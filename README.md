@@ -1,2 +1,2 @@
-# Rust-Memory-Management-101
-My attempt to learn system programming in rust and exploit the dynamic memory management tools it provide to learn build performant applications.
+# Project-JARVIL
+Just A Rather Very Idiotic Language (JARVIL) is a programming language made for pure fun! Just wanted to discover how a language is made
