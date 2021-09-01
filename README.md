@@ -1,2 +1,2 @@
 # Project-JARVIL
-Just A Rather Very Insane Language (JARVIL) is a programming language made for pure fun! Just wanted to discover how a language is made
+Just A Rather Very Insane Language (JARVIL) is a programming language made for pure fun! Just wanted to discover how a language is made. This repo contains all my learnings on designing and writing a compiler and language design which is written in a familiar fashion followed by an standard text on compilers (for example: The Dragon Book!). Because of the descriptive nature of this repo, it can also be used to learn compiler concepts and implementation details along side any textbook.
