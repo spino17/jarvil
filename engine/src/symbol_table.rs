@@ -8,7 +8,8 @@
 // 4. During parsing phase, when we encounter any statement involving identifiers then we access it for checking declartions, 
 // datatypes etc.
 
-use std::{collections::HashMap};
+use std::{collections::HashMap, cell::RefCell};
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct SymbolData {
@@ -16,36 +17,65 @@ pub struct SymbolData {
 }
 
 #[derive(Debug)]
-pub struct Scope<'a> {
+pub struct Scope {
     symbol_table: HashMap<String, SymbolData>,
-    parent_scope_ref: Option<&'a Scope<'a>>,
+    parent_env: Option<Env>,
 }
 
-impl<'a> Scope<'a> {
-    pub fn new() -> Self {
-        Scope {
-            symbol_table: HashMap::new(),
-            parent_scope_ref: None,
-        }
-    }
-
-    pub fn new_with_parent_scope(parent_scope_ref: &'a Scope<'a>) -> Self {
-        Scope {
-            symbol_table: HashMap::new(),
-            parent_scope_ref: Some(parent_scope_ref),
-        }
-    }
-
-    pub fn set(&mut self, name: String, data_type: String) {
+impl Scope {
+    fn set(&mut self, name: String, data_type: String) {
         self.symbol_table.insert(name, SymbolData { data_type, });
     }
 
-    pub fn get(&self, name: &str) -> Option<&SymbolData> {
+    fn get(&self, name: &str) -> Option<&SymbolData> {
+        self.symbol_table.get(name)
+    }
+}
+
+#[derive(Debug)]
+pub struct Env(Rc<RefCell<Scope>>);
+
+impl Env {
+    pub fn new() -> Self {
+        Env(Rc::new(RefCell::new(Scope {
+            symbol_table: HashMap::new(),
+            parent_env: None,
+        })))
+    }
+
+    pub fn new_with_parent_env(parent_env: &Env) -> Self {
+        let env = parent_env.0.clone();
+        Env(Rc::new(RefCell::new(Scope {
+            symbol_table: HashMap::new(),
+            parent_env: Some(Env(env)),
+        })))
+    }
+
+    pub fn set(&self, name: String, data_type: String) {
+        self.0.borrow_mut().set(name, data_type);
+    }
+
+    pub fn get(&self, name: &str) -> Option<i64> {
+        /*
         match self.symbol_table.get(name) {
             Some(value) => Some(value),
             None => {
                 if let Some(parent_scope_ref) = self.parent_scope_ref {
                     parent_scope_ref.get(name)
+                } else {
+                    None
+                }
+            }
+        }
+         */
+        let scope_ref = self.0.borrow();
+        match scope_ref.get(name) {
+            Some(value) => {
+                Some(10)
+            },
+            None => {
+                if let Some(parent_env) = &scope_ref.parent_env {
+                    parent_env.get(name)
                 } else {
                     None
                 }

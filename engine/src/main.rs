@@ -4,7 +4,7 @@ mod symbol_table;
 
 use std::fs;
 use errors::CompilationError;
-use crate::symbol_table::Scope;
+use crate::symbol_table::Env;
 
 fn main() -> Result<(), CompilationError> {
     let contents = fs::read_to_string("/Users/bhavyabhatt/Desktop/main.jv")?;
