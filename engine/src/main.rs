@@ -1,9 +1,10 @@
 mod errors;
 
 use std::fs;
-use std::error::Error;
+use errors::CompilationError;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let contents = fs::read_to_string("/Users/bhavyabhatt/Desktop/file.jv")?;
+fn main() -> Result<(), CompilationError> {
+    let contents = fs::read_to_string("/Users/bhavyabhatt/Desktop/main.jv")?;
+    print!("{}", contents);
     Ok(())
 }
