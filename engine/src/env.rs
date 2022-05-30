@@ -7,9 +7,9 @@
 // 3. During parsing phase, we add entries in the table for identifiers when we find declartion statements in the current scope.
 // 4. During parsing phase, when we encounter any statement involving identifiers then we access it for checking declartions, 
 // datatypes etc.
-
 use std::{collections::HashMap, cell::RefCell};
 use std::rc::Rc;
+use crate::errors::SemanticError;
 
 #[derive(Debug)]
 pub struct MetaData {
@@ -77,6 +77,18 @@ impl Env {
                     None
                 }
             }
+        }
+    }
+    
+    pub fn check_type(&self, name: &str, base_type: &str) -> Result<bool, SemanticError> {
+        if let Some(symbol_data) = self.get(name) {
+            if symbol_data.0.data_type.eq(base_type) {
+                Ok(true)
+            } else {
+                Err(SemanticError{})  // TODO - type mismatch, expected base_type but got symbol_data.0.data_type
+            }
+        } else {
+            Err(SemanticError{})  // TODO - identifier is not declared in the current scope
         }
     }
 }
