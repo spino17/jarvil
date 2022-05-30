@@ -12,9 +12,12 @@ use std::{collections::HashMap, cell::RefCell};
 use std::rc::Rc;
 
 #[derive(Debug)]
-pub struct SymbolData {
+pub struct MetaData {
     data_type: String,
 }
+
+#[derive(Debug)]
+pub struct SymbolData(Rc<MetaData>);
 
 #[derive(Debug)]
 pub struct Scope {
@@ -24,7 +27,7 @@ pub struct Scope {
 
 impl Scope {
     fn set(&mut self, name: String, data_type: String) {
-        self.symbol_table.insert(name, SymbolData { data_type, });
+        self.symbol_table.insert(name, SymbolData(Rc::new(MetaData{data_type, })));
     }
 
     fn get(&self, name: &str) -> Option<&SymbolData> {
@@ -55,26 +58,20 @@ impl Env {
         self.0.borrow_mut().set(name, data_type);
     }
 
-    pub fn get(&self, name: &str) -> Option<i64> {
-        /*
-        match self.symbol_table.get(name) {
-            Some(value) => Some(value),
-            None => {
-                if let Some(parent_scope_ref) = self.parent_scope_ref {
-                    parent_scope_ref.get(name)
-                } else {
-                    None
-                }
-            }
-        }
-         */
+    pub fn get(&self, name: &str) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
+
+        // check the identifier name in current scope
         match scope_ref.get(name) {
             Some(value) => {
-                Some(10)
+                Some(SymbolData(value.0.clone()))
             },
             None => {
+
+                // if not found in current scope, check recursively in parent scopes
                 if let Some(parent_env) = &scope_ref.parent_env {
+
+                    // return from the nearest scope which found the identifier name
                     parent_env.get(name)
                 } else {
                     None
