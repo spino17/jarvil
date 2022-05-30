@@ -10,7 +10,7 @@
 use std::{collections::HashMap, cell::RefCell};
 use std::rc::Rc;
 use crate::errors::SemanticError;
-use crate::context::is_keyword;
+use crate::context::{is_keyword, is_type};
 
 #[derive(Debug)]
 pub struct MetaData {
@@ -24,6 +24,12 @@ impl SymbolData {
     pub fn new_keyword() -> Self {
         SymbolData(Rc::new(MetaData{
             data_type: String::from("keyword"),
+        }))
+    }
+
+    pub fn new_type() -> Self {
+        SymbolData(Rc::new(MetaData{
+            data_type: String::from("type"),
         }))
     }
 
@@ -123,6 +129,12 @@ impl Env {
     pub fn is_type(&self, name: &str) -> bool {
         // TODO - uses keyword table, useful during lexical analysis phase to distinguish lexeme for identifier and lexeme for
         // type
-        todo!()
+        if is_type(name) {
+            true
+        } else {
+            // TODO - check user defined data types available in scope
+            println!("checking user defined type");
+            todo!()
+        }
     }
 }
