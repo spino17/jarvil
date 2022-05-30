@@ -7,6 +7,7 @@
 // 3. During parsing phase, we add entries in the table for identifiers when we find declartion statements in the current scope.
 // 4. During parsing phase, when we encounter any statement involving identifiers then we access it for checking declartions, 
 // datatypes etc.
+
 use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
@@ -41,6 +42,12 @@ impl SymbolData {
         } else {
             Err(SemanticError{})  // TODO - type mismatch, expected base_type but got symbol_data.0.data_type
         }
+    }
+
+    // This method is called during parsing phase where we check whether a particular token is a type or not
+    pub fn is_type(&self) -> bool {
+        // TODO - check first in the context data types and then in scope for user defined types
+        self.0.data_type.eq("type")
     }
 }
 
@@ -82,16 +89,15 @@ impl Env {
         })))
     }
 
-    pub fn set(&self, name: &TokenValue, data_type: String) {
-        // TODO - check whether key already exists or not, if yes then it means it is already declared inside the current scope
-        self.0.borrow_mut().set(name.0.clone(), data_type);
+    pub fn set(&self, token_value: &TokenValue, data_type: String) {
+        self.0.borrow_mut().set(token_value.0.clone(), data_type);
     }
 
-    fn get(&self, name: &TokenValue) -> Option<SymbolData> {
+    fn get(&self, token_value: &TokenValue) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
 
         // check the identifier name in current scope
-        match scope_ref.get(&name.0) {
+        match scope_ref.get(&token_value.0) {
             Some(value) => {
                 Some(SymbolData(value.0.clone()))
             },
@@ -101,7 +107,7 @@ impl Env {
                 if let Some(parent_env) = &scope_ref.parent_env {
 
                     // return from the nearest scope which found the identifier name
-                    parent_env.get(name)
+                    parent_env.get(token_value)
                 } else {
                     None
                 }
@@ -109,8 +115,8 @@ impl Env {
         }
     }
 
-    pub fn check_declaration(&self, name: &TokenValue) -> Result<SymbolData, SemanticError> {
-        match self.get(name) {
+    pub fn check_declaration(&self, token_value: &TokenValue) -> Result<SymbolData, SemanticError> {
+        match self.get(token_value) {
             Some(symbol_data) => Ok(symbol_data),
             None => {
                 Err(SemanticError{})  // TODO - identifier is not declared in the current scope
@@ -118,6 +124,7 @@ impl Env {
         }
     }
 
+    // mostly below two methods are called during lexical analysis phase when we are about to form token by checking raw string
     pub fn is_keyword(&self, name: &str) -> bool {
         is_keyword(name)
     }

@@ -44,7 +44,7 @@ fn main() -> Result<(), CompilationError> {
 
 
     let mut scope_1 = Env::new_with_parent_env(&scope);
-    scope_1.set(&f, String::from("uint"));
+    scope_1.set(&g, String::from("uint"));
     // scope_1.set(&g, String::from("bool"));
     scope_1.set(&varima, String::from("array"));
     println!("{:?}", scope_1.check_declaration(&f));
