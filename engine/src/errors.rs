@@ -8,6 +8,11 @@ pub struct IOError {
 }
 
 #[derive(Debug)]
+pub struct LexicalError {
+
+}
+
+#[derive(Debug)]
 pub struct SyntaxError {
 
 }
@@ -20,12 +25,19 @@ pub struct SemanticError {
 #[derive(Debug)]
 pub enum CompilationError {
     IO_ERROR(IOError),
+    LEXICAL_ERROR(LexicalError),
     SYNTAX_ERROR(SyntaxError),
     SEMANTIC_ERROR(SemanticError)
 }
 
 impl From<ioError> for CompilationError {
     fn from(err: ioError) -> Self {
+        todo!()
+    }
+}
+
+impl From<LexicalError> for CompilationError {
+    fn from(err: LexicalError) -> Self {
         todo!()
     }
 }
