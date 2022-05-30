@@ -10,6 +10,7 @@
 use std::{collections::HashMap, cell::RefCell};
 use std::rc::Rc;
 use crate::errors::SemanticError;
+use crate::context::is_keyword;
 
 #[derive(Debug)]
 pub struct MetaData {
@@ -19,10 +20,29 @@ pub struct MetaData {
 #[derive(Debug)]
 pub struct SymbolData(Rc<MetaData>);
 
+impl SymbolData {
+    pub fn new_keyword() -> Self {
+        SymbolData(Rc::new(MetaData{
+            data_type: String::from("keyword"),
+        }))
+    }
+
+    pub fn check_type(&self, base_type: &str) -> Result<bool, SemanticError> {
+        if self.0.data_type.eq(base_type) {
+            Ok(true)
+        } else {
+            Err(SemanticError{})  // TODO - type mismatch, expected base_type but got symbol_data.0.data_type
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Scope {
     symbol_table: HashMap<String, SymbolData>,
     parent_env: Option<Env>,
+    // TODO - store it in local thread space as it is not modified
+    // add reference to keyword table
+    // add reference to data types table
 }
 
 impl Scope {
@@ -58,7 +78,12 @@ impl Env {
         self.0.borrow_mut().set(name, data_type);
     }
 
-    pub fn get(&self, name: &str) -> Option<SymbolData> {
+    pub fn set_type(&self, name: &str) {
+        // TODO - set type in data types table, useful for user defined types via struct
+        todo!()
+    }
+
+    fn get(&self, name: &str) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
 
         // check the identifier name in current scope
@@ -79,16 +104,25 @@ impl Env {
             }
         }
     }
-    
-    pub fn check_type(&self, name: &str, base_type: &str) -> Result<bool, SemanticError> {
-        if let Some(symbol_data) = self.get(name) {
-            if symbol_data.0.data_type.eq(base_type) {
-                Ok(true)
-            } else {
-                Err(SemanticError{})  // TODO - type mismatch, expected base_type but got symbol_data.0.data_type
+
+    pub fn check_declaration(&self, name: &str) -> Result<SymbolData, SemanticError> {
+        match self.get(name) {
+            Some(symbol_data) => Ok(symbol_data),
+            None => {
+                Err(SemanticError{})  // TODO - identifier is not declared in the current scope
             }
-        } else {
-            Err(SemanticError{})  // TODO - identifier is not declared in the current scope
         }
+    }
+
+    pub fn is_keyword(&self, name: &str) -> bool {
+        // TODO - uses keyword table, useful during lexical analysis phase to distinguish lexeme for identifier and lexeme for
+        // keyword
+        is_keyword(name)
+    }
+
+    pub fn is_type(&self, name: &str) -> bool {
+        // TODO - uses keyword table, useful during lexical analysis phase to distinguish lexeme for identifier and lexeme for
+        // type
+        todo!()
     }
 }

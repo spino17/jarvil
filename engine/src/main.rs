@@ -1,6 +1,8 @@
 mod errors;
 mod lexer;
 mod env;
+mod context;
+mod constants;
 
 use std::fs;
 use errors::CompilationError;
@@ -20,9 +22,7 @@ fn main() -> Result<(), CompilationError> {
     let mut scope_2 = Env::new_with_parent_env(&scope_1);
     scope_2.set(String::from("bhatt"), String::from("vector"));
     scope_2.set(String::from("wds"), String::from("keyword"));
-    println!("{:?}", scope_2.get("f"));
     scope.set(String::from("pandey"), String::from("string"));
-    println!("{:?}", scope_1.get("v"));
-    println!("{:?}", scope_2.check_type("v_ref", "uint"));
+    println!("{:?}", scope.is_keyword("while"));
     Ok(())
 }
