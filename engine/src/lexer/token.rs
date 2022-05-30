@@ -3,6 +3,7 @@ use crate::errors::LexicalError;
 pub struct TokenValue(String);
 
 pub enum CoreToken {
+    
     // conditionals
     IF,                 // 'if'
     ELSE,               // 'else'
@@ -81,7 +82,8 @@ impl Token {
             "struct"    => CoreToken::STRUCT,
             "and"       => CoreToken::AND,
             "not"       => CoreToken::NOT,
-            "or"        => CoreToken::IS,
+            "or"        => CoreToken::OR,
+            "is"        => CoreToken::IS,
             "+"         => CoreToken::ADD,
             "++"        => CoreToken::INCREMENT,
             "-"         => CoreToken::SUBTRACT,
@@ -109,7 +111,7 @@ impl Token {
             "<="        => CoreToken::LESS_EQUAL,
             "<"         => CoreToken::LESS,
             _           => {
-                return Err(LexicalError{})
+                panic!("{:?}", LexicalError{})  // This is bug!
             }
         };
         Ok(Token{
@@ -126,7 +128,7 @@ impl Token {
             "id"        => CoreToken::IDENTIFIER(token_value),
             "literal"   => CoreToken::LITERAL(token_value),
             _           => {
-                return Err(LexicalError{})
+                panic!("{:?}", LexicalError{})  // This is bug!
             }
         };
         Ok(Token{

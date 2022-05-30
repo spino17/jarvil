@@ -2,10 +2,13 @@ use std::{collections::HashMap};
 use crate::env::{SymbolData, MetaData};
 use std::cell::RefCell;
 use crate::constants::{keywords::KEYWORDS, types::TYPES};
+use std::rc::Rc;
 
 thread_local! {
     static CONTEXT: RefCell<Context> = RefCell::new(Context::new())
 }
+
+pub type SharedString = Rc<String>;
 
 struct Context {
     keywords: HashMap<String, SymbolData>,
