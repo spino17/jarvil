@@ -1,24 +1,24 @@
-use std::{collections::HashMap};
-use crate::env::{SymbolData, MetaData};
+use rustc_hash::FxHashMap;
+use std::collections::HashMap;
+use crate::env::SymbolData;
 use std::cell::RefCell;
 use crate::constants::{keywords::KEYWORDS, types::TYPES};
-use std::rc::Rc;
 
 thread_local! {
     static CONTEXT: RefCell<Context> = RefCell::new(Context::new())
 }
 
-pub type SharedString = Rc<String>;
-
 struct Context {
-    keywords: HashMap<String, SymbolData>,
-    types: HashMap<String, SymbolData>,
+    keywords: FxHashMap<String, SymbolData>,
+    types: FxHashMap<String, SymbolData>
+    // TODO - add Env (symbol table) so that internal methods just access context value and Env is updated while entry and exit
+    // of block
 }
 
 impl Context {
     fn new() -> Self {
-        let mut keywords = HashMap::new();
-        let mut types = HashMap::new();
+        let mut keywords: FxHashMap<String, SymbolData> = HashMap::default();
+        let mut types: FxHashMap<String, SymbolData> = HashMap::default();
         for &keyword in KEYWORDS.iter() {
             keywords.insert(String::from(keyword), SymbolData::new_with_keyword());
         }

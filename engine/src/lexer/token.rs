@@ -1,9 +1,10 @@
 use crate::errors::LexicalError;
+use std::rc::Rc;
 
-pub struct TokenValue(String);
+pub struct TokenValue(pub Rc<String>);
 
 pub enum CoreToken {
-    
+
     // conditionals
     IF,                 // 'if'
     ELSE,               // 'else'
@@ -111,7 +112,7 @@ impl Token {
             "<="        => CoreToken::LESS_EQUAL,
             "<"         => CoreToken::LESS,
             _           => {
-                panic!("{:?}", LexicalError{})  // This is bug!
+                panic!("{:?}", LexicalError{})  // This is a bug!
             }
         };
         Ok(Token{
@@ -121,19 +122,39 @@ impl Token {
     }
 
     pub fn new_with_name_and_value(line_number: i64, name: &str, value: &str) -> Result<Self, LexicalError> {
-        let token_value = TokenValue(String::from(value));
+        let token_value = TokenValue(Rc::new(String::from(value)));
         let core_token = match name {
             "type"      => CoreToken::TYPE(token_value),
             "num"       => CoreToken::NUMBER(token_value),
             "id"        => CoreToken::IDENTIFIER(token_value),
             "literal"   => CoreToken::LITERAL(token_value),
             _           => {
-                panic!("{:?}", LexicalError{})  // This is bug!
+                panic!("{:?}", LexicalError{})  // This is a bug!
             }
         };
         Ok(Token{
             line_number,
             core_token,
         })
+    }
+
+    pub fn get_value(&self) -> Option<TokenValue> {
+        match &self.core_token {
+            CoreToken::TYPE(value) => {
+                Some(TokenValue(value.0.clone()))
+            },
+            CoreToken::NUMBER(value) => {
+                Some(TokenValue(value.0.clone()))
+            },
+            CoreToken::IDENTIFIER(value) => {
+                Some(TokenValue(value.0.clone()))
+            }
+            CoreToken::LITERAL(value) => {
+                Some(TokenValue(value.0.clone()))
+            },
+            _ => {
+                None
+            }
+        }
     }
 }

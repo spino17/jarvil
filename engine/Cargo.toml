@@ -5,3 +5,4 @@ edition = "2018"
 authors = ["Bhavya Bhatt bhavyabhatt17@gmail.com"]
 
 [dependencies]
+rustc-hash = { version = "1.1" }

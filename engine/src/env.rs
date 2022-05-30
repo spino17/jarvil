@@ -7,10 +7,12 @@
 // 3. During parsing phase, we add entries in the table for identifiers when we find declartion statements in the current scope.
 // 4. During parsing phase, when we encounter any statement involving identifiers then we access it for checking declartions, 
 // datatypes etc.
-use std::{collections::HashMap, cell::RefCell};
+use std::cell::RefCell;
+use rustc_hash::FxHashMap;
 use std::rc::Rc;
 use crate::errors::SemanticError;
 use crate::context::{is_keyword, is_type};
+use crate::lexer::token::TokenValue;
 
 #[derive(Debug)]
 pub struct MetaData {
@@ -44,7 +46,7 @@ impl SymbolData {
 
 #[derive(Debug)]
 pub struct Scope {
-    symbol_table: HashMap<String, SymbolData>,
+    symbol_table: FxHashMap<Rc<String>, SymbolData>,
     parent_env: Option<Env>,
     // TODO - store it in local thread space as it is not modified
     // add reference to keyword table
@@ -52,11 +54,11 @@ pub struct Scope {
 }
 
 impl Scope {
-    fn set(&mut self, name: String, data_type: String) {
+    fn set(&mut self, name: Rc<String>, data_type: String) {
         self.symbol_table.insert(name, SymbolData(Rc::new(MetaData{data_type, })));
     }
 
-    fn get(&self, name: &str) -> Option<&SymbolData> {
+    fn get(&self, name: &Rc<String>) -> Option<&SymbolData> {
         self.symbol_table.get(name)
     }
 }
@@ -67,7 +69,7 @@ pub struct Env(Rc<RefCell<Scope>>);
 impl Env {
     pub fn new() -> Self {
         Env(Rc::new(RefCell::new(Scope {
-            symbol_table: HashMap::new(),  // TODO - fill this up with keyword strings! or we can have separate keyword table
+            symbol_table: FxHashMap::default(),  // TODO - fill this up with keyword strings! or we can have separate keyword table
             parent_env: None,
         })))
     }
@@ -75,21 +77,21 @@ impl Env {
     pub fn new_with_parent_env(parent_env: &Env) -> Self {
         let env = parent_env.0.clone();
         Env(Rc::new(RefCell::new(Scope {
-            symbol_table: HashMap::new(),
+            symbol_table: FxHashMap::default(),
             parent_env: Some(Env(env)),
         })))
     }
 
-    pub fn set(&self, name: String, data_type: String) {
+    pub fn set(&self, name: &TokenValue, data_type: String) {
         // TODO - check whether key already exists or not, if yes then it means it is already declared inside the current scope
-        self.0.borrow_mut().set(name, data_type);
+        self.0.borrow_mut().set(name.0.clone(), data_type);
     }
 
-    fn get(&self, name: &str) -> Option<SymbolData> {
+    fn get(&self, name: &TokenValue) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
 
         // check the identifier name in current scope
-        match scope_ref.get(name) {
+        match scope_ref.get(&name.0) {
             Some(value) => {
                 Some(SymbolData(value.0.clone()))
             },
@@ -107,7 +109,7 @@ impl Env {
         }
     }
 
-    pub fn check_declaration(&self, name: &str) -> Result<SymbolData, SemanticError> {
+    pub fn check_declaration(&self, name: &TokenValue) -> Result<SymbolData, SemanticError> {
         match self.get(name) {
             Some(symbol_data) => Ok(symbol_data),
             None => {

@@ -5,18 +5,11 @@ mod context;
 mod constants;
 mod reader;
 
-use std::{fs, vec};
 use errors::CompilationError;
+use std::rc::Rc;
 use crate::env::Env;
 use crate::reader::read_file;
-
-fn print_string(name: &str) {
-    println!("{}", name);
-}
-
-struct Node {
-    name: String,
-}
+use crate::lexer::token::TokenValue;
 
 fn main() -> Result<(), CompilationError> {
     let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;  // pass this vector of char to lexer
@@ -33,20 +26,36 @@ fn main() -> Result<(), CompilationError> {
         println!("Horray")
     }
     
-
     // call init on symbol_table to set keywords before lexical phase.
     // call scan from lexical analyzer to return iter of tokens.
     // attempt parsing for syntax and semantical analysis.
+    let v_ref = TokenValue(Rc::new(String::from("v_ref")));
+    let v = TokenValue(Rc::new(String::from("v")));
+    let f = TokenValue(Rc::new(String::from("f")));
+    let g = TokenValue(Rc::new(String::from("f")));
+    let varima = TokenValue(Rc::new(String::from("varima")));
+    let bhatt = TokenValue(Rc::new(String::from("bhatt")));
+    let wds = TokenValue(Rc::new(String::from("wds")));
+    let pandey = TokenValue(Rc::new(String::from("pandey")));
+
     let mut scope = Env::new();  // used to set global variable declarations
-    scope.set(String::from("v_ref"), String::from("int"));
-    scope.set(String::from("v"), String::from("hashmap"));
+    scope.set(&v_ref, String::from("int"));
+    scope.set(&v, String::from("hashmap"));
+
+
     let mut scope_1 = Env::new_with_parent_env(&scope);
-    scope_1.set(String::from("f"), String::from("uint"));
-    scope_1.set(String::from("varima"), String::from("array"));
-    let mut scope_2 = Env::new_with_parent_env(&scope_1);
-    scope_2.set(String::from("bhatt"), String::from("vector"));
-    scope_2.set(String::from("wds"), String::from("keyword"));
-    scope.set(String::from("pandey"), String::from("string"));
-    println!("{:?}", scope_1.is_keyword("while"));
+    scope_1.set(&f, String::from("uint"));
+    // scope_1.set(&g, String::from("bool"));
+    scope_1.set(&varima, String::from("array"));
+    println!("{:?}", scope_1.check_declaration(&f));
+
+
+    let mut scope_2 = Env::new_with_parent_env(&scope);
+    scope_2.set(&bhatt, String::from("vector"));
+    scope_2.set(&wds, String::from("keyword"));
+    scope.set(&pandey, String::from("string"));
+
+
+    println!("{:?}", scope_1);
     Ok(())
 }
