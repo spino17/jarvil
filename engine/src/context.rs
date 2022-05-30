@@ -17,10 +17,10 @@ impl Context {
         let mut keywords = HashMap::new();
         let mut types = HashMap::new();
         for &keyword in KEYWORDS.iter() {
-            keywords.insert(String::from(keyword), SymbolData::new_keyword());
+            keywords.insert(String::from(keyword), SymbolData::new_with_keyword());
         }
         for &data_type in TYPES.iter() {
-            types.insert(String::from(data_type), SymbolData::new_type());
+            types.insert(String::from(data_type), SymbolData::new_with_type());
         }
         Context {
             keywords,

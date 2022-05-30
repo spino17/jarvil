@@ -21,13 +21,13 @@ pub struct MetaData {
 pub struct SymbolData(Rc<MetaData>);
 
 impl SymbolData {
-    pub fn new_keyword() -> Self {
+    pub fn new_with_keyword() -> Self {
         SymbolData(Rc::new(MetaData{
             data_type: String::from("keyword"),
         }))
     }
 
-    pub fn new_type() -> Self {
+    pub fn new_with_type() -> Self {
         SymbolData(Rc::new(MetaData{
             data_type: String::from("type"),
         }))
@@ -81,12 +81,8 @@ impl Env {
     }
 
     pub fn set(&self, name: String, data_type: String) {
+        // TODO - check whether key already exists or not, if yes then it means it is already declared inside the current scope
         self.0.borrow_mut().set(name, data_type);
-    }
-
-    pub fn set_type(&self, name: &str) {
-        // TODO - set type in data types table, useful for user defined types via struct
-        todo!()
     }
 
     fn get(&self, name: &str) -> Option<SymbolData> {
@@ -121,20 +117,10 @@ impl Env {
     }
 
     pub fn is_keyword(&self, name: &str) -> bool {
-        // TODO - uses keyword table, useful during lexical analysis phase to distinguish lexeme for identifier and lexeme for
-        // keyword
         is_keyword(name)
     }
 
-    pub fn is_type(&self, name: &str) -> bool {
-        // TODO - uses keyword table, useful during lexical analysis phase to distinguish lexeme for identifier and lexeme for
-        // type
-        if is_type(name) {
-            true
-        } else {
-            // TODO - check user defined data types available in scope
-            println!("checking user defined type");
-            todo!()
-        }
+    pub fn is_builtin_type(&self, name: &str) -> bool {
+        is_type(name)
     }
 }

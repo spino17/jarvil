@@ -23,6 +23,6 @@ fn main() -> Result<(), CompilationError> {
     scope_2.set(String::from("bhatt"), String::from("vector"));
     scope_2.set(String::from("wds"), String::from("keyword"));
     scope.set(String::from("pandey"), String::from("string"));
-    println!("{:?}", scope_1.is_type("String"));
+    println!("{:?}", scope_1.is_keyword("for"));
     Ok(())
 }

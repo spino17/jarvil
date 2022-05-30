@@ -1,4 +1,4 @@
-pub const KEYWORDS: [&'static str; 9] = [
+pub const KEYWORDS: [&'static str; 10] = [
     "for",
     "if",
     "elif",
@@ -8,4 +8,5 @@ pub const KEYWORDS: [&'static str; 9] = [
     "and",
     "not",
     "or",
+    "is",
 ];
