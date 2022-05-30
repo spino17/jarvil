@@ -38,7 +38,7 @@ pub struct Env(Rc<RefCell<Scope>>);
 impl Env {
     pub fn new() -> Self {
         Env(Rc::new(RefCell::new(Scope {
-            symbol_table: HashMap::new(),
+            symbol_table: HashMap::new(),  // TODO - fill this up with keyword strings! or we can have separate keyword table
             parent_env: None,
         })))
     }

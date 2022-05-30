@@ -1,3 +1,4 @@
 pub mod errors;
 pub mod lexer;
-pub mod symbol_table;
+pub mod env;
+pub mod constants;
