@@ -43,10 +43,8 @@ impl SymbolData {
             Err(SemanticError{})  // TODO - type mismatch, expected base_type but got symbol_data.0.data_type
         }
     }
-
-    // This method is called during parsing phase where we check whether a particular token is a type or not
+    
     pub fn is_type(&self) -> bool {
-        // TODO - check first in the context data types and then in scope for user defined types
         self.0.data_type.eq("type")
     }
 }
@@ -55,9 +53,6 @@ impl SymbolData {
 pub struct Scope {
     symbol_table: FxHashMap<Rc<String>, SymbolData>,
     parent_env: Option<Env>,
-    // TODO - store it in local thread space as it is not modified
-    // add reference to keyword table
-    // add reference to data types table
 }
 
 impl Scope {
@@ -76,7 +71,7 @@ pub struct Env(Rc<RefCell<Scope>>);
 impl Env {
     pub fn new() -> Self {
         Env(Rc::new(RefCell::new(Scope {
-            symbol_table: FxHashMap::default(),  // TODO - fill this up with keyword strings! or we can have separate keyword table
+            symbol_table: FxHashMap::default(),
             parent_env: None,
         })))
     }
@@ -125,6 +120,7 @@ impl Env {
     }
 
     // mostly below two methods are called during lexical analysis phase when we are about to form token by checking raw string
+    // to distinguish whether a name is keyword, builtin type or an identifier
     pub fn is_keyword(&self, name: &str) -> bool {
         is_keyword(name)
     }

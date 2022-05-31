@@ -1,8 +1,11 @@
-use crate::errors::LexicalError;
+use crate::errors::{LexicalError, SemanticError};
 use std::rc::Rc;
+use crate::env::Env;
 
+#[derive(Debug)]
 pub struct TokenValue(pub Rc<String>);
 
+#[derive(Debug)]
 pub enum CoreToken {
 
     // conditionals
@@ -64,16 +67,14 @@ pub enum CoreToken {
     LITERAL(TokenValue),
 }
 
+#[derive(Debug)]
 pub struct Token {
-    // TODO - implement all token types - if, else, elif, l_parentheses, r_parentheses, l_brace, r_brace, equal, double_equal,
-    // greater_equal, greater, less_equal, less, semicolon, number, identifier, literal
     line_number: i64,
     core_token: CoreToken,
 }
 
 impl Token {
-    pub fn new_with_name(line_number: i64, name: &str) -> Result<Self, LexicalError> {
-        // large switch case to return appropiate token for the name
+    pub fn new_with_name(line_number: i64, name: &str) -> Self {
         let core_token: CoreToken = match name {
             "if"        =>      CoreToken::IF,
             "else"      =>      CoreToken::ELSE,
@@ -115,13 +116,13 @@ impl Token {
                 panic!("{:?}", LexicalError{})  // This is a bug!
             }
         };
-        Ok(Token{
+        Token {
             line_number,
             core_token,
-        })
+        }
     }
 
-    pub fn new_with_name_and_value(line_number: i64, name: &str, value: &str) -> Result<Self, LexicalError> {
+    pub fn new_with_name_and_value(line_number: i64, name: &str, value: &str) -> Self {
         let token_value = TokenValue(Rc::new(String::from(value)));
         let core_token = match name {
             "type"      =>      CoreToken::TYPE(token_value),
@@ -132,10 +133,10 @@ impl Token {
                 panic!("{:?}", LexicalError{})  // This is a bug!
             }
         };
-        Ok(Token{
+        Token {
             line_number,
             core_token,
-        })
+        }
     }
 
     pub fn get_value(&self) -> Option<TokenValue> {
@@ -154,6 +155,25 @@ impl Token {
             },
             _ => {
                 None
+            }
+        }
+    }
+    
+    pub fn is_type(&self, env: &Env) -> Result<bool, SemanticError> {
+        match &self.core_token {
+            CoreToken::TYPE(_) => {
+                Ok(true)
+            },
+            CoreToken::IDENTIFIER(token_value) => {
+                match env.check_declaration(token_value) {
+                    Ok(symbol_table) => {
+                        Ok(symbol_table.is_type())
+                    },
+                    Err(err) => Err(err)
+                }
+            },
+            _ => {
+                Ok(false)
             }
         }
     }

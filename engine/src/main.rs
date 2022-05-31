@@ -9,7 +9,7 @@ use errors::CompilationError;
 use std::rc::Rc;
 use crate::env::Env;
 use crate::reader::read_file;
-use crate::lexer::token::TokenValue;
+use crate::lexer::token::{Token, TokenValue};
 
 fn main() -> Result<(), CompilationError> {
     let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;  // pass this vector of char to lexer
@@ -52,8 +52,8 @@ fn main() -> Result<(), CompilationError> {
 
     let mut scope_2 = Env::new_with_parent_env(&scope);
     scope_2.set(&bhatt, String::from("vector"));
-    scope_2.set(&wds, String::from("keyword"));
-    scope.set(&pandey, String::from("string"));
+    scope_2.set(&wds, String::from("type"));
+    scope.set(&pandey, String::from("type"));
 
 
     println!("{:?}", scope_1);
