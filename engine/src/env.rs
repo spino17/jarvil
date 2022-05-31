@@ -110,6 +110,7 @@ impl Env {
         }
     }
 
+    // always call this function for identifier token
     pub fn check_declaration(&self, token_value: &TokenValue) -> Result<SymbolData, SemanticError> {
         match self.get(token_value) {
             Some(symbol_data) => Ok(symbol_data),
@@ -117,15 +118,5 @@ impl Env {
                 Err(SemanticError{})  // TODO - identifier is not declared in the current scope
             }
         }
-    }
-
-    // mostly below two methods are called during lexical analysis phase when we are about to form token by checking raw string
-    // to distinguish whether a name is keyword, builtin type or an identifier
-    pub fn is_keyword(&self, name: &str) -> bool {
-        is_keyword(name)
-    }
-
-    pub fn is_builtin_type(&self, name: &str) -> bool {
-        is_type(name)
     }
 }

@@ -165,12 +165,8 @@ impl Token {
                 Ok(true)
             },
             CoreToken::IDENTIFIER(token_value) => {
-                match env.check_declaration(token_value) {
-                    Ok(symbol_table) => {
-                        Ok(symbol_table.is_type())
-                    },
-                    Err(err) => Err(err)
-                }
+                let symbol_table = env.check_declaration(token_value)?;
+                Ok(symbol_table.is_type())
             },
             _ => {
                 Ok(false)

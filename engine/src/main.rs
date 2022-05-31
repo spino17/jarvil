@@ -39,7 +39,7 @@ fn main() -> Result<(), CompilationError> {
     let pandey = TokenValue(Rc::new(String::from("pandey")));
 
     let mut scope = Env::new();  // used to set global variable declarations
-    scope.set(&v_ref, String::from("int"));
+    scope.set(&v_ref, String::from("type"));
     scope.set(&v, String::from("hashmap"));
 
 
@@ -57,5 +57,6 @@ fn main() -> Result<(), CompilationError> {
 
 
     println!("{:?}", scope_1);
+    println!("{:?}", Token::new_with_name_and_value(10, "id", "v").is_type(&scope_2));
     Ok(())
 }
