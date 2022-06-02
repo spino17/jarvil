@@ -9,7 +9,7 @@ use errors::CompilationError;
 use std::rc::Rc;
 use crate::env::Env;
 use crate::reader::read_file;
-use crate::lexer::token::{Token, TokenValue};
+use crate::lexer::{token::{Token, TokenValue}, lexer::CoreLexer};
 
 fn main() -> Result<(), CompilationError> {
     let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;  // pass this vector of char to lexer
@@ -25,6 +25,8 @@ fn main() -> Result<(), CompilationError> {
     if s.eq("/") {
         println!("Horray")
     }
+
+    let mut core_lexer = CoreLexer::new();
     
     // call init on symbol_table to set keywords before lexical phase.
     // call scan from lexical analyzer to return iter of tokens.
