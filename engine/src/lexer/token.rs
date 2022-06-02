@@ -52,6 +52,9 @@ pub enum CoreToken {
     LCOMMENT,           // '/*'
     RCOMMENT,           // '*/'
     DOT,                // '.'
+    BLANK,              // ' '
+    TAB,                // '\t'
+    NEWLINE,            // '\n'
 
     // comparison
     EQUAL,              // '='
@@ -69,72 +72,95 @@ pub enum CoreToken {
 
 #[derive(Debug)]
 pub struct Token {
-    line_number: i64,
+    line_number: usize,
     core_token: CoreToken,
 }
 
 impl Token {
-    pub fn new_with_name(line_number: i64, name: &str) -> Self {
-        let core_token: CoreToken = match name {
-            "if"        =>      CoreToken::IF,
-            "else"      =>      CoreToken::ELSE,
-            "elif"      =>      CoreToken::ELIF,
-            "for"       =>      CoreToken::FOR,
-            "while"     =>      CoreToken::WHILE,
-            "struct"    =>      CoreToken::STRUCT,
-            "and"       =>      CoreToken::AND,
-            "not"       =>      CoreToken::NOT,
-            "or"        =>      CoreToken::OR,
-            "is"        =>      CoreToken::IS,
-            "+"         =>      CoreToken::PLUS,
-            "++"        =>      CoreToken::DOUBLE_PLUS,
-            "-"         =>      CoreToken::MINUS,
-            "--"        =>      CoreToken::DOUBLE_MINUS,
-            "*"         =>      CoreToken::STAR,
-            "**"        =>      CoreToken::DOUBLE_STAR,
-            "/"         =>      CoreToken::SLASH,
-            "("         =>      CoreToken::LPAREN,
-            ")"         =>      CoreToken::RPAREN,
-            "{"         =>      CoreToken::LBRACE,
-            "}"         =>      CoreToken::RBRACE,
-            "["         =>      CoreToken::LSQUARE,
-            "]"         =>      CoreToken::RSQUARE,
-            ";"         =>      CoreToken::SEMICOLON,
-            ":"         =>      CoreToken::COLON,
-            ","         =>      CoreToken::COMMA,
-            "//"        =>      CoreToken::DOUBLE_SLASH,
-            "/*"        =>      CoreToken::LCOMMENT,
-            "*/"        =>      CoreToken::RCOMMENT,
-            "."         =>      CoreToken::DOT,
-            "="         =>      CoreToken::EQUAL,
-            "=="        =>      CoreToken::DOUBLE_EQUAL,
-            ">="        =>      CoreToken::GREATER_EQUAL,
-            ">"         =>      CoreToken::GREATER,
-            "<="        =>      CoreToken::LESS_EQUAL,
-            "<"         =>      CoreToken::LESS,
+    pub fn extract_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Token {
+        let critical_char = code[*begin_lexeme];
+        let core_token = match critical_char {
+            '+'         =>      {
+                extract_plus_prefix_lexeme(begin_lexeme)
+            },
+            '-'         =>      {
+                extract_minus_prefix_lexeme(begin_lexeme)
+            }
+            '*'         =>      {
+                extract_star_prefix_lexeme(begin_lexeme)
+            },
+            '/'         =>      {
+                extract_slash_prefix_lexeme(begin_lexeme)
+            },
+            '('         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::LPAREN
+            },
+            ')'         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::RPAREN
+            },
+            '{'         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::LBRACE
+            },
+            '}'         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::RBRACE
+            },
+            '['         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::LSQUARE
+            },
+            ']'         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::RSQUARE
+            },
+            ';'         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::SEMICOLON
+            },
+            ':'         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::COLON
+            },
+            ','         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::COMMA
+            },
+            '.'         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::DOT
+            },
+            ' '         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::BLANK
+            },
+            '\t'        =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::TAB
+            },
+            '\n'        =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                *line_number = *line_number + 1;
+                CoreToken::NEWLINE
+            },
+            '='         =>      {
+                extract_equal_prefix_lexeme(begin_lexeme)
+            },
+            '>'        =>      {
+                extract_greater_prefix_lexeme(begin_lexeme)
+            },
+            '<'        =>      {
+                extract_less_prefix_lexeme(begin_lexeme)
+            },
             _           =>      {
+                // check if a letter or num or literal
                 panic!("{:?}", LexicalError{})  // This is a bug!
             }
         };
         Token {
-            line_number,
-            core_token,
-        }
-    }
-
-    pub fn new_with_name_and_value(line_number: i64, name: &str, value: &str) -> Self {
-        let token_value = TokenValue(Rc::new(String::from(value)));
-        let core_token = match name {
-            "type"      =>      CoreToken::TYPE(token_value),
-            "num"       =>      CoreToken::NUMBER(token_value),
-            "id"        =>      CoreToken::IDENTIFIER(token_value),
-            "literal"   =>      CoreToken::LITERAL(token_value),
-            _           =>      {
-                panic!("{:?}", LexicalError{})  // This is a bug!
-            }
-        };
-        Token {
-            line_number,
+            line_number: *line_number,
             core_token,
         }
     }

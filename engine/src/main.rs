@@ -27,6 +27,7 @@ fn main() -> Result<(), CompilationError> {
     }
 
     let mut core_lexer = CoreLexer::new();
+    core_lexer.scan(char_vec);
     
     // call init on symbol_table to set keywords before lexical phase.
     // call scan from lexical analyzer to return iter of tokens.
