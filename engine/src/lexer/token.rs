@@ -1,7 +1,7 @@
 use crate::errors::{LexicalError, SemanticError};
 use std::rc::Rc;
 use crate::env::Env;
-use crate::lexer::{conditionals, operators};
+use crate::lexer::common;
 
 #[derive(Debug)]
 pub struct TokenValue(pub Rc<String>);
@@ -82,16 +82,16 @@ impl Token {
         let critical_char = code[*begin_lexeme];
         let core_token = match critical_char {
             '+'         =>      {
-                operators::extract_plus_prefix_lexeme(begin_lexeme, code)
+                common::extract_plus_prefix_lexeme(begin_lexeme, code)
             },
             '-'         =>      {
-                operators::extract_minus_prefix_lexeme(begin_lexeme, code)
+                common::extract_minus_prefix_lexeme(begin_lexeme, code)
             }
             '*'         =>      {
-                operators::extract_star_prefix_lexeme(begin_lexeme, code)
+                common::extract_star_prefix_lexeme(begin_lexeme, code)
             },
             '/'         =>      {
-                operators::extract_slash_prefix_lexeme(begin_lexeme, code)
+                common::extract_slash_prefix_lexeme(begin_lexeme, code)
             },
             '('         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
@@ -147,17 +147,19 @@ impl Token {
                 CoreToken::NEWLINE
             },
             '='         =>      {
-                conditionals::extract_equal_prefix_lexeme(begin_lexeme, code)
+                common::extract_equal_prefix_lexeme(begin_lexeme, code)
             },
             '>'        =>      {
-                conditionals::extract_greater_prefix_lexeme(begin_lexeme, code)
+                common::extract_greater_prefix_lexeme(begin_lexeme, code)
             },
             '<'        =>      {
-                conditionals::extract_less_prefix_lexeme(begin_lexeme, code)
+                common::extract_less_prefix_lexeme(begin_lexeme, code)
             },
             _           =>      {
                 // check if a letter or num or literal or else raise lexical error
-                panic!("{:?}", LexicalError{})  // This is a bug!
+                // panic!("{:?}", LexicalError{})  // This is a bug!
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::IF
             }
         };
         Token {

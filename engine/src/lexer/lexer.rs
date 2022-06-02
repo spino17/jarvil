@@ -27,6 +27,7 @@ impl CoreLexer {
             let token = self.extract_lexeme(&code);
             token_vec.push(token);
         }
+        println!("{:?}", token_vec);
     }
 }
 
