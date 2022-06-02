@@ -1,4 +1,4 @@
-use crate::{lexer::token::Token, errors::LexicalError};
+use crate::{lexer::token::{Token, self}, errors::LexicalError};
 
 // TODO - while lexical phase, when traversing through the string, keep account for \n so as to track the line number
 // on which a specific token lies.
@@ -20,20 +20,14 @@ impl CoreLexer {
         Token::extract_lexeme(&mut self.begin_lexeme, &mut self.line_number, code)
     }
 
-    pub fn scan(&mut self, code: Vec<char>) {
+    pub fn scan(&mut self, code: Vec<char>) -> Result<(), LexicalError> {
         let mut token_vec: Vec<Token> = Vec::new();
         while self.begin_lexeme < code.len() {
-            println!("{}", self.begin_lexeme);
-            match self.extract_lexeme(&code) {
-                Ok(token) => {
-                    token_vec.push(token);
-                },
-                Err(err) => {
-                    panic!("{:?}", err)
-                }
-            }
+            let token = self.extract_lexeme(&code)?;
+            println!("{:?}", token);
+            token_vec.push(token);
         }
-        println!("{:?}", token_vec);
+        Ok(())
     }
 }
 

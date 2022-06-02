@@ -1,74 +1,74 @@
 use crate::{lexer::token::CoreToken, errors::LexicalError};
 
 // + -> +, ++
-pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> CoreToken {
+pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '+' => {
                 *begin_lexeme = forward_lexeme + 1;  // retract true
-                return CoreToken::DOUBLE_PLUS;
+                return Ok(CoreToken::DOUBLE_PLUS);
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;  // retract false
-                return CoreToken::PLUS;
+                return Ok(CoreToken::PLUS);
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;  // retract false
-        return CoreToken::PLUS;
+        return Ok(CoreToken::PLUS);
     }
 }
 
 // - -> -, --
-pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> CoreToken {
+pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '-' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::DOUBLE_MINUS;
+                return Ok(CoreToken::DOUBLE_MINUS);
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::MINUS;
+                return Ok(CoreToken::MINUS);
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::MINUS;
+        return Ok(CoreToken::MINUS);
     }
 }
 
 // * -> *, **
-pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> CoreToken {
+pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '*' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::DOUBLE_STAR;
+                return Ok(CoreToken::DOUBLE_STAR);
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::STAR;
+                return Ok(CoreToken::STAR);
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::STAR;
+        return Ok(CoreToken::STAR);
     }
 }
 
 // / -> /, /*, //
-pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> CoreToken {
+pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme == code.len() {
         *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::SLASH;
+        return Ok(CoreToken::SLASH);
     }
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
@@ -84,7 +84,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
                     },
                     _ => {
                         *begin_lexeme = *begin_lexeme + 1;
-                        return CoreToken::SLASH;
+                        return Ok(CoreToken::SLASH);
                     }
                 }
             },
@@ -92,7 +92,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
                 match next_char {
                     '\n' => {
                         *begin_lexeme = forward_lexeme + 1;
-                        return CoreToken::SINGLE_LINE_COMMENT;
+                        return Ok(CoreToken::SINGLE_LINE_COMMENT);
                     },
                     _ => {}
                 }
@@ -109,7 +109,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
                 match next_char {
                     '/' => {
                         *begin_lexeme = forward_lexeme + 1;
-                        return CoreToken::BLOCK_COMMENT;
+                        return Ok(CoreToken::BLOCK_COMMENT);
                     },
                     _ => {
                         state = 2;
@@ -123,80 +123,77 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
         forward_lexeme = forward_lexeme + 1;
     }
     match state {
-        0 => {
-            unreachable!()  // if we get to this point in state 0, it's a bug
-        },
+        0 => unreachable!(),  // if we get to this point in state 0, it's a bug
         1 => {
             Err(LexicalError{})  // TODO - did not found any newline
         },
         2 => {
             Err(LexicalError{})  // TODO - did not found closing tag for block comment
         },
-        3 => {
-            unreachable!()
-        }
+        3 => unreachable!(),
+        _ => unreachable!()
     }
 }
 
 // = -> =, ==
-pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> CoreToken {
+pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::EQUAL
+                return Ok(CoreToken::EQUAL);
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::DOUBLE_EQUAL
+                return Ok(CoreToken::DOUBLE_EQUAL);
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::EQUAL;
+        return Ok(CoreToken::EQUAL);
     }
 }
 
 // > -> >, >=
-pub fn extract_greater_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> CoreToken {
+pub fn extract_greater_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::GREATER_EQUAL
+                return Ok(CoreToken::GREATER_EQUAL);
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::GREATER
+                return Ok(CoreToken::GREATER);
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::GREATER;
+        return Ok(CoreToken::GREATER);
     }
 }
 
 // < -> <, <=
-pub fn extract_less_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> CoreToken {
+pub fn extract_less_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::LESS_EQUAL
+                return Ok(CoreToken::LESS_EQUAL);
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::LESS
+                return Ok(CoreToken::LESS);
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::LESS;
+        return Ok(CoreToken::LESS);
     }
 }

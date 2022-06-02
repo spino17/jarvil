@@ -83,16 +83,16 @@ impl Token {
         let critical_char = code[*begin_lexeme];
         let core_token = match critical_char {
             '+'         =>      {
-                common::extract_plus_prefix_lexeme(begin_lexeme, code)
+                common::extract_plus_prefix_lexeme(begin_lexeme, code)?
             },
             '-'         =>      {
-                common::extract_minus_prefix_lexeme(begin_lexeme, code)
+                common::extract_minus_prefix_lexeme(begin_lexeme, code)?
             }
             '*'         =>      {
-                common::extract_star_prefix_lexeme(begin_lexeme, code)
+                common::extract_star_prefix_lexeme(begin_lexeme, code)?
             },
             '/'         =>      {
-                common::extract_slash_prefix_lexeme(begin_lexeme, code)
+                common::extract_slash_prefix_lexeme(begin_lexeme, code)?
             },
             '('         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
@@ -148,13 +148,13 @@ impl Token {
                 CoreToken::NEWLINE
             },
             '='         =>      {
-                common::extract_equal_prefix_lexeme(begin_lexeme, code)
+                common::extract_equal_prefix_lexeme(begin_lexeme, code)?
             },
             '>'        =>      {
-                common::extract_greater_prefix_lexeme(begin_lexeme, code)
+                common::extract_greater_prefix_lexeme(begin_lexeme, code)?
             },
             '<'        =>      {
-                common::extract_less_prefix_lexeme(begin_lexeme, code)
+                common::extract_less_prefix_lexeme(begin_lexeme, code)?
             },
             _           =>      {
                 // check if a letter or num or literal or else raise lexical error
