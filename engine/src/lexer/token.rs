@@ -1,6 +1,7 @@
 use crate::errors::{LexicalError, SemanticError};
 use std::rc::Rc;
 use crate::env::Env;
+use crate::lexer::{conditionals, operators};
 
 #[derive(Debug)]
 pub struct TokenValue(pub Rc<String>);
@@ -81,16 +82,16 @@ impl Token {
         let critical_char = code[*begin_lexeme];
         let core_token = match critical_char {
             '+'         =>      {
-                extract_plus_prefix_lexeme(begin_lexeme)
+                operators::extract_plus_prefix_lexeme(begin_lexeme, code)
             },
             '-'         =>      {
-                extract_minus_prefix_lexeme(begin_lexeme)
+                operators::extract_minus_prefix_lexeme(begin_lexeme, code)
             }
             '*'         =>      {
-                extract_star_prefix_lexeme(begin_lexeme)
+                operators::extract_star_prefix_lexeme(begin_lexeme, code)
             },
             '/'         =>      {
-                extract_slash_prefix_lexeme(begin_lexeme)
+                operators::extract_slash_prefix_lexeme(begin_lexeme, code)
             },
             '('         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
@@ -146,16 +147,16 @@ impl Token {
                 CoreToken::NEWLINE
             },
             '='         =>      {
-                extract_equal_prefix_lexeme(begin_lexeme)
+                conditionals::extract_equal_prefix_lexeme(begin_lexeme, code)
             },
             '>'        =>      {
-                extract_greater_prefix_lexeme(begin_lexeme)
+                conditionals::extract_greater_prefix_lexeme(begin_lexeme, code)
             },
             '<'        =>      {
-                extract_less_prefix_lexeme(begin_lexeme)
+                conditionals::extract_less_prefix_lexeme(begin_lexeme, code)
             },
             _           =>      {
-                // check if a letter or num or literal
+                // check if a letter or num or literal or else raise lexical error
                 panic!("{:?}", LexicalError{})  // This is a bug!
             }
         };

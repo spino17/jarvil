@@ -12,7 +12,6 @@ use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
 use crate::errors::SemanticError;
-use crate::context::{is_keyword, is_type};
 use crate::lexer::token::TokenValue;
 
 #[derive(Debug)]
