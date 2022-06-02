@@ -36,7 +36,6 @@ pub enum CoreToken {
     STAR,               // '*'
     DOUBLE_STAR,        // '**'
     SLASH,              // '/'
-    DOUBLE_SLASH,       // '//'
 
     // wrappers
     LPAREN,             // '('
@@ -50,8 +49,6 @@ pub enum CoreToken {
     SEMICOLON,          // ';'
     COLON,              // ':'
     COMMA,              // ','
-    LCOMMENT,           // '/*'
-    RCOMMENT,           // '*/'
     DOT,                // '.'
     BLANK,              // ' '
     TAB,                // '\t'
@@ -69,6 +66,10 @@ pub enum CoreToken {
     NUMBER(TokenValue),
     IDENTIFIER(TokenValue),
     LITERAL(TokenValue),
+
+    // ignored by parser
+    SINGLE_LINE_COMMENT,// '//......\n'
+    BLOCK_COMMENT,      // '/* ..... */'
 }
 
 #[derive(Debug)]
@@ -78,7 +79,7 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn extract_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Token {
+    pub fn extract_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<Token, LexicalError> {
         let critical_char = code[*begin_lexeme];
         let core_token = match critical_char {
             '+'         =>      {
@@ -162,10 +163,10 @@ impl Token {
                 CoreToken::IF
             }
         };
-        Token {
+        Ok(Token {
             line_number: *line_number,
             core_token,
-        }
+        })
     }
 
     pub fn get_value(&self) -> Option<TokenValue> {

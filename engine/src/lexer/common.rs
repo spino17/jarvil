@@ -1,4 +1,4 @@
-use crate::lexer::token::CoreToken;
+use crate::{lexer::token::CoreToken, errors::LexicalError};
 
 // + -> +, ++
 pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> CoreToken {
@@ -8,11 +8,11 @@ pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
         match next_char {
             '+' => {
                 *begin_lexeme = forward_lexeme + 1;  // retract true
-                return CoreToken::DOUBLE_PLUS
+                return CoreToken::DOUBLE_PLUS;
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;  // retract false
-                return CoreToken::PLUS
+                return CoreToken::PLUS;
             }
         }
     } else {
@@ -29,11 +29,11 @@ pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
         match next_char {
             '-' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::DOUBLE_MINUS
+                return CoreToken::DOUBLE_MINUS;
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::MINUS
+                return CoreToken::MINUS;
             }
         }
     } else {
@@ -50,11 +50,11 @@ pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
         match next_char {
             '*' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::DOUBLE_STAR
+                return CoreToken::DOUBLE_STAR;
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::STAR
+                return CoreToken::STAR;
             }
         }
     } else {
@@ -65,26 +65,76 @@ pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 
 // / -> /, /*, //
 pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> CoreToken {
-    let forward_lexeme = *begin_lexeme + 1;
-    if forward_lexeme < code.len() {
+    let mut forward_lexeme = *begin_lexeme + 1;
+    if forward_lexeme == code.len() {
+        *begin_lexeme = *begin_lexeme + 1;
+        return CoreToken::SLASH;
+    }
+    let mut state: usize = 0;
+    while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
-        match next_char {
-            '/' => {
-                *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::DOUBLE_SLASH
+        match state {
+            0 => {
+                match next_char {
+                    '/' => {
+                        state = 1;
+                    },
+                    '*' => {
+                        state = 2;
+                    },
+                    _ => {
+                        *begin_lexeme = *begin_lexeme + 1;
+                        return CoreToken::SLASH;
+                    }
+                }
             },
-            '*' => {
-                *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::LCOMMENT
+            1 => {
+                match next_char {
+                    '\n' => {
+                        *begin_lexeme = forward_lexeme + 1;
+                        return CoreToken::SINGLE_LINE_COMMENT;
+                    },
+                    _ => {}
+                }
             },
+            2 => {
+                match next_char {
+                    '*' => {
+                        state = 3;
+                    },
+                    _ => {}
+                }
+            },
+            3 => {
+                match next_char {
+                    '/' => {
+                        *begin_lexeme = forward_lexeme + 1;
+                        return CoreToken::BLOCK_COMMENT;
+                    },
+                    _ => {
+                        state = 2;
+                    }
+                }
+            }
             _ => {
-                *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::STAR
+                unreachable!()  // if we got unknown state then it's a bug
             }
         }
-    } else {
-        *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::STAR;
+        forward_lexeme = forward_lexeme + 1;
+    }
+    match state {
+        0 => {
+            unreachable!()  // if we get to this point in state 0, it's a bug
+        },
+        1 => {
+            Err(LexicalError{})  // TODO - did not found any newline
+        },
+        2 => {
+            Err(LexicalError{})  // TODO - did not found closing tag for block comment
+        },
+        3 => {
+            unreachable!()
+        }
     }
 }
 
