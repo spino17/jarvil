@@ -82,18 +82,6 @@ impl Token {
     pub fn extract_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<Token, LexicalError> {
         let critical_char = code[*begin_lexeme];
         let core_token = match critical_char {
-            '+'         =>      {
-                common::extract_plus_prefix_lexeme(begin_lexeme, code)?
-            },
-            '-'         =>      {
-                common::extract_minus_prefix_lexeme(begin_lexeme, code)?
-            }
-            '*'         =>      {
-                common::extract_star_prefix_lexeme(begin_lexeme, code)?
-            },
-            '/'         =>      {
-                common::extract_slash_prefix_lexeme(begin_lexeme, code)?
-            },
             '('         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::LPAREN
@@ -147,6 +135,18 @@ impl Token {
                 *line_number = *line_number + 1;
                 CoreToken::NEWLINE
             },
+            '+'         =>      {
+                common::extract_plus_prefix_lexeme(begin_lexeme, code)?
+            },
+            '-'         =>      {
+                common::extract_minus_prefix_lexeme(begin_lexeme, code)?
+            }
+            '*'         =>      {
+                common::extract_star_prefix_lexeme(begin_lexeme, code)?
+            },
+            '/'         =>      {
+                common::extract_slash_prefix_lexeme(begin_lexeme, code)?
+            },
             '='         =>      {
                 common::extract_equal_prefix_lexeme(begin_lexeme, code)?
             },
@@ -155,6 +155,9 @@ impl Token {
             },
             '<'        =>      {
                 common::extract_less_prefix_lexeme(begin_lexeme, code)?
+            },
+            '"'        =>      {
+                common::extract_literal_prefix_lexeme(begin_lexeme, code)?
             },
             _           =>      {
                 // check if a letter or num or literal or else raise lexical error

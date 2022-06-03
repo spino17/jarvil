@@ -1,4 +1,6 @@
+use std::rc::Rc;
 use crate::{lexer::token::CoreToken, errors::LexicalError};
+use super::token::TokenValue;
 
 // + -> +, ++
 pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
@@ -67,7 +69,6 @@ pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme == code.len() {
-        *begin_lexeme = *begin_lexeme + 1;
         return Ok(CoreToken::SLASH);
     }
     let mut state: usize = 0;
@@ -196,4 +197,25 @@ pub fn extract_less_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
         *begin_lexeme = *begin_lexeme + 1;
         return Ok(CoreToken::LESS);
     }
+}
+
+// " -> "......"
+pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+    let mut forward_lexeme = *begin_lexeme + 1;
+    if forward_lexeme == code.len() {
+        return Err(LexicalError::new(r#"no closing " found for literal"#))
+    }
+    while forward_lexeme < code.len() {
+        let next_char = code[forward_lexeme];
+        match next_char {
+            '"' => {
+                let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
+                *begin_lexeme = forward_lexeme + 1;
+                return Ok(CoreToken::LITERAL(TokenValue(Rc::new(literal_value))))
+            },
+            _ => {}
+        }
+        forward_lexeme = forward_lexeme + 1;
+    }
+    Err(LexicalError::new(r#"no closing " found for literal"#))
 }
