@@ -131,7 +131,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
         2 => {
             Err(LexicalError::new("no closing tag found for block comment"))
         },
-        3 => unreachable!("found state 3 which is not possible as state 3 either returns or always transition to 2"),
+        3 => unreachable!("found state 3 which is not possible as state 3 either returns or always transition to state 2"),
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
     }
 }
@@ -273,6 +273,58 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) 
 
 // digit -> digit((digit)*(.digit(digit*)|empty))
 pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
-    *begin_lexeme = *begin_lexeme + 1;
-    Ok(CoreToken::NUMBER(TokenValue(Rc::new(String::from("10")))))
+    let mut forward_lexeme = *begin_lexeme + 1;
+    let mut state: usize = 0;
+    while forward_lexeme < code.len() {
+        let next_char = code[forward_lexeme];
+        match state {
+            0 => {
+                if context::is_digit(&next_char) {
+                    // do nothing
+                } else if next_char == '.' {
+                    state = 1;
+                } else {
+                    let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
+                    *begin_lexeme = forward_lexeme;
+                    return Ok(CoreToken::NUMBER(TokenValue(Rc::new(value))))
+                }
+            },
+            1 => {
+                if context::is_digit(&next_char) {
+                    state = 2;
+                } else {
+                    return Err(LexicalError::new("expected at least one digit after '.'"))
+                }
+            },
+            2 => {
+                if context::is_digit(&next_char) {
+                    // do nothing
+                } else {
+                    let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
+                    *begin_lexeme = forward_lexeme;
+                    return Ok(CoreToken::NUMBER(TokenValue(Rc::new(value))))
+                }
+            },
+            _ => {
+                unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
+            }
+        }
+        forward_lexeme = forward_lexeme + 1;
+    }
+    match state {
+        0 => {
+            let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
+            *begin_lexeme = forward_lexeme;
+            return Ok(CoreToken::NUMBER(TokenValue(Rc::new(value))))
+        },
+        1 => {
+            unreachable!("found state 1 which is not possible as state 1 either returns or always transition to state 2")
+        },
+        2 => {
+            let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
+            *begin_lexeme = forward_lexeme;
+            return Ok(CoreToken::NUMBER(TokenValue(Rc::new(value))))
+        },
+        _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
+    }
 }
