@@ -1,6 +1,6 @@
 use crate::errors::{LexicalError, SemanticError};
 use std::rc::Rc;
-use crate::env::Env;
+use crate::env::{Env,SymbolData};
 use crate::lexer::common;
 
 #[derive(Debug)]
@@ -74,8 +74,8 @@ pub enum CoreToken {
 
 #[derive(Debug)]
 pub struct Token {
-    line_number: usize,
-    core_token: CoreToken,
+    pub line_number: usize,
+    pub core_token: CoreToken,
 }
 
 impl Token {
@@ -188,14 +188,29 @@ impl Token {
             }
         }
     }
-    
+
+    pub fn check_declaration(&self, env: &Env) -> Result<SymbolData, SemanticError> {
+        match &self.core_token {
+            CoreToken::IDENTIFIER(token_value) => {
+                match env.get(token_value) {
+                    Some(symbol_data) => Ok(symbol_data),
+                    None => {
+                        Err(SemanticError::new("identifier is not declared in the current scope"))
+                    }
+                }
+            },
+            _ => unreachable!()  // if we call this method for token other than identifier then that's a bug
+        }
+    }
+
+    /*
     pub fn is_type(&self, env: &Env) -> Result<bool, SemanticError> {
         match &self.core_token {
             CoreToken::TYPE(_) => {
                 Ok(true)
             },
-            CoreToken::IDENTIFIER(token_value) => {
-                let symbol_table = env.check_declaration(token_value)?;
+            CoreToken::IDENTIFIER(_) => {
+                let symbol_table = self.check_declaration(env)?;
                 Ok(symbol_table.is_type())
             },
             _ => {
@@ -203,4 +218,5 @@ impl Token {
             }
         }
     }
+    */
 }

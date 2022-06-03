@@ -9,17 +9,11 @@ use errors::CompilationError;
 use std::rc::Rc;
 use crate::env::Env;
 use crate::reader::read_file;
-use crate::lexer::{token::{Token, TokenValue}, lexer::CoreLexer};
+use crate::lexer::{token::{Token, TokenValue, CoreToken}, lexer::CoreLexer};
 
 fn main() -> Result<(), CompilationError> {
     let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;  // pass this vector of char to lexer
     let mut counter = 0;
-    for &i in &char_vec {
-        if (i == ' ') {
-            println!("line changed");
-        }
-        counter = counter + 1;
-    }
     let vec_slice = &char_vec[13..14];
     let s: &String = &vec_slice.iter().collect();
     if s.eq("/") {
@@ -27,14 +21,17 @@ fn main() -> Result<(), CompilationError> {
     }
 
     let mut core_lexer = CoreLexer::new();
-    core_lexer.scan(char_vec).unwrap();
+    core_lexer.scan(char_vec)?;
     
     // call init on symbol_table to set keywords before lexical phase.
     // call scan from lexical analyzer to return iter of tokens.
     // attempt parsing for syntax and semantical analysis.
     let v_ref = TokenValue(Rc::new(String::from("v_ref")));
     let v = TokenValue(Rc::new(String::from("v")));
-    let f = TokenValue(Rc::new(String::from("f")));
+    let f = Token {
+        line_number: 1,
+        core_token: CoreToken::IDENTIFIER(TokenValue(Rc::new(String::from("f"))))
+    };
     let g = TokenValue(Rc::new(String::from("f")));
     let varima = TokenValue(Rc::new(String::from("varima")));
     let bhatt = TokenValue(Rc::new(String::from("bhatt")));
@@ -50,7 +47,7 @@ fn main() -> Result<(), CompilationError> {
     scope_1.set(&g, String::from("uint"));
     // scope_1.set(&g, String::from("bool"));
     scope_1.set(&varima, String::from("array"));
-    println!("{:?}", scope_1.check_declaration(&f));
+    println!("{:?}", f.check_declaration(&scope_1));
 
 
     let mut scope_2 = Env::new_with_parent_env(&scope);

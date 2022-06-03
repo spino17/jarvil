@@ -2,7 +2,6 @@ use crate::{lexer::token::{Token, self}, errors::LexicalError};
 
 // TODO - while lexical phase, when traversing through the string, keep account for \n so as to track the line number
 // on which a specific token lies.
-
 pub struct CoreLexer {
     begin_lexeme: usize,
     line_number: usize,

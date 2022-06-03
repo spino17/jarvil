@@ -125,10 +125,10 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
     match state {
         0 => unreachable!(),  // if we get to this point in state 0, it's a bug
         1 => {
-            Err(LexicalError{})  // TODO - did not found any newline
+            Err(LexicalError::new("no newline terminal found for line comment"))
         },
         2 => {
-            Err(LexicalError{})  // TODO - did not found closing tag for block comment
+            Err(LexicalError::new("no closing tag found for block comment"))
         },
         3 => unreachable!(),
         _ => unreachable!()

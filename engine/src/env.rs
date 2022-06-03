@@ -39,7 +39,7 @@ impl SymbolData {
         if self.0.data_type.eq(base_type) {
             Ok(true)
         } else {
-            Err(SemanticError{})  // TODO - type mismatch, expected base_type but got symbol_data.0.data_type
+            Err(SemanticError::new("type mismatch found\n"))  // TODO - fill with expected and found data type
         }
     }
     
@@ -87,7 +87,7 @@ impl Env {
         self.0.borrow_mut().set(token_value.0.clone(), data_type);
     }
 
-    fn get(&self, token_value: &TokenValue) -> Option<SymbolData> {
+    pub fn get(&self, token_value: &TokenValue) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
 
         // check the identifier name in current scope
@@ -105,16 +105,6 @@ impl Env {
                 } else {
                     None
                 }
-            }
-        }
-    }
-
-    // always call this function for identifier token
-    pub fn check_declaration(&self, token_value: &TokenValue) -> Result<SymbolData, SemanticError> {
-        match self.get(token_value) {
-            Some(symbol_data) => Ok(symbol_data),
-            None => {
-                Err(SemanticError{})  // TODO - identifier is not declared in the current scope
             }
         }
     }
