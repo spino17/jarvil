@@ -152,7 +152,7 @@ impl Token {
                 helper::extract_star_prefix_lexeme(begin_lexeme, code)?
             },
             '/'         =>      {
-                helper::extract_slash_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code)?
             },
             '='         =>      {
                 helper::extract_equal_prefix_lexeme(begin_lexeme, code)?
@@ -164,7 +164,7 @@ impl Token {
                 helper::extract_less_prefix_lexeme(begin_lexeme, code)?
             },
             '"'         =>      {
-                helper::extract_literal_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_literal_prefix_lexeme(begin_lexeme, line_number, code)?
             },
             c     =>       {
                 let token: CoreToken;

@@ -67,11 +67,14 @@ pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 }
 
 // / -> /, /*, //
-pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
+        if next_char == '\n' {
+            *line_number = *line_number + 1;
+        }
         match state {
             0 => {
                 match next_char {
@@ -201,13 +204,16 @@ pub fn extract_less_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 }
 
 // " -> "......"
-pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme == code.len() {
         return Err(LexicalError::new(r#"no closing " found for literal"#))
     }
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
+        if next_char == '\n' {
+            *line_number = *line_number + 1;
+        }
         match next_char {
             '"' => {
                 let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();

@@ -17,10 +17,11 @@ pub const KEYWORDS: [&'static str; 12] = [
     "false",
 ];
 
-pub const TYPES: [&'static str; 3] = [
-    "Int",
-    "String",
-    "Bool",
+pub const TYPES: [&'static str; 4] = [
+    "int",
+    "float",
+    "string",
+    "bool",
 ];
 
 pub const LETTERS: [char; 53] = [
