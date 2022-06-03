@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use crate::{lexer::token::CoreToken, errors::LexicalError};
+use crate::{lexer::token::CoreToken, errors::LexicalError, context};
 use super::token::TokenValue;
 
 // + -> +, ++
@@ -68,9 +68,6 @@ pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 // / -> /, /*, //
 pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
-    if forward_lexeme == code.len() {
-        return Ok(CoreToken::SLASH);
-    }
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
@@ -118,21 +115,24 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
                 }
             }
             _ => {
-                unreachable!()  // if we got unknown state then it's a bug
+                unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
             }
         }
         forward_lexeme = forward_lexeme + 1;
     }
     match state {
-        0 => unreachable!(),  // if we get to this point in state 0, it's a bug
+        0 => {
+            *begin_lexeme = *begin_lexeme + 1;
+            return Ok(CoreToken::SLASH);
+        },
         1 => {
             Err(LexicalError::new("no newline terminal found for line comment"))
         },
         2 => {
             Err(LexicalError::new("no closing tag found for block comment"))
         },
-        3 => unreachable!(),
-        _ => unreachable!()
+        3 => unreachable!("found state 3 which is not possible as state 3 either returns or always transition to 2"),
+        _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
     }
 }
 
@@ -218,4 +218,38 @@ pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>)
         forward_lexeme = forward_lexeme + 1;
     }
     Err(LexicalError::new(r#"no closing " found for literal"#))
+}
+
+pub fn get_token_for_identifier(value: String) -> CoreToken {
+    if context::is_keyword(&value) {
+        todo!()
+    } else if context::is_type(&value) {
+        todo!()
+    } else {
+        CoreToken::IDENTIFIER(TokenValue(Rc::new(value)))
+    }
+}
+
+// letter -> letter((letter|digit|_)*) or keyword or type
+pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+    // at the end check whether value is keyword, type or identifier
+    let mut forward_lexeme = *begin_lexeme + 1;
+    while forward_lexeme < code.len() {
+        let next_char = code[forward_lexeme];
+        if context::is_letter(&next_char) || context::is_digit(&next_char) {
+            // do nothing
+        } else {
+            let value: String = code[(*begin_lexeme)..(forward_lexeme)].iter().collect();
+            *begin_lexeme = forward_lexeme;
+            return Ok(get_token_for_identifier(value));
+        }
+        forward_lexeme = forward_lexeme + 1;
+    }
+    let value: String = code[(*begin_lexeme)..(forward_lexeme)].iter().collect();
+    return Ok(get_token_for_identifier(value));
+}
+
+// digit -> digit((digit)*(.digit(digit*)|empty))
+pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+    todo!()
 }

@@ -1,7 +1,8 @@
 use crate::errors::{LexicalError, SemanticError};
 use std::rc::Rc;
 use crate::env::{Env,SymbolData};
-use crate::lexer::common;
+use crate::lexer::helper;
+use crate::context;
 
 #[derive(Debug)]
 pub struct TokenValue(pub Rc<String>);
@@ -136,34 +137,39 @@ impl Token {
                 CoreToken::NEWLINE
             },
             '+'         =>      {
-                common::extract_plus_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_plus_prefix_lexeme(begin_lexeme, code)?
             },
             '-'         =>      {
-                common::extract_minus_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_minus_prefix_lexeme(begin_lexeme, code)?
             }
             '*'         =>      {
-                common::extract_star_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_star_prefix_lexeme(begin_lexeme, code)?
             },
             '/'         =>      {
-                common::extract_slash_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_slash_prefix_lexeme(begin_lexeme, code)?
             },
             '='         =>      {
-                common::extract_equal_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_equal_prefix_lexeme(begin_lexeme, code)?
             },
             '>'        =>      {
-                common::extract_greater_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_greater_prefix_lexeme(begin_lexeme, code)?
             },
             '<'        =>      {
-                common::extract_less_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_less_prefix_lexeme(begin_lexeme, code)?
             },
             '"'        =>      {
-                common::extract_literal_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_literal_prefix_lexeme(begin_lexeme, code)?
             },
-            _           =>      {
-                // check if a letter or num or literal or else raise lexical error
-                // panic!("{:?}", LexicalError{})  // This is a bug!
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::IF
+            c    =>      {
+                let token: CoreToken;
+                if context::is_letter(&c) {
+                    token = helper::extract_letter_prefix_lexeme(begin_lexeme, code)?;
+                } else if context::is_digit(&c) {
+                    token = helper::extract_digit_prefix_lexeme(begin_lexeme, code)?;
+                } else {
+                    unreachable!("token missing for char `{}` prefix missing", c)
+                }
+                token
             }
         };
         Ok(Token {
@@ -202,7 +208,7 @@ impl Token {
                     }
                 }
             },
-            _ => unreachable!()  // if we call this method for token other than identifier then that's a bug
+            _ => unreachable!("check_declaration cannot be used for tokens other than type identifier")
         }
     }
 

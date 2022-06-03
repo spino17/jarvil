@@ -16,7 +16,7 @@ use crate::lexer::token::TokenValue;
 
 #[derive(Debug)]
 pub struct MetaData {
-    data_type: String,
+    data_type: String,  // TODO - change this to Rc string
 }
 
 #[derive(Debug)]

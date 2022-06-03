@@ -58,5 +58,6 @@ fn main() -> Result<(), CompilationError> {
 
     println!("{:?}", scope_1);
     // println!("{:?}", Token::new_with_name_and_value(10, "id", "v").is_type(&scope_2));
+    println!("{}", context::is_keyword("and"));
     Ok(())
 }
