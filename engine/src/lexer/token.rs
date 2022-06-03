@@ -151,16 +151,16 @@ impl Token {
             '='         =>      {
                 helper::extract_equal_prefix_lexeme(begin_lexeme, code)?
             },
-            '>'        =>      {
+            '>'         =>      {
                 helper::extract_greater_prefix_lexeme(begin_lexeme, code)?
             },
-            '<'        =>      {
+            '<'         =>      {
                 helper::extract_less_prefix_lexeme(begin_lexeme, code)?
             },
-            '"'        =>      {
+            '"'         =>      {
                 helper::extract_literal_prefix_lexeme(begin_lexeme, code)?
             },
-            c    =>      {
+            c     =>       {
                 let token: CoreToken;
                 if context::is_letter(&c) {
                     token = helper::extract_letter_prefix_lexeme(begin_lexeme, code)?;

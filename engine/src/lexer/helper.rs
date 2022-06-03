@@ -144,11 +144,11 @@ pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return Ok(CoreToken::EQUAL);
+                return Ok(CoreToken::DOUBLE_EQUAL);
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return Ok(CoreToken::DOUBLE_EQUAL);
+                return Ok(CoreToken::EQUAL);
             }
         }
     } else {
@@ -222,9 +222,31 @@ pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>)
 
 pub fn get_token_for_identifier(value: String) -> CoreToken {
     if context::is_keyword(&value) {
-        todo!()
+        if value.eq("for") {
+            CoreToken::FOR
+        } else if value.eq("if") {
+            CoreToken::IF
+        } else if value.eq("elif") {
+            CoreToken::ELIF
+        } else if value.eq("else") {
+            CoreToken::ELSE
+        } else if value.eq("while") {
+            CoreToken::WHILE
+        } else if value.eq("struct") {
+            CoreToken::STRUCT
+        } else if value.eq("and") {
+            CoreToken::AND
+        } else if value.eq("not") {
+            CoreToken::NOT
+        } else if value.eq("or") {
+            CoreToken::OR
+        } else if value.eq("is") {
+            CoreToken::IS
+        } else {
+            unreachable!("keyword missing in the matching arms")
+        }
     } else if context::is_type(&value) {
-        todo!()
+        CoreToken::TYPE(TokenValue(Rc::new(value)))
     } else {
         CoreToken::IDENTIFIER(TokenValue(Rc::new(value)))
     }
@@ -251,5 +273,6 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) 
 
 // digit -> digit((digit)*(.digit(digit*)|empty))
 pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
-    todo!()
+    *begin_lexeme = *begin_lexeme + 1;
+    Ok(CoreToken::NUMBER(TokenValue(Rc::new(String::from("10")))))
 }

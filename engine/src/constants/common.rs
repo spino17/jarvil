@@ -1,5 +1,3 @@
-use crate::lexer::token::CoreToken;
-
 pub const KEYWORDS: [&'static str; 10] = [
     "for",
     "if",
@@ -19,7 +17,7 @@ pub const TYPES: [&'static str; 3] = [
     "Bool",
 ];
 
-pub const LETTERS: [char; 27] = [
+pub const LETTERS: [char; 53] = [
     'a',
     'b',
     'c',
@@ -46,6 +44,32 @@ pub const LETTERS: [char; 27] = [
     'x',
     'y',
     'z',
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+    'I',
+    'J',
+    'K',
+    'L',
+    'M',
+    'N',
+    'O',
+    'P',
+    'Q',
+    'R',
+    'S',
+    'T',
+    'U',
+    'V',
+    'W',
+    'X',
+    'Y',
+    'Z',
     '_',
 ];
 

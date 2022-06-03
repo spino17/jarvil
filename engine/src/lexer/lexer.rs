@@ -1,4 +1,5 @@
-use crate::{lexer::token::{Token, self}, errors::LexicalError};
+use crate::lexer::token::Token;
+use crate::errors::LexicalError;
 
 // TODO - while lexical phase, when traversing through the string, keep account for \n so as to track the line number
 // on which a specific token lies.
