@@ -65,8 +65,14 @@ pub enum CoreToken {
 
     // others
     NUMBER(TokenValue),
+    INTEGER(TokenValue),
+    FLOAT(TokenValue),
     IDENTIFIER(TokenValue),
     LITERAL(TokenValue),
+
+    // booleans
+    TRUE,               // 'true'
+    FALSE,              // 'false'
 
     // ignored by parser
     SINGLE_LINE_COMMENT,// '//......\n'
@@ -178,22 +184,22 @@ impl Token {
         })
     }
 
-    pub fn get_value(&self) -> Option<TokenValue> {
+    pub fn get_value(&self) -> TokenValue {
         match &self.core_token {
             CoreToken::TYPE(value) => {
-                Some(TokenValue(value.0.clone()))
+                TokenValue(value.0.clone())
             },
             CoreToken::NUMBER(value) => {
-                Some(TokenValue(value.0.clone()))
+                TokenValue(value.0.clone())
             },
             CoreToken::IDENTIFIER(value) => {
-                Some(TokenValue(value.0.clone()))
+                TokenValue(value.0.clone())
             }
             CoreToken::LITERAL(value) => {
-                Some(TokenValue(value.0.clone()))
+                TokenValue(value.0.clone())
             },
             _ => {
-                None
+                unreachable!("get value should only be used for type, number, identifier and literal")
             }
         }
     }

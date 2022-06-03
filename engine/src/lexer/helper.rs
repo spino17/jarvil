@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use crate::{lexer::token::CoreToken, errors::LexicalError, context};
 use super::token::TokenValue;
+use crate::constants::common::get_token_for_identifier;
 
 // + -> +, ++
 pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
@@ -220,38 +221,6 @@ pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>)
     Err(LexicalError::new(r#"no closing " found for literal"#))
 }
 
-pub fn get_token_for_identifier(value: String) -> CoreToken {
-    if context::is_keyword(&value) {
-        if value.eq("for") {
-            CoreToken::FOR
-        } else if value.eq("if") {
-            CoreToken::IF
-        } else if value.eq("elif") {
-            CoreToken::ELIF
-        } else if value.eq("else") {
-            CoreToken::ELSE
-        } else if value.eq("while") {
-            CoreToken::WHILE
-        } else if value.eq("struct") {
-            CoreToken::STRUCT
-        } else if value.eq("and") {
-            CoreToken::AND
-        } else if value.eq("not") {
-            CoreToken::NOT
-        } else if value.eq("or") {
-            CoreToken::OR
-        } else if value.eq("is") {
-            CoreToken::IS
-        } else {
-            unreachable!("keyword missing in the matching arms")
-        }
-    } else if context::is_type(&value) {
-        CoreToken::TYPE(TokenValue(Rc::new(value)))
-    } else {
-        CoreToken::IDENTIFIER(TokenValue(Rc::new(value)))
-    }
-}
-
 // letter -> letter((letter|digit|_)*) or keyword or type
 pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     // at the end check whether value is keyword, type or identifier
@@ -286,7 +255,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
                 } else {
                     let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
                     *begin_lexeme = forward_lexeme;
-                    return Ok(CoreToken::NUMBER(TokenValue(Rc::new(value))))
+                    return Ok(CoreToken::INTEGER(TokenValue(Rc::new(value))))
                 }
             },
             1 => {
@@ -302,7 +271,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
                 } else {
                     let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
                     *begin_lexeme = forward_lexeme;
-                    return Ok(CoreToken::NUMBER(TokenValue(Rc::new(value))))
+                    return Ok(CoreToken::FLOAT(TokenValue(Rc::new(value))))
                 }
             },
             _ => {
@@ -323,7 +292,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
         2 => {
             let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return Ok(CoreToken::NUMBER(TokenValue(Rc::new(value))))
+            return Ok(CoreToken::FLOAT(TokenValue(Rc::new(value))))
         },
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
     }
