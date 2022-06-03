@@ -18,6 +18,7 @@ pub enum CoreToken {
     // loops
     FOR,                // 'for'
     WHILE,              // 'while'
+    CONTINUE,           // 'continue'
 
     // types
     STRUCT,             // 'struct'
@@ -86,6 +87,7 @@ pub struct Token {
 }
 
 impl Token {
+    // This method tokenize the code in O(|code|)
     pub fn extract_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<Token, LexicalError> {
         let critical_char = code[*begin_lexeme];
         let core_token = match critical_char {
@@ -166,7 +168,7 @@ impl Token {
             '"'         =>      {
                 helper::extract_literal_prefix_lexeme(begin_lexeme, line_number, code)?
             },
-            c     =>       {
+            c     =>      {
                 let token: CoreToken;
                 if context::is_letter(&c) {
                     token = helper::extract_letter_prefix_lexeme(begin_lexeme, code)?;

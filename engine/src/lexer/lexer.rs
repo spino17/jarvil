@@ -1,8 +1,11 @@
 use crate::lexer::token::Token;
 use crate::errors::LexicalError;
+use crate::lexer::token::CoreToken;
 
-// TODO - while lexical phase, when traversing through the string, keep account for \n so as to track the line number
-// on which a specific token lies.
+pub trait Lexer {
+    fn tokenize(&mut self, code: Vec<char>) -> Result<Vec<Token>, LexicalError>;
+}
+
 pub struct CoreLexer {
     begin_lexeme: usize,
     line_number: usize,
@@ -19,29 +22,24 @@ impl CoreLexer {
     pub fn extract_lexeme(&mut self, code: &Vec<char>) -> Result<Token, LexicalError> {
         Token::extract_lexeme(&mut self.begin_lexeme, &mut self.line_number, code)
     }
-
-    pub fn scan(&mut self, code: Vec<char>) -> Result<(), LexicalError> {
-        let mut token_vec: Vec<Token> = Vec::new();
-        while self.begin_lexeme < code.len() {
-            let token = self.extract_lexeme(&code)?;
-            println!("{:?}", token);
-            token_vec.push(token);
-        }
-        Ok(())
-    }
 }
 
 impl Lexer for CoreLexer {
-    fn scan(&mut self, code: Vec<char>) -> Box<dyn Iterator<Item=Token>> {
+    fn tokenize(&mut self, code: Vec<char>) -> Result<Vec<Token>, LexicalError> {
         let mut token_vec: Vec<Token> = Vec::new();
         while self.begin_lexeme < code.len() {
-            println!("{}", self.begin_lexeme);
-            // self.begin_lexeme = self.begin_lexeme + 1;
+            let token = self.extract_lexeme(&code)?;
+            match token.core_token {
+                
+                // ignore single line and block comments
+                CoreToken::SINGLE_LINE_COMMENT => continue,
+                CoreToken::BLOCK_COMMENT => continue,
+                _ => {
+                    println!("{:?}", token);
+                    token_vec.push(token)
+                }
+            }
         }
-        todo!()
+        Ok(token_vec)
     }
-}
-
-pub trait Lexer {
-    fn scan(&mut self, code: Vec<char>) -> Box<dyn Iterator<Item=Token>>;
 }
