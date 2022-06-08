@@ -1,4 +1,4 @@
 # clean for any existing build
-# cd into engine and then execute `cargo build --release` to get the build files
-# set system wide PATH variable pointing to target/release dir containing all essential build files
+# execute `cargo build --release --manifest-path engine/Cargo.toml` to get the build files
+# set system wide PATH variable pointing to `${BASE_DIR}/engine/target/release` dir containing all essential build files
 # test the installation using jarvil --version
