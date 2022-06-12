@@ -20,6 +20,9 @@ pub enum CoreToken {
     WHILE,              // 'while'
     CONTINUE,           // 'continue'
 
+    // functions
+    DEF,                // 'def'
+
     // types
     STRUCT,             // 'struct'
     TYPE(TokenValue),   // 'type'

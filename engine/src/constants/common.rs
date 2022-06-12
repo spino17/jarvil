@@ -2,7 +2,7 @@ use crate::lexer::token::{CoreToken, TokenValue};
 use crate::context;
 use std::rc::Rc;
 
-pub const KEYWORDS: [&'static str; 13] = [
+pub const KEYWORDS: [&'static str; 14] = [
     "for",
     "while",
     "continue",
@@ -10,6 +10,7 @@ pub const KEYWORDS: [&'static str; 13] = [
     "elif",
     "else",
     "struct",
+    "def",
     "and",
     "not",
     "or",
@@ -111,6 +112,8 @@ pub fn get_token_for_identifier(value: String) -> CoreToken {
             CoreToken::ELSE
         }  else if value.eq("struct") {
             CoreToken::STRUCT
+        } else if value.eq("def") {
+            CoreToken::DEF
         } else if value.eq("and") {
             CoreToken::AND
         } else if value.eq("not") {
