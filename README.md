@@ -4,9 +4,9 @@ Just A Rather Very Idiotic Language (JARVIL) is a programming language made pure
 ## Build Instruction
 On Unix, Linux, BSD, macOS
 `
-./configure
-make
-sudo make install
+./configure\n
+make\n
+sudo make install\n
 `
 
 ## Formal Description
