@@ -179,7 +179,7 @@ impl Token {
                 } else if context::is_digit(&c) {
                     token = helper::extract_digit_prefix_lexeme(begin_lexeme, code)?;
                 } else {
-                    unreachable!("token missing for char `{}` prefix missing", c)
+                    unreachable!("token missing for char `{}` prefix", c)
                 }
                 token
             }

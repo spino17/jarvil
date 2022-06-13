@@ -233,7 +233,6 @@ pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut
 
 // letter -> letter((letter|digit|_)*) or keyword or type
 pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
-    // at the end check whether value is keyword, type or identifier
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];

@@ -2,21 +2,36 @@ use crate::lexer::token::{CoreToken, TokenValue};
 use crate::context;
 use std::rc::Rc;
 
+const FOR:          &'static str = "for";
+const WHILE:        &'static str = "while";
+const CONTINUE:     &'static str = "continue";
+const IF:           &'static str = "if";
+const ELIF:         &'static str = "elif";
+const ELSE:         &'static str = "else";
+const STRUCT:       &'static str = "struct";
+const DEF:          &'static str = "def";
+const AND:          &'static str = "and";
+const NOT:          &'static str = "not";
+const OR:           &'static str = "or";
+const IS:           &'static str = "is";
+const TRUE:         &'static str = "True";
+const FALSE:        &'static str = "False";
+
 pub const KEYWORDS: [&'static str; 14] = [
-    "for",
-    "while",
-    "continue",
-    "if",
-    "elif",
-    "else",
-    "struct",
-    "def",
-    "and",
-    "not",
-    "or",
-    "is",
-    "True",
-    "False",
+    FOR,
+    WHILE,
+    CONTINUE,
+    IF,
+    ELIF,
+    ELSE,
+    STRUCT,
+    DEF,
+    AND,
+    NOT,
+    OR,
+    IS,
+    TRUE,
+    FALSE,
 ];
 
 pub const TYPES: [&'static str; 4] = [
@@ -98,33 +113,33 @@ pub const DIGITS: [char; 10] = [
 // everytime there is an addition in keyword, add an else if also here!
 pub fn get_token_for_identifier(value: String) -> CoreToken {
     if context::is_keyword(&value) {
-        if value.eq("for") {
+        if value.eq(FOR) {
             CoreToken::FOR
-        } else if value.eq("while") {
+        } else if value.eq(WHILE) {
             CoreToken::WHILE
-        } else if value.eq("continue") {
+        } else if value.eq(CONTINUE) {
             CoreToken::CONTINUE
-        } else if value.eq("if") {
+        } else if value.eq(IF) {
             CoreToken::IF
-        } else if value.eq("elif") {
+        } else if value.eq(ELIF) {
             CoreToken::ELIF
-        } else if value.eq("else") {
+        } else if value.eq(ELSE) {
             CoreToken::ELSE
-        }  else if value.eq("struct") {
+        }  else if value.eq(STRUCT) {
             CoreToken::STRUCT
-        } else if value.eq("def") {
+        } else if value.eq(DEF) {
             CoreToken::DEF
-        } else if value.eq("and") {
+        } else if value.eq(AND) {
             CoreToken::AND
-        } else if value.eq("not") {
+        } else if value.eq(NOT) {
             CoreToken::NOT
-        } else if value.eq("or") {
+        } else if value.eq(OR) {
             CoreToken::OR
-        } else if value.eq("is") {
+        } else if value.eq(IS) {
             CoreToken::IS
-        } else if value.eq("True") {
+        } else if value.eq(TRUE) {
             CoreToken::TRUE
-        } else if value.eq("False") {
+        } else if value.eq(FALSE) {
             CoreToken::FALSE
         } else {
             unreachable!("keyword missing in the matching arms")
