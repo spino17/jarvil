@@ -38,6 +38,7 @@ pub enum CoreToken {
     DOUBLE_PLUS,        // '++'
     MINUS,              // '-'
     DOUBLE_MINUS,       // '--'
+    RIGHT_ARROW,        // '->'
     STAR,               // '*'
     DOUBLE_STAR,        // '**'
     SLASH,              // '/'
@@ -75,8 +76,8 @@ pub enum CoreToken {
     LITERAL(TokenValue),
 
     // booleans
-    TRUE,               // 'true'
-    FALSE,              // 'false'
+    TRUE,               // 'True'
+    FALSE,              // 'False'
 
     // ignored by parser
     SINGLE_LINE_COMMENT,// '//......\n'

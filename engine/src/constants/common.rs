@@ -15,8 +15,8 @@ pub const KEYWORDS: [&'static str; 14] = [
     "not",
     "or",
     "is",
-    "true",
-    "false",
+    "True",
+    "False",
 ];
 
 pub const TYPES: [&'static str; 4] = [
@@ -122,9 +122,9 @@ pub fn get_token_for_identifier(value: String) -> CoreToken {
             CoreToken::OR
         } else if value.eq("is") {
             CoreToken::IS
-        } else if value.eq("true") {
+        } else if value.eq("True") {
             CoreToken::TRUE
-        } else if value.eq("false") {
+        } else if value.eq("False") {
             CoreToken::FALSE
         } else {
             unreachable!("keyword missing in the matching arms")

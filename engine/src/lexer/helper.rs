@@ -24,7 +24,7 @@ pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
     }
 }
 
-// - -> -, --
+// - -> -, --, ->
 pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
@@ -33,6 +33,10 @@ pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
             '-' => {
                 *begin_lexeme = forward_lexeme + 1;
                 return Ok(CoreToken::DOUBLE_MINUS);
+            },
+            '>' => {
+                *begin_lexeme = forward_lexeme + 1;
+                return Ok(CoreToken::RIGHT_ARROW);
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
@@ -243,6 +247,7 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) 
         forward_lexeme = forward_lexeme + 1;
     }
     let value: String = code[(*begin_lexeme)..(forward_lexeme)].iter().collect();
+    *begin_lexeme = forward_lexeme;
     return Ok(get_token_for_identifier(value));
 }
 
