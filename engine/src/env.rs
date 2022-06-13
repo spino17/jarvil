@@ -23,18 +23,6 @@ pub struct MetaData {
 pub struct SymbolData(Rc<MetaData>);
 
 impl SymbolData {
-    pub fn new_with_keyword() -> Self {
-        SymbolData(Rc::new(MetaData{
-            data_type: String::from("keyword"),
-        }))
-    }
-
-    pub fn new_with_type() -> Self {
-        SymbolData(Rc::new(MetaData{
-            data_type: String::from("type"),
-        }))
-    }
-
     pub fn check_type(&self, base_type: &str) -> Result<bool, SemanticError> {
         if self.0.data_type.eq(base_type) {
             Ok(true)
@@ -43,6 +31,7 @@ impl SymbolData {
         }
     }
     
+    // identifiers can be user defined types as well
     pub fn is_type(&self) -> bool {
         self.0.data_type.eq("type")
     }
