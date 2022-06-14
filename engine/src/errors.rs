@@ -41,11 +41,16 @@ impl SemanticError {
 }
 
 #[derive(Debug)]
+pub enum ParseError {
+    SYNTAX_ERROR(SyntaxError),
+    SEMANTIC_ERROR(SemanticError)
+}
+
+#[derive(Debug)]
 pub enum CompilationError {
     IO_ERROR(IOError),
     LEXICAL_ERROR(LexicalError),
-    SYNTAX_ERROR(SyntaxError),
-    SEMANTIC_ERROR(SemanticError)
+    PARSE_ERROR(ParseError)
 }
 
 impl From<IOError> for CompilationError {
@@ -60,15 +65,9 @@ impl From<LexicalError> for CompilationError {
     }
 }
 
-impl From<SyntaxError> for CompilationError {
-    fn from(err: SyntaxError) -> Self {
-        CompilationError::SYNTAX_ERROR(err)
-    }
-}
-
-impl From<SemanticError> for CompilationError {
-    fn from(err: SemanticError) -> Self {
-        CompilationError::SEMANTIC_ERROR(err)
+impl From<ParseError> for CompilationError {
+    fn from(err: ParseError) -> Self {
+        CompilationError::PARSE_ERROR(err)
     }
 }
 
@@ -77,8 +76,12 @@ impl Display for CompilationError {
         match self {
             CompilationError::IO_ERROR(err) => write!(f, "(Error occured while compilation\nIO Errror\n{})", err.to_string()),
             CompilationError::LEXICAL_ERROR(err) => write!(f, "(Error occured while compilation\nLexical Error\n{})", err.err_message),
-            CompilationError::SYNTAX_ERROR(err) => write!(f, "(Error occured while compilation\nSynatx Error\n{})", err.err_message),
-            CompilationError::SEMANTIC_ERROR(err) => write!(f, "(Error occured while compilation\nSemantic Error\n{})", err.err_message)
+            CompilationError::PARSE_ERROR(err) => {
+                match err {
+                    ParseError::SYNTAX_ERROR(syntax_error) => write!(f, "(Error occured while compilation\nSynatx Error\n{})", syntax_error.err_message),
+                    ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, "(Error occured while compilation\nSemantic Error\n{})", semantic_error.err_message)
+                }
+            }
         }
     }
 }
