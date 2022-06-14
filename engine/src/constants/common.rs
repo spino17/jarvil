@@ -5,6 +5,7 @@ use std::rc::Rc;
 const FOR:          &'static str = "for";
 const WHILE:        &'static str = "while";
 const CONTINUE:     &'static str = "continue";
+const BREAK:        &'static str = "break";
 const IF:           &'static str = "if";
 const ELIF:         &'static str = "elif";
 const ELSE:         &'static str = "else";
@@ -14,13 +15,15 @@ const AND:          &'static str = "and";
 const NOT:          &'static str = "not";
 const OR:           &'static str = "or";
 const IS:           &'static str = "is";
+const IN:           &'static str = "in";
 const TRUE:         &'static str = "True";
 const FALSE:        &'static str = "False";
 
-pub const KEYWORDS: [&'static str; 14] = [
+pub const KEYWORDS: [&'static str; 16] = [
     FOR,
     WHILE,
     CONTINUE,
+    BREAK,
     IF,
     ELIF,
     ELSE,
@@ -30,6 +33,7 @@ pub const KEYWORDS: [&'static str; 14] = [
     NOT,
     OR,
     IS,
+    IN,
     TRUE,
     FALSE,
 ];
@@ -110,7 +114,7 @@ pub const DIGITS: [char; 10] = [
     '9',
 ];
 
-// everytime there is an addition in keyword, add an else if also here!
+// everytime there is an addition in keyword, add here also!
 pub fn get_token_for_identifier(value: String) -> CoreToken {
     if context::is_keyword(&value) {
         if value.eq(FOR) {
@@ -119,6 +123,8 @@ pub fn get_token_for_identifier(value: String) -> CoreToken {
             CoreToken::WHILE
         } else if value.eq(CONTINUE) {
             CoreToken::CONTINUE
+        } else if value.eq(BREAK) {
+            CoreToken::BREAK
         } else if value.eq(IF) {
             CoreToken::IF
         } else if value.eq(ELIF) {
@@ -137,6 +143,8 @@ pub fn get_token_for_identifier(value: String) -> CoreToken {
             CoreToken::OR
         } else if value.eq(IS) {
             CoreToken::IS
+        } else if value.eq(IN) {
+            CoreToken::IN
         } else if value.eq(TRUE) {
             CoreToken::TRUE
         } else if value.eq(FALSE) {

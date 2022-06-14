@@ -19,6 +19,7 @@ pub enum CoreToken {
     FOR,                // 'for'
     WHILE,              // 'while'
     CONTINUE,           // 'continue'
+    BREAK,              // 'break'
 
     // functions
     DEF,                // 'def'
@@ -32,6 +33,7 @@ pub enum CoreToken {
     NOT,                // 'not'
     OR,                 // 'or'
     IS,                 // 'is'
+    IN,                 // 'in'
 
     // operators
     PLUS,               // '+'
