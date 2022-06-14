@@ -46,6 +46,18 @@ pub enum ParseError {
     SEMANTIC_ERROR(SemanticError)
 }
 
+impl From<SyntaxError> for ParseError {
+    fn from(err: SyntaxError) -> Self {
+        ParseError::SYNTAX_ERROR(err)
+    }
+}
+
+impl From<SemanticError> for ParseError {
+    fn from(err: SemanticError) -> Self {
+        ParseError::SEMANTIC_ERROR(err)
+    }
+}
+
 #[derive(Debug)]
 pub enum CompilationError {
     IO_ERROR(IOError),
