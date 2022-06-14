@@ -82,8 +82,11 @@ pub enum CoreToken {
     FALSE,              // 'False'
 
     // ignored by parser
-    SINGLE_LINE_COMMENT,// '//......\n'
+    SINGLE_LINE_COMMENT,// '//......\n' or '#.........\n'
     BLOCK_COMMENT,      // '/* ..... */'
+
+    // termination
+    ENDMARKER,
 }
 
 #[derive(Debug)]
@@ -162,6 +165,9 @@ impl Token {
             '/'         =>      {
                 helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code)?
             },
+            '#'         =>      {
+                helper::extract_hash_prefix_lexeme(begin_lexeme, line_number, code)?
+            }
             '='         =>      {
                 helper::extract_equal_prefix_lexeme(begin_lexeme, code)?
             },
