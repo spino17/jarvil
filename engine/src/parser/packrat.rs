@@ -7,19 +7,53 @@ use crate::parser::core::Parser;
 use crate::lexer::token::Token;
 use crate::parser::ast::AST;
 use crate::errors::ParseError;
+use crate::env::Env;
 
 pub struct PackratParser {
-
+    lookahead: usize,
+    indent_level: usize,
+    env: Env,
 }
 
 impl PackratParser {
     pub fn new() -> Self {
-        todo!()
+        let env = Env::new();
+        PackratParser {
+            lookahead: 0,
+            indent_level: 0,
+            env,
+        }
+    }
+}
+
+impl PackratParser {
+    fn code(&mut self) -> Result<(), ParseError> {
+        self.stmt()?;
+        let stmt_c = || {
+            self.stmt()?;
+            Ok(())
+        };
+        self.zero_or_more(stmt_c)?;
+        Ok(())
+    }
+
+    fn stmt(&self) -> Result<(), ParseError> {
+        Ok(())
+    }
+
+    fn zero_or_more<F: FnMut() -> Result<(), ParseError>>(&self, mut f: F) -> Result<(), ParseError> {
+        loop {
+            match f() {
+                Ok(()) => continue,
+                Err(_) => return Ok(())
+            }
+        }
     }
 }
 
 impl Parser for PackratParser {
-    fn parse(&mut self, token_vec: Vec<Token>) -> Result<AST, ParseError> {
-        todo!()
+    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
+        self.code()?;
+        Ok(())
     }
 }

@@ -20,6 +20,8 @@ fn main() -> Result<(), CompilationError> {
     let mut core_lexer = CoreLexer::new();
     let token_vec = core_lexer.tokenize(char_vec)?;
     let mut parser = PackratParser::new();
-    let ast = parser.parse(token_vec)?;  // TODO - do bytecode generation using this ast object
+    if token_vec.len() > 0 {
+        let ast = parser.parse(token_vec)?;  // TODO - do bytecode generation using this ast object
+    }
     Ok(())
 }

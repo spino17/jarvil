@@ -9,7 +9,7 @@
 code: stmts
 
 # python style of block
-block: NEWLINE INDENT stmts DEDENT
+block: NEWLINE (INDENT stmt)+
 
 stmts: stmt+
 stmt: compound_stmt | simple_stmts
@@ -29,9 +29,9 @@ compound_stmt:
     | while_stmt
 
 # here grammer cannot capture the fact that first id should be a type. We could have used another token TYPE for capturing 
-# that but there can be user defined types which are not known in lexical analysis phase when tokens are being made so we 
-# can have types from both tokens TYPE as well as IDENTIFIER. In general we need to have type-check system in place to 
-# take into account these type information which grammer is incapable of capturing.
+# that but there can be user defined types which are not known at lexical analysis phase so we can have types from both tokens 
+# - TYPE as well as IDENTIFIER. In general we need to have type-check system in place to take into account these type information 
+# which grammer is incapable of capturing.
 decl:
     | id id ['='expr]
 
