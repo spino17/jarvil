@@ -8,7 +8,7 @@ use crate::parser::core::Parser;
 use crate::lexer::token::{Token, CoreToken};
 use crate::parser::ast::AST;
 use crate::errors::{ParseError, SyntaxError, aggregate_errors};
-use crate::env::Env;
+use crate::env::{Env, SymbolData};
 
 pub struct PackratParser {
     token_vec: Vec<Token>,
@@ -120,16 +120,11 @@ impl PackratParser {
     }
 
     fn assign(&mut self) -> Result<usize, ParseError> {
-        let token = &self.token_vec[self.lookahead];
-        match token.core_token {
-            CoreToken::IDENTIFIER(_) => {
-                self.expect("id")?;
-                self.expect("=")?;
-                self.expr()?;
-                Ok(self.lookahead)
-            },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, self.lookahead, "expected an identifier on left side of the assignment")))
-        }
+        let (_, symbol_data) = self.expect_id_and_get_data()?;
+        // TODO - use symbol data to type check
+        self.expect("=")?;
+        self.expr()?;
+        Ok(self.lookahead)
     }
 
     fn expr(&mut self) -> Result<usize, ParseError> {
@@ -170,6 +165,22 @@ impl PackratParser {
         } else {
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
                 self.lookahead, "expected ")))
+        }
+    }
+
+    // always use this for matching identifiers except in declarations
+    fn expect_id_and_get_data(&mut self) -> Result<(usize, SymbolData), ParseError> {
+        let token = &self.token_vec[self.lookahead];
+        match &token.core_token {
+            CoreToken::IDENTIFIER(_) => {
+                let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
+                self.lookahead = self.lookahead + 1;
+                Ok((self.lookahead, symbol_data))
+            },
+            _ => {
+                Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
+                    self.lookahead, "expected an identifier")))
+            }
         }
     }
 }
