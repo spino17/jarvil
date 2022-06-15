@@ -318,7 +318,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
             return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from("int")))
         },
         1 => {
-            unreachable!("found state 1 which is not possible as state 1 either returns or always transition to state 2")
+            return Err(LexicalError::new(*line_number, "expected at least one digit after '.'"))
         },
         2 => {
             let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();

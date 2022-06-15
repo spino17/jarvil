@@ -1,10 +1,15 @@
-// This is full specification of jarvil grammer. The style is PEG type where
-// |    ->  ordered choice
-// []   ->  optional
-// +    ->  at least one occurence
-// ()   ->  empty string
-// This grammer is by no means exhaustive for all programming constructs generally found in production grade languages. However
-// it surely contains enough so that anyone who wishes to learn language grammer can benefit from it.
+# This is full specification of jarvil grammer. The style is PEG type where
+# |    ->  ordered choice
+# []   ->  optional
+# +    ->  at least one occurence
+# ()   ->  empty string
+# This grammer is by no means exhaustive for all programming constructs generally found in production grade languages. However
+# it surely contains enough so that anyone who wishes to learn language grammer can benefit from it.
+
+
+# TODO - there are many places in grammer where there should be atom instead of id for example left side of assignment can be
+# an identifier or something like id[(id | int)] (array indexing)
+
 
 code: stmts
 
@@ -28,12 +33,12 @@ compound_stmt:
     | for_stmt
     | while_stmt
 
-# here grammer cannot capture the fact that first id should be a type. We could have used another token TYPE for capturing 
-# that but there can be user defined types which are not known at lexical analysis phase so we can have types from both tokens 
-# - TYPE as well as IDENTIFIER. In general we need to have type-check system in place to take into account these type information 
-# which grammer is incapable of capturing.
+type:
+    | TYPE  # type token for in-built types
+    | id  # identifier for user-defined types - semantic check required here!
+
 decl:
-    | id id ['='expr]
+    | type id ['='expr]
 
 assign: id '=' expr
 
