@@ -108,6 +108,6 @@ impl Display for CompilationError {
     }
 }
 
-pub fn aggregate_errors() -> ParseError {
+pub fn aggregate_errors(errors: Vec<ParseError>) -> ParseError {
     todo!()
 }

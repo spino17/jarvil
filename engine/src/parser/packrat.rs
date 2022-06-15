@@ -3,6 +3,8 @@
 // parsing!
 // See https://pdos.csail.mit.edu/~baford/packrat/thesis/ for more information.
 
+use std::vec;
+
 use crate::parser::core::Parser;
 use crate::lexer::token::{Token, CoreToken};
 use crate::parser::ast::AST;
@@ -15,6 +17,7 @@ pub struct PackratParser {
     indent_level: usize,
     env: Env,
     // TODO - add look up hash table for cached results
+    // TODO - add AST data structure
 }
 
 impl PackratParser {
@@ -30,84 +33,133 @@ impl PackratParser {
 }
 
 impl PackratParser {
+    fn reset_lookahead(&mut self, reset_index: usize) {
+        self.lookahead = reset_index;
+    }
+
     fn code(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
         self.token_vec = token_vec;
         self.stmt()?;
-        let stmt_c = || {
-            self.stmt()?;
-            Ok(())
-        };
-        PackratParser::expect_zero_or_more(stmt_c)?;
+        let lookahead = self.lookahead;
+        let new_lookahead = PackratParser::expect_zero_or_more(|| {
+            let lookahead = self.stmt()?;
+            Ok(lookahead)
+        }, lookahead)?;
+        self.reset_lookahead(new_lookahead);
         Ok(())
     }
 
-    fn stmt(&mut self) -> Result<(), ParseError> {
-        if let Ok(_) = self.compound_stmt() {
-            return Ok(())
+    fn stmt(&mut self) -> Result<usize, ParseError> {
+        let mut errors_vec: Vec<ParseError> = vec![];
+        // TODO - handle lookahead index to reset it if a production fails
+        // Below is a general pattern among many production rule cases where we always have to reset lookahead back to the original
+        // value when trying out new production rule after prior one failed
+        let curr_lookahead = self.lookahead;
+        match self.compound_stmt() {
+            Ok(lookahead) => return Ok(lookahead),
+            Err(err) => {
+                self.reset_lookahead(curr_lookahead);
+                errors_vec.push(err);
+            }
         }
-        if let Ok(_) = self.simple_stmts() {
-            return Ok(())
+        let curr_lookahead = self.lookahead;
+        match self.simple_stmts() {
+            Ok(lookahead) => return Ok(lookahead),
+            Err(err) => {
+                self.reset_lookahead(curr_lookahead);
+                errors_vec.push(err);
+            }
         }
-        Err(aggregate_errors())
+        Err(aggregate_errors(errors_vec))
     }
 
-    fn compound_stmt(&mut self) -> Result<(), ParseError> {
-        Ok(())
+    fn compound_stmt(&mut self) -> Result<usize, ParseError> {
+        // TODO - add production rules for compound statements - see jarvil.gram
+        Ok(self.lookahead)
     }
 
-    fn simple_stmts(&mut self) -> Result<(), ParseError> {
+    fn simple_stmts(&mut self) -> Result<usize, ParseError> {
         self.simple_stmt()?;
         self.expect("\n")?;
-        self.simple_stmts()?;
-        Ok(())
+        let lookahead = self.lookahead;
+        let new_lookahead = PackratParser::expect_optionally(|| {
+            let lookahead = self.simple_stmts()?;
+            Ok(lookahead)
+        }, lookahead)?;
+        self.reset_lookahead(new_lookahead);
+        Ok(self.lookahead)
     }
 
-    fn simple_stmt(&mut self) -> Result<(), ParseError> {
-        if let Ok(()) = self.decl() {
-            return Ok(())
+    fn simple_stmt(&mut self) -> Result<usize, ParseError> {
+        let mut errors_vec: Vec<ParseError> = vec![];
+        match self.decl() {
+            Ok(lookahead) => return Ok(lookahead),
+            Err(err) => {
+                errors_vec.push(err);
+            }
         }
-        if let Ok(()) = self.assign() {
-            return Ok(())
+        match self.assign() {
+            Ok(lookahead) => return Ok(lookahead),
+            Err(err) => {
+                errors_vec.push(err);
+            }
         }
-        Err(aggregate_errors())
+        Err(aggregate_errors(errors_vec))
     }
 
-    fn decl(&mut self) -> Result<(), ParseError> {
+    fn decl(&mut self) -> Result<usize, ParseError> {
         todo!()
     }
 
-    fn assign(&mut self) -> Result<(), ParseError> {
+    fn assign(&mut self) -> Result<usize, ParseError> {
         let token = &self.token_vec[self.lookahead];
         match token.core_token {
             CoreToken::IDENTIFIER(_) => {
                 self.expect("id")?;
                 self.expect("=")?;
                 self.expr()?;
-                Ok(())
+                Ok(self.lookahead)
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, self.lookahead, "Expected an Identifier on left side of the assignment")))
+            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, self.lookahead, "expected an identifier on left side of the assignment")))
         }
     }
 
-    fn expr(&mut self) -> Result<(), ParseError> {
+    fn expr(&mut self) -> Result<usize, ParseError> {
         todo!()
     }
 
-    fn expect_zero_or_more<F: FnMut() -> Result<(), ParseError>>(mut f: F) -> Result<(), ParseError> {
+    fn expect(&mut self, symbol: &'static str) -> Result<usize, ParseError> {
+        todo!()
+    }
+
+    fn expect_and_get_value(&mut self, symbol: &'static str) -> Result<usize, ParseError> {
+        todo!()
+    }
+
+    fn expect_zero_or_more<F: FnMut() -> Result<usize, ParseError>>(mut f: F, curr_lookahead: usize) -> Result<usize, ParseError> {
+        let mut curr_lookahead = curr_lookahead;
         loop {
             match f() {
-                Ok(()) => continue,
-                Err(_) => return Ok(())
+                Ok(lookahead) => {
+                    curr_lookahead = lookahead;
+                    continue;
+                },
+                Err(_) => {
+                    // TODO - propogate this error too outside!
+                    return Ok(curr_lookahead);
+                }
             }
         }
     }
 
-    fn expect(&mut self, symbol: &'static str) -> Result<(), ParseError> {
-        todo!()
-    }
-
-    fn expect_and_get_value(&mut self, symbol: &'static str) -> Result<(), ParseError> {
-        todo!()
+    fn expect_optionally<F: FnMut() -> Result<usize, ParseError>>(mut f: F, curr_lookahead: usize) -> Result<usize, ParseError> {
+        match f() {
+            Ok(lookahead) => Ok(lookahead),
+            Err(_) => {
+                // TODO - propogate this error too outside!
+                Ok(curr_lookahead)
+            }
+        }
     }
 }
 
