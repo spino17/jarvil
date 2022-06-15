@@ -12,6 +12,12 @@ pub struct PackratParser {
 
 }
 
+impl PackratParser {
+    pub fn new() -> Self {
+        todo!()
+    }
+}
+
 impl Parser for PackratParser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<AST, ParseError> {
         todo!()

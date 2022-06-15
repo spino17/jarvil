@@ -18,6 +18,7 @@ const IS:           &'static str = "is";
 const IN:           &'static str = "in";
 const TRUE:         &'static str = "True";
 const FALSE:        &'static str = "False";
+const NONE:         &'static str = "None";
 
 pub const KEYWORDS: [&'static str; 16] = [
     FOR,
@@ -149,6 +150,8 @@ pub fn get_token_for_identifier(value: String) -> CoreToken {
             CoreToken::TRUE
         } else if value.eq(FALSE) {
             CoreToken::FALSE
+        } else if value.eq(NONE) {
+            CoreToken::NONE
         } else {
             unreachable!("keyword missing in the matching arms")
         }

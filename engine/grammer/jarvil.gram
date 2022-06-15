@@ -1,0 +1,91 @@
+// This is full specification of jarvil grammer. The style is PEG type where
+// |    ->  ordered choice
+// []   ->  optional
+// +    ->  at least one occurence
+// ()   ->  empty string
+// This grammer is by no means exhaustive for all programming constructs generally found in production grade languages. However
+// it surely contains enough so that anyone who wishes to learn language grammer can benefit from it.
+
+code: stmts
+
+# python style of block
+block: NEWLINE INDENT stmts DEDENT
+
+stmts: stmt+
+stmt: compound_stmt | simple_stmts
+
+simple_stmts: 
+    | simple_stmt NEWLINE simple_stmts
+    | simple_stmt NEWLINE
+
+simple_stmt:
+    | decl
+    | assign
+
+compound_stmt:
+    | function_def
+    | if_stmt
+    | for_stmt
+    | while_stmt
+
+# here grammer cannot capture the fact that first id should be a type. We could have used another token TYPE for capturing 
+# that but there can be user defined types which are not known in lexical analysis phase when tokens are being made so we 
+# can have types from both tokens TYPE as well as IDENTIFIER. In general we need to have type-check system in place to 
+# take into account these type information which grammer is incapable of capturing.
+decl:
+    | id id ['='expr]
+
+assign: id '=' expr
+
+expr: term additive
+
+additive:
+    | '+' expr
+    | '-' expr
+    | ()
+
+term: factor multitive
+
+multitive:
+    | '*' term
+    | '/' term
+    | ()
+
+factor:
+    | '(' expr ')'
+    | id  # check the type of identifier for valid '+', '-', '*', '/' operations
+    | int
+    | float
+
+if_stmt:
+    | 'if' bexpr ':' block elif_stmt
+    | 'if' bexpr ':' block [else_block]
+elif_stmt:
+    | 'elif' bexpr ':' block elif_stmt
+    | 'elif' bexpr ':' block [else_block]
+else_block:
+    | 'else' ':' block
+
+while_stmt: 'while' bexpr ':' block
+
+bexpr: bterm oritive
+oritive: 
+    | 'or' bexpr
+    | ()
+bterm: bfactor anditive
+anditive: 
+    | 'and' bterm
+    | ()
+bfactor:
+    | 'not' bfactor
+    | '(' bexpr ')'
+    | id  # check the type of identifier is 'bool'
+    | 'True'
+    | 'False'
+
+function_def: 'def' id '(' optparams ')' ['->' id] ':' block
+optparams:
+    | param ',' optparams
+    | param
+param: id id  # type id
+

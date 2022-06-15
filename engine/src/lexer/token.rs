@@ -85,8 +85,9 @@ pub enum CoreToken {
     SINGLE_LINE_COMMENT,// '//......\n' or '#.........\n'
     BLOCK_COMMENT,      // '/* ..... */'
 
-    // termination
+    // corner cases
     ENDMARKER,
+    NONE,
 }
 
 #[derive(Debug)]

@@ -10,6 +10,8 @@ use errors::CompilationError;
 use crate::reader::read_file;
 use crate::lexer::lexer::{CoreLexer, Lexer};
 use std::env::args;
+use crate::parser::packrat::PackratParser;
+use crate::parser::core::Parser;
 
 fn main() -> Result<(), CompilationError> {
     let args: Vec<String> = args().collect();
@@ -17,6 +19,7 @@ fn main() -> Result<(), CompilationError> {
     let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;
     let mut core_lexer = CoreLexer::new();
     let token_vec = core_lexer.tokenize(char_vec)?;
-    // TODO - pass this token_vec to parser and build AST!
+    let mut parser = PackratParser::new();
+    let ast = parser.parse(token_vec)?;  // TODO - do bytecode generation using this ast object
     Ok(())
 }
