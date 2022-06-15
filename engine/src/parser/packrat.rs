@@ -62,7 +62,6 @@ impl PackratParser {
                 errors_vec.push(err);
             }
         }
-        let curr_lookahead = self.lookahead;
         match self.simple_stmts() {
             Ok(lookahead) => return Ok(lookahead),
             Err(err) => {
@@ -92,15 +91,18 @@ impl PackratParser {
 
     fn simple_stmt(&mut self) -> Result<usize, ParseError> {
         let mut errors_vec: Vec<ParseError> = vec![];
+        let curr_lookahead = self.lookahead;
         match self.decl() {
             Ok(lookahead) => return Ok(lookahead),
             Err(err) => {
+                self.reset_lookahead(curr_lookahead);
                 errors_vec.push(err);
             }
         }
         match self.assign() {
             Ok(lookahead) => return Ok(lookahead),
             Err(err) => {
+                self.reset_lookahead(curr_lookahead);
                 errors_vec.push(err);
             }
         }
@@ -129,10 +131,6 @@ impl PackratParser {
     }
 
     fn expect(&mut self, symbol: &'static str) -> Result<usize, ParseError> {
-        todo!()
-    }
-
-    fn expect_and_get_value(&mut self, symbol: &'static str) -> Result<usize, ParseError> {
         todo!()
     }
 

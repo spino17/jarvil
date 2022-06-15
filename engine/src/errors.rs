@@ -1,3 +1,4 @@
+use std::str::ParseBoolError;
 use std::{io::Error as IOError, fmt::Display};
 use std::fmt::Formatter;
 
@@ -109,5 +110,39 @@ impl Display for CompilationError {
 }
 
 pub fn aggregate_errors(errors: Vec<ParseError>) -> ParseError {
-    todo!()
+    let mut line_number = std::usize::MAX;
+    let mut lookahead_index = 0;
+    let mut curr_error = None;
+    for err in errors {
+        match err {
+            ParseError::SYNTAX_ERROR(error) => {
+                if error.lookahead_index > lookahead_index {
+                    lookahead_index = error.lookahead_index;
+                    line_number = error.line_number;
+                    curr_error = Some(ParseError::SYNTAX_ERROR(error));
+                } else if error.lookahead_index == lookahead_index {
+                    if error.line_number < line_number {
+                        line_number = error.line_number;
+                        curr_error = Some(ParseError::SYNTAX_ERROR(error));
+                    }
+                }
+            },
+            ParseError::SEMANTIC_ERROR(error) => {
+                if error.lookahead_index > lookahead_index {
+                    lookahead_index = error.lookahead_index;
+                    line_number = error.line_number;
+                    curr_error = Some(ParseError::SEMANTIC_ERROR(error));
+                } else if error.lookahead_index == lookahead_index {
+                    if error.line_number < line_number {
+                        line_number = error.line_number;
+                        curr_error = Some(ParseError::SEMANTIC_ERROR(error));
+                    }
+                }
+            }
+        }
+    }
+    match curr_error {
+        Some(err) => err,
+        None => unreachable!("aggregated error can be None only when provided vector of errors were empty which is not possible")
+    }
 }
