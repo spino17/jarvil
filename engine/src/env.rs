@@ -16,7 +16,7 @@ use crate::lexer::token::TokenValue;
 
 #[derive(Debug)]
 pub struct MetaData {
-    data_type: String,  // TODO - change this to Rc string
+    data_type: Rc<String>,  // TODO - change this to Rc string
 }
 
 #[derive(Debug)]
@@ -35,7 +35,7 @@ impl SymbolData {
     
     // identifiers can be user defined types as well
     pub fn is_type(&self) -> bool {
-        self.0.data_type.eq("type")
+        self.0.data_type.as_ref().eq("type")
     }
 }
 
@@ -46,8 +46,8 @@ pub struct Scope {
 }
 
 impl Scope {
-    fn set(&mut self, name: Rc<String>, data_type: String) {
-        self.symbol_table.insert(name, SymbolData(Rc::new(MetaData{data_type, })));
+    fn set(&mut self, name: Rc<String>, data_type: &Rc<String>) {
+        self.symbol_table.insert(name, SymbolData(Rc::new(MetaData{data_type: data_type.clone(), })));
     }
 
     fn get(&self, name: &Rc<String>) -> Option<&SymbolData> {
@@ -74,7 +74,7 @@ impl Env {
         })))
     }
 
-    pub fn set(&self, token_value: &TokenValue, data_type: String) {
+    pub fn set(&self, token_value: &TokenValue, data_type: &Rc<String>) {
         self.0.borrow_mut().set(token_value.0.clone(), data_type);
     }
 
