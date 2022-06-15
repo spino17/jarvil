@@ -43,6 +43,7 @@ impl Lexer for CoreLexer {
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
+            name: String::from("endmarker")
         });
         Ok(token_vec)
     }

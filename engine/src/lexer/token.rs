@@ -71,7 +71,7 @@ pub enum CoreToken {
     LESS,               // '<'
 
     // others
-    NUMBER(TokenValue),
+    // NUMBER(TokenValue),
     INTEGER(TokenValue),
     FLOAT(TokenValue),
     IDENTIFIER(TokenValue),
@@ -94,65 +94,67 @@ pub enum CoreToken {
 pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
+    pub name: String,
 }
 
 impl Token {
     // This method tokenize the code in O(|code|)
     pub fn extract_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<Token, LexicalError> {
         let critical_char = code[*begin_lexeme];
-        let core_token = match critical_char {
+        let mut name: String = String::from("");
+        let (core_token, name) = match critical_char {
             '('         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::LPAREN
+                (CoreToken::LPAREN, String::from("("))
             },
             ')'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::RPAREN
+                (CoreToken::RPAREN, String::from(")"))
             },
             '{'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::LBRACE
+                (CoreToken::LBRACE, String::from("{"))
             },
             '}'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::RBRACE
+                (CoreToken::RBRACE, String::from("}"))
             },
             '['         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::LSQUARE
+                (CoreToken::LSQUARE, String::from("["))
             },
             ']'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::RSQUARE
+                (CoreToken::RSQUARE, String::from("]"))
             },
             ';'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::SEMICOLON
+                (CoreToken::SEMICOLON, String::from(";"))
             },
             ':'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::COLON
+                (CoreToken::COLON, String::from(":"))
             },
             ','         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::COMMA
+                (CoreToken::COMMA, String::from(","))
             },
             '.'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::DOT
+                (CoreToken::DOT, String::from("."))
             },
             ' '         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::BLANK
+                (CoreToken::BLANK, String::from(" "))
             },
             '\t'        =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::TAB
+                (CoreToken::TAB, String::from("\t"))
             },
             '\n'        =>      {
                 *begin_lexeme = *begin_lexeme + 1;
                 *line_number = *line_number + 1;
-                CoreToken::NEWLINE
+                (CoreToken::NEWLINE, String::from("\n"))
             },
             '+'         =>      {
                 helper::extract_plus_prefix_lexeme(begin_lexeme, code)?
@@ -183,19 +185,21 @@ impl Token {
             },
             c     =>      {
                 let token: CoreToken;
+                let name: String;
                 if context::is_letter(&c) {
-                    token = helper::extract_letter_prefix_lexeme(begin_lexeme, code)?;
+                    (token, name) = helper::extract_letter_prefix_lexeme(begin_lexeme, code)?;
                 } else if context::is_digit(&c) {
-                    token = helper::extract_digit_prefix_lexeme(begin_lexeme, line_number, code)?;
+                    (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, line_number, code)?;
                 } else {
                     unreachable!("token missing for char `{}` prefix", c)
                 }
-                token
+                (token, name)
             }
         };
         Ok(Token {
             line_number: *line_number,
             core_token,
+            name,
         })
     }
 
@@ -204,7 +208,10 @@ impl Token {
             CoreToken::TYPE(value) => {
                 TokenValue(value.0.clone())
             },
-            CoreToken::NUMBER(value) => {
+            CoreToken::INTEGER(value) => {
+                TokenValue(value.0.clone())
+            },
+            CoreToken::FLOAT(value) => {
                 TokenValue(value.0.clone())
             },
             CoreToken::IDENTIFIER(value) => {
@@ -232,6 +239,10 @@ impl Token {
             },
             _ => unreachable!("check_declaration cannot be used for tokens other than type identifier")
         }
+    }
+
+    pub fn is_eq(&self, symbol: &str) -> bool {
+        self.name.eq(symbol)
     }
 
     /*

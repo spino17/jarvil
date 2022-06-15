@@ -116,48 +116,48 @@ pub const DIGITS: [char; 10] = [
 ];
 
 // everytime there is an addition in keyword, add here also!
-pub fn get_token_for_identifier(value: String) -> CoreToken {
+pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
     if context::is_keyword(&value) {
         if value.eq(FOR) {
-            CoreToken::FOR
+            (CoreToken::FOR, String::from(FOR))
         } else if value.eq(WHILE) {
-            CoreToken::WHILE
+            (CoreToken::WHILE, String::from(WHILE))
         } else if value.eq(CONTINUE) {
-            CoreToken::CONTINUE
+            (CoreToken::CONTINUE, String::from(CONTINUE))
         } else if value.eq(BREAK) {
-            CoreToken::BREAK
+            (CoreToken::BREAK, String::from(BREAK))
         } else if value.eq(IF) {
-            CoreToken::IF
+            (CoreToken::IF, String::from(IF))
         } else if value.eq(ELIF) {
-            CoreToken::ELIF
+            (CoreToken::ELIF, String::from(ELIF))
         } else if value.eq(ELSE) {
-            CoreToken::ELSE
+            (CoreToken::ELSE, String::from(ELSE))
         }  else if value.eq(STRUCT) {
-            CoreToken::STRUCT
+            (CoreToken::STRUCT, String::from(STRUCT))
         } else if value.eq(DEF) {
-            CoreToken::DEF
+            (CoreToken::DEF, String::from(DEF))
         } else if value.eq(AND) {
-            CoreToken::AND
+            (CoreToken::AND, String::from(AND))
         } else if value.eq(NOT) {
-            CoreToken::NOT
+            (CoreToken::NOT, String::from(NOT))
         } else if value.eq(OR) {
-            CoreToken::OR
+            (CoreToken::OR, String::from(OR))
         } else if value.eq(IS) {
-            CoreToken::IS
+            (CoreToken::IS, String::from(IS))
         } else if value.eq(IN) {
-            CoreToken::IN
+            (CoreToken::IN, String::from(IN))
         } else if value.eq(TRUE) {
-            CoreToken::TRUE
+            (CoreToken::TRUE, String::from(TRUE))
         } else if value.eq(FALSE) {
-            CoreToken::FALSE
+            (CoreToken::FALSE, String::from(FALSE))
         } else if value.eq(NONE) {
-            CoreToken::NONE
+            (CoreToken::NONE, String::from(NONE))
         } else {
             unreachable!("keyword missing in the matching arms")
         }
     } else if context::is_type(&value) {
-        CoreToken::TYPE(TokenValue(Rc::new(value)))
+        (CoreToken::TYPE(TokenValue(Rc::new(value))), String::from("type"))
     } else {
-        CoreToken::IDENTIFIER(TokenValue(Rc::new(value)))
+        (CoreToken::IDENTIFIER(TokenValue(Rc::new(value))), String::from("id"))
     }
 }

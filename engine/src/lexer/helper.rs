@@ -4,74 +4,75 @@ use super::token::TokenValue;
 use crate::constants::common::get_token_for_identifier;
 
 // + -> +, ++
-pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '+' => {
                 *begin_lexeme = forward_lexeme + 1;  // retract true
-                return Ok(CoreToken::DOUBLE_PLUS);
+                return Ok((CoreToken::DOUBLE_PLUS, String::from("++")));
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;  // retract false
-                return Ok(CoreToken::PLUS);
+                return Ok((CoreToken::PLUS, String::from("+")));
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;  // retract false
-        return Ok(CoreToken::PLUS);
+        return Ok((CoreToken::PLUS, String::from("+")));
     }
 }
 
 // - -> -, --, ->
-pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '-' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return Ok(CoreToken::DOUBLE_MINUS);
+                return Ok((CoreToken::DOUBLE_MINUS, String::from("--")));
             },
             '>' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return Ok(CoreToken::RIGHT_ARROW);
+                return Ok((CoreToken::RIGHT_ARROW, String::from("->")));
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return Ok(CoreToken::MINUS);
+                return Ok((CoreToken::MINUS, String::from("-")));
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return Ok(CoreToken::MINUS);
+        return Ok((CoreToken::MINUS, String::from("-")));
     }
 }
 
 // * -> *, **
-pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '*' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return Ok(CoreToken::DOUBLE_STAR);
+                return Ok((CoreToken::DOUBLE_STAR, String::from("**")));
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return Ok(CoreToken::STAR);
+                return Ok((CoreToken::STAR, String::from("*")));
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return Ok(CoreToken::STAR);
+        return Ok((CoreToken::STAR, String::from("*")));
     }
 }
 
 // / -> /, /*, //
-pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, 
+    line_number: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
@@ -90,7 +91,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut u
                     },
                     _ => {
                         *begin_lexeme = *begin_lexeme + 1;
-                        return Ok(CoreToken::SLASH);
+                        return Ok((CoreToken::SLASH, String::from("/")));
                     }
                 }
             },
@@ -98,7 +99,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut u
                 match next_char {
                     '\n' => {
                         *begin_lexeme = forward_lexeme + 1;
-                        return Ok(CoreToken::SINGLE_LINE_COMMENT);
+                        return Ok((CoreToken::SINGLE_LINE_COMMENT, String::from("single_comment")));
                     },
                     _ => {}
                 }
@@ -115,7 +116,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut u
                 match next_char {
                     '/' => {
                         *begin_lexeme = forward_lexeme + 1;
-                        return Ok(CoreToken::BLOCK_COMMENT);
+                        return Ok((CoreToken::BLOCK_COMMENT, String::from("block_comment")));
                     },
                     _ => {
                         state = 2;
@@ -131,7 +132,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut u
     match state {
         0 => {
             *begin_lexeme = *begin_lexeme + 1;
-            return Ok(CoreToken::SLASH);
+            return Ok((CoreToken::SLASH, String::from("/")));
         },
         1 => {
             Err(LexicalError::new(*line_number, "no newline terminal found for line comment"))
@@ -145,7 +146,8 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut u
 }
 
 // # -> #......\n
-pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, 
+    line_number: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
@@ -155,7 +157,7 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut us
         match next_char {
             '\n' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return Ok(CoreToken::SINGLE_LINE_COMMENT)
+                return Ok((CoreToken::SINGLE_LINE_COMMENT, String::from("single_comment")))
             },
             _ => {}
         }
@@ -165,70 +167,71 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut us
 }
 
 // = -> =, ==
-pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return Ok(CoreToken::DOUBLE_EQUAL);
+                return Ok((CoreToken::DOUBLE_EQUAL, String::from("==")));
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return Ok(CoreToken::EQUAL);
+                return Ok((CoreToken::EQUAL, String::from("=")));
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return Ok(CoreToken::EQUAL);
+        return Ok((CoreToken::EQUAL, String::from("=")));
     }
 }
 
 // > -> >, >=
-pub fn extract_greater_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_greater_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return Ok(CoreToken::GREATER_EQUAL);
+                return Ok((CoreToken::GREATER_EQUAL, String::from(">=")));
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return Ok(CoreToken::GREATER);
+                return Ok((CoreToken::GREATER, String::from(">")));
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return Ok(CoreToken::GREATER);
+        return Ok((CoreToken::GREATER, String::from(">")));
     }
 }
 
 // < -> <, <=
-pub fn extract_less_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_less_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return Ok(CoreToken::LESS_EQUAL);
+                return Ok((CoreToken::LESS_EQUAL, String::from("<=")));
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return Ok(CoreToken::LESS);
+                return Ok((CoreToken::LESS, String::from("<")));
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return Ok(CoreToken::LESS);
+        return Ok((CoreToken::LESS, String::from("<")));
     }
 }
 
 // " -> "......"
-pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, 
+    line_number: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
@@ -239,7 +242,7 @@ pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut
             '"' => {
                 let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
                 *begin_lexeme = forward_lexeme + 1;
-                return Ok(CoreToken::LITERAL(TokenValue(Rc::new(literal_value))))
+                return Ok((CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from("literal")))
             },
             _ => {}
         }
@@ -249,7 +252,7 @@ pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type
-pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
@@ -268,7 +271,8 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) 
 }
 
 // digit -> digit((digit)*(.digit(digit*)|empty))
-pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, 
+    line_number: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
@@ -282,7 +286,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut u
                 } else {
                     let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
                     *begin_lexeme = forward_lexeme;
-                    return Ok(CoreToken::INTEGER(TokenValue(Rc::new(value))))
+                    return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from("int")))
                 }
             },
             1 => {
@@ -298,7 +302,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut u
                 } else {
                     let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
                     *begin_lexeme = forward_lexeme;
-                    return Ok(CoreToken::FLOAT(TokenValue(Rc::new(value))))
+                    return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from("float")))
                 }
             },
             _ => {
@@ -311,7 +315,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut u
         0 => {
             let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return Ok(CoreToken::NUMBER(TokenValue(Rc::new(value))))
+            return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from("int")))
         },
         1 => {
             unreachable!("found state 1 which is not possible as state 1 either returns or always transition to state 2")
@@ -319,7 +323,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut u
         2 => {
             let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return Ok(CoreToken::FLOAT(TokenValue(Rc::new(value))))
+            return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from("float")))
         },
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
     }

@@ -4,7 +4,6 @@
 // See https://pdos.csail.mit.edu/~baford/packrat/thesis/ for more information.
 
 use std::vec;
-
 use crate::parser::core::Parser;
 use crate::lexer::token::{Token, CoreToken};
 use crate::parser::ast::AST;
@@ -29,6 +28,13 @@ impl PackratParser {
             indent_level: 0,
             env,
         }
+    }
+}
+
+impl Parser for PackratParser {
+    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
+        self.code(token_vec)?;
+        Ok(())
     }
 }
 
@@ -130,10 +136,6 @@ impl PackratParser {
         todo!()
     }
 
-    fn expect(&mut self, symbol: &'static str) -> Result<usize, ParseError> {
-        todo!()
-    }
-
     fn expect_zero_or_more<F: FnMut() -> Result<usize, ParseError>>(mut f: F, curr_lookahead: usize) -> Result<usize, ParseError> {
         let mut curr_lookahead = curr_lookahead;
         loop {
@@ -159,11 +161,15 @@ impl PackratParser {
             }
         }
     }
-}
 
-impl Parser for PackratParser {
-    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
-        self.code(token_vec)?;
-        Ok(())
+    fn expect(&mut self, symbol: &str) -> Result<usize, ParseError> {
+        let token = &self.token_vec[self.lookahead];
+        if token.is_eq(symbol) {
+            self.lookahead = self.lookahead + 1;
+            Ok(self.lookahead)
+        } else {
+            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
+                self.lookahead, "expected ")))
+        }
     }
 }
