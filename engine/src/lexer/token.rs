@@ -186,7 +186,7 @@ impl Token {
                 if context::is_letter(&c) {
                     token = helper::extract_letter_prefix_lexeme(begin_lexeme, code)?;
                 } else if context::is_digit(&c) {
-                    token = helper::extract_digit_prefix_lexeme(begin_lexeme, code)?;
+                    token = helper::extract_digit_prefix_lexeme(begin_lexeme, line_number, code)?;
                 } else {
                     unreachable!("token missing for char `{}` prefix", c)
                 }
@@ -219,13 +219,14 @@ impl Token {
         }
     }
 
-    pub fn check_declaration(&self, env: &Env) -> Result<SymbolData, SemanticError> {
+    pub fn check_declaration(&self, env: &Env, lookahead_index: usize) -> Result<SymbolData, SemanticError> {
+        let line_number = self.line_number;
         match &self.core_token {
             CoreToken::IDENTIFIER(token_value) => {
                 match env.get(token_value) {
                     Some(symbol_data) => Ok(symbol_data),
                     None => {
-                        Err(SemanticError::new("identifier is not declared in the current scope"))
+                        Err(SemanticError::new(line_number, lookahead_index, "identifier is not declared in the current scope"))
                     }
                 }
             },

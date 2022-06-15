@@ -134,10 +134,10 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut u
             return Ok(CoreToken::SLASH);
         },
         1 => {
-            Err(LexicalError::new("no newline terminal found for line comment"))
+            Err(LexicalError::new(*line_number, "no newline terminal found for line comment"))
         },
         2 => {
-            Err(LexicalError::new("no closing tag found for block comment"))
+            Err(LexicalError::new(*line_number, "no closing tag found for block comment"))
         },
         3 => unreachable!("found state 3 which is not possible as state 3 either returns or always transition to state 2"),
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
@@ -161,7 +161,7 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut us
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    Err(LexicalError::new("no newline terminal found for line comment"))
+    Err(LexicalError::new(*line_number, "no newline terminal found for line comment"))
 }
 
 // = -> =, ==
@@ -245,7 +245,7 @@ pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    Err(LexicalError::new(r#"no closing " found for literal"#))
+    Err(LexicalError::new(*line_number, r#"no closing " found for literal"#))
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type
@@ -268,7 +268,7 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) 
 }
 
 // digit -> digit((digit)*(.digit(digit*)|empty))
-pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
+pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<CoreToken, LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
@@ -289,7 +289,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
                 if context::is_digit(&next_char) {
                     state = 2;
                 } else {
-                    return Err(LexicalError::new("expected at least one digit after '.'"))
+                    return Err(LexicalError::new(*line_number, "expected at least one digit after '.'"))
                 }
             },
             2 => {

@@ -3,12 +3,14 @@ use std::fmt::Formatter;
 
 #[derive(Debug)]
 pub struct LexicalError {
+    line_number: usize,
     err_message: &'static str,
 }
 
 impl LexicalError {
-    pub fn new(err_message: &'static str) -> Self {
+    pub fn new(line_number: usize, err_message: &'static str) -> Self {
         LexicalError{
+            line_number,
             err_message,
         }
     }
@@ -16,12 +18,16 @@ impl LexicalError {
 
 #[derive(Debug)]
 pub struct SyntaxError {
+    line_number: usize,
+    lookahead_index: usize,
     err_message: &'static str,
 }
 
 impl SyntaxError {
-    pub fn new(err_message: &'static str) -> Self {
+    pub fn new(line_number: usize, lookahead_index: usize, err_message: &'static str) -> Self {
         SyntaxError{
+            line_number,
+            lookahead_index,
             err_message,
         }
     }
@@ -29,12 +35,16 @@ impl SyntaxError {
 
 #[derive(Debug)]
 pub struct SemanticError {
+    line_number: usize,
+    lookahead_index: usize,
     err_message: &'static str
 }
 
 impl SemanticError {
-    pub fn new(err_message: &'static str) -> Self {
+    pub fn new(line_number: usize, lookahead_index: usize, err_message: &'static str) -> Self {
         SemanticError{
+            line_number,
+            lookahead_index,
             err_message,
         }
     }
@@ -90,10 +100,14 @@ impl Display for CompilationError {
             CompilationError::LEXICAL_ERROR(err) => write!(f, "(Error occured while compilation\nLexical Error\n{})", err.err_message),
             CompilationError::PARSE_ERROR(err) => {
                 match err {
-                    ParseError::SYNTAX_ERROR(syntax_error) => write!(f, "(Error occured while compilation\nSynatx Error\n{})", syntax_error.err_message),
-                    ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, "(Error occured while compilation\nSemantic Error\n{})", semantic_error.err_message)
+                    ParseError::SYNTAX_ERROR(syntax_error) => write!(f, "(Error occured while compilation\nSynatx Error\n on line {} - {})", syntax_error.line_number, syntax_error.err_message),
+                    ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, "(Error occured while compilation\nSemantic Error\n on line {} - {})", semantic_error.line_number, semantic_error.err_message)
                 }
             }
         }
     }
+}
+
+pub fn aggregate_errors() -> ParseError {
+    todo!()
 }

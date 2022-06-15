@@ -23,6 +23,7 @@ pub struct MetaData {
 pub struct SymbolData(Rc<MetaData>);
 
 impl SymbolData {
+    /*
     pub fn check_type(&self, base_type: &str) -> Result<bool, SemanticError> {
         if self.0.data_type.eq(base_type) {
             Ok(true)
@@ -30,6 +31,7 @@ impl SymbolData {
             Err(SemanticError::new("type mismatch found\n"))  // TODO - fill with expected and found data type
         }
     }
+     */
     
     // identifiers can be user defined types as well
     pub fn is_type(&self) -> bool {
