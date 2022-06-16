@@ -97,12 +97,12 @@ impl From<ParseError> for CompilationError {
 impl Display for CompilationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            CompilationError::IO_ERROR(err) => write!(f, "(Error occured while compilation\nIO Errror\n{})", err.to_string()),
-            CompilationError::LEXICAL_ERROR(err) => write!(f, "(Error occured while compilation\nLexical Error\n{})", err.err_message),
-            CompilationError::PARSE_ERROR(err) => {
+            CompilationError::IO_ERROR(err)                         =>      write!(f, "(Error occured while compilation\nIO Errror\n{})", err.to_string()),
+            CompilationError::LEXICAL_ERROR(lexical_err)      =>      write!(f, "(Error occured while compilation\nLexical Error\n on line {} - {})", lexical_err.line_number, lexical_err.err_message),
+            CompilationError::PARSE_ERROR(err)                  =>      {
                 match err {
-                    ParseError::SYNTAX_ERROR(syntax_error) => write!(f, "(Error occured while compilation\nSynatx Error\n on line {} - {})", syntax_error.line_number, syntax_error.err_message),
-                    ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, "(Error occured while compilation\nSemantic Error\n on line {} - {})", semantic_error.line_number, semantic_error.err_message)
+                    ParseError::SYNTAX_ERROR(syntax_error)          =>      write!(f, "(Error occured while compilation\nSynatx Error\n on line {} - {})", syntax_error.line_number, syntax_error.err_message),
+                    ParseError::SEMANTIC_ERROR(semantic_error)    =>      write!(f, "(Error occured while compilation\nSemantic Error\n on line {} - {})", semantic_error.line_number, semantic_error.err_message)
                 }
             }
         }

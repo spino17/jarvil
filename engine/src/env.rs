@@ -11,7 +11,6 @@
 use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
-use crate::errors::SemanticError;
 use crate::lexer::token::TokenValue;
 
 #[derive(Debug)]
@@ -23,19 +22,14 @@ pub struct MetaData {
 pub struct SymbolData(Rc<MetaData>);
 
 impl SymbolData {
-    /*
-    pub fn check_type(&self, base_type: &str) -> Result<bool, SemanticError> {
-        if self.0.data_type.eq(base_type) {
-            Ok(true)
-        } else {
-            Err(SemanticError::new("type mismatch found\n"))  // TODO - fill with expected and found data type
-        }
-    }
-     */
     
     // identifiers can be user defined types as well
     pub fn is_type(&self) -> bool {
         self.0.data_type.as_ref().eq("type")
+    }
+
+    pub fn type_eq(&self, data_type: &str) -> bool {
+        self.0.data_type.as_ref().eq(data_type)
     }
 }
 
@@ -46,8 +40,8 @@ pub struct Scope {
 }
 
 impl Scope {
-    fn set(&mut self, name: Rc<String>, data_type: &Rc<String>) {
-        self.symbol_table.insert(name, SymbolData(Rc::new(MetaData{data_type: data_type.clone(), })));
+    fn set(&mut self, name: Rc<String>, data_type: Rc<String>) {
+        self.symbol_table.insert(name, SymbolData(Rc::new(MetaData{data_type, })));
     }
 
     fn get(&self, name: &Rc<String>) -> Option<&SymbolData> {
@@ -75,7 +69,7 @@ impl Env {
     }
 
     pub fn set(&self, token_value: &TokenValue, data_type: &Rc<String>) {
-        self.0.borrow_mut().set(token_value.0.clone(), data_type);
+        self.0.borrow_mut().set(token_value.0.clone(), data_type.clone());
     }
 
     pub fn get(&self, token_value: &TokenValue) -> Option<SymbolData> {

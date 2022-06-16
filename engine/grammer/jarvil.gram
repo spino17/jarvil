@@ -37,19 +37,19 @@ type:
     | TYPE  # type token for in-built types
     | id  # identifier for user-defined types - semantic check required here!
 
+r_assign:
+    | expr
+    | bexpr
+    | literal
+
 decl:
-    | type id ['='r_decl]
+    | type id ['=' r_assign]
     | struct id ':' struct_block
 
 struct_block:
     | (INDENT decl)*
 
-r_decl:
-    | expr
-    | bexpr
-    | literal
-
-assign: id '=' expr
+assign: id '=' r_assign
 
 expr: term additive
 

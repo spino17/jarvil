@@ -205,19 +205,19 @@ impl Token {
 
     pub fn get_value(&self) -> TokenValue {
         match &self.core_token {
-            CoreToken::TYPE(value) => {
+            CoreToken::TYPE(value)          =>      {
                 TokenValue(value.0.clone())
             },
-            CoreToken::INTEGER(value) => {
+            CoreToken::INTEGER(value)       =>      {
                 TokenValue(value.0.clone())
             },
-            CoreToken::FLOAT(value) => {
+            CoreToken::FLOAT(value)         =>      {
                 TokenValue(value.0.clone())
             },
-            CoreToken::IDENTIFIER(value) => {
+            CoreToken::IDENTIFIER(value)    =>      {
                 TokenValue(value.0.clone())
             }
-            CoreToken::LITERAL(value) => {
+            CoreToken::LITERAL(value)       =>      {
                 TokenValue(value.0.clone())
             },
             _ => {
@@ -244,21 +244,4 @@ impl Token {
     pub fn is_eq(&self, symbol: &str) -> bool {
         self.name.eq(symbol)
     }
-
-    /*
-    pub fn is_type(&self, env: &Env) -> Result<bool, SemanticError> {
-        match &self.core_token {
-            CoreToken::TYPE(_) => {
-                Ok(true)
-            },
-            CoreToken::IDENTIFIER(_) => {
-                let symbol_table = self.check_declaration(env)?;
-                Ok(symbol_table.is_type())
-            },
-            _ => {
-                Ok(false)
-            }
-        }
-    }
-    */
 }

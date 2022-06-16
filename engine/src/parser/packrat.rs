@@ -10,6 +10,7 @@ use crate::parser::ast::AST;
 use std::rc::Rc;
 use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
 use crate::env::{Env, SymbolData};
+use crate::parser::components;
 
 pub struct PackratParser {
     token_vec: Vec<Token>,
@@ -40,11 +41,19 @@ impl Parser for PackratParser {
 }
 
 impl PackratParser {
-    fn reset_lookahead(&mut self, reset_index: usize) {
+    pub fn get_lookahead(&mut self) -> usize {
+        self.lookahead
+    }
+
+    pub fn reset_lookahead(&mut self, reset_index: usize) {
         self.lookahead = reset_index;
     }
 
-    fn code(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
+    pub fn set_scope(&mut self, token_value: &TokenValue, data_type: &Rc<String>) {
+        self.env.set(token_value, data_type);
+    }
+
+    pub fn code(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
         println!("Inside code");
         self.token_vec = token_vec;
         self.stmt()?;
@@ -57,7 +66,7 @@ impl PackratParser {
         Ok(())
     }
 
-    fn stmt(&mut self) -> Result<usize, ParseError> {
+    pub fn stmt(&mut self) -> Result<usize, ParseError> {
         let mut errors_vec: Vec<ParseError> = vec![];
         // TODO - handle lookahead index to reset it if a production fails
         // Below is a general pattern among many production rule cases where we always have to reset lookahead back to the original
@@ -80,17 +89,17 @@ impl PackratParser {
         Err(aggregate_errors(errors_vec))
     }
 
-    fn compound_stmt(&mut self) -> Result<usize, ParseError> {
+    pub fn compound_stmt(&mut self) -> Result<usize, ParseError> {
         // TODO - add production rules for compound statements - see jarvil.gram
         Err(ParseError::SYNTAX_ERROR(SyntaxError::new(1000, 0, "This is just a demo error to test")))
         // Ok(self.lookahead)
     }
 
-    fn simple_stmts(&mut self) -> Result<usize, ParseError> {
+    pub fn simple_stmts(&mut self) -> Result<usize, ParseError> {
         self.simple_stmt()?;
         self.expect("\n")?;
         let lookahead = self.lookahead;
-        let new_lookahead = PackratParser::expect_optionally(|| {
+        let (_, new_lookahead) = PackratParser::expect_optionally(|| {
             let lookahead = self.simple_stmts()?;
             Ok(lookahead)
         }, lookahead)?;
@@ -98,7 +107,7 @@ impl PackratParser {
         Ok(self.lookahead)
     }
 
-    fn simple_stmt(&mut self) -> Result<usize, ParseError> {
+    pub fn simple_stmt(&mut self) -> Result<usize, ParseError> {
         let mut errors_vec: Vec<ParseError> = vec![];
         let curr_lookahead = self.lookahead;
         match self.decl() {
@@ -118,32 +127,31 @@ impl PackratParser {
         Err(aggregate_errors(errors_vec))
     }
 
-    fn decl(&mut self) -> Result<usize, ParseError> {
-        let (_, data_type) = self.expect_type()?;
-        let (_, token_value) = self.expect_and_get_value("id")?;
-        let lookahead = self.lookahead;
-        let new_lookahead = PackratParser::expect_optionally(|| {
-            // TODO - match with expr, bexpr and literal (and new id(optparams))
-            let lookahead = self.expr()?;
-            Ok(lookahead)
-        }, lookahead)?;
-        self.reset_lookahead(new_lookahead);
-        self.env.set(&token_value, &data_type);
-        Ok(self.lookahead)
+    pub fn decl(&mut self) -> Result<usize, ParseError> {
+        components::simple_stmt::declaration::decl(self)
     }
 
-    fn assign(&mut self) -> Result<usize, ParseError> {
-        let (_, symbol_data) = self.expect_id_and_get_data()?;
-        self.expect("=")?;
-        self.expr()?;
-        Ok(self.lookahead)
+    pub fn assign(&mut self) -> Result<usize, ParseError> {
+        components::simple_stmt::assignment::assign(self)
     }
 
-    fn expr(&mut self) -> Result<usize, ParseError> {
-        todo!()
+    pub fn expr(&mut self) -> Result<(usize, bool), ParseError> {
+        components::expression::expression::expr(self)
     }
 
-    fn expect_zero_or_more<F: FnMut() -> Result<usize, ParseError>>(mut f: F, curr_lookahead: usize) -> Result<usize, ParseError> {
+    pub fn term(&mut self) -> Result<(usize, bool), ParseError> {
+        components::expression::expression::term(self)
+    }
+
+    pub fn additive(&mut self) -> Result<(usize, bool), ParseError> {
+        components::expression::expression::additive(self)
+    }
+
+    pub fn bexpr(&mut self) -> Result<usize, ParseError> {
+        components::expression::bexpression::bexpr(self)
+    }
+
+    pub fn expect_zero_or_more<F: FnMut() -> Result<usize, ParseError>>(mut f: F, curr_lookahead: usize) -> Result<usize, ParseError> {
         let mut curr_lookahead = curr_lookahead;
         loop {
             match f() {
@@ -159,38 +167,38 @@ impl PackratParser {
         }
     }
 
-    fn expect_optionally<F: FnMut() -> Result<usize, ParseError>>(mut f: F, curr_lookahead: usize) -> Result<usize, ParseError> {
+    pub fn expect_optionally<T, F: FnMut() -> Result<T, ParseError>>(mut f: F, curr_value: T) -> Result<(bool, T), ParseError> {
         match f() {
-            Ok(lookahead) => Ok(lookahead),
+            Ok(lookahead) => Ok((true, lookahead)),
             Err(_) => {
                 // TODO - propogate this error too outside!
-                Ok(curr_lookahead)
+                Ok((false, curr_value))
             }
         }
     }
 
-    fn expect(&mut self, symbol: &str) -> Result<usize, ParseError> {
+    pub fn expect(&mut self, symbol: &str) -> Result<(usize, usize), ParseError> {
         let token = &self.token_vec[self.lookahead];
         if token.is_eq(symbol) {
             self.lookahead = self.lookahead + 1;
-            Ok(self.lookahead)
+            Ok((self.lookahead, token.line_number))
         } else {
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
                 self.lookahead, "expected ")))
         }
     }
 
-    fn expect_type(&mut self) -> Result<(usize, Rc<String>), ParseError> {
+    pub fn expect_type(&mut self) -> Result<(usize, usize, Rc<String>), ParseError> {
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
             CoreToken::TYPE(token_value) => {
                 self.lookahead = self.lookahead + 1;
-                Ok((self.lookahead, token_value.0.clone()))
+                Ok((self.lookahead, token.line_number, token_value.0.clone()))
             },
             CoreToken::IDENTIFIER(token_value) => {
                 let symbol_table = token.check_declaration(&self.env, self.lookahead)?;
                 if symbol_table.is_type() {
-                    Ok((self.lookahead, token_value.0.clone()))
+                    Ok((self.lookahead, token.line_number, token_value.0.clone()))
                 } else {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
                         self.lookahead, "expected a type, identifier is not a type")))
@@ -201,23 +209,23 @@ impl PackratParser {
         }
     }
 
-    fn expect_and_get_value(&mut self, symbol: &str) -> Result<(usize, TokenValue), ParseError> {
+    pub fn expect_and_get_value(&mut self, symbol: &str) -> Result<(usize, usize, TokenValue), ParseError> {
         let token = &self.token_vec[self.lookahead];
         if token.is_eq(symbol) {
             let (has_value, token_value) = match &token.core_token {
-                CoreToken::IDENTIFIER(token_value) => {
+                CoreToken::IDENTIFIER(token_value)  =>      {
                     (true, Some(token_value))
                 },
-                CoreToken::INTEGER(token_value) => {
+                CoreToken::INTEGER(token_value)     =>      {
                     (true, Some(token_value))
                 },
-                CoreToken::FLOAT(token_value) => {
+                CoreToken::FLOAT(token_value)       =>      {
                     (true, Some(token_value))
                 },
-                CoreToken::LITERAL(token_value) => {
+                CoreToken::LITERAL(token_value)     =>      {
                     (true, Some(token_value))
                 },
-                CoreToken::TYPE(token_value) => {
+                CoreToken::TYPE(token_value)        =>      {
                     (true, Some(token_value))
                 }
                 _ => {
@@ -227,7 +235,7 @@ impl PackratParser {
             if has_value {
                 if let Some(token_value) = token_value {
                     self.lookahead = self.lookahead + 1;
-                    Ok((self.lookahead, TokenValue(token_value.0.clone())))
+                    Ok((self.lookahead, token.line_number, TokenValue(token_value.0.clone())))
                 } else {
                     unreachable!("any token which has value can't be reached here")
                 }
@@ -241,13 +249,13 @@ impl PackratParser {
     }
 
     // always use this for matching identifiers except in declarations
-    fn expect_id_and_get_data(&mut self) -> Result<(usize, SymbolData), ParseError> {
+    pub fn expect_id_and_get_data(&mut self) -> Result<(usize, usize, SymbolData), ParseError> {
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
             CoreToken::IDENTIFIER(_) => {
                 let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
                 self.lookahead = self.lookahead + 1;
-                Ok((self.lookahead, symbol_data))
+                Ok((self.lookahead, token.line_number, symbol_data))
             },
             _ => {
                 Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
