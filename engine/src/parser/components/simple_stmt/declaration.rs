@@ -5,7 +5,7 @@ use crate::parser::packrat::ParseSuccess;
 
 pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let (_, _, data_type) = parser.expect_type()?;
-    let (_, line_number, token_value) = parser.expect_and_get_value("id")?;
+    let (_, line_number, token_value) = parser.expect_and_get_value("identifier")?;
     let curr_lookahead = parser.get_lookahead();
     let (is_matched, (response, rule_index, has_float), err) = 
     PackratParser::expect_optionally(|| {

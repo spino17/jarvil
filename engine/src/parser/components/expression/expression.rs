@@ -53,7 +53,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                         parser.reset_lookahead(curr_lookahead);
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
                             response.lookahead, format!(
-                                "expected an identifier with type 'int' or 'float' in an expression, got '{}'", symbol_data.get_type())))
+                                "expected an identifier with type 'int' or 'float' in an expression, got type '{}'", symbol_data.get_type())))
                             );
                     }
                 },

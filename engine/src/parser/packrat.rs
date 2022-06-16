@@ -96,89 +96,19 @@ impl PackratParser {
     }
 
     pub fn stmt(&mut self) -> Result<ParseSuccess, ParseError> {
-        let mut errors_vec: Vec<ParseError> = vec![];
-        // TODO - handle lookahead index to reset it if a production fails
-        // Below is a general pattern among many production rule cases where we always have to reset lookahead back to the original
-        // value when trying out new production rule after prior one failed
-        let curr_lookahead = self.lookahead;
-        match self.compound_stmt() {
-            Ok(response) => return Ok(response),
-            Err(err) => {
-                self.reset_lookahead(curr_lookahead);
-                errors_vec.push(err);
-            }
-        }
-        match self.simple_stmts() {
-            Ok(response) => return Ok(response),
-            Err(err) => {
-                self.reset_lookahead(curr_lookahead);
-                errors_vec.push(err);
-            }
-        }
-        Err(aggregate_errors(errors_vec))
+        components::stmt::stmt(self)
     }
 
     pub fn compound_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
-        // TODO - add production rules for compound statements - see jarvil.gram
-        Err(ParseError::SYNTAX_ERROR(SyntaxError::new(1000, 0, 
-            String::from("This is just a demo error to test"))))
-        // Ok(self.lookahead)
+        components::compound_stmt::core::compound_stmt(self)
     }
 
     pub fn simple_stmts(&mut self) -> Result<ParseSuccess, ParseError> {
-        let mut errors_vec: Vec<ParseError> = vec![];
-        let response = self.simple_stmt()?;
-        if let Some(err) = response.possible_err {
-            errors_vec.push(err);
-        }
-        match self.expect("\n") {
-            Ok((_, _)) => {
-                return Ok(ParseSuccess{
-                    lookahead: self.lookahead,
-                    possible_err: None,
-                });
-            },
-            Err(err) => errors_vec.push(err)
-        }
-        Err(aggregate_errors(errors_vec))
-        /*
-        let curr_lookahead = self.lookahead;
-        match self.simple_stmts() {
-            Ok(lookahead) => return Ok(lookahead),
-            Err(err) => {
-                self.reset_lookahead(curr_lookahead);
-                errors_vec.push(err);
-            }
-        }
-        match self.expect("empty") {
-            Ok((lookahead, _)) => return Ok(lookahead),
-            Err(err) => {
-                self.reset_lookahead(curr_lookahead);
-                errors_vec.push(err);
-            }
-        }
-        Err(aggregate_errors(errors_vec))
-         */
+        components::simple_stmt::core::simple_stmts(self)
     }
 
     pub fn simple_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
-        let mut errors_vec: Vec<ParseError> = vec![];
-        let curr_lookahead = self.lookahead;
-        match self.decl() {
-            Ok(lookahead) => return Ok(lookahead),
-            Err(err) => {
-                self.reset_lookahead(curr_lookahead);
-                errors_vec.push(err);
-            }
-        }
-        match self.assign() {
-            Ok(lookahead) => return Ok(lookahead),
-            Err(err) => {
-                self.reset_lookahead(curr_lookahead);
-                errors_vec.push(err);
-            }
-        }
-        Err(aggregate_errors(errors_vec))
+        components::simple_stmt::core::simple_stmt(self)
     }
 
     pub fn decl(&mut self) -> Result<ParseSuccess, ParseError> {
@@ -213,42 +143,11 @@ impl PackratParser {
         components::expression::bexpression::bexpr(self)
     }
 
-    pub fn expect_zero_or_more<F: FnMut() -> Result<ParseSuccess, ParseError>>(mut f: F, 
-        initial_lookahead: usize) -> ParseSuccess {
-        let mut curr_lookahead = initial_lookahead;
-        loop {
-            match f() {
-                Ok(response) => {
-                    curr_lookahead = response.lookahead;
-                    continue;
-                },
-                Err(err) => {
-                    return ParseSuccess{
-                        lookahead: curr_lookahead,
-                        possible_err: Some(err)
-                    };
-                }
-            }
-        }
-    }
-
-    pub fn expect_optionally<T, F: FnMut() -> Result<T, ParseError>>(mut f: F, curr_value: T) -> (bool, T, Option<ParseError>) {
-        match f() {
-            Ok(lookahead) => (true, lookahead, None),
-            Err(err) => {
-                // TODO - propogate this error too outside!
-                println!("inside optionally: {:?}", err);
-                (false, curr_value, Some(err))
-            }
-        }
-    }
-
     pub fn ignore_blanks(&mut self) {
         loop {
             let token = &self.token_vec[self.lookahead];
             match token.core_token {
                 CoreToken::BLANK => {
-                    // println!("{}", self.lookahead);
                     self.lookahead = self.lookahead + 1;
                 },
                 _ => return
@@ -367,6 +266,34 @@ impl PackratParser {
             _ => {
                 Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
                     self.lookahead, format!("expected an identifier, got '{}'", token.name))))
+            }
+        }
+    }
+
+    pub fn expect_zero_or_more<F: FnMut() -> Result<ParseSuccess, ParseError>>(mut f: F, 
+        initial_lookahead: usize) -> ParseSuccess {
+        let mut curr_lookahead = initial_lookahead;
+        loop {
+            match f() {
+                Ok(response) => {
+                    curr_lookahead = response.lookahead;
+                    continue;
+                },
+                Err(err) => {
+                    return ParseSuccess{
+                        lookahead: curr_lookahead,
+                        possible_err: Some(err)
+                    };
+                }
+            }
+        }
+    }
+
+    pub fn expect_optionally<T, F: FnMut() -> Result<T, ParseError>>(mut f: F, curr_value: T) -> (bool, T, Option<ParseError>) {
+        match f() {
+            Ok(lookahead) => (true, lookahead, None),
+            Err(err) => {
+                (false, curr_value, Some(err))
             }
         }
     }

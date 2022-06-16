@@ -117,6 +117,7 @@ pub const DIGITS: [char; 10] = [
 
 // everytime there is an addition in keyword, add here also!
 pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
+    // TODO - try to keep in the same map
     if context::is_keyword(&value) {
         if value.eq(FOR) {
             (CoreToken::FOR, String::from(FOR))
@@ -158,6 +159,6 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
     } else if context::is_type(&value) {
         (CoreToken::TYPE(TokenValue(Rc::new(value))), String::from("type"))
     } else {
-        (CoreToken::IDENTIFIER(TokenValue(Rc::new(value))), String::from("id"))
+        (CoreToken::IDENTIFIER(TokenValue(Rc::new(value))), String::from("identifier"))
     }
 }
