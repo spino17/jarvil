@@ -54,21 +54,26 @@ impl PackratParser {
         self.lookahead = reset_index;
     }
 
-    pub fn set_scope(&mut self, token_value: &TokenValue, data_type: &Rc<String>) {
-        self.env.set(token_value, data_type);
+    pub fn set_scope(&mut self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
+        self.env.set(token_value, data_type, is_init);
     }
 
-    pub fn get_core_token(&mut self) -> &CoreToken {
-        self.ignore_blanks();
-        &self.token_vec[self.lookahead].core_token
-    }
-
-    pub fn get_line_number(&mut self) -> usize {
+    pub fn get_curr_line_number(&mut self) -> usize {
         self.ignore_blanks();
         self.token_vec[self.lookahead].line_number
     }
 
-    pub fn get_token_name(&mut self) -> Rc<String> {
+    pub fn get_curr_token_value(&mut self) -> Option<TokenValue> {
+        self.ignore_blanks();
+        self.token_vec[self.lookahead].get_value()
+    }
+
+    pub fn get_curr_core_token(&mut self) -> &CoreToken {
+        self.ignore_blanks();
+        &self.token_vec[self.lookahead].core_token
+    }
+
+    pub fn get_curr_token_name(&mut self) -> Rc<String> {
         self.ignore_blanks();
         self.token_vec[self.lookahead].name.clone()
     }
@@ -271,7 +276,7 @@ impl PackratParser {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
-            CoreToken::IDENTIFIER(_) => {
+            CoreToken::IDENTIFIER(token_value) => {
                 let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
                 self.lookahead = self.lookahead + 1;
                 Ok((ParseSuccess{

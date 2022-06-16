@@ -23,7 +23,8 @@ pub fn bfactor_not(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
 
 pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let curr_lookahead = parser.get_lookahead();
-    match parser.get_core_token() {
+    let token_value = parser.get_curr_token_value();
+    match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             match bfactor_expr_in_parenthesis(parser) {
                 Ok(response) => return Ok(response),
@@ -63,6 +64,16 @@ pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         CoreToken::IDENTIFIER(_) => {
             match parser.expect_id_and_get_data() {
                 Ok((response, line_number, symbol_data)) => {
+                    if !symbol_data.is_init() {
+                        if let Some(token_value) = token_value {
+                            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(line_number,
+                                response.lookahead, format!(
+                                    "identifier '{}' is not initialized", token_value.0.clone())))
+                                )
+                        } else {
+                            unreachable!("identifier token must have a value")
+                        }
+                    }
                     if symbol_data.type_eq("bool") {
                         return Ok(response);
                     } else {
@@ -81,58 +92,12 @@ pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             }
         },
         _ => {
-            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_line_number(), 
+            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
             parser.get_lookahead(), 
             format!("expected '(', 'True', 'False' or an identifier, got '{}'", 
-            parser.get_token_name()))))
+            parser.get_curr_token_name()))))
         }
     }
-    /*
-    let mut errors_vec: Vec<ParseError> = vec![];
-    let curr_lookahead = parser.get_lookahead();
-    match factor_expr_in_parenthesis(parser) {
-        Ok((lookahead, has_float)) => return Ok((lookahead, has_float)),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    match parser.expect("int") {
-        Ok((lookahead, _)) => return Ok((lookahead, false)),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    match parser.expect("float") {
-        Ok((lookahead, _)) => return Ok((lookahead, true)),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    match parser.expect_id_and_get_data() {
-        Ok((lookahead, line_number, symbol_data)) => {
-            if symbol_data.type_eq("int") {
-                return Ok((lookahead, false))
-            } else if symbol_data.type_eq("float") {
-                return Ok((lookahead, true))
-            } else {
-                parser.reset_lookahead(curr_lookahead);
-                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
-                    lookahead, format!(
-                        "expected an identifier with type 'int' or 'float' in an expression, got '{}'", symbol_data.get_type())))
-                    )
-            }
-        },
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    Err(aggregate_errors(errors_vec))
-     */
-    
 }
 
 pub fn andtive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
@@ -146,7 +111,7 @@ pub fn andtive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, P
 
 pub fn andtive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let curr_lookahead = parser.get_lookahead();
-    match parser.get_core_token() {
+    match parser.get_curr_core_token() {
         CoreToken::AND => {
             match andtive_alternative(parser) {
                 Ok(response) => return Ok(response),
@@ -188,7 +153,7 @@ pub fn ortive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, Pa
 
 pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let curr_lookahead = parser.get_lookahead();
-    match parser.get_core_token() {
+    match parser.get_curr_core_token() {
         CoreToken::OR => {
             match ortive_alternative(parser) {
                 Ok(response) => return Ok(response),

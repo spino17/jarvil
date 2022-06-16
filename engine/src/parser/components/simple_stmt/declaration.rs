@@ -70,13 +70,13 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             },
             _ => unreachable!("rule index can only be 0, 1 and 2 as there are three alternatives to declaration")
         };
-        parser.set_scope(&token_value, &data_type);
+        parser.set_scope(&token_value, &data_type, true);
         Ok(ParseSuccess{
             lookahead: parser.get_lookahead(),
             possible_err: None,
         })
     } else {
-        parser.set_scope(&token_value, &data_type);
+        parser.set_scope(&token_value, &data_type, false);
         Ok(ParseSuccess{
             lookahead: parser.get_lookahead(),
             possible_err: err,

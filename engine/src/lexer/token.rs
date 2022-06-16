@@ -203,25 +203,25 @@ impl Token {
         })
     }
 
-    pub fn get_value(&self) -> TokenValue {
+    pub fn get_value(&self) -> Option<TokenValue> {
         match &self.core_token {
             CoreToken::TYPE(value)          =>      {
-                TokenValue(value.0.clone())
+                Some(TokenValue(value.0.clone()))
             },
             CoreToken::INTEGER(value)       =>      {
-                TokenValue(value.0.clone())
+                Some(TokenValue(value.0.clone()))
             },
             CoreToken::FLOAT(value)         =>      {
-                TokenValue(value.0.clone())
+                Some(TokenValue(value.0.clone()))
             },
             CoreToken::IDENTIFIER(value)    =>      {
-                TokenValue(value.0.clone())
+                Some(TokenValue(value.0.clone()))
             }
             CoreToken::LITERAL(value)       =>      {
-                TokenValue(value.0.clone())
+                Some(TokenValue(value.0.clone()))
             },
             _ => {
-                unreachable!("get value should only be used for type, number, identifier and literal")
+                None
             }
         }
     }

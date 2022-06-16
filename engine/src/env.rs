@@ -16,24 +16,33 @@ use crate::lexer::token::TokenValue;
 #[derive(Debug)]
 pub struct MetaData {
     data_type: Rc<String>,  // TODO - change this to Rc string
+    is_init: bool,
 }
 
 #[derive(Debug)]
-pub struct SymbolData(Rc<MetaData>);
+pub struct SymbolData(Rc<RefCell<MetaData>>);
 
 impl SymbolData {
     
     // identifiers can be user defined types as well
     pub fn is_type(&self) -> bool {
-        self.0.data_type.as_ref().eq("type")
+        self.0.borrow().data_type.as_ref().eq("type")
     }
 
     pub fn type_eq(&self, data_type: &str) -> bool {
-        self.0.data_type.as_ref().eq(data_type)
+        self.0.borrow().data_type.as_ref().eq(data_type)
     }
 
     pub fn get_type(&self) -> Rc<String> {
-        self.0.data_type.clone()
+        self.0.borrow().data_type.clone()
+    }
+
+    pub fn set_init(&self, is_init: bool) {
+        self.0.borrow_mut().is_init = is_init;
+    }
+
+    pub fn is_init(&self) -> bool {
+        self.0.borrow().is_init
     }
 }
 
@@ -44,8 +53,8 @@ pub struct Scope {
 }
 
 impl Scope {
-    fn set(&mut self, name: Rc<String>, data_type: Rc<String>) {
-        self.symbol_table.insert(name, SymbolData(Rc::new(MetaData{data_type, })));
+    fn set(&mut self, name: Rc<String>, data_type: Rc<String>, is_init: bool) {
+        self.symbol_table.insert(name, SymbolData(Rc::new(RefCell::new(MetaData{data_type, is_init}))));
     }
 
     fn get(&self, name: &Rc<String>) -> Option<&SymbolData> {
@@ -72,8 +81,8 @@ impl Env {
         })))
     }
 
-    pub fn set(&self, token_value: &TokenValue, data_type: &Rc<String>) {
-        self.0.borrow_mut().set(token_value.0.clone(), data_type.clone());
+    pub fn set(&self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
+        self.0.borrow_mut().set(token_value.0.clone(), data_type.clone(), is_init);
     }
 
     pub fn get(&self, token_value: &TokenValue) -> Option<SymbolData> {

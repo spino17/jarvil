@@ -3,7 +3,7 @@ use crate::errors::{ParseError, SemanticError};
 use crate::parser::components::simple_stmt::helper::r_asssign_alternatives;
 
 pub fn assign(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    let (_, _, symbol_data) = parser.expect_id_and_get_data()?;
+    let (_, _, mut symbol_data) = parser.expect_id_and_get_data()?;
     let (_, line_number) = parser.expect("=")?;
     let (_, rule_index, has_float) = r_asssign_alternatives(parser)?;
     let _ = match rule_index {
@@ -57,6 +57,7 @@ pub fn assign(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         },
         _ => unreachable!("rule index can only be 0, 1 and 2 as there are three alternatives to assignment")
     };
+    symbol_data.set_init(true);
     Ok(ParseSuccess{
         lookahead: parser.get_lookahead(),
         possible_err: None,
