@@ -143,6 +143,22 @@ impl PackratParser {
         components::expression::bexpression::bexpr(self)
     }
 
+    pub fn ortive(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::ortive(self)
+    }
+
+    pub fn bterm(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bterm(self)
+    }
+
+    pub fn bfactor(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bfactor(self)
+    }
+
+    pub fn andtive(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::andtive(self)
+    }
+
     pub fn ignore_blanks(&mut self) {
         loop {
             let token = &self.token_vec[self.lookahead];

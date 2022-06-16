@@ -119,14 +119,20 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
 
 pub fn star_multitive_alternative(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("*")?;
-    let (response, has_float) = parser.term()?;
-    Ok((response, has_float))
+    let (_, has_float) = parser.term()?;
+    Ok((ParseSuccess{
+        lookahead: parser.get_lookahead(),
+        possible_err: None,
+    }, has_float))
 }
 
 pub fn slash_multitive_alternative(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("/")?;
-    let (response, has_float) = parser.term()?;
-    Ok((response, has_float))
+    let (_, has_float) = parser.term()?;
+    Ok((ParseSuccess{
+        lookahead: parser.get_lookahead(),
+        possible_err: None,
+    }, has_float))
 }
 
 pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
@@ -180,14 +186,20 @@ pub fn term(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseErr
 
 pub fn plus_additive_alternative(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("+")?;
-    let (response, has_float) = parser.expr()?;
-    Ok((response, has_float))
+    let (_, has_float) = parser.expr()?;
+    Ok((ParseSuccess{
+        lookahead: parser.get_lookahead(),
+        possible_err: None,
+    }, has_float))
 }
 
 pub fn minus_additive_alternative(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("-")?;
-    let (response, has_float) = parser.expr()?;
-    Ok((response, has_float))
+    let (_, has_float) = parser.expr()?;
+    Ok((ParseSuccess{
+        lookahead: parser.get_lookahead(),
+        possible_err: None,
+    }, has_float))
 }
 
 pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
