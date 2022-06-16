@@ -54,16 +54,25 @@ impl PackratParser {
     }
 
     pub fn code(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
-        println!("Inside code");
+        let mut errors_vec: Vec<ParseError> = vec![];
         self.token_vec = token_vec;
         self.stmt()?;
-        let lookahead = self.lookahead;
-        let new_lookahead = PackratParser::expect_zero_or_more(|| {
+        let curr_lookahead = self.lookahead;
+        let (new_lookahead, err) = PackratParser::expect_zero_or_more(|| {
             let lookahead = self.stmt()?;
             Ok(lookahead)
-        }, lookahead)?;
+        }, curr_lookahead);
         self.reset_lookahead(new_lookahead);
-        Ok(())
+        if let Some(err) = err {
+            errors_vec.push(err);
+        }
+        match self.expect("endmarker") {
+            Ok((_, _)) => {
+                return Ok(());
+            },
+            Err(err) => errors_vec.push(err)
+        }
+        Err(aggregate_errors(errors_vec))
     }
 
     pub fn stmt(&mut self) -> Result<usize, ParseError> {
@@ -96,15 +105,25 @@ impl PackratParser {
     }
 
     pub fn simple_stmts(&mut self) -> Result<usize, ParseError> {
+        let mut errors_vec: Vec<ParseError> = vec![];
         self.simple_stmt()?;
         self.expect("\n")?;
-        let lookahead = self.lookahead;
-        let (_, new_lookahead) = PackratParser::expect_optionally(|| {
-            let lookahead = self.simple_stmts()?;
-            Ok(lookahead)
-        }, lookahead)?;
-        self.reset_lookahead(new_lookahead);
-        Ok(self.lookahead)
+        let curr_lookahead = self.lookahead;
+        match self.simple_stmts() {
+            Ok(lookahead) => return Ok(lookahead),
+            Err(err) => {
+                self.reset_lookahead(curr_lookahead);
+                errors_vec.push(err);
+            }
+        }
+        match self.expect("empty") {
+            Ok((lookahead, _)) => return Ok(lookahead),
+            Err(err) => {
+                self.reset_lookahead(curr_lookahead);
+                errors_vec.push(err);
+            }
+        }
+        Err(aggregate_errors(errors_vec))
     }
 
     pub fn simple_stmt(&mut self) -> Result<usize, ParseError> {
@@ -159,17 +178,17 @@ impl PackratParser {
         components::expression::bexpression::bexpr(self)
     }
 
-    pub fn expect_zero_or_more<F: FnMut() -> Result<usize, ParseError>>(mut f: F, curr_lookahead: usize) -> Result<usize, ParseError> {
-        let mut curr_lookahead = curr_lookahead;
+    pub fn expect_zero_or_more<F: FnMut() -> Result<usize, ParseError>>(mut f: F, 
+        initial_lookahead: usize) -> (usize, Option<ParseError>) {
+        let mut curr_lookahead = initial_lookahead;
         loop {
             match f() {
                 Ok(lookahead) => {
                     curr_lookahead = lookahead;
                     continue;
                 },
-                Err(_) => {
-                    // TODO - propogate this error too outside!
-                    return Ok(curr_lookahead);
+                Err(err) => {
+                    return (curr_lookahead, Some(err));
                 }
             }
         }

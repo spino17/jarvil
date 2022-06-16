@@ -13,9 +13,8 @@ use std::env::args;
 use crate::parser::packrat::PackratParser;
 use crate::parser::core::Parser;
 
-fn main() -> Result<(), CompilationError> {
+fn start_compiler() -> Result<(), CompilationError> {
     let args: Vec<String> = args().collect();
-    println!("{:?}", args);
     let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;
     let mut core_lexer = CoreLexer::new();
     let token_vec = core_lexer.tokenize(char_vec)?;
@@ -24,4 +23,13 @@ fn main() -> Result<(), CompilationError> {
         let ast = parser.parse(token_vec)?;  // TODO - do bytecode generation using this ast object
     }
     Ok(())
+}
+
+fn main() {
+    match start_compiler() {
+        Ok(()) => {},
+        Err(err) => {
+            println!("{}", err);
+        }
+    }
 }

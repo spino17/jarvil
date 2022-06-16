@@ -11,14 +11,14 @@ pub fn assign(parser: &mut PackratParser) -> Result<usize, ParseError> {
             if has_float {
                 if !symbol_data.type_eq("float") {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
-                        parser.get_lookahead(), "mismatched types\n right side of the declaration is a float")))
+                        parser.get_lookahead(), "mismatched types\nright side of the assignment is a float")))
                 } else {
                     ()
                 }
             } else {
                 if !symbol_data.type_eq("int") {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
-                        parser.get_lookahead(), "mismatched types\n right side of the declaration is an int")))
+                        parser.get_lookahead(), "mismatched types\nright side of the assignment is an int")))
                 } else {
                     ()
                 }
@@ -27,7 +27,7 @@ pub fn assign(parser: &mut PackratParser) -> Result<usize, ParseError> {
         1 => {
             if !symbol_data.type_eq("bool") {
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
-                    parser.get_lookahead(), "mismatched types\n right side of the declaration is a bool")))
+                    parser.get_lookahead(), "mismatched types\nright side of the assignment is a bool")))
             } else {
                 ()
             }
@@ -35,12 +35,12 @@ pub fn assign(parser: &mut PackratParser) -> Result<usize, ParseError> {
         2 => {
             if !symbol_data.type_eq("string") {
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
-                    parser.get_lookahead(), "mismatched types\n right side of the declaration is a string")))
+                    parser.get_lookahead(), "mismatched types\nright side of the assignment is a string")))
             } else {
                 ()
             }
         },
-        _ => unreachable!("rule index can only be 0, 1 and 2 as there are three alternatives to declaration")
+        _ => unreachable!("rule index can only be 0, 1 and 2 as there are three alternatives to assignment")
     };
     Ok(parser.get_lookahead())
 }

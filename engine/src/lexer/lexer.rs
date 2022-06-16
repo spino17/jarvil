@@ -34,8 +34,8 @@ impl Lexer for CoreLexer {
                 // ignore single line and block comments
                 CoreToken::SINGLE_LINE_COMMENT => continue,
                 CoreToken::BLOCK_COMMENT => continue,
+                CoreToken::BLANK => continue,
                 _ => {
-                    println!("{:?}", token);
                     token_vec.push(token)
                 }
             }

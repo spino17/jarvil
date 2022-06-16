@@ -26,5 +26,6 @@ pub fn r_asssign_alternatives(parser: &mut PackratParser) -> Result<(usize, usiz
             errors_vec.push(err);
         }
     }
+    // TODO - add for new id(optparams) for user-defined types
     Err(aggregate_errors(errors_vec))
 }

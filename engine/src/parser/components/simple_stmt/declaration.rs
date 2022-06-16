@@ -8,6 +8,7 @@ pub fn decl(parser: &mut PackratParser) -> Result<usize, ParseError> {
     let lookahead = parser.get_lookahead();
     let (is_matched, (new_lookahead, rule_index, has_float)) = PackratParser::expect_optionally(|| {
         // TODO - match with expr, bexpr and literal (and new id(optparams))
+        let (_, line_number) = parser.expect("=")?;
         let (lookahead, rule_index, has_float) = r_asssign_alternatives(parser)?;
         Ok((lookahead, rule_index, has_float))
     }, (lookahead, 0, false))?;
@@ -18,14 +19,14 @@ pub fn decl(parser: &mut PackratParser) -> Result<usize, ParseError> {
                 if has_float {
                     if !data_type.as_ref().eq("float") {
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
-                            parser.get_lookahead(), "mismatched types\n right side of the declaration is a float")))
+                            parser.get_lookahead(), "mismatched types\nright side of the declaration is a float")))
                     } else {
                         ()
                     }
                 } else {
                     if !data_type.as_ref().eq("int") {
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
-                            parser.get_lookahead(), "mismatched types\n right side of the declaration is an int")))
+                            parser.get_lookahead(), "mismatched types\nright side of the declaration is an int")))
                     } else {
                         ()
                     }
@@ -34,7 +35,7 @@ pub fn decl(parser: &mut PackratParser) -> Result<usize, ParseError> {
             1 => {
                 if !data_type.as_ref().eq("bool") {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
-                        parser.get_lookahead(), "mismatched types\n right side of the declaration is a bool")))
+                        parser.get_lookahead(), "mismatched types\nright side of the declaration is a bool")))
                 } else {
                     ()
                 }
@@ -42,7 +43,7 @@ pub fn decl(parser: &mut PackratParser) -> Result<usize, ParseError> {
             2 => {
                 if !data_type.as_ref().eq("string") {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
-                        parser.get_lookahead(), "mismatched types\n right side of the declaration is a string")))
+                        parser.get_lookahead(), "mismatched types\nright side of the declaration is a string")))
                 } else {
                     ()
                 }

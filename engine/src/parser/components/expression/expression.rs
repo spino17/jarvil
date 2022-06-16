@@ -92,9 +92,9 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(usize, bool), ParseError
 }
 
 pub fn term(parser: &mut PackratParser) -> Result<(usize, bool), ParseError> {
-    let (_, is_float_in_term) = parser.factor()?;
+    let (_, is_float_in_factor) = parser.factor()?;
     let (_, is_float_in_multitive) = parser.multitive()?;
-    if is_float_in_term || is_float_in_multitive {
+    if is_float_in_factor || is_float_in_multitive {
         Ok((parser.get_lookahead(), true))
     } else {
         Ok((parser.get_lookahead(), false))
