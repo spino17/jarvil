@@ -1,3 +1,4 @@
 pub struct AST {
-    // abstract syntax tree
+    // TODO - put node data field
+    children: Vec<Box<AST>>,
 }

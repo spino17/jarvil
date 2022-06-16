@@ -38,7 +38,16 @@ type:
     | id  # identifier for user-defined types - semantic check required here!
 
 decl:
-    | type id ['='expr]
+    | type id ['='r_decl]
+    | struct id ':' struct_block
+
+struct_block:
+    | (INDENT decl)*
+
+r_decl:
+    | expr
+    | bexpr
+    | literal
 
 assign: id '=' expr
 

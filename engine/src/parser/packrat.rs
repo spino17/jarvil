@@ -5,9 +5,10 @@
 
 use std::vec;
 use crate::parser::core::Parser;
-use crate::lexer::token::{Token, CoreToken};
+use crate::lexer::token::{Token, CoreToken, TokenValue};
 use crate::parser::ast::AST;
-use crate::errors::{ParseError, SyntaxError, aggregate_errors};
+use std::rc::Rc;
+use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
 use crate::env::{Env, SymbolData};
 
 pub struct PackratParser {
@@ -44,6 +45,7 @@ impl PackratParser {
     }
 
     fn code(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
+        println!("Inside code");
         self.token_vec = token_vec;
         self.stmt()?;
         let lookahead = self.lookahead;
@@ -80,7 +82,8 @@ impl PackratParser {
 
     fn compound_stmt(&mut self) -> Result<usize, ParseError> {
         // TODO - add production rules for compound statements - see jarvil.gram
-        Ok(self.lookahead)
+        Err(ParseError::SYNTAX_ERROR(SyntaxError::new(1000, 0, "This is just a demo error to test")))
+        // Ok(self.lookahead)
     }
 
     fn simple_stmts(&mut self) -> Result<usize, ParseError> {
@@ -116,12 +119,21 @@ impl PackratParser {
     }
 
     fn decl(&mut self) -> Result<usize, ParseError> {
-        todo!()
+        let (_, data_type) = self.expect_type()?;
+        let (_, token_value) = self.expect_and_get_value("id")?;
+        let lookahead = self.lookahead;
+        let new_lookahead = PackratParser::expect_optionally(|| {
+            // TODO - match with expr, bexpr and literal (and new id(optparams))
+            let lookahead = self.expr()?;
+            Ok(lookahead)
+        }, lookahead)?;
+        self.reset_lookahead(new_lookahead);
+        self.env.set(&token_value, &data_type);
+        Ok(self.lookahead)
     }
 
     fn assign(&mut self) -> Result<usize, ParseError> {
         let (_, symbol_data) = self.expect_id_and_get_data()?;
-        // TODO - use symbol data to type check
         self.expect("=")?;
         self.expr()?;
         Ok(self.lookahead)
@@ -162,6 +174,66 @@ impl PackratParser {
         if token.is_eq(symbol) {
             self.lookahead = self.lookahead + 1;
             Ok(self.lookahead)
+        } else {
+            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
+                self.lookahead, "expected ")))
+        }
+    }
+
+    fn expect_type(&mut self) -> Result<(usize, Rc<String>), ParseError> {
+        let token = &self.token_vec[self.lookahead];
+        match &token.core_token {
+            CoreToken::TYPE(token_value) => {
+                self.lookahead = self.lookahead + 1;
+                Ok((self.lookahead, token_value.0.clone()))
+            },
+            CoreToken::IDENTIFIER(token_value) => {
+                let symbol_table = token.check_declaration(&self.env, self.lookahead)?;
+                if symbol_table.is_type() {
+                    Ok((self.lookahead, token_value.0.clone()))
+                } else {
+                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
+                        self.lookahead, "expected a type, identifier is not a type")))
+                }
+            },
+            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
+                 self.lookahead, "expected a type")))
+        }
+    }
+
+    fn expect_and_get_value(&mut self, symbol: &str) -> Result<(usize, TokenValue), ParseError> {
+        let token = &self.token_vec[self.lookahead];
+        if token.is_eq(symbol) {
+            let (has_value, token_value) = match &token.core_token {
+                CoreToken::IDENTIFIER(token_value) => {
+                    (true, Some(token_value))
+                },
+                CoreToken::INTEGER(token_value) => {
+                    (true, Some(token_value))
+                },
+                CoreToken::FLOAT(token_value) => {
+                    (true, Some(token_value))
+                },
+                CoreToken::LITERAL(token_value) => {
+                    (true, Some(token_value))
+                },
+                CoreToken::TYPE(token_value) => {
+                    (true, Some(token_value))
+                }
+                _ => {
+                    (false, None)
+                }
+            };
+            if has_value {
+                if let Some(token_value) = token_value {
+                    self.lookahead = self.lookahead + 1;
+                    Ok((self.lookahead, TokenValue(token_value.0.clone())))
+                } else {
+                    unreachable!("any token which has value can't be reached here")
+                }
+            } else {
+                unreachable!("this method should only be called for tokens which have values")
+            }
         } else {
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
                 self.lookahead, "expected ")))
