@@ -8,7 +8,8 @@ pub fn r_asssign_alternatives(parser: &mut PackratParser) -> Result<(usize, usiz
         Ok((lookahead, has_float)) => return Ok((lookahead, 0, has_float)),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
+            // errors_vec.push(err);
+            return Err(err)  // TODO - just for testing purpose
         }
     }
     match parser.bexpr() {

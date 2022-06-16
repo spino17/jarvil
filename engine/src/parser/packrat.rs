@@ -147,6 +147,14 @@ impl PackratParser {
         components::expression::expression::additive(self)
     }
 
+    pub fn factor(&mut self) -> Result<(usize, bool), ParseError> {
+        components::expression::expression::factor(self)
+    }
+
+    pub fn multitive(&mut self) -> Result<(usize, bool), ParseError> {
+        components::expression::expression::multitive(self)
+    }
+
     pub fn bexpr(&mut self) -> Result<usize, ParseError> {
         components::expression::bexpression::bexpr(self)
     }
@@ -179,6 +187,9 @@ impl PackratParser {
 
     pub fn expect(&mut self, symbol: &str) -> Result<(usize, usize), ParseError> {
         let token = &self.token_vec[self.lookahead];
+        if String::from("empty").eq(symbol) {
+            return Ok((self.lookahead, token.line_number))
+        }
         if token.is_eq(symbol) {
             self.lookahead = self.lookahead + 1;
             Ok((self.lookahead, token.line_number))
@@ -237,7 +248,7 @@ impl PackratParser {
                     self.lookahead = self.lookahead + 1;
                     Ok((self.lookahead, token.line_number, TokenValue(token_value.0.clone())))
                 } else {
-                    unreachable!("any token which has value can't be reached here")
+                    unreachable!("any token which has a value can't be reached here")
                 }
             } else {
                 unreachable!("this method should only be called for tokens which have values")

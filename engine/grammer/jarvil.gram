@@ -41,6 +41,7 @@ r_assign:
     | expr
     | bexpr
     | literal
+    | id
 
 decl:
     | type id ['=' r_assign]
