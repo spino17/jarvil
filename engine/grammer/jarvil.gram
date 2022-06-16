@@ -17,10 +17,8 @@ code: stmts
 block: NEWLINE (INDENT stmt)+
 
 stmts: stmt+
-stmt: compound_stmt | simple_stmts
-
-simple_stmts: 
-    | simple_stmt NEWLINE simple_stmts
+stmt: 
+    | compound_stmt
     | simple_stmt NEWLINE
 
 simple_stmt:

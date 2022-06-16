@@ -94,7 +94,7 @@ pub enum CoreToken {
 pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
-    pub name: String,
+    pub name: Rc<String>,
 }
 
 impl Token {
@@ -199,7 +199,7 @@ impl Token {
         Ok(Token {
             line_number: *line_number,
             core_token,
-            name,
+            name: Rc::new(name),
         })
     }
 
@@ -233,7 +233,8 @@ impl Token {
                 match env.get(token_value) {
                     Some(symbol_data) => Ok(symbol_data),
                     None => {
-                        Err(SemanticError::new(line_number, lookahead_index, "identifier is not declared in the current scope"))
+                        let err_message = format!("identifier '{}' is not declared in the current scope", token_value.0);
+                        Err(SemanticError::new(line_number, lookahead_index, err_message))
                     }
                 }
             },
@@ -242,6 +243,6 @@ impl Token {
     }
 
     pub fn is_eq(&self, symbol: &str) -> bool {
-        self.name.eq(symbol)
+        self.name.as_ref().eq(symbol)
     }
 }

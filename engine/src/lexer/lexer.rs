@@ -1,6 +1,7 @@
 use crate::lexer::token::Token;
 use crate::errors::LexicalError;
 use crate::lexer::token::CoreToken;
+use std::rc::Rc;
 
 pub trait Lexer {
     fn tokenize(&mut self, code: Vec<char>) -> Result<Vec<Token>, LexicalError>;
@@ -34,7 +35,7 @@ impl Lexer for CoreLexer {
                 // ignore single line and block comments
                 CoreToken::SINGLE_LINE_COMMENT => continue,
                 CoreToken::BLOCK_COMMENT => continue,
-                CoreToken::BLANK => continue,
+                // CoreToken::BLANK => continue,
                 _ => {
                     token_vec.push(token)
                 }
@@ -43,7 +44,7 @@ impl Lexer for CoreLexer {
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
-            name: String::from("endmarker")
+            name: Rc::new(String::from("endmarker"))
         });
         Ok(token_vec)
     }

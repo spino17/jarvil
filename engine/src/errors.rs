@@ -20,11 +20,11 @@ impl LexicalError {
 pub struct SyntaxError {
     line_number: usize,
     lookahead_index: usize,
-    err_message: &'static str,
+    err_message: String,
 }
 
 impl SyntaxError {
-    pub fn new(line_number: usize, lookahead_index: usize, err_message: &'static str) -> Self {
+    pub fn new(line_number: usize, lookahead_index: usize, err_message: String) -> Self {
         SyntaxError{
             line_number,
             lookahead_index,
@@ -37,11 +37,11 @@ impl SyntaxError {
 pub struct SemanticError {
     line_number: usize,
     lookahead_index: usize,
-    err_message: &'static str
+    err_message: String,
 }
 
 impl SemanticError {
-    pub fn new(line_number: usize, lookahead_index: usize, err_message: &'static str) -> Self {
+    pub fn new(line_number: usize, lookahead_index: usize, err_message: String) -> Self {
         SemanticError{
             line_number,
             lookahead_index,
@@ -116,8 +116,8 @@ impl Display for CompilationError {
             CompilationError::LEXICAL_ERROR(lexical_err)      =>      write!(f, "Error occured while compilation\nLexical Error: on line {}\n{}", lexical_err.line_number, lexical_err.err_message),
             CompilationError::PARSE_ERROR(err)                  =>      {
                 match err {
-                    ParseError::SYNTAX_ERROR(syntax_error)          =>      write!(f, "Error occured while compilation\nSynatx Error: on line {}\n{}", syntax_error.line_number, syntax_error.err_message),
-                    ParseError::SEMANTIC_ERROR(semantic_error)    =>      write!(f, "Error occured while compilation\nSemantic Error: on line {}\n{}", semantic_error.line_number, semantic_error.err_message)
+                    ParseError::SYNTAX_ERROR(syntax_error)          =>      write!(f, "Error occured while compilation\nSynatx Error: on line {}, lookahead {}\n{}", syntax_error.line_number, syntax_error.lookahead_index, syntax_error.err_message),
+                    ParseError::SEMANTIC_ERROR(semantic_error)    =>      write!(f, "Error occured while compilation\nSemantic Error: on line {}, lookahead {}\n{}", semantic_error.line_number, semantic_error.lookahead_index, semantic_error.err_message)
                 }
             }
         }

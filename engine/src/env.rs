@@ -31,6 +31,10 @@ impl SymbolData {
     pub fn type_eq(&self, data_type: &str) -> bool {
         self.0.data_type.as_ref().eq(data_type)
     }
+
+    pub fn get_type(&self) -> Rc<String> {
+        self.0.data_type.clone()
+    }
 }
 
 #[derive(Debug)]
