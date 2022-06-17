@@ -109,16 +109,6 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
             }
         },
         _ => {
-            let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                parser.get_curr_line_number(), parser.get_lookahead(),
-                format!(
-                "expected a '*' or '/', got '{}'",
-                PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
-            ));
-            return Err(err);
-        }
-        /*
-        _ => {
             match parser.expect("empty") {
                 Ok((response, _)) => {
                     // FOLLOW(multitive)
@@ -149,11 +139,10 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
                 }
             }
         }
-         */
     }
 }
 
-pub fn term_factor_multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+pub fn term(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     let (_, is_float_in_factor) = parser.factor()?;
     let (response, is_float_in_multitive) = parser.multitive()?;
     if is_float_in_factor || is_float_in_multitive {
@@ -161,26 +150,6 @@ pub fn term_factor_multitive(parser: &mut PackratParser) -> Result<(ParseSuccess
     } else {
         Ok((response, false))
     }
-}
-
-pub fn term(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
-    let mut errors_vec: Vec<ParseError> = vec![];
-    let curr_lookahead = parser.get_lookahead();
-    match parser.term_factor_multitive() {
-        Ok(response) => return Ok(response),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    match parser.factor() {
-        Ok(response) => return Ok(response),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    Err(aggregate_errors(errors_vec))
 }
 
 pub fn plus_additive_alternative(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
@@ -214,16 +183,6 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
             }
         },
         _ => {
-            let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                parser.get_curr_line_number(), parser.get_lookahead(),
-                format!(
-                "expected a '+' or '-', got '{}'",
-                PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
-            ));
-            return Err(err);
-        }
-        /*
-        _ => {
             match parser.expect("empty") {
                 Ok((response, _)) => {
                     // FOLLOW(additive)
@@ -252,11 +211,10 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
                 }
             }
         }
-         */
     }
 }
 
-pub fn expr_term_additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+pub fn expr(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     let (_, is_float_in_term) = parser.term()?;
     let (response, is_float_in_additive) = parser.additive()?;
     if is_float_in_term || is_float_in_additive {
@@ -264,24 +222,4 @@ pub fn expr_term_additive(parser: &mut PackratParser) -> Result<(ParseSuccess, b
     } else {
         return Ok((response, false))
     }
-}
-
-pub fn expr(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
-    let mut errors_vec: Vec<ParseError> = vec![];
-    let curr_lookahead = parser.get_lookahead();
-    match parser.expr_term_additive() {
-        Ok(response) => return Ok(response),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    match parser.term() {
-        Ok(response) => return Ok(response),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    Err(aggregate_errors(errors_vec))
 }

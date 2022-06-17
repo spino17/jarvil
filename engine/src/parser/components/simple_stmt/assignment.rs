@@ -1,10 +1,10 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
-use crate::errors::{ParseError, SemanticError};
+use crate::errors::{ParseError};
 
 pub fn assign(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let (_, _, symbol_data) = parser.expect_id_and_get_data()?;
     let (_, line_number) = parser.expect("=")?;
-    let mut rule_index;
+    let rule_index;
     if symbol_data.type_eq("int") {
         rule_index = 0;
     } else if symbol_data.type_eq("float") {

@@ -181,16 +181,8 @@ impl PackratParser {
         components::expression::expression::expr(self)
     }
 
-    pub fn expr_term_additive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::expr_term_additive(self)
-    }
-
     pub fn term(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
         components::expression::expression::term(self)
-    }
-
-    pub fn term_factor_multitive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::term_factor_multitive(self)
     }
 
     pub fn additive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {

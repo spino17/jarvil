@@ -45,7 +45,6 @@ pub fn r_asssign_alternatives(parser: &mut PackratParser,
                 // rule index - 2
                 Ok(response) => return Ok(response),
                 Err(err) => {
-                    println!("I am djasdnasndfjkwndjwendfnewdnwednfwen");
                     return Err(err)
                 }
             }
