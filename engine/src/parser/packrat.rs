@@ -192,9 +192,13 @@ impl PackratParser {
                 possible_err: None,
             }, token.line_number))
         } else {
+            let mut modified_symbol = symbol;
+            if String::from("\n").eq(symbol) {
+                modified_symbol = "newline";
+            }
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
                 self.lookahead, 
-                format!("expected '{}', got '{}'", symbol, token.name))))
+                format!("expected '{}', got '{}'", modified_symbol, token.name))))
         }
     }
 
@@ -266,8 +270,12 @@ impl PackratParser {
                 unreachable!("this method should only be called for tokens which have values")
             }
         } else {
+            let mut modified_symbol = symbol;
+            if String::from("\n").eq(symbol) {
+                modified_symbol = "newline";
+            }
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
-                self.lookahead, format!("expected '{}', got '{}'", symbol, token.name))))
+                self.lookahead, format!("expected '{}', got '{}'", modified_symbol, token.name))))
         }
     }
 
