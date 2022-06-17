@@ -22,14 +22,12 @@ pub fn bfactor_not(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
 }
 
 pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    // let curr_lookahead = parser.get_lookahead();
     let token_value = parser.get_curr_token_value();
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             match bfactor_expr_in_parenthesis(parser) {
                 Ok(response) => return Ok(response),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -38,7 +36,6 @@ pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             match bfactor_not(parser) {
                 Ok(response) => return Ok(response),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -47,7 +44,6 @@ pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             match parser.expect("True") {
                 Ok((response, _)) => return Ok(response),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -56,7 +52,6 @@ pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             match parser.expect("False") {
                 Ok((response, _)) => return Ok(response),
                 Err(err) => {
-                    // arser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -77,7 +72,6 @@ pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                     if symbol_data.type_eq("bool") {
                         return Ok(response);
                     } else {
-                        // parser.reset_lookahead(curr_lookahead);
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
                             response.lookahead, format!(
                                 "expected an identifier with type 'bool' in an boolean expression, got type '{}'", 
@@ -86,7 +80,6 @@ pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                     }
                 },
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -107,13 +100,11 @@ pub fn andtive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, P
 }
 
 pub fn andtive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    // let curr_lookahead = parser.get_lookahead();
     match parser.get_curr_core_token() {
         CoreToken::AND => {
             match andtive_alternative(parser) {
                 Ok(response) => return Ok(response),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -135,7 +126,6 @@ pub fn andtive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                     }
                 },
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     unreachable!("parsing empty string never give error, got {:?}", err)
                 }
             }
@@ -156,13 +146,11 @@ pub fn ortive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, Pa
 }
 
 pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    // let curr_lookahead = parser.get_lookahead();
     match parser.get_curr_core_token() {
         CoreToken::OR => {
             match ortive_alternative(parser) {
                 Ok(response) => return Ok(response),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -183,7 +171,6 @@ pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                     }
                 },
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     unreachable!("parsing empty string never give error, got {:?}", err)
                 }
             }

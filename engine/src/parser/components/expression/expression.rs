@@ -1,6 +1,6 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::lexer::token::CoreToken;
-use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
+use crate::errors::{ParseError, SyntaxError, SemanticError};
 
 pub fn factor_expr_in_parenthesis(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("(")?;
@@ -13,14 +13,12 @@ pub fn factor_expr_in_parenthesis(parser: &mut PackratParser) -> Result<(ParseSu
 }
 
 pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
-    // let curr_lookahead = parser.get_lookahead();
     let token_value = parser.get_curr_token_value();
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             match factor_expr_in_parenthesis(parser) {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -29,7 +27,6 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             match parser.expect("int") {
                 Ok((response, _)) => return Ok((response, false)),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -38,7 +35,6 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             match parser.expect("float") {
                 Ok((response, _)) => return Ok((response, true)),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -61,7 +57,6 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                     } else if symbol_data.type_eq("float") {
                         return Ok((response, true));
                     } else {
-                        // parser.reset_lookahead(curr_lookahead);
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
                             response.lookahead, format!(
                                 "expected an identifier with type 'int' or 'float' in an expression, got type '{}'", 
@@ -70,7 +65,6 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                     }
                 },
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -97,13 +91,11 @@ pub fn slash_multitive_alternative(parser: &mut PackratParser) -> Result<(ParseS
 }
 
 pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
-    // let curr_lookahead = parser.get_lookahead();
     match parser.get_curr_core_token() {
         CoreToken::STAR => {
             match star_multitive_alternative(parser) {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -112,7 +104,6 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
             match slash_multitive_alternative(parser) {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -121,7 +112,6 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
             match parser.expect("empty") {
                 Ok((response, _)) => {
                     // FOLLOW(multitive)
-                    // TODO - add '==', '>', '<'
                     if parser.check_next_token("\n") 
                     || parser.check_next_token(")") 
                     || parser.check_next_token("+") 
@@ -173,13 +163,11 @@ pub fn minus_additive_alternative(parser: &mut PackratParser) -> Result<(ParseSu
 }
 
 pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
-    // let curr_lookahead = parser.get_lookahead();
     match parser.get_curr_core_token() {
         CoreToken::PLUS => {
             match plus_additive_alternative(parser) {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -188,7 +176,6 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
             match minus_additive_alternative(parser) {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
-                    // parser.reset_lookahead(curr_lookahead);
                     return Err(err);
                 }
             }
@@ -197,7 +184,6 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
             match parser.expect("empty") {
                 Ok((response, _)) => {
                     // FOLLOW(additive)
-                    // TODO - add '==', '>', '<'
                     if parser.check_next_token("\n") 
                     || parser.check_next_token(")")
                     || parser.check_next_token("==")
