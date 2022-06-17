@@ -1,7 +1,7 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SemanticError};
 
-pub fn r_asssign_alternatives(parser: &mut PackratParser, 
+pub fn r_asssign(parser: &mut PackratParser,
     rule_index: usize, line_number: usize) -> Result<ParseSuccess, ParseError> {
     match rule_index {
         0 => {

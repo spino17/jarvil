@@ -1,6 +1,6 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::lexer::token::CoreToken;
-use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
+use crate::errors::{ParseError, SyntaxError, SemanticError};
 
 pub fn factor_expr_in_parenthesis(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("(")?;
@@ -78,13 +78,13 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
     }
 }
 
-pub fn star_multitive_alternative(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+pub fn multitive_star(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("*")?;
     let (response, has_float) = parser.term()?;
     Ok((response, has_float))
 }
 
-pub fn slash_multitive_alternative(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+pub fn multitive_slash(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("/")?;
     let (response, has_float) = parser.term()?;
     Ok((response, has_float))
@@ -93,7 +93,7 @@ pub fn slash_multitive_alternative(parser: &mut PackratParser) -> Result<(ParseS
 pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::STAR => {
-            match parser.star_multitive_alternative() {
+            match parser.multitive_star() {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
                     return Err(err);
@@ -101,7 +101,7 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
             }
         },
         CoreToken::SLASH => {
-            match parser.slash_multitive_alternative() {
+            match parser.multitive_slash() {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
                     return Err(err);
@@ -152,13 +152,13 @@ pub fn term(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseErr
     }
 }
 
-pub fn plus_additive_alternative(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+pub fn additive_plus(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("+")?;
     let (response, has_float) = parser.expr()?;
     Ok((response, has_float))
 }
 
-pub fn minus_additive_alternative(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+pub fn additive_minus(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("-")?;
     let (response, has_float) = parser.expr()?;
     Ok((response, has_float))
@@ -167,7 +167,7 @@ pub fn minus_additive_alternative(parser: &mut PackratParser) -> Result<(ParseSu
 pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::PLUS => {
-            match parser.plus_additive_alternative() {
+            match parser.additive_plus() {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
                     return Err(err);
@@ -175,7 +175,7 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
             }
         },
         CoreToken::MINUS => {
-            match parser.minus_additive_alternative() {
+            match parser.additive_minus() {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
                     return Err(err);

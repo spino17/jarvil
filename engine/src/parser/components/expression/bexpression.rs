@@ -45,10 +45,15 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             }
         },
         _ => {
+            /*
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
             parser.get_lookahead(), 
             format!("expected '==', '>=', '>', '<=' or '<', got '{}'", 
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
+             */
+            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
+            parser.get_lookahead(), 
+            String::from("got an 'int' or 'float' valued expression inside a boolean expression"))))
         }
     }
 }
@@ -171,7 +176,7 @@ pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     Err(aggregate_errors(errors_vec))
 }
 
-pub fn andtive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn andtive_and(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("and")?;
     let response = parser.bterm()?;
     Ok(response)
@@ -180,7 +185,7 @@ pub fn andtive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, P
 pub fn andtive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::AND => {
-            match parser.andtive_alternative() {
+            match parser.andtive_and() {
                 Ok(response) => return Ok(response),
                 Err(err) => {
                     return Err(err);
@@ -217,7 +222,7 @@ pub fn bterm(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     Ok(response)
 }
 
-pub fn ortive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn ortive_or(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("or")?;
     let response = parser.bexpr()?;
     Ok(response)
@@ -226,7 +231,7 @@ pub fn ortive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, Pa
 pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::OR => {
-            match parser.ortive_alternative() {
+            match parser.ortive_or() {
                 Ok(response) => return Ok(response),
                 Err(err) => {
                     return Err(err);

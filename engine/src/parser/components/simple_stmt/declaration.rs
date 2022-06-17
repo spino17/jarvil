@@ -21,7 +21,7 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let (is_matched, response, err) = 
     PackratParser::expect_optionally(|| {
         let (_, _) = parser.expect("=")?;
-        let response = parser.r_asssign_alternatives(rule_index, line_number)?;
+        let response = parser.r_asssign(rule_index, line_number)?;
         Ok(response)
     }, ParseSuccess{
         lookahead: curr_lookahead,

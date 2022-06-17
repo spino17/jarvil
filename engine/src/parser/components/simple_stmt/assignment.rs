@@ -16,7 +16,7 @@ pub fn assign(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     } else {
         unimplemented!("yet to be implemented for user-defined types")
     }
-    parser.r_asssign_alternatives(rule_index, line_number)?;
+    parser.r_asssign(rule_index, line_number)?;
     Ok(ParseSuccess{
         lookahead: parser.get_lookahead(),
         possible_err: None,
