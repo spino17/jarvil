@@ -64,7 +64,8 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                         // parser.reset_lookahead(curr_lookahead);
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
                             response.lookahead, format!(
-                                "expected an identifier with type 'int' or 'float' in an expression, got type '{}'", symbol_data.get_type())))
+                                "expected an identifier with type 'int' or 'float' in an expression, got type '{}'", 
+                                symbol_data.get_type())))
                             );
                     }
                 },
@@ -75,9 +76,10 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             }
         },
         _ => {
-            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
+            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(),
             parser.get_lookahead(), 
-            format!("expected '(', 'int', 'float' or an identifier, got '{}'", parser.get_curr_token_name()))))
+            format!("expected '(', 'int', 'float' or an identifier, got '{}'", 
+            PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
     }
 }
@@ -119,15 +121,23 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
             match parser.expect("empty") {
                 Ok((response, _)) => {
                     // FOLLOW(multitive)
+                    // TODO - add '==', '>', '<'
                     if parser.check_next_token("\n") 
                     || parser.check_next_token(")") 
                     || parser.check_next_token("+") 
-                    || parser.check_next_token("-") {
+                    || parser.check_next_token("-")
+                    || parser.check_next_token("==")
+                    || parser.check_next_token(">=")
+                    || parser.check_next_token(">")
+                    || parser.check_next_token("<=")
+                    || parser.check_next_token("<") {
                         return Ok((response, false))
                     } else {
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             parser.get_curr_line_number(), parser.get_lookahead(),
-                            format!("expected a ')', '+', '-', '*' or '/', got '{}'", parser.get_next_token_name())
+                            format!(
+                            "expected a ')', '+', '-', '*', '/', '==', '>=', '>', '<=', '<' or 'newline', got '{}'", 
+                            PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);
                     }
@@ -187,13 +197,21 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
             match parser.expect("empty") {
                 Ok((response, _)) => {
                     // FOLLOW(additive)
+                    // TODO - add '==', '>', '<'
                     if parser.check_next_token("\n") 
-                    || parser.check_next_token(")") {
+                    || parser.check_next_token(")")
+                    || parser.check_next_token("==")
+                    || parser.check_next_token(">=")
+                    || parser.check_next_token(">")
+                    || parser.check_next_token("<=")
+                    || parser.check_next_token("<") {
                         return Ok((response, false))
                     } else {
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             parser.get_curr_line_number(), parser.get_lookahead(),
-                            format!("expected a ')', '+', '-', '*' or '/', got '{}'", parser.get_next_token_name())
+                            format!(
+                            "expected a ')', '+', '-', '*', '/' '==', '>=', '>', '<=', '<' or 'newline', got '{}'", 
+                            PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);
                     }

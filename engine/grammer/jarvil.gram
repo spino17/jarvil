@@ -24,6 +24,7 @@ stmt:
 simple_stmt:
     | decl
     | assign
+    | # calling a function
 
 compound_stmt:
     | function_def
@@ -35,20 +36,25 @@ type:
     | TYPE  # type token for in-built types
     | id  # identifier for user-defined types - semantic check required here!
 
+
+
 r_assign:
     | expr
     | bexpr
     | literal
     | id
 
+l_decl:
+    | type id
+
 decl:
-    | type id ['=' r_assign]
+    | l_decl ['=' r_assign]
     | struct id ':' struct_block
 
 struct_block:
-    | (INDENT decl)*
+    | (INDENT l_decl NEWLINE)*
 
-assign: id '=' r_assign
+assign: id '=' r_assign  # change this to => atom '=' r_assign
 
 expr: term additive
 
@@ -81,7 +87,16 @@ else_block:
 
 while_stmt: 'while' bexpr ':' block
 
-bexpr: bterm oritive
+comp_op:
+    | ==
+    | >=
+    | >
+    | <=
+    | <
+
+bexpr: 
+    | bterm oritive
+    | expr comp_op expr
 oritive: 
     | 'or' bexpr
     | ()
@@ -100,5 +115,5 @@ function_def: 'def' id '(' optparams ')' ['->' id] ':' block
 optparams:
     | param ',' optparams
     | param
-param: id id  # type id
+param: type id  # type id
 

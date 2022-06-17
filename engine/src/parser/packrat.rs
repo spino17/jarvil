@@ -210,6 +210,18 @@ impl PackratParser {
         components::expression::bexpression::andtive(self)
     }
 
+    pub fn comp_op(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::comp_op(self)
+    }
+
+    pub fn bexpr_term_ortive_alternative(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bexpr_term_ortive_alternative(self)
+    }
+
+    pub fn bexpr_expr_comp_op_expr_alternative(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bexpr_expr_comp_op_expr_alternative(self)
+    }
+
     pub fn expect(&mut self, symbol: &str) -> Result<(ParseSuccess, usize), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
@@ -226,13 +238,19 @@ impl PackratParser {
                 possible_err: None,
             }, token.line_number))
         } else {
+            /*
             let mut modified_symbol = symbol;
             if String::from("\n").eq(symbol) {
                 modified_symbol = "newline";
             }
+             */
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
                 self.lookahead, 
-                format!("expected '{}', got '{}'", modified_symbol, token.name))))
+                format!(
+                "expected '{}', got '{}'",
+                PackratParser::parse_for_err_message(String::from(symbol)), 
+                PackratParser::parse_for_err_message(token.name.to_string()))))
+            )
         }
     }
 
@@ -262,7 +280,8 @@ impl PackratParser {
             },
             _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
                  self.lookahead,
-                  format!("expected a type, got '{}'", token.name))))
+                  format!("expected a type, got '{}'", 
+                  PackratParser::parse_for_err_message( token.name.to_string())))))
         }
     }
 
@@ -304,12 +323,18 @@ impl PackratParser {
                 unreachable!("this method should only be called for tokens which have values")
             }
         } else {
+            /*
             let mut modified_symbol = symbol;
             if String::from("\n").eq(symbol) {
                 modified_symbol = "newline";
             }
+             */
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
-                self.lookahead, format!("expected '{}', got '{}'", modified_symbol, token.name))))
+                self.lookahead, format!(
+                "expected '{}', got '{}'", 
+                PackratParser::parse_for_err_message(String::from(symbol)), 
+                PackratParser::parse_for_err_message(token.name.to_string()))))
+            )
         }
     }
 
@@ -318,7 +343,7 @@ impl PackratParser {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
-            CoreToken::IDENTIFIER(token_value) => {
+            CoreToken::IDENTIFIER(_) => {
                 let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
                 self.lookahead = self.lookahead + 1;
                 Ok((ParseSuccess{
@@ -328,7 +353,9 @@ impl PackratParser {
             },
             _ => {
                 Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
-                    self.lookahead, format!("expected an identifier, got '{}'", token.name))))
+                    self.lookahead, format!(
+                        "expected an identifier, got '{}'", 
+                        PackratParser::parse_for_err_message(token.name.to_string())))))
             }
         }
     }
@@ -359,5 +386,13 @@ impl PackratParser {
                 (false, curr_value, Some(err))
             }
         }
+    }
+
+    pub fn parse_for_err_message(message: String) -> String {
+        let mut parsed_message = message;
+        if parsed_message.eq("\n") {
+            parsed_message = String::from("newline")
+        }
+        parsed_message
     }
 }

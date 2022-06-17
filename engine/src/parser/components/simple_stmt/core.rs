@@ -23,14 +23,14 @@ pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
     let mut errors_vec: Vec<ParseError> = vec![];
     let curr_lookahead = parser.get_lookahead();
     match parser.decl() {
-        Ok(lookahead) => return Ok(lookahead),
+        Ok(response) => return Ok(response),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
             errors_vec.push(err);
         }
     }
     match parser.assign() {
-        Ok(lookahead) => return Ok(lookahead),
+        Ok(response) => return Ok(response),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
             errors_vec.push(err);
