@@ -13,7 +13,7 @@ pub fn factor_expr_in_parenthesis(parser: &mut PackratParser) -> Result<(ParseSu
 }
 
 pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
-    let curr_lookahead = parser.get_lookahead();
+    // let curr_lookahead = parser.get_lookahead();
     let token_value = parser.get_curr_token_value();
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
@@ -95,7 +95,7 @@ pub fn slash_multitive_alternative(parser: &mut PackratParser) -> Result<(ParseS
 }
 
 pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
-    let curr_lookahead = parser.get_lookahead();
+    // let curr_lookahead = parser.get_lookahead();
     match parser.get_curr_core_token() {
         CoreToken::STAR => {
             match star_multitive_alternative(parser) {
@@ -127,7 +127,7 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
                     } else {
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             parser.get_curr_line_number(), parser.get_lookahead(),
-                            format!("expected a '+', '-', '*' or '/', got '{}'", parser.get_next_token_name())
+                            format!("expected a ')', '+', '-', '*' or '/', got '{}'", parser.get_next_token_name())
                         ));
                         return Err(err);
                     }
@@ -163,7 +163,7 @@ pub fn minus_additive_alternative(parser: &mut PackratParser) -> Result<(ParseSu
 }
 
 pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
-    let curr_lookahead = parser.get_lookahead();
+    // let curr_lookahead = parser.get_lookahead();
     match parser.get_curr_core_token() {
         CoreToken::PLUS => {
             match plus_additive_alternative(parser) {
@@ -193,7 +193,7 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
                     } else {
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             parser.get_curr_line_number(), parser.get_lookahead(),
-                            format!("expected a '+', '-', '*' or '/', got '{}'", parser.get_next_token_name())
+                            format!("expected a ')', '+', '-', '*' or '/', got '{}'", parser.get_next_token_name())
                         ));
                         return Err(err);
                     }
