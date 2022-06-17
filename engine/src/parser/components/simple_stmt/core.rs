@@ -16,6 +16,7 @@ pub fn simple_stmts(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErr
         },
         Err(err) => errors_vec.push(err)
     }
+    println!("Hello brkadnisfnsndf");
     Err(aggregate_errors(errors_vec))
 }
 

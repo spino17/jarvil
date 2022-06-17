@@ -1,6 +1,6 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::lexer::token::CoreToken;
-use crate::errors::{ParseError, SyntaxError, SemanticError};
+use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
 
 pub fn factor_expr_in_parenthesis(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("(")?;
@@ -16,7 +16,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
     let token_value = parser.get_curr_token_value();
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
-            match factor_expr_in_parenthesis(parser) {
+            match parser.factor_expr_in_parenthesis() {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
                     return Err(err);
@@ -93,7 +93,7 @@ pub fn slash_multitive_alternative(parser: &mut PackratParser) -> Result<(ParseS
 pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::STAR => {
-            match star_multitive_alternative(parser) {
+            match parser.star_multitive_alternative() {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
                     return Err(err);
@@ -101,13 +101,23 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
             }
         },
         CoreToken::SLASH => {
-            match slash_multitive_alternative(parser) {
+            match parser.slash_multitive_alternative() {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
                     return Err(err);
                 }
             }
         },
+        _ => {
+            let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
+                parser.get_curr_line_number(), parser.get_lookahead(),
+                format!(
+                "expected a '*' or '/', got '{}'",
+                PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
+            ));
+            return Err(err);
+        }
+        /*
         _ => {
             match parser.expect("empty") {
                 Ok((response, _)) => {
@@ -120,13 +130,15 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
                     || parser.check_next_token(">=")
                     || parser.check_next_token(">")
                     || parser.check_next_token("<=")
-                    || parser.check_next_token("<") {
+                    || parser.check_next_token("<")
+                    || parser.check_next_token("or") 
+                    || parser.check_next_token("and") {
                         return Ok((response, false))
                     } else {
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             parser.get_curr_line_number(), parser.get_lookahead(),
                             format!(
-                            "expected a ')', '+', '-', '*', '/', '==', '>=', '>', '<=', '<' or 'newline', got '{}'", 
+                            "expected a ')', '+', '-', '*', '/', '==', '>=', '>', '<=', '<', 'or', 'and' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);
@@ -137,10 +149,11 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
                 }
             }
         }
+         */
     }
 }
 
-pub fn term(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+pub fn term_factor_multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     let (_, is_float_in_factor) = parser.factor()?;
     let (response, is_float_in_multitive) = parser.multitive()?;
     if is_float_in_factor || is_float_in_multitive {
@@ -148,6 +161,26 @@ pub fn term(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseErr
     } else {
         Ok((response, false))
     }
+}
+
+pub fn term(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+    let mut errors_vec: Vec<ParseError> = vec![];
+    let curr_lookahead = parser.get_lookahead();
+    match parser.term_factor_multitive() {
+        Ok(response) => return Ok(response),
+        Err(err) => {
+            parser.reset_lookahead(curr_lookahead);
+            errors_vec.push(err);
+        }
+    }
+    match parser.factor() {
+        Ok(response) => return Ok(response),
+        Err(err) => {
+            parser.reset_lookahead(curr_lookahead);
+            errors_vec.push(err);
+        }
+    }
+    Err(aggregate_errors(errors_vec))
 }
 
 pub fn plus_additive_alternative(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
@@ -165,7 +198,7 @@ pub fn minus_additive_alternative(parser: &mut PackratParser) -> Result<(ParseSu
 pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::PLUS => {
-            match plus_additive_alternative(parser) {
+            match parser.plus_additive_alternative() {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
                     return Err(err);
@@ -173,13 +206,23 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
             }
         },
         CoreToken::MINUS => {
-            match minus_additive_alternative(parser) {
+            match parser.minus_additive_alternative() {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {
                     return Err(err);
                 }
             }
         },
+        _ => {
+            let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
+                parser.get_curr_line_number(), parser.get_lookahead(),
+                format!(
+                "expected a '+' or '-', got '{}'",
+                PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
+            ));
+            return Err(err);
+        }
+        /*
         _ => {
             match parser.expect("empty") {
                 Ok((response, _)) => {
@@ -190,13 +233,15 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
                     || parser.check_next_token(">=")
                     || parser.check_next_token(">")
                     || parser.check_next_token("<=")
-                    || parser.check_next_token("<") {
+                    || parser.check_next_token("<")
+                    || parser.check_next_token("or") 
+                    || parser.check_next_token("and") {
                         return Ok((response, false))
                     } else {
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             parser.get_curr_line_number(), parser.get_lookahead(),
                             format!(
-                            "expected a ')', '+', '-', '*', '/' '==', '>=', '>', '<=', '<' or 'newline', got '{}'", 
+                            "expected a ')', '+', '-', '*', '/' '==', '>=', '>', '<=', '<', 'or', 'and' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);
@@ -207,10 +252,11 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
                 }
             }
         }
+         */
     }
 }
 
-pub fn expr(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+pub fn expr_term_additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     let (_, is_float_in_term) = parser.term()?;
     let (response, is_float_in_additive) = parser.additive()?;
     if is_float_in_term || is_float_in_additive {
@@ -218,4 +264,24 @@ pub fn expr(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseErr
     } else {
         return Ok((response, false))
     }
+}
+
+pub fn expr(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+    let mut errors_vec: Vec<ParseError> = vec![];
+    let curr_lookahead = parser.get_lookahead();
+    match parser.expr_term_additive() {
+        Ok(response) => return Ok(response),
+        Err(err) => {
+            parser.reset_lookahead(curr_lookahead);
+            errors_vec.push(err);
+        }
+    }
+    match parser.term() {
+        Ok(response) => return Ok(response),
+        Err(err) => {
+            parser.reset_lookahead(curr_lookahead);
+            errors_vec.push(err);
+        }
+    }
+    Err(aggregate_errors(errors_vec))
 }

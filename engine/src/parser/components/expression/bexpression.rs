@@ -2,6 +2,64 @@ use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::lexer::token::CoreToken;
 use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
 
+pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+    match parser.get_curr_core_token() {
+        CoreToken::DOUBLE_EQUAL => {
+            match parser.expect("==") {
+                Ok((response, _)) => return Ok(response),
+                Err(err) => {
+                    return Err(err);
+                }
+            }
+        },
+        CoreToken::GREATER_EQUAL => {
+            match parser.expect(">=") {
+                Ok((response, _)) => return Ok(response),
+                Err(err) => {
+                    return Err(err);
+                }
+            }
+        },
+        CoreToken::GREATER => {
+            match parser.expect(">") {
+                Ok((response, _)) => return Ok(response),
+                Err(err) => {
+                    return Err(err);
+                }
+            }
+        },
+        CoreToken::LESS_EQUAL => {
+            match parser.expect("<=") {
+                Ok((response, _)) => return Ok(response),
+                Err(err) => {
+                    return Err(err);
+                }
+            }
+        },
+        CoreToken::LESS => {
+            match parser.expect("<") {
+                Ok((response, _)) => return Ok(response),
+                Err(err) => {
+                    return Err(err);
+                }
+            }
+        },
+        _ => {
+            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
+            parser.get_lookahead(), 
+            format!("expected '==', '>=', '>', '<=' or '<', got '{}'", 
+            PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
+        }
+    }
+}
+
+pub fn bfactor_expr_comp_op_expr(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+    parser.expr()?;
+    parser.comp_op()?;
+    let (response, _) = parser.expr()?;
+    Ok(response)
+}
+
 pub fn bfactor_expr_in_parenthesis(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("(")?;
     parser.bexpr()?;
@@ -21,11 +79,11 @@ pub fn bfactor_not(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
     })
 }
 
-pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let token_value = parser.get_curr_token_value();
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
-            match bfactor_expr_in_parenthesis(parser) {
+            match parser.bfactor_expr_in_parenthesis() {
                 Ok(response) => return Ok(response),
                 Err(err) => {
                     return Err(err);
@@ -33,7 +91,7 @@ pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             }
         },
         CoreToken::NOT => {
-            match bfactor_not(parser) {
+            match parser.bfactor_not() {
                 Ok(response) => return Ok(response),
                 Err(err) => {
                     return Err(err);
@@ -93,6 +151,26 @@ pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     }
 }
 
+pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+    let mut errors_vec: Vec<ParseError> = vec![];
+    let curr_lookahead = parser.get_lookahead();
+    match parser.bfactor_lookahead_one() {
+        Ok(response) => return Ok(response),
+        Err(err) => {
+            parser.reset_lookahead(curr_lookahead);
+            errors_vec.push(err);
+        }
+    }
+    match parser.bfactor_expr_comp_op_expr() {
+        Ok(response) => return Ok(response),
+        Err(err) => {
+            parser.reset_lookahead(curr_lookahead);
+            errors_vec.push(err);
+        }
+    }
+    Err(aggregate_errors(errors_vec))
+}
+
 pub fn andtive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("and")?;
     let response = parser.bterm()?;
@@ -102,7 +180,7 @@ pub fn andtive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, P
 pub fn andtive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::AND => {
-            match andtive_alternative(parser) {
+            match parser.andtive_alternative() {
                 Ok(response) => return Ok(response),
                 Err(err) => {
                     return Err(err);
@@ -148,7 +226,7 @@ pub fn ortive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, Pa
 pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::OR => {
-            match ortive_alternative(parser) {
+            match parser.ortive_alternative() {
                 Ok(response) => return Ok(response),
                 Err(err) => {
                     return Err(err);
@@ -178,86 +256,8 @@ pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     }
 }
 
-pub fn bexpr_term_ortive_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn bexpr(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.bterm()?;
     let response = parser.ortive()?;
     Ok(response)
-}
-
-pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    match parser.get_curr_core_token() {
-        CoreToken::DOUBLE_EQUAL => {
-            match parser.expect("==") {
-                Ok((response, _)) => return Ok(response),
-                Err(err) => {
-                    return Err(err);
-                }
-            }
-        },
-        CoreToken::GREATER_EQUAL => {
-            match parser.expect(">=") {
-                Ok((response, _)) => return Ok(response),
-                Err(err) => {
-                    return Err(err);
-                }
-            }
-        },
-        CoreToken::GREATER => {
-            match parser.expect(">") {
-                Ok((response, _)) => return Ok(response),
-                Err(err) => {
-                    return Err(err);
-                }
-            }
-        },
-        CoreToken::LESS_EQUAL => {
-            match parser.expect("<=") {
-                Ok((response, _)) => return Ok(response),
-                Err(err) => {
-                    return Err(err);
-                }
-            }
-        },
-        CoreToken::LESS => {
-            match parser.expect("<") {
-                Ok((response, _)) => return Ok(response),
-                Err(err) => {
-                    return Err(err);
-                }
-            }
-        },
-        _ => {
-            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
-            parser.get_lookahead(), 
-            format!("expected '==', '>=', '>', '<=' or '<', got '{}'", 
-            PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
-        }
-    }
-}
-
-pub fn bexpr_expr_comp_op_expr_alternative(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    parser.expr()?;
-    parser.comp_op()?;
-    let (response, _) = parser.expr()?;
-    Ok(response)
-}
-
-pub fn bexpr(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    let mut errors_vec: Vec<ParseError> = vec![];
-    let curr_lookahead = parser.get_lookahead();
-    match parser.bexpr_term_ortive_alternative() {
-        Ok(response) => return Ok(response),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    match parser.bexpr_expr_comp_op_expr_alternative() {
-        Ok(response) => return Ok(response),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    Err(aggregate_errors(errors_vec))
 }

@@ -146,6 +146,7 @@ impl PackratParser {
         Err(aggregate_errors(errors_vec))
     }
 
+    // statements
     pub fn stmt(&mut self) -> Result<ParseSuccess, ParseError> {
         components::stmt::stmt(self)
     }
@@ -162,6 +163,7 @@ impl PackratParser {
         components::simple_stmt::core::simple_stmt(self)
     }
 
+    // simple statement - decl, assign
     pub fn decl(&mut self) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::declaration::decl(self)
     }
@@ -170,12 +172,25 @@ impl PackratParser {
         components::simple_stmt::assignment::assign(self)
     }
 
+    pub fn r_asssign_alternatives(&mut self, rule_index: usize, line_number: usize) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::helper::r_asssign_alternatives(self, rule_index, line_number)
+    }
+
+    // expression
     pub fn expr(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
         components::expression::expression::expr(self)
     }
 
+    pub fn expr_term_additive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::expr_term_additive(self)
+    }
+
     pub fn term(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
         components::expression::expression::term(self)
+    }
+
+    pub fn term_factor_multitive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::term_factor_multitive(self)
     }
 
     pub fn additive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
@@ -190,6 +205,27 @@ impl PackratParser {
         components::expression::expression::multitive(self)
     }
 
+    pub fn factor_expr_in_parenthesis(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::factor_expr_in_parenthesis(self)
+    }
+
+    pub fn star_multitive_alternative(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::star_multitive_alternative(self)
+    }
+
+    pub fn slash_multitive_alternative(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::slash_multitive_alternative(self)
+    }
+
+    pub fn plus_additive_alternative(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::plus_additive_alternative(self)
+    }
+
+    pub fn minus_additive_alternative(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::minus_additive_alternative(self)
+    }
+
+    // boolean expression
     pub fn bexpr(&mut self) -> Result<ParseSuccess, ParseError> {
         components::expression::bexpression::bexpr(self)
     }
@@ -206,6 +242,10 @@ impl PackratParser {
         components::expression::bexpression::bfactor(self)
     }
 
+    pub fn bfactor_lookahead_one(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bfactor_lookahead_one(self)
+    }
+
     pub fn andtive(&mut self) -> Result<ParseSuccess, ParseError> {
         components::expression::bexpression::andtive(self)
     }
@@ -214,12 +254,24 @@ impl PackratParser {
         components::expression::bexpression::comp_op(self)
     }
 
-    pub fn bexpr_term_ortive_alternative(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::bexpr_term_ortive_alternative(self)
+    pub fn bfactor_expr_comp_op_expr(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bfactor_expr_comp_op_expr(self)
     }
 
-    pub fn bexpr_expr_comp_op_expr_alternative(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::bexpr_expr_comp_op_expr_alternative(self)
+    pub fn bfactor_expr_in_parenthesis(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bfactor_expr_in_parenthesis(self)
+    }
+
+    pub fn bfactor_not(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bfactor_not(self)
+    }
+
+    pub fn andtive_alternative(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::andtive_alternative(self)
+    }
+
+    pub fn ortive_alternative(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::ortive_alternative(self)
     }
 
     pub fn expect(&mut self, symbol: &str) -> Result<(ParseSuccess, usize), ParseError> {

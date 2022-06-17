@@ -56,19 +56,22 @@ struct_block:
 
 assign: id '=' r_assign  # change this to => atom '=' r_assign
 
-expr: term additive
+expr: 
+    | term additive
+    | term
 
 additive:
     | '+' expr
     | '-' expr
     | ()
 
-term: factor multitive
+term: 
+    | factor multitive
+    | factor
 
 multitive:
     | '*' term
     | '/' term
-    | ()
 
 factor:
     | '(' expr ')'
@@ -96,7 +99,6 @@ comp_op:
 
 bexpr: 
     | bterm oritive
-    | expr comp_op expr
 oritive: 
     | 'or' bexpr
     | ()
@@ -106,6 +108,7 @@ anditive:
     | ()
 bfactor:
     | 'not' bfactor
+    | expr comp_op expr
     | '(' bexpr ')'
     | id  # check the type of identifier is 'bool'
     | 'True'
