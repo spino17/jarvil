@@ -78,6 +78,52 @@ impl PackratParser {
         self.token_vec[self.lookahead].name.clone()
     }
 
+    pub fn get_next_token_name(&mut self) ->Rc<String> {
+        let mut temp_lookahead = self.lookahead;
+        loop {
+            let token = &self.token_vec[temp_lookahead];
+            match token.core_token {
+                CoreToken::BLANK => {
+                    temp_lookahead = temp_lookahead + 1;
+                },
+                _ => {
+                    return token.name.clone();
+                }
+            }
+        }
+    }
+
+    pub fn check_next_token(&mut self, symbol: &str) -> bool {
+        let mut temp_lookahead = self.lookahead;
+        loop {
+            let token = &self.token_vec[temp_lookahead];
+            match token.core_token {
+                CoreToken::BLANK => {
+                    temp_lookahead = temp_lookahead + 1;
+                },
+                _ => {
+                    if token.is_eq(symbol) {
+                        return true
+                    } else {
+                        return false
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn ignore_blanks(&mut self) {
+        loop {
+            let token = &self.token_vec[self.lookahead];
+            match token.core_token {
+                CoreToken::BLANK => {
+                    self.lookahead = self.lookahead + 1;
+                },
+                _ => return
+            }
+        }
+    }
+
     pub fn code(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
         let mut errors_vec: Vec<ParseError> = vec![];
         self.token_vec = token_vec;
@@ -162,18 +208,6 @@ impl PackratParser {
 
     pub fn andtive(&mut self) -> Result<ParseSuccess, ParseError> {
         components::expression::bexpression::andtive(self)
-    }
-
-    pub fn ignore_blanks(&mut self) {
-        loop {
-            let token = &self.token_vec[self.lookahead];
-            match token.core_token {
-                CoreToken::BLANK => {
-                    self.lookahead = self.lookahead + 1;
-                },
-                _ => return
-            }
-        }
     }
 
     pub fn expect(&mut self, symbol: &str) -> Result<(ParseSuccess, usize), ParseError> {
