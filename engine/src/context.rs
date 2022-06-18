@@ -12,7 +12,7 @@ struct Context {
     types: FxHashMap<String, ()>,
     letters: FxHashMap<char, ()>,
     digits: FxHashMap<char, ()>,
-    indent_spaces: usize,
+    indent_spaces: i64,
     // TODO - add Env (symbol table) so that internal methods just access context value and Env is updated while entry and exit
     // of block
 }
@@ -74,11 +74,11 @@ impl Context {
         }
     }
 
-    fn set_indent(&mut self, spaces: usize) {
-        self.indent_spaces = spaces;
+    fn set_indent(&mut self, indent_spaces: i64) {
+        self.indent_spaces = indent_spaces;
     }
 
-    fn get_indent(&self) -> usize {
+    fn get_indent(&self) -> i64 {
         self.indent_spaces
     }
 }
@@ -127,9 +127,9 @@ pub fn is_digit(c: &char) -> bool {
     }
 }
 
-pub fn set_indent(spaces: usize) {
+pub fn set_indent(indent_spaces: i64) {
     match CONTEXT.try_with(|ctx| {
-        ctx.borrow_mut().set_indent(spaces)
+        ctx.borrow_mut().set_indent(indent_spaces)
     }) {
         Err(err) => {
             panic!("{}", err)
@@ -138,7 +138,7 @@ pub fn set_indent(spaces: usize) {
     }
 }
 
-pub fn get_indent() -> usize {
+pub fn get_indent() -> i64 {
     match CONTEXT.try_with(|ctx| {
         ctx.borrow().get_indent()
     }) {

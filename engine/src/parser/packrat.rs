@@ -20,7 +20,7 @@ pub struct ParseSuccess {
 pub struct PackratParser {
     token_vec: Vec<Token>,
     lookahead: usize,
-    indent_level: usize,
+    indent_level: i64,
     env: Env,
     // TODO - add look up hash table for cached results
     // TODO - add AST data structure
@@ -32,7 +32,7 @@ impl PackratParser {
         PackratParser {
             token_vec: Vec::new(),
             lookahead: 0,
-            indent_level: 0,
+            indent_level: -1,
             env,
         }
     }
@@ -54,11 +54,11 @@ impl PackratParser {
         self.lookahead = reset_index;
     }
 
-    pub fn get_indent_level(&self) -> usize {
+    pub fn get_indent_level(&self) -> i64 {
         self.indent_level
     }
 
-    pub fn reset_indent_level(&mut self, reset_indent: usize) {
+    pub fn reset_indent_level(&mut self, reset_indent: i64) {
         self.indent_level = reset_indent;
     }
 
@@ -161,6 +161,10 @@ impl PackratParser {
         components::block::block(self)
     }
 
+    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, TokenValue)>), ParseError> {
+        components::block::struct_block(self)
+    }
+
     // statements
     pub fn stmt(&mut self) -> Result<ParseSuccess, ParseError> {
         components::stmt::stmt(self)
@@ -168,6 +172,10 @@ impl PackratParser {
 
     pub fn compound_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
         components::compound_stmt::core::compound_stmt(self)
+    }
+
+    pub fn struct_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::struct_stmt::struct_stmt(self)
     }
 
     pub fn simple_stmts(&mut self) -> Result<ParseSuccess, ParseError> {
@@ -185,6 +193,10 @@ impl PackratParser {
 
     pub fn assign(&mut self) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::assignment::assign(self)
+    }
+
+    pub fn l_decl(&mut self) -> Result<(ParseSuccess, Rc<String>, TokenValue), ParseError> {
+        components::simple_stmt::helper::l_decl(self)
     }
 
     pub fn r_asssign(&mut self, rule_index: usize, line_number: usize) -> Result<ParseSuccess, ParseError> {
@@ -407,9 +419,9 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_indent_spaces(&mut self) -> Result<(ParseSuccess, usize), ParseError> {
+    pub fn expect_indent_spaces(&mut self) -> Result<(ParseSuccess, i64), ParseError> {
         let expected_indent_spaces = context::get_indent() * self.indent_level;
-        let mut indent_spaces: usize = 0;
+        let mut indent_spaces = 0;
         loop {
             let token = &self.token_vec[self.lookahead];
             match &token.core_token {

@@ -11,10 +11,10 @@
 # an identifier or something like id[(id | int)] (array indexing)
 
 
-code: stmts
+code: block ENDMARKER
 
 # python style of block
-block: NEWLINE (INDENT stmt)+
+block: NEWLINE (INDENT stmt)*
 
 stmts: stmt+
 stmt: 
@@ -24,10 +24,11 @@ stmt:
 simple_stmt:
     | decl
     | assign
-    | # calling a function
+    | # calling a function, break, continue
 
 compound_stmt:
-    | function_def
+    | struct_stmt
+    | function_stmt
     | if_stmt
     | for_stmt
     | while_stmt
@@ -35,8 +36,6 @@ compound_stmt:
 type:
     | TYPE  # type token for in-built types
     | id  # identifier for user-defined types - semantic check required here!
-
-
 
 r_assign:
     | expr
@@ -114,7 +113,7 @@ bfactor:
     | 'True'
     | 'False'
 
-function_def: 'def' id '(' optparams ')' ['->' id] ':' block
+function_stmt: 'def' id '(' optparams ')' ['->' id] ':' block
 optparams:
     | param ',' optparams
     | param
