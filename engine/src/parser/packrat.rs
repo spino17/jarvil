@@ -76,8 +76,12 @@ impl PackratParser {
         self.env = env;
     }
 
-    pub fn set_scope(&mut self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
-        self.env.set(token_value, data_type, is_init);
+    pub fn set_identifier_to_scope(&mut self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
+        self.env.set_identifier(token_value, data_type, is_init);
+    }
+
+    pub fn set_user_defined_type_to_scope(&mut self, token_value: &TokenValue, fields: Vec<(Rc<String>, Rc<String>)>) {
+        self.env.set_user_defined_type(token_value, fields);
     }
 
     pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
@@ -161,7 +165,7 @@ impl PackratParser {
         components::block::block(self)
     }
 
-    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, TokenValue)>), ParseError> {
+    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(TokenValue, TokenValue)>), ParseError> {
         components::block::struct_block(self)
     }
 
@@ -195,7 +199,7 @@ impl PackratParser {
         components::simple_stmt::assignment::assign(self)
     }
 
-    pub fn l_decl(&mut self) -> Result<(ParseSuccess, Rc<String>, TokenValue), ParseError> {
+    pub fn l_decl(&mut self) -> Result<(ParseSuccess, TokenValue, TokenValue), ParseError> {
         components::simple_stmt::helper::l_decl(self)
     }
 
@@ -319,7 +323,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_type(&mut self) -> Result<(ParseSuccess, usize, Rc<String>), ParseError> {
+    pub fn expect_type(&mut self) -> Result<(ParseSuccess, usize, TokenValue), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -328,7 +332,7 @@ impl PackratParser {
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token.line_number, token_value.0.clone()))
+                }, token.line_number, TokenValue(token_value.0.clone())))
             },
             CoreToken::IDENTIFIER(token_value) => {
                 let symbol_table = token.check_declaration(&self.env, self.lookahead)?;
@@ -336,7 +340,7 @@ impl PackratParser {
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, token_value.0.clone()))
+                    }, token.line_number, TokenValue(token_value.0.clone())))
                 } else {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
                         self.lookahead, 

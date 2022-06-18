@@ -14,35 +14,69 @@ use std::rc::Rc;
 use crate::lexer::token::TokenValue;
 
 #[derive(Debug)]
-pub struct MetaData {
+struct IdentifierData {
     data_type: Rc<String>,  // TODO - change this to Rc string
     is_init: bool,
+}
+
+#[derive(Debug)]
+struct UserDefinedTypeData {
+    fields: Vec<(Rc<String>, Rc<String>)>
+}
+
+#[derive(Debug)]
+enum MetaData {
+    IDENTIFIER(IdentifierData),
+    USER_DEFINED_TYPE(UserDefinedTypeData),
 }
 
 #[derive(Debug)]
 pub struct SymbolData(Rc<RefCell<MetaData>>);
 
 impl SymbolData {
-    
-    // identifiers can be user defined types as well
     pub fn is_type(&self) -> bool {
-        self.0.borrow().data_type.as_ref().eq("type")
+        match *self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(_) => true,
+            _ => false,
+        }
     }
 
     pub fn type_eq(&self, data_type: &str) -> bool {
-        self.0.borrow().data_type.as_ref().eq(data_type)
+        // .data_type.as_ref().eq(data_type)
+        match &*self.0.borrow() {
+            MetaData::IDENTIFIER(data) => data.data_type.to_string().eq(data_type),
+            _ => false
+        }
     }
 
     pub fn get_type(&self) -> Rc<String> {
-        self.0.borrow().data_type.clone()
+        // .data_type.clone()
+        match &*self.0.borrow() {
+            MetaData::IDENTIFIER(data) => data.data_type.clone(),
+            _ => {
+                unreachable!("this method cannot be called for user-defined types")
+            }
+        }
     }
 
     pub fn set_init(&self, is_init: bool) {
-        self.0.borrow_mut().is_init = is_init;
+        // .is_init = is_init;
+        match &mut *self.0.borrow_mut() {
+            MetaData::IDENTIFIER(data) => data.is_init = is_init,
+            _ => {
+                unreachable!("this method cannot be called for user-defined types")
+            }
+        }
     }
 
     pub fn is_init(&self) -> bool {
-        self.0.borrow().is_init
+        // .is_init
+        match &*self.0.borrow() {
+            MetaData::IDENTIFIER(data) => data.is_init,
+            _ => {
+                unreachable!("this method cannot be called for user-defined types")
+            }
+        }
     }
 }
 
@@ -53,8 +87,8 @@ pub struct Scope {
 }
 
 impl Scope {
-    fn set(&mut self, name: Rc<String>, data_type: Rc<String>, is_init: bool) {
-        self.symbol_table.insert(name, SymbolData(Rc::new(RefCell::new(MetaData{data_type, is_init}))));
+    fn set(&mut self, name: Rc<String>, meta_data: MetaData) {
+        self.symbol_table.insert(name, SymbolData(Rc::new(RefCell::new(meta_data))));
     }
 
     fn get(&self, name: &Rc<String>) -> Option<&SymbolData> {
@@ -81,8 +115,19 @@ impl Env {
         })))
     }
 
-    pub fn set(&self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
-        self.0.borrow_mut().set(token_value.0.clone(), data_type.clone(), is_init);
+    pub fn set_identifier(&self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
+        let meta_data = MetaData::IDENTIFIER(IdentifierData{
+            data_type: data_type.clone(),
+            is_init,
+        });
+        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+    }
+
+    pub fn set_user_defined_type(&self, token_value: &TokenValue, fields: Vec<(Rc<String>, Rc<String>)>) {
+        let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData{
+            fields,
+        });
+        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
     }
 
     pub fn get(&self, token_value: &TokenValue) -> Option<SymbolData> {

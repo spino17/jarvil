@@ -64,14 +64,14 @@ pub fn block(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     }
 }
 
-pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, TokenValue)>), ParseError> {
+pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(TokenValue, TokenValue)>), ParseError> {
     parser.expect("\n")?;
     let indent_spaces_unit = context::get_indent();
     let curr_env = parser.get_env();
     parser.set_new_env_for_block();
     let mut curr_lookahead = parser.get_lookahead();
     parser.reset_indent_level(parser.get_indent_level() + 1);
-    let mut fields_vec: Vec<(Rc<String>, TokenValue)> = vec![];
+    let mut fields_vec: Vec<(TokenValue, TokenValue)> = vec![];
     loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
         if let Some(err) = response.possible_err {

@@ -6,13 +6,13 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let (_, _, data_type) = parser.expect_type()?;
     let (_, line_number, token_value) = parser.expect_and_get_value("identifier")?;
     let rule_index;
-    if data_type.as_ref().eq("int") {
+    if data_type.0.as_ref().eq("int") {
         rule_index = 0;
-    } else if data_type.as_ref().eq("float") {
+    } else if data_type.0.as_ref().eq("float") {
         rule_index = 1
-    } else if data_type.as_ref().eq("bool") {
+    } else if data_type.0.as_ref().eq("bool") {
         rule_index = 2;
-    } else if data_type.as_ref().eq("string") {
+    } else if data_type.0.as_ref().eq("string") {
         rule_index = 3;
     } else {
         unimplemented!("yet to be implemented for user-defined types")
@@ -28,7 +28,7 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         possible_err: None,
     });
     parser.reset_lookahead(response.lookahead);
-    parser.set_scope(&token_value, &data_type, is_matched);
+    parser.set_identifier_to_scope(&token_value, &data_type.0, is_matched);
 
     // semantic check -> type-checking
     if is_matched {
