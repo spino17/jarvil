@@ -89,6 +89,14 @@ impl PackratParser {
         self.env.set_function(token_value, params, return_type);
     }
 
+    pub fn set_params_to_scope(&mut self, params: Option<&Vec<(Rc<String>, Rc<String>)>>) {
+        if let Some(params) = params {
+            for (data_type, identifier_name) in params {
+                self.set_identifier_to_scope(&TokenValue(identifier_name.clone()), data_type, true);
+            }
+        }
+    }
+
     pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
         self.token_vec = token_vec;
     }
@@ -166,8 +174,8 @@ impl PackratParser {
         components::code::code(self, token_vec)
     }
 
-    pub fn block(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::block::block(self)
+    pub fn block(&mut self, params: Option<&Vec<(Rc<String>, Rc<String>)>>) -> Result<ParseSuccess, ParseError> {
+        components::block::block(self, params)
     }
 
     pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
@@ -354,6 +362,7 @@ impl PackratParser {
             CoreToken::IDENTIFIER(token_value) => {
                 let symbol_table = token.check_declaration(&self.env, self.lookahead)?;
                 if symbol_table.is_type() {
+                    self.lookahead = self.lookahead + 1;
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,

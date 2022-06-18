@@ -8,11 +8,12 @@ use crate::errors::{ParseError};
 // pub fn block<F: FnMut() -> Result<ParseSuccess, ParseError>>(parser: &mut PackratParser, 
 //    mut f: F) -> Result<ParseSuccess, ParseError>
 
-pub fn block(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn block(parser: &mut PackratParser, params: Option<&Vec<(Rc<String>, Rc<String>)>>) -> Result<ParseSuccess, ParseError> {
     parser.expect("\n")?;
     let indent_spaces_unit = context::get_indent();
     let curr_env = parser.get_env();
     parser.set_new_env_for_block();
+    parser.set_params_to_scope(params);
     let mut curr_lookahead = parser.get_lookahead();
     parser.reset_indent_level(parser.get_indent_level() + 1);
     loop {

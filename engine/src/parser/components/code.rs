@@ -17,7 +17,7 @@ pub fn code(parser: &mut PackratParser, token_vec: Vec<Token>) -> Result<(), Par
         errors_vec.push(err);
     }
      */
-    let response = parser.block()?;
+    let response = parser.block(None)?;
     if let Some(err) = response.possible_err {
         errors_vec.push(err);
     }
