@@ -74,6 +74,7 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
             }
         }
     }
+    // TODO - input all the params into the function scope
     let response = parser.block()?;
     if is_matched {
         if let Some(return_type) = return_type {

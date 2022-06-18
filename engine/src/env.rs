@@ -62,7 +62,7 @@ impl SymbolData {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.data_type.clone(),
             _ => {
-                unreachable!("this method cannot be called for user-defined types")
+                Rc::new(String::from("non-typed"))
             }
         }
     }
@@ -72,7 +72,7 @@ impl SymbolData {
         match &mut *self.0.borrow_mut() {
             MetaData::IDENTIFIER(data) => data.is_init = is_init,
             _ => {
-                unreachable!("this method cannot be called for user-defined types")
+                // do nothing for other branches
             }
         }
     }
@@ -82,7 +82,7 @@ impl SymbolData {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.is_init,
             _ => {
-                unreachable!("this method cannot be called for user-defined types")
+                true
             }
         }
     }
