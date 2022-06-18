@@ -63,7 +63,7 @@ impl Scope {
 }
 
 #[derive(Debug)]
-pub struct Env(Rc<RefCell<Scope>>);
+pub struct Env(pub Rc<RefCell<Scope>>);
 
 impl Env {
     pub fn new() -> Self {

@@ -46,7 +46,7 @@ impl Parser for PackratParser {
 }
 
 impl PackratParser {
-    pub fn get_lookahead(&mut self) -> usize {
+    pub fn get_lookahead(&self) -> usize {
         self.lookahead
     }
 
@@ -54,12 +54,26 @@ impl PackratParser {
         self.lookahead = reset_index;
     }
 
-    pub fn get_indent_level(&mut self) -> usize {
+    pub fn get_indent_level(&self) -> usize {
         self.indent_level
     }
 
     pub fn reset_indent_level(&mut self, reset_indent: usize) {
         self.indent_level = reset_indent;
+    }
+
+    pub fn get_env(&self) -> Env {
+        Env(self.env.0.clone())
+    }
+
+    pub fn reset_env(&mut self, reset_env: &Env) {
+        self.env = Env(reset_env.0.clone())
+    }
+
+    pub fn set_new_env_for_block(&mut self) {
+        let curr_env = Env(self.env.0.clone());
+        let env = Env::new_with_parent_env(&curr_env);
+        self.env = env;
     }
 
     pub fn set_scope(&mut self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
@@ -70,7 +84,7 @@ impl PackratParser {
         self.token_vec = token_vec;
     }
 
-    pub fn get_curr_line_number(&mut self) -> usize {
+    pub fn get_curr_line_number(&self) -> usize {
         // self.ignore_blanks();
         self.token_vec[self.lookahead].line_number
     }
@@ -90,7 +104,7 @@ impl PackratParser {
         self.token_vec[self.lookahead].name.clone()
     }
 
-    pub fn get_next_token_name(&mut self) ->Rc<String> {
+    pub fn get_next_token_name(&self) ->Rc<String> {
         let mut temp_lookahead = self.lookahead;
         loop {
             let token = &self.token_vec[temp_lookahead];
@@ -105,7 +119,7 @@ impl PackratParser {
         }
     }
 
-    pub fn check_next_token(&mut self, symbol: &str) -> bool {
+    pub fn check_next_token(&self, symbol: &str) -> bool {
         let mut temp_lookahead = self.lookahead;
         loop {
             let token = &self.token_vec[temp_lookahead];
