@@ -152,7 +152,7 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
         _ => {
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
             parser.get_lookahead(), 
-            format!("expected '(', 'True', 'False' , 'not' or an identifier, got '{}'",
+            format!("expected '(', 'True', 'False', 'not' or an identifier, got '{}'",
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
     }

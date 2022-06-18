@@ -158,8 +158,7 @@ impl PackratParser {
     }
 
     pub fn block(&mut self) -> Result<ParseSuccess, ParseError> {
-        // components::block::block(self)
-        todo!()
+        components::block::block(self)
     }
 
     // statements
@@ -418,19 +417,19 @@ impl PackratParser {
                 CoreToken::NEWLINE => indent_spaces = 0,
                 CoreToken::TAB => unimplemented!("yet to handle tabs in indentation"),
                 _ => {
-                    if !indent_spaces == expected_indent_spaces {
+                    if indent_spaces == expected_indent_spaces {
+                        return Ok((ParseSuccess{
+                            lookahead: self.lookahead,
+                            possible_err: None,
+                        }, indent_spaces))
+                    } else {
                         let err =ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
                             self.lookahead, format!(
-                                "indentation of the statement do not match. expected indent '{}', got '{}'", 
+                                "indentation of the statement does not match. expected indent '{}' spaces, got '{}' spaces", 
                                 expected_indent_spaces, indent_spaces)));
                         return Ok((ParseSuccess{
                             lookahead: self.lookahead,
                             possible_err: Some(err),
-                        }, indent_spaces))
-                    } else {
-                        return Ok((ParseSuccess{
-                            lookahead: self.lookahead,
-                            possible_err: None,
                         }, indent_spaces))
                     }
                 }
