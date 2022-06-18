@@ -27,6 +27,7 @@ pub enum CoreToken {
     // types
     STRUCT,             // 'struct'
     TYPE(TokenValue),
+    NEW,                // 'new'
 
     // bitwise operators
     AND,                // 'and'

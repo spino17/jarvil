@@ -16,11 +16,12 @@ const NOT:          &'static str = "not";
 const OR:           &'static str = "or";
 const IS:           &'static str = "is";
 const IN:           &'static str = "in";
+const NEW:          &'static str = "new";
 const TRUE:         &'static str = "True";
 const FALSE:        &'static str = "False";
 const NONE:         &'static str = "None";
 
-pub const KEYWORDS: [&'static str; 16] = [
+pub const KEYWORDS: [&'static str; 18] = [
     FOR,
     WHILE,
     CONTINUE,
@@ -35,8 +36,10 @@ pub const KEYWORDS: [&'static str; 16] = [
     OR,
     IS,
     IN,
+    NEW,
     TRUE,
     FALSE,
+    NONE,
 ];
 
 pub const TYPES: [&'static str; 4] = [
@@ -147,6 +150,8 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
             (CoreToken::IS, String::from(IS))
         } else if value.eq(IN) {
             (CoreToken::IN, String::from(IN))
+        } else if value.eq(NEW) {
+            (CoreToken::NEW, String::from(NEW))
         } else if value.eq(TRUE) {
             (CoreToken::TRUE, String::from(TRUE))
         } else if value.eq(FALSE) {

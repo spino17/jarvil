@@ -3,12 +3,11 @@
 // parsing!
 // See https://pdos.csail.mit.edu/~baford/packrat/thesis/ for more information.
 
-use std::vec;
 use crate::parser::core::Parser;
 use crate::lexer::token::{Token, CoreToken, TokenValue};
 use crate::parser::ast::AST;
 use std::rc::Rc;
-use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
+use crate::errors::{ParseError, SyntaxError};
 use crate::env::{Env, SymbolData};
 use crate::parser::components;
 
@@ -54,8 +53,20 @@ impl PackratParser {
         self.lookahead = reset_index;
     }
 
+    pub fn get_indent_level(&mut self) -> usize {
+        self.indent_level
+    }
+
+    pub fn reset_indent_level(&mut self, reset_indent: usize) {
+        self.indent_level = reset_indent;
+    }
+
     pub fn set_scope(&mut self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
         self.env.set(token_value, data_type, is_init);
+    }
+
+    pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
+        self.token_vec = token_vec;
     }
 
     pub fn get_curr_line_number(&mut self) -> usize {
@@ -124,26 +135,16 @@ impl PackratParser {
         }
     }
 
+    // all production rule matching function declared below:
+
+    // code
     pub fn code(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
-        let mut errors_vec: Vec<ParseError> = vec![];
-        self.token_vec = token_vec;
-        self.stmt()?;
-        let curr_lookahead = self.lookahead;
-        let response = PackratParser::expect_zero_or_more(|| {
-            let response = self.stmt()?;
-            Ok(response)
-        }, curr_lookahead);
-        self.reset_lookahead(response.lookahead);
-        if let Some(err) = response.possible_err {
-            errors_vec.push(err);
-        }
-        match self.expect("endmarker") {
-            Ok((_, _)) => {
-                return Ok(());
-            },
-            Err(err) => errors_vec.push(err)
-        }
-        Err(aggregate_errors(errors_vec))
+        components::code::code(self, token_vec)
+    }
+
+    pub fn block(&mut self) -> Result<ParseSuccess, ParseError> {
+        // components::block::block(self)
+        todo!()
     }
 
     // statements
