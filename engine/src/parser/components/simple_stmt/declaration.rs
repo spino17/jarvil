@@ -15,7 +15,7 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     } else if data_type.0.as_ref().eq("string") {
         rule_index = 3;
     } else {
-        // TODO - if user-defined type then choose rule_index = 4 (new type())
+        // TODO - if user-defined type then choose rule_index = 4 (new type)
         unimplemented!("yet to be implemented for user-defined types")
     }
     let curr_lookahead = parser.get_lookahead();

@@ -84,6 +84,11 @@ impl PackratParser {
         self.env.set_user_defined_type(token_value, fields);
     }
 
+    pub fn set_function_to_scope(&mut self, token_value: &TokenValue, 
+        params: Vec<(Rc<String>, Rc<String>)>, return_type: Option<Rc<String>>) {
+        self.env.set_function(token_value, params, return_type);
+    }
+
     pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
         self.token_vec = token_vec;
     }
@@ -180,6 +185,10 @@ impl PackratParser {
 
     pub fn struct_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
         components::compound_stmt::struct_stmt::struct_stmt(self)
+    }
+
+    pub fn optparams(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+        components::compound_stmt::function_stmt::optparams(self)
     }
 
     pub fn simple_stmts(&mut self) -> Result<ParseSuccess, ParseError> {
@@ -475,7 +484,7 @@ impl PackratParser {
 
     pub fn expect_optionally<T, F: FnMut() -> Result<T, ParseError>>(mut f: F, curr_value: T) -> (bool, T, Option<ParseError>) {
         match f() {
-            Ok(lookahead) => (true, lookahead, None),
+            Ok(response) => (true, response, None),
             Err(err) => {
                 (false, curr_value, Some(err))
             }

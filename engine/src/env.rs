@@ -25,9 +25,17 @@ struct UserDefinedTypeData {
 }
 
 #[derive(Debug)]
+struct FunctionData {
+    params: Vec<(Rc<String>, Rc<String>)>,
+    return_type: Option<Rc<String>>,
+}
+
+#[derive(Debug)]
 enum MetaData {
     IDENTIFIER(IdentifierData),
     USER_DEFINED_TYPE(UserDefinedTypeData),
+    FUNCTION(FunctionData),
+    // TODO - add for function
 }
 
 #[derive(Debug)]
@@ -126,6 +134,14 @@ impl Env {
     pub fn set_user_defined_type(&self, token_value: &TokenValue, fields: Vec<(Rc<String>, Rc<String>)>) {
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData{
             fields,
+        });
+        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+    }
+
+    pub fn set_function(&self, token_value: &TokenValue, params: Vec<(Rc<String>, Rc<String>)>, return_type: Option<Rc<String>>) {
+        let meta_data = MetaData::FUNCTION(FunctionData{
+            params,
+            return_type: return_type,
         });
         self.0.borrow_mut().set(token_value.0.clone(), meta_data);
     }
