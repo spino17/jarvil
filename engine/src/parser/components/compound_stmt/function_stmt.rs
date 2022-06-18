@@ -51,6 +51,7 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
     let (_, _, token_value) = parser.expect_and_get_value("identifier")?;
     parser.expect("(")?;
     let (_, params) = parser.optparams()?;  // take individual l_decl info from this parsing step for semantic analysis
+    println!("{:?}", params);
     parser.expect(")")?;
     let curr_lookahead = parser.get_lookahead();
     let (is_matched, (response, return_type), err) = 

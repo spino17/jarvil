@@ -31,7 +31,6 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     });
     parser.reset_lookahead(response.lookahead);
     parser.set_identifier_to_scope(&token_value, &data_type.0, is_matched);
-
     // semantic check -> type-checking
     if is_matched {
         Ok(ParseSuccess{

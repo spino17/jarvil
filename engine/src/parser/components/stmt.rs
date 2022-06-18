@@ -1,12 +1,12 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
-use crate::errors::{ParseError, SyntaxError, aggregate_errors};
+use crate::errors::{ParseError, SyntaxError};
 use crate::lexer::token::CoreToken;
 
-pub fn try_compound_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn try_compound_stmt(parser: &mut PackratParser) -> Result<(Option<ParseSuccess>, bool), ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::STRUCT => {
             match parser.struct_stmt() {
-                Ok(response) => return Ok(response),
+                Ok(response) => return Ok((Some(response), true)),
                 Err(err) => {
                     return Err(err);
                 }
@@ -14,17 +14,14 @@ pub fn try_compound_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, Par
         },
         CoreToken::DEF => {
             match parser.function_stmt() {
-                Ok(response) => return Ok(response),
+                Ok(response) => return Ok((Some(response), true)),
                 Err(err) => {
                     return Err(err);
                 }
             }
         }
         _ => {
-            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
-            parser.get_lookahead(), 
-            format!("expected 'struct', 'def', got '{}'",
-            PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
+            return Ok((None, false))
         }
     }
 }
@@ -35,11 +32,15 @@ pub fn stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     // Below is a general pattern among many production rule cases where we always have to reset lookahead back to the original
     // value when trying out new production rule after prior one failed
     // let curr_lookahead = parser.get_lookahead();
-    match try_compound_stmt(parser) {
-        Ok(response) => Ok(response),
-        Err(_) => {
-            return parser.simple_stmt();
+    let (response, is_success) = try_compound_stmt(parser)?;
+    if is_success {
+        if let Some(response) = response {
+            return Ok(response)
+        } else {
+            unreachable!("a successfull parse of compound statement always give some response")
         }
+    } else {
+        parser.simple_stmts()
     }
     /*
     match parser.compound_stmt() {
