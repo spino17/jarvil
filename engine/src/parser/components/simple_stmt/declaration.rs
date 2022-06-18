@@ -3,8 +3,9 @@ use crate::errors::{ParseError};
 use crate::parser::packrat::ParseSuccess;
 
 pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    let (_, _, data_type) = parser.expect_type()?;
-    let (_, line_number, token_value) = parser.expect_and_get_value("identifier")?;
+    // let (_, _, data_type) = parser.expect_type()?;
+    // let (_, line_number, token_value) = parser.expect_and_get_value("identifier")?;
+    let (_, line_number, data_type, token_value) = parser.l_decl()?;
     let rule_index;
     if data_type.0.as_ref().eq("int") {
         rule_index = 0;

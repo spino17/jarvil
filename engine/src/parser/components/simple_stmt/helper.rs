@@ -2,10 +2,10 @@ use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SemanticError};
 use crate::lexer::token::{TokenValue};
 
-pub fn l_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, TokenValue, TokenValue), ParseError> {
+pub fn l_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, TokenValue, TokenValue), ParseError> {
     let (_, _, data_type) = parser.expect_type()?;
-    let (response, _, token_value) = parser.expect_and_get_value("identifier")?;
-    Ok((response, data_type, token_value))
+    let (response, line_number, token_value) = parser.expect_and_get_value("identifier")?;
+    Ok((response, line_number, data_type, token_value))
 }
 
 pub fn r_asssign(parser: &mut PackratParser,

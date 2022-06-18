@@ -135,10 +135,10 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             return Ok((CoreToken::SLASH, String::from("/")));
         },
         1 => {
-            Err(LexicalError::new(*line_number, "no newline terminal found for line comment"))
+            Err(LexicalError::new(*line_number, String::from("no newline terminal found for line comment")))
         },
         2 => {
-            Err(LexicalError::new(*line_number, "no closing tag found for block comment"))
+            Err(LexicalError::new(*line_number, String::from("no closing tag found for block comment")))
         },
         3 => unreachable!("found state 3 which is not possible as state 3 either returns or always transition to state 2"),
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
@@ -163,7 +163,7 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize,
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    Err(LexicalError::new(*line_number, "no newline terminal found for line comment"))
+    Err(LexicalError::new(*line_number, String::from("no newline terminal found for line comment")))
 }
 
 // = -> =, ==
@@ -248,7 +248,7 @@ pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize,
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    Err(LexicalError::new(*line_number, r#"no closing " found for literal"#))
+    Err(LexicalError::new(*line_number, String::from(r#"no closing " found for literal"#)))
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type
@@ -293,7 +293,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
                 if context::is_digit(&next_char) {
                     state = 2;
                 } else {
-                    return Err(LexicalError::new(*line_number, "expected at least one digit after '.'"))
+                    return Err(LexicalError::new(*line_number, String::from("expected at least one digit after '.'")))
                 }
             },
             2 => {
@@ -318,7 +318,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
             return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from("int")))
         },
         1 => {
-            return Err(LexicalError::new(*line_number, "expected at least one digit after '.'"))
+            return Err(LexicalError::new(*line_number, String::from("expected at least one digit after '.'")))
         },
         2 => {
             let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();

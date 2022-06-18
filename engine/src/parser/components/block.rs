@@ -97,7 +97,7 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
         // f()?;
         // parser.stmt()?;
         match parser.l_decl() {
-            Ok((_, data_type, token_value)) => {
+            Ok((_, _, data_type, token_value)) => {
                 fields_vec.push((data_type.0, token_value.0));
             },
             Err(err) => {

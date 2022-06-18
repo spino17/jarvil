@@ -4,11 +4,11 @@ use std::fmt::Formatter;
 #[derive(Debug)]
 pub struct LexicalError {
     line_number: usize,
-    err_message: &'static str,
+    err_message: String,
 }
 
 impl LexicalError {
-    pub fn new(line_number: usize, err_message: &'static str) -> Self {
+    pub fn new(line_number: usize, err_message: String) -> Self {
         LexicalError{
             line_number,
             err_message,
@@ -112,12 +112,19 @@ impl From<ParseError> for CompilationError {
 impl Display for CompilationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            CompilationError::IO_ERROR(err) => write!(f, "Error occured while compilation\nIO Errror:\n{}", err.to_string()),
-            CompilationError::LEXICAL_ERROR(lexical_err) => write!(f, "Error occured while compilation\nLexical Error: on line {}\n{}", lexical_err.line_number, lexical_err.err_message),
+            CompilationError::IO_ERROR(err) => write!(
+                f, "Error occured while compilation\nIO Errror:\n{}", err.to_string()),
+            CompilationError::LEXICAL_ERROR(lexical_err) => write!(f, 
+                "Error occured while compilation\nLexical Error: on line {}\n{}", lexical_err.line_number, 
+                lexical_err.err_message),
             CompilationError::PARSE_ERROR(err) => {
                 match err {
-                    ParseError::SYNTAX_ERROR(syntax_error) => write!(f, "Error occured while compilation\nSynatx Error: on line {}, lookahead {}\n{}", syntax_error.line_number, syntax_error.lookahead_index, syntax_error.err_message),
-                    ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, "Error occured while compilation\nSemantic Error: on line {}, lookahead {}\n{}", semantic_error.line_number, semantic_error.lookahead_index, semantic_error.err_message)
+                    ParseError::SYNTAX_ERROR(syntax_error) => write!(f, 
+                        "Error occured while compilation\nSynatx Error: on line {}, lookahead {}\n{}", 
+                        syntax_error.line_number, syntax_error.lookahead_index, syntax_error.err_message),
+                    ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, 
+                        "Error occured while compilation\nSemantic Error: on line {}, lookahead {}\n{}", 
+                        semantic_error.line_number, semantic_error.lookahead_index, semantic_error.err_message)
                 }
             }
         }

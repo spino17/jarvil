@@ -3,7 +3,13 @@ use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::ParseError;
 
 pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
-    todo!()
+    let mut params: Vec<(Rc<String>, Rc<String>)> = vec![];
+    let (_, _, data_type, token_value) = parser.l_decl()?;
+    params.push((data_type.0.clone(), token_value.0.clone()));
+    parser.expect(",")?;
+    let (response, mut remaining_params) = parser.optparams()?;
+    params.append(&mut remaining_params);
+    Ok((response, params))
 }
 
 pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {

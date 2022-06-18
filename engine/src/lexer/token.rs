@@ -4,6 +4,8 @@ use crate::env::{Env,SymbolData};
 use crate::lexer::helper;
 use crate::context;
 
+use super::lexer::Lexer;
+
 #[derive(Debug)]
 pub struct TokenValue(pub Rc<String>);
 
@@ -191,7 +193,7 @@ impl Token {
                 } else if context::is_digit(&c) {
                     (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, line_number, code)?;
                 } else {
-                    unreachable!("token missing for char `{}` prefix", c)
+                    return Err(LexicalError::new(*line_number, format!("invalid character '{}' found", c)))
                 }
                 (token, name)
             }
