@@ -7,7 +7,8 @@ use crate::errors::SyntaxError;
 pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::COMMA => {
-            todo!()
+            parser.expect(",")?;
+            parser.optparams()
         },
         _ => {
             match parser.expect("empty") {
@@ -38,8 +39,9 @@ pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<St
     let mut params: Vec<(Rc<String>, Rc<String>)> = vec![];
     let (_, _, data_type, token_value) = parser.l_decl()?;
     params.push((data_type.0.clone(), token_value.0.clone()));
-    parser.expect(",")?;
-    let (response, mut remaining_params) = parser.optparams()?;
+    // parser.expect(",")?;
+    // let (response, mut remaining_params) = parser.optparams()?;
+    let (response, mut remaining_params) = parser.optparams_factor()?;
     params.append(&mut remaining_params);
     Ok((response, params))
 }

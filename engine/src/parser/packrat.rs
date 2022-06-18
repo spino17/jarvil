@@ -187,8 +187,16 @@ impl PackratParser {
         components::compound_stmt::struct_stmt::struct_stmt(self)
     }
 
+    pub fn function_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::function_stmt::function_stmt(self)
+    }
+
     pub fn optparams(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
         components::compound_stmt::function_stmt::optparams(self)
+    }
+
+    pub fn optparams_factor(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+        components::compound_stmt::function_stmt::optparams_factor(self)
     }
 
     pub fn simple_stmts(&mut self) -> Result<ParseSuccess, ParseError> {
