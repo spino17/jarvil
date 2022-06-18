@@ -10,6 +10,7 @@ use std::rc::Rc;
 use crate::errors::{ParseError, SyntaxError};
 use crate::env::{Env, SymbolData};
 use crate::parser::components;
+use crate::context;
 
 pub struct ParseSuccess {
     pub lookahead: usize,
@@ -393,7 +394,57 @@ impl PackratParser {
         }
     }
 
+    pub fn expect_indent_spaces(&mut self) -> Result<(ParseSuccess, usize), ParseError> {
+        let expected_indent_spaces = context::get_indent() * self.indent_level;
+        let mut indent_spaces: usize = 0;
+        loop {
+            let token = &self.token_vec[self.lookahead];
+            match &token.core_token {
+                CoreToken::BLANK => indent_spaces = indent_spaces + 1,
+                CoreToken::NEWLINE => indent_spaces = 0,
+                CoreToken::TAB => unimplemented!("yet to handle tabs in indentation"),
+                _ => {
+                    if !indent_spaces == expected_indent_spaces {
+                        let err =ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
+                            self.lookahead, format!(
+                                "indentation of the statement do not match. expected indent '{}', got '{}'", 
+                                expected_indent_spaces, indent_spaces)));
+                        return Ok((ParseSuccess{
+                            lookahead: self.lookahead,
+                            possible_err: Some(err),
+                        }, indent_spaces))
+                    } else {
+                        return Ok((ParseSuccess{
+                            lookahead: self.lookahead,
+                            possible_err: None,
+                        }, indent_spaces))
+                    }
+                }
+            }
+            self.lookahead = self.lookahead + 1;
+        }
+    }
+
     pub fn expect_zero_or_more<F: FnMut() -> Result<ParseSuccess, ParseError>>(mut f: F, 
+        initial_lookahead: usize) -> ParseSuccess {
+        let mut curr_lookahead = initial_lookahead;
+        loop {
+            match f() {
+                Ok(response) => {
+                    curr_lookahead = response.lookahead;
+                    continue;
+                },
+                Err(err) => {
+                    return ParseSuccess{
+                        lookahead: curr_lookahead,
+                        possible_err: Some(err)
+                    };
+                }
+            }
+        }
+    }
+
+    pub fn expect_zero_or_more_with_termination<F: FnMut() -> Result<ParseSuccess, ParseError>>(mut f: F, 
         initial_lookahead: usize) -> ParseSuccess {
         let mut curr_lookahead = initial_lookahead;
         loop {

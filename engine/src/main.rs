@@ -32,4 +32,5 @@ fn main() {
             println!("{}", err);
         }
     }
+    println!("{}", 0.999999 as usize);
 }
