@@ -30,7 +30,7 @@ pub fn r_asssign(parser: &mut PackratParser,
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number,
                             parser.get_lookahead(), 
                             String::from(
-                                "mismatched types\nidentifier declared with type 'int', got assigned with value of type 'float'")))
+                                "mismatched types\nidentifier declared with type 'float', got assigned with value of type 'int'")))
                             )
                     }
                     return Ok(response)

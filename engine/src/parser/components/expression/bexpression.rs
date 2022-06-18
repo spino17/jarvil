@@ -53,7 +53,9 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
              */
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
             parser.get_lookahead(), 
-            String::from("got an 'int' or 'float' valued expression inside a boolean expression"))))
+            String::from(
+                "got a numeric expression inside a boolean expression\nnumeric expression can only be paired using '==', '>=', '>', '<=' or '<' inside a boolean expression")))
+            )
         }
     }
 }
@@ -195,6 +197,7 @@ pub fn andtive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         _ => {
             match parser.expect("empty") {
                 Ok((response, _)) => {
+                    // FOLLOW(andtive)
                     if parser.check_next_token("\n") 
                     || parser.check_next_token(")") 
                     || parser.check_next_token("or") {
@@ -241,6 +244,7 @@ pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         _ => {
             match parser.expect("empty") {
                 Ok((response, _)) => {
+                    // FOLLOW(ortive)
                     if parser.check_next_token("\n") 
                     || parser.check_next_token(")") {
                         return Ok(response)

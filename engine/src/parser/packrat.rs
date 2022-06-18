@@ -59,7 +59,7 @@ impl PackratParser {
     }
 
     pub fn get_curr_line_number(&mut self) -> usize {
-        self.ignore_blanks();
+        // self.ignore_blanks();
         self.token_vec[self.lookahead].line_number
     }
 
