@@ -444,25 +444,6 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_zero_or_more_with_termination<F: FnMut() -> Result<ParseSuccess, ParseError>>(mut f: F, 
-        initial_lookahead: usize) -> ParseSuccess {
-        let mut curr_lookahead = initial_lookahead;
-        loop {
-            match f() {
-                Ok(response) => {
-                    curr_lookahead = response.lookahead;
-                    continue;
-                },
-                Err(err) => {
-                    return ParseSuccess{
-                        lookahead: curr_lookahead,
-                        possible_err: Some(err)
-                    };
-                }
-            }
-        }
-    }
-
     pub fn expect_optionally<T, F: FnMut() -> Result<T, ParseError>>(mut f: F, curr_value: T) -> (bool, T, Option<ParseError>) {
         match f() {
             Ok(lookahead) => (true, lookahead, None),

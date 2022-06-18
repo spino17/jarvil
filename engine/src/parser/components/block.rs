@@ -8,11 +8,11 @@ pub fn block<F: FnMut() -> Result<ParseSuccess, ParseError>>(parser: &mut Packra
     let indent_spaces_unit = context::get_indent();
     // TODO - add a new scope table here
     let curr_indent_level = parser.get_indent_level();  // if block parsing fails, reset indent level to this value
+    let mut curr_lookahead = parser.get_lookahead();
     parser.reset_indent_level(curr_indent_level + 1);
     parser.expect("\n")?;
     // do below thing on loop - zero of more times
-    let curr_lookahead = parser.get_lookahead();
-    let response = PackratParser::expect_zero_or_more(|| {
+    loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
         if let Some(err) = response.possible_err {
             // check here whether block got over! by comparing the spaces found and expected
@@ -24,7 +24,10 @@ pub fn block<F: FnMut() -> Result<ParseSuccess, ParseError>>(parser: &mut Packra
                 if indent_spaces > indent_spaces_unit * parser.get_indent_level() {
                     return Err(err)
                 } else {
+                    // block is over
+                    // TODO - switch back to parent scope
                     parser.reset_indent_level(indent_factor);
+                    parser.reset_lookahead(curr_lookahead);
                     return Ok(ParseSuccess{
                         lookahead: parser.get_lookahead(),
                         possible_err: None,
@@ -32,10 +35,7 @@ pub fn block<F: FnMut() -> Result<ParseSuccess, ParseError>>(parser: &mut Packra
                 }
             }
         }
-        let response = f()?;
-        Ok(response)
-    }, curr_lookahead);
-    parser.reset_lookahead(response.lookahead);
-    // TODO - reser the parent scope table here
-    Ok(response)
+        f()?;
+        curr_lookahead = parser.get_lookahead();
+    }
 }
