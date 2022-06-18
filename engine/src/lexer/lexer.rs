@@ -28,6 +28,11 @@ impl CoreLexer {
 impl Lexer for CoreLexer {
     fn tokenize(&mut self, code: Vec<char>) -> Result<Vec<Token>, LexicalError> {
         let mut token_vec: Vec<Token> = Vec::new();
+        token_vec.push(Token {
+            line_number: self.line_number,
+            core_token: CoreToken::NEWLINE,
+            name: Rc::new(String::from("\n"))
+        });
         while self.begin_lexeme < code.len() {
             let token = self.extract_lexeme(&code)?;
             match token.core_token {
@@ -48,6 +53,11 @@ impl Lexer for CoreLexer {
                 }
             }
         }
+        token_vec.push(Token {
+            line_number: self.line_number,
+            core_token: CoreToken::NEWLINE,
+            name: Rc::new(String::from("\n"))
+        });
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,

@@ -1,9 +1,8 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
-use crate::errors::{ParseError, SyntaxError};
+use crate::errors::{ParseError};
 use crate::lexer::token::CoreToken;
 
 pub fn try_compound_stmt(parser: &mut PackratParser) -> Result<(Option<ParseSuccess>, bool), ParseError> {
-    let token_name = parser.get_curr_token_name();
     match parser.get_curr_core_token() {
         CoreToken::STRUCT => {
             match parser.struct_stmt() {
