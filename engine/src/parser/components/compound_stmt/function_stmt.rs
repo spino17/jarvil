@@ -1,6 +1,38 @@
 use std::rc::Rc;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::ParseError;
+use crate::lexer::token::CoreToken;
+use crate::errors::SyntaxError;
+
+pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+    match parser.get_curr_core_token() {
+        CoreToken::COMMA => {
+            todo!()
+        },
+        _ => {
+            match parser.expect("empty") {
+                Ok((response, _)) => {
+                    // FOLLOW(optparams)
+                    if parser.check_next_token(")") {
+                        return Ok((response, vec![]))
+                    } else {
+                        let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
+                            parser.get_curr_line_number(), parser.get_lookahead(),
+                            format!(
+                            "expected a ')', got '{}'", PackratParser::parse_for_err_message(
+                                parser.get_next_token_name().to_string())
+                            )
+                        ));
+                        return Err(err);
+                    }
+                },
+                Err(err) => {
+                    unreachable!("parsing empty string never give error, got {:?}", err)
+                }
+            }
+        }
+    }
+}
 
 pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
     let mut params: Vec<(Rc<String>, Rc<String>)> = vec![];
