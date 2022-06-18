@@ -33,7 +33,14 @@ impl Lexer for CoreLexer {
             match token.core_token {
                 
                 // ignore single line and block comments
-                CoreToken::SINGLE_LINE_COMMENT => continue,
+                CoreToken::SINGLE_LINE_COMMENT => {
+                    // replace a single line comment with a newline token (to maintain the block indentation)
+                    token_vec.push(Token{
+                        line_number: token.line_number,
+                        core_token: CoreToken::NEWLINE,
+                        name: Rc::new(String::from("\n"))
+                    })
+                },
                 CoreToken::BLOCK_COMMENT => continue,
                 // CoreToken::BLANK => continue,
                 _ => {

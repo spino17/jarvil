@@ -1,4 +1,5 @@
 use std::vec;
+use std::rc::Rc;
 use crate::context;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::lexer::token::{TokenValue};
@@ -62,14 +63,14 @@ pub fn block(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     }
 }
 
-pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(TokenValue, TokenValue)>), ParseError> {
+pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
     parser.expect("\n")?;
     let indent_spaces_unit = context::get_indent();
     let curr_env = parser.get_env();
     parser.set_new_env_for_block();
     let mut curr_lookahead = parser.get_lookahead();
     parser.reset_indent_level(parser.get_indent_level() + 1);
-    let mut fields_vec: Vec<(TokenValue, TokenValue)> = vec![];
+    let mut fields_vec: Vec<(Rc<String>, Rc<String>)> = vec![];
     loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
         if let Some(err) = response.possible_err {
@@ -97,7 +98,7 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(To
         // parser.stmt()?;
         match parser.l_decl() {
             Ok((_, data_type, token_value)) => {
-                fields_vec.push((data_type, token_value));
+                fields_vec.push((data_type.0, token_value.0));
             },
             Err(err) => {
                 if parser.check_next_token("endmarker") {

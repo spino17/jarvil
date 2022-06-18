@@ -165,7 +165,7 @@ impl PackratParser {
         components::block::block(self)
     }
 
-    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(TokenValue, TokenValue)>), ParseError> {
+    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
         components::block::struct_block(self)
     }
 
