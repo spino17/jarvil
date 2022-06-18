@@ -102,7 +102,6 @@ impl Token {
     // This method tokenize the code in O(|code|)
     pub fn extract_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<Token, LexicalError> {
         let critical_char = code[*begin_lexeme];
-        let mut name: String = String::from("");
         let (core_token, name) = match critical_char {
             '('         =>      {
                 *begin_lexeme = *begin_lexeme + 1;

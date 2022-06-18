@@ -1,5 +1,5 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
-use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
+use crate::errors::{ParseError, SyntaxError};
 use crate::lexer::token::CoreToken;
 
 pub fn compound_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
