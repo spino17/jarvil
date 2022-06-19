@@ -21,7 +21,7 @@ struct IdentifierData {
 
 #[derive(Debug)]
 struct UserDefinedTypeData {
-    fields: Rc<Vec<(Rc<String>, Rc<String>)>>
+    fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
 }
 
 #[derive(Debug)]
@@ -106,7 +106,7 @@ impl SymbolData {
         }
     }
 
-    pub fn get_user_defined_type_data(&self) -> Rc<Vec<(Rc<String>, Rc<String>)>> {
+    pub fn get_user_defined_type_data(&self) -> Rc<FxHashMap<Rc<String>, Rc<String>>> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
                 data.fields.clone()
@@ -202,7 +202,7 @@ impl Env {
         self.0.borrow_mut().set_init(&token_value.0.clone());
     }
 
-    pub fn set_user_defined_type(&self, token_value: &TokenValue, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
+    pub fn set_user_defined_type(&self, token_value: &TokenValue, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData{
             fields: fields.clone(),
         });

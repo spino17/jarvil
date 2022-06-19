@@ -11,6 +11,7 @@ use crate::errors::{ParseError, SyntaxError};
 use crate::scope::{Env, SymbolData};
 use crate::parser::components;
 use crate::context;
+use rustc_hash::FxHashMap;
 
 pub struct ParseSuccess {
     pub lookahead: usize,
@@ -84,7 +85,7 @@ impl PackratParser {
         self.env.set_identifier_init(token_value)
     }
 
-    pub fn set_user_defined_type_to_scope(&mut self, token_value: &TokenValue, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
+    pub fn set_user_defined_type_to_scope(&mut self, token_value: &TokenValue, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
         self.env.set_user_defined_type(token_value, fields);
     }
 
@@ -95,7 +96,7 @@ impl PackratParser {
 
     pub fn set_params_to_scope(&mut self, params: Option<&Vec<(Rc<String>, Rc<String>)>>) {
         if let Some(params) = params {
-            for (data_type, identifier_name) in params {
+            for (identifier_name, data_type) in params {
                 self.set_identifier_to_scope(&TokenValue(identifier_name.clone()), data_type, true);
             }
         }
@@ -247,7 +248,7 @@ impl PackratParser {
     }
 
     pub fn expect_type(&mut self)
-    -> Result<(ParseSuccess, usize, TokenValue, Option<Rc<Vec<(Rc<String>, Rc<String>)>>>), ParseError> {
+    -> Result<(ParseSuccess, usize, TokenValue, Option<Rc<FxHashMap<Rc<String>, Rc<String>>>>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -460,7 +461,7 @@ impl PackratParser {
         components::block::block(self, params)
     }
 
-    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+    pub fn struct_block(&mut self) -> Result<(ParseSuccess, FxHashMap<Rc<String>, Rc<String>>), ParseError> {
         components::block::struct_block(self)
     }
 

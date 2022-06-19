@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::context;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError};
+use rustc_hash::FxHashMap;
 
 // pub fn block<F: FnMut() -> Result<ParseSuccess, ParseError>>(parser: &mut PackratParser, 
 //    mut f: F) -> Result<ParseSuccess, ParseError>
@@ -63,14 +64,14 @@ pub fn block(parser: &mut PackratParser, params: Option<&Vec<(Rc<String>, Rc<Str
     }
 }
 
-pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, FxHashMap<Rc<String>, Rc<String>>), ParseError> {
     parser.expect("\n")?;
     let indent_spaces_unit = context::get_indent();
     let curr_env = parser.get_env();
     parser.set_new_env_for_block();
     let mut curr_lookahead = parser.get_lookahead();
     parser.reset_indent_level(parser.get_indent_level() + 1);
-    let mut fields_vec: Vec<(Rc<String>, Rc<String>)> = vec![];
+    let mut fields_map: FxHashMap<Rc<String>, Rc<String>> = FxHashMap::default();
     loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
         if let Some(err) = response.possible_err {
@@ -90,7 +91,7 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
                     return Ok((ParseSuccess{
                         lookahead: parser.get_lookahead(),
                         possible_err: None,
-                    }, fields_vec))
+                    }, fields_map))
                 }
             }
         }
@@ -114,7 +115,7 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
         }
          */
         let (_, _, data_type, token_value) = parser.l_decl()?;
-        fields_vec.push((data_type.0, token_value.0));
+        fields_map.insert(token_value.0, data_type.0);
         match parser.expect("\n") {
             Ok(_) => {},
             Err(err) => {
@@ -122,7 +123,7 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
                     return Ok((ParseSuccess{
                         lookahead: parser.get_lookahead(),
                         possible_err: Some(err),
-                    }, fields_vec))
+                    }, fields_map))
                 } else {
                     return Err(err)
                 }
