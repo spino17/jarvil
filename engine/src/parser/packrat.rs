@@ -80,12 +80,16 @@ impl PackratParser {
         self.env.set_identifier(token_value, data_type, is_init);
     }
 
-    pub fn set_user_defined_type_to_scope(&mut self, token_value: &TokenValue, fields: Vec<(Rc<String>, Rc<String>)>) {
+    pub fn set_identifier_init_to_scope(&mut self, token_value: &TokenValue) {
+        self.env.set_identifier_init(token_value)
+    }
+
+    pub fn set_user_defined_type_to_scope(&mut self, token_value: &TokenValue, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
         self.env.set_user_defined_type(token_value, fields);
     }
 
     pub fn set_function_to_scope(&mut self, token_value: &TokenValue, 
-        params: Vec<(Rc<String>, Rc<String>)>, return_type: Option<Rc<String>>) {
+        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: Option<Rc<String>>) {
         self.env.set_function(token_value, params, return_type);
     }
 
@@ -193,7 +197,59 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_type(&mut self) -> Result<(ParseSuccess, usize, TokenValue), ParseError> {
+    pub fn expect_any_id(&mut self) -> Result<(ParseSuccess, usize, TokenValue), ParseError> {
+        self.ignore_blanks();
+        let token = &self.token_vec[self.lookahead];
+        match &token.core_token {
+            CoreToken::IDENTIFIER(token_value) => {
+                self.lookahead = self.lookahead + 1;
+                return Ok((ParseSuccess{
+                    lookahead: self.lookahead,
+                    possible_err: None
+                }, token.line_number, TokenValue(token_value.0.clone())))
+            },
+            _ => {
+                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
+                    self.lookahead, format!(
+                    "expected an identifier, got '{}'", 
+                    PackratParser::parse_for_err_message(token.name.to_string()))))
+                )
+            }
+        }
+    }
+
+    pub fn expect_id(&mut self) -> Result<(ParseSuccess, usize, TokenValue, Rc<String>, bool), ParseError> {
+        // TODO - add data_type and is_init to return
+        self.ignore_blanks();
+        let token = &self.token_vec[self.lookahead];
+        match &token.core_token {
+            CoreToken::IDENTIFIER(token_value) => {
+                let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
+                if symbol_data.is_id() {
+                    self.lookahead = self.lookahead + 1;
+                    let (data_type, is_init) = symbol_data.get_id_data();
+                    Ok((ParseSuccess{
+                        lookahead: self.lookahead,
+                        possible_err: None,
+                    }, token.line_number, TokenValue(token_value.0.clone()), data_type, is_init))
+                } else {
+                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
+                        self.lookahead, 
+                        format!("expected an identifier, got a {} '{}'", 
+                        symbol_data.get_type_of_identifier(), token_value.0.clone())))
+                    )
+                }
+            },
+            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
+                 self.lookahead,
+                  format!("expected an identifier, got '{}'",
+                  PackratParser::parse_for_err_message( token.name.to_string())))))
+        }
+    }
+
+    pub fn expect_type(&mut self) 
+    -> Result<(ParseSuccess, usize, TokenValue, Option<Rc<Vec<(Rc<String>, Rc<String>)>>>), ParseError> {
+        // TODO - add fields to return
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -202,20 +258,22 @@ impl PackratParser {
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token.line_number, TokenValue(token_value.0.clone())))
+                }, token.line_number, TokenValue(token_value.0.clone()), None))
             },
             CoreToken::IDENTIFIER(token_value) => {
-                let symbol_table = token.check_declaration(&self.env, self.lookahead)?;
-                if symbol_table.is_type() {
+                let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
+                if symbol_data.is_type() {
                     self.lookahead = self.lookahead + 1;
+                    let fields = symbol_data.get_user_defined_type_data();
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone())))
+                    }, token.line_number, TokenValue(token_value.0.clone()), Some(fields)))
                 } else {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
                         self.lookahead, 
-                        String::from("expected a type, got an identifier"))))
+                        format!("expected a type, got a {} '{}'", 
+                        symbol_data.get_type_of_identifier(), token_value.0.clone()))))
                 }
             },
             _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
@@ -225,6 +283,37 @@ impl PackratParser {
         }
     }
 
+    pub fn expect_function(&mut self) 
+    -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Option<Rc<String>>), ParseError> {
+        // TODO - add params and return type to return
+        self.ignore_blanks();
+        let token = &self.token_vec[self.lookahead];
+        match &token.core_token {
+            CoreToken::IDENTIFIER(token_value) => {
+                let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
+                if symbol_data.is_function() {
+                    self.lookahead = self.lookahead + 1;
+                    let (params, return_type) = symbol_data.get_function_data();
+                    Ok((ParseSuccess{
+                        lookahead: self.lookahead,
+                        possible_err: None,
+                    }, token.line_number, TokenValue(token_value.0.clone()), params, return_type))
+                } else {
+                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
+                        self.lookahead, 
+                        format!("expected a function, got a {} '{}'", 
+                        symbol_data.get_type_of_identifier(), token_value.0.clone())))
+                    )
+                }
+            },
+            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
+                 self.lookahead,
+                  format!("expected a function, got '{}'", 
+                  PackratParser::parse_for_err_message( token.name.to_string())))))
+        }
+    }
+
+    /*
     pub fn expect_and_get_value(&mut self, symbol: &str) -> Result<(ParseSuccess, usize, TokenValue), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
@@ -271,8 +360,10 @@ impl PackratParser {
             )
         }
     }
+     */
 
     // always use this for matching identifiers except in declarations
+    /*
     pub fn expect_id_and_get_data(&mut self) -> Result<(ParseSuccess, usize, SymbolData), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
@@ -293,6 +384,7 @@ impl PackratParser {
             }
         }
     }
+     */
 
     pub fn expect_indent_spaces(&mut self) -> Result<(ParseSuccess, i64), ParseError> {
         let expected_indent_spaces = context::get_indent() * self.indent_level;

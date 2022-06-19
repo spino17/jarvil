@@ -122,9 +122,9 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
             }
         },
         CoreToken::IDENTIFIER(_) => {
-            match parser.expect_id_and_get_data() {
-                Ok((response, line_number, symbol_data)) => {
-                    if !symbol_data.is_init() {
+            match parser.expect_id() {
+                Ok((response, line_number, _, data_type, is_init)) => {
+                    if !is_init {
                         if let Some(token_value) = token_value {
                             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(line_number,
                                 response.lookahead, format!(
@@ -134,13 +134,13 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                             unreachable!("identifier token must have a value")
                         }
                     }
-                    if symbol_data.type_eq("bool") {
+                    if data_type.to_string().eq("bool") {
                         return Ok(response);
                     } else {
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
                             response.lookahead, format!(
                                 "expected an identifier with type 'bool' in an boolean expression, got type '{}'", 
-                                symbol_data.get_type())))
+                                data_type)))
                             );
                     }
                 },

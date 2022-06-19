@@ -40,9 +40,9 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             }
         },
         CoreToken::IDENTIFIER(_) => {
-            match parser.expect_id_and_get_data() {
-                Ok((response, line_number, symbol_data)) => {
-                    if !symbol_data.is_init() {
+            match parser.expect_id() {
+                Ok((response, line_number, _, data_type, is_init)) => {
+                    if !is_init {
                         if let Some(token_value) = token_value {
                             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(line_number,
                                 response.lookahead, format!(
@@ -52,15 +52,15 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                             unreachable!("identifier token must have a value")
                         }
                     }
-                    if symbol_data.type_eq("int") {
+                    if data_type.to_string().eq("int") {
                         return Ok((response, false));
-                    } else if symbol_data.type_eq("float") {
+                    } else if data_type.to_string().eq("float") {
                         return Ok((response, true));
                     } else {
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
                             response.lookahead, format!(
                                 "expected an identifier with type 'int' or 'float' in an expression, got type '{}'", 
-                                symbol_data.get_type())))
+                                data_type)))
                             );
                     }
                 },

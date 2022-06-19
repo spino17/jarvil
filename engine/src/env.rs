@@ -21,12 +21,12 @@ struct IdentifierData {
 
 #[derive(Debug)]
 struct UserDefinedTypeData {
-    fields: Vec<(Rc<String>, Rc<String>)>
+    fields: Rc<Vec<(Rc<String>, Rc<String>)>>
 }
 
 #[derive(Debug)]
 struct FunctionData {
-    params: Vec<(Rc<String>, Rc<String>)>,
+    params: Rc<Vec<(Rc<String>, Rc<String>)>>,
     return_type: Option<Rc<String>>,
 }
 
@@ -42,28 +42,11 @@ enum MetaData {
 pub struct SymbolData(Rc<RefCell<MetaData>>);
 
 impl SymbolData {
-    pub fn is_type(&self) -> bool {
+    // identifier specific methods
+    pub fn is_id(&self) -> bool {
         match *self.0.borrow() {
-            MetaData::USER_DEFINED_TYPE(_) => true,
+            MetaData::IDENTIFIER(_) => true,
             _ => false,
-        }
-    }
-
-    pub fn type_eq(&self, data_type: &str) -> bool {
-        // .data_type.as_ref().eq(data_type)
-        match &*self.0.borrow() {
-            MetaData::IDENTIFIER(data) => data.data_type.to_string().eq(data_type),
-            _ => false
-        }
-    }
-
-    pub fn get_type(&self) -> Rc<String> {
-        // .data_type.clone()
-        match &*self.0.borrow() {
-            MetaData::IDENTIFIER(data) => data.data_type.clone(),
-            _ => {
-                Rc::new(String::from("non-typed"))
-            }
         }
     }
 
@@ -86,6 +69,82 @@ impl SymbolData {
             }
         }
     }
+
+    pub fn get_type(&self) -> Rc<String> {
+        // .data_type.clone()
+        match &*self.0.borrow() {
+            MetaData::IDENTIFIER(data) => data.data_type.clone(),
+            _ => {
+                Rc::new(String::from("non-typed"))
+            }
+        }
+    }
+
+    pub fn type_eq(&self, data_type: &str) -> bool {
+        // .data_type.as_ref().eq(data_type)
+        match &*self.0.borrow() {
+            MetaData::IDENTIFIER(data) => data.data_type.to_string().eq(data_type),
+            _ => false
+        }
+    }
+
+    pub fn get_id_data(&self) -> (Rc<String>, bool) {
+        match &*self.0.borrow() {
+            MetaData::IDENTIFIER(data) => {
+                (data.data_type.clone(), data.is_init)
+            },
+            _ => {
+                unreachable!("use this method only for purely identifier tokens")
+            }
+        }
+    }
+
+    // type specific methods
+    pub fn is_type(&self) -> bool {
+        match *self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn get_user_defined_type_data(&self) -> Rc<Vec<(Rc<String>, Rc<String>)>> {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                data.fields.clone()
+            },
+            _ => {
+                unreachable!("use this method only for purely identifier tokens")
+            }
+        }
+    }
+
+    // function specific methods
+    pub fn is_function(&self) -> bool {
+        match *self.0.borrow() {
+            MetaData::FUNCTION(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn get_function_data(&self) -> (Rc<Vec<(Rc<String>, Rc<String>)>>, Option<Rc<String>>) {
+        match &*self.0.borrow() {
+            MetaData::FUNCTION(data) => {
+                (data.params.clone(), data.return_type.clone())
+            },
+            _ => {
+                unreachable!("use this method only for purely identifier tokens")
+            }
+        }
+    }
+
+    // general methods
+    pub fn get_type_of_identifier(&self) -> &str {
+        match &*self.0.borrow() {
+            MetaData::IDENTIFIER(_) => "identifier",
+            MetaData::USER_DEFINED_TYPE(_) => "user-defined type",
+            MetaData::FUNCTION(_) => "function",
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -101,6 +160,12 @@ impl Scope {
 
     fn get(&self, name: &Rc<String>) -> Option<&SymbolData> {
         self.symbol_table.get(name)
+    }
+
+    fn set_init(&self, name: &Rc<String>) {
+        if let Some(symbol_data) = self.get(name) {
+            symbol_data.set_init(true);
+        }
     }
 }
 
@@ -131,16 +196,21 @@ impl Env {
         self.0.borrow_mut().set(token_value.0.clone(), meta_data);
     }
 
-    pub fn set_user_defined_type(&self, token_value: &TokenValue, fields: Vec<(Rc<String>, Rc<String>)>) {
+    pub fn set_identifier_init(&self, token_value: &TokenValue) {
+        self.0.borrow_mut().set_init(&token_value.0.clone());
+    }
+
+    pub fn set_user_defined_type(&self, token_value: &TokenValue, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData{
-            fields,
+            fields: fields.clone(),
         });
         self.0.borrow_mut().set(token_value.0.clone(), meta_data);
     }
 
-    pub fn set_function(&self, token_value: &TokenValue, params: Vec<(Rc<String>, Rc<String>)>, return_type: Option<Rc<String>>) {
+    pub fn set_function(&self, token_value: &TokenValue, 
+        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: Option<Rc<String>>) {
         let meta_data = MetaData::FUNCTION(FunctionData{
-            params,
+            params: params.clone(),
             return_type: return_type,
         });
         self.0.borrow_mut().set(token_value.0.clone(), meta_data);

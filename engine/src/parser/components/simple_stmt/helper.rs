@@ -3,8 +3,8 @@ use crate::errors::{ParseError, SemanticError};
 use crate::lexer::token::{TokenValue};
 
 pub fn l_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, TokenValue, TokenValue), ParseError> {
-    let (_, _, data_type) = parser.expect_type()?;
-    let (response, line_number, token_value) = parser.expect_and_get_value("identifier")?;
+    let (_, _, data_type, _) = parser.expect_type()?;
+    let (response, line_number, token_value) = parser.expect_any_id()?;
     Ok((response, line_number, data_type, token_value))
 }
 

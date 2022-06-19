@@ -48,7 +48,7 @@ pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<St
 
 pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("def")?;
-    let (_, _, token_value) = parser.expect_and_get_value("identifier")?;
+    let (_, _, token_value) = parser.expect_any_id()?;
     parser.expect("(")?;
     let mut params = vec![];
     if !parser.check_next_token(")") {
@@ -60,7 +60,7 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
     let (is_matched, (response, return_type), err) = 
     PackratParser::expect_optionally(|| {
         let (_, _) = parser.expect("->")?;
-        let (response, _, data_type) = parser.expect_type()?;
+        let (response, _, data_type, _) = parser.expect_type()?;
         Ok((response, Some(data_type)))
     }, (ParseSuccess{
         lookahead: curr_lookahead,
@@ -81,12 +81,12 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
     let response = parser.block(Some(&params))?;
     if is_matched {
         if let Some(return_type) = return_type {
-            parser.set_function_to_scope(&token_value, params, Some(return_type.0.clone()))
+            parser.set_function_to_scope(&token_value, &Rc::new(params), Some(return_type.0.clone()))
         } else {
             unreachable!("if optional pattern is matched will give some return type")
         }
     } else {
-        parser.set_function_to_scope(&token_value, params, None)
+        parser.set_function_to_scope(&token_value, &Rc::new(params), None)
     }
     Ok(response)
 }
