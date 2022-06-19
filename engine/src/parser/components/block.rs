@@ -97,10 +97,27 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
         }
         // f()?;
         // parser.stmt()?;
+        /*
         match parser.l_decl() {
             Ok((_, _, data_type, token_value)) => {
                 fields_vec.push((data_type.0, token_value.0));
             },
+            Err(err) => {
+                if parser.check_next_token("endmarker") {
+                    return Ok((ParseSuccess{
+                        lookahead: parser.get_lookahead(),
+                        possible_err: Some(err),
+                    }, fields_vec))
+                } else {
+                    return Err(err)
+                }
+            }
+        }
+         */
+        let (_, _, data_type, token_value) = parser.l_decl()?;
+        fields_vec.push((data_type.0, token_value.0));
+        match parser.expect("\n") {
+            Ok(_) => {},
             Err(err) => {
                 if parser.check_next_token("endmarker") {
                     return Ok((ParseSuccess{

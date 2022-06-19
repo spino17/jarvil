@@ -167,161 +167,6 @@ impl PackratParser {
         }
     }
 
-    // all production rule matching function declared below:
-
-    // code
-    pub fn code(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
-        components::code::code(self, token_vec)
-    }
-
-    pub fn block(&mut self, params: Option<&Vec<(Rc<String>, Rc<String>)>>) -> Result<ParseSuccess, ParseError> {
-        components::block::block(self, params)
-    }
-
-    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
-        components::block::struct_block(self)
-    }
-
-    // statements
-    pub fn stmt(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::stmt::stmt(self)
-    }
-
-    pub fn compound_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::compound_stmt::core::compound_stmt(self)
-    }
-
-    pub fn struct_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::compound_stmt::struct_stmt::struct_stmt(self)
-    }
-
-    pub fn function_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::compound_stmt::function_stmt::function_stmt(self)
-    }
-
-    pub fn optparams(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
-        components::compound_stmt::function_stmt::optparams(self)
-    }
-
-    pub fn optparams_factor(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
-        components::compound_stmt::function_stmt::optparams_factor(self)
-    }
-
-    pub fn simple_stmts(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::core::simple_stmts(self)
-    }
-
-    pub fn simple_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::core::simple_stmt(self)
-    }
-
-    // simple statement - decl, assign
-    pub fn decl(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::declaration::decl(self)
-    }
-
-    pub fn assign(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::assignment::assign(self)
-    }
-
-    pub fn l_decl(&mut self) -> Result<(ParseSuccess, usize, TokenValue, TokenValue), ParseError> {
-        components::simple_stmt::helper::l_decl(self)
-    }
-
-    pub fn r_asssign(&mut self, rule_index: usize, line_number: usize) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::helper::r_asssign(self, rule_index, line_number)
-    }
-
-    // expression
-    pub fn expr(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::expr(self)
-    }
-
-    pub fn term(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::term(self)
-    }
-
-    pub fn additive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::additive(self)
-    }
-
-    pub fn factor(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::factor(self)
-    }
-
-    pub fn multitive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::multitive(self)
-    }
-
-    pub fn factor_expr_in_parenthesis(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::factor_expr_in_parenthesis(self)
-    }
-
-    pub fn multitive_star(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::multitive_star(self)
-    }
-
-    pub fn multitive_slash(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::multitive_slash(self)
-    }
-
-    pub fn additive_plus(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::additive_plus(self)
-    }
-
-    pub fn additive_minus(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::additive_minus(self)
-    }
-
-    // boolean expression
-    pub fn bexpr(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::bexpr(self)
-    }
-
-    pub fn ortive(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::ortive(self)
-    }
-
-    pub fn bterm(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::bterm(self)
-    }
-
-    pub fn bfactor(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::bfactor(self)
-    }
-
-    pub fn bfactor_lookahead_one(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::bfactor_lookahead_one(self)
-    }
-
-    pub fn andtive(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::andtive(self)
-    }
-
-    pub fn comp_op(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::comp_op(self)
-    }
-
-    pub fn bfactor_expr_comp_op_expr(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::bfactor_expr_comp_op_expr(self)
-    }
-
-    pub fn bfactor_expr_in_parenthesis(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::bfactor_expr_in_parenthesis(self)
-    }
-
-    pub fn bfactor_not(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::bfactor_not(self)
-    }
-
-    pub fn andtive_and(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::andtive_and(self)
-    }
-
-    pub fn ortive_or(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::ortive_or(self)
-    }
-
     pub fn expect(&mut self, symbol: &str) -> Result<(ParseSuccess, usize), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
@@ -514,5 +359,155 @@ impl PackratParser {
             parsed_message = String::from("newline")
         }
         parsed_message
+    }
+
+    // ------------------- production rule matching function for terminals and non-terminals declared below -------------------
+    // code
+    pub fn code(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
+        components::code::code(self, token_vec)
+    }
+
+    pub fn block(&mut self, params: Option<&Vec<(Rc<String>, Rc<String>)>>) -> Result<ParseSuccess, ParseError> {
+        components::block::block(self, params)
+    }
+
+    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+        components::block::struct_block(self)
+    }
+
+    // statements
+    pub fn stmt(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::stmt::stmt(self)
+    }
+
+    pub fn struct_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::struct_stmt::struct_stmt(self)
+    }
+
+    pub fn function_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::function_stmt::function_stmt(self)
+    }
+
+    pub fn optparams(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+        components::compound_stmt::function_stmt::optparams(self)
+    }
+
+    pub fn optparams_factor(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+        components::compound_stmt::function_stmt::optparams_factor(self)
+    }
+
+    pub fn simple_stmts(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::core::simple_stmts(self)
+    }
+
+    pub fn simple_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::core::simple_stmt(self)
+    }
+
+    // simple statement - decl, assign
+    pub fn decl(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::declaration::decl(self)
+    }
+
+    pub fn assign(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::assignment::assign(self)
+    }
+
+    pub fn l_decl(&mut self) -> Result<(ParseSuccess, usize, TokenValue, TokenValue), ParseError> {
+        components::simple_stmt::helper::l_decl(self)
+    }
+
+    pub fn r_asssign(&mut self, rule_index: usize, line_number: usize) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::helper::r_asssign(self, rule_index, line_number)
+    }
+
+    // expression
+    pub fn expr(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::expr(self)
+    }
+
+    pub fn term(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::term(self)
+    }
+
+    pub fn additive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::additive(self)
+    }
+
+    pub fn factor(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::factor(self)
+    }
+
+    pub fn multitive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::multitive(self)
+    }
+
+    pub fn factor_expr_in_parenthesis(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::factor_expr_in_parenthesis(self)
+    }
+
+    pub fn multitive_star(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::multitive_star(self)
+    }
+
+    pub fn multitive_slash(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::multitive_slash(self)
+    }
+
+    pub fn additive_plus(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::additive_plus(self)
+    }
+
+    pub fn additive_minus(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::additive_minus(self)
+    }
+
+    // boolean expression
+    pub fn bexpr(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bexpr(self)
+    }
+
+    pub fn ortive(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::ortive(self)
+    }
+
+    pub fn bterm(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bterm(self)
+    }
+
+    pub fn bfactor(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bfactor(self)
+    }
+
+    pub fn bfactor_lookahead_one(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bfactor_lookahead_one(self)
+    }
+
+    pub fn andtive(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::andtive(self)
+    }
+
+    pub fn comp_op(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::comp_op(self)
+    }
+
+    pub fn bfactor_expr_comp_op_expr(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bfactor_expr_comp_op_expr(self)
+    }
+
+    pub fn bfactor_expr_in_parenthesis(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bfactor_expr_in_parenthesis(self)
+    }
+
+    pub fn bfactor_not(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bfactor_not(self)
+    }
+
+    pub fn andtive_and(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::andtive_and(self)
+    }
+
+    pub fn ortive_or(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::ortive_or(self)
     }
 }
