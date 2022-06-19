@@ -52,7 +52,7 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
     parser.expect("(")?;
     let mut params = vec![];
     if !parser.check_next_token(")") {
-        let (_, opt_params) = parser.optparams()?;  // take individual l_decl info from this parsing step for semantic analysis
+        let (_, opt_params) = parser.optparams()?;
         params = opt_params;
     }
     parser.expect(")")?;
@@ -77,7 +77,6 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
             }
         }
     }
-    // TODO - input all the params into the function scope
     let response = parser.block(Some(&params))?;
     if is_matched {
         if let Some(return_type) = return_type {

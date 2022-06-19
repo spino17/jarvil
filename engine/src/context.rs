@@ -13,8 +13,6 @@ struct Context {
     letters: FxHashMap<char, ()>,
     digits: FxHashMap<char, ()>,
     indent_spaces: i64,
-    // TODO - add Env (symbol table) so that internal methods just access context value and Env is updated while entry and exit
-    // of block
 }
 
 impl Context {

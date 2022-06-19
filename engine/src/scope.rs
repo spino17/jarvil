@@ -15,7 +15,7 @@ use crate::lexer::token::TokenValue;
 
 #[derive(Debug)]
 struct IdentifierData {
-    data_type: Rc<String>,  // TODO - change this to Rc string
+    data_type: Rc<String>,
     is_init: bool,
 }
 
@@ -35,7 +35,6 @@ enum MetaData {
     IDENTIFIER(IdentifierData),
     USER_DEFINED_TYPE(UserDefinedTypeData),
     FUNCTION(FunctionData),
-    // TODO - add for function
 }
 
 #[derive(Debug)]
@@ -151,6 +150,7 @@ impl SymbolData {
 pub struct Scope {
     symbol_table: FxHashMap<Rc<String>, SymbolData>,
     parent_env: Option<Env>,
+    return_type: Option<Rc<String>>,  // for functional scope - match return type in nested sub blocks checking this global field
 }
 
 impl Scope {
@@ -177,6 +177,7 @@ impl Env {
         Env(Rc::new(RefCell::new(Scope {
             symbol_table: FxHashMap::default(),
             parent_env: None,
+            return_type: None,
         })))
     }
 
@@ -185,6 +186,7 @@ impl Env {
         Env(Rc::new(RefCell::new(Scope {
             symbol_table: FxHashMap::default(),
             parent_env: Some(Env(env)),
+            return_type: None,
         })))
     }
 

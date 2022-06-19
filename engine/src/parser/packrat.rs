@@ -219,7 +219,6 @@ impl PackratParser {
     }
 
     pub fn expect_id(&mut self) -> Result<(ParseSuccess, usize, TokenValue, Rc<String>, bool), ParseError> {
-        // TODO - add data_type and is_init to return
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -249,7 +248,6 @@ impl PackratParser {
 
     pub fn expect_type(&mut self)
     -> Result<(ParseSuccess, usize, TokenValue, Option<Rc<Vec<(Rc<String>, Rc<String>)>>>), ParseError> {
-        // TODO - add fields to return
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -285,7 +283,6 @@ impl PackratParser {
 
     pub fn expect_function(&mut self) 
     -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Option<Rc<String>>), ParseError> {
-        // TODO - add params and return type to return
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
