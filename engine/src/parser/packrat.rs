@@ -608,4 +608,29 @@ impl PackratParser {
     pub fn ortive_or(&mut self) -> Result<ParseSuccess, ParseError> {
         components::expression::bexpression::ortive_or(self)
     }
+
+    // atom
+    pub fn atom(&mut self) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+        components::atom::atom(self)
+    }
+
+    pub fn atom_factor(&mut self) -> Result<(ParseSuccess, Vec<components::atom::CompoundPart>), ParseError> {
+        components::atom::atom_factor(self)
+    }
+    
+    pub fn atom_index_or_propetry_access(&mut self) -> Result<(ParseSuccess, components::atom::CompoundPart), ParseError> {
+        components::atom::atom_index_or_propetry_access(self)
+    }
+
+    pub fn atom_index_access(&mut self) -> Result<(ParseSuccess, components::atom::CompoundPart), ParseError> {
+        components::atom::atom_index_access(self)
+    }
+    
+    pub fn atom_propertry_access(&mut self) -> Result<(ParseSuccess, components::atom::CompoundPart), ParseError> {
+        components::atom::atom_propertry_access(self)
+    }
+
+    pub fn atom_expr_bexpr_literal(&mut self) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+        components::atom::atom_expr_bexpr_literal(self)
+    }
 }

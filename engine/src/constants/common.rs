@@ -46,11 +46,15 @@ pub const KEYWORDS: [&'static str; 19] = [
     RETURN,
 ];
 
-pub const TYPES: [&'static str; 4] = [
+pub const TYPES: [&'static str; 6] = [
     "int",
     "float",
     "string",
     "bool",
+
+    // compound iterable types
+    "List",
+    "Dict",
 ];
 
 pub const LETTERS: [char; 53] = [
@@ -168,8 +172,8 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
             unreachable!("keyword missing in the matching arms")
         }
     } else if context::is_type(&value) {
-        (CoreToken::TYPE(TokenValue(Rc::new(value))), String::from("type"))
+        (CoreToken::TYPE(TokenValue(Rc::new(value))), String::from("type"))  // TODO - add value also in name
     } else {
-        (CoreToken::IDENTIFIER(TokenValue(Rc::new(value))), String::from("identifier"))
+        (CoreToken::IDENTIFIER(TokenValue(Rc::new(value))), String::from("identifier"))  // TODO - add value also in name
     }
 }
