@@ -8,14 +8,15 @@ pub enum CompoundPart {
 }
 
 pub fn atom_expr_bexpr_literal(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+    // TODO - match expr, bexpr, literal and atom
     todo!()
 }
 
 pub fn atom_index_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
     parser.expect("[")?;
-    let (_, data_type) = parser.atom_expr_bexpr_literal()?;
+    let (_, index_data_type) = parser.atom_expr_bexpr_literal()?;
     let (response, _) = parser.expect("]")?;
-    Ok((response, CompoundPart::INDEX_TYPE(data_type)))
+    Ok((response, CompoundPart::INDEX_TYPE(index_data_type)))
 }
 
 pub fn atom_propertry_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
@@ -81,5 +82,6 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), Pa
             }
         }
     }
+    // we can also capture token_value here
     Ok((response, curr_type))
 }

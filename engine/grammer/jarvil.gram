@@ -33,6 +33,16 @@ compound_stmt:
     | for_stmt
     | while_stmt
 
+atom: id atom_factor
+atom_factor:
+    | ([C], .id) atom_factor
+    | ()
+C:
+    | expr  # key is int or float
+    | bexpr  # key is bool
+    | literal  # key is string
+    | atom
+
 type:
     | TYPE  # type token for in-built types
     | id  # identifier for user-defined types - semantic check required here!
