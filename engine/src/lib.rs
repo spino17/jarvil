@@ -1,6 +1,6 @@
 pub mod errors;
 pub mod lexer;
-pub mod env;
+pub mod scope;
 pub mod constants;
 pub mod context;
 pub mod reader;

@@ -1,7 +1,7 @@
 mod errors;
 mod lexer;
 mod parser;
-mod env;
+mod scope;
 mod context;
 mod constants;
 mod reader;

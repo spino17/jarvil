@@ -8,7 +8,7 @@ use crate::lexer::token::{Token, CoreToken, TokenValue};
 use crate::parser::ast::AST;
 use std::rc::Rc;
 use crate::errors::{ParseError, SyntaxError};
-use crate::env::{Env, SymbolData};
+use crate::scope::{Env, SymbolData};
 use crate::parser::components;
 use crate::context;
 

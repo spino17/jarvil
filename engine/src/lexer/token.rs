@@ -1,6 +1,6 @@
 use crate::errors::{LexicalError, SemanticError};
 use std::rc::Rc;
-use crate::env::{Env,SymbolData};
+use crate::scope::{Env,SymbolData};
 use crate::lexer::helper;
 use crate::context;
 
