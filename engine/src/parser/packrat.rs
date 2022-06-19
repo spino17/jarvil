@@ -247,7 +247,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_type(&mut self) 
+    pub fn expect_type(&mut self)
     -> Result<(ParseSuccess, usize, TokenValue, Option<Rc<Vec<(Rc<String>, Rc<String>)>>>), ParseError> {
         // TODO - add fields to return
         self.ignore_blanks();

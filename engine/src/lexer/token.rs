@@ -25,6 +25,7 @@ pub enum CoreToken {
 
     // functions
     DEF,                // 'def'
+    RETURN,             // 'return'
 
     // types
     STRUCT,             // 'struct'

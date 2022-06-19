@@ -24,7 +24,7 @@ stmt:
 simple_stmt:
     | decl
     | assign
-    | # calling a function, break, continue
+    | # calling a function, break, continue, return
 
 compound_stmt:
     | struct_stmt

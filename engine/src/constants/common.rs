@@ -20,8 +20,9 @@ const NEW:          &'static str = "new";
 const TRUE:         &'static str = "True";
 const FALSE:        &'static str = "False";
 const NONE:         &'static str = "None";
+const RETURN:       &'static str = "return";
 
-pub const KEYWORDS: [&'static str; 18] = [
+pub const KEYWORDS: [&'static str; 19] = [
     FOR,
     WHILE,
     CONTINUE,
@@ -40,6 +41,7 @@ pub const KEYWORDS: [&'static str; 18] = [
     TRUE,
     FALSE,
     NONE,
+    RETURN,
 ];
 
 pub const TYPES: [&'static str; 4] = [
@@ -158,6 +160,8 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
             (CoreToken::FALSE, String::from(FALSE))
         } else if value.eq(NONE) {
             (CoreToken::NONE, String::from(NONE))
+        } else if value.eq(RETURN) {
+            (CoreToken::RETURN, String::from(RETURN))
         } else {
             unreachable!("keyword missing in the matching arms")
         }

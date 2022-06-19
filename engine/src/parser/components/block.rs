@@ -2,7 +2,6 @@ use std::vec;
 use std::rc::Rc;
 use crate::context;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
-use crate::lexer::token::{TokenValue};
 use crate::errors::{ParseError};
 
 // pub fn block<F: FnMut() -> Result<ParseSuccess, ParseError>>(parser: &mut PackratParser, 
