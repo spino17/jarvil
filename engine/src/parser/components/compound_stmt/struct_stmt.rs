@@ -3,7 +3,7 @@ use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::ParseError;
 
 pub fn struct_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    parser.expect("struct")?;
+    parser.expect("type")?;
     let (_, _, token_value) = parser.expect_any_id()?;
     parser.expect(":")?;
     let (response, fields_vec) = parser.struct_block()?;

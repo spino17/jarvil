@@ -4,7 +4,7 @@ use crate::lexer::token::CoreToken;
 
 pub fn try_compound_stmt(parser: &mut PackratParser) -> Result<(Option<ParseSuccess>, bool), ParseError> {
     match parser.get_curr_core_token() {
-        CoreToken::STRUCT => {
+        CoreToken::TYPE_KEYWORD => {
             match parser.struct_stmt() {
                 Ok(response) => return Ok((Some(response), true)),
                 Err(err) => {

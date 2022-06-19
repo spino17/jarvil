@@ -28,7 +28,8 @@ pub enum CoreToken {
     RETURN,             // 'return'
 
     // types
-    STRUCT,             // 'struct'
+    // STRUCT,          // 'struct'
+    TYPE_KEYWORD,       // 'type'
     TYPE(TokenValue),
     NEW,                // 'new'
 

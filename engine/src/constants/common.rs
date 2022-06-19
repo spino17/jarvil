@@ -9,7 +9,8 @@ const BREAK:        &'static str = "break";
 const IF:           &'static str = "if";
 const ELIF:         &'static str = "elif";
 const ELSE:         &'static str = "else";
-const STRUCT:       &'static str = "struct";
+// const STRUCT:       &'static str = "struct";
+const TYPE_KEYWORD: &'static str = "type";
 const DEF:          &'static str = "def";
 const AND:          &'static str = "and";
 const NOT:          &'static str = "not";
@@ -30,7 +31,8 @@ pub const KEYWORDS: [&'static str; 19] = [
     IF,
     ELIF,
     ELSE,
-    STRUCT,
+    // STRUCT,
+    TYPE_KEYWORD,
     DEF,
     AND,
     NOT,
@@ -138,8 +140,8 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
             (CoreToken::ELIF, String::from(ELIF))
         } else if value.eq(ELSE) {
             (CoreToken::ELSE, String::from(ELSE))
-        }  else if value.eq(STRUCT) {
-            (CoreToken::STRUCT, String::from(STRUCT))
+        }  else if value.eq(TYPE_KEYWORD) {
+            (CoreToken::TYPE_KEYWORD, String::from(TYPE_KEYWORD))
         } else if value.eq(DEF) {
             (CoreToken::DEF, String::from(DEF))
         } else if value.eq(AND) {
