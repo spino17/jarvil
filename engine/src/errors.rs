@@ -56,22 +56,6 @@ pub enum ParseError {
     SEMANTIC_ERROR(SemanticError)
 }
 
-impl ParseError {
-    pub fn get_err_lookahead(&self) -> usize {
-        match self {
-            ParseError::SYNTAX_ERROR(err) => err.lookahead_index,
-            ParseError::SEMANTIC_ERROR(err) => err.lookahead_index,
-        }
-    }
-
-    pub fn get_err_line_number(&self) -> usize {
-        match self {
-            ParseError::SYNTAX_ERROR(err) => err.line_number,
-            ParseError::SEMANTIC_ERROR(err) => err.line_number,
-        }
-    }
-}
-
 impl From<SyntaxError> for ParseError {
     fn from(err: SyntaxError) -> Self {
         ParseError::SYNTAX_ERROR(err)
@@ -113,18 +97,18 @@ impl Display for CompilationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             CompilationError::IO_ERROR(err) => write!(
-                f, "Error occured while compilation\nIO Errror:\n{}", err.to_string()),
+                f, ">>> IOErrror:\n    {}", err.to_string()),
             CompilationError::LEXICAL_ERROR(lexical_err) => write!(f, 
-                "Error occured while compilation\nLexical Error: on line {}\n{}", lexical_err.line_number, 
+                ">>> LexicalError: line {}\n    {}", lexical_err.line_number, 
                 lexical_err.err_message),
             CompilationError::PARSE_ERROR(err) => {
                 match err {
                     ParseError::SYNTAX_ERROR(syntax_error) => write!(f, 
-                        "Error occured while compilation\nSynatx Error: on line {}, lookahead {}\n{}", 
-                        syntax_error.line_number, syntax_error.lookahead_index, syntax_error.err_message),
+                        ">>> SynatxError: line {}\n    {}", 
+                        syntax_error.line_number, syntax_error.err_message),
                     ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, 
-                        "Error occured while compilation\nSemantic Error: on line {}, lookahead {}\n{}", 
-                        semantic_error.line_number, semantic_error.lookahead_index, semantic_error.err_message)
+                        ">>> SemanticError: line {}\n    {}", 
+                        semantic_error.line_number, semantic_error.err_message)
                 }
             }
         }

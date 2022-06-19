@@ -22,7 +22,7 @@ pub fn simple_stmts(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErr
 pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let mut errors_vec: Vec<ParseError> = vec![];
     let curr_lookahead = parser.get_lookahead();
-    match parser.decl() {
+    match parser.decls() {
         Ok(response) => return Ok(response),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);

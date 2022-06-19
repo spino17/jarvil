@@ -404,7 +404,7 @@ impl PackratParser {
                     } else {
                         let err =ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
                             self.lookahead, format!(
-                                "indentation of the statement does not match. expected indent '{}' spaces, got '{}' spaces", 
+                                "incorrectly indented statement\nexpected indent of {} spaces, got {} spaces", 
                                 expected_indent_spaces, indent_spaces)));
                         return Ok((ParseSuccess{
                             lookahead: self.lookahead,
@@ -497,8 +497,16 @@ impl PackratParser {
     }
 
     // simple statement - decl, assign
+    pub fn decls(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::declaration::decls(self)
+    }
+
     pub fn decl(&mut self) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::declaration::decl(self)
+    }
+
+    pub fn decl_factor(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::declaration::decl_factor(self)
     }
 
     pub fn assign(&mut self) -> Result<ParseSuccess, ParseError> {

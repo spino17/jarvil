@@ -122,13 +122,14 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
                     || parser.check_next_token("<=")
                     || parser.check_next_token("<")
                     || parser.check_next_token("or") 
-                    || parser.check_next_token("and") {
+                    || parser.check_next_token("and")
+                    || parser.check_next_token(",") {
                         return Ok((response, false))
                     } else {
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             parser.get_curr_line_number(), parser.get_lookahead(),
                             format!(
-                            "expected a ')', '+', '-', '*', '/', '==', '>=', '>', '<=', '<', 'or', 'and' or 'newline', got '{}'", 
+                            "expected a ')', '+', '-', '*', '/', '==', '>=', '>', '<=', '<', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);
@@ -194,13 +195,14 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
                     || parser.check_next_token("<=")
                     || parser.check_next_token("<")
                     || parser.check_next_token("or") 
-                    || parser.check_next_token("and") {
+                    || parser.check_next_token("and")
+                    || parser.check_next_token(",") {
                         return Ok((response, false))
                     } else {
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             parser.get_curr_line_number(), parser.get_lookahead(),
                             format!(
-                            "expected a ')', '+', '-', '*', '/' '==', '>=', '>', '<=', '<', 'or', 'and' or 'newline', got '{}'", 
+                            "expected a ')', '+', '-', '*', '/' '==', '>=', '>', '<=', '<', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);
