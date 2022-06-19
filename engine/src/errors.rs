@@ -1,56 +1,170 @@
-use std::{io::Error as ioError, fmt::Display};
+use std::{io::Error as IOError, fmt::Display};
 use std::fmt::Formatter;
-use std::error::Error;
 
 #[derive(Debug)]
-pub struct IOError {
+pub struct LexicalError {
+    line_number: usize,
+    err_message: String,
+}
 
+impl LexicalError {
+    pub fn new(line_number: usize, err_message: String) -> Self {
+        LexicalError{
+            line_number,
+            err_message,
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct SyntaxError {
+    line_number: usize,
+    lookahead_index: usize,
+    err_message: String,
+}
 
+impl SyntaxError {
+    pub fn new(line_number: usize, lookahead_index: usize, err_message: String) -> Self {
+        SyntaxError{
+            line_number,
+            lookahead_index,
+            err_message,
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct SemanticError {
+    line_number: usize,
+    lookahead_index: usize,
+    err_message: String,
+}
 
+impl SemanticError {
+    pub fn new(line_number: usize, lookahead_index: usize, err_message: String) -> Self {
+        SemanticError{
+            line_number,
+            lookahead_index,
+            err_message,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ParseError {
+    SYNTAX_ERROR(SyntaxError),
+    SEMANTIC_ERROR(SemanticError)
+}
+
+impl ParseError {
+    pub fn get_err_lookahead(&self) -> usize {
+        match self {
+            ParseError::SYNTAX_ERROR(err) => err.lookahead_index,
+            ParseError::SEMANTIC_ERROR(err) => err.lookahead_index,
+        }
+    }
+
+    pub fn get_err_line_number(&self) -> usize {
+        match self {
+            ParseError::SYNTAX_ERROR(err) => err.line_number,
+            ParseError::SEMANTIC_ERROR(err) => err.line_number,
+        }
+    }
+}
+
+impl From<SyntaxError> for ParseError {
+    fn from(err: SyntaxError) -> Self {
+        ParseError::SYNTAX_ERROR(err)
+    }
+}
+
+impl From<SemanticError> for ParseError {
+    fn from(err: SemanticError) -> Self {
+        ParseError::SEMANTIC_ERROR(err)
+    }
 }
 
 #[derive(Debug)]
 pub enum CompilationError {
     IO_ERROR(IOError),
-    SYNTAX_ERROR(SyntaxError),
-    SEMANTIC_ERROR(SemanticError)
+    LEXICAL_ERROR(LexicalError),
+    PARSE_ERROR(ParseError)
 }
 
-impl From<ioError> for CompilationError {
-    fn from(err: ioError) -> Self {
-        todo!()
+impl From<IOError> for CompilationError {
+    fn from(err: IOError) -> Self {
+        CompilationError::IO_ERROR(err)
     }
 }
 
-impl From<SyntaxError> for CompilationError {
-    fn from(err: SyntaxError) -> Self {
-        todo!()
+impl From<LexicalError> for CompilationError {
+    fn from(err: LexicalError) -> Self {
+        CompilationError::LEXICAL_ERROR(err)
     }
 }
 
-impl From<SemanticError> for CompilationError {
-    fn from(err: SemanticError) -> Self {
-        todo!()
+impl From<ParseError> for CompilationError {
+    fn from(err: ParseError) -> Self {
+        CompilationError::PARSE_ERROR(err)
     }
 }
 
 impl Display for CompilationError {
-    fn fmt(&self, _: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        todo!()
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            CompilationError::IO_ERROR(err) => write!(
+                f, "Error occured while compilation\nIO Errror:\n{}", err.to_string()),
+            CompilationError::LEXICAL_ERROR(lexical_err) => write!(f, 
+                "Error occured while compilation\nLexical Error: on line {}\n{}", lexical_err.line_number, 
+                lexical_err.err_message),
+            CompilationError::PARSE_ERROR(err) => {
+                match err {
+                    ParseError::SYNTAX_ERROR(syntax_error) => write!(f, 
+                        "Error occured while compilation\nSynatx Error: on line {}, lookahead {}\n{}", 
+                        syntax_error.line_number, syntax_error.lookahead_index, syntax_error.err_message),
+                    ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, 
+                        "Error occured while compilation\nSemantic Error: on line {}, lookahead {}\n{}", 
+                        semantic_error.line_number, semantic_error.lookahead_index, semantic_error.err_message)
+                }
+            }
+        }
     }
 }
 
-
-impl Error for CompilationError {
-    fn description(&self) -> &str {
-        todo!()
+pub fn aggregate_errors(errors: Vec<ParseError>) -> ParseError {
+    let mut line_number = std::usize::MAX;
+    let mut lookahead_index = 0;
+    let mut curr_error = None;
+    for err in errors {
+        match err {
+            ParseError::SYNTAX_ERROR(error) => {
+                if error.lookahead_index > lookahead_index {
+                    lookahead_index = error.lookahead_index;
+                    line_number = error.line_number;
+                    curr_error = Some(ParseError::SYNTAX_ERROR(error));
+                } else if error.lookahead_index == lookahead_index {
+                    if error.line_number < line_number {
+                        line_number = error.line_number;
+                        curr_error = Some(ParseError::SYNTAX_ERROR(error));
+                    }
+                }
+            },
+            ParseError::SEMANTIC_ERROR(error) => {
+                if error.lookahead_index > lookahead_index {
+                    lookahead_index = error.lookahead_index;
+                    line_number = error.line_number;
+                    curr_error = Some(ParseError::SEMANTIC_ERROR(error));
+                } else if error.lookahead_index == lookahead_index {
+                    if error.line_number < line_number {
+                        line_number = error.line_number;
+                        curr_error = Some(ParseError::SEMANTIC_ERROR(error));
+                    }
+                }
+            }
+        }
+    }
+    match curr_error {
+        Some(err) => err,
+        None => unreachable!("aggregated error can be None only when provided vector of errors were empty which is not possible")
     }
 }

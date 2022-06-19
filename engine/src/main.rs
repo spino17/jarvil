@@ -1,10 +1,35 @@
 mod errors;
+mod lexer;
+mod parser;
+mod env;
+mod context;
+mod constants;
+mod reader;
 
-use std::fs;
 use errors::CompilationError;
+use crate::reader::read_file;
+use crate::lexer::lexer::{CoreLexer, Lexer};
+use std::env::args;
+use crate::parser::packrat::PackratParser;
+use crate::parser::core::Parser;
 
-fn main() -> Result<(), CompilationError> {
-    let contents = fs::read_to_string("/Users/bhavyabhatt/Desktop/main.jv")?;
-    print!("{}", contents);
+fn start_compiler() -> Result<(), CompilationError> {
+    let args: Vec<String> = args().collect();
+    let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;
+    let mut core_lexer = CoreLexer::new();
+    let token_vec = core_lexer.tokenize(char_vec)?;
+    let mut parser = PackratParser::new();
+    if token_vec.len() > 0 {
+        let ast = parser.parse(token_vec)?;  // TODO - do bytecode generation using this ast object
+    }
     Ok(())
+}
+
+fn main() {
+    match start_compiler() {
+        Ok(()) => {},
+        Err(err) => {
+            println!("{}", err);
+        }
+    }
 }
