@@ -1,9 +1,9 @@
 Jarvil 0.1.0
 ============
 
-JARVIL (Just A Rather Very Idiotic Language) is metaset of Python. Jarvil add types to a subset of Python programming constructs. 
+JARVIL (Just A Rather Very Idiotic Language) is a metaset of Python. Jarvil add types to a subset of Python programming constructs. 
 Jarvil compiles to readable, standards-based Python. Jarvil with it's type-check system in place can eliminate a lot of bugs at 
-compile time which typically show up at runtime in dynamically typed language like Python.
+compile time which typically show up at runtime in a dynamically typed language like Python.
 
 .. contents::
 
