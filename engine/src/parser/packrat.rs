@@ -453,8 +453,21 @@ impl PackratParser {
         components::stmt::stmt(self)
     }
 
-    pub fn struct_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::compound_stmt::struct_stmt::struct_stmt(self)
+    pub fn type_decl_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::type_declaration_stmt::type_decl_stmt(self)
+    }
+
+    pub fn struct_stmt(&mut self, token_value: &TokenValue) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::type_declaration_stmt::struct_stmt(self, token_value)
+    }
+
+    pub fn lambda_stmt(&mut self, token_value: &TokenValue) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::type_declaration_stmt::lambda_stmt(self, token_value)
+    }
+
+    pub fn function_input_output(&mut self) 
+    -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>, bool, Option<Rc<String>>, Option<ParseError>), ParseError> {
+        components::compound_stmt::function_stmt::function_input_output(self)
     }
 
     pub fn function_stmt(&mut self) -> Result<ParseSuccess, ParseError> {

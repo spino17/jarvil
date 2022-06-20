@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::ParseError;
-use crate::lexer::token::CoreToken;
+use crate::lexer::token::{CoreToken, TokenValue};
 use crate::errors::SyntaxError;
 
 pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
@@ -47,9 +47,33 @@ pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<St
     Ok((response, params))
 }
 
+pub fn function_input_output(parser: &mut PackratParser) 
+-> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>, bool, Option<Rc<String>>, Option<ParseError>), ParseError> {
+    parser.expect("(")?;
+    let mut params = vec![];
+    if !parser.check_next_token(")") {
+        let (_, opt_params) = parser.optparams()?;
+        params = opt_params;
+    }
+    parser.expect(")")?;
+    let curr_lookahead = parser.get_lookahead();
+    let (is_matched, (response, return_type), err) = 
+    PackratParser::expect_optionally(|| {
+        let (_, _) = parser.expect("->")?;
+        let (response, _, data_type, _) = parser.expect_type()?;
+        Ok((response, Some(data_type.0.clone())))
+    }, (ParseSuccess{
+        lookahead: curr_lookahead,
+        possible_err: None,
+    }, None));
+    parser.reset_lookahead(response.lookahead);
+    Ok((response, params, is_matched, return_type, err))
+}
+
 pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("def")?;
     let (_, _, token_value) = parser.expect_any_id()?;
+    /*
     parser.expect("(")?;
     let mut params = vec![];
     if !parser.check_next_token(")") {
@@ -68,6 +92,9 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
         possible_err: None,
     }, None));
     parser.reset_lookahead(response.lookahead);
+     */
+    let (_, params, 
+        _, return_type, err) = parser.function_input_output()?;
     match parser.expect(":") {
         Ok((_, _)) => {},
         Err(error) => {
@@ -79,14 +106,6 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
         }
     }
     let response = parser.block(Some(&params))?;
-    if is_matched {
-        if let Some(return_type) = return_type {
-            parser.set_function_to_scope(&token_value, &Rc::new(params), Some(return_type.0.clone()))
-        } else {
-            unreachable!("if optional pattern is matched will give some return type")
-        }
-    } else {
-        parser.set_function_to_scope(&token_value, &Rc::new(params), None)
-    }
+    parser.set_function_to_scope(&token_value, &Rc::new(params), return_type);
     Ok(response)
 }
