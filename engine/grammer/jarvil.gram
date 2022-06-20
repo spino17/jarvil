@@ -37,7 +37,18 @@ stmt:
 simple_stmt:
     | decls
     | assign
+    | id '(' params ')'  # function or lambda call: check id is a function or type of id is lambda
     | # calling a function, break, continue, return
+
+r_assign:
+    | expr
+    | bexpr
+    | literal
+    | atom
+
+params:
+    | r_asssign ',' params
+    | r_assign
 
 decls:
     | decl, decls
@@ -48,12 +59,6 @@ decl:
 
 l_decl:
     | type id
-
-r_assign:
-    | expr
-    | bexpr
-    | literal
-    | atom
 
 assign:
     | atom '=' r_assign
