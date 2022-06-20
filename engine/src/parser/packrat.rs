@@ -8,7 +8,7 @@ use crate::lexer::token::{Token, CoreToken, TokenValue};
 use crate::parser::ast::AST;
 use std::rc::Rc;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
-use crate::scope::{Env, SymbolData};
+use crate::scope::{Env, SymbolData, UserDefinedTypeData};
 use crate::parser::components;
 use crate::context;
 use rustc_hash::FxHashMap;
@@ -96,8 +96,13 @@ impl PackratParser {
         self.env.set_identifier_init(token_value)
     }
 
-    pub fn set_user_defined_type_to_scope(&mut self, token_value: &TokenValue, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
-        self.env.set_user_defined_type(token_value, fields);
+    pub fn set_user_defined_struct_type_to_scope(&mut self, token_value: &TokenValue, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
+        self.env.set_user_defined_struct_type(token_value, fields);
+    }
+
+    pub fn set_user_defined_lambda_type(&mut self, token_value: &TokenValue, 
+        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
+        self.env.set_user_defined_lambda_type(token_value, params, return_type);
     }
 
     pub fn set_function_to_scope(&mut self, token_value: &TokenValue, 
@@ -288,7 +293,7 @@ impl PackratParser {
     }
 
     pub fn expect_type(&mut self)
-    -> Result<(ParseSuccess, usize, TokenValue, Option<Rc<FxHashMap<Rc<String>, Rc<String>>>>), ParseError> {
+    -> Result<(ParseSuccess, usize, TokenValue, Option<UserDefinedTypeData>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -303,11 +308,11 @@ impl PackratParser {
                 let symbol_data = self.check_declaration(&token)?;
                 if symbol_data.is_type() {
                     self.lookahead = self.lookahead + 1;
-                    let fields = symbol_data.get_user_defined_type_data();
+                    let user_defined_type_data = symbol_data.get_user_defined_type_data();
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), Some(fields)))
+                    }, token.line_number, TokenValue(token_value.0.clone()), Some(user_defined_type_data)))
                 } else {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         token.line_number, 

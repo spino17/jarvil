@@ -27,10 +27,6 @@ pub fn try_compound_stmt(parser: &mut PackratParser) -> Result<(Option<ParseSucc
 }
 
 pub fn stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    // let mut errors_vec: Vec<ParseError> = vec![];
-    // Below is a general pattern among many production rule cases where we always have to reset lookahead back to the original
-    // value when trying out new production rule after prior one failed
-    // let curr_lookahead = parser.get_lookahead();
     let (response, is_success) = try_compound_stmt(parser)?;
     if is_success {
         if let Some(response) = response {

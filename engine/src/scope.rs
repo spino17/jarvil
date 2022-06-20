@@ -20,8 +20,20 @@ struct IdentifierData {
 }
 
 #[derive(Debug)]
-struct UserDefinedTypeData {
+pub struct StructType {
     fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
+}
+
+#[derive(Debug)]
+pub struct LambdaType {
+    params: Rc<Vec<(Rc<String>, Rc<String>)>>,
+    return_type: Rc<Option<Rc<String>>>,
+}
+
+#[derive(Debug)]
+pub enum UserDefinedTypeData {
+    STRUCT(StructType),
+    LAMBDA(LambdaType),
 }
 
 #[derive(Debug)]
@@ -102,13 +114,25 @@ impl SymbolData {
         }
     }
 
-    pub fn get_user_defined_type_data(&self) -> Rc<FxHashMap<Rc<String>, Rc<String>>> {
+    pub fn get_user_defined_type_data(&self) -> UserDefinedTypeData {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
-                data.fields.clone()
+                match data {
+                    UserDefinedTypeData::STRUCT(struct_data) => {
+                        UserDefinedTypeData::STRUCT(StructType{
+                            fields: struct_data.fields.clone()
+                        })
+                    },
+                    UserDefinedTypeData::LAMBDA(lambda_data) => {
+                        UserDefinedTypeData::LAMBDA(LambdaType{
+                            params: lambda_data.params.clone(),
+                            return_type: lambda_data.return_type.clone(),
+                        })
+                    }
+                }
             },
             _ => {
-                unreachable!("use this method only for purely identifier tokens")
+                unreachable!("this method should only be called for purely identifier tokens")
             }
         }
     }
@@ -198,10 +222,19 @@ impl Env {
         self.0.borrow_mut().set_init(&token_value.0.clone());
     }
 
-    pub fn set_user_defined_type(&self, token_value: &TokenValue, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
-        let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData{
+    pub fn set_user_defined_struct_type(&self, token_value: &TokenValue, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
+        let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::STRUCT(StructType{
             fields: fields.clone(),
-        });
+        }));
+        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+    }
+
+    pub fn set_user_defined_lambda_type(&self, token_value: &TokenValue, 
+        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
+        let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::LAMBDA(LambdaType{
+            params: params.clone(),
+            return_type: return_type.clone(),
+        }));
         self.0.borrow_mut().set(token_value.0.clone(), meta_data);
     }
 
