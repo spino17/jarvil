@@ -9,7 +9,6 @@ const BREAK:        &'static str = "break";
 const IF:           &'static str = "if";
 const ELIF:         &'static str = "elif";
 const ELSE:         &'static str = "else";
-// const STRUCT:       &'static str = "struct";
 const TYPE_KEYWORD: &'static str = "type";
 const DEF:          &'static str = "def";
 const AND:          &'static str = "and";
@@ -31,7 +30,6 @@ pub const KEYWORDS: [&'static str; 19] = [
     IF,
     ELIF,
     ELSE,
-    // STRUCT,
     TYPE_KEYWORD,
     DEF,
     AND,

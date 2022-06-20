@@ -45,12 +45,6 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             }
         },
         _ => {
-            /*
-            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
-            parser.get_lookahead(), 
-            format!("expected '==', '>=', '>', '<=' or '<', got '{}'", 
-            PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
-             */
             let line_number = parser.get_curr_line_number();
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
             line_number,

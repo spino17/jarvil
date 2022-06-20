@@ -129,10 +129,12 @@ impl Display for CompilationError {
                 match err {
                     ParseError::SYNTAX_ERROR(syntax_error) => write!(f, 
                         ">>> SynatxError: line {}\n    {}\n    {}",
-                        syntax_error.line_number, form_code_line(&syntax_error.code_line, syntax_error.err_index), syntax_error.err_message),
+                        syntax_error.line_number, form_code_line(&syntax_error.code_line, syntax_error.err_index), 
+                        syntax_error.err_message),
                     ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, 
                         ">>> SemanticError: line {}\n    {}\n    {}", 
-                        semantic_error.line_number, form_code_line(&semantic_error.code_line, semantic_error.err_index), semantic_error.err_message)
+                        semantic_error.line_number, form_code_line(&semantic_error.code_line, semantic_error.err_index), 
+                        semantic_error.err_message)
                 }
             }
         }

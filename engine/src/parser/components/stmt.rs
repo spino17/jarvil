@@ -41,21 +41,4 @@ pub fn stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     } else {
         parser.simple_stmts()
     }
-    /*
-    match parser.compound_stmt() {
-        Ok(response) => return Ok(response),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    match parser.simple_stmts() {
-        Ok(response) => return Ok(response),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    Err(aggregate_errors(errors_vec))
-     */
 }

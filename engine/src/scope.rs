@@ -50,7 +50,6 @@ impl SymbolData {
     }
 
     pub fn set_init(&self, is_init: bool) {
-        // .is_init = is_init;
         match &mut *self.0.borrow_mut() {
             MetaData::IDENTIFIER(data) => data.is_init = is_init,
             _ => {
@@ -60,7 +59,6 @@ impl SymbolData {
     }
 
     pub fn is_init(&self) -> bool {
-        // .is_init
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.is_init,
             _ => {
@@ -70,7 +68,6 @@ impl SymbolData {
     }
 
     pub fn get_type(&self) -> Rc<String> {
-        // .data_type.clone()
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.data_type.clone(),
             _ => {
@@ -80,7 +77,6 @@ impl SymbolData {
     }
 
     pub fn type_eq(&self, data_type: &str) -> bool {
-        // .data_type.as_ref().eq(data_type)
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.data_type.to_string().eq(data_type),
             _ => false

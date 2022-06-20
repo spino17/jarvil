@@ -359,79 +359,6 @@ impl PackratParser {
         }
     }
 
-    /*
-    pub fn expect_and_get_value(&mut self, symbol: &str) -> Result<(ParseSuccess, usize, TokenValue), ParseError> {
-        self.ignore_blanks();
-        let token = &self.token_vec[self.lookahead];
-        if token.is_eq(symbol) {
-            let (has_value, token_value) = match &token.core_token {
-                CoreToken::IDENTIFIER(token_value)  =>      {
-                    (true, Some(token_value))
-                },
-                CoreToken::INTEGER(token_value)     =>      {
-                    (true, Some(token_value))
-                },
-                CoreToken::FLOAT(token_value)       =>      {
-                    (true, Some(token_value))
-                },
-                CoreToken::LITERAL(token_value)     =>      {
-                    (true, Some(token_value))
-                },
-                CoreToken::TYPE(token_value)        =>      {
-                    (true, Some(token_value))
-                }
-                _ => {
-                    (false, None)
-                }
-            };
-            if has_value {
-                if let Some(token_value) = token_value {
-                    self.lookahead = self.lookahead + 1;
-                    Ok((ParseSuccess{
-                        lookahead: self.lookahead,
-                        possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone())))
-                } else {
-                    unreachable!("any token which has a value can't be reached here")
-                }
-            } else {
-                unreachable!("this method should only be called for tokens which have values")
-            }
-        } else {
-            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
-                self.lookahead, format!(
-                "expected '{}', got '{}'", 
-                PackratParser::parse_for_err_message(String::from(symbol)), 
-                PackratParser::parse_for_err_message(token.name.to_string()))))
-            )
-        }
-    }
-     */
-
-    // always use this for matching identifiers except in declarations
-    /*
-    pub fn expect_id_and_get_data(&mut self) -> Result<(ParseSuccess, usize, SymbolData), ParseError> {
-        self.ignore_blanks();
-        let token = &self.token_vec[self.lookahead];
-        match &token.core_token {
-            CoreToken::IDENTIFIER(_) => {
-                let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
-                self.lookahead = self.lookahead + 1;
-                Ok((ParseSuccess{
-                    lookahead: self.lookahead,
-                    possible_err: None,
-                }, token.line_number, symbol_data))
-            },
-            _ => {
-                Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
-                    self.lookahead, format!(
-                        "expected an identifier, got '{}'", 
-                        PackratParser::parse_for_err_message(token.name.to_string())))))
-            }
-        }
-    }
-     */
-
     pub fn expect_indent_spaces(&mut self) -> Result<(ParseSuccess, i64), ParseError> {
         let expected_indent_spaces = context::get_indent() * self.indent_level;
         let mut indent_spaces = 0;
@@ -452,7 +379,7 @@ impl PackratParser {
                             token.line_number,
                             self.get_code_line(token.line_number),
                             self.get_index(), format!(
-                                "incorrectly indented statement\nexpected indent of {} spaces, got {} spaces", 
+                                "incorrectly indented statement\n    expected indent of {} spaces, got {} spaces", 
                                 expected_indent_spaces, indent_spaces)));
                         return Ok((ParseSuccess{
                             lookahead: self.lookahead,
@@ -500,6 +427,7 @@ impl PackratParser {
         }
         parsed_message
     }
+
 
     // ------------------- production rule matching function for terminals and non-terminals declared below -------------------
     // code

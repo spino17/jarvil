@@ -236,27 +236,6 @@ impl Token {
             }
         }
     }
-    /*
-    pub fn check_declaration(&self, env: &Env, lookahead_index: usize) -> Result<SymbolData, SemanticError> {
-        let line_number = self.line_number;
-        match &self.core_token {
-            CoreToken::IDENTIFIER(token_value) => {
-                match env.get(token_value) {
-                    Some(symbol_data) => Ok(symbol_data),
-                    None => {
-                        let err_message = format!("identifier '{}' is not declared in the current scope", token_value.0);
-                        Err(SemanticError::new(
-                            line_number,
-                            lookahead_index,
-                            err_message)
-                        )
-                    }
-                }
-            },
-            _ => unreachable!("check_declaration cannot be used for tokens other than type identifier")
-        }
-    }
-     */
 
     pub fn is_eq(&self, symbol: &str) -> bool {
         self.name.as_ref().eq(symbol)

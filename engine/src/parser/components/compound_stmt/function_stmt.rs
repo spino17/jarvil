@@ -42,8 +42,6 @@ pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<St
     let mut params: Vec<(Rc<String>, Rc<String>)> = vec![];
     let (_, _, data_type, token_value) = parser.l_decl()?;
     params.push((token_value.0.clone(), data_type.0.clone()));
-    // parser.expect(",")?;
-    // let (response, mut remaining_params) = parser.optparams()?;
     let (response, mut remaining_params) = parser.optparams_factor()?;
     params.append(&mut remaining_params);
     Ok((response, params))
