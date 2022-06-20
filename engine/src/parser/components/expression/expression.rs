@@ -44,7 +44,9 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                 Ok((response, line_number, _, data_type, is_init)) => {
                     if !is_init {
                         if let Some(token_value) = token_value {
-                            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(line_number,
+                            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                                line_number,
+                                parser.get_code_line(line_number),
                                 response.lookahead, format!(
                                     "identifier '{}' is not initialized", token_value.0.clone())))
                                 )
@@ -57,7 +59,9 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                     } else if data_type.to_string().eq("float") {
                         return Ok((response, true));
                     } else {
-                        return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
+                        return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                            line_number,
+                            parser.get_code_line(line_number),
                             response.lookahead, format!(
                                 "expected an identifier with type 'int' or 'float' in an expression, got type '{}'", 
                                 data_type)))
@@ -70,7 +74,10 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             }
         },
         _ => {
-            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(),
+            let line_number = parser.get_curr_line_number();
+            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+            line_number,
+            parser.get_code_line(line_number),
             parser.get_lookahead(), 
             format!("expected '(', 'int', 'float' or an identifier, got '{}'", 
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
@@ -126,8 +133,11 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
                     || parser.check_next_token(",") {
                         return Ok((response, false))
                     } else {
+                        let line_number = parser.get_curr_line_number();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            parser.get_curr_line_number(), parser.get_lookahead(),
+                            line_number,
+                            parser.get_code_line(line_number),
+                             parser.get_lookahead(),
                             format!(
                             "expected a ')', '+', '-', '*', '/', '==', '>=', '>', '<=', '<', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
@@ -199,8 +209,11 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
                     || parser.check_next_token(",") {
                         return Ok((response, false))
                     } else {
+                        let line_number = parser.get_curr_line_number();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            parser.get_curr_line_number(), parser.get_lookahead(),
+                            line_number, 
+                            parser.get_code_line(line_number),
+                            parser.get_lookahead(),
                             format!(
                             "expected a ')', '+', '-', '*', '/' '==', '>=', '>', '<=', '<', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))

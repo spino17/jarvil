@@ -17,8 +17,11 @@ pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec
                     if parser.check_next_token(")") {
                         return Ok((response, vec![]))
                     } else {
+                        let line_number = parser.get_curr_line_number();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            parser.get_curr_line_number(), parser.get_lookahead(),
+                            line_number, 
+                            parser.get_code_line(line_number),
+                            parser.get_lookahead(),
                             format!(
                             "expected a ')', got '{}'", PackratParser::parse_for_err_message(
                                 parser.get_next_token_name().to_string())

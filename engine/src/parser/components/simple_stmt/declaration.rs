@@ -59,8 +59,11 @@ pub fn decl_factor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
                     if parser.check_next_token("\n") {
                         return Ok(response)
                     } else {
+                        let line_number = parser.get_curr_line_number();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            parser.get_curr_line_number(), parser.get_lookahead(),
+                            line_number, 
+                            parser.get_code_line(line_number),
+                            parser.get_lookahead(),
                             format!(
                             "expected a 'newline', got '{}'", PackratParser::parse_for_err_message(
                                 parser.get_next_token_name().to_string())

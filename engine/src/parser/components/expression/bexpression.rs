@@ -51,7 +51,10 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             format!("expected '==', '>=', '>', '<=' or '<', got '{}'", 
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
              */
-            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
+            let line_number = parser.get_curr_line_number();
+            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+            line_number,
+            parser.get_code_line(line_number),
             parser.get_lookahead(), 
             String::from(
                 "got a numeric expression inside a boolean expression\nnumeric expression can only be paired using '==', '>=', '>', '<=' or '<' inside a boolean expression")))
@@ -126,7 +129,9 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                 Ok((response, line_number, _, data_type, is_init)) => {
                     if !is_init {
                         if let Some(token_value) = token_value {
-                            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(line_number,
+                            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                                line_number,
+                                parser.get_code_line(line_number),
                                 response.lookahead, format!(
                                     "identifier '{}' is not initialized", token_value.0.clone())))
                                 )
@@ -137,7 +142,9 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                     if data_type.to_string().eq("bool") {
                         return Ok(response);
                     } else {
-                        return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(line_number, 
+                        return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                            line_number,
+                            parser.get_code_line(line_number),
                             response.lookahead, format!(
                                 "expected an identifier with type 'bool' in an boolean expression, got type '{}'", 
                                 data_type)))
@@ -150,7 +157,10 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
             }
         },
         _ => {
-            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(parser.get_curr_line_number(), 
+            let line_number = parser.get_curr_line_number();
+            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+            line_number,
+            parser.get_code_line(line_number),
             parser.get_lookahead(), 
             format!("expected '(', 'True', 'False', 'not' or an identifier, got '{}'",
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
@@ -204,8 +214,11 @@ pub fn andtive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                     || parser.check_next_token(",") {
                         return Ok(response)
                     } else {
+                        let line_number = parser.get_curr_line_number();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            parser.get_curr_line_number(), parser.get_lookahead(),
+                            line_number, 
+                            parser.get_code_line(line_number),
+                            parser.get_lookahead(),
                             format!("expected a ')', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
@@ -251,8 +264,11 @@ pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                     || parser.check_next_token(",") {
                         return Ok(response)
                     } else {
+                        let line_number = parser.get_curr_line_number();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            parser.get_curr_line_number(), parser.get_lookahead(),
+                            line_number,
+                            parser.get_code_line(line_number), 
+                            parser.get_lookahead(),
                             format!("expected a ')', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));

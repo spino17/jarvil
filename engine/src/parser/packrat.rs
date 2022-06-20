@@ -7,7 +7,7 @@ use crate::parser::core::Parser;
 use crate::lexer::token::{Token, CoreToken, TokenValue};
 use crate::parser::ast::AST;
 use std::rc::Rc;
-use crate::errors::{ParseError, SyntaxError};
+use crate::errors::{ParseError, SyntaxError, SemanticError};
 use crate::scope::{Env, SymbolData};
 use crate::parser::components;
 use crate::context;
@@ -23,18 +23,20 @@ pub struct PackratParser {
     lookahead: usize,
     indent_level: i64,
     env: Env,
+    code_lines: Vec<(Rc<String>, usize)>,
     // TODO - add look up hash table for cached results
     // TODO - add AST data structure
 }
 
 impl PackratParser {
-    pub fn new() -> Self {
+    pub fn new(code_lines: Vec<(Rc<String>, usize)>) -> Self {
         let env = Env::new();
         PackratParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
             env,
+            code_lines,
         }
     }
 }
@@ -61,6 +63,11 @@ impl PackratParser {
 
     pub fn reset_indent_level(&mut self, reset_indent: i64) {
         self.indent_level = reset_indent;
+    }
+
+    pub fn get_code_line(&self, line_number: usize) -> (Rc<String>, usize) {
+        let (s, line_start_index) = &self.code_lines[line_number - 1];
+        (s.clone(), *line_start_index)
     }
 
     pub fn get_env(&self) -> Env {
@@ -172,6 +179,27 @@ impl PackratParser {
         }
     }
 
+    pub fn check_declaration(&self, token: &Token) -> Result<SymbolData, SemanticError> {
+        let line_number = token.line_number;
+        match &token.core_token {
+            CoreToken::IDENTIFIER(token_value) => {
+                match self.env.get(token_value) {
+                    Some(symbol_data) => Ok(symbol_data),
+                    None => {
+                        let err_message = format!("identifier '{}' is not declared in the current scope", token_value.0);
+                        Err(SemanticError::new(
+                            line_number,
+                            self.get_code_line(line_number),
+                            self.lookahead,
+                            err_message)
+                        )
+                    }
+                }
+            },
+            _ => unreachable!("check_declaration cannot be used for tokens other than type identifier")
+        }
+    }
+
     pub fn expect(&mut self, symbol: &str) -> Result<(ParseSuccess, usize), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
@@ -188,7 +216,9 @@ impl PackratParser {
                 possible_err: None,
             }, token.line_number))
         } else {
-            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
+            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                token.line_number,
+                self.get_code_line(token.line_number),
                 self.lookahead, 
                 format!(
                 "expected '{}', got '{}'",
@@ -210,7 +240,9 @@ impl PackratParser {
                 }, token.line_number, TokenValue(token_value.0.clone())))
             },
             _ => {
-                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
+                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    token.line_number,
+                    self.get_code_line(token.line_number),
                     self.lookahead, format!(
                     "expected an identifier, got '{}'", 
                     PackratParser::parse_for_err_message(token.name.to_string()))))
@@ -224,7 +256,7 @@ impl PackratParser {
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
             CoreToken::IDENTIFIER(token_value) => {
-                let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
+                let symbol_data = self.check_declaration(&token)?;
                 if symbol_data.is_id() {
                     self.lookahead = self.lookahead + 1;
                     let (data_type, is_init) = symbol_data.get_id_data();
@@ -233,14 +265,18 @@ impl PackratParser {
                         possible_err: None,
                     }, token.line_number, TokenValue(token_value.0.clone()), data_type, is_init))
                 } else {
-                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
+                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        token.line_number,
+                        self.get_code_line(token.line_number),
                         self.lookahead, 
                         format!("expected an identifier, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
                 }
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
+            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                token.line_number,
+                self.get_code_line(token.line_number),
                  self.lookahead,
                   format!("expected an identifier, got '{}'",
                   PackratParser::parse_for_err_message( token.name.to_string())))))
@@ -260,7 +296,7 @@ impl PackratParser {
                 }, token.line_number, TokenValue(token_value.0.clone()), None))
             },
             CoreToken::IDENTIFIER(token_value) => {
-                let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
+                let symbol_data = self.check_declaration(&token)?;
                 if symbol_data.is_type() {
                     self.lookahead = self.lookahead + 1;
                     let fields = symbol_data.get_user_defined_type_data();
@@ -269,13 +305,17 @@ impl PackratParser {
                         possible_err: None,
                     }, token.line_number, TokenValue(token_value.0.clone()), Some(fields)))
                 } else {
-                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
-                        self.lookahead, 
+                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        token.line_number, 
+                        self.get_code_line(token.line_number),
+                        self.lookahead,
                         format!("expected a type, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone()))))
                 }
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
+            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                token.line_number,
+                self.get_code_line(token.line_number),
                  self.lookahead,
                   format!("expected a type, got '{}'", 
                   PackratParser::parse_for_err_message( token.name.to_string())))))
@@ -288,7 +328,7 @@ impl PackratParser {
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
             CoreToken::IDENTIFIER(token_value) => {
-                let symbol_data = token.check_declaration(&self.env, self.lookahead)?;
+                let symbol_data = self.check_declaration(&token)?;
                 if symbol_data.is_function() {
                     self.lookahead = self.lookahead + 1;
                     let (params, return_type) = symbol_data.get_function_data();
@@ -297,14 +337,18 @@ impl PackratParser {
                         possible_err: None,
                     }, token.line_number, TokenValue(token_value.0.clone()), params, return_type))
                 } else {
-                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number, 
+                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        token.line_number, 
+                        self.get_code_line(token.line_number),
                         self.lookahead, 
                         format!("expected a function, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
                 }
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
+            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                token.line_number,
+                self.get_code_line(token.line_number),
                  self.lookahead,
                   format!("expected a function, got '{}'", 
                   PackratParser::parse_for_err_message( token.name.to_string())))))
@@ -400,7 +444,9 @@ impl PackratParser {
                             possible_err: None,
                         }, indent_spaces))
                     } else {
-                        let err =ParseError::SYNTAX_ERROR(SyntaxError::new(token.line_number,
+                        let err =ParseError::SYNTAX_ERROR(SyntaxError::new(
+                            token.line_number,
+                            self.get_code_line(token.line_number),
                             self.lookahead, format!(
                                 "incorrectly indented statement\nexpected indent of {} spaces, got {} spaces", 
                                 expected_indent_spaces, indent_spaces)));

@@ -18,9 +18,11 @@ fn start_compiler() -> Result<(), CompilationError> {
     let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;
     let mut core_lexer = CoreLexer::new();
     let token_vec = core_lexer.tokenize(char_vec)?;
-    let mut parser = PackratParser::new();
+    let code_lines = core_lexer.get_code_lines();
+    // println!("{:?}", code_lines);
+    let mut parser = PackratParser::new(code_lines);
     if token_vec.len() > 0 {
-        let ast = parser.parse(token_vec)?;  // TODO - do bytecode generation using this ast object
+        let ast = parser.parse(token_vec, )?;  // TODO - do bytecode generation using this ast object
     }
     Ok(())
 }

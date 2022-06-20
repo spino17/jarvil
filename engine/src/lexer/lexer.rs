@@ -10,7 +10,7 @@ pub trait Lexer {
 pub struct CoreLexer {
     begin_lexeme: usize,
     line_number: usize,
-    code_lines: Vec<(String, usize)>,
+    code_lines: Vec<(Rc<String>, usize)>,
     line_start_index: usize,
 }
 
@@ -26,6 +26,10 @@ impl CoreLexer {
 
     pub fn extract_lexeme(&mut self, code: &Vec<char>) -> Result<Token, LexicalError> {
         Token::extract_lexeme(&mut self.begin_lexeme, &mut self.line_number, code, &mut self.code_lines, &mut self.line_start_index)
+    }
+
+    pub fn get_code_lines(self) -> Vec<(Rc<String>, usize)> {
+        self.code_lines
     }
 }
 
@@ -57,8 +61,7 @@ impl Lexer for CoreLexer {
                 }
             }
         }
-        self.code_lines.push((code[self.line_start_index..].iter().collect(), self.line_start_index));
-        // println!("{:?}", self.code_lines);
+        self.code_lines.push((Rc::new(code[self.line_start_index..].iter().collect()), self.line_start_index));
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::NEWLINE,

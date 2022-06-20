@@ -1,5 +1,6 @@
 use std::{io::Error as IOError, fmt::Display};
 use std::fmt::Formatter;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct LexicalError {
@@ -19,14 +20,17 @@ impl LexicalError {
 #[derive(Debug)]
 pub struct SyntaxError {
     line_number: usize,
+    code_line: Rc<String>,
     lookahead_index: usize,
     err_message: String,
 }
 
 impl SyntaxError {
-    pub fn new(line_number: usize, lookahead_index: usize, err_message: String) -> Self {
-        SyntaxError{
+    pub fn new(line_number: usize, code_line: (Rc<String>, usize), lookahead_index: usize, err_message: String) -> Self {
+        // make complete code line here
+        SyntaxError {
             line_number,
+            code_line: code_line.0,
             lookahead_index,
             err_message,
         }
@@ -36,14 +40,17 @@ impl SyntaxError {
 #[derive(Debug)]
 pub struct SemanticError {
     line_number: usize,
+    code_line: Rc<String>,
     lookahead_index: usize,
     err_message: String,
 }
 
 impl SemanticError {
-    pub fn new(line_number: usize, lookahead_index: usize, err_message: String) -> Self {
-        SemanticError{
+    pub fn new(line_number: usize, code_line: (Rc<String>, usize), lookahead_index: usize, err_message: String) -> Self {
+        // make complete code line here
+        SemanticError {
             line_number,
+            code_line: code_line.0,
             lookahead_index,
             err_message,
         }
@@ -104,11 +111,11 @@ impl Display for CompilationError {
             CompilationError::PARSE_ERROR(err) => {
                 match err {
                     ParseError::SYNTAX_ERROR(syntax_error) => write!(f, 
-                        ">>> SynatxError: line {}\n    {}", 
-                        syntax_error.line_number, syntax_error.err_message),
+                        ">>> SynatxError: line {}\n    {}\n\n    {}",
+                        syntax_error.line_number, syntax_error.code_line, syntax_error.err_message),
                     ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, 
-                        ">>> SemanticError: line {}\n    {}", 
-                        semantic_error.line_number, semantic_error.err_message)
+                        ">>> SemanticError: line {}\n    {}\n\n    {}", 
+                        semantic_error.line_number, semantic_error.code_line, semantic_error.err_message)
                 }
             }
         }

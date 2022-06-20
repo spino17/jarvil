@@ -57,7 +57,9 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), Pa
     let (response, line_number, 
         token_value, data_type, is_init) = parser.expect_id()?;
     if !is_init {
-        return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(line_number,
+        return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+            line_number,
+            parser.get_code_line(line_number),
             response.lookahead, format!(
                 "cannot access parts of uninitialized identifier '{}'", token_value.0.clone())))
             )

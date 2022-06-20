@@ -106,7 +106,7 @@ impl Token {
     // This method tokenize the code in O(|code|)
     pub fn extract_lexeme(begin_lexeme: &mut usize, 
         line_number: &mut usize, code: &Vec<char>, 
-        code_lines: &mut Vec<(String, usize)>, line_start_index: &mut usize) -> Result<Token, LexicalError> {
+        code_lines: &mut Vec<(Rc<String>, usize)>, line_start_index: &mut usize) -> Result<Token, LexicalError> {
         let critical_char = code[*begin_lexeme];
         let (core_token, name) = match critical_char {
             '('         =>      {
@@ -158,7 +158,7 @@ impl Token {
                 (CoreToken::TAB, String::from("\t"))
             },
             '\n'        =>      {
-                code_lines.push((code[*line_start_index..*begin_lexeme].iter().collect(), *line_start_index));
+                code_lines.push((Rc::new(code[*line_start_index..*begin_lexeme].iter().collect()), *line_start_index));
                 *begin_lexeme = *begin_lexeme + 1;
                 *line_number = *line_number + 1;
                 *line_start_index = *begin_lexeme;
@@ -233,7 +233,7 @@ impl Token {
             }
         }
     }
-
+    /*
     pub fn check_declaration(&self, env: &Env, lookahead_index: usize) -> Result<SymbolData, SemanticError> {
         let line_number = self.line_number;
         match &self.core_token {
@@ -242,13 +242,18 @@ impl Token {
                     Some(symbol_data) => Ok(symbol_data),
                     None => {
                         let err_message = format!("identifier '{}' is not declared in the current scope", token_value.0);
-                        Err(SemanticError::new(line_number, lookahead_index, err_message))
+                        Err(SemanticError::new(
+                            line_number,
+                            lookahead_index,
+                            err_message)
+                        )
                     }
                 }
             },
             _ => unreachable!("check_declaration cannot be used for tokens other than type identifier")
         }
     }
+     */
 
     pub fn is_eq(&self, symbol: &str) -> bool {
         self.name.as_ref().eq(symbol)
