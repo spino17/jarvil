@@ -82,7 +82,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             code_lines.push((Rc::new(code[*line_start_index..forward_lexeme].iter().collect()), *line_start_index));
             *begin_lexeme = *begin_lexeme + 1;
             *line_number = *line_number + 1;
-            *line_start_index = forward_lexeme;
+            *line_start_index = forward_lexeme + 1;
         }
         match state {
             0 => {
@@ -160,7 +160,7 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize,
             code_lines.push((Rc::new(code[*line_start_index..forward_lexeme].iter().collect()), *line_start_index));
             *begin_lexeme = *begin_lexeme + 1;
             *line_number = *line_number + 1;
-            *line_start_index = forward_lexeme;
+            *line_start_index = forward_lexeme + 1;
         }
         match next_char {
             '\n' => {

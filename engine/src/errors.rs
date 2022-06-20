@@ -7,7 +7,7 @@ fn form_code_line(code_line: &(Rc<String>, usize), err_index: usize) -> String {
         unreachable!("lookahead at which error occured can never be less than the start index of the line")
     }
     let start_lookahead = code_line.1;
-    let pointer_index = err_index - start_lookahead - 1;
+    let pointer_index = err_index - start_lookahead;
     let mut pointer_line: Vec<char> = vec![];
     for (i, _) in code_line.0.as_ref().chars().enumerate() {
         if i == pointer_index {
@@ -17,7 +17,7 @@ fn form_code_line(code_line: &(Rc<String>, usize), err_index: usize) -> String {
         }
     }
     let pointer_line: String = pointer_line.iter().collect();
-    format!("{}\n{}", code_line.0.clone(), pointer_line)
+    format!("{}\n    {}", code_line.0.clone(), pointer_line)
 }
 
 #[derive(Debug)]
