@@ -21,7 +21,7 @@ pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             line_number, 
                             parser.get_code_line(line_number),
-                            parser.get_lookahead(),
+                            parser.get_index(),
                             format!(
                             "expected a ')', got '{}'", PackratParser::parse_for_err_message(
                                 parser.get_next_token_name().to_string())

@@ -39,7 +39,9 @@ impl Lexer for CoreLexer {
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::NEWLINE,
-            name: Rc::new(String::from("\n"))
+            name: Rc::new(String::from("\n")),
+            start_index: 0,
+            end_index: 0,
         });
         while self.begin_lexeme < code.len() {
             let token = self.extract_lexeme(&code)?;
@@ -51,12 +53,15 @@ impl Lexer for CoreLexer {
                     token_vec.push(Token{
                         line_number: token.line_number,
                         core_token: CoreToken::NEWLINE,
-                        name: Rc::new(String::from("\n"))
+                        name: Rc::new(String::from("\n")),
+                        start_index: token.start_index,
+                        end_index: token.end_index,
                     })
                 },
                 CoreToken::BLOCK_COMMENT => continue,
                 // CoreToken::BLANK => continue,
                 _ => {
+                    println!("{:?}", token);
                     token_vec.push(token)
                 }
             }
@@ -65,12 +70,16 @@ impl Lexer for CoreLexer {
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::NEWLINE,
-            name: Rc::new(String::from("\n"))
+            name: Rc::new(String::from("\n")),
+            start_index: code.len(),
+            end_index: code.len(),
         });
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
-            name: Rc::new(String::from("endmarker"))
+            name: Rc::new(String::from("endmarker")),
+            start_index: code.len(),
+            end_index: code.len(),
         });
         Ok(token_vec)
     }

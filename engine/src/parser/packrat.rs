@@ -57,6 +57,10 @@ impl PackratParser {
         self.lookahead = reset_index;
     }
 
+    pub fn get_index(&self) -> usize {
+        self.token_vec[self.lookahead].end_index
+    }
+
     pub fn get_indent_level(&self) -> i64 {
         self.indent_level
     }
@@ -190,7 +194,7 @@ impl PackratParser {
                         Err(SemanticError::new(
                             line_number,
                             self.get_code_line(line_number),
-                            self.lookahead,
+                            self.get_index(),
                             err_message)
                         )
                     }
@@ -219,7 +223,7 @@ impl PackratParser {
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                 token.line_number,
                 self.get_code_line(token.line_number),
-                self.lookahead, 
+                self.get_index(), 
                 format!(
                 "expected '{}', got '{}'",
                 PackratParser::parse_for_err_message(String::from(symbol)), 
@@ -243,7 +247,7 @@ impl PackratParser {
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     token.line_number,
                     self.get_code_line(token.line_number),
-                    self.lookahead, format!(
+                    self.get_index(), format!(
                     "expected an identifier, got '{}'", 
                     PackratParser::parse_for_err_message(token.name.to_string()))))
                 )
@@ -268,7 +272,7 @@ impl PackratParser {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         token.line_number,
                         self.get_code_line(token.line_number),
-                        self.lookahead, 
+                        self.get_index(), 
                         format!("expected an identifier, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
@@ -277,7 +281,7 @@ impl PackratParser {
             _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                 token.line_number,
                 self.get_code_line(token.line_number),
-                 self.lookahead,
+                 self.get_index(),
                   format!("expected an identifier, got '{}'",
                   PackratParser::parse_for_err_message( token.name.to_string())))))
         }
@@ -308,7 +312,7 @@ impl PackratParser {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         token.line_number, 
                         self.get_code_line(token.line_number),
-                        self.lookahead,
+                        self.get_index(),
                         format!("expected a type, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone()))))
                 }
@@ -316,7 +320,7 @@ impl PackratParser {
             _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                 token.line_number,
                 self.get_code_line(token.line_number),
-                 self.lookahead,
+                 self.get_index(),
                   format!("expected a type, got '{}'", 
                   PackratParser::parse_for_err_message( token.name.to_string())))))
         }
@@ -340,7 +344,7 @@ impl PackratParser {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         token.line_number, 
                         self.get_code_line(token.line_number),
-                        self.lookahead, 
+                        self.get_index(), 
                         format!("expected a function, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
@@ -349,7 +353,7 @@ impl PackratParser {
             _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                 token.line_number,
                 self.get_code_line(token.line_number),
-                 self.lookahead,
+                 self.get_index(),
                   format!("expected a function, got '{}'", 
                   PackratParser::parse_for_err_message( token.name.to_string())))))
         }
@@ -447,7 +451,7 @@ impl PackratParser {
                         let err =ParseError::SYNTAX_ERROR(SyntaxError::new(
                             token.line_number,
                             self.get_code_line(token.line_number),
-                            self.lookahead, format!(
+                            self.get_index(), format!(
                                 "incorrectly indented statement\nexpected indent of {} spaces, got {} spaces", 
                                 expected_indent_spaces, indent_spaces)));
                         return Ok((ParseSuccess{

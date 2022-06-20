@@ -60,7 +60,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), Pa
         return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
             line_number,
             parser.get_code_line(line_number),
-            response.lookahead, format!(
+            parser.get_index(), format!(
                 "cannot access parts of uninitialized identifier '{}'", token_value.0.clone())))
             )
     }

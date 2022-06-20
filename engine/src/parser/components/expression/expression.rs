@@ -47,7 +47,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                                 line_number,
                                 parser.get_code_line(line_number),
-                                response.lookahead, format!(
+                                parser.get_index(), format!(
                                     "identifier '{}' is not initialized", token_value.0.clone())))
                                 )
                         } else {
@@ -62,7 +62,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                             line_number,
                             parser.get_code_line(line_number),
-                            response.lookahead, format!(
+                            parser.get_index(), format!(
                                 "expected an identifier with type 'int' or 'float' in an expression, got type '{}'", 
                                 data_type)))
                             );
@@ -78,7 +78,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
             line_number,
             parser.get_code_line(line_number),
-            parser.get_lookahead(), 
+            parser.get_index(), 
             format!("expected '(', 'int', 'float' or an identifier, got '{}'", 
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
@@ -137,7 +137,7 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             line_number,
                             parser.get_code_line(line_number),
-                             parser.get_lookahead(),
+                             parser.get_index(),
                             format!(
                             "expected a ')', '+', '-', '*', '/', '==', '>=', '>', '<=', '<', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
@@ -213,7 +213,7 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                             line_number, 
                             parser.get_code_line(line_number),
-                            parser.get_lookahead(),
+                            parser.get_index(),
                             format!(
                             "expected a ')', '+', '-', '*', '/' '==', '>=', '>', '<=', '<', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))

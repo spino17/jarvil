@@ -1,10 +1,7 @@
-use crate::errors::{LexicalError, SemanticError};
+use crate::errors::{LexicalError};
 use std::rc::Rc;
-use crate::scope::{Env,SymbolData};
 use crate::lexer::helper;
 use crate::context;
-
-use super::lexer::Lexer;
 
 #[derive(Debug)]
 pub struct TokenValue(pub Rc<String>);
@@ -100,6 +97,8 @@ pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
     pub name: Rc<String>,
+    pub start_index: usize,
+    pub end_index: usize,
 }
 
 impl Token {
@@ -107,6 +106,7 @@ impl Token {
     pub fn extract_lexeme(begin_lexeme: &mut usize, 
         line_number: &mut usize, code: &Vec<char>, 
         code_lines: &mut Vec<(Rc<String>, usize)>, line_start_index: &mut usize) -> Result<Token, LexicalError> {
+        let start_index = *begin_lexeme;
         let critical_char = code[*begin_lexeme];
         let (core_token, name) = match critical_char {
             '('         =>      {
@@ -204,10 +204,13 @@ impl Token {
                 (token, name)
             }
         };
+        let end_index = *begin_lexeme;
         Ok(Token {
             line_number: *line_number,
             core_token,
             name: Rc::new(name),
+            start_index,
+            end_index,
         })
     }
 
