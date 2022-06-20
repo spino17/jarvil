@@ -72,13 +72,17 @@ pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 
 // / -> /, /*, //
 pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
+    line_number: &mut usize, code: &Vec<char>, 
+    code_lines: &mut Vec<(String, usize)>, line_start_index: &mut usize) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         if next_char == '\n' {
+            code_lines.push((code[*line_start_index..forward_lexeme].iter().collect(), *line_start_index));
+            *begin_lexeme = *begin_lexeme + 1;
             *line_number = *line_number + 1;
+            *line_start_index = forward_lexeme + 1;
         }
         match state {
             0 => {
@@ -147,12 +151,16 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
 
 // # -> #......\n
 pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
+    line_number: &mut usize, code: &Vec<char>, 
+    code_lines: &mut Vec<(String, usize)>, line_start_index: &mut usize) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         if next_char == '\n' {
+            code_lines.push((code[*line_start_index..forward_lexeme].iter().collect(), *line_start_index));
+            *begin_lexeme = *begin_lexeme + 1;
             *line_number = *line_number + 1;
+            *line_start_index = forward_lexeme + 1;
         }
         match next_char {
             '\n' => {

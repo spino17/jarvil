@@ -104,7 +104,9 @@ pub struct Token {
 
 impl Token {
     // This method tokenize the code in O(|code|)
-    pub fn extract_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<Token, LexicalError> {
+    pub fn extract_lexeme(begin_lexeme: &mut usize, 
+        line_number: &mut usize, code: &Vec<char>, 
+        code_lines: &mut Vec<(String, usize)>, line_start_index: &mut usize) -> Result<Token, LexicalError> {
         let critical_char = code[*begin_lexeme];
         let (core_token, name) = match critical_char {
             '('         =>      {
@@ -156,8 +158,10 @@ impl Token {
                 (CoreToken::TAB, String::from("\t"))
             },
             '\n'        =>      {
+                code_lines.push((code[*line_start_index..*begin_lexeme].iter().collect(), *line_start_index));
                 *begin_lexeme = *begin_lexeme + 1;
                 *line_number = *line_number + 1;
+                *line_start_index = *begin_lexeme;
                 (CoreToken::NEWLINE, String::from("\n"))
             },
             '+'         =>      {
@@ -170,10 +174,10 @@ impl Token {
                 helper::extract_star_prefix_lexeme(begin_lexeme, code)?
             },
             '/'         =>      {
-                helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code)?
+                helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)?
             },
             '#'         =>      {
-                helper::extract_hash_prefix_lexeme(begin_lexeme, line_number, code)?
+                helper::extract_hash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)?
             }
             '='         =>      {
                 helper::extract_equal_prefix_lexeme(begin_lexeme, code)?
