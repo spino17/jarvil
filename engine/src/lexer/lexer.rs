@@ -61,7 +61,6 @@ impl Lexer for CoreLexer {
                 CoreToken::BLOCK_COMMENT => continue,
                 // CoreToken::BLANK => continue,
                 _ => {
-                    println!("{:?}", token);
                     token_vec.push(token)
                 }
             }

@@ -58,7 +58,7 @@ impl PackratParser {
     }
 
     pub fn get_index(&self) -> usize {
-        self.token_vec[self.lookahead].end_index
+        self.token_vec[self.lookahead].start_index
     }
 
     pub fn get_indent_level(&self) -> i64 {

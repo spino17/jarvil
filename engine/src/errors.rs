@@ -3,12 +3,11 @@ use std::fmt::Formatter;
 use std::rc::Rc;
 
 fn form_code_line(code_line: &(Rc<String>, usize), err_index: usize) -> String {
-    println!("{}-{}-{}", err_index, code_line.0, code_line.1);
     if err_index < code_line.1 {
         unreachable!("lookahead at which error occured can never be less than the start index of the line")
     }
     let start_lookahead = code_line.1;
-    let pointer_index = err_index - start_lookahead;
+    let pointer_index = err_index - start_lookahead - 1;
     let mut pointer_line: Vec<char> = vec![];
     for (i, _) in code_line.0.as_ref().chars().enumerate() {
         if i == pointer_index {
@@ -19,7 +18,6 @@ fn form_code_line(code_line: &(Rc<String>, usize), err_index: usize) -> String {
     }
     let pointer_line: String = pointer_line.iter().collect();
     format!("{}\n{}", code_line.0.clone(), pointer_line)
-    // code_line.0.to_string()
 }
 
 #[derive(Debug)]
@@ -47,22 +45,6 @@ pub struct SyntaxError {
 
 impl SyntaxError {
     pub fn new(line_number: usize, code_line: (Rc<String>, usize), err_index: usize, err_message: String) -> Self {
-        // make complete code line here
-        /*
-        println!("{}-{}-{}", lookahead, code_line.0, code_line.1);
-        let start_lookahead = code_line.1;
-        let pointer_index = lookahead - start_lookahead;
-        let mut pointer_line: Vec<char> = vec![];
-        for (i, _) in code_line.0.as_ref().chars().enumerate() {
-            if i == pointer_index {
-                pointer_line.push('^');
-            } else {
-                pointer_line.push(' ');
-            }
-        }
-        let pointer_line: String = pointer_line.iter().collect();
-         */
-        // Rc::new(format!("{}\n{}", code_line.0.clone(), &pointer_line))
         SyntaxError {
             line_number,
             code_line: (code_line.0.clone(), code_line.1),
