@@ -41,37 +41,33 @@ Below is the complete grammer of the language with a custom (mostly copied from 
     # it surely contains enough so that anyone who wishes to learn language grammer can benefit from it.
 
 
-    # TODO - there are many places in grammer where there should be atom instead of id for example left side of assignment can be
-    # an identifier or something like id[(id | int)] (array indexing)
-
-
     code: block ENDMARKER
 
     # python style of block
     block: NEWLINE (INDENT stmt)*
 
-    atom: id atom_factor
+    atom: id atom_factor  # semantic check - indexable with key of type C or propertry with name of id
     atom_factor:
-        | ([C], .id) atom_factor
+        | ('[' C ']' | '.' id) atom_factor
         | ()
     C:
-        | expr  # key is int or float
-        | bexpr  # key is bool
-        | literal  # key is string
-        | atom
+        | expr              # semantic check - index key is int or float
+        | bexpr             # semantic check - index key is bool
+        | literal           # semantic check - index key is string
+        | atom              # semantic check - index key with type of atom
 
     type:
-        | TYPE  # type token for in-built types
-        | id  # identifier for user-defined types - semantic check required here!
+        | TYPE              # type token for in-built types
+        | id                # semantic check - id is a user-defined type
 
     stmt: 
         | compound_stmt
         | simple_stmt NEWLINE
 
     simple_stmt:
-        | decls
-        | assign
-        | id '(' params ')'  # function or lambda call: check id is a function or type of id is lambda
+        | decls             # semantic check - both side have matched types
+        | assign            # semantic check - both side have matched types
+        | id '(' params ')' # semantic check - number of params and their datatypes match the definition of the function or lambda
         | # calling a function, break, continue, return
 
     r_assign:
@@ -85,7 +81,7 @@ Below is the complete grammer of the language with a custom (mostly copied from 
         | r_assign
 
     decls:
-        | decl, decls
+        | decl ',' decls
         | decl
 
     decl:
@@ -156,11 +152,11 @@ Below is the complete grammer of the language with a custom (mostly copied from 
         | float
 
     comp_op:
-        | ==
-        | >=
-        | >
-        | <=
-        | <
+        | '=='
+        | '>='
+        | '>'
+        | '<='
+        | '<'
 
     bexpr: 
         | bterm oritive

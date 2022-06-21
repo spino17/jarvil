@@ -7,10 +7,6 @@
 # it surely contains enough so that anyone who wishes to learn language grammer can benefit from it.
 
 
-# TODO - there are many places in grammer where there should be atom instead of id for example left side of assignment can be
-# an identifier or something like id[(id | int)] (array indexing)
-
-
 code: block ENDMARKER
 
 # python style of block
@@ -18,17 +14,17 @@ block: NEWLINE (INDENT stmt)*
 
 atom: id atom_factor
 atom_factor:
-    | ([C], .id) atom_factor
+    | ('[' C ']' | '.' id) atom_factor
     | ()
 C:
-    | expr  # key is int or float
-    | bexpr  # key is bool
-    | literal  # key is string
+    | expr
+    | bexpr
+    | literal
     | atom
 
 type:
-    | TYPE  # type token for in-built types
-    | id  # identifier for user-defined types - semantic check required here!
+    | TYPE
+    | id
 
 stmt: 
     | compound_stmt
@@ -37,7 +33,7 @@ stmt:
 simple_stmt:
     | decls
     | assign
-    | id '(' params ')'  # function or lambda call: check id is a function or type of id is lambda
+    | id '(' params ')'
     | # calling a function, break, continue, return
 
 r_assign:
@@ -51,7 +47,7 @@ params:
     | r_assign
 
 decls:
-    | decl, decls
+    | decl ',' decls
     | decl
 
 decl:
@@ -122,11 +118,11 @@ factor:
     | float
 
 comp_op:
-    | ==
-    | >=
-    | >
-    | <=
-    | <
+    | '=='
+    | '>='
+    | '>'
+    | '<='
+    | '<'
 
 bexpr: 
     | bterm oritive
