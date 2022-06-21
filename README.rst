@@ -147,7 +147,7 @@ Below is the complete grammer of the language with a custom (mostly copied from 
 
     factor:
         | '(' expr ')'
-        | atom  # check the type of identifier for valid '+', '-', '*', '/' operations
+        | atom              # semantic check - type of atom is for valid '+', '-', '*', '/' operations
         | int
         | float
 
@@ -175,6 +175,6 @@ Below is the complete grammer of the language with a custom (mostly copied from 
         | 'not' bfactor
         | expr comp_op expr
         | '(' bexpr ')'
-        | atom  # check the type of identifier is 'bool'
+        | atom              # semantic check - type of atom is bool
         | 'True'
         | 'False'
