@@ -540,6 +540,14 @@ impl PackratParser {
         components::expression::expression::factor_expr_in_parenthesis(self)
     }
 
+    pub fn factor_plus(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::factor_plus(self)
+    }
+
+    pub fn factor_minus(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+        components::expression::expression::factor_minus(self)
+    }
+
     pub fn multitive_star(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
         components::expression::expression::multitive_star(self)
     }

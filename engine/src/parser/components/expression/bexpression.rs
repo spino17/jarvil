@@ -58,29 +58,23 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
 }
 
 pub fn bfactor_expr_comp_op_expr(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    parser.expr()?;
+    let (_, has_float_in_expr_one) = parser.expr()?;
     parser.comp_op()?;
-    let (response, _) = parser.expr()?;
+    let (response, has_float_in_expr_two) = parser.expr()?;
     Ok(response)
 }
 
 pub fn bfactor_expr_in_parenthesis(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("(")?;
     parser.bexpr()?;
-    parser.expect(")")?;
-    Ok(ParseSuccess{
-        lookahead: parser.get_lookahead(),
-        possible_err: None,
-    })
+    let (response, _) = parser.expect(")")?;
+    Ok(response)
 }
 
 pub fn bfactor_not(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("not")?;
-    parser.bfactor()?;
-    Ok(ParseSuccess{
-        lookahead: parser.get_lookahead(),
-        possible_err: None,
-    })
+    let response = parser.bfactor()?;
+    Ok(response)
 }
 
 pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {

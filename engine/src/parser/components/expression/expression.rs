@@ -5,23 +5,25 @@ use crate::errors::{ParseError, SyntaxError, SemanticError};
 pub fn factor_expr_in_parenthesis(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("(")?;
     let (_, has_float) = parser.expr()?;
-    parser.expect(")")?;
-    return Ok((ParseSuccess{
-        lookahead: parser.get_lookahead(),
-        possible_err: None,
-    }, has_float))
+    let (response, _) = parser.expect(")")?;
+    return Ok((response, has_float))
+}
+
+pub fn factor_plus(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+    parser.expect("+")?;
+    parser.factor()
+}
+
+pub fn factor_minus(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
+    parser.expect("-")?;
+    parser.factor()
 }
 
 pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     let token_value = parser.get_curr_token_value();
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
-            match parser.factor_expr_in_parenthesis() {
-                Ok((response, has_float)) => return Ok((response, has_float)),
-                Err(err) => {
-                    return Err(err);
-                }
-            }
+            return parser.factor_expr_in_parenthesis();
         },
         CoreToken::INTEGER(_) => {
             match parser.expect("int") {
@@ -39,6 +41,12 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                 }
             }
         },
+        CoreToken::PLUS => {
+            return parser.factor_plus();
+        },
+        CoreToken::MINUS => {
+            return parser.factor_minus();
+        }
         CoreToken::IDENTIFIER(_) => {
             match parser.expect_id() {
                 Ok((response, line_number, _, data_type, is_init)) => {
@@ -79,7 +87,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             line_number,
             parser.get_code_line(line_number),
             parser.get_index(), 
-            format!("expected '(', 'int', 'float' or an identifier, got '{}'", 
+            format!("expected '(', 'int', 'float', '+', '-' or an identifier, got '{}'", 
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
     }

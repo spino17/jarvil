@@ -39,9 +39,9 @@ pub enum CoreToken {
 
     // operators
     PLUS,               // '+'
-    DOUBLE_PLUS,        // '++'
+    // DOUBLE_PLUS,        // '++'
     MINUS,              // '-'
-    DOUBLE_MINUS,       // '--'
+    // DOUBLE_MINUS,       // '--'
     RIGHT_ARROW,        // '->'
     STAR,               // '*'
     DOUBLE_STAR,        // '**'
@@ -165,7 +165,9 @@ impl Token {
                 (CoreToken::NEWLINE, String::from("\n"))
             },
             '+'         =>      {
-                helper::extract_plus_prefix_lexeme(begin_lexeme, code)?
+                // helper::extract_plus_prefix_lexeme(begin_lexeme, code)?
+                *begin_lexeme = *begin_lexeme + 1;
+                (CoreToken::PLUS, String::from("+"))
             },
             '-'         =>      {
                 helper::extract_minus_prefix_lexeme(begin_lexeme, code)?

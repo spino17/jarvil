@@ -4,6 +4,7 @@ use super::token::TokenValue;
 use crate::constants::common::get_token_for_identifier;
 
 // + -> +, ++
+/*
 pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
@@ -23,6 +24,7 @@ pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
         return Ok((CoreToken::PLUS, String::from("+")));
     }
 }
+ */
 
 // - -> -, --, ->
 pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
@@ -30,10 +32,12 @@ pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
+            /*
             '-' => {
                 *begin_lexeme = forward_lexeme + 1;
                 return Ok((CoreToken::DOUBLE_MINUS, String::from("--")));
             },
+             */
             '>' => {
                 *begin_lexeme = forward_lexeme + 1;
                 return Ok((CoreToken::RIGHT_ARROW, String::from("->")));
