@@ -106,7 +106,7 @@ impl PackratParser {
     }
 
     pub fn set_function_to_scope(&mut self, token_value: &TokenValue, 
-        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: Option<Rc<String>>) {
+        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
         self.env.set_function(token_value, params, return_type);
     }
 
@@ -332,7 +332,7 @@ impl PackratParser {
     }
 
     pub fn expect_function(&mut self) 
-    -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Option<Rc<String>>), ParseError> {
+    -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {

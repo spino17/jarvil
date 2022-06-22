@@ -20,26 +20,23 @@ struct IdentifierData {
 }
 
 #[derive(Debug)]
-pub struct StructType {
-    fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
-}
-
-#[derive(Debug)]
-pub struct LambdaType {
+struct FunctionData {
     params: Rc<Vec<(Rc<String>, Rc<String>)>>,
     return_type: Rc<Option<Rc<String>>>,
 }
 
 #[derive(Debug)]
-pub enum UserDefinedTypeData {
-    STRUCT(StructType),
-    LAMBDA(LambdaType),
+pub struct StructType {
+    fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
 }
 
 #[derive(Debug)]
-struct FunctionData {
-    params: Rc<Vec<(Rc<String>, Rc<String>)>>,
-    return_type: Option<Rc<String>>,
+pub struct LambdaType(FunctionData);
+
+#[derive(Debug)]
+pub enum UserDefinedTypeData {
+    STRUCT(StructType),
+    LAMBDA(LambdaType),
 }
 
 #[derive(Debug)]
@@ -124,10 +121,10 @@ impl SymbolData {
                         })
                     },
                     UserDefinedTypeData::LAMBDA(lambda_data) => {
-                        UserDefinedTypeData::LAMBDA(LambdaType{
-                            params: lambda_data.params.clone(),
-                            return_type: lambda_data.return_type.clone(),
-                        })
+                        UserDefinedTypeData::LAMBDA(LambdaType(FunctionData{
+                            params: lambda_data.0.params.clone(),
+                            return_type: lambda_data.0.return_type.clone(),
+                        }))
                     }
                 }
             },
@@ -145,7 +142,7 @@ impl SymbolData {
         }
     }
 
-    pub fn get_function_data(&self) -> (Rc<Vec<(Rc<String>, Rc<String>)>>, Option<Rc<String>>) {
+    pub fn get_function_data(&self) -> (Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>) {
         match &*self.0.borrow() {
             MetaData::FUNCTION(data) => {
                 (data.params.clone(), data.return_type.clone())
@@ -231,18 +228,18 @@ impl Env {
 
     pub fn set_user_defined_lambda_type(&self, token_value: &TokenValue, 
         params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
-        let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::LAMBDA(LambdaType{
+        let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::LAMBDA(LambdaType(FunctionData{
             params: params.clone(),
             return_type: return_type.clone(),
-        }));
+        })));
         self.0.borrow_mut().set(token_value.0.clone(), meta_data);
     }
 
     pub fn set_function(&self, token_value: &TokenValue, 
-        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: Option<Rc<String>>) {
+        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
         let meta_data = MetaData::FUNCTION(FunctionData{
             params: params.clone(),
-            return_type: return_type,
+            return_type: return_type.clone(),
         });
         self.0.borrow_mut().set(token_value.0.clone(), meta_data);
     }

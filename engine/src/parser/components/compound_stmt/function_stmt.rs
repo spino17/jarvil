@@ -72,40 +72,38 @@ pub fn function_input_output(parser: &mut PackratParser)
 
 pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("def")?;
-    let (_, _, token_value) = parser.expect_any_id()?;
-    /*
-    parser.expect("(")?;
-    let mut params = vec![];
-    if !parser.check_next_token(")") {
-        let (_, opt_params) = parser.optparams()?;
-        params = opt_params;
-    }
-    parser.expect(")")?;
-    let curr_lookahead = parser.get_lookahead();
-    let (is_matched, (response, return_type), err) = 
-    PackratParser::expect_optionally(|| {
-        let (_, _) = parser.expect("->")?;
-        let (response, _, data_type, _) = parser.expect_type()?;
-        Ok((response, Some(data_type)))
-    }, (ParseSuccess{
-        lookahead: curr_lookahead,
-        possible_err: None,
-    }, None));
-    parser.reset_lookahead(response.lookahead);
-     */
-    let (_, params, 
-        _, return_type, err) = parser.function_input_output()?;
-    match parser.expect(":") {
-        Ok((_, _)) => {},
-        Err(error) => {
-            if let Some(possible_err) = err {
-                return Err(possible_err)
-            } else {
-                return Err(error)
+    // TODO - optionally check for some struct attached methods => [type id]
+    match parser.get_curr_core_token() {
+        CoreToken::LPAREN => {
+            todo!()
+        },
+        CoreToken::IDENTIFIER(_) => {
+            let (_, _, token_value) = parser.expect_any_id()?;
+            let (_, params, 
+                _, return_type, err) = parser.function_input_output()?;
+            match parser.expect(":") {
+                Ok((_, _)) => {},
+                Err(error) => {
+                    if let Some(possible_err) = err {
+                        return Err(possible_err)
+                    } else {
+                        return Err(error)
+                    }
+                }
             }
+            let response = parser.block(Some(&params))?;
+            println!("{:?} {:?}", params, return_type);
+            parser.set_function_to_scope(&token_value, &Rc::new(params), &Rc::new(return_type));
+            Ok(response)
+        },
+        _ => {
+            let line_number = parser.get_curr_line_number();
+            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+            line_number,
+            parser.get_code_line(line_number),
+            parser.get_index(),
+            format!("expected '(' or an identifier, got '{}'",
+            PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
     }
-    let response = parser.block(Some(&params))?;
-    parser.set_function_to_scope(&token_value, &Rc::new(params), return_type);
-    Ok(response)
 }
