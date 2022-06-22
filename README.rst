@@ -147,6 +147,8 @@ Below is the complete grammer of the language with a custom (mostly copied from 
 
     factor:
         | '(' expr ')'
+        | '+' factor
+        | '-' factor
         | atom              # semantic check - type of atom is for valid '+', '-', '*', '/' operations
         | int
         | float

@@ -75,7 +75,7 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
     // TODO - optionally check for some struct attached methods => [type id]
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
-            todo!()
+            unimplemented!("yet to implement for struct methods")
         },
         CoreToken::IDENTIFIER(_) => {
             let (_, _, token_value) = parser.expect_any_id()?;

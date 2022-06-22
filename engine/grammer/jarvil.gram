@@ -113,7 +113,9 @@ multitive:
 
 factor:
     | '(' expr ')'
-    | id  # check the type of identifier for valid '+', '-', '*', '/' operations
+    | '+' factor
+    | '-' factor
+    | atom
     | int
     | float
 
@@ -141,7 +143,7 @@ bfactor:
     | 'not' bfactor
     | expr comp_op expr
     | '(' bexpr ')'
-    | id  # check the type of identifier is 'bool'
+    | atom
     | 'True'
     | 'False'
 
