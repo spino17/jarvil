@@ -203,7 +203,7 @@ impl SymbolData {
 #[derive(Debug)]
 pub struct Scope {
     symbol_table: FxHashMap<Rc<String>, SymbolData>,
-    parent_env: Option<Env>,
+    pub parent_env: Option<Env>,
     return_type: Option<Rc<String>>,  // for functional scope - match return type in nested sub blocks checking this global field
 }
 

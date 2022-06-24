@@ -1,4 +1,3 @@
-use std::vec;
 use std::rc::Rc;
 use crate::context;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
@@ -26,9 +25,9 @@ pub fn block(parser: &mut PackratParser, params: Option<&Vec<(Rc<String>, Rc<Str
                     return Err(err)
                 } else {
                     // block is over
-                    parser.reset_indent_level(indent_factor);
-                    parser.reset_lookahead(curr_lookahead);
                     parser.reset_env(&curr_env);
+                    parser.reset_indent_level(parser.get_indent_level() - 1);
+                    parser.reset_lookahead(curr_lookahead);
                     return Ok(ParseSuccess{
                         lookahead: parser.get_lookahead(),
                         possible_err: None,
@@ -74,9 +73,9 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, FxHashM
                     return Err(err)
                 } else {
                     // block is over
-                    parser.reset_indent_level(indent_factor);
-                    parser.reset_lookahead(curr_lookahead);
                     parser.reset_env(&curr_env);
+                    parser.reset_indent_level(parser.get_indent_level() - 1);
+                    parser.reset_lookahead(curr_lookahead);
                     return Ok((ParseSuccess{
                         lookahead: parser.get_lookahead(),
                         possible_err: None,

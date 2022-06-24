@@ -78,6 +78,13 @@ impl PackratParser {
         Env(self.env.0.clone())
     }
 
+    pub fn get_parent_env(&self, env: &Env) -> Option<Env> {
+        match &env.0.borrow().parent_env {
+            Some(parent_env) => Some(Env(parent_env.0.clone())),
+            None => None, 
+        }
+    }
+
     pub fn reset_env(&mut self, reset_env: &Env) {
         self.env = Env(reset_env.0.clone())
     }
