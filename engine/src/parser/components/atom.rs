@@ -5,6 +5,7 @@ use crate::lexer::token::CoreToken;
 pub enum CompoundPart {
     INDEX_TYPE(Rc<String>),  // (index type, is_init)
     PROPERTRY_NAME(Rc<String>),  // identifier name
+    METHOD_DATA((Rc<String>, Vec<Rc<String>>)),  // (method name, datatype of the params passed)
 }
 
 pub fn atom_expr_bexpr_literal(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
@@ -81,7 +82,13 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), Pa
                 // set curr_type to the type of that field
                 // else give error => does not have a propertry named '{}'
                 todo!()
-            }
+            },
+            CompoundPart::METHOD_DATA(method_data) => {
+                // check whether curr_type has a field with name property_name.
+                // set curr_type to the type of that field
+                // else give error => does not have a propertry named '{}'
+                todo!()
+            },
         }
     }
     // we can also capture token_value here
