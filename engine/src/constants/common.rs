@@ -2,27 +2,28 @@ use crate::lexer::token::{CoreToken, TokenValue};
 use crate::context;
 use std::rc::Rc;
 
-const FOR:          &'static str = "for";
-const WHILE:        &'static str = "while";
-const CONTINUE:     &'static str = "continue";
-const BREAK:        &'static str = "break";
-const IF:           &'static str = "if";
-const ELIF:         &'static str = "elif";
-const ELSE:         &'static str = "else";
-const TYPE_KEYWORD: &'static str = "type";
-const DEF:          &'static str = "def";
-const AND:          &'static str = "and";
-const NOT:          &'static str = "not";
-const OR:           &'static str = "or";
-const IS:           &'static str = "is";
-const IN:           &'static str = "in";
-const NEW:          &'static str = "new";
-const TRUE:         &'static str = "True";
-const FALSE:        &'static str = "False";
-const NONE:         &'static str = "None";
-const RETURN:       &'static str = "return";
+const FOR:                  &'static str = "for";
+const WHILE:                &'static str = "while";
+const CONTINUE:             &'static str = "continue";
+const BREAK:                &'static str = "break";
+const IF:                   &'static str = "if";
+const ELIF:                 &'static str = "elif";
+const ELSE:                 &'static str = "else";
+const TYPE_KEYWORD:         &'static str = "type";
+const INTERFACE_KEYWORD:    &'static str = "interface";
+const DEF:                  &'static str = "def";
+const AND:                  &'static str = "and";
+const NOT:                  &'static str = "not";
+const OR:                   &'static str = "or";
+const IS:                   &'static str = "is";
+const IN:                   &'static str = "in";
+const NEW:                  &'static str = "new";
+const TRUE:                 &'static str = "True";
+const FALSE:                &'static str = "False";
+const NONE:                 &'static str = "None";
+const RETURN:               &'static str = "return";
 
-pub const KEYWORDS: [&'static str; 19] = [
+pub const KEYWORDS: [&'static str; 20] = [
     FOR,
     WHILE,
     CONTINUE,
@@ -31,6 +32,7 @@ pub const KEYWORDS: [&'static str; 19] = [
     ELIF,
     ELSE,
     TYPE_KEYWORD,
+    INTERFACE_KEYWORD,
     DEF,
     AND,
     NOT,
@@ -44,15 +46,15 @@ pub const KEYWORDS: [&'static str; 19] = [
     RETURN,
 ];
 
-pub const TYPES: [&'static str; 6] = [
+pub const TYPES: [&'static str; 4] = [
     "int",
     "float",
     "string",
     "bool",
 
     // compound iterable types
-    "List",
-    "Dict",
+    // "List",
+    // "Dict",
 ];
 
 pub const LETTERS: [char; 53] = [
@@ -144,6 +146,8 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
             (CoreToken::ELSE, String::from(ELSE))
         }  else if value.eq(TYPE_KEYWORD) {
             (CoreToken::TYPE_KEYWORD, String::from(TYPE_KEYWORD))
+        } else if value.eq(INTERFACE_KEYWORD) {
+            (CoreToken::INTERFACE_KEYWORD, String::from(INTERFACE_KEYWORD))
         } else if value.eq(DEF) {
             (CoreToken::DEF, String::from(DEF))
         } else if value.eq(AND) {
