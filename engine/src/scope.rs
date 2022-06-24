@@ -14,15 +14,19 @@ use std::rc::Rc;
 use crate::lexer::token::TokenValue;
 
 #[derive(Debug)]
-struct IdentifierData {
-    data_type: Rc<String>,
-    is_init: bool,
-}
+struct GenericSymbolVSBounds(Rc<FxHashMap<Rc<String>, Rc<Vec<Rc<String>>>>>);
 
 #[derive(Debug)]
 struct FunctionData {
     params: Rc<Vec<(Rc<String>, Rc<String>)>>,
     return_type: Rc<Option<Rc<String>>>,
+    // generic_symbols: GenericSymbolVSBounds,
+}
+
+#[derive(Debug)]
+struct IdentifierData {
+    data_type: Rc<String>,
+    is_init: bool,
 }
 
 #[derive(Debug)]
@@ -30,15 +34,21 @@ pub struct StructType {
     fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
     // methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
     // interfaces: Rc<Vec<Rc<String>>>,
+    // generic_symbols: GenericSymbolVSBounds,
 }
 
 #[derive(Debug)]
 pub struct LambdaType(FunctionData);
 
+pub struct GenericType {
+    bounded_by_interfaces: Rc<Vec<Rc<String>>>,
+}
+
 #[derive(Debug)]
 pub enum UserDefinedTypeData {
     STRUCT(StructType),
     LAMBDA(LambdaType),
+    // GENERIC(GenericType),
 }
 
 pub struct InterfaceData {

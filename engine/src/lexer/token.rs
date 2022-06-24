@@ -55,8 +55,6 @@ pub enum CoreToken {
     RBRACE,             // '}'
     LSQUARE,            // '['
     RSQUARE,            // ']'
-    LANGLE,             // '<'
-    RANGLE,             // '>'
 
     // delimiters
     SEMICOLON,          // ';'
@@ -135,14 +133,6 @@ impl Token {
             ']'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::RSQUARE, String::from("]"))
-            },
-            '<'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::LANGLE, String::from("<"))
-            },
-            '>'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::RANGLE, String::from(">"))
             },
             ';'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;

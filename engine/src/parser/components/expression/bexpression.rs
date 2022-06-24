@@ -1,5 +1,5 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
-use crate::lexer::token::CoreToken;
+use crate::lexer::token::{CoreToken};
 use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
 
 pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
@@ -51,7 +51,7 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             parser.get_code_line(line_number),
             parser.get_index(), 
             String::from(
-                "got a numeric expression inside a boolean expression\nnumeric expression can only be paired using '==', '>=', '>', '<=' or '<' inside a boolean expression")))
+                "got a numeric expression inside a boolean expression\n    numeric expression can only be paired using '==', '>=', '>', '<=' or '<' inside a boolean expression")))
             )
         }
     }

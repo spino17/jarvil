@@ -92,7 +92,6 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
                 }
             }
             let response = parser.block(Some(&params))?;
-            println!("{:?} {:?}", params, return_type);
             parser.set_function_to_scope(&token_value, &Rc::new(params), &Rc::new(return_type));
             Ok(response)
         },
