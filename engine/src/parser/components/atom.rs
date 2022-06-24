@@ -54,19 +54,10 @@ pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<Comp
     Ok((response, sub_part_access_vec))
 }
 
-pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
-    let (response, line_number, 
-        token_value, data_type, is_init) = parser.expect_id()?;
-    if !is_init {
-        return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-            line_number,
-            parser.get_code_line(line_number),
-            parser.get_index(), format!(
-                "cannot access parts of uninitialized identifier '{}'", token_value.0.clone())))
-            )
-    }
+pub fn check_atom_factor(parser: &mut PackratParser, 
+    data_type: &Rc<String>, is_init: bool) -> Result<(ParseSuccess, Rc<String>), ParseError> {
     let (response, sub_part_access_vec) = parser.atom_factor()?;
-    let curr_type = data_type.clone();
+    let mut curr_type = data_type.clone();
     let curr_is_init = is_init;
     for entry in &sub_part_access_vec {
         match entry {
@@ -93,4 +84,58 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), Pa
     }
     // we can also capture token_value here
     Ok((response, curr_type))
+}
+
+pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+    let (response, line_number, 
+        token_value, symbol_data) = parser.expect_any_id_in_scope()?;
+    match parser.get_curr_core_token() {
+        CoreToken::LPAREN => {
+            // check wther it is function or lambda using symbol_data
+            let mut params: Rc<Vec<(Rc<String>, Rc<String>)>>;
+            let mut return_type: Rc<Option<Rc<String>>>;
+            if let Some(response) = symbol_data.get_function_data() {
+                (params, return_type) = (response.params, response.return_type);
+            }
+            if let Some(lambda_data) = parser.has_lambda_type(&symbol_data) {
+                (params, return_type) = (lambda_data.params, lambda_data.return_type);
+            } else {
+                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    line_number, 
+                    parser.get_code_line(line_number),
+                    parser.get_index(), 
+                    format!("'{}' of type {} is not callable", 
+                    token_value.0.clone(), symbol_data.get_type_of_identifier())))
+                )
+            }
+            let data_type;  // get from return type of id '(' params ')'
+            parser.check_atom_factor(&data_type, true);
+            // do the semantic check for params passed in the function
+            todo!()
+        },
+        _ => {
+            let data_type;
+            let is_init;
+            if let Some(response) = symbol_data.get_id_data() {
+                (data_type, is_init) = (response.0, response.1);
+            } else {
+                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    line_number,
+                    parser.get_code_line(line_number),
+                    parser.get_index(),
+                    format!("expected an identifier, got a {} '{}'", 
+                    symbol_data.get_type_of_identifier(), token_value.0.clone())))
+                )
+            }
+            if !is_init {
+                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    line_number,
+                    parser.get_code_line(line_number),
+                    parser.get_index(), format!(
+                        "cannot access parts of uninitialized identifier '{}'", token_value.0.clone())))
+                    )
+            }
+            parser.check_atom_factor(&data_type, is_init)
+        }
+    }
 }

@@ -67,12 +67,13 @@ pub struct SymbolData(Rc<RefCell<MetaData>>);
 
 impl SymbolData {
     // identifier specific methods
+    /*
     pub fn is_id(&self) -> bool {
         match *self.0.borrow() {
             MetaData::IDENTIFIER(_) => true,
             _ => false,
         }
-    }
+    }*/
 
     pub fn set_init(&self, is_init: bool) {
         match &mut *self.0.borrow_mut() {
@@ -82,7 +83,7 @@ impl SymbolData {
             }
         }
     }
-
+    /*
     pub fn is_init(&self) -> bool {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.is_init,
@@ -90,8 +91,8 @@ impl SymbolData {
                 true
             }
         }
-    }
-
+    }*/
+    
     pub fn get_type(&self) -> Rc<String> {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.data_type.clone(),
@@ -100,57 +101,58 @@ impl SymbolData {
             }
         }
     }
-
+    /*
     pub fn type_eq(&self, data_type: &str) -> bool {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.data_type.to_string().eq(data_type),
             _ => false
         }
-    }
+    }*/
 
-    pub fn get_id_data(&self) -> (Rc<String>, bool) {
+    pub fn get_id_data(&self) -> Option<(Rc<String>, bool)> {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => {
-                (data.data_type.clone(), data.is_init)
+                Some((data.data_type.clone(), data.is_init))
             },
             _ => {
-                unreachable!("use this method only for purely identifier tokens")
+                None
             }
         }
     }
 
     // type specific methods
+    /*
     pub fn is_type(&self) -> bool {
         match *self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(_) => true,
             _ => false,
         }
-    }
+    }*/
 
-    pub fn get_user_defined_type_data(&self) -> UserDefinedTypeData {
+    pub fn get_user_defined_type_data(&self) -> Option<UserDefinedTypeData> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
                 match data {
                     UserDefinedTypeData::STRUCT(struct_data) => {
-                        UserDefinedTypeData::STRUCT(StructType{
+                        Some(UserDefinedTypeData::STRUCT(StructType{
                             fields: struct_data.fields.clone()
-                        })
+                        }))
                     },
                     UserDefinedTypeData::LAMBDA(lambda_data) => {
-                        UserDefinedTypeData::LAMBDA(LambdaType(FunctionData{
+                        Some(UserDefinedTypeData::LAMBDA(LambdaType(FunctionData{
                             params: lambda_data.0.params.clone(),
                             return_type: lambda_data.0.return_type.clone(),
-                        }))
+                        })))
                     }
                 }
             },
             _ => {
-                unreachable!("use this method only for user-defined types identifier tokens")
+                None
             }
         }
     }
-
-    pub fn is_lambda_type(&self) -> Option<FunctionData> {
+    
+    pub fn get_lambda_data(&self) -> Option<FunctionData> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
                 match data {
@@ -166,26 +168,30 @@ impl SymbolData {
                 }
             },
             _ => {
-                unreachable!("use this method only for user-defined types identifier tokens")
+                None
             }
         }
     }
 
     // function specific methods
+    /*
     pub fn is_function(&self) -> bool {
         match *self.0.borrow() {
             MetaData::FUNCTION(_) => true,
             _ => false,
         }
-    }
+    }*/
 
-    pub fn get_function_data(&self) -> (Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>) {
+    pub fn get_function_data(&self) -> Option<FunctionData> {
         match &*self.0.borrow() {
             MetaData::FUNCTION(data) => {
-                (data.params.clone(), data.return_type.clone())
+                Some(FunctionData{
+                    params: data.params.clone(),
+                    return_type: data.return_type.clone(),
+                })
             },
             _ => {
-                unreachable!("use this method only for function identifier token")
+                None
             }
         }
     }
