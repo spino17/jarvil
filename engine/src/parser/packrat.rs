@@ -88,32 +88,33 @@ impl PackratParser {
         self.env = env;
     }
 
-    pub fn set_identifier_to_scope(&mut self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
-        self.env.set_identifier(token_value, data_type, is_init);
+    pub fn set_identifier_to_scope(&mut self, identifier_name: &Rc<String>, data_type: &Rc<String>, is_init: bool) {
+        self.env.set_identifier(identifier_name, data_type, is_init);
     }
 
-    pub fn set_identifier_init_to_scope(&mut self, token_value: &TokenValue) {
-        self.env.set_identifier_init(token_value)
+    pub fn set_identifier_init_to_scope(&mut self, identifier_name: &Rc<String>) {
+        self.env.set_identifier_init(identifier_name)
     }
 
-    pub fn set_user_defined_struct_type_to_scope(&mut self, token_value: &TokenValue, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
-        self.env.set_user_defined_struct_type(token_value, fields);
+    pub fn set_user_defined_struct_type_to_scope(&mut self, 
+        identifier_name: &Rc<String>, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
+        self.env.set_user_defined_struct_type(identifier_name, fields);
     }
 
-    pub fn set_user_defined_lambda_type(&mut self, token_value: &TokenValue, 
+    pub fn set_user_defined_lambda_type(&mut self, identifier_name: &Rc<String>, 
         params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
-        self.env.set_user_defined_lambda_type(token_value, params, return_type);
+        self.env.set_user_defined_lambda_type(identifier_name, params, return_type);
     }
 
-    pub fn set_function_to_scope(&mut self, token_value: &TokenValue, 
+    pub fn set_function_to_scope(&mut self, identifier_name: &Rc<String>, 
         params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
-        self.env.set_function(token_value, params, return_type);
+        self.env.set_function(identifier_name, params, return_type);
     }
 
     pub fn set_params_to_scope(&mut self, params: Option<&Vec<(Rc<String>, Rc<String>)>>) {
         if let Some(params) = params {
             for (identifier_name, data_type) in params {
-                self.set_identifier_to_scope(&TokenValue(identifier_name.clone()), data_type, true);
+                self.set_identifier_to_scope(identifier_name, data_type, true);
             }
         }
     }
@@ -192,7 +193,7 @@ impl PackratParser {
         let line_number = token.line_number;
         match &token.core_token {
             CoreToken::IDENTIFIER(token_value) => {
-                match self.env.get(token_value) {
+                match self.env.get(&token_value.0) {
                     Some(symbol_data) => Ok(symbol_data),
                     None => {
                         let err_message = format!("identifier '{}' is not declared in the current scope", token_value.0);
@@ -206,6 +207,24 @@ impl PackratParser {
                 }
             },
             _ => unreachable!("check_declaration cannot be used for tokens other than type identifier")
+        }
+    }
+
+    pub fn is_lambda(&self, data_type: &Rc<String>) -> Result<SymbolData, SemanticError> {
+        match self.env.get(data_type) {
+            Some(symbol_data) => {
+                todo!();
+            },
+            None => {
+                let err_message = format!("type '{}' is not declared in the current scope", data_type);
+                let line_number = self.get_curr_line_number();
+                Err(SemanticError::new(
+                    line_number,
+                    self.get_code_line(line_number),
+                    self.get_index(),
+                    err_message)
+                )
+            }
         }
     }
 
@@ -331,7 +350,40 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_function(&mut self) 
+    pub fn expect_function(&mut self)
+    -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
+        self.ignore_blanks();
+        let token = &self.token_vec[self.lookahead];
+        match &token.core_token {
+            CoreToken::IDENTIFIER(token_value) => {
+                let symbol_data = self.check_declaration(&token)?;
+                if symbol_data.is_function() {
+                    self.lookahead = self.lookahead + 1;
+                    let (params, return_type) = symbol_data.get_function_data();
+                    Ok((ParseSuccess{
+                        lookahead: self.lookahead,
+                        possible_err: None,
+                    }, token.line_number, TokenValue(token_value.0.clone()), params, return_type))
+                } else {
+                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        token.line_number, 
+                        self.get_code_line(token.line_number),
+                        self.get_index(), 
+                        format!("expected a function, got a {} '{}'", 
+                        symbol_data.get_type_of_identifier(), token_value.0.clone())))
+                    )
+                }
+            },
+            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                token.line_number,
+                self.get_code_line(token.line_number),
+                 self.get_index(),
+                  format!("expected a function, got '{}'", 
+                  PackratParser::parse_for_err_message( token.name.to_string())))))
+        }
+    }
+
+    pub fn expect_callable(&mut self)
     -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
@@ -457,12 +509,12 @@ impl PackratParser {
         components::compound_stmt::type_declaration_stmt::type_decl_stmt(self)
     }
 
-    pub fn struct_stmt(&mut self, token_value: &TokenValue) -> Result<ParseSuccess, ParseError> {
-        components::compound_stmt::type_declaration_stmt::struct_stmt(self, token_value)
+    pub fn struct_stmt(&mut self, identifier_name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::type_declaration_stmt::struct_stmt(self, identifier_name)
     }
 
-    pub fn lambda_stmt(&mut self, token_value: &TokenValue) -> Result<ParseSuccess, ParseError> {
-        components::compound_stmt::type_declaration_stmt::lambda_stmt(self, token_value)
+    pub fn lambda_stmt(&mut self, identifier_name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::type_declaration_stmt::lambda_stmt(self, identifier_name)
     }
 
     pub fn function_input_output(&mut self) 
@@ -470,8 +522,8 @@ impl PackratParser {
         components::compound_stmt::function_stmt::function_input_output(self)
     }
 
-    pub fn function_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::compound_stmt::function_stmt::function_stmt(self)
+    pub fn function_declaration(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::function_stmt::function_declaration(self)
     }
 
     pub fn optparams(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {

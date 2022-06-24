@@ -4,16 +4,16 @@ use crate::errors::ParseError;
 use crate::lexer::token::{CoreToken, TokenValue};
 use crate::errors::SyntaxError;
 
-pub fn struct_stmt(parser: &mut PackratParser, token_value: &TokenValue) -> Result<ParseSuccess, ParseError> {
+pub fn struct_stmt(parser: &mut PackratParser, name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
     // parser.expect("type")?;
     // let (_, _, token_value) = parser.expect_any_id()?;
     // parser.expect(":")?;
     let (response, fields_map) = parser.struct_block()?;
-    parser.set_user_defined_struct_type_to_scope(token_value, &Rc::new(fields_map));
+    parser.set_user_defined_struct_type_to_scope(name, &Rc::new(fields_map));
     Ok(response)
 }
 
-pub fn lambda_stmt(parser: &mut PackratParser, token_value: &TokenValue) -> Result<ParseSuccess, ParseError> {
+pub fn lambda_stmt(parser: &mut PackratParser, name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
     let (_, params, 
         _, return_type, err) = parser.function_input_output()?;
     match parser.expect("\n") {
@@ -26,7 +26,7 @@ pub fn lambda_stmt(parser: &mut PackratParser, token_value: &TokenValue) -> Resu
             }
         }
     }
-    parser.set_user_defined_lambda_type(token_value, &Rc::new(params), &Rc::new(return_type));
+    parser.set_user_defined_lambda_type(name, &Rc::new(params), &Rc::new(return_type));
     Ok(ParseSuccess{
         lookahead: parser.get_lookahead(),
         possible_err: None,
@@ -39,10 +39,10 @@ pub fn type_decl_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseE
     parser.expect(":")?;
     match parser.get_curr_core_token() {
         CoreToken::NEWLINE => {
-            return parser.struct_stmt(&token_value)
+            return parser.struct_stmt(&token_value.0)
         },
         CoreToken::LPAREN => {
-            return parser.lambda_stmt(&token_value)
+            return parser.lambda_stmt(&token_value.0)
         },
         _ => {
             let line_number = parser.get_curr_line_number();

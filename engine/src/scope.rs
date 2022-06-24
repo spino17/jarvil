@@ -11,7 +11,6 @@
 use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
-use crate::lexer::token::TokenValue;
 
 #[derive(Debug)]
 struct GenericSymbolVSBounds(Rc<FxHashMap<Rc<String>, Rc<Vec<Rc<String>>>>>);
@@ -146,7 +145,7 @@ impl SymbolData {
                 }
             },
             _ => {
-                unreachable!("this method should only be called for purely identifier tokens")
+                unreachable!("use this method only for purely identifier tokens")
             }
         }
     }
@@ -224,48 +223,48 @@ impl Env {
         })))
     }
 
-    pub fn set_identifier(&self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
+    pub fn set_identifier(&self, identifier_name: &Rc<String>, data_type: &Rc<String>, is_init: bool) {
         let meta_data = MetaData::IDENTIFIER(IdentifierData{
             data_type: data_type.clone(),
             is_init,
         });
-        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
-    pub fn set_identifier_init(&self, token_value: &TokenValue) {
-        self.0.borrow_mut().set_init(&token_value.0.clone());
+    pub fn set_identifier_init(&self, identifier_name: &Rc<String>) {
+        self.0.borrow_mut().set_init(identifier_name);
     }
 
-    pub fn set_user_defined_struct_type(&self, token_value: &TokenValue, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
+    pub fn set_user_defined_struct_type(&self, identifier_name: &Rc<String>, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::STRUCT(StructType{
             fields: fields.clone(),
         }));
-        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
-    pub fn set_user_defined_lambda_type(&self, token_value: &TokenValue, 
+    pub fn set_user_defined_lambda_type(&self, identifier_name: &Rc<String>, 
         params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::LAMBDA(LambdaType(FunctionData{
             params: params.clone(),
             return_type: return_type.clone(),
         })));
-        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
-    pub fn set_function(&self, token_value: &TokenValue, 
+    pub fn set_function(&self, identifier_name: &Rc<String>, 
         params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
         let meta_data = MetaData::FUNCTION(FunctionData{
             params: params.clone(),
             return_type: return_type.clone(),
         });
-        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
-    pub fn get(&self, token_value: &TokenValue) -> Option<SymbolData> {
+    pub fn get(&self, key: &Rc<String>) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
 
         // check the identifier name in current scope
-        match scope_ref.get(&token_value.0) {
+        match scope_ref.get(key) {
             Some(value) => {
                 Some(SymbolData(value.0.clone()))
             },
@@ -275,7 +274,7 @@ impl Env {
                 if let Some(parent_env) = &scope_ref.parent_env {
 
                     // return from the nearest scope which found the identifier name
-                    parent_env.get(token_value)
+                    parent_env.get(key)
                 } else {
                     None
                 }
