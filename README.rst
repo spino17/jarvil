@@ -46,10 +46,11 @@ Below is the complete grammer of the language with a custom (mostly copied from 
     # python style of block
     block: NEWLINE (INDENT stmt)*
 
-    atom: id atom_factor  # semantic check - indexable with key of type C or propertry with name of id
+    atom: id ['(' params ')'] atom_factor # semantic check - indexable with key of type C or propertry with name of id
     atom_factor:
-        | ('[' C ']' | '.' id) atom_factor
+        | ('[' C ']' | '.' id ['(' params ')']) atom_factor
         | ()
+
     C:
         | expr              # semantic check - index key is int or float
         | bexpr             # semantic check - index key is bool

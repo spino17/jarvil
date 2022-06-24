@@ -12,9 +12,9 @@ code: block ENDMARKER
 # python style of block
 block: NEWLINE (INDENT stmt)*
 
-atom: id atom_factor
+atom: id ['(' params ')'] atom_factor
 atom_factor:
-    | ('[' C ']' | '.' id) atom_factor
+    | ('[' C ']' | '.' id ['(' params ')']) atom_factor
     | ()
 C:
     | expr

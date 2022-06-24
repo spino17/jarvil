@@ -39,10 +39,15 @@ pub enum UserDefinedTypeData {
     LAMBDA(LambdaType),
 }
 
+pub struct InterfaceData {
+    methods: Rc<FxHashMap<Rc<String>, FunctionData>>
+}
+
 #[derive(Debug)]
 enum MetaData {
     IDENTIFIER(IdentifierData),
     USER_DEFINED_TYPE(UserDefinedTypeData),
+    // INTERFACE(InterfaceData),
     FUNCTION(FunctionData),
 }
 

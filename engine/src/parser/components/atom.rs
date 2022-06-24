@@ -43,11 +43,11 @@ pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(Pars
 pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<CompoundPart>), ParseError> {
     let mut sub_part_access_vec: Vec<CompoundPart> = vec![];
     let (response, compound_part) = parser.atom_index_or_propetry_access()?;
-    sub_part_access_vec.push(compound_part);
     if let Some(possible_err) = response.possible_err {
         // check this error to match empty string - check FOLLOW(id)
         todo!()
     }
+    sub_part_access_vec.push(compound_part);
     let (response, mut remaining_sub_part_access_vec) = parser.atom_factor()?;
     sub_part_access_vec.append(&mut remaining_sub_part_access_vec);
     Ok((response, sub_part_access_vec))
