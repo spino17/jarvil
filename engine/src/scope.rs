@@ -16,9 +16,9 @@ use std::rc::Rc;
 struct GenericSymbolVSBounds(Rc<FxHashMap<Rc<String>, Rc<Vec<Rc<String>>>>>);
 
 #[derive(Debug)]
-struct FunctionData {
-    params: Rc<Vec<(Rc<String>, Rc<String>)>>,
-    return_type: Rc<Option<Rc<String>>>,
+pub struct FunctionData {
+    pub params: Rc<Vec<(Rc<String>, Rc<String>)>>,
+    pub return_type: Rc<Option<Rc<String>>>,
     // generic_symbols: GenericSymbolVSBounds,
 }
 
@@ -145,7 +145,28 @@ impl SymbolData {
                 }
             },
             _ => {
-                unreachable!("use this method only for purely identifier tokens")
+                unreachable!("use this method only for user-defined types identifier tokens")
+            }
+        }
+    }
+
+    pub fn is_lambda_type(&self) -> Option<FunctionData> {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::LAMBDA(data) => {
+                        return Some(FunctionData{
+                            params: data.0.params.clone(),
+                            return_type: data.0.return_type.clone(),
+                        })
+                    },
+                    _ => {
+                        return None
+                    }
+                }
+            },
+            _ => {
+                unreachable!("use this method only for user-defined types identifier tokens")
             }
         }
     }
@@ -164,7 +185,7 @@ impl SymbolData {
                 (data.params.clone(), data.return_type.clone())
             },
             _ => {
-                unreachable!("use this method only for purely identifier tokens")
+                unreachable!("use this method only for function identifier token")
             }
         }
     }

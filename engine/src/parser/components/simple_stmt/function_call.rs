@@ -8,5 +8,8 @@ pub fn function_call(parser: &mut PackratParser,
     // take out the params, return type structure
     // using datatypes of arguments start using production rules to determine expr, bexpr, literal, atom
     // each arguments should match the datatype
-    todo!()
+    let (response, _, token_value, params, return_type) = parser.expect_callable()?;
+    parser.expect("(")?;
+    let (response, _) = parser.expect(")")?;
+    Ok((response, token_value.0.clone(), vec![]))
 }

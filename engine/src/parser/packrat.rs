@@ -8,7 +8,7 @@ use crate::lexer::token::{Token, CoreToken, TokenValue};
 use crate::parser::ast::AST;
 use std::rc::Rc;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
-use crate::scope::{Env, SymbolData, UserDefinedTypeData};
+use crate::scope::{Env, SymbolData, UserDefinedTypeData, FunctionData};
 use crate::parser::components;
 use crate::context;
 use rustc_hash::FxHashMap;
@@ -210,20 +210,14 @@ impl PackratParser {
         }
     }
 
-    pub fn is_lambda(&self, data_type: &Rc<String>) -> Result<SymbolData, SemanticError> {
-        match self.env.get(data_type) {
-            Some(symbol_data) => {
-                todo!();
+    pub fn has_lambda_type(&self, symbol_data: &SymbolData) -> Option<FunctionData> {
+        let data_type = symbol_data.get_type();
+        match self.env.get(&data_type) {
+            Some(type_data) => {
+                type_data.is_lambda_type()
             },
             None => {
-                let err_message = format!("type '{}' is not declared in the current scope", data_type);
-                let line_number = self.get_curr_line_number();
-                Err(SemanticError::new(
-                    line_number,
-                    self.get_code_line(line_number),
-                    self.get_index(),
-                    err_message)
-                )
+                unreachable!("use this method only for symbol data from identifier token")
             }
         }
     }
@@ -393,16 +387,23 @@ impl PackratParser {
                 if symbol_data.is_function() {
                     self.lookahead = self.lookahead + 1;
                     let (params, return_type) = symbol_data.get_function_data();
-                    Ok((ParseSuccess{
+                    return Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
                     }, token.line_number, TokenValue(token_value.0.clone()), params, return_type))
+                }
+                if let Some(lambda_data) = self.has_lambda_type(&symbol_data) {
+                    self.lookahead = self.lookahead + 1;
+                    return Ok((ParseSuccess{
+                        lookahead: self.lookahead,
+                        possible_err: None,
+                    }, token.line_number, TokenValue(token_value.0.clone()), lambda_data.params, lambda_data.return_type))
                 } else {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         token.line_number, 
                         self.get_code_line(token.line_number),
                         self.get_index(), 
-                        format!("expected a function, got a {} '{}'", 
+                        format!("expected a function or an identifier with lambda type, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
                 }
@@ -411,7 +412,7 @@ impl PackratParser {
                 token.line_number,
                 self.get_code_line(token.line_number),
                  self.get_index(),
-                  format!("expected a function, got '{}'", 
+                  format!("'{}' is not callable",
                   PackratParser::parse_for_err_message( token.name.to_string())))))
         }
     }
@@ -565,6 +566,10 @@ impl PackratParser {
 
     pub fn r_asssign(&mut self, rule_index: usize, line_number: usize) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::helper::r_asssign(self, rule_index, line_number)
+    }
+
+    pub fn function_call(&mut self, is_method: bool) -> Result<(ParseSuccess, Rc<String>, Vec<Rc<String>>), ParseError> {
+        components::simple_stmt::function_call::function_call(self, is_method)
     }
 
     // expression
