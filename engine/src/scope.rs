@@ -28,6 +28,8 @@ struct FunctionData {
 #[derive(Debug)]
 pub struct StructType {
     fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
+    // methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
+    // interfaces: Rc<Vec<Rc<String>>>,
 }
 
 #[derive(Debug)]
