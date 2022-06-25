@@ -16,7 +16,12 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         rule_index = 3;
     } else {
         // TODO - if user-defined type then choose rule_index = 4 (new type)
-        unimplemented!("yet to be implemented for user-defined types")
+        // unimplemented!("yet to be implemented for user-defined types")
+        parser.set_identifier_to_scope(&token_value.0, &data_type.0, true);
+        return Ok(ParseSuccess{
+            lookahead: parser.get_lookahead(),
+            possible_err: None,
+        })
     }
     let curr_lookahead = parser.get_lookahead();
     let (is_matched, response, err) = 

@@ -27,6 +27,7 @@ pub fn atom_propertry_access(parser: &mut PackratParser) -> Result<(ParseSuccess
 }
 
 pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
+    let token_name = parser.get_curr_token_name();
     match parser.get_curr_core_token() {
         CoreToken::LSQUARE => {
             return parser.atom_index_access()
@@ -35,19 +36,39 @@ pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(Pars
             return parser.atom_propertry_access()
         },
         _ => {
-            // possible error
-            todo!()
+            let line_number = parser.get_curr_line_number();
+            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                line_number, 
+                parser.get_code_line(line_number),
+                parser.get_index(), 
+               format!("expected '.' or '[', got '{}'", token_name))
+            ))
         }
     }
 }
 
 pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<CompoundPart>), ParseError> {
     let mut sub_part_access_vec: Vec<CompoundPart> = vec![];
+    let response: ParseSuccess;
+    let compound_part: CompoundPart;
+    match parser.atom_index_or_propetry_access() {
+        Ok((resp, cmpd_part)) => {
+            response = resp;
+            compound_part = cmpd_part;
+        },
+        Err(_) => {
+            return Ok((ParseSuccess{
+                lookahead: parser.get_lookahead(),
+                possible_err: None,
+            }, parser.get_curr_line_number(), vec![]))
+        }
+    }
+    /*
     let (response, compound_part) = parser.atom_index_or_propetry_access()?;
     if let Some(possible_err) = response.possible_err {
         // check this error to match empty string - check FOLLOW(id)
         todo!()
-    }
+    }*/
     sub_part_access_vec.push(compound_part);
     let (response, line_number, mut remaining_sub_part_access_vec) = parser.atom_factor()?;
     sub_part_access_vec.append(&mut remaining_sub_part_access_vec);
