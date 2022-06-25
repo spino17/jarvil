@@ -1,4 +1,4 @@
-use crate::{parser::packrat::{PackratParser, ParseSuccess}, errors::{ParseError, SyntaxError}};
+use crate::{parser::packrat::{PackratParser, ParseSuccess}, errors::{ParseError, SyntaxError, SemanticError}};
 use std::rc::Rc;
 use crate::lexer::token::CoreToken;
 
@@ -119,7 +119,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                 if let Some(curr_type_val) = curr_type {
                     todo!()
                 } else {
-                    return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                         line_number, 
                         parser.get_code_line(line_number),
                         parser.get_index(), 
@@ -135,7 +135,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                     if let Some(field_data_type) = parser.has_field_with_name(&curr_type_val, property_name) {
                         curr_type = Some(field_data_type.clone());
                     } else {
-                        return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                             line_number, 
                             parser.get_code_line(line_number),
                             parser.get_index(), 
@@ -143,7 +143,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                         ))
                     }
                 } else {
-                    return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                         line_number, 
                         parser.get_code_line(line_number),
                         parser.get_index(), 
@@ -164,7 +164,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                         let params_len = params.len();
                         let params_data_type_vec_len = params_data_type_vec.len();
                         if params_data_type_vec_len != params_len {
-                            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                            return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                                 line_number, 
                                 parser.get_code_line(line_number),
                                 parser.get_index(), 
@@ -176,7 +176,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                             let curr_data_type = params_data_type_vec[i].clone();
                             let expected_data_type = params[i].1.clone();
                             if !curr_data_type.eq(&expected_data_type) {
-                                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                                     line_number, 
                                     parser.get_code_line(line_number),
                                     parser.get_index(), 
@@ -194,7 +194,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                             }
                         }
                     } else {
-                        return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                             line_number, 
                             parser.get_code_line(line_number),
                             parser.get_index(), 
@@ -202,7 +202,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                         ))
                     }
                 } else {
-                    return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                         line_number, 
                         parser.get_code_line(line_number),
                         parser.get_index(), 
@@ -228,7 +228,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
             } else if let Some(lambda_data) = parser.has_lambda_type(&symbol_data) {
                 (params, return_type) = (lambda_data.params, lambda_data.return_type);
             } else {
-                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     line_number, 
                     parser.get_code_line(line_number),
                     parser.get_index(), 
@@ -241,7 +241,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
             let params_data_type_vec_len = params_data_type_vec.len();
             let params_len = params.len();
             if params_data_type_vec_len != params_len {
-                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     line_number, 
                     parser.get_code_line(line_number),
                     parser.get_index(), 
@@ -253,7 +253,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 let curr_data_type = params_data_type_vec[i].clone();
                 let expected_data_type = params[i].1.clone();
                 if !curr_data_type.eq(&expected_data_type) {
-                    return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                         line_number, 
                         parser.get_code_line(line_number),
                         parser.get_index(), 
@@ -289,7 +289,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 )
             }
             if !is_init {
-                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     line_number,
                     parser.get_code_line(line_number),
                     parser.get_index(), format!(

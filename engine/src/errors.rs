@@ -3,14 +3,11 @@ use std::fmt::Formatter;
 use std::rc::Rc;
 
 fn form_code_line(code_line: &(Rc<String>, usize), err_index: usize) -> String {
-    println!("{}-{}", err_index, code_line.1);
-    println!("{}", code_line.0);
     if err_index < code_line.1 {
-        // unreachable!("lookahead at which error occured can never be less than the start index of the line")
+        unreachable!("lookahead at which error occured can never be less than the start index of the line")
     }
     let start_lookahead = code_line.1;
     let pointer_index = err_index - start_lookahead;
-    // let pointer_index = 0;
     let mut pointer_line: Vec<char> = vec![];
     for (i, _) in code_line.0.as_ref().chars().enumerate() {
         if i == pointer_index {

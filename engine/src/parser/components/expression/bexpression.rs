@@ -46,7 +46,7 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         },
         _ => {
             let line_number = parser.get_curr_line_number();
-            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+            Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
             line_number,
             parser.get_code_line(line_number),
             parser.get_index(), 

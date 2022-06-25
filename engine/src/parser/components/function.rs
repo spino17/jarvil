@@ -1,6 +1,6 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::lexer::token::CoreToken;
-use crate::errors::{ParseError, SyntaxError, aggregate_errors};
+use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
 use std::rc::Rc;
 
 pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
@@ -55,7 +55,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
                 }
             } else {
                 let line_number = parser.get_curr_line_number();
-                let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
+                let err = ParseError::SEMANTIC_ERROR(SemanticError::new(
                     line_number, 
                     parser.get_code_line(line_number),
                     parser.get_index(), 
