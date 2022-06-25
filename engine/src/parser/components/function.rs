@@ -38,8 +38,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
     match parser.atom() {
         Ok((response, data_type)) => {
             if let Some(data_type) = data_type {
-                if parser.check_next_token("\n") 
-                || parser.check_next_token(")")
+                if parser.check_next_token(")")
                 || parser.check_next_token(",") {
                     return Ok((response, data_type))
                 } else {
@@ -71,7 +70,6 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
             errors_vec.push(err)
         }
     }
-    println!("errors vec: {:?}", errors_vec);
     Err(aggregate_errors(errors_vec))
 }
 

@@ -70,8 +70,13 @@ impl PackratParser {
     }
 
     pub fn get_code_line(&self, line_number: usize) -> (Rc<String>, usize) {
-        let (s, line_start_index) = &self.code_lines[line_number - 1];
-        (s.clone(), *line_start_index)
+        if self.get_index() == &self.code_lines[line_number - 1].1 - 1 {
+            let (s, line_start_index) = &self.code_lines[line_number - 2];
+            (s.clone(), *line_start_index)
+        } else {
+            let (s, line_start_index) = &self.code_lines[line_number - 1];
+            (s.clone(), *line_start_index)
+        }
     }
 
     pub fn get_env(&self) -> Env {
