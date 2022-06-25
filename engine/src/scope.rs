@@ -128,7 +128,6 @@ impl SymbolData {
             _ => false,
         }
     }*/
-
     pub fn get_user_defined_type_data(&self) -> Option<UserDefinedTypeData> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
@@ -143,6 +142,27 @@ impl SymbolData {
                             params: lambda_data.0.params.clone(),
                             return_type: lambda_data.0.return_type.clone(),
                         })))
+                    }
+                }
+            },
+            _ => {
+                None
+            }
+        }
+    }
+
+    pub fn has_field_name(&self, field_name: &Rc<String>) -> Option<Rc<String>> {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::STRUCT(data) => {
+                        match data.fields.get(field_name) {
+                            Some(val) => Some(val.clone()),
+                            None => None,
+                        }
+                    },
+                    _ => {
+                        return None
                     }
                 }
             },

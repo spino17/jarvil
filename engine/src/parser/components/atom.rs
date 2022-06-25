@@ -81,8 +81,17 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                 // check whether curr_type has a field with name property_name.
                 // set curr_type to the type of that field
                 // else give error => does not have a propertry named '{}'
-                if let Some(curr_type) = curr_type {
-                    todo!()
+                if let Some(curr_type_val) = curr_type {
+                    if let Some(field_data_type) = parser.has_field_with_name(&curr_type_val, property_name) {
+                        curr_type = Some(field_data_type.clone());
+                    } else {
+                        return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                            line_number, 
+                            parser.get_code_line(line_number),
+                            parser.get_index(), 
+                           format!("type '{}' has no propertry named '{}'", curr_type_val, property_name))
+                        ))
+                    }
                 } else {
                     return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         line_number, 

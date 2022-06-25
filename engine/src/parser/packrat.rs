@@ -126,6 +126,18 @@ impl PackratParser {
         }
     }
 
+    pub fn has_field_with_name(&self, data_type: &Rc<String>, field_name: &Rc<String>) -> Option<Rc<String>> {
+        match self.env.get(data_type) {
+            Some(symbol_data) => {
+                match &symbol_data.has_field_name(field_name) {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                }
+            },
+            None => unreachable!("any datatype passed in this method should be in scope")
+        }
+    }
+
     pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
         self.token_vec = token_vec;
     }
