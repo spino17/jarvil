@@ -20,10 +20,20 @@ pub fn atom_index_access(parser: &mut PackratParser) -> Result<(ParseSuccess, Co
     Ok((response, CompoundPart::INDEX_TYPE(index_data_type)))
 }
 
-pub fn atom_propertry_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
+pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
     parser.expect(".")?;
     let (response, _, token_value) = parser.expect_any_id()?;
-    Ok((response, CompoundPart::PROPERTRY_NAME(token_value.0.clone())))
+    match parser.get_curr_core_token() {
+        CoreToken::LPAREN => {
+            parser.expect("(")?;
+            let (_, params_data_type_vec) = parser.params()?;
+            let (response, _) = parser.expect(")")?;
+            Ok((response, CompoundPart::METHOD_DATA((token_value.0.clone(), params_data_type_vec))))
+        },
+        _ => {
+            Ok((response, CompoundPart::PROPERTRY_NAME(token_value.0.clone())))
+        }
+    }
 }
 
 pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
@@ -33,7 +43,8 @@ pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(Pars
             return parser.atom_index_access()
         },
         CoreToken::DOT => {
-            return parser.atom_propertry_access()
+            // TODO - add parser.atom_propertry_or_method_access()
+            return parser.atom_propertry_or_method_access()
         },
         _ => {
             let line_number = parser.get_curr_line_number();
@@ -57,6 +68,7 @@ pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, V
             compound_part = cmpd_part;
         },
         Err(_) => {
+            // handle possible error using FOLLOW(id)
             return Ok((ParseSuccess{
                 lookahead: parser.get_lookahead(),
                 possible_err: None,

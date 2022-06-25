@@ -735,6 +735,10 @@ impl PackratParser {
         components::function::params(self)
     }
 
+    pub fn param(&mut self) -> Result<(ParseSuccess, usize, Rc<String>), ParseError> {
+        components::function::param(self)
+    }
+
     pub fn atom_factor(&mut self) -> Result<(ParseSuccess, usize, Vec<components::atom::CompoundPart>), ParseError> {
         components::atom::atom_factor(self)
     }
@@ -747,8 +751,8 @@ impl PackratParser {
         components::atom::atom_index_access(self)
     }
     
-    pub fn atom_propertry_access(&mut self) -> Result<(ParseSuccess, components::atom::CompoundPart), ParseError> {
-        components::atom::atom_propertry_access(self)
+    pub fn atom_propertry_or_method_access(&mut self) -> Result<(ParseSuccess, components::atom::CompoundPart), ParseError> {
+        components::atom::atom_propertry_or_method_access(self)
     }
 
     pub fn atom_expr_bexpr_literal(&mut self) -> Result<(ParseSuccess, Rc<String>), ParseError> {
