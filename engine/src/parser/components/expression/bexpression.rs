@@ -163,7 +163,7 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                     line_number,
                     parser.get_code_line(line_number),
                     parser.get_index(), 
-                    String::from("'None' value found in boolean expression")))
+                    String::from("value with type 'None' found in boolean expression")))
                 );
             }
         },

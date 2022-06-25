@@ -124,7 +124,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                         line_number, 
                         parser.get_code_line(line_number),
                         parser.get_index(), 
-                       format!("'None' value is not indexable with key of type '{}'", key_data_type))
+                       format!("type 'None' is not indexable with key of type '{}'", key_data_type))
                     ))
                 }
             },
@@ -148,7 +148,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                         line_number, 
                         parser.get_code_line(line_number),
                         parser.get_index(), 
-                       format!("'None' value has no propertry named '{}'", property_name))
+                       format!("type 'None' has no propertry named '{}'", property_name))
                     ))
                 }
             },
@@ -207,7 +207,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                         line_number, 
                         parser.get_code_line(line_number),
                         parser.get_index(), 
-                       format!("'None' value has no method named '{}'", method_data.0))
+                       format!("type 'None' has no method named '{}'", method_data.0))
                     ))
                 }
             },

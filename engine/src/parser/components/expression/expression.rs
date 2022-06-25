@@ -102,7 +102,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                     line_number,
                     parser.get_code_line(line_number),
                     parser.get_index(), 
-                    String::from("'None' value found in expression")))
+                    String::from("value with type 'None' found in expression")))
                 );
             }
         },
