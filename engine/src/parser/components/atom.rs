@@ -26,7 +26,7 @@ pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(Pa
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             parser.expect("(")?;
-            let (_, params_data_type_vec) = parser.params()?;
+            let (_, _, params_data_type_vec) = parser.params()?;
             let (response, _) = parser.expect(")")?;
             Ok((response, CompoundPart::METHOD_DATA((token_value.0.clone(), params_data_type_vec))))
         },
@@ -49,7 +49,7 @@ pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(Pars
         _ => {
             let line_number = parser.get_curr_line_number();
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                line_number, 
+                line_number,
                 parser.get_code_line(line_number),
                 parser.get_index(), 
                format!("expected '.' or '[', got '{}'", token_name))
@@ -67,8 +67,9 @@ pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, V
             response = resp;
             compound_part = cmpd_part;
         },
-        Err(_) => {
+        Err(err) => {
             // handle possible error using FOLLOW(id)
+            println!("error coming: {:?}", err);
             return Ok((ParseSuccess{
                 lookahead: parser.get_lookahead(),
                 possible_err: None,
@@ -181,7 +182,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                             line_number, 
                             parser.get_code_line(line_number),
                             parser.get_index(), 
-                           format!("type '{}' has no method named '{}'", curr_type_val, method_data.0))
+                            format!("type '{}' has no method named '{}'", curr_type_val, method_data.0))
                         ))
                     }
                 } else {
@@ -220,8 +221,8 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                     token_value.0.clone(), symbol_data.get_type_of_identifier())))
                 )
             }
-            let (_, line_number) = parser.expect("(")?;
-            let (response, params_data_type_vec) = parser.params()?;
+            parser.expect("(")?;
+            let (response, line_number, params_data_type_vec) = parser.params()?;
             let params_data_type_vec_len = params_data_type_vec.len();
             let params_len = params.len();
             if params_data_type_vec_len != params_len {
