@@ -41,7 +41,7 @@ pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(Pars
     }
 }
 
-pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<CompoundPart>), ParseError> {
+pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<CompoundPart>), ParseError> {
     let mut sub_part_access_vec: Vec<CompoundPart> = vec![];
     let (response, compound_part) = parser.atom_index_or_propetry_access()?;
     if let Some(possible_err) = response.possible_err {
@@ -49,15 +49,15 @@ pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<Comp
         todo!()
     }
     sub_part_access_vec.push(compound_part);
-    let (response, mut remaining_sub_part_access_vec) = parser.atom_factor()?;
+    let (response, line_number, mut remaining_sub_part_access_vec) = parser.atom_factor()?;
     sub_part_access_vec.append(&mut remaining_sub_part_access_vec);
-    Ok((response, sub_part_access_vec))
+    Ok((response, line_number, sub_part_access_vec))
 }
 
 pub fn check_atom_factor(parser: &mut PackratParser, 
-    data_type: &Rc<String>, is_init: bool) -> Result<(ParseSuccess, Rc<String>), ParseError> {
-    let (response, sub_part_access_vec) = parser.atom_factor()?;
-    let mut curr_type = data_type.clone();
+    data_type: Option<Rc<String>>, is_init: bool) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
+    let (response, line_number, sub_part_access_vec) = parser.atom_factor()?;
+    let mut curr_type = data_type;
     let curr_is_init = is_init;
     for entry in &sub_part_access_vec {
         match entry {
@@ -66,19 +66,46 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                 // set curr_type to the type of the value of the above iterable (List, Dict)
                 // else give error => not iterable on index with type '{}' or not an iterable
                 // curr_is_init && is_init -> curr_is_init
-                todo!()
+                if let Some(curr_type) = curr_type {
+                    todo!()
+                } else {
+                    return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        line_number, 
+                        parser.get_code_line(line_number),
+                        parser.get_index(), 
+                       format!("type 'None' is not indexable with key of type '{}'", key_data_type))
+                    ))
+                }
             },
             CompoundPart::PROPERTRY_NAME(property_name) => {
                 // check whether curr_type has a field with name property_name.
                 // set curr_type to the type of that field
                 // else give error => does not have a propertry named '{}'
-                todo!()
+                if let Some(curr_type) = curr_type {
+                    todo!()
+                } else {
+                    return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        line_number, 
+                        parser.get_code_line(line_number),
+                        parser.get_index(), 
+                       format!("type 'None' has no propertry named '{}'", property_name))
+                    ))
+                }
             },
             CompoundPart::METHOD_DATA(method_data) => {
                 // check whether curr_type has a field with name property_name.
                 // set curr_type to the type of that field
                 // else give error => does not have a propertry named '{}'
-                todo!()
+                if let Some(curr_type) = curr_type {
+                    todo!()
+                } else {
+                    return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        line_number, 
+                        parser.get_code_line(line_number),
+                        parser.get_index(), 
+                       format!("type 'None' has no method named '{}'", method_data.0))
+                    ))
+                }
             },
         }
     }
@@ -86,7 +113,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
     Ok((response, curr_type))
 }
 
-pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
     let (response, line_number, 
         token_value, symbol_data) = parser.expect_any_id_in_scope()?;
     match parser.get_curr_core_token() {
@@ -130,13 +157,20 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), Pa
                         parser.get_index(), 
                         format!("expected type '{}' for argument '{}', got '{}'", 
                         expected_data_type, i, curr_data_type)))
-                    )
+                    ) 
                 }
             }
-            // let data_type;  // get from return type of id '(' params ')'
-            // parser.check_atom_factor(&data_type, true);
-            // do the semantic check for params passed in the function
-            todo!()
+            let (response, _) = parser.expect(")")?;
+            let data_type: Option<Rc<String>>;
+            match return_type.as_ref() {
+                Some(value) => {
+                    data_type = Some(value.clone());
+                },
+                None => {
+                    data_type = None;
+                }
+            }
+            parser.check_atom_factor(data_type, true)
         },
         _ => {
             let data_type;
@@ -160,7 +194,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), Pa
                         "cannot access parts of uninitialized identifier '{}'", token_value.0.clone())))
                     )
             }
-            parser.check_atom_factor(&data_type, is_init)
+            parser.check_atom_factor(Some(data_type), is_init)
         }
     }
 }
