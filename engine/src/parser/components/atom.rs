@@ -107,7 +107,6 @@ pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, V
 pub fn check_atom_factor(parser: &mut PackratParser, 
     data_type: Option<Rc<String>>, is_init: bool) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
     let (response, line_number, sub_part_access_vec) = parser.atom_factor()?;
-    println!("{:?}", sub_part_access_vec);
     let mut curr_type = data_type;
     let curr_is_init = is_init;
     for entry in &sub_part_access_vec {

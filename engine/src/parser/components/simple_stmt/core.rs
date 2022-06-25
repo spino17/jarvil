@@ -38,7 +38,6 @@ pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
     }
     match parser.atom() {
         Ok(response) => {
-            println!("type of atom is -> {:?}", response.1);
             return Ok(response.0)
         },
         Err(err) => {
