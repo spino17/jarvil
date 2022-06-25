@@ -87,7 +87,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                 // set curr_type to the type of the value of the above iterable (List, Dict)
                 // else give error => not iterable on index with type '{}' or not an iterable
                 // curr_is_init && is_init -> curr_is_init
-                if let Some(curr_type) = curr_type {
+                if let Some(curr_type_val) = curr_type {
                     todo!()
                 } else {
                     return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
@@ -126,8 +126,52 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                 // check whether curr_type has a field with name property_name.
                 // set curr_type to the type of that field
                 // else give error => does not have a propertry named '{}'
-                if let Some(curr_type) = curr_type {
-                    todo!()
+                if let Some(curr_type_val) = curr_type {
+                    if let Some(function_data) = parser.has_method_with_name(&curr_type_val, &method_data.0) {
+                        // curr_type = Some(field_data_type.clone());
+                        let params = function_data.params;
+                        let return_type = function_data.return_type;
+                        let params_data_type_vec = method_data.1.clone();
+                        let params_len = params.len();
+                        let params_data_type_vec_len = params_data_type_vec.len();
+                        if params_data_type_vec_len != params_len {
+                            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                                line_number, 
+                                parser.get_code_line(line_number),
+                                parser.get_index(), 
+                                format!("expected '{}' number of arguments to the method '{}', got '{}'", 
+                                params_len, method_data.0, params_data_type_vec_len)))
+                            )
+                        }
+                        for i in 0..params_data_type_vec_len {
+                            let curr_data_type = params_data_type_vec[i].clone();
+                            let expected_data_type = params[i].1.clone();
+                            if !curr_data_type.eq(&expected_data_type) {
+                                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                                    line_number, 
+                                    parser.get_code_line(line_number),
+                                    parser.get_index(), 
+                                    format!("expected type '{}' for argument '{}' in method '{}', got '{}'", 
+                                    expected_data_type, i, method_data.0, curr_data_type)))
+                                ) 
+                            }
+                        }
+                        match return_type.as_ref() {
+                            Some(value) => {
+                                curr_type = Some(value.clone());
+                            },
+                            None => {
+                                curr_type = None;
+                            }
+                        }
+                    } else {
+                        return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                            line_number, 
+                            parser.get_code_line(line_number),
+                            parser.get_index(), 
+                           format!("type '{}' has no method named '{}'", curr_type_val, method_data.0))
+                        ))
+                    }
                 } else {
                     return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         line_number, 

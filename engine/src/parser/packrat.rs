@@ -138,6 +138,22 @@ impl PackratParser {
         }
     }
 
+    pub fn has_method_with_name(&self, data_type: &Rc<String>, 
+        method_name: &Rc<String>) -> Option<FunctionData> {
+        match self.env.get(data_type) {
+            Some(symbol_data) => {
+                match &symbol_data.has_method_name(method_name) {
+                    Some(val) => Some(FunctionData{
+                        params: val.params.clone(),
+                        return_type: val.return_type.clone(),
+                    }),
+                    None => None,
+                }
+            },
+            None => None
+        }
+    }
+
     pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
         self.token_vec = token_vec;
     }

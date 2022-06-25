@@ -31,7 +31,7 @@ struct IdentifierData {
 #[derive(Debug)]
 pub struct StructType {
     fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
-    // methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
+    methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
     // interfaces: Rc<Vec<Rc<String>>>,
     // generic_symbols: GenericSymbolVSBounds,
 }
@@ -134,7 +134,8 @@ impl SymbolData {
                 match data {
                     UserDefinedTypeData::STRUCT(struct_data) => {
                         Some(UserDefinedTypeData::STRUCT(StructType{
-                            fields: struct_data.fields.clone()
+                            fields: struct_data.fields.clone(),
+                            methods: struct_data.methods.clone(),
                         }))
                     },
                     UserDefinedTypeData::LAMBDA(lambda_data) => {
@@ -158,6 +159,32 @@ impl SymbolData {
                     UserDefinedTypeData::STRUCT(data) => {
                         match data.fields.get(field_name) {
                             Some(val) => Some(val.clone()),
+                            None => None,
+                        }
+                    },
+                    _ => {
+                        return None
+                    }
+                }
+            },
+            _ => {
+                None
+            }
+        }
+    }
+
+    pub fn has_method_name(&self, method_name: &Rc<String>) -> Option<FunctionData> {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::STRUCT(data) => {
+                        match data.methods.get(method_name) {
+                            Some(val) => {
+                                Some(FunctionData{
+                                    params: val.params.clone(),
+                                    return_type: val.return_type.clone(),
+                                })
+                            },
                             None => None,
                         }
                     },
@@ -285,6 +312,7 @@ impl Env {
     pub fn set_user_defined_struct_type(&self, identifier_name: &Rc<String>, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::STRUCT(StructType{
             fields: fields.clone(),
+            methods: Rc::new(FxHashMap::default()),
         }));
         self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
