@@ -134,7 +134,7 @@ impl PackratParser {
                     None => None,
                 }
             },
-            None => unreachable!("any datatype passed in this method should be in scope")
+            None => None
         }
     }
 
