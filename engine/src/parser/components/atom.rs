@@ -2,6 +2,7 @@ use crate::{parser::packrat::{PackratParser, ParseSuccess}, errors::{ParseError,
 use std::rc::Rc;
 use crate::lexer::token::CoreToken;
 
+#[derive(Debug)]
 pub enum CompoundPart {
     INDEX_TYPE(Rc<String>),  // (index type, is_init)
     PROPERTRY_NAME(Rc<String>),  // identifier name
@@ -36,32 +37,51 @@ pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(Pa
     }
 }
 
-pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
-    let token_name = parser.get_curr_token_name();
+pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<CompoundPart>), ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::LSQUARE => {
-            return parser.atom_index_access()
+            match parser.atom_index_access() {
+                Ok(response) => {
+                    Ok((response.0, Some(response.1)))
+                },
+                Err(err) => Err(err)
+            }
         },
         CoreToken::DOT => {
             // TODO - add parser.atom_propertry_or_method_access()
-            return parser.atom_propertry_or_method_access()
+            match parser.atom_propertry_or_method_access() {
+                Ok(response) => {
+                    Ok((response.0, Some(response.1)))
+                },
+                Err(err) => Err(err)
+            }
         },
         _ => {
-            let line_number = parser.get_curr_line_number();
-            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                line_number,
-                parser.get_code_line(line_number),
-                parser.get_index(), 
-               format!("expected '.' or '[', got '{}'", token_name))
-            ))
+            Ok((ParseSuccess{
+                lookahead: parser.get_lookahead(),
+                possible_err: None,
+            }, None))
         }
     }
 }
 
 pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<CompoundPart>), ParseError> {
     let mut sub_part_access_vec: Vec<CompoundPart> = vec![];
-    let response: ParseSuccess;
-    let compound_part: CompoundPart;
+    // let response: ParseSuccess;
+    // let compound_part: CompoundPart;
+    let (_, compound_part) = parser.atom_index_or_propetry_access()?;
+    if let Some(compound_part) = compound_part {
+        sub_part_access_vec.push(compound_part);
+        let (response, line_number, mut remaining_sub_part_access_vec) = parser.atom_factor()?;
+        sub_part_access_vec.append(&mut remaining_sub_part_access_vec);
+        Ok((response, line_number, sub_part_access_vec))
+    } else {
+        return Ok((ParseSuccess{
+            lookahead: parser.get_lookahead(),
+            possible_err: None,
+        }, parser.get_curr_line_number(), vec![]))
+    }
+    /*
     match parser.atom_index_or_propetry_access() {
         Ok((resp, cmpd_part)) => {
             response = resp;
@@ -75,22 +95,19 @@ pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, V
                 possible_err: None,
             }, parser.get_curr_line_number(), vec![]))
         }
-    }
+    }*/
     /*
     let (response, compound_part) = parser.atom_index_or_propetry_access()?;
     if let Some(possible_err) = response.possible_err {
         // check this error to match empty string - check FOLLOW(id)
         todo!()
     }*/
-    sub_part_access_vec.push(compound_part);
-    let (response, line_number, mut remaining_sub_part_access_vec) = parser.atom_factor()?;
-    sub_part_access_vec.append(&mut remaining_sub_part_access_vec);
-    Ok((response, line_number, sub_part_access_vec))
 }
 
 pub fn check_atom_factor(parser: &mut PackratParser, 
     data_type: Option<Rc<String>>, is_init: bool) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
     let (response, line_number, sub_part_access_vec) = parser.atom_factor()?;
+    println!("{:?}", sub_part_access_vec);
     let mut curr_type = data_type;
     let curr_is_init = is_init;
     for entry in &sub_part_access_vec {

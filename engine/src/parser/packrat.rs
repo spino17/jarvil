@@ -743,7 +743,7 @@ impl PackratParser {
         components::atom::atom_factor(self)
     }
     
-    pub fn atom_index_or_propetry_access(&mut self) -> Result<(ParseSuccess, components::atom::CompoundPart), ParseError> {
+    pub fn atom_index_or_propetry_access(&mut self) -> Result<(ParseSuccess, Option<components::atom::CompoundPart>), ParseError> {
         components::atom::atom_index_or_propetry_access(self)
     }
 
