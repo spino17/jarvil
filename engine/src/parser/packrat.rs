@@ -735,7 +735,7 @@ impl PackratParser {
         components::function::params(self)
     }
 
-    pub fn param(&mut self) -> Result<(ParseSuccess, usize, Rc<String>), ParseError> {
+    pub fn param(&mut self) -> Result<(ParseSuccess, Rc<String>), ParseError> {
         components::function::param(self)
     }
 

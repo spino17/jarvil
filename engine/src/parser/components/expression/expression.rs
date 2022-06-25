@@ -20,7 +20,6 @@ pub fn factor_minus(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), 
 }
 
 pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
-    let token_value = parser.get_curr_token_value();
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             return parser.factor_expr_in_parenthesis();

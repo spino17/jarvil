@@ -78,7 +78,6 @@ pub fn bfactor_not(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
 }
 
 pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    let token_value = parser.get_curr_token_value();
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             match parser.bfactor_expr_in_parenthesis() {
