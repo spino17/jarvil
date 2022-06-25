@@ -218,16 +218,15 @@ pub fn check_atom_factor(parser: &mut PackratParser,
 }
 
 pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
-    let (response, line_number, 
+    let (_, line_number, 
         token_value, symbol_data) = parser.expect_any_id_in_scope()?;
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
-            let mut params: Rc<Vec<(Rc<String>, Rc<String>)>>;
-            let mut return_type: Rc<Option<Rc<String>>>;
+            let params: Rc<Vec<(Rc<String>, Rc<String>)>>;
+            let return_type: Rc<Option<Rc<String>>>;
             if let Some(response) = symbol_data.get_function_data() {
                 (params, return_type) = (response.params, response.return_type);
-            }
-            if let Some(lambda_data) = parser.has_lambda_type(&symbol_data) {
+            } else if let Some(lambda_data) = parser.has_lambda_type(&symbol_data) {
                 (params, return_type) = (lambda_data.params, lambda_data.return_type);
             } else {
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
@@ -239,7 +238,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 )
             }
             parser.expect("(")?;
-            let (response, line_number, params_data_type_vec) = parser.params()?;
+            let (_, line_number, params_data_type_vec) = parser.params()?;
             let params_data_type_vec_len = params_data_type_vec.len();
             let params_len = params.len();
             if params_data_type_vec_len != params_len {
@@ -264,7 +263,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                     ) 
                 }
             }
-            let (response, _) = parser.expect(")")?;
+            parser.expect(")")?;
             let data_type: Option<Rc<String>>;
             match return_type.as_ref() {
                 Some(value) => {
