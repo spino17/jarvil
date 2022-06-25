@@ -700,8 +700,12 @@ impl PackratParser {
 
     pub fn check_atom_factor(&mut self, 
         data_type: &Rc<String>, is_init: bool) -> Result<(ParseSuccess, Rc<String>), ParseError> {
-            components::atom::check_atom_factor(self, data_type, is_init)
-        }
+        components::atom::check_atom_factor(self, data_type, is_init)
+    }
+
+    pub fn params(&mut self) -> Result<(ParseSuccess, Vec<Rc<String>>), ParseError> {
+        components::function::params(self)
+    }
 
     pub fn atom_factor(&mut self) -> Result<(ParseSuccess, Vec<components::atom::CompoundPart>), ParseError> {
         components::atom::atom_factor(self)

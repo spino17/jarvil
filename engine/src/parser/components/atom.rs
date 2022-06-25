@@ -91,7 +91,6 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), Pa
         token_value, symbol_data) = parser.expect_any_id_in_scope()?;
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
-            // check wther it is function or lambda using symbol_data
             let mut params: Rc<Vec<(Rc<String>, Rc<String>)>>;
             let mut return_type: Rc<Option<Rc<String>>>;
             if let Some(response) = symbol_data.get_function_data() {
@@ -108,8 +107,34 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), Pa
                     token_value.0.clone(), symbol_data.get_type_of_identifier())))
                 )
             }
-            let data_type;  // get from return type of id '(' params ')'
-            parser.check_atom_factor(&data_type, true);
+            let (_, line_number) = parser.expect("(")?;
+            let (response, params_data_type_vec) = parser.params()?;
+            let params_data_type_vec_len = params_data_type_vec.len();
+            let params_len = params.len();
+            if params_data_type_vec_len != params_len {
+                return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    line_number, 
+                    parser.get_code_line(line_number),
+                    parser.get_index(), 
+                    format!("expected '{}' number of arguments to the function, got '{}'", 
+                    params_len, params_data_type_vec_len)))
+                )
+            }
+            for i in 0..params_data_type_vec_len {
+                let curr_data_type = params_data_type_vec[i].clone();
+                let expected_data_type = params[i].1.clone();
+                if !curr_data_type.eq(&expected_data_type) {
+                    return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        line_number, 
+                        parser.get_code_line(line_number),
+                        parser.get_index(), 
+                        format!("expected type '{}' for argument '{}', got '{}'", 
+                        expected_data_type, i, curr_data_type)))
+                    )
+                }
+            }
+            // let data_type;  // get from return type of id '(' params ')'
+            // parser.check_atom_factor(&data_type, true);
             // do the semantic check for params passed in the function
             todo!()
         },
