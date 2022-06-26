@@ -4,9 +4,9 @@ use crate::lexer::token::CoreToken;
 
 #[derive(Debug)]
 pub enum CompoundPart {
-    INDEX_TYPE(Rc<String>),  // (index type, is_init)
-    PROPERTRY_NAME(Rc<String>),  // identifier name
-    METHOD_DATA((Rc<String>, Vec<Rc<String>>)),  // (method name, datatype of the params passed)
+    INDEX_TYPE((Rc<String>, usize)),  // (index type, is_init, index)
+    PROPERTRY_NAME((Rc<String>, usize)),  // (identifier name, index)
+    METHOD_DATA((Rc<String>, Vec<(Rc<String>, usize)>, usize)),  // (method name, datatype of the params passed, index)
 }
 
 pub fn atom_expr_bexpr_literal(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
@@ -18,7 +18,7 @@ pub fn atom_index_access(parser: &mut PackratParser) -> Result<(ParseSuccess, Co
     parser.expect("[")?;
     let (_, index_data_type) = parser.atom_expr_bexpr_literal()?;
     let (response, _) = parser.expect("]")?;
-    Ok((response, CompoundPart::INDEX_TYPE(index_data_type)))
+    Ok((response, CompoundPart::INDEX_TYPE((index_data_type, parser.get_index()))))
 }
 
 pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
@@ -29,10 +29,10 @@ pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(Pa
             parser.expect("(")?;
             let (_, _, params_data_type_vec) = parser.params()?;
             let (response, _) = parser.expect(")")?;
-            Ok((response, CompoundPart::METHOD_DATA((token_value.0.clone(), params_data_type_vec))))
+            Ok((response, CompoundPart::METHOD_DATA((token_value.0.clone(), params_data_type_vec, parser.get_index()))))
         },
         _ => {
-            Ok((response, CompoundPart::PROPERTRY_NAME(token_value.0.clone())))
+            Ok((response, CompoundPart::PROPERTRY_NAME((token_value.0.clone(), parser.get_index()))))
         }
     }
 }
@@ -111,7 +111,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
     let curr_is_init = is_init;
     for entry in &sub_part_access_vec {
         match entry {
-            CompoundPart::INDEX_TYPE(key_data_type) => {
+            CompoundPart::INDEX_TYPE((key_data_type, index)) => {
                 // check whether curr_type is iterable with key having key_data_type.
                 // set curr_type to the type of the value of the above iterable (List, Dict)
                 // else give error => not iterable on index with type '{}' or not an iterable
@@ -119,14 +119,13 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                 if let Some(curr_type_val) = curr_type {
                     todo!()
                 } else {
-                    let index = parser.get_index();
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                        parser.get_code_line(line_number, index),
+                        parser.get_code_line(line_number, *index),
                        format!("type 'None' is not indexable with key of type '{}'", key_data_type))
                     ))
                 }
             },
-            CompoundPart::PROPERTRY_NAME(property_name) => {
+            CompoundPart::PROPERTRY_NAME((property_name, index)) => {
                 // check whether curr_type has a field with name property_name.
                 // set curr_type to the type of that field
                 // else give error => does not have a propertry named '{}'
@@ -134,16 +133,16 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                     if let Some(field_data_type) = parser.has_field_with_name(&curr_type_val, property_name) {
                         curr_type = Some(field_data_type.clone());
                     } else {
-                        let index = parser.get_index();
+                        // let index = parser.get_index();
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                            parser.get_code_line(line_number, index),
+                            parser.get_code_line(line_number, *index),
                            format!("type '{}' has no propertry named '{}'", curr_type_val, property_name))
                         ))
                     }
                 } else {
-                    let index = parser.get_index();
+                    // let index = parser.get_index();
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                        parser.get_code_line(line_number, index),
+                        parser.get_code_line(line_number, *index),
                        format!("type 'None' has no propertry named '{}'", property_name))
                     ))
                 }
@@ -161,20 +160,20 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                         let params_len = params.len();
                         let params_data_type_vec_len = params_data_type_vec.len();
                         if params_data_type_vec_len != params_len {
-                            let index = parser.get_index();
+                            // let index = parser.get_index();
                             return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                                parser.get_code_line(line_number, index), 
+                                parser.get_code_line(line_number, method_data.2), 
                                 format!("expected '{}' number of arguments to the method '{}', got '{}'", 
                                 params_len, method_data.0, params_data_type_vec_len)))
                             )
                         }
                         for i in 0..params_data_type_vec_len {
-                            let curr_data_type = params_data_type_vec[i].clone();
+                            let curr_data_type = params_data_type_vec[i].0.clone();
                             let expected_data_type = params[i].1.clone();
                             if !curr_data_type.eq(&expected_data_type) {
-                                let index = parser.get_index();
+                                // let index = parser.get_index();
                                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                                    parser.get_code_line(line_number, index),
+                                    parser.get_code_line(line_number, params_data_type_vec[i].1),
                                     format!("expected type '{}' for argument '{}' in method '{}', got '{}'", 
                                     expected_data_type, i, method_data.0, curr_data_type)))
                                 ) 
@@ -189,16 +188,16 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                             }
                         }
                     } else {
-                        let index = parser.get_index();
+                        // let index = parser.get_index();
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                            parser.get_code_line(line_number, index),
+                            parser.get_code_line(line_number, method_data.2),
                             format!("type '{}' has no method named '{}'", curr_type_val, method_data.0))
                         ))
                     }
                 } else {
-                    let index = parser.get_index();
+                    // let index = parser.get_index();
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                        parser.get_code_line(line_number, index),
+                        parser.get_code_line(line_number, method_data.2),
                        format!("type 'None' has no method named '{}'", method_data.0))
                     ))
                 }
@@ -241,12 +240,12 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 )
             }
             for i in 0..params_data_type_vec_len {
-                let curr_data_type = params_data_type_vec[i].clone();
+                let curr_data_type = params_data_type_vec[i].0.clone();
                 let expected_data_type = params[i].1.clone();
                 let index = parser.get_index();
                 if !curr_data_type.eq(&expected_data_type) {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                        parser.get_code_line(line_number, index), 
+                        parser.get_code_line(line_number, params_data_type_vec[i].1), 
                         format!("expected type '{}' for argument '{}', got '{}'", 
                         expected_data_type, i, curr_data_type)))
                     ) 

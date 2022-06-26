@@ -3,15 +3,15 @@ use crate::lexer::token::CoreToken;
 use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
 use std::rc::Rc;
 
-pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, usize)), ParseError> {
     let mut errors_vec: Vec<ParseError> = vec![];
     let curr_lookahead = parser.get_lookahead();
     match parser.expr() {
         Ok((response, has_float)) => {
             if has_float {
-                return Ok((response, Rc::new(String::from("float"))))
+                return Ok((response, (Rc::new(String::from("float")), parser.get_index())))
             } else {
-                return Ok((response, Rc::new(String::from("int"))))
+                return Ok((response, (Rc::new(String::from("int")), parser.get_index())))
             }
         },
         Err(err) => {
@@ -21,7 +21,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
     }
     match parser.bexpr() {
         Ok(response) => {
-            return Ok((response, Rc::new(String::from("bool"))))
+            return Ok((response, (Rc::new(String::from("bool")), parser.get_index())))
         },
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
@@ -29,7 +29,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
         }
     }
     match parser.expect("literal") {
-        Ok((response, _)) => return Ok((response, Rc::new(String::from("string")))),
+        Ok((response, _)) => return Ok((response, (Rc::new(String::from("string")), parser.get_index()))),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
             errors_vec.push(err)
@@ -40,7 +40,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
             if let Some(data_type) = data_type {
                 if parser.check_next_token(")")
                 || parser.check_next_token(",") {
-                    return Ok((response, data_type))
+                    return Ok((response, (data_type, parser.get_index())))
                 } else {
                     let line_number = parser.get_curr_line_number();
                     let index = parser.get_index();
@@ -71,8 +71,8 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
     Err(aggregate_errors(errors_vec))
 }
 
-pub fn params(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<Rc<String>>), ParseError> {
-    let mut params_data_type_vec: Vec<Rc<String>> = vec![];
+pub fn params(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<(Rc<String>, usize)>), ParseError> {
+    let mut params_data_type_vec: Vec<(Rc<String>, usize)> = vec![];
     match parser.get_curr_core_token() {
         CoreToken::RPAREN => {
             // let (response, line_number) = parser.expect(")")?;
