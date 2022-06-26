@@ -88,29 +88,26 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                     return Ok((response, true))
                 } else {
                     let line_number = parser.get_curr_line_number();
+                    let index = parser.get_index();
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                        line_number,
-                        parser.get_code_line(line_number),
-                        parser.get_index(), 
+                        parser.get_code_line(line_number, index),
                         format!("expected value with type 'int' or 'float' in an expression, got type '{}'", data_type)))
                     );
                 }
             } else {
                 let line_number = parser.get_curr_line_number();
+                let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                    line_number,
-                    parser.get_code_line(line_number),
-                    parser.get_index(), 
+                    parser.get_code_line(line_number, index),
                     String::from("value with type 'None' found in expression")))
                 );
             }
         },
         _ => {
             let line_number = parser.get_curr_line_number();
+            let index = parser.get_index();
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-            line_number,
-            parser.get_code_line(line_number),
-            parser.get_index(), 
+            parser.get_code_line(line_number, index), 
             format!("expected '(', 'int', 'float', '+', '-' or an identifier, got '{}'", 
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
@@ -166,12 +163,11 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
                         return Ok((response, false))
                     } else {
                         let line_number = parser.get_curr_line_number();
+                        let index = parser.get_index();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            line_number,
-                            parser.get_code_line(line_number),
-                             parser.get_index(),
+                            parser.get_code_line(line_number, index),
                             format!(
-                            "expected a ')', '+', '-', '*', '/', '==', '>=', '>', '<=', '<', 'or', 'and', ',' or 'newline', got '{}'", 
+                            "expected ')', '+', '-', '*', '/', '==', '>=', '>', '<=', '<', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);
@@ -242,12 +238,11 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
                         return Ok((response, false))
                     } else {
                         let line_number = parser.get_curr_line_number();
+                        let index = parser.get_index();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            line_number, 
-                            parser.get_code_line(line_number),
-                            parser.get_index(),
+                            parser.get_code_line(line_number, index),
                             format!(
-                            "expected a ')', '+', '-', '*', '/' '==', '>=', '>', '<=', '<', 'or', 'and', ',' or 'newline', got '{}'", 
+                            "expected ')', '+', '-', '*', '/' '==', '>=', '>', '<=', '<', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);

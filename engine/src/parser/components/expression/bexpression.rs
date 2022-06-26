@@ -46,10 +46,9 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         },
         _ => {
             let line_number = parser.get_curr_line_number();
+            let index = parser.get_index();
             Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-            line_number,
-            parser.get_code_line(line_number),
-            parser.get_index(), 
+            parser.get_code_line(line_number, index),
             String::from(
                 "got a numeric expression inside a boolean expression\n    numeric expression can only be paired using '==', '>=', '>', '<=' or '<' inside a boolean expression")))
             )
@@ -149,29 +148,26 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                     return Ok(response)
                 } else {
                     let line_number = parser.get_curr_line_number();
+                    let index = parser.get_index();
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                        line_number,
-                        parser.get_code_line(line_number),
-                        parser.get_index(), 
+                        parser.get_code_line(line_number, index),
                         format!("expected value with type 'bool' in a boolean expression, got type '{}'", data_type)))
                     );
                 }
             } else {
                 let line_number = parser.get_curr_line_number();
+                let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                    line_number,
-                    parser.get_code_line(line_number),
-                    parser.get_index(), 
+                    parser.get_code_line(line_number, index), 
                     String::from("value with type 'None' found in boolean expression")))
                 );
             }
         },
         _ => {
             let line_number = parser.get_curr_line_number();
+            let index = parser.get_index();
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-            line_number,
-            parser.get_code_line(line_number),
-            parser.get_index(),
+            parser.get_code_line(line_number, index),
             format!("expected '(', 'True', 'False', 'not' or an identifier, got '{}'",
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
@@ -225,11 +221,10 @@ pub fn andtive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                         return Ok(response)
                     } else {
                         let line_number = parser.get_curr_line_number();
+                        let index = parser.get_index();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            line_number, 
-                            parser.get_code_line(line_number),
-                            parser.get_index(),
-                            format!("expected a ')', 'or', 'and', ',' or 'newline', got '{}'", 
+                            parser.get_code_line(line_number, index),
+                            format!("expected ')', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);
@@ -275,11 +270,10 @@ pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                         return Ok(response)
                     } else {
                         let line_number = parser.get_curr_line_number();
+                        let index = parser.get_index();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            line_number,
-                            parser.get_code_line(line_number), 
-                            parser.get_index(),
-                            format!("expected a ')', 'or', 'and', ',' or 'newline', got '{}'", 
+                            parser.get_code_line(line_number, index),
+                            format!("expected ')', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);

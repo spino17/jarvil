@@ -43,10 +43,9 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
                     return Ok((response, data_type))
                 } else {
                     let line_number = parser.get_curr_line_number();
+                    let index = parser.get_index();
                     let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                        line_number, 
-                        parser.get_code_line(line_number),
-                        parser.get_index(), 
+                        parser.get_code_line(line_number, index),
                         format!("expected ',' or ')', got '{}'", 
                         PackratParser::parse_for_err_message(parser.get_next_token_name().to_string())))
                     );
@@ -55,10 +54,9 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
                 }
             } else {
                 let line_number = parser.get_curr_line_number();
+                let index = parser.get_index();
                 let err = ParseError::SEMANTIC_ERROR(SemanticError::new(
-                    line_number, 
-                    parser.get_code_line(line_number),
-                    parser.get_index(), 
+                    parser.get_code_line(line_number, index),
                     String::from("argument with type 'None' found"))
                 );
                 parser.reset_lookahead(curr_lookahead);
@@ -100,10 +98,9 @@ pub fn params(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<Rc
             Ok((response, line_number, params_data_type_vec))
         }
         _ => {
+            let index = parser.get_index();
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                line_number, 
-                parser.get_code_line(line_number),
-                parser.get_index(), 
+                parser.get_code_line(line_number, index),
                 format!("expected ',' or ')', got '{}'", 
                 PackratParser::parse_for_err_message(token_name.to_string()))))
             )

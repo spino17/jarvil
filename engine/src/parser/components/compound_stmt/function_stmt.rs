@@ -18,12 +18,11 @@ pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec
                         return Ok((response, vec![]))
                     } else {
                         let line_number = parser.get_curr_line_number();
+                        let index = parser.get_index();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            line_number, 
-                            parser.get_code_line(line_number),
-                            parser.get_index(),
+                            parser.get_code_line(line_number, index),
                             format!(
-                            "expected a ')', got '{}'", PackratParser::parse_for_err_message(
+                            "expected ',' or ')', got '{}'", PackratParser::parse_for_err_message(
                                 parser.get_next_token_name().to_string())
                             )
                         ));
@@ -97,10 +96,9 @@ pub fn function_declaration(parser: &mut PackratParser) -> Result<ParseSuccess, 
         },
         _ => {
             let line_number = parser.get_curr_line_number();
+            let index = parser.get_index();
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-            line_number,
-            parser.get_code_line(line_number),
-            parser.get_index(),
+            parser.get_code_line(line_number, index),
             format!("expected '(' or an identifier, got '{}'",
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }

@@ -46,12 +46,11 @@ pub fn type_decl_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseE
         },
         _ => {
             let line_number = parser.get_curr_line_number();
+            let index = parser.get_index();
             let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                line_number,
-                parser.get_code_line(line_number),
-                parser.get_index(),
+                parser.get_code_line(line_number, index),
                 format!(
-                "expected a 'newline' or '(', got '{}'", PackratParser::parse_for_err_message(
+                "expected 'newline' or '(', got '{}'", PackratParser::parse_for_err_message(
                     parser.get_next_token_name().to_string())
                 )
             ));

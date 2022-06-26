@@ -69,13 +69,14 @@ impl PackratParser {
         self.indent_level = reset_indent;
     }
 
-    pub fn get_code_line(&self, line_number: usize) -> (Rc<String>, usize) {
-        if self.get_index() == &self.code_lines[line_number - 1].1 - 1 {
-            let (s, line_start_index) = &self.code_lines[line_number - 2];
-            (s.clone(), *line_start_index)
-        } else {
-            let (s, line_start_index) = &self.code_lines[line_number - 1];
-            (s.clone(), *line_start_index)
+    pub fn get_code_line(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
+        // let curr_line_number = self.get_curr_line_number();
+        loop {
+            let (s, line_start_index) = &self.code_lines[curr_line_number - 1];
+            if index >= *line_start_index {
+                return (s.clone(), *line_start_index, curr_line_number, index)
+            }
+            curr_line_number = curr_line_number - 1;
         }
     }
 
@@ -236,11 +237,10 @@ impl PackratParser {
                 match self.env.get(&token_value.0) {
                     Some(symbol_data) => Ok(symbol_data),
                     None => {
+                        let index = self.get_index();
                         let err_message = format!("identifier '{}' is not declared in the current scope", token_value.0);
                         Err(SemanticError::new(
-                            line_number,
-                            self.get_code_line(line_number),
-                            self.get_index(),
+                            self.get_code_line(line_number, index),
                             err_message)
                         )
                     }
@@ -278,10 +278,9 @@ impl PackratParser {
                 possible_err: None,
             }, token.line_number))
         } else {
+            let index = self.get_index();
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                self.get_index(), 
+                self.get_code_line(token.line_number, index),
                 format!(
                 "expected '{}', got '{}'",
                 PackratParser::parse_for_err_message(String::from(symbol)), 
@@ -302,10 +301,10 @@ impl PackratParser {
                 }, token.line_number, TokenValue(token_value.0.clone())))
             },
             _ => {
+                let index = self.get_index();
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                    token.line_number,
-                    self.get_code_line(token.line_number),
-                    self.get_index(), format!(
+                    self.get_code_line(token.line_number, index),
+                    format!(
                     "expected an identifier, got '{}'", 
                     PackratParser::parse_for_err_message(token.name.to_string()))))
                 )
@@ -325,12 +324,14 @@ impl PackratParser {
                     possible_err: None,
                 }, token.line_number, TokenValue(token_value.0.clone()), symbol_data))
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                 self.get_index(),
-                  format!("expected an identifier, got '{}'",
-                  PackratParser::parse_for_err_message( token.name.to_string())))))
+            _ => {
+                let index = self.get_index();
+                Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    self.get_code_line(token.line_number, index),
+                    format!("expected an identifier, got '{}'",
+                    PackratParser::parse_for_err_message( token.name.to_string()))))
+                )
+            }
         }
     }
 
@@ -348,21 +349,22 @@ impl PackratParser {
                         possible_err: None,
                     }, token.line_number, TokenValue(token_value.0.clone()), data_type, is_init))
                 } else {
+                    let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                        token.line_number,
-                        self.get_code_line(token.line_number),
-                        self.get_index(), 
+                        self.get_code_line(token.line_number, index),
                         format!("expected an identifier, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
                 }
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                 self.get_index(),
-                  format!("expected an identifier, got '{}'",
-                  PackratParser::parse_for_err_message( token.name.to_string())))))
+            _ => {
+                let index = self.get_index();
+                Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    self.get_code_line(token.line_number, index),
+                    format!("expected an identifier, got '{}'",
+                    PackratParser::parse_for_err_message( token.name.to_string()))))
+                )
+            }
         }
     }
 
@@ -387,20 +389,20 @@ impl PackratParser {
                         possible_err: None,
                     }, token.line_number, TokenValue(token_value.0.clone()), Some(response)))
                 } else {
+                    let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                        token.line_number, 
-                        self.get_code_line(token.line_number),
-                        self.get_index(),
+                        self.get_code_line(token.line_number, index),
                         format!("expected a type, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone()))))
                 }
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                 self.get_index(),
-                  format!("expected a type, got '{}'", 
-                  PackratParser::parse_for_err_message( token.name.to_string())))))
+            _ => {
+                let index = self.get_index();
+                Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    self.get_code_line(token.line_number, index),
+                    format!("expected a type, got '{}'", 
+                    PackratParser::parse_for_err_message( token.name.to_string())))))
+            }
         }
     }
     /*
@@ -459,21 +461,21 @@ impl PackratParser {
                         possible_err: None,
                     }, token.line_number, TokenValue(token_value.0.clone()), lambda_data.params, lambda_data.return_type))
                 } else {
+                    let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                        token.line_number, 
-                        self.get_code_line(token.line_number),
-                        self.get_index(), 
+                        self.get_code_line(token.line_number, index),
                         format!("expected a function or an identifier with lambda type, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
                 }
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                 self.get_index(),
-                  format!("'{}' is not callable",
-                  PackratParser::parse_for_err_message( token.name.to_string())))))
+            _ => {
+                let index = self.get_index();
+                Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    self.get_code_line(token.line_number, index),
+                    format!("'{}' is not callable",
+                    PackratParser::parse_for_err_message( token.name.to_string())))))
+            }
         }
     }
 
@@ -493,10 +495,10 @@ impl PackratParser {
                             possible_err: None,
                         }, indent_spaces))
                     } else {
+                        let index = self.get_index();
                         let err =ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            token.line_number,
-                            self.get_code_line(token.line_number),
-                            self.get_index(), format!(
+                            self.get_code_line(token.line_number, index),
+                            format!(
                                 "incorrectly indented statement\n    expected indent of {} spaces, got {} spaces", 
                                 expected_indent_spaces, indent_spaces)));
                         return Ok((ParseSuccess{
