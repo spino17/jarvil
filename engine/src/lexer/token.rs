@@ -29,6 +29,7 @@ pub enum CoreToken {
     TYPE_KEYWORD,       // 'type'
     TYPE(TokenValue),
     NEW,                // 'new'
+    LET,                // 'let'
     INTERFACE_KEYWORD,  // 'interface'
 
     // bitwise operators
