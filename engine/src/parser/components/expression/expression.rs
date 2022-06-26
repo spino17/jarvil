@@ -80,6 +80,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                     return Err(err);
                 }
             }*/
+            let index = parser.get_index();
             let (response, data_type) = parser.atom()?;
             if let Some(data_type) = data_type {
                 if data_type.as_ref().eq("int") {
@@ -88,7 +89,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                     return Ok((response, true))
                 } else {
                     let line_number = parser.get_curr_line_number();
-                    let index = parser.get_index();
+                    // let index = parser.get_index();
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                         parser.get_code_line(line_number, index),
                         format!("expected value with type 'int' or 'float' in an expression, got type '{}'", data_type)))
@@ -96,7 +97,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                 }
             } else {
                 let line_number = parser.get_curr_line_number();
-                let index = parser.get_index();
+                // let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
                     String::from("value with type 'None' found in expression")))

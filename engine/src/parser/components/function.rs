@@ -6,12 +6,13 @@ use std::rc::Rc;
 pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, usize)), ParseError> {
     let mut errors_vec: Vec<ParseError> = vec![];
     let curr_lookahead = parser.get_lookahead();
+    let index = parser.get_index();
     match parser.expr() {
         Ok((response, has_float)) => {
             if has_float {
-                return Ok((response, (Rc::new(String::from("float")), parser.get_index())))
+                return Ok((response, (Rc::new(String::from("float")), index)))
             } else {
-                return Ok((response, (Rc::new(String::from("int")), parser.get_index())))
+                return Ok((response, (Rc::new(String::from("int")), index)))
             }
         },
         Err(err) => {
@@ -21,7 +22,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
     }
     match parser.bexpr() {
         Ok(response) => {
-            return Ok((response, (Rc::new(String::from("bool")), parser.get_index())))
+            return Ok((response, (Rc::new(String::from("bool")), index)))
         },
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
@@ -29,7 +30,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
         }
     }
     match parser.expect("literal") {
-        Ok((response, _)) => return Ok((response, (Rc::new(String::from("string")), parser.get_index()))),
+        Ok((response, _)) => return Ok((response, (Rc::new(String::from("string")), index))),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
             errors_vec.push(err)
@@ -40,7 +41,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
             if let Some(data_type) = data_type {
                 if parser.check_next_token(")")
                 || parser.check_next_token(",") {
-                    return Ok((response, (data_type, parser.get_index())))
+                    return Ok((response, (data_type, index)))
                 } else {
                     let line_number = parser.get_curr_line_number();
                     let index = parser.get_index();

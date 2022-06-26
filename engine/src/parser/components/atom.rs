@@ -16,23 +16,25 @@ pub fn atom_expr_bexpr_literal(parser: &mut PackratParser) -> Result<(ParseSucce
 
 pub fn atom_index_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
     parser.expect("[")?;
+    let index = parser.get_index();
     let (_, index_data_type) = parser.atom_expr_bexpr_literal()?;
     let (response, _) = parser.expect("]")?;
-    Ok((response, CompoundPart::INDEX_TYPE((index_data_type, parser.get_index()))))
+    Ok((response, CompoundPart::INDEX_TYPE((index_data_type, index))))
 }
 
 pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
     parser.expect(".")?;
+    let index = parser.get_index();
     let (response, _, token_value) = parser.expect_any_id()?;
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             parser.expect("(")?;
             let (_, _, params_data_type_vec) = parser.params()?;
             let (response, _) = parser.expect(")")?;
-            Ok((response, CompoundPart::METHOD_DATA((token_value.0.clone(), params_data_type_vec, parser.get_index()))))
+            Ok((response, CompoundPart::METHOD_DATA((token_value.0.clone(), params_data_type_vec, index))))
         },
         _ => {
-            Ok((response, CompoundPart::PROPERTRY_NAME((token_value.0.clone(), parser.get_index()))))
+            Ok((response, CompoundPart::PROPERTRY_NAME((token_value.0.clone(), index))))
         }
     }
 }

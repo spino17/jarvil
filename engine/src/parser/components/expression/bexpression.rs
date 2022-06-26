@@ -142,13 +142,14 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                     return Err(err);
                 }
             }*/
+            let index = parser.get_index();
             let (response, data_type) = parser.atom()?;
             if let Some(data_type) = data_type {
                 if data_type.as_ref().eq("bool") {
                     return Ok(response)
                 } else {
                     let line_number = parser.get_curr_line_number();
-                    let index = parser.get_index();
+                    // let index = parser.get_index();
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                         parser.get_code_line(line_number, index),
                         format!("expected value with type 'bool' in a boolean expression, got type '{}'", data_type)))
@@ -156,7 +157,7 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                 }
             } else {
                 let line_number = parser.get_curr_line_number();
-                let index = parser.get_index();
+                // let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index), 
                     String::from("value with type 'None' found in boolean expression")))
