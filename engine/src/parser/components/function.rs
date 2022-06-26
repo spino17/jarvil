@@ -39,7 +39,8 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
     match parser.atom() {
         Ok((response, data_type)) => {
             if let Some(data_type) = data_type {
-                if parser.check_next_token(")")
+                if parser.check_next_token("\n")
+                || parser.check_next_token(")")
                 || parser.check_next_token(",") {
                     return Ok((response, (data_type, index)))
                 } else {
@@ -47,7 +48,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
                     let index = parser.get_index();
                     let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                         parser.get_code_line(line_number, index),
-                        format!("expected ',' or ')', got '{}'", 
+                        format!("expected 'newline', ',' or ')', got '{}'",
                         PackratParser::parse_for_err_message(parser.get_next_token_name().to_string())))
                     );
                     parser.reset_lookahead(curr_lookahead);
