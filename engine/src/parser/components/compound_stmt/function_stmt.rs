@@ -49,6 +49,7 @@ pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<St
 
 pub fn function_input_output(parser: &mut PackratParser) 
 -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>, bool, Option<Rc<String>>, Option<ParseError>), ParseError> {
+    // TODO - check for any generic symbols inside '<' '>'
     parser.expect("(")?;
     let mut params = vec![];
     if !parser.check_next_token(")") {
