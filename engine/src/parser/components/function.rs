@@ -77,7 +77,6 @@ pub fn params(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<(R
     let mut params_data_type_vec: Vec<(Rc<String>, usize)> = vec![];
     match parser.get_curr_core_token() {
         CoreToken::RPAREN => {
-            // let (response, line_number) = parser.expect(")")?;
             return Ok((ParseSuccess{
                 lookahead: parser.get_lookahead(),
                 possible_err: None,

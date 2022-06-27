@@ -15,7 +15,6 @@ pub fn block(parser: &mut PackratParser, params: Option<&Vec<(Rc<String>, Rc<Str
     loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
         if let Some(err) = response.possible_err {
-            // check here whether block got over! by comparing the spaces found and expected
             let indent_factor = indent_spaces / indent_spaces_unit as i64;
             let indent_remainder = indent_spaces - indent_factor * indent_spaces_unit;
             if indent_remainder > 0 {
@@ -63,7 +62,6 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, FxHashM
     loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
         if let Some(err) = response.possible_err {
-            // check here whether block got over! by comparing the spaces found and expected
             let indent_factor = indent_spaces / indent_spaces_unit as i64;
             let indent_remainder = indent_spaces - indent_factor * indent_spaces_unit;
             if indent_remainder > 0 {

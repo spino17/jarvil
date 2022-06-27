@@ -1,13 +1,10 @@
 use std::rc::Rc;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::ParseError;
-use crate::lexer::token::{CoreToken, TokenValue};
+use crate::lexer::token::{CoreToken};
 use crate::errors::SyntaxError;
 
 pub fn struct_stmt(parser: &mut PackratParser, name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
-    // parser.expect("type")?;
-    // let (_, _, token_value) = parser.expect_any_id()?;
-    // parser.expect(":")?;
     let (response, fields_map) = parser.struct_block()?;
     parser.set_user_defined_struct_type_to_scope(name, &Rc::new(fields_map));
     Ok(response)

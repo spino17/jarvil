@@ -70,7 +70,6 @@ impl PackratParser {
     }
 
     pub fn get_code_line(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
-        // let curr_line_number = self.get_curr_line_number();
         loop {
             let (s, line_start_index) = &self.code_lines[curr_line_number - 1];
             if index >= *line_start_index {
@@ -82,13 +81,6 @@ impl PackratParser {
 
     pub fn get_env(&self) -> Env {
         Env(self.env.0.clone())
-    }
-
-    pub fn get_parent_env(&self, env: &Env) -> Option<Env> {
-        match &env.0.borrow().parent_env {
-            Some(parent_env) => Some(Env(parent_env.0.clone())),
-            None => None, 
-        }
     }
 
     pub fn reset_env(&mut self, reset_env: &Env) {
@@ -165,13 +157,7 @@ impl PackratParser {
     }
 
     pub fn get_curr_line_number(&self) -> usize {
-        // self.ignore_blanks();
         self.token_vec[self.lookahead].line_number
-    }
-
-    pub fn get_curr_token_value(&mut self) -> Option<TokenValue> {
-        self.ignore_blanks();
-        self.token_vec[self.lookahead].get_value()
     }
 
     pub fn get_curr_core_token(&mut self) -> &CoreToken {
@@ -405,39 +391,6 @@ impl PackratParser {
             }
         }
     }
-    /*
-    pub fn expect_function(&mut self)
-    -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
-        self.ignore_blanks();
-        let token = &self.token_vec[self.lookahead];
-        match &token.core_token {
-            CoreToken::IDENTIFIER(token_value) => {
-                let symbol_data = self.check_declaration(&token)?;
-                if symbol_data.is_function() {
-                    self.lookahead = self.lookahead + 1;
-                    let (params, return_type) = symbol_data.get_function_data();
-                    Ok((ParseSuccess{
-                        lookahead: self.lookahead,
-                        possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), params, return_type))
-                } else {
-                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                        token.line_number, 
-                        self.get_code_line(token.line_number),
-                        self.get_index(), 
-                        format!("expected a function, got a {} '{}'", 
-                        symbol_data.get_type_of_identifier(), token_value.0.clone())))
-                    )
-                }
-            },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                 self.get_index(),
-                  format!("expected a function, got '{}'", 
-                  PackratParser::parse_for_err_message( token.name.to_string())))))
-        }
-    }*/
 
     pub fn expect_callable(&mut self)
     -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
@@ -453,8 +406,7 @@ impl PackratParser {
                         lookahead: self.lookahead,
                         possible_err: None,
                     }, token.line_number, TokenValue(token_value.0.clone()), params, return_type))
-                }
-                if let Some(lambda_data) = self.has_lambda_type(&symbol_data) {
+                } else if let Some(lambda_data) = self.has_lambda_type(&symbol_data) {
                     self.lookahead = self.lookahead + 1;
                     return Ok((ParseSuccess{
                         lookahead: self.lookahead,
@@ -734,8 +686,8 @@ impl PackratParser {
     }
 
     pub fn check_atom_factor(&mut self, 
-        data_type: Option<Rc<String>>, is_init: bool) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
-        components::atom::check_atom_factor(self, data_type, is_init)
+        data_type: Option<Rc<String>>) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
+        components::atom::check_atom_factor(self, data_type)
     }
 
     pub fn params(&mut self) -> Result<(ParseSuccess, usize, Vec<(Rc<String>, usize)>), ParseError> {

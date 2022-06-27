@@ -111,37 +111,6 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
             }
         },
         CoreToken::IDENTIFIER(_) => {
-            /*
-            match parser.expect_id() {
-                Ok((response, line_number, _, data_type, is_init)) => {
-                    if !is_init {
-                        if let Some(token_value) = token_value {
-                            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                                line_number,
-                                parser.get_code_line(line_number),
-                                parser.get_index(), format!(
-                                    "identifier '{}' is not initialized", token_value.0.clone())))
-                                )
-                        } else {
-                            unreachable!("identifier token must have a value")
-                        }
-                    }
-                    if data_type.to_string().eq("bool") {
-                        return Ok(response);
-                    } else {
-                        return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                            line_number,
-                            parser.get_code_line(line_number),
-                            parser.get_index(), format!(
-                                "expected an identifier with type 'bool' in an boolean expression, got type '{}'", 
-                                data_type)))
-                            );
-                    }
-                },
-                Err(err) => {
-                    return Err(err);
-                }
-            }*/
             let index = parser.get_index();
             let (response, data_type) = parser.atom()?;
             if let Some(data_type) = data_type {
@@ -149,7 +118,6 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                     return Ok(response)
                 } else {
                     let line_number = parser.get_curr_line_number();
-                    // let index = parser.get_index();
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                         parser.get_code_line(line_number, index),
                         format!("expected value with type 'bool' in a boolean expression, got type '{}'", data_type)))
@@ -157,7 +125,6 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                 }
             } else {
                 let line_number = parser.get_curr_line_number();
-                // let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index), 
                     String::from("value with type 'None' found in boolean expression")))
