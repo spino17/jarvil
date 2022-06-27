@@ -66,15 +66,8 @@ enum MetaData {
 pub struct SymbolData(Rc<RefCell<MetaData>>);
 
 impl SymbolData {
-    // identifier specific methods
-    /*
-    pub fn is_id(&self) -> bool {
-        match *self.0.borrow() {
-            MetaData::IDENTIFIER(_) => true,
-            _ => false,
-        }
-    }*/
 
+    // identifier specific methods
     pub fn set_init(&self, is_init: bool) {
         match &mut *self.0.borrow_mut() {
             MetaData::IDENTIFIER(data) => data.is_init = is_init,
@@ -83,15 +76,6 @@ impl SymbolData {
             }
         }
     }
-    /*
-    pub fn is_init(&self) -> bool {
-        match &*self.0.borrow() {
-            MetaData::IDENTIFIER(data) => data.is_init,
-            _ => {
-                true
-            }
-        }
-    }*/
     
     pub fn get_type(&self) -> Rc<String> {
         match &*self.0.borrow() {
@@ -101,13 +85,6 @@ impl SymbolData {
             }
         }
     }
-    /*
-    pub fn type_eq(&self, data_type: &str) -> bool {
-        match &*self.0.borrow() {
-            MetaData::IDENTIFIER(data) => data.data_type.to_string().eq(data_type),
-            _ => false
-        }
-    }*/
 
     pub fn get_id_data(&self) -> Option<(Rc<String>, bool)> {
         match &*self.0.borrow() {
@@ -121,13 +98,6 @@ impl SymbolData {
     }
 
     // type specific methods
-    /*
-    pub fn is_type(&self) -> bool {
-        match *self.0.borrow() {
-            MetaData::USER_DEFINED_TYPE(_) => true,
-            _ => false,
-        }
-    }*/
     pub fn get_user_defined_type_data(&self) -> Option<UserDefinedTypeData> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
@@ -221,14 +191,6 @@ impl SymbolData {
     }
 
     // function specific methods
-    /*
-    pub fn is_function(&self) -> bool {
-        match *self.0.borrow() {
-            MetaData::FUNCTION(_) => true,
-            _ => false,
-        }
-    }*/
-
     pub fn get_function_data(&self) -> Option<FunctionData> {
         match &*self.0.borrow() {
             MetaData::FUNCTION(data) => {

@@ -4,7 +4,7 @@ use crate::parser::packrat::ParseSuccess;
 use crate::lexer::token::CoreToken;
 
 pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    let (_, line_number, data_type, token_value) = parser.l_decl()?;
+    let (_, line_number, data_type, token_value) = parser.param_decl()?;
     let rule_index;
     if data_type.0.as_ref().eq("int") {
         rule_index = 0;
