@@ -46,53 +46,47 @@ Below is the complete grammer of the language with a custom (mostly copied from 
     # python style of block
     block: NEWLINE (INDENT stmt)*
 
-    atom: id ['(' params ')'] atom_factor # semantic check - indexable with key of type C or propertry with name of id
+    atom: (id | id '(' [params] ')' ) atom_factor
     atom_factor:
-        | ('[' C ']' | '.' id ['(' params ')']) atom_factor
+        | ('[' params ']' | '.' id ['(' [params] ')']) atom_factor
         | ()
 
-    C:
-        | expr              # semantic check - index key is int or float
-        | bexpr             # semantic check - index key is bool
-        | literal           # semantic check - index key is string
-        | atom              # semantic check - index key with type of atom
-
-    type:
-        | TYPE              # type token for in-built types
-        | id                # semantic check - id is a user-defined type
-
-    stmt: 
-        | compound_stmt
-        | simple_stmt NEWLINE
-
-    simple_stmt:
-        | decls             # semantic check - both side have matched types
-        | assign            # semantic check - both side have matched types
-        | id '(' params ')' # semantic check - number of params and their datatypes match the definition of the function or lambda
-        | # calling a function, break, continue, return
-
-    r_assign:
+    param:
         | expr
         | bexpr
         | literal
         | atom
 
     params:
-        | r_asssign ',' params
-        | r_assign
+        | param ',' params
+        | param
+
+    type:
+        | TYPE
+        | id
+
+    stmt: 
+        | compound_stmt
+        | simple_stmt NEWLINE
+
+    simple_stmt:
+        | decls
+        | assign
+        | id '(' [params] ')'
+        | # calling a function, break, continue, return
 
     decls:
         | decl ',' decls
         | decl
 
     decl:
-        | l_decl ['=' r_assign]
+        | l_decl ['=' param]
 
     l_decl:
         | type id
 
     assign:
-        | atom '=' r_assign
+        | atom '=' param
 
     compound_stmt:
         | type_decl_stmt
@@ -103,18 +97,16 @@ Below is the complete grammer of the language with a custom (mostly copied from 
 
     type_decl_stmt:
         | 'type' id ':' struct_block
-        | 'type' id ':' '(' optparams ')' ['->' id] NEWLINE
+        | 'type' id ':' '(' [optparams] ')' ['->' id] NEWLINE
 
     struct_block:
         | (INDENT l_decl NEWLINE)*
 
-    function_stmt: 'def' id '(' optparams ')' ['->' id] ':' block
+    function_stmt: 'def' id '(' [optparams] ')' ['->' id] ':' block
 
     optparams:
-        | param ',' optparams
-        | param
-
-    param: type id
+        | l_decl ',' optparams
+        | l_decl
 
     if_stmt:
         | 'if' bexpr ':' block elif_stmt
@@ -150,7 +142,7 @@ Below is the complete grammer of the language with a custom (mostly copied from 
         | '(' expr ')'
         | '+' factor
         | '-' factor
-        | atom              # semantic check - type of atom is for valid '+', '-', '*', '/' operations
+        | atom
         | int
         | float
 
@@ -178,6 +170,6 @@ Below is the complete grammer of the language with a custom (mostly copied from 
         | 'not' bfactor
         | expr comp_op expr
         | '(' bexpr ')'
-        | atom              # semantic check - type of atom is bool
+        | atom
         | 'True'
         | 'False'
