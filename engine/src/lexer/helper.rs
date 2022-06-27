@@ -143,7 +143,9 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             return Ok((CoreToken::SLASH, String::from("/")));
         },
         1 => {
-            Err(LexicalError::new(*line_number, String::from("no newline terminal found for line comment")))
+            *begin_lexeme = forward_lexeme;
+            return Ok((CoreToken::SINGLE_LINE_COMMENT, String::from("single_comment")));
+            // Err(LexicalError::new(*line_number, String::from("no newline terminal found for line comment")))
         },
         2 => {
             Err(LexicalError::new(*line_number, String::from("no closing tag found for block comment")))
@@ -175,7 +177,9 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize,
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    Err(LexicalError::new(*line_number, String::from("no newline terminal found for line comment")))
+    *begin_lexeme = forward_lexeme;
+    return Ok((CoreToken::SINGLE_LINE_COMMENT, String::from("single_comment")))
+    // Err(LexicalError::new(*line_number, String::from("no newline terminal found for line comment")))
 }
 
 // = -> =, ==
