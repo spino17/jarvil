@@ -13,13 +13,15 @@ pub fn try_compound_stmt(parser: &mut PackratParser) -> Result<(Option<ParseSucc
             }
         },
         CoreToken::DEF => {
-            match parser.function_stmt() {
-                Ok(response) => return Ok((Some(response), true)),
+            match parser.function_declaration() {
+                Ok(response) => {
+                    return Ok((Some(response), true))
+                },
                 Err(err) => {
                     return Err(err);
                 }
             }
-        }
+        },
         _ => {
             return Ok((None, false))
         }

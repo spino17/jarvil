@@ -21,7 +21,7 @@ pub fn r_asssign(parser: &mut PackratParser,
                             parser.get_code_line(line_number),
                             parser.get_index(), 
                             String::from(
-                                "mismatched types\nidentifier declared with type 'int', got assigned with value of type 'float'")))
+                                "mismatched types\n    identifier declared with type 'int', got assigned with value of type 'float'")))
                             )
                     }
                     return Ok(response)
@@ -41,7 +41,7 @@ pub fn r_asssign(parser: &mut PackratParser,
                             parser.get_code_line(line_number),
                             parser.get_index(), 
                             String::from(
-                                "mismatched types\nidentifier declared with type 'float', got assigned with value of type 'int'")))
+                                "mismatched types\n    identifier declared with type 'float', got assigned with value of type 'int'")))
                             )
                     }
                     return Ok(response)

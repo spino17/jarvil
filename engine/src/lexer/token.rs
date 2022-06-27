@@ -159,7 +159,7 @@ impl Token {
                 (CoreToken::TAB, String::from("\t"))
             },
             '\n'        =>      {
-                code_lines.push((Rc::new(code[*line_start_index..*begin_lexeme].iter().collect()), *line_start_index));
+                code_lines.push((Rc::new(code[*line_start_index..*begin_lexeme+1].iter().collect()), *line_start_index));
                 *line_start_index = *begin_lexeme + 1;
                 *begin_lexeme = *begin_lexeme + 1;
                 *line_number = *line_number + 1;

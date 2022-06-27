@@ -20,7 +20,6 @@ pub fn factor_minus(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), 
 }
 
 pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
-    let token_value = parser.get_curr_token_value();
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             return parser.factor_expr_in_parenthesis();
@@ -46,8 +45,9 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
         },
         CoreToken::MINUS => {
             return parser.factor_minus();
-        }
+        },
         CoreToken::IDENTIFIER(_) => {
+            /*
             match parser.expect_id() {
                 Ok((response, line_number, _, data_type, is_init)) => {
                     if !is_init {
@@ -79,6 +79,30 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                 Err(err) => {
                     return Err(err);
                 }
+            }*/
+            let (response, data_type) = parser.atom()?;
+            if let Some(data_type) = data_type {
+                if data_type.as_ref().eq("int") {
+                    return Ok((response, false))
+                } else if data_type.as_ref().eq("float") {
+                    return Ok((response, true))
+                } else {
+                    let line_number = parser.get_curr_line_number();
+                    return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                        line_number,
+                        parser.get_code_line(line_number),
+                        parser.get_index(), 
+                        format!("expected value with type 'int' or 'float' in an expression, got type '{}'", data_type)))
+                    );
+                }
+            } else {
+                let line_number = parser.get_curr_line_number();
+                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                    line_number,
+                    parser.get_code_line(line_number),
+                    parser.get_index(), 
+                    String::from("value with type 'None' found in expression")))
+                );
             }
         },
         _ => {

@@ -47,7 +47,7 @@ pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<St
     Ok((response, params))
 }
 
-pub fn function_input_output(parser: &mut PackratParser) 
+pub fn function_input_output(parser: &mut PackratParser)
 -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>, bool, Option<Rc<String>>, Option<ParseError>), ParseError> {
     // TODO - check for any generic symbols inside '<' '>'
     parser.expect("(")?;
@@ -71,7 +71,7 @@ pub fn function_input_output(parser: &mut PackratParser)
     Ok((response, params, is_matched, return_type, err))
 }
 
-pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn function_declaration(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("def")?;
     // TODO - optionally check for some struct attached methods => [type id]
     match parser.get_curr_core_token() {
@@ -93,7 +93,7 @@ pub fn function_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseEr
                 }
             }
             let response = parser.block(Some(&params))?;
-            parser.set_function_to_scope(&token_value, &Rc::new(params), &Rc::new(return_type));
+            parser.set_function_to_scope(&token_value.0, &Rc::new(params), &Rc::new(return_type));
             Ok(response)
         },
         _ => {

@@ -46,7 +46,7 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         },
         _ => {
             let line_number = parser.get_curr_line_number();
-            Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+            Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
             line_number,
             parser.get_code_line(line_number),
             parser.get_index(), 
@@ -78,7 +78,6 @@ pub fn bfactor_not(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
 }
 
 pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    let token_value = parser.get_curr_token_value();
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             match parser.bfactor_expr_in_parenthesis() {
@@ -113,6 +112,7 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
             }
         },
         CoreToken::IDENTIFIER(_) => {
+            /*
             match parser.expect_id() {
                 Ok((response, line_number, _, data_type, is_init)) => {
                     if !is_init {
@@ -142,6 +142,28 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                 Err(err) => {
                     return Err(err);
                 }
+            }*/
+            let (response, data_type) = parser.atom()?;
+            if let Some(data_type) = data_type {
+                if data_type.as_ref().eq("bool") {
+                    return Ok(response)
+                } else {
+                    let line_number = parser.get_curr_line_number();
+                    return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                        line_number,
+                        parser.get_code_line(line_number),
+                        parser.get_index(), 
+                        format!("expected value with type 'bool' in a boolean expression, got type '{}'", data_type)))
+                    );
+                }
+            } else {
+                let line_number = parser.get_curr_line_number();
+                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                    line_number,
+                    parser.get_code_line(line_number),
+                    parser.get_index(), 
+                    String::from("value with type 'None' found in boolean expression")))
+                );
             }
         },
         _ => {

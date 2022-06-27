@@ -11,15 +11,14 @@
 use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
-use crate::lexer::token::TokenValue;
 
 #[derive(Debug)]
 struct GenericSymbolVSBounds(Rc<FxHashMap<Rc<String>, Rc<Vec<Rc<String>>>>>);
 
 #[derive(Debug)]
-struct FunctionData {
-    params: Rc<Vec<(Rc<String>, Rc<String>)>>,
-    return_type: Rc<Option<Rc<String>>>,
+pub struct FunctionData {
+    pub params: Rc<Vec<(Rc<String>, Rc<String>)>>,
+    pub return_type: Rc<Option<Rc<String>>>,
     // generic_symbols: GenericSymbolVSBounds,
 }
 
@@ -32,7 +31,7 @@ struct IdentifierData {
 #[derive(Debug)]
 pub struct StructType {
     fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
-    // methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
+    methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
     // interfaces: Rc<Vec<Rc<String>>>,
     // generic_symbols: GenericSymbolVSBounds,
 }
@@ -68,12 +67,13 @@ pub struct SymbolData(Rc<RefCell<MetaData>>);
 
 impl SymbolData {
     // identifier specific methods
+    /*
     pub fn is_id(&self) -> bool {
         match *self.0.borrow() {
             MetaData::IDENTIFIER(_) => true,
             _ => false,
         }
-    }
+    }*/
 
     pub fn set_init(&self, is_init: bool) {
         match &mut *self.0.borrow_mut() {
@@ -83,7 +83,7 @@ impl SymbolData {
             }
         }
     }
-
+    /*
     pub fn is_init(&self) -> bool {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.is_init,
@@ -91,8 +91,8 @@ impl SymbolData {
                 true
             }
         }
-    }
-
+    }*/
+    
     pub fn get_type(&self) -> Rc<String> {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.data_type.clone(),
@@ -101,71 +101,144 @@ impl SymbolData {
             }
         }
     }
-
+    /*
     pub fn type_eq(&self, data_type: &str) -> bool {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => data.data_type.to_string().eq(data_type),
             _ => false
         }
-    }
+    }*/
 
-    pub fn get_id_data(&self) -> (Rc<String>, bool) {
+    pub fn get_id_data(&self) -> Option<(Rc<String>, bool)> {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => {
-                (data.data_type.clone(), data.is_init)
+                Some((data.data_type.clone(), data.is_init))
             },
             _ => {
-                unreachable!("use this method only for purely identifier tokens")
+                None
             }
         }
     }
 
     // type specific methods
+    /*
     pub fn is_type(&self) -> bool {
         match *self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(_) => true,
             _ => false,
         }
-    }
-
-    pub fn get_user_defined_type_data(&self) -> UserDefinedTypeData {
+    }*/
+    pub fn get_user_defined_type_data(&self) -> Option<UserDefinedTypeData> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
                 match data {
                     UserDefinedTypeData::STRUCT(struct_data) => {
-                        UserDefinedTypeData::STRUCT(StructType{
-                            fields: struct_data.fields.clone()
-                        })
+                        Some(UserDefinedTypeData::STRUCT(StructType{
+                            fields: struct_data.fields.clone(),
+                            methods: struct_data.methods.clone(),
+                        }))
                     },
                     UserDefinedTypeData::LAMBDA(lambda_data) => {
-                        UserDefinedTypeData::LAMBDA(LambdaType(FunctionData{
+                        Some(UserDefinedTypeData::LAMBDA(LambdaType(FunctionData{
                             params: lambda_data.0.params.clone(),
                             return_type: lambda_data.0.return_type.clone(),
-                        }))
+                        })))
                     }
                 }
             },
             _ => {
-                unreachable!("this method should only be called for purely identifier tokens")
+                None
+            }
+        }
+    }
+
+    pub fn has_field_name(&self, field_name: &Rc<String>) -> Option<Rc<String>> {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::STRUCT(data) => {
+                        match data.fields.get(field_name) {
+                            Some(val) => Some(val.clone()),
+                            None => None,
+                        }
+                    },
+                    _ => {
+                        return None
+                    }
+                }
+            },
+            _ => {
+                None
+            }
+        }
+    }
+
+    pub fn has_method_name(&self, method_name: &Rc<String>) -> Option<FunctionData> {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::STRUCT(data) => {
+                        match data.methods.get(method_name) {
+                            Some(val) => {
+                                Some(FunctionData{
+                                    params: val.params.clone(),
+                                    return_type: val.return_type.clone(),
+                                })
+                            },
+                            None => None,
+                        }
+                    },
+                    _ => {
+                        return None
+                    }
+                }
+            },
+            _ => {
+                None
+            }
+        }
+    }
+    
+    pub fn get_lambda_data(&self) -> Option<FunctionData> {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::LAMBDA(data) => {
+                        return Some(FunctionData{
+                            params: data.0.params.clone(),
+                            return_type: data.0.return_type.clone(),
+                        })
+                    },
+                    _ => {
+                        return None
+                    }
+                }
+            },
+            _ => {
+                None
             }
         }
     }
 
     // function specific methods
+    /*
     pub fn is_function(&self) -> bool {
         match *self.0.borrow() {
             MetaData::FUNCTION(_) => true,
             _ => false,
         }
-    }
+    }*/
 
-    pub fn get_function_data(&self) -> (Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>) {
+    pub fn get_function_data(&self) -> Option<FunctionData> {
         match &*self.0.borrow() {
             MetaData::FUNCTION(data) => {
-                (data.params.clone(), data.return_type.clone())
+                Some(FunctionData{
+                    params: data.params.clone(),
+                    return_type: data.return_type.clone(),
+                })
             },
             _ => {
-                unreachable!("use this method only for purely identifier tokens")
+                None
             }
         }
     }
@@ -183,7 +256,7 @@ impl SymbolData {
 #[derive(Debug)]
 pub struct Scope {
     symbol_table: FxHashMap<Rc<String>, SymbolData>,
-    parent_env: Option<Env>,
+    pub parent_env: Option<Env>,
     return_type: Option<Rc<String>>,  // for functional scope - match return type in nested sub blocks checking this global field
 }
 
@@ -224,48 +297,49 @@ impl Env {
         })))
     }
 
-    pub fn set_identifier(&self, token_value: &TokenValue, data_type: &Rc<String>, is_init: bool) {
+    pub fn set_identifier(&self, identifier_name: &Rc<String>, data_type: &Rc<String>, is_init: bool) {
         let meta_data = MetaData::IDENTIFIER(IdentifierData{
             data_type: data_type.clone(),
             is_init,
         });
-        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
-    pub fn set_identifier_init(&self, token_value: &TokenValue) {
-        self.0.borrow_mut().set_init(&token_value.0.clone());
+    pub fn set_identifier_init(&self, identifier_name: &Rc<String>) {
+        self.0.borrow_mut().set_init(identifier_name);
     }
 
-    pub fn set_user_defined_struct_type(&self, token_value: &TokenValue, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
+    pub fn set_user_defined_struct_type(&self, identifier_name: &Rc<String>, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::STRUCT(StructType{
             fields: fields.clone(),
+            methods: Rc::new(FxHashMap::default()),
         }));
-        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
-    pub fn set_user_defined_lambda_type(&self, token_value: &TokenValue, 
+    pub fn set_user_defined_lambda_type(&self, identifier_name: &Rc<String>, 
         params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::LAMBDA(LambdaType(FunctionData{
             params: params.clone(),
             return_type: return_type.clone(),
         })));
-        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
-    pub fn set_function(&self, token_value: &TokenValue, 
+    pub fn set_function(&self, identifier_name: &Rc<String>, 
         params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
         let meta_data = MetaData::FUNCTION(FunctionData{
             params: params.clone(),
             return_type: return_type.clone(),
         });
-        self.0.borrow_mut().set(token_value.0.clone(), meta_data);
+        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
-    pub fn get(&self, token_value: &TokenValue) -> Option<SymbolData> {
+    pub fn get(&self, key: &Rc<String>) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
 
         // check the identifier name in current scope
-        match scope_ref.get(&token_value.0) {
+        match scope_ref.get(key) {
             Some(value) => {
                 Some(SymbolData(value.0.clone()))
             },
@@ -275,7 +349,7 @@ impl Env {
                 if let Some(parent_env) = &scope_ref.parent_env {
 
                     // return from the nearest scope which found the identifier name
-                    parent_env.get(token_value)
+                    parent_env.get(key)
                 } else {
                     None
                 }

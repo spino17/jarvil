@@ -18,7 +18,7 @@ pub fn assign(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         unimplemented!("yet to be implemented for user-defined types")
     }
     parser.r_asssign(rule_index, line_number)?;
-    parser.set_identifier_init_to_scope(&token_value);
+    parser.set_identifier_init_to_scope(&token_value.0);
     Ok(ParseSuccess{
         lookahead: parser.get_lookahead(),
         possible_err: None,
