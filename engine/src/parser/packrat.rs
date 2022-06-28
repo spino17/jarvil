@@ -18,7 +18,7 @@ use crate::parser::helper::clone_atom_result;
 #[derive(Debug)]
 pub enum RoutineCache {
     ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>>>>),
-    EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>>>>),
+    // EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>>>>),
 }
 
 #[derive(Debug)]
@@ -520,9 +520,9 @@ impl PackratParser {
     H: FnOnce(&T) -> usize>(
         &mut self,
         cache_map: &Rc<RefCell<FxHashMap<usize, Result<T, ParseError>>>>,
-        mut routine_fn: F,
-        mut clone_result_fn: G,
-        mut get_lookahead_fn: H,
+        routine_fn: F,
+        clone_result_fn: G,
+        get_lookahead_fn: H,
         curr_lookahead: usize,
     ) -> Result<T, ParseError> {
         match cache_map.borrow().get(&curr_lookahead) {
@@ -555,28 +555,24 @@ impl PackratParser {
         self.ignore_blanks();
         let curr_lookahead = self.lookahead;
         match cache_map.as_ref() {
-            RoutineCache::ATOM(atom_cache_map) => { 
+            RoutineCache::ATOM(atom_cache_map) => {
                 let routine_fn 
-                = |parser| -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+                = move |parser: &mut PackratParser| -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
                     components::atom::atom(parser)
                 };
                 let clone_result_fn 
-                = |result| -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+                = move |result: &Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>| -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
                     clone_atom_result(result)
                 };
                 let get_lookahead_fn 
-                = |response: &(ParseSuccess, Option<Rc<String>>, bool)| -> usize {
+                = move |response: &(ParseSuccess, Option<Rc<String>>, bool)| -> usize {
                     response.0.lookahead
                 };
                 self.get_or_set_cache(atom_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead)
             },
-            RoutineCache::EXPR(expr_cache_map) => {
-                todo!()
-            },
             // _ => unreachable!("cache map with routine index 0 should be an atom")
         }
     }
-
 
     // ------------------- production rule matching function for terminals and non-terminals declared below -------------------
     // code
