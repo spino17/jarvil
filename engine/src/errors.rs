@@ -38,8 +38,8 @@ impl LexicalError {
 
 #[derive(Debug)]
 pub struct SyntaxError {
-    code_line: (Rc<String>, usize, usize, usize),  // (code_line string, line_start_index, line_number, err_index)
-    err_message: Rc<String>,
+    pub code_line: (Rc<String>, usize, usize, usize),  // (code_line string, line_start_index, line_number, err_index)
+    pub err_message: Rc<String>,
 }
 
 impl SyntaxError {
@@ -53,8 +53,8 @@ impl SyntaxError {
 
 #[derive(Debug)]
 pub struct SemanticError {
-    code_line: (Rc<String>, usize, usize, usize),
-    err_message: Rc<String>,
+    pub code_line: (Rc<String>, usize, usize, usize),
+    pub err_message: Rc<String>,
 }
 
 impl SemanticError {

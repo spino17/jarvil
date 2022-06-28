@@ -1,9 +1,22 @@
 use crate::parser::packrat::ParseSuccess;
-use crate::errors::ParseError;
+use crate::errors::{ParseError, SyntaxError, SemanticError};
 use std::rc::Rc;
 
 pub fn clone_error(err: &ParseError) -> ParseError {
-    todo!()
+    match err {
+        ParseError::SYNTAX_ERROR(syntax_error) => {
+            ParseError::SYNTAX_ERROR(SyntaxError{
+                code_line: (syntax_error.code_line.0.clone(), syntax_error.code_line.1, syntax_error.code_line.2, syntax_error.code_line.3),
+                err_message: syntax_error.err_message.clone(),
+            })
+        },
+        ParseError::SEMANTIC_ERROR(semantic_error) => {
+            ParseError::SEMANTIC_ERROR(SemanticError{
+                code_line: (semantic_error.code_line.0.clone(), semantic_error.code_line.1, semantic_error.code_line.2, semantic_error.code_line.3),
+                err_message: semantic_error.err_message.clone(),
+            })
+        }
+    }
 }
 
 pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>) 
