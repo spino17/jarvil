@@ -48,7 +48,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
         },
         CoreToken::IDENTIFIER(_) => {
             let index = parser.get_index();
-            let (response, data_type) = parser.atom()?;
+            let (response, data_type, _) = parser.atom()?;
             if let Some(data_type) = data_type {
                 if data_type.as_ref().eq("int") {
                     return Ok((response, false))

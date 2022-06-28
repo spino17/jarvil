@@ -685,13 +685,13 @@ impl PackratParser {
     }
 
     // atom
-    pub fn atom(&mut self) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
+    pub fn atom(&mut self) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
         components::atom::atom(self)
     }
 
     pub fn check_atom_factor(&mut self, 
-        data_type: Option<Rc<String>>) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
-        components::atom::check_atom_factor(self, data_type)
+        data_type: Option<Rc<String>>, is_assignable: bool) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+        components::atom::check_atom_factor(self, data_type, is_assignable)
     }
 
     pub fn params(&mut self) -> Result<(ParseSuccess, usize, Vec<(Rc<String>, usize)>), ParseError> {

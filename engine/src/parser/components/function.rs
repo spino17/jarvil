@@ -37,7 +37,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
         }
     }
     match parser.atom() {
-        Ok((response, data_type)) => {
+        Ok((response, data_type, _)) => {
             if let Some(data_type) = data_type {
                 if parser.check_next_token("\n")
                 || parser.check_next_token(")")

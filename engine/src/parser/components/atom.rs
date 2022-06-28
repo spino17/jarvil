@@ -83,7 +83,7 @@ pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, V
 }
 
 pub fn check_atom_factor(parser: &mut PackratParser, 
-    data_type: Option<Rc<String>>) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
+    data_type: Option<Rc<String>>, mut is_assignable: bool) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
     let (response, line_number, sub_part_access_vec) = parser.atom_factor()?;
     let mut curr_type = data_type;
     for entry in &sub_part_access_vec {
@@ -150,6 +150,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                                 curr_type = None;
                             }
                         }
+                        is_assignable = false;
                     } else {
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                             parser.get_code_line(line_number, method_data.2),
@@ -165,12 +166,13 @@ pub fn check_atom_factor(parser: &mut PackratParser,
             },
         }
     }
-    Ok((response, curr_type))
+    Ok((response, curr_type, is_assignable))
 }
 
-pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
+pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
     let (_, line_number, 
         token_value, symbol_data) = parser.expect_any_id_in_scope()?;
+    let mut is_assignable = true;
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             // TODO - check id for type also (constructor in that case)
@@ -221,7 +223,8 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                     data_type = None;
                 }
             }
-            parser.check_atom_factor(data_type)
+            is_assignable = false;
+            parser.check_atom_factor(data_type, is_assignable)
         },
         _ => {
             let data_type;
@@ -244,7 +247,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                         "cannot access parts of uninitialized identifier '{}'", token_value.clone())))
                     )
             }
-            parser.check_atom_factor(Some(data_type))
+            parser.check_atom_factor(Some(data_type), is_assignable)
         }
     }
 }
