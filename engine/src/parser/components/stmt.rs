@@ -20,14 +20,6 @@ pub fn try_compound_stmt(parser: &mut PackratParser) -> Result<(Option<ParseSucc
                 }
             }
         },
-        CoreToken::LET => {
-            match parser.decls() {
-                Ok(response) => return Ok((Some(response), true)),
-                Err(err) => {
-                    return Err(err);
-                }
-            }
-        }
         _ => {
             return Ok((None, false))
         }
