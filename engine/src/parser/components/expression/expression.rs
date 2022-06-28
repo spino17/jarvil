@@ -48,7 +48,6 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
         },
         CoreToken::IDENTIFIER(_) => {
             let index = parser.get_index();
-            println!("lookahead in expr: {}", parser.get_lookahead());
             let (response, data_type, _) = parser.atom()?;
             if let Some(data_type) = data_type {
                 if data_type.as_ref().eq("int") {

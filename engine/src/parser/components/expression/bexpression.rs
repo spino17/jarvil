@@ -112,7 +112,6 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
         },
         CoreToken::IDENTIFIER(_) => {
             let index = parser.get_index();
-            println!("lookahead in bexpr: {}", parser.get_lookahead());
             let (response, data_type, _) = parser.atom()?;
             if let Some(data_type) = data_type {
                 if data_type.as_ref().eq("bool") {
@@ -146,14 +145,14 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
 pub fn bfactor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let mut errors_vec: Vec<ParseError> = vec![];
     let curr_lookahead = parser.get_lookahead();
-    match parser.bfactor_lookahead_one() {
+    match parser.bfactor_expr_comp_op_expr() {
         Ok(response) => return Ok(response),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
             errors_vec.push(err);
         }
     }
-    match parser.bfactor_expr_comp_op_expr() {
+    match parser.bfactor_lookahead_one() {
         Ok(response) => return Ok(response),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);

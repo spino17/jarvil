@@ -7,19 +7,6 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
     let mut errors_vec: Vec<ParseError> = vec![];
     let curr_lookahead = parser.get_lookahead();
     let index = parser.get_index();
-    match parser.expr() {
-        Ok((response, has_float)) => {
-            if has_float {
-                return Ok((response, (Rc::new(String::from("float")), index)))
-            } else {
-                return Ok((response, (Rc::new(String::from("int")), index)))
-            }
-        },
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err)
-        }
-    }
     match parser.bexpr() {
         Ok(response) => {
             return Ok((response, (Rc::new(String::from("bool")), index)))
@@ -29,8 +16,14 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
             errors_vec.push(err)
         }
     }
-    match parser.expect("literal") {
-        Ok((response, _)) => return Ok((response, (Rc::new(String::from("string")), index))),
+    match parser.expr() {
+        Ok((response, has_float)) => {
+            if has_float {
+                return Ok((response, (Rc::new(String::from("float")), index)))
+            } else {
+                return Ok((response, (Rc::new(String::from("int")), index)))
+            }
+        },
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
             errors_vec.push(err)
@@ -65,6 +58,13 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
                 errors_vec.push(err)
             }
         },
+        Err(err) => {
+            parser.reset_lookahead(curr_lookahead);
+            errors_vec.push(err)
+        }
+    }
+    match parser.expect("literal") {
+        Ok((response, _)) => return Ok((response, (Rc::new(String::from("string")), index))),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
             errors_vec.push(err)

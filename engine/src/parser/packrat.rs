@@ -528,10 +528,11 @@ impl PackratParser {
         clone_result_fn: G,
         get_lookahead_fn: H,
         curr_lookahead: usize,
+        message: &str,
     ) -> Result<T, ParseError> {
         match cache_map.borrow().get(&curr_lookahead) {
             Some(result) => {
-                println!("cache hit!\n");
+                println!("lookahead for cache hit for {}: {}\n", curr_lookahead, message);
                 let result = clone_result_fn(result);
                 match result {
                     Ok(response) => {
@@ -542,14 +543,15 @@ impl PackratParser {
                 }
             },
             _ => {
-                println!("lookahead for cache missed: {}\n", curr_lookahead);
+                println!("lookahead for cache missed for {}: {}\n", curr_lookahead, message);
                 // print!("cache missed!\n");
             }
         }
         let result = routine_fn(self);
         let result_entry = clone_result_fn(&result);
-        println!("cache missed: pushing the entry = {:?}", result_entry);
+        // println!("cache missed: pushing the entry = {:?} in map of {}", result_entry, message);
         cache_map.borrow_mut().insert(curr_lookahead, result_entry);
+        println!("{:?}", cache_map);
         result
     }
 
@@ -636,7 +638,7 @@ impl PackratParser {
 
     // expression
     pub fn expr(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        let routine_index = 1;  // routine_index for atom is 0
+        let routine_index = 1;  // routine_index for expr is 1
         let cache_map = self.cache[routine_index].clone();
         self.ignore_blanks();
         let curr_lookahead = self.lookahead;
@@ -654,7 +656,7 @@ impl PackratParser {
                 = move |response: &(ParseSuccess, bool)| -> usize {
                     response.0.lookahead
                 };
-                self.get_or_set_cache(expr_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead)
+                self.get_or_set_cache(expr_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead, "expr")
             },
             _ => unreachable!("cache map with routine index 1 should be an expr")
         }
@@ -773,7 +775,7 @@ impl PackratParser {
                 = move |response: &(ParseSuccess, Option<Rc<String>>, bool)| -> usize {
                     response.0.lookahead
                 };
-                self.get_or_set_cache(atom_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead)
+                self.get_or_set_cache(atom_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead, "atom")
             },
             _ => unreachable!("cache map with routine index 0 should be an atom")
         }
