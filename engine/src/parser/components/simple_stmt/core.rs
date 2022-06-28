@@ -22,13 +22,6 @@ pub fn simple_stmts(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErr
 pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let mut errors_vec: Vec<ParseError> = vec![];
     let curr_lookahead = parser.get_lookahead();
-    match parser.decls() {
-        Ok(response) => return Ok(response),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
     match parser.assign() {
         Ok(response) => return Ok(response),
         Err(err) => {
@@ -36,6 +29,7 @@ pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
             errors_vec.push(err);
         }
     }
+    /*
     match parser.atom() {
         Ok(response) => {
             return Ok(response.0)
@@ -45,6 +39,7 @@ pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
             errors_vec.push(err);
         }
     }
+    */
     /*
     match parser.function_call(false) {
         Ok(response) => return Ok(response.0),

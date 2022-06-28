@@ -83,7 +83,9 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         if next_char == '\n' {
-            code_lines.push((Rc::new(code[*line_start_index..forward_lexeme].iter().collect()), *line_start_index));
+            let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
+            code_str.push(' ');
+            code_lines.push((Rc::new(code_str), *line_start_index));
             *begin_lexeme = *begin_lexeme + 1;
             *line_number = *line_number + 1;
             *line_start_index = forward_lexeme + 1;
@@ -162,7 +164,9 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize,
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         if next_char == '\n' {
-            code_lines.push((Rc::new(code[*line_start_index..forward_lexeme].iter().collect()), *line_start_index));
+            let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
+            code_str.push(' ');
+            code_lines.push((Rc::new(code_str), *line_start_index));
             *begin_lexeme = *begin_lexeme + 1;
             *line_number = *line_number + 1;
             *line_start_index = forward_lexeme + 1;
