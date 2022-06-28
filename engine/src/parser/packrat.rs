@@ -57,6 +57,7 @@ impl Parser for PackratParser {
 }
 
 impl PackratParser {
+    // parsing utilities
     pub fn get_lookahead(&self) -> usize {
         self.lookahead
     }
@@ -256,6 +257,12 @@ impl PackratParser {
         }
     }
 
+    pub fn get_atom_result(&self, result: &Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>) 
+        -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+        todo!()
+    }
+
+    // parsing routines for terminals
     pub fn expect(&mut self, symbol: &str) -> Result<(ParseSuccess, usize), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
@@ -696,19 +703,25 @@ impl PackratParser {
             RoutineCache::ATOM(atom_cache_map) => {
                 let curr_lookahead = self.lookahead;
                 match atom_cache_map.borrow().get(&curr_lookahead) {
-                    Some(val) => {
+                    Some(result) => {
                         println!("cache hit!");
-                        todo!()
+                        let result = self.get_atom_result(result);
+                        match result {
+                            Ok(response) => {
+                                self.reset_lookahead(response.0.lookahead);
+                                return Ok(response)
+                            },
+                            Err(err) => return Err(err)
+                        }
                     },
-                    None => {
-                        {}
-                    }
+                    _ => {}
                 }
                 let result = components::atom::atom(self);
-                atom_cache_map.borrow_mut().insert(curr_lookahead, result);
-                todo!()
+                let result_entry = self.get_atom_result(&result);
+                atom_cache_map.borrow_mut().insert(curr_lookahead, result_entry);
+                result
             },
-            _ => unreachable!("cache map with routine index 0 should be an atom")
+            // _ => unreachable!("cache map with routine index 0 should be an atom")
         }
     }
 
