@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::ParseError;
-use crate::lexer::token::{CoreToken, TokenValue};
+use crate::lexer::token::{CoreToken};
 use crate::errors::SyntaxError;
 
 pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {

@@ -4,7 +4,7 @@
 // See https://pdos.csail.mit.edu/~baford/packrat/thesis/ for more information.
 
 use crate::parser::core::Parser;
-use crate::lexer::token::{Token, CoreToken, TokenValue};
+use crate::lexer::token::{Token, CoreToken};
 use crate::parser::ast::AST;
 use std::rc::Rc;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
