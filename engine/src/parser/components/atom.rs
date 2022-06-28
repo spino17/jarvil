@@ -31,10 +31,10 @@ pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(Pa
             parser.expect("(")?;
             let (_, _, params_data_type_vec) = parser.params()?;
             let (response, _) = parser.expect(")")?;
-            Ok((response, CompoundPart::METHOD_DATA((token_value.0.clone(), params_data_type_vec, index))))
+            Ok((response, CompoundPart::METHOD_DATA((token_value.clone(), params_data_type_vec, index))))
         },
         _ => {
-            Ok((response, CompoundPart::PROPERTRY_NAME((token_value.0.clone(), index))))
+            Ok((response, CompoundPart::PROPERTRY_NAME((token_value.clone(), index))))
         }
     }
 }
@@ -185,7 +185,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
                     format!("'{}' of type {} is not callable", 
-                    token_value.0.clone(), symbol_data.get_type_of_identifier())))
+                    token_value.clone(), symbol_data.get_type_of_identifier())))
                 )
             }
             parser.expect("(")?;
@@ -233,7 +233,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     parser.get_code_line(line_number, index),
                     format!("expected an identifier, got a {} '{}'", 
-                    symbol_data.get_type_of_identifier(), token_value.0.clone())))
+                    symbol_data.get_type_of_identifier(), token_value.clone())))
                 )
             }
             if !is_init {
@@ -241,7 +241,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
                     format!(
-                        "cannot access parts of uninitialized identifier '{}'", token_value.0.clone())))
+                        "cannot access parts of uninitialized identifier '{}'", token_value.clone())))
                     )
             }
             parser.check_atom_factor(Some(data_type))

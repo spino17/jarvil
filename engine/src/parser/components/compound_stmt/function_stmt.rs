@@ -40,7 +40,7 @@ pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec
 pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
     let mut params: Vec<(Rc<String>, Rc<String>)> = vec![];
     let (_, _, data_type, token_value) = parser.param_decl()?;
-    params.push((token_value.0.clone(), data_type.0.clone()));
+    params.push((token_value.clone(), data_type.clone()));
     let (response, mut remaining_params) = parser.optparams_factor()?;
     params.append(&mut remaining_params);
     Ok((response, params))
@@ -60,7 +60,7 @@ pub fn function_input_output(parser: &mut PackratParser)
     PackratParser::expect_optionally(|| {
         let (_, _) = parser.expect("->")?;
         let (response, _, data_type, _) = parser.expect_type()?;
-        Ok((response, Some(data_type.0.clone())))
+        Ok((response, Some(data_type.clone())))
     }, (ParseSuccess{
         lookahead: curr_lookahead,
         possible_err: None,
@@ -91,7 +91,7 @@ pub fn function_declaration(parser: &mut PackratParser) -> Result<ParseSuccess, 
                 }
             }
             let response = parser.block(Some(&params))?;
-            parser.set_function_to_scope(&token_value.0, &Rc::new(params), &Rc::new(return_type));
+            parser.set_function_to_scope(&token_value, &Rc::new(params), &Rc::new(return_type));
             Ok(response)
         },
         _ => {

@@ -275,7 +275,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_any_id(&mut self) -> Result<(ParseSuccess, usize, TokenValue), ParseError> {
+    pub fn expect_any_id(&mut self) -> Result<(ParseSuccess, usize, Rc<String>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -284,7 +284,7 @@ impl PackratParser {
                 return Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None
-                }, token.line_number, TokenValue(token_value.0.clone())))
+                }, token.line_number, token_value.0.clone()))
             },
             _ => {
                 let index = self.get_index();
@@ -298,7 +298,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_any_id_in_scope(&mut self) -> Result<(ParseSuccess, usize, TokenValue, SymbolData), ParseError> {
+    pub fn expect_any_id_in_scope(&mut self) -> Result<(ParseSuccess, usize, Rc<String>, SymbolData), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -308,7 +308,7 @@ impl PackratParser {
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token.line_number, TokenValue(token_value.0.clone()), symbol_data))
+                }, token.line_number, token_value.0.clone(), symbol_data))
             },
             _ => {
                 let index = self.get_index();
@@ -321,7 +321,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_id(&mut self) -> Result<(ParseSuccess, usize, TokenValue, Rc<String>, bool), ParseError> {
+    pub fn expect_id(&mut self) -> Result<(ParseSuccess, usize, Rc<String>, Rc<String>, bool), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -333,7 +333,7 @@ impl PackratParser {
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), data_type, is_init))
+                    }, token.line_number, token_value.0.clone(), data_type, is_init))
                 } else {
                     let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
@@ -355,7 +355,7 @@ impl PackratParser {
     }
 
     pub fn expect_type(&mut self)
-    -> Result<(ParseSuccess, usize, TokenValue, Option<UserDefinedTypeData>), ParseError> {
+    -> Result<(ParseSuccess, usize, Rc<String>, Option<UserDefinedTypeData>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -364,7 +364,7 @@ impl PackratParser {
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token.line_number, TokenValue(token_value.0.clone()), None))
+                }, token.line_number, token_value.0.clone(), None))
             },
             CoreToken::IDENTIFIER(token_value) => {
                 let symbol_data = self.check_declaration(&token)?;
@@ -373,7 +373,7 @@ impl PackratParser {
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), Some(response)))
+                    }, token.line_number, token_value.0.clone(), Some(response)))
                 } else {
                     let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
@@ -393,7 +393,7 @@ impl PackratParser {
     }
 
     pub fn expect_callable(&mut self)
-    -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
+    -> Result<(ParseSuccess, usize, Rc<String>, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -405,13 +405,13 @@ impl PackratParser {
                     return Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), params, return_type))
+                    }, token.line_number, token_value.0.clone(), params, return_type))
                 } else if let Some(lambda_data) = self.has_lambda_type(&symbol_data) {
                     self.lookahead = self.lookahead + 1;
                     return Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), lambda_data.params, lambda_data.return_type))
+                    }, token.line_number, token_value.0.clone(), lambda_data.params, lambda_data.return_type))
                 } else {
                     let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
@@ -578,7 +578,7 @@ impl PackratParser {
         components::simple_stmt::declaration::r_assign(self)
     }
 
-    pub fn param_decl(&mut self) -> Result<(ParseSuccess, usize, TokenValue, TokenValue), ParseError> {
+    pub fn param_decl(&mut self) -> Result<(ParseSuccess, usize, Rc<String>, Rc<String>), ParseError> {
         components::simple_stmt::helper::param_decl(self)
     }
 

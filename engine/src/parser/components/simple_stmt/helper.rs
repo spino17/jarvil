@@ -1,8 +1,8 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SemanticError};
-use crate::lexer::token::{TokenValue};
+use std::rc::Rc;
 
-pub fn param_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, TokenValue, TokenValue), ParseError> {
+pub fn param_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Rc<String>, Rc<String>), ParseError> {
     let (_, _, data_type, _) = parser.expect_type()?;
     let (response, line_number, token_value) = parser.expect_any_id()?;
     Ok((response, line_number, data_type, token_value))

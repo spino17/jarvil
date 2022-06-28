@@ -82,7 +82,7 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, FxHashM
             }
         }
         let (_, _, data_type, token_value) = parser.param_decl()?;
-        fields_map.insert(token_value.0, data_type.0);
+        fields_map.insert(token_value, data_type);
         match parser.expect("\n") {
             Ok(_) => {},
             Err(err) => {

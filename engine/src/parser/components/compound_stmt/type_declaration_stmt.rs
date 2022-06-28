@@ -36,10 +36,10 @@ pub fn type_decl_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseE
     parser.expect(":")?;
     match parser.get_curr_core_token() {
         CoreToken::NEWLINE => {
-            return parser.struct_stmt(&token_value.0)
+            return parser.struct_stmt(&token_value)
         },
         CoreToken::LPAREN => {
-            return parser.lambda_stmt(&token_value.0)
+            return parser.lambda_stmt(&token_value)
         },
         _ => {
             let line_number = parser.get_curr_line_number();
