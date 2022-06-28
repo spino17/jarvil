@@ -112,6 +112,7 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
         },
         CoreToken::IDENTIFIER(_) => {
             let index = parser.get_index();
+            println!("lookahead in bexpr: {}", parser.get_lookahead());
             let (response, data_type, _) = parser.atom()?;
             if let Some(data_type) = data_type {
                 if data_type.as_ref().eq("bool") {
