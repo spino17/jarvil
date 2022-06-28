@@ -52,6 +52,8 @@ pub enum UserDefinedTypeData {
 }
 
 pub struct InterfaceData {
+    name: Rc<String>,
+    fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
     methods: Rc<FxHashMap<Rc<String>, FunctionData>>
 }
 

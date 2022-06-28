@@ -1,28 +1,13 @@
 use crate::parser::packrat::PackratParser;
-use crate::errors::{ParseError, SyntaxError, aggregate_errors};
+use crate::errors::{ParseError, SyntaxError};
 use crate::parser::packrat::ParseSuccess;
 use crate::lexer::token::CoreToken;
-use std::rc::Rc;
-
-pub fn r_assign(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
-    let mut errors_vec: Vec<ParseError> = vec![];
-    let curr_lookahead = parser.get_lookahead();
-    // let index = parser.get_index();
-    match parser.param() {
-        Ok(response) => return Ok((response.0, response.1.0)),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err)
-        }
-    }
-    Err(aggregate_errors(errors_vec))
-}
 
 pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("let")?;
     let (_, _, token_value) = parser.expect_any_id()?;
     parser.expect("=")?;
-    let (response, data_type) = parser.r_assign()?;
+    let (response, data_type, _) = parser.r_assign()?;
     println!("{}", data_type);
     parser.set_identifier_to_scope(&token_value, &data_type, true);
     Ok(response)

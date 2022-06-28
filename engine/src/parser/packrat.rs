@@ -574,16 +574,12 @@ impl PackratParser {
         components::simple_stmt::assignment::assign(self)
     }
 
-    pub fn r_assign(&mut self) -> Result<(ParseSuccess, Rc<String>), ParseError> {
-        components::simple_stmt::declaration::r_assign(self)
+    pub fn r_assign(&mut self) -> Result<(ParseSuccess, Rc<String>, usize), ParseError> {
+        components::simple_stmt::helper::r_assign(self)
     }
 
     pub fn param_decl(&mut self) -> Result<(ParseSuccess, usize, Rc<String>, Rc<String>), ParseError> {
         components::simple_stmt::helper::param_decl(self)
-    }
-
-    pub fn r_asssign(&mut self, rule_index: usize, line_number: usize) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::helper::r_asssign(self, rule_index, line_number)
     }
 
     // expression

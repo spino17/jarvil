@@ -36,7 +36,7 @@ pub fn assign(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         )
     }
     if let Some(l_data_type) = data_type {
-        let (response, (r_data_type, index)) = parser.param()?;
+        let (response, r_data_type, index) = parser.r_assign()?;
         if !l_data_type.eq(&r_data_type) {
             let line_number = parser.get_curr_line_number();
             return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
