@@ -13,12 +13,12 @@ use crate::parser::components;
 use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
-use crate::parser::helper::clone_atom_result;
+use crate::parser::helper::{clone_atom_result, clone_expr_result};
 
 #[derive(Debug)]
 pub enum RoutineCache {
     ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>>>>),
-    // EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>>>>),
+    EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>>>>),
 }
 
 #[derive(Debug)]
@@ -42,13 +42,17 @@ impl PackratParser {
     pub fn new(code_lines: Vec<(Rc<String>, usize)>) -> Self {
         let env = Env::new();
         let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>> = FxHashMap::default();
+        let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>> = FxHashMap::default();
         PackratParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
             env,
             code_lines,
-            cache: vec![Rc::new(RoutineCache::ATOM(Rc::new(RefCell::new(atom_cache_map))))],
+            cache: vec![
+                Rc::new(RoutineCache::ATOM(Rc::new(RefCell::new(atom_cache_map)))),
+                Rc::new(RoutineCache::EXPR(Rc::new(RefCell::new(expr_cache_map)))),
+            ],
         }
     }
 }
@@ -549,31 +553,6 @@ impl PackratParser {
         result
     }
 
-    pub fn cache_wrapper(&mut self, routine_index: usize) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
-        // let routine_index = 0;  // routine_index for atom is 0
-        let cache_map = self.cache[routine_index].clone();
-        self.ignore_blanks();
-        let curr_lookahead = self.lookahead;
-        match cache_map.as_ref() {
-            RoutineCache::ATOM(atom_cache_map) => {
-                let routine_fn 
-                = move |parser: &mut PackratParser| -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
-                    components::atom::atom(parser)
-                };
-                let clone_result_fn 
-                = move |result: &Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>| -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
-                    clone_atom_result(result)
-                };
-                let get_lookahead_fn 
-                = move |response: &(ParseSuccess, Option<Rc<String>>, bool)| -> usize {
-                    response.0.lookahead
-                };
-                self.get_or_set_cache(atom_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead)
-            },
-            // _ => unreachable!("cache map with routine index 0 should be an atom")
-        }
-    }
-
     // ------------------- production rule matching function for terminals and non-terminals declared below -------------------
     // code
     pub fn code(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
@@ -657,7 +636,28 @@ impl PackratParser {
 
     // expression
     pub fn expr(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::expr(self)
+        let routine_index = 1;  // routine_index for atom is 0
+        let cache_map = self.cache[routine_index].clone();
+        self.ignore_blanks();
+        let curr_lookahead = self.lookahead;
+        match cache_map.as_ref() {
+            RoutineCache::EXPR(expr_cache_map) => {
+                let routine_fn 
+                = move |parser: &mut PackratParser| -> Result<(ParseSuccess, bool), ParseError> {
+                    components::expression::expression::expr(parser)
+                };
+                let clone_result_fn 
+                = move |result: &Result<(ParseSuccess, bool), ParseError>| -> Result<(ParseSuccess, bool), ParseError> {
+                    clone_expr_result(result)
+                };
+                let get_lookahead_fn 
+                = move |response: &(ParseSuccess, bool)| -> usize {
+                    response.0.lookahead
+                };
+                self.get_or_set_cache(expr_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead)
+            },
+            _ => unreachable!("cache map with routine index 1 should be an expr")
+        }
     }
 
     pub fn term(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
@@ -757,32 +757,23 @@ impl PackratParser {
     pub fn atom(&mut self) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
         let routine_index = 0;  // routine_index for atom is 0
         let cache_map = self.cache[routine_index].clone();
+        self.ignore_blanks();
+        let curr_lookahead = self.lookahead;
         match cache_map.as_ref() {
             RoutineCache::ATOM(atom_cache_map) => {
-                self.ignore_blanks();
-                let curr_lookahead = self.lookahead;
-                match atom_cache_map.borrow().get(&curr_lookahead) {
-                    Some(result) => {
-                        println!("cache hit!\n");
-                        let result = clone_atom_result(result);
-                        match result {
-                            Ok(response) => {
-                                self.reset_lookahead(response.0.lookahead);
-                                return Ok(response)
-                            },
-                            Err(err) => return Err(err)
-                        }
-                    },
-                    _ => {
-                        println!("lookahead for cache missed: {}\n", curr_lookahead);
-                        // print!("cache missed!\n");
-                    }
-                }
-                let result = components::atom::atom(self);
-                let result_entry = clone_atom_result(&result);
-                println!("cache missed: pushing the entry = {:?}", result_entry);
-                atom_cache_map.borrow_mut().insert(curr_lookahead, result_entry);
-                result
+                let routine_fn 
+                = move |parser: &mut PackratParser| -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+                    components::atom::atom(parser)
+                };
+                let clone_result_fn 
+                = move |result: &Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>| -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+                    clone_atom_result(result)
+                };
+                let get_lookahead_fn 
+                = move |response: &(ParseSuccess, Option<Rc<String>>, bool)| -> usize {
+                    response.0.lookahead
+                };
+                self.get_or_set_cache(atom_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead)
             },
             _ => unreachable!("cache map with routine index 0 should be an atom")
         }

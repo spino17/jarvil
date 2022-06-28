@@ -42,3 +42,23 @@ pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Rc<String>>, bool
         }
     }
 }
+
+pub fn clone_expr_result(result: &Result<(ParseSuccess, bool), ParseError>) 
+-> Result<(ParseSuccess, bool), ParseError> {
+    match result {
+        Ok(response) => {
+            let possible_err = match &response.0.possible_err {
+                Some(val) => Some(clone_error(val)),
+                None => None,
+            };
+            let parse_success = ParseSuccess{
+                lookahead: response.0.lookahead,
+                possible_err,
+            };
+            Ok((parse_success, response.1))
+        },
+        Err(err) => {
+            Err(clone_error(err))
+        }
+    }
+}
