@@ -12,9 +12,10 @@ use crate::scope::{Env, SymbolData, UserDefinedTypeData, FunctionData};
 use crate::parser::components;
 use crate::context;
 use rustc_hash::FxHashMap;
+use std::cell::RefCell;
 
 pub enum RoutineCache {
-    ATOM(FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>>),
+    ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>>>>),
 }
 
 pub struct ParseSuccess {
@@ -28,7 +29,7 @@ pub struct PackratParser {
     indent_level: i64,
     env: Env,
     code_lines: Vec<(Rc<String>, usize)>,
-    cache: Vec<RoutineCache>,
+    cache: Vec<Rc<RoutineCache>>,
     // TODO - add look up hash table for cached results
     // TODO - add AST data structure
 }
@@ -43,7 +44,7 @@ impl PackratParser {
             indent_level: -1,
             env,
             code_lines,
-            cache: vec![RoutineCache::ATOM(atom_cache_map)],
+            cache: vec![Rc::new(RoutineCache::ATOM(Rc::new(RefCell::new(atom_cache_map))))],
         }
     }
 }
@@ -689,7 +690,26 @@ impl PackratParser {
 
     // atom
     pub fn atom(&mut self) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
-        components::atom::atom(self)
+        let routine_index = 0;
+        let cache_map = self.cache[routine_index].clone();
+        match cache_map.as_ref() {
+            RoutineCache::ATOM(atom_cache_map) => {
+                let curr_lookahead = self.lookahead;
+                match atom_cache_map.borrow().get(&curr_lookahead) {
+                    Some(val) => {
+                        println!("cache hit!");
+                        todo!()
+                    },
+                    None => {
+                        {}
+                    }
+                }
+                let result = components::atom::atom(self);
+                atom_cache_map.borrow_mut().insert(curr_lookahead, result);
+                todo!()
+            },
+            _ => unreachable!("cache map with routine index 0 should be an atom")
+        }
     }
 
     pub fn check_atom_factor(&mut self, 

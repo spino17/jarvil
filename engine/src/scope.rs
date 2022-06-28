@@ -8,7 +8,7 @@
 // 4. During parsing phase, when we encounter any statement involving identifiers then we access it for checking declartions, 
 // datatypes etc.
 
-use std::{cell::RefCell};
+use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
 

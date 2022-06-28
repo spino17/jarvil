@@ -39,14 +39,14 @@ impl LexicalError {
 #[derive(Debug)]
 pub struct SyntaxError {
     code_line: (Rc<String>, usize, usize, usize),  // (code_line string, line_start_index, line_number, err_index)
-    err_message: String,
+    err_message: Rc<String>,
 }
 
 impl SyntaxError {
     pub fn new(code_line: (Rc<String>, usize, usize, usize), err_message: String) -> Self {
         SyntaxError {
             code_line: (code_line.0.clone(), code_line.1, code_line.2, code_line.3),
-            err_message,
+            err_message: Rc::new(err_message),
         }
     }
 }
@@ -54,14 +54,14 @@ impl SyntaxError {
 #[derive(Debug)]
 pub struct SemanticError {
     code_line: (Rc<String>, usize, usize, usize),
-    err_message: String,
+    err_message: Rc<String>,
 }
 
 impl SemanticError {
     pub fn new(code_line: (Rc<String>, usize, usize, usize), err_message: String) -> Self {
         SemanticError {
             code_line: (code_line.0.clone(), code_line.1, code_line.2, code_line.3),
-            err_message,
+            err_message: Rc::new(err_message),
         }
     }
 }
