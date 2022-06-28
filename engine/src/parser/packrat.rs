@@ -4,7 +4,7 @@
 // See https://pdos.csail.mit.edu/~baford/packrat/thesis/ for more information.
 
 use crate::parser::core::Parser;
-use crate::lexer::token::{Token, CoreToken, TokenValue};
+use crate::lexer::token::{Token, CoreToken};
 use crate::parser::ast::AST;
 use std::rc::Rc;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
@@ -69,25 +69,18 @@ impl PackratParser {
         self.indent_level = reset_indent;
     }
 
-    pub fn get_code_line(&self, line_number: usize) -> (Rc<String>, usize) {
-        if self.get_index() == &self.code_lines[line_number - 1].1 - 1 {
-            let (s, line_start_index) = &self.code_lines[line_number - 2];
-            (s.clone(), *line_start_index)
-        } else {
-            let (s, line_start_index) = &self.code_lines[line_number - 1];
-            (s.clone(), *line_start_index)
+    pub fn get_code_line(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
+        loop {
+            let (s, line_start_index) = &self.code_lines[curr_line_number - 1];
+            if index >= *line_start_index {
+                return (s.clone(), *line_start_index, curr_line_number, index)
+            }
+            curr_line_number = curr_line_number - 1;
         }
     }
 
     pub fn get_env(&self) -> Env {
         Env(self.env.0.clone())
-    }
-
-    pub fn get_parent_env(&self, env: &Env) -> Option<Env> {
-        match &env.0.borrow().parent_env {
-            Some(parent_env) => Some(Env(parent_env.0.clone())),
-            None => None, 
-        }
     }
 
     pub fn reset_env(&mut self, reset_env: &Env) {
@@ -109,7 +102,7 @@ impl PackratParser {
     }
 
     pub fn set_user_defined_struct_type_to_scope(&mut self, 
-        identifier_name: &Rc<String>, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
+        identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
         self.env.set_user_defined_struct_type(identifier_name, fields);
     }
 
@@ -164,13 +157,7 @@ impl PackratParser {
     }
 
     pub fn get_curr_line_number(&self) -> usize {
-        // self.ignore_blanks();
         self.token_vec[self.lookahead].line_number
-    }
-
-    pub fn get_curr_token_value(&mut self) -> Option<TokenValue> {
-        self.ignore_blanks();
-        self.token_vec[self.lookahead].get_value()
     }
 
     pub fn get_curr_core_token(&mut self) -> &CoreToken {
@@ -236,11 +223,10 @@ impl PackratParser {
                 match self.env.get(&token_value.0) {
                     Some(symbol_data) => Ok(symbol_data),
                     None => {
+                        let index = self.get_index();
                         let err_message = format!("identifier '{}' is not declared in the current scope", token_value.0);
                         Err(SemanticError::new(
-                            line_number,
-                            self.get_code_line(line_number),
-                            self.get_index(),
+                            self.get_code_line(line_number, index),
                             err_message)
                         )
                     }
@@ -278,10 +264,9 @@ impl PackratParser {
                 possible_err: None,
             }, token.line_number))
         } else {
+            let index = self.get_index();
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                self.get_index(), 
+                self.get_code_line(token.line_number, index),
                 format!(
                 "expected '{}', got '{}'",
                 PackratParser::parse_for_err_message(String::from(symbol)), 
@@ -290,7 +275,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_any_id(&mut self) -> Result<(ParseSuccess, usize, TokenValue), ParseError> {
+    pub fn expect_any_id(&mut self) -> Result<(ParseSuccess, usize, Rc<String>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -299,13 +284,13 @@ impl PackratParser {
                 return Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None
-                }, token.line_number, TokenValue(token_value.0.clone())))
+                }, token.line_number, token_value.0.clone()))
             },
             _ => {
+                let index = self.get_index();
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                    token.line_number,
-                    self.get_code_line(token.line_number),
-                    self.get_index(), format!(
+                    self.get_code_line(token.line_number, index),
+                    format!(
                     "expected an identifier, got '{}'", 
                     PackratParser::parse_for_err_message(token.name.to_string()))))
                 )
@@ -313,7 +298,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_any_id_in_scope(&mut self) -> Result<(ParseSuccess, usize, TokenValue, SymbolData), ParseError> {
+    pub fn expect_any_id_in_scope(&mut self) -> Result<(ParseSuccess, usize, Rc<String>, SymbolData), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -323,18 +308,20 @@ impl PackratParser {
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token.line_number, TokenValue(token_value.0.clone()), symbol_data))
+                }, token.line_number, token_value.0.clone(), symbol_data))
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                 self.get_index(),
-                  format!("expected an identifier, got '{}'",
-                  PackratParser::parse_for_err_message( token.name.to_string())))))
+            _ => {
+                let index = self.get_index();
+                Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    self.get_code_line(token.line_number, index),
+                    format!("expected an identifier, got '{}'",
+                    PackratParser::parse_for_err_message( token.name.to_string()))))
+                )
+            }
         }
     }
 
-    pub fn expect_id(&mut self) -> Result<(ParseSuccess, usize, TokenValue, Rc<String>, bool), ParseError> {
+    pub fn expect_id(&mut self) -> Result<(ParseSuccess, usize, Rc<String>, Rc<String>, bool), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -346,28 +333,29 @@ impl PackratParser {
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), data_type, is_init))
+                    }, token.line_number, token_value.0.clone(), data_type, is_init))
                 } else {
+                    let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                        token.line_number,
-                        self.get_code_line(token.line_number),
-                        self.get_index(), 
+                        self.get_code_line(token.line_number, index),
                         format!("expected an identifier, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
                 }
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                 self.get_index(),
-                  format!("expected an identifier, got '{}'",
-                  PackratParser::parse_for_err_message( token.name.to_string())))))
+            _ => {
+                let index = self.get_index();
+                Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    self.get_code_line(token.line_number, index),
+                    format!("expected an identifier, got '{}'",
+                    PackratParser::parse_for_err_message( token.name.to_string()))))
+                )
+            }
         }
     }
 
     pub fn expect_type(&mut self)
-    -> Result<(ParseSuccess, usize, TokenValue, Option<UserDefinedTypeData>), ParseError> {
+    -> Result<(ParseSuccess, usize, Rc<String>, Option<UserDefinedTypeData>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -376,7 +364,7 @@ impl PackratParser {
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token.line_number, TokenValue(token_value.0.clone()), None))
+                }, token.line_number, token_value.0.clone(), None))
             },
             CoreToken::IDENTIFIER(token_value) => {
                 let symbol_data = self.check_declaration(&token)?;
@@ -385,60 +373,27 @@ impl PackratParser {
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), Some(response)))
+                    }, token.line_number, token_value.0.clone(), Some(response)))
                 } else {
+                    let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                        token.line_number, 
-                        self.get_code_line(token.line_number),
-                        self.get_index(),
+                        self.get_code_line(token.line_number, index),
                         format!("expected a type, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone()))))
                 }
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                 self.get_index(),
-                  format!("expected a type, got '{}'", 
-                  PackratParser::parse_for_err_message( token.name.to_string())))))
+            _ => {
+                let index = self.get_index();
+                Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    self.get_code_line(token.line_number, index),
+                    format!("expected a type, got '{}'", 
+                    PackratParser::parse_for_err_message( token.name.to_string())))))
+            }
         }
     }
-    /*
-    pub fn expect_function(&mut self)
-    -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
-        self.ignore_blanks();
-        let token = &self.token_vec[self.lookahead];
-        match &token.core_token {
-            CoreToken::IDENTIFIER(token_value) => {
-                let symbol_data = self.check_declaration(&token)?;
-                if symbol_data.is_function() {
-                    self.lookahead = self.lookahead + 1;
-                    let (params, return_type) = symbol_data.get_function_data();
-                    Ok((ParseSuccess{
-                        lookahead: self.lookahead,
-                        possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), params, return_type))
-                } else {
-                    Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                        token.line_number, 
-                        self.get_code_line(token.line_number),
-                        self.get_index(), 
-                        format!("expected a function, got a {} '{}'", 
-                        symbol_data.get_type_of_identifier(), token_value.0.clone())))
-                    )
-                }
-            },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                 self.get_index(),
-                  format!("expected a function, got '{}'", 
-                  PackratParser::parse_for_err_message( token.name.to_string())))))
-        }
-    }*/
 
     pub fn expect_callable(&mut self)
-    -> Result<(ParseSuccess, usize, TokenValue, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
+    -> Result<(ParseSuccess, usize, Rc<String>, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -450,30 +405,29 @@ impl PackratParser {
                     return Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), params, return_type))
-                }
-                if let Some(lambda_data) = self.has_lambda_type(&symbol_data) {
+                    }, token.line_number, token_value.0.clone(), params, return_type))
+                } else if let Some(lambda_data) = self.has_lambda_type(&symbol_data) {
                     self.lookahead = self.lookahead + 1;
                     return Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, TokenValue(token_value.0.clone()), lambda_data.params, lambda_data.return_type))
+                    }, token.line_number, token_value.0.clone(), lambda_data.params, lambda_data.return_type))
                 } else {
+                    let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                        token.line_number, 
-                        self.get_code_line(token.line_number),
-                        self.get_index(), 
+                        self.get_code_line(token.line_number, index),
                         format!("expected a function or an identifier with lambda type, got a {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
                 }
             },
-            _ => Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                token.line_number,
-                self.get_code_line(token.line_number),
-                 self.get_index(),
-                  format!("'{}' is not callable",
-                  PackratParser::parse_for_err_message( token.name.to_string())))))
+            _ => {
+                let index = self.get_index();
+                Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                    self.get_code_line(token.line_number, index),
+                    format!("'{}' is not callable",
+                    PackratParser::parse_for_err_message( token.name.to_string())))))
+            }
         }
     }
 
@@ -493,10 +447,10 @@ impl PackratParser {
                             possible_err: None,
                         }, indent_spaces))
                     } else {
+                        let index = self.get_index();
                         let err =ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            token.line_number,
-                            self.get_code_line(token.line_number),
-                            self.get_index(), format!(
+                            self.get_code_line(token.line_number, index),
+                            format!(
                                 "incorrectly indented statement\n    expected indent of {} spaces, got {} spaces", 
                                 expected_indent_spaces, indent_spaces)));
                         return Ok((ParseSuccess{
@@ -557,7 +511,7 @@ impl PackratParser {
         components::block::block(self, params)
     }
 
-    pub fn struct_block(&mut self) -> Result<(ParseSuccess, FxHashMap<Rc<String>, Rc<String>>), ParseError> {
+    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
         components::block::struct_block(self)
     }
 
@@ -595,12 +549,12 @@ impl PackratParser {
         components::compound_stmt::function_stmt::optparams_factor(self)
     }
 
-    pub fn simple_stmts(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::core::simple_stmts(self)
-    }
-
     pub fn simple_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::core::simple_stmt(self)
+    }
+
+    pub fn simple_stmt_alternatives(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::core::simple_stmt_alternatives(self)
     }
 
     // simple statement - decl, assign
@@ -620,8 +574,12 @@ impl PackratParser {
         components::simple_stmt::assignment::assign(self)
     }
 
-    pub fn l_decl(&mut self) -> Result<(ParseSuccess, usize, TokenValue, TokenValue), ParseError> {
-        components::simple_stmt::helper::l_decl(self)
+    pub fn r_assign(&mut self) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+        components::simple_stmt::declaration::r_assign(self)
+    }
+
+    pub fn param_decl(&mut self) -> Result<(ParseSuccess, usize, Rc<String>, Rc<String>), ParseError> {
+        components::simple_stmt::helper::param_decl(self)
     }
 
     pub fn r_asssign(&mut self, rule_index: usize, line_number: usize) -> Result<ParseSuccess, ParseError> {
@@ -727,20 +685,20 @@ impl PackratParser {
     }
 
     // atom
-    pub fn atom(&mut self) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
+    pub fn atom(&mut self) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
         components::atom::atom(self)
     }
 
     pub fn check_atom_factor(&mut self, 
-        data_type: Option<Rc<String>>, is_init: bool) -> Result<(ParseSuccess, Option<Rc<String>>), ParseError> {
-        components::atom::check_atom_factor(self, data_type, is_init)
+        data_type: Option<Rc<String>>, is_assignable: bool) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+        components::atom::check_atom_factor(self, data_type, is_assignable)
     }
 
-    pub fn params(&mut self) -> Result<(ParseSuccess, usize, Vec<Rc<String>>), ParseError> {
+    pub fn params(&mut self) -> Result<(ParseSuccess, usize, Vec<(Rc<String>, usize)>), ParseError> {
         components::function::params(self)
     }
 
-    pub fn param(&mut self) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+    pub fn param(&mut self) -> Result<(ParseSuccess, (Rc<String>, usize)), ParseError> {
         components::function::param(self)
     }
 

@@ -1,8 +1,8 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SemanticError};
-use crate::lexer::token::{TokenValue};
+use std::rc::Rc;
 
-pub fn l_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, TokenValue, TokenValue), ParseError> {
+pub fn param_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Rc<String>, Rc<String>), ParseError> {
     let (_, _, data_type, _) = parser.expect_type()?;
     let (response, line_number, token_value) = parser.expect_any_id()?;
     Ok((response, line_number, data_type, token_value))
@@ -16,10 +16,9 @@ pub fn r_asssign(parser: &mut PackratParser,
                 // rule index - 0
                 Ok((response, has_float)) => {
                     if has_float {
+                        let index = parser.get_index();
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                            line_number,
-                            parser.get_code_line(line_number),
-                            parser.get_index(), 
+                            parser.get_code_line(line_number, index),
                             String::from(
                                 "mismatched types\n    identifier declared with type 'int', got assigned with value of type 'float'")))
                             )
@@ -36,10 +35,9 @@ pub fn r_asssign(parser: &mut PackratParser,
                 // rule index - 1
                 Ok((response, has_float)) => {
                     if !has_float {
+                        let index = parser.get_index();
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                            line_number,
-                            parser.get_code_line(line_number),
-                            parser.get_index(), 
+                            parser.get_code_line(line_number, index),
                             String::from(
                                 "mismatched types\n    identifier declared with type 'float', got assigned with value of type 'int'")))
                             )

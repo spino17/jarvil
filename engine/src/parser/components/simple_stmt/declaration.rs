@@ -1,52 +1,31 @@
 use crate::parser::packrat::PackratParser;
-use crate::errors::{ParseError, SyntaxError};
+use crate::errors::{ParseError, SyntaxError, aggregate_errors};
 use crate::parser::packrat::ParseSuccess;
 use crate::lexer::token::CoreToken;
+use std::rc::Rc;
+
+pub fn r_assign(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+    let mut errors_vec: Vec<ParseError> = vec![];
+    let curr_lookahead = parser.get_lookahead();
+    // let index = parser.get_index();
+    match parser.param() {
+        Ok(response) => return Ok((response.0, response.1.0)),
+        Err(err) => {
+            parser.reset_lookahead(curr_lookahead);
+            errors_vec.push(err)
+        }
+    }
+    Err(aggregate_errors(errors_vec))
+}
 
 pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    let (_, line_number, data_type, token_value) = parser.l_decl()?;
-    let rule_index;
-    if data_type.0.as_ref().eq("int") {
-        rule_index = 0;
-    } else if data_type.0.as_ref().eq("float") {
-        rule_index = 1
-    } else if data_type.0.as_ref().eq("bool") {
-        rule_index = 2;
-    } else if data_type.0.as_ref().eq("string") {
-        rule_index = 3;
-    } else {
-        // TODO - if user-defined type then choose rule_index = 4 (new type)
-        // unimplemented!("yet to be implemented for user-defined types")
-        parser.set_identifier_to_scope(&token_value.0, &data_type.0, true);
-        return Ok(ParseSuccess{
-            lookahead: parser.get_lookahead(),
-            possible_err: None,
-        })
-    }
-    let curr_lookahead = parser.get_lookahead();
-    let (is_matched, response, err) = 
-    PackratParser::expect_optionally(|| {
-        let (_, _) = parser.expect("=")?;
-        let response = parser.r_asssign(rule_index, line_number)?;
-        Ok(response)
-    }, ParseSuccess{
-        lookahead: curr_lookahead,
-        possible_err: None,
-    });
-    parser.reset_lookahead(response.lookahead);
-    parser.set_identifier_to_scope(&token_value.0, &data_type.0, is_matched);
-    // semantic check -> type-checking
-    if is_matched {
-        Ok(ParseSuccess{
-            lookahead: parser.get_lookahead(),
-            possible_err: None,
-        })
-    } else {
-        Ok(ParseSuccess{
-            lookahead: parser.get_lookahead(),
-            possible_err: err,
-        })
-    }
+    parser.expect("let")?;
+    let (_, _, token_value) = parser.expect_any_id()?;
+    parser.expect("=")?;
+    let (response, data_type) = parser.r_assign()?;
+    println!("{}", data_type);
+    parser.set_identifier_to_scope(&token_value, &data_type, true);
+    Ok(response)
 }
 
 pub fn decl_factor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
@@ -63,12 +42,11 @@ pub fn decl_factor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
                         return Ok(response)
                     } else {
                         let line_number = parser.get_curr_line_number();
+                        let index = parser.get_index();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            line_number, 
-                            parser.get_code_line(line_number),
-                            parser.get_index(),
+                            parser.get_code_line(line_number, index),
                             format!(
-                            "expected a 'newline', got '{}'", PackratParser::parse_for_err_message(
+                            "expected 'newline', got '{}'", PackratParser::parse_for_err_message(
                                 parser.get_next_token_name().to_string())
                             )
                         ));
@@ -92,5 +70,6 @@ pub fn decls(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         }
     }
     let response = parser.decl_factor()?;
+    // parser.expect("\n")?;
     Ok(response)
 }

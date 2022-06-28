@@ -46,10 +46,9 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         },
         _ => {
             let line_number = parser.get_curr_line_number();
+            let index = parser.get_index();
             Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-            line_number,
-            parser.get_code_line(line_number),
-            parser.get_index(), 
+            parser.get_code_line(line_number, index),
             String::from(
                 "got a numeric expression inside a boolean expression\n    numeric expression can only be paired using '==', '>=', '>', '<=' or '<' inside a boolean expression")))
             )
@@ -112,66 +111,31 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
             }
         },
         CoreToken::IDENTIFIER(_) => {
-            /*
-            match parser.expect_id() {
-                Ok((response, line_number, _, data_type, is_init)) => {
-                    if !is_init {
-                        if let Some(token_value) = token_value {
-                            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                                line_number,
-                                parser.get_code_line(line_number),
-                                parser.get_index(), format!(
-                                    "identifier '{}' is not initialized", token_value.0.clone())))
-                                )
-                        } else {
-                            unreachable!("identifier token must have a value")
-                        }
-                    }
-                    if data_type.to_string().eq("bool") {
-                        return Ok(response);
-                    } else {
-                        return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                            line_number,
-                            parser.get_code_line(line_number),
-                            parser.get_index(), format!(
-                                "expected an identifier with type 'bool' in an boolean expression, got type '{}'", 
-                                data_type)))
-                            );
-                    }
-                },
-                Err(err) => {
-                    return Err(err);
-                }
-            }*/
-            let (response, data_type) = parser.atom()?;
+            let index = parser.get_index();
+            let (response, data_type, _) = parser.atom()?;
             if let Some(data_type) = data_type {
                 if data_type.as_ref().eq("bool") {
                     return Ok(response)
                 } else {
                     let line_number = parser.get_curr_line_number();
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                        line_number,
-                        parser.get_code_line(line_number),
-                        parser.get_index(), 
+                        parser.get_code_line(line_number, index),
                         format!("expected value with type 'bool' in a boolean expression, got type '{}'", data_type)))
                     );
                 }
             } else {
                 let line_number = parser.get_curr_line_number();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                    line_number,
-                    parser.get_code_line(line_number),
-                    parser.get_index(), 
+                    parser.get_code_line(line_number, index), 
                     String::from("value with type 'None' found in boolean expression")))
                 );
             }
         },
         _ => {
             let line_number = parser.get_curr_line_number();
+            let index = parser.get_index();
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-            line_number,
-            parser.get_code_line(line_number),
-            parser.get_index(),
+            parser.get_code_line(line_number, index),
             format!("expected '(', 'True', 'False', 'not' or an identifier, got '{}'",
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
@@ -225,11 +189,10 @@ pub fn andtive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                         return Ok(response)
                     } else {
                         let line_number = parser.get_curr_line_number();
+                        let index = parser.get_index();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            line_number, 
-                            parser.get_code_line(line_number),
-                            parser.get_index(),
-                            format!("expected a ')', 'or', 'and', ',' or 'newline', got '{}'", 
+                            parser.get_code_line(line_number, index),
+                            format!("expected ')', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);
@@ -275,11 +238,10 @@ pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                         return Ok(response)
                     } else {
                         let line_number = parser.get_curr_line_number();
+                        let index = parser.get_index();
                         let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            line_number,
-                            parser.get_code_line(line_number), 
-                            parser.get_index(),
-                            format!("expected a ')', 'or', 'and', ',' or 'newline', got '{}'", 
+                            parser.get_code_line(line_number, index),
+                            format!("expected ')', 'or', 'and', ',' or 'newline', got '{}'", 
                             PackratParser::parse_for_err_message(parser.get_next_token_name().to_string()))
                         ));
                         return Err(err);

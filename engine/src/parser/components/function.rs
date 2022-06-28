@@ -3,15 +3,16 @@ use crate::lexer::token::CoreToken;
 use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
 use std::rc::Rc;
 
-pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, usize)), ParseError> {
     let mut errors_vec: Vec<ParseError> = vec![];
     let curr_lookahead = parser.get_lookahead();
+    let index = parser.get_index();
     match parser.expr() {
         Ok((response, has_float)) => {
             if has_float {
-                return Ok((response, Rc::new(String::from("float"))))
+                return Ok((response, (Rc::new(String::from("float")), index)))
             } else {
-                return Ok((response, Rc::new(String::from("int"))))
+                return Ok((response, (Rc::new(String::from("int")), index)))
             }
         },
         Err(err) => {
@@ -21,7 +22,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
     }
     match parser.bexpr() {
         Ok(response) => {
-            return Ok((response, Rc::new(String::from("bool"))))
+            return Ok((response, (Rc::new(String::from("bool")), index)))
         },
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
@@ -29,25 +30,25 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
         }
     }
     match parser.expect("literal") {
-        Ok((response, _)) => return Ok((response, Rc::new(String::from("string")))),
+        Ok((response, _)) => return Ok((response, (Rc::new(String::from("string")), index))),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);
             errors_vec.push(err)
         }
     }
     match parser.atom() {
-        Ok((response, data_type)) => {
+        Ok((response, data_type, _)) => {
             if let Some(data_type) = data_type {
-                if parser.check_next_token(")")
+                if parser.check_next_token("\n")
+                || parser.check_next_token(")")
                 || parser.check_next_token(",") {
-                    return Ok((response, data_type))
+                    return Ok((response, (data_type, index)))
                 } else {
                     let line_number = parser.get_curr_line_number();
+                    let index = parser.get_index();
                     let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                        line_number, 
-                        parser.get_code_line(line_number),
-                        parser.get_index(), 
-                        format!("expected ',' or ')', got '{}'", 
+                        parser.get_code_line(line_number, index),
+                        format!("expected 'newline', ',' or ')', got '{}'",
                         PackratParser::parse_for_err_message(parser.get_next_token_name().to_string())))
                     );
                     parser.reset_lookahead(curr_lookahead);
@@ -55,10 +56,9 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
                 }
             } else {
                 let line_number = parser.get_curr_line_number();
+                let index = parser.get_index();
                 let err = ParseError::SEMANTIC_ERROR(SemanticError::new(
-                    line_number, 
-                    parser.get_code_line(line_number),
-                    parser.get_index(), 
+                    parser.get_code_line(line_number, index),
                     String::from("argument with type 'None' found"))
                 );
                 parser.reset_lookahead(curr_lookahead);
@@ -73,11 +73,10 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), P
     Err(aggregate_errors(errors_vec))
 }
 
-pub fn params(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<Rc<String>>), ParseError> {
-    let mut params_data_type_vec: Vec<Rc<String>> = vec![];
+pub fn params(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<(Rc<String>, usize)>), ParseError> {
+    let mut params_data_type_vec: Vec<(Rc<String>, usize)> = vec![];
     match parser.get_curr_core_token() {
         CoreToken::RPAREN => {
-            // let (response, line_number) = parser.expect(")")?;
             return Ok((ParseSuccess{
                 lookahead: parser.get_lookahead(),
                 possible_err: None,
@@ -100,10 +99,9 @@ pub fn params(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<Rc
             Ok((response, line_number, params_data_type_vec))
         }
         _ => {
+            let index = parser.get_index();
             return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
-                line_number, 
-                parser.get_code_line(line_number),
-                parser.get_index(), 
+                parser.get_code_line(line_number, index),
                 format!("expected ',' or ')', got '{}'", 
                 PackratParser::parse_for_err_message(token_name.to_string()))))
             )

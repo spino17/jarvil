@@ -1,15 +1,12 @@
 use std::rc::Rc;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::ParseError;
-use crate::lexer::token::{CoreToken, TokenValue};
+use crate::lexer::token::{CoreToken};
 use crate::errors::SyntaxError;
 
 pub fn struct_stmt(parser: &mut PackratParser, name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
-    // parser.expect("type")?;
-    // let (_, _, token_value) = parser.expect_any_id()?;
-    // parser.expect(":")?;
-    let (response, fields_map) = parser.struct_block()?;
-    parser.set_user_defined_struct_type_to_scope(name, &Rc::new(fields_map));
+    let (response, fields_vec) = parser.struct_block()?;
+    parser.set_user_defined_struct_type_to_scope(name, &Rc::new(fields_vec));
     Ok(response)
 }
 
@@ -39,19 +36,18 @@ pub fn type_decl_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseE
     parser.expect(":")?;
     match parser.get_curr_core_token() {
         CoreToken::NEWLINE => {
-            return parser.struct_stmt(&token_value.0)
+            return parser.struct_stmt(&token_value)
         },
         CoreToken::LPAREN => {
-            return parser.lambda_stmt(&token_value.0)
+            return parser.lambda_stmt(&token_value)
         },
         _ => {
             let line_number = parser.get_curr_line_number();
+            let index = parser.get_index();
             let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                line_number,
-                parser.get_code_line(line_number),
-                parser.get_index(),
+                parser.get_code_line(line_number, index),
                 format!(
-                "expected a 'newline' or '(', got '{}'", PackratParser::parse_for_err_message(
+                "expected 'newline' or '(', got '{}'", PackratParser::parse_for_err_message(
                     parser.get_next_token_name().to_string())
                 )
             ));

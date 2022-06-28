@@ -14,9 +14,7 @@ pub fn try_compound_stmt(parser: &mut PackratParser) -> Result<(Option<ParseSucc
         },
         CoreToken::DEF => {
             match parser.function_declaration() {
-                Ok(response) => {
-                    return Ok((Some(response), true))
-                },
+                Ok(response) => return Ok((Some(response), true)),
                 Err(err) => {
                     return Err(err);
                 }
@@ -37,6 +35,6 @@ pub fn stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             unreachable!("a successfull parse of compound statement always give some response")
         }
     } else {
-        parser.simple_stmts()
+        parser.simple_stmt()
     }
 }

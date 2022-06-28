@@ -12,6 +12,8 @@ const ELSE:                 &'static str = "else";
 const TYPE_KEYWORD:         &'static str = "type";
 const INTERFACE_KEYWORD:    &'static str = "interface";
 const DEF:                  &'static str = "def";
+const LET:                  &'static str = "let";
+const SELF:                 &'static str = "self";
 const AND:                  &'static str = "and";
 const NOT:                  &'static str = "not";
 const OR:                   &'static str = "or";
@@ -23,7 +25,7 @@ const FALSE:                &'static str = "False";
 const NONE:                 &'static str = "None";
 const RETURN:               &'static str = "return";
 
-pub const KEYWORDS: [&'static str; 20] = [
+pub const KEYWORDS: [&'static str; 22] = [
     FOR,
     WHILE,
     CONTINUE,
@@ -34,6 +36,8 @@ pub const KEYWORDS: [&'static str; 20] = [
     TYPE_KEYWORD,
     INTERFACE_KEYWORD,
     DEF,
+    LET,
+    SELF,
     AND,
     NOT,
     OR,
@@ -130,46 +134,50 @@ pub const DIGITS: [char; 10] = [
 pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
     // TODO - try to keep in the same map
     if context::is_keyword(&value) {
-        if value.eq(FOR) {
-            (CoreToken::FOR, String::from(FOR))
-        } else if value.eq(WHILE) {
-            (CoreToken::WHILE, String::from(WHILE))
-        } else if value.eq(CONTINUE) {
-            (CoreToken::CONTINUE, String::from(CONTINUE))
-        } else if value.eq(BREAK) {
-            (CoreToken::BREAK, String::from(BREAK))
-        } else if value.eq(IF) {
-            (CoreToken::IF, String::from(IF))
-        } else if value.eq(ELIF) {
-            (CoreToken::ELIF, String::from(ELIF))
-        } else if value.eq(ELSE) {
-            (CoreToken::ELSE, String::from(ELSE))
-        }  else if value.eq(TYPE_KEYWORD) {
-            (CoreToken::TYPE_KEYWORD, String::from(TYPE_KEYWORD))
-        } else if value.eq(INTERFACE_KEYWORD) {
-            (CoreToken::INTERFACE_KEYWORD, String::from(INTERFACE_KEYWORD))
-        } else if value.eq(DEF) {
-            (CoreToken::DEF, String::from(DEF))
-        } else if value.eq(AND) {
-            (CoreToken::AND, String::from(AND))
-        } else if value.eq(NOT) {
-            (CoreToken::NOT, String::from(NOT))
-        } else if value.eq(OR) {
-            (CoreToken::OR, String::from(OR))
-        } else if value.eq(IS) {
-            (CoreToken::IS, String::from(IS))
-        } else if value.eq(IN) {
-            (CoreToken::IN, String::from(IN))
-        } else if value.eq(NEW) {
-            (CoreToken::NEW, String::from(NEW))
-        } else if value.eq(TRUE) {
-            (CoreToken::TRUE, String::from(TRUE))
-        } else if value.eq(FALSE) {
-            (CoreToken::FALSE, String::from(FALSE))
-        } else if value.eq(NONE) {
-            (CoreToken::NONE, String::from(NONE))
-        } else if value.eq(RETURN) {
-            (CoreToken::RETURN, String::from(RETURN))
+        if value.eq(FOR)                        {
+            (CoreToken::FOR,                String::from(FOR))
+        } else if value.eq(WHILE)               {
+            (CoreToken::WHILE,              String::from(WHILE))
+        } else if value.eq(CONTINUE)            {
+            (CoreToken::CONTINUE,           String::from(CONTINUE))
+        } else if value.eq(BREAK)               {
+            (CoreToken::BREAK,              String::from(BREAK))
+        } else if value.eq(IF)                  {
+            (CoreToken::IF,                 String::from(IF))
+        } else if value.eq(ELIF)                {
+            (CoreToken::ELIF,               String::from(ELIF))
+        } else if value.eq(ELSE)                {
+            (CoreToken::ELSE,               String::from(ELSE))
+        }  else if value.eq(TYPE_KEYWORD)       {
+            (CoreToken::TYPE_KEYWORD,       String::from(TYPE_KEYWORD))
+        } else if value.eq(INTERFACE_KEYWORD)   {
+            (CoreToken::INTERFACE_KEYWORD,  String::from(INTERFACE_KEYWORD))
+        } else if value.eq(DEF)                 {
+            (CoreToken::DEF,                String::from(DEF))
+        } else if value.eq(LET)                 {
+            (CoreToken::LET,                String::from(LET))
+        } else if value.eq(SELF)                 {
+            (CoreToken::SELF,               String::from(SELF))
+        } else if value.eq(AND)                 {
+            (CoreToken::AND,                String::from(AND))
+        } else if value.eq(NOT)                 {
+            (CoreToken::NOT,                String::from(NOT))
+        } else if value.eq(OR)                  {
+            (CoreToken::OR,                 String::from(OR))
+        } else if value.eq(IS)                  {
+            (CoreToken::IS,                 String::from(IS))
+        } else if value.eq(IN)                  {
+            (CoreToken::IN,                 String::from(IN))
+        } else if value.eq(NEW)                 {
+            (CoreToken::NEW,                String::from(NEW))
+        } else if value.eq(TRUE)                {
+            (CoreToken::TRUE,               String::from(TRUE))
+        } else if value.eq(FALSE)               {
+            (CoreToken::FALSE,              String::from(FALSE))
+        } else if value.eq(NONE)                {
+            (CoreToken::NONE,               String::from(NONE))
+        } else if value.eq(RETURN)              {
+            (CoreToken::RETURN,             String::from(RETURN))
         } else {
             unreachable!("keyword missing in the matching arms")
         }
