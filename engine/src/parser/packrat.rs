@@ -13,6 +13,10 @@ use crate::parser::components;
 use crate::context;
 use rustc_hash::FxHashMap;
 
+pub enum RoutineCache {
+    ATOM(FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>>),
+}
+
 pub struct ParseSuccess {
     pub lookahead: usize,
     pub possible_err: Option<ParseError>,
@@ -24,6 +28,7 @@ pub struct PackratParser {
     indent_level: i64,
     env: Env,
     code_lines: Vec<(Rc<String>, usize)>,
+    cache: Vec<RoutineCache>,
     // TODO - add look up hash table for cached results
     // TODO - add AST data structure
 }
@@ -31,12 +36,14 @@ pub struct PackratParser {
 impl PackratParser {
     pub fn new(code_lines: Vec<(Rc<String>, usize)>) -> Self {
         let env = Env::new();
+        let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>> = FxHashMap::default();
         PackratParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
             env,
             code_lines,
+            cache: vec![RoutineCache::ATOM(atom_cache_map)],
         }
     }
 }
