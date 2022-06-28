@@ -173,6 +173,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
         token_value, symbol_data) = parser.expect_any_id_in_scope()?;
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
+            // TODO - check id for type also (constructor in that case)
             let params: Rc<Vec<(Rc<String>, Rc<String>)>>;
             let return_type: Rc<Option<Rc<String>>>;
             if let Some(response) = symbol_data.get_function_data() {
