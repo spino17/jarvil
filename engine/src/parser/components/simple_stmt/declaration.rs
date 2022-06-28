@@ -2,8 +2,14 @@ use crate::parser::packrat::PackratParser;
 use crate::errors::{ParseError, SyntaxError};
 use crate::parser::packrat::ParseSuccess;
 use crate::lexer::token::CoreToken;
+use std::rc::Rc;
+
+pub fn r_assign(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+    todo!()
+}
 
 pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+    /*
     let (_, line_number, data_type, token_value) = parser.param_decl()?;
     let rule_index;
     if data_type.0.as_ref().eq("int") {
@@ -47,6 +53,13 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             possible_err: err,
         })
     }
+     */
+    parser.expect("let")?;
+    let (_, _, token_value) = parser.expect_any_id()?;
+    parser.expect("=")?;
+    let (response, data_type) = parser.r_assign()?;
+    parser.set_identifier_to_scope(&token_value.0, &data_type, true);
+    Ok(response)
 }
 
 pub fn decl_factor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {

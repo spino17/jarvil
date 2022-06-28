@@ -574,6 +574,10 @@ impl PackratParser {
         components::simple_stmt::assignment::assign(self)
     }
 
+    pub fn r_assign(&mut self) -> Result<(ParseSuccess, Rc<String>), ParseError> {
+        components::simple_stmt::declaration::r_assign(self)
+    }
+
     pub fn param_decl(&mut self) -> Result<(ParseSuccess, usize, TokenValue, TokenValue), ParseError> {
         components::simple_stmt::helper::param_decl(self)
     }
