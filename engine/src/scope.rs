@@ -8,7 +8,7 @@
 // 4. During parsing phase, when we encounter any statement involving identifiers then we access it for checking declartions, 
 // datatypes etc.
 
-use std::cell::RefCell;
+use std::{cell::RefCell};
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
 
@@ -30,6 +30,7 @@ struct IdentifierData {
 
 #[derive(Debug)]
 pub struct StructType {
+    name: Rc<String>,
     fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
     methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
     // interfaces: Rc<Vec<Rc<String>>>,
@@ -104,6 +105,7 @@ impl SymbolData {
                 match data {
                     UserDefinedTypeData::STRUCT(struct_data) => {
                         Some(UserDefinedTypeData::STRUCT(StructType{
+                            name: struct_data.name.clone(),
                             fields: struct_data.fields.clone(),
                             methods: struct_data.methods.clone(),
                         }))
@@ -119,6 +121,27 @@ impl SymbolData {
             _ => {
                 None
             }
+        }
+    }
+
+    pub fn get_struct_constructor_data(&self) -> Option<FunctionData> {
+        match self.get_user_defined_type_data() {
+            Some(response) => {
+                match response {
+                    UserDefinedTypeData::STRUCT(struct_data) => {
+                        if let Some(function_data) = struct_data.methods.get(&struct_data.name) {
+                            Some(FunctionData{
+                                params: function_data.params.clone(),
+                                return_type: function_data.return_type.clone(),
+                            })
+                        } else {
+                            unreachable!("struct type always have constructor with same name")
+                        }
+                    },
+                    _ => None
+                }
+            },
+            None => None
         }
     }
 
@@ -271,10 +294,22 @@ impl Env {
         self.0.borrow_mut().set_init(identifier_name);
     }
 
-    pub fn set_user_defined_struct_type(&self, identifier_name: &Rc<String>, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
+    pub fn set_user_defined_struct_type(&self, identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
+        let mut constructor_data: Vec<(Rc<String>, Rc<String>)> = vec![];
+        let mut fields_map: FxHashMap<Rc<String>, Rc<String>> = FxHashMap::default();
+        for (field_name, data_type) in fields.as_ref() {
+            constructor_data.push((field_name.clone(), data_type.clone()));
+            fields_map.insert(field_name.clone(), data_type.clone());
+        }
+        let mut methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
+        methods.insert(identifier_name.clone(), FunctionData {
+            params: Rc::new(constructor_data), 
+            return_type: Rc::new(Some(identifier_name.clone())),
+        });
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::STRUCT(StructType{
-            fields: fields.clone(),
-            methods: Rc::new(FxHashMap::default()),
+            name: identifier_name.clone(),
+            fields: Rc::new(fields_map),
+            methods: Rc::new(methods),
         }));
         self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }

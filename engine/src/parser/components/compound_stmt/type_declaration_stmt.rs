@@ -5,8 +5,8 @@ use crate::lexer::token::{CoreToken};
 use crate::errors::SyntaxError;
 
 pub fn struct_stmt(parser: &mut PackratParser, name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
-    let (response, fields_map) = parser.struct_block()?;
-    parser.set_user_defined_struct_type_to_scope(name, &Rc::new(fields_map));
+    let (response, fields_vec) = parser.struct_block()?;
+    parser.set_user_defined_struct_type_to_scope(name, &Rc::new(fields_vec));
     Ok(response)
 }
 

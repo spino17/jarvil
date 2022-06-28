@@ -102,7 +102,7 @@ impl PackratParser {
     }
 
     pub fn set_user_defined_struct_type_to_scope(&mut self, 
-        identifier_name: &Rc<String>, fields: &Rc<FxHashMap<Rc<String>, Rc<String>>>) {
+        identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
         self.env.set_user_defined_struct_type(identifier_name, fields);
     }
 
@@ -511,7 +511,7 @@ impl PackratParser {
         components::block::block(self, params)
     }
 
-    pub fn struct_block(&mut self) -> Result<(ParseSuccess, FxHashMap<Rc<String>, Rc<String>>), ParseError> {
+    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
         components::block::struct_block(self)
     }
 

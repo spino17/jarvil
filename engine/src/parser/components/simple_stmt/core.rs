@@ -23,7 +23,7 @@ pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
 pub fn simple_stmt_alternatives(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::LET => {
-            parser.decls()
+            return parser.decls()
         },
         _ => {
             let mut errors_vec: Vec<ParseError> = vec![];

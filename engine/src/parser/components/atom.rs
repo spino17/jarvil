@@ -178,10 +178,12 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
             // TODO - check id for type also (constructor in that case)
             let params: Rc<Vec<(Rc<String>, Rc<String>)>>;
             let return_type: Rc<Option<Rc<String>>>;
-            if let Some(response) = symbol_data.get_function_data() {
-                (params, return_type) = (response.params, response.return_type);
+            if let Some(function_data) = symbol_data.get_function_data() {
+                (params, return_type) = (function_data.params, function_data.return_type);
             } else if let Some(lambda_data) = parser.has_lambda_type(&symbol_data) {
                 (params, return_type) = (lambda_data.params, lambda_data.return_type);
+            } else if let Some(struct_constructor_data) = symbol_data.get_struct_constructor_data() {
+                (params, return_type) = (struct_constructor_data.params, struct_constructor_data.return_type);
             } else {
                 let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
