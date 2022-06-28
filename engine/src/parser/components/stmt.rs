@@ -35,6 +35,6 @@ pub fn stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             unreachable!("a successfull parse of compound statement always give some response")
         }
     } else {
-        parser.simple_stmts()
+        parser.simple_stmt()
     }
 }

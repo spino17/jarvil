@@ -549,12 +549,12 @@ impl PackratParser {
         components::compound_stmt::function_stmt::optparams_factor(self)
     }
 
-    pub fn simple_stmts(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::core::simple_stmts(self)
-    }
-
     pub fn simple_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::core::simple_stmt(self)
+    }
+
+    pub fn simple_stmt_alternatives(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::core::simple_stmt_alternatives(self)
     }
 
     // simple statement - decl, assign

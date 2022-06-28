@@ -2,9 +2,9 @@ use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, aggregate_errors};
 use crate::lexer::token::CoreToken;
 
-pub fn simple_stmts(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let mut errors_vec: Vec<ParseError> = vec![];
-    let response = parser.simple_stmt()?;
+    let response = parser.simple_stmt_alternatives()?;
     if let Some(err) = response.possible_err {
         errors_vec.push(err);
     }
@@ -20,7 +20,7 @@ pub fn simple_stmts(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErr
     Err(aggregate_errors(errors_vec))
 }
 
-pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn simple_stmt_alternatives(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::LET => {
             parser.decls()
