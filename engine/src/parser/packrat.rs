@@ -13,6 +13,7 @@ use crate::parser::components;
 use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
+use crate::parser::helper::clone_atom_result;
 
 pub enum RoutineCache {
     ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>>>>),
@@ -255,11 +256,6 @@ impl PackratParser {
                 None
             }
         }
-    }
-
-    pub fn get_atom_result(&self, result: &Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>) 
-        -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
-        todo!()
     }
 
     // parsing routines for terminals
@@ -705,7 +701,7 @@ impl PackratParser {
                 match atom_cache_map.borrow().get(&curr_lookahead) {
                     Some(result) => {
                         println!("cache hit!");
-                        let result = self.get_atom_result(result);
+                        let result = clone_atom_result(result);
                         match result {
                             Ok(response) => {
                                 self.reset_lookahead(response.0.lookahead);
@@ -717,7 +713,7 @@ impl PackratParser {
                     _ => {}
                 }
                 let result = components::atom::atom(self);
-                let result_entry = self.get_atom_result(&result);
+                let result_entry = clone_atom_result(&result);
                 atom_cache_map.borrow_mut().insert(curr_lookahead, result_entry);
                 result
             },
