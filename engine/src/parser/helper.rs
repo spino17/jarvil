@@ -19,10 +19,11 @@ pub fn clone_error(err: &ParseError) -> ParseError {
     }
 }
 
-pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>) 
--> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError>) 
+-> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
     match result {
         Ok(response) => {
+            println!("response: {:?}", response);
             let possible_err = match &response.0.possible_err {
                 Some(val) => Some(clone_error(val)),
                 None => None,
@@ -35,7 +36,7 @@ pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Rc<String>>, bool
                 Some(data_type) => Some(data_type.clone()),
                 None => None,
             };
-            Ok((parse_success, data_type, response.2))
+            Ok((parse_success, data_type, response.2, response.3))
         },
         Err(err) => {
             Err(clone_error(err))

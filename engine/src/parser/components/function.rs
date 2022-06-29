@@ -30,7 +30,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
         }
     }
     match parser.atom() {
-        Ok((response, data_type, _)) => {
+        Ok((response, data_type, _, _)) => {
             if let Some(data_type) = data_type {
                 if parser.check_next_token("\n")
                 || parser.check_next_token(")")
@@ -49,10 +49,10 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Rc<String>, u
                 }
             } else {
                 let line_number = parser.get_curr_line_number();
-                let index = parser.get_index();
+                // let index = parser.get_index();
                 let err = ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
-                    String::from("argument with type 'None' found"))
+                    String::from("value with type 'None' found"))
                 );
                 parser.reset_lookahead(curr_lookahead);
                 errors_vec.push(err)

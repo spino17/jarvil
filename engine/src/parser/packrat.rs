@@ -18,7 +18,7 @@ use crate::parser::helper::{clone_atom_result, clone_expr_result};
 #[derive(Debug)]
 pub enum RoutineCache {
     // currently only two routine (atom, expr) results are cached by the parser
-    ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>>>>),
+    ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError>>>>),
     EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>>>>),
 }
 
@@ -41,7 +41,7 @@ pub struct PackratParser {
 impl PackratParser {
     pub fn new(code_lines: Vec<(Rc<String>, usize)>) -> Self {
         let env = Env::new();
-        let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>> = FxHashMap::default();
+        let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError>> = FxHashMap::default();
         let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>> = FxHashMap::default();
         PackratParser {
             token_vec: Vec::new(),
@@ -141,8 +141,8 @@ impl PackratParser {
         self.env.set_method_to_struct(struct_name, method_name, method_data);
     }
 
-    pub fn has_field_with_name(&self, data_type: &Rc<String>, field_name: &Rc<String>) -> Option<Rc<String>> {
-        match self.env.get(data_type) {
+    pub fn has_field_with_name(&self, struct_name: &Rc<String>, field_name: &Rc<String>) -> Option<Rc<String>> {
+        match self.env.get(struct_name) {
             Some(symbol_data) => {
                 match &symbol_data.has_field_with_name(field_name) {
                     Some(val) => Some(val.clone()),
@@ -802,7 +802,7 @@ impl PackratParser {
     }
 
     // atom
-    pub fn atom(&mut self) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+    pub fn atom(&mut self) -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
         let routine_index = 0;  // routine_index for atom is 0
         let cache_map = self.cache[routine_index].clone();
         self.ignore_blanks();
@@ -810,15 +810,15 @@ impl PackratParser {
         match cache_map.as_ref() {
             RoutineCache::ATOM(atom_cache_map) => {
                 let routine_fn 
-                = move |parser: &mut PackratParser| -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+                = move |parser: &mut PackratParser| -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
                     components::atom::atom(parser)
                 };
                 let clone_result_fn 
-                = move |result: &Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>| -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+                = move |result: &Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError>| -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
                     clone_atom_result(result)
                 };
                 let get_lookahead_fn 
-                = move |response: &(ParseSuccess, Option<Rc<String>>, bool)| -> usize {
+                = move |response: &(ParseSuccess, Option<Rc<String>>, bool, bool)| -> usize {
                     response.0.lookahead
                 };
                 self.get_or_set_cache(atom_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead, "atom")
@@ -828,8 +828,9 @@ impl PackratParser {
     }
 
     pub fn check_atom_factor(&mut self, 
-        data_type: Option<Rc<String>>, is_assignable: bool) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
-        components::atom::check_atom_factor(self, data_type, is_assignable)
+        data_type: Option<Rc<String>>, 
+        is_assignable: bool, is_function_call: bool) -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
+        components::atom::check_atom_factor(self, data_type, is_assignable, is_function_call)
     }
 
     pub fn params(&mut self) -> Result<(ParseSuccess, usize, Vec<(Rc<String>, usize)>), ParseError> {

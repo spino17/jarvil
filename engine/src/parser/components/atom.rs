@@ -78,13 +78,15 @@ pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, V
 }
 
 pub fn check_atom_factor(parser: &mut PackratParser, 
-    data_type: Option<Rc<String>>, mut is_assignable: bool) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+    data_type: Option<Rc<String>>, 
+    mut is_assignable: bool, mut is_function_call: bool) -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
     let (response, line_number, sub_part_access_vec) = parser.atom_factor()?;
     let mut curr_type = data_type;
     for entry in &sub_part_access_vec {
         match entry {
             CompoundPart::INDEX_TYPE((key_data_type, index)) => {
                 if let Some(curr_type_val) = curr_type {
+                    is_function_call = false;
                     todo!()
                 } else {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
@@ -97,6 +99,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                 if let Some(curr_type_val) = curr_type {
                     if let Some(field_data_type) = parser.has_field_with_name(&curr_type_val, property_name) {
                         curr_type = Some(field_data_type.clone());
+                        is_function_call = false;
                     } else {
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                             parser.get_code_line(line_number, *index),
@@ -149,6 +152,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                             }
                         }
                         is_assignable = false;
+                        is_function_call = true;
                     } else {
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                             parser.get_code_line(line_number, method_data.2),
@@ -164,14 +168,15 @@ pub fn check_atom_factor(parser: &mut PackratParser,
             },
         }
     }
-    Ok((response, curr_type, is_assignable))
+    Ok((response, curr_type, is_assignable, is_function_call))
 }
 
-pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
     let index = parser.get_index();
     let (_, line_number, 
         token_value, symbol_data) = parser.expect_any_id_in_scope()?;
     let mut is_assignable = true;
+    let mut is_function_call = false;
     match parser.get_curr_core_token() {
         CoreToken::DOUBLE_COLON => {
             if let Some(struct_data) = symbol_data.get_user_defined_struct_type_data() {
@@ -201,7 +206,8 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                     }
                 }
                 is_assignable = false;
-                parser.check_atom_factor(data_type, is_assignable)
+                is_function_call = true;
+                parser.check_atom_factor(data_type, is_assignable, is_function_call)
             } else {
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
@@ -262,7 +268,8 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 }
             }
             is_assignable = false;
-            parser.check_atom_factor(data_type, is_assignable)
+            is_function_call = true;
+            parser.check_atom_factor(data_type, is_assignable, is_function_call)
         },
         _ => {
             let data_type;
@@ -285,7 +292,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                         "cannot access parts of uninitialized identifier '{}'", token_value.clone())))
                     )
             }
-            parser.check_atom_factor(Some(data_type), is_assignable)
+            parser.check_atom_factor(Some(data_type), is_assignable, is_function_call)
         }
     }
 }

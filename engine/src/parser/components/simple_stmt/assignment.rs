@@ -3,7 +3,7 @@ use crate::errors::{ParseError, SemanticError};
 
 pub fn assign(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let index = parser.get_index();
-    let (_, data_type, is_assignable) = parser.atom()?;
+    let (_, data_type, is_assignable, _) = parser.atom()?;
     parser.expect("=")?;
     if !is_assignable {
         let line_number = parser.get_curr_line_number();

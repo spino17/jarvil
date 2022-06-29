@@ -12,8 +12,6 @@ use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
 
-use crate::parser::components::function;
-
 #[derive(Debug)]
 struct GenericSymbolVSBounds(Rc<FxHashMap<Rc<String>, Rc<Vec<Rc<String>>>>>);
 
