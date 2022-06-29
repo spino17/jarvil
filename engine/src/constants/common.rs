@@ -14,6 +14,7 @@ const INTERFACE_KEYWORD:    &'static str = "interface";
 const DEF:                  &'static str = "def";
 const LET:                  &'static str = "let";
 const SELF:                 &'static str = "self";
+const IMPL:                 &'static str = "impl";
 const AND:                  &'static str = "and";
 const NOT:                  &'static str = "not";
 const OR:                   &'static str = "or";
@@ -25,7 +26,7 @@ const FALSE:                &'static str = "False";
 const NONE:                 &'static str = "None";
 const RETURN:               &'static str = "return";
 
-pub const KEYWORDS: [&'static str; 22] = [
+pub const KEYWORDS: [&'static str; 23] = [
     FOR,
     WHILE,
     CONTINUE,
@@ -38,6 +39,7 @@ pub const KEYWORDS: [&'static str; 22] = [
     DEF,
     LET,
     SELF,
+    IMPL,
     AND,
     NOT,
     OR,
@@ -158,6 +160,8 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
             (CoreToken::LET,                String::from(LET))
         } else if value.eq(SELF)                 {
             (CoreToken::SELF,               String::from(SELF))
+        } else if value.eq(IMPL)                 {
+            (CoreToken::IMPL,               String::from(IMPL))
         } else if value.eq(AND)                 {
             (CoreToken::AND,                String::from(AND))
         } else if value.eq(NOT)                 {

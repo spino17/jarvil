@@ -31,6 +31,7 @@ pub enum CoreToken {
     NEW,                // 'new'
     LET,                // 'let'
     SELF,               // 'self'
+    IMPL,               // 'impl'
     INTERFACE_KEYWORD,  // 'interface'
 
     // bitwise operators
@@ -61,6 +62,7 @@ pub enum CoreToken {
     // delimiters
     SEMICOLON,          // ';'
     COLON,              // ':'
+    DOUBLE_COLON,       // '::'
     COMMA,              // ','
     DOT,                // '.'
     BLANK,              // ' '
@@ -140,10 +142,6 @@ impl Token {
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::SEMICOLON, String::from(";"))
             },
-            ':'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::COLON, String::from(":"))
-            },
             ','         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::COMMA, String::from(","))
@@ -197,6 +195,13 @@ impl Token {
             },
             '"'         =>      {
                 helper::extract_literal_prefix_lexeme(begin_lexeme, line_number, code)?
+            },
+            ':'         =>      {
+                /*
+                *begin_lexeme = *begin_lexeme + 1;
+                (CoreToken::COLON, String::from(":"))
+                 */
+                helper::extract_colon_prefix_lexeme(begin_lexeme, code)?
             },
             c     =>      {
                 let token: CoreToken;

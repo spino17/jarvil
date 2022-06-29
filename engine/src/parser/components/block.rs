@@ -3,11 +3,34 @@ use std::vec;
 use crate::context;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError};
-use rustc_hash::FxHashMap;
+use crate::scope::{Env, StructFunction};
+
+pub fn check_block_indentation(parser: &mut PackratParser, 
+    indent_spaces: i64, err: ParseError, curr_env: &Env, curr_lookahead: usize) -> Result<ParseSuccess, ParseError> {
+    let indent_spaces_unit = context::get_indent();
+    let indent_factor = indent_spaces / indent_spaces_unit as i64;
+    let indent_remainder = indent_spaces - indent_factor * indent_spaces_unit;
+    if indent_remainder > 0 {
+        return Err(err)
+    } else {
+        if indent_spaces > indent_spaces_unit * parser.get_indent_level() {
+            return Err(err)
+        } else {
+            // block is over
+            parser.reset_env(curr_env);
+            parser.reset_indent_level(parser.get_indent_level() - 1);
+            parser.reset_lookahead(curr_lookahead);
+            return Ok(ParseSuccess{
+                lookahead: parser.get_lookahead(),
+                possible_err: None,
+            })
+        }
+    }
+}
 
 pub fn block(parser: &mut PackratParser, params: Option<&Vec<(Rc<String>, Rc<String>)>>) -> Result<ParseSuccess, ParseError> {
     parser.expect("\n")?;
-    let indent_spaces_unit = context::get_indent();
+    // let indent_spaces_unit = context::get_indent();
     let curr_env = parser.get_env();
     parser.set_new_env_for_block();
     parser.set_params_to_scope(params);
@@ -16,6 +39,7 @@ pub fn block(parser: &mut PackratParser, params: Option<&Vec<(Rc<String>, Rc<Str
     loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
         if let Some(err) = response.possible_err {
+            /*
             let indent_factor = indent_spaces / indent_spaces_unit as i64;
             let indent_remainder = indent_spaces - indent_factor * indent_spaces_unit;
             if indent_remainder > 0 {
@@ -34,6 +58,8 @@ pub fn block(parser: &mut PackratParser, params: Option<&Vec<(Rc<String>, Rc<Str
                     })
                 }
             }
+             */
+            return parser.check_block_indentation(indent_spaces, err, &curr_env, curr_lookahead)
         }
         match parser.stmt() {
             Ok(_) => {},
@@ -64,6 +90,7 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
     loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
         if let Some(err) = response.possible_err {
+            /*
             let indent_factor = indent_spaces / indent_spaces_unit as i64;
             let indent_remainder = indent_spaces - indent_factor * indent_spaces_unit;
             if indent_remainder > 0 {
@@ -82,6 +109,9 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
                     }, fields_vec))
                 }
             }
+             */
+            let response = parser.check_block_indentation(indent_spaces, err, &curr_env, curr_lookahead)?;
+            return Ok((response, fields_vec))
         }
         let (_, _, data_type, token_value) = parser.param_decl()?;
         fields_vec.push((token_value, data_type));
@@ -100,4 +130,9 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
         }
         curr_lookahead = parser.get_lookahead();
     }
+}
+
+pub fn impl_for_struct_block(parser: &mut PackratParser, 
+    struct_name: &Rc<String>) -> Result<(ParseSuccess, Vec<(Rc<String>, StructFunction)>), ParseError> {
+    todo!()
 }

@@ -8,7 +8,7 @@ use crate::lexer::token::{Token, CoreToken};
 use crate::parser::ast::AST;
 use std::rc::Rc;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
-use crate::scope::{Env, SymbolData, UserDefinedTypeData, FunctionData};
+use crate::scope::{Env, SymbolData, UserDefinedTypeData, FunctionData, StructFunction};
 use crate::parser::components;
 use crate::context;
 use rustc_hash::FxHashMap;
@@ -139,6 +139,10 @@ impl PackratParser {
                 self.set_identifier_to_scope(identifier_name, data_type, true);
             }
         }
+    }
+
+    pub fn set_methods_to_struct(&mut self, struct_name: &Rc<String>, methods_vec: Vec<(Rc<String>, StructFunction)>) {
+        todo!()
     }
 
     pub fn has_field_with_name(&self, data_type: &Rc<String>, field_name: &Rc<String>) -> Option<Rc<String>> {
@@ -463,7 +467,15 @@ impl PackratParser {
             match &token.core_token {
                 CoreToken::BLANK => indent_spaces = indent_spaces + 1,
                 CoreToken::NEWLINE => indent_spaces = 0,
-                CoreToken::TAB => unimplemented!("yet to handle tabs in indentation"),
+                CoreToken::TAB => {
+                    let index = self.get_index();
+                    let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        self.get_code_line(token.line_number, index),
+                        String::from(
+                        "incorrectly indented statement\n    tabs are not allowed for indentation"))
+                    );
+                    return Err(err)
+                },
                 _ => {
                     if indent_spaces == expected_indent_spaces {
                         return Ok((ParseSuccess{
@@ -475,7 +487,7 @@ impl PackratParser {
                         let err =ParseError::SYNTAX_ERROR(SyntaxError::new(
                             self.get_code_line(token.line_number, index),
                             format!(
-                                "incorrectly indented statement\n    expected indent of {} spaces, got {} spaces", 
+                                "incorrectly indented statement\n    expected indent of '{}' spaces, got '{}' spaces", 
                                 expected_indent_spaces, indent_spaces)));
                         return Ok((ParseSuccess{
                             lookahead: self.lookahead,
@@ -567,12 +579,22 @@ impl PackratParser {
         components::code::code(self, token_vec)
     }
 
+    pub fn check_block_indentation(&mut self, 
+        indent_spaces: i64, err: ParseError, curr_env: &Env, curr_lookahead: usize) -> Result<ParseSuccess, ParseError> {
+        components::block::check_block_indentation(self, indent_spaces, err, curr_env, curr_lookahead)
+    }
+
     pub fn block(&mut self, params: Option<&Vec<(Rc<String>, Rc<String>)>>) -> Result<ParseSuccess, ParseError> {
         components::block::block(self, params)
     }
 
     pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
         components::block::struct_block(self)
+    }
+
+    pub fn impl_for_struct_block(&mut self, 
+        struct_name: &Rc<String>) -> Result<(ParseSuccess, Vec<(Rc<String>, StructFunction)>), ParseError> {
+        components::block::impl_for_struct_block(self, struct_name)
     }
 
     // statements
@@ -591,6 +613,10 @@ impl PackratParser {
 
     pub fn lambda_stmt(&mut self, identifier_name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
         components::compound_stmt::type_declaration_stmt::lambda_stmt(self, identifier_name)
+    }
+
+    pub fn impl_for_struct(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::impl_for_struct::impl_for_struct(self)
     }
 
     // function declaration

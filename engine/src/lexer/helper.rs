@@ -26,7 +26,7 @@ pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 }
  */
 
-// - -> -, --, ->
+// - -> -, ->
 pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
@@ -344,5 +344,25 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
             return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from("float")))
         },
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
+    }
+}
+
+pub fn extract_colon_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
+    let forward_lexeme = *begin_lexeme + 1;
+    if forward_lexeme < code.len() {
+        let next_char = code[forward_lexeme];
+        match next_char {
+            ':' => {
+                *begin_lexeme = forward_lexeme + 1;
+                return Ok((CoreToken::DOUBLE_COLON, String::from("::")));
+            },
+            _ => {
+                *begin_lexeme = *begin_lexeme + 1;
+                return Ok((CoreToken::COLON, String::from(":")));
+            }
+        }
+    } else {
+        *begin_lexeme = *begin_lexeme + 1;
+        return Ok((CoreToken::COLON, String::from(":")));
     }
 }

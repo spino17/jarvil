@@ -22,6 +22,11 @@ pub struct FunctionData {
     // generic_symbols: GenericSymbolVSBounds,
 }
 
+pub enum StructFunction {
+    METHOD(FunctionData),
+    CLASS_METHOD(FunctionData),
+}
+
 #[derive(Debug)]
 struct IdentifierData {
     data_type: Rc<String>,
@@ -32,7 +37,9 @@ struct IdentifierData {
 pub struct StructType {
     name: Rc<String>,
     fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
+    constructor: FunctionData,
     methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
+    // class_methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
     // interfaces: Rc<Vec<Rc<String>>>,
     // generic_symbols: GenericSymbolVSBounds,
 }
@@ -109,6 +116,10 @@ impl SymbolData {
                         Some(UserDefinedTypeData::STRUCT(StructType{
                             name: struct_data.name.clone(),
                             fields: struct_data.fields.clone(),
+                            constructor: FunctionData{
+                                params: struct_data.constructor.params.clone(),
+                                return_type: struct_data.constructor.return_type.clone(),
+                            },
                             methods: struct_data.methods.clone(),
                         }))
                     },
@@ -126,11 +137,36 @@ impl SymbolData {
         }
     }
 
+    pub fn get_user_defined_struct_type_data(&self) -> Option<UserDefinedTypeData> {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::STRUCT(struct_data) => {
+                        Some(UserDefinedTypeData::STRUCT(StructType{
+                            name: struct_data.name.clone(),
+                            fields: struct_data.fields.clone(),
+                            constructor: FunctionData{
+                                params: struct_data.constructor.params.clone(),
+                                return_type: struct_data.constructor.return_type.clone(),
+                            },
+                            methods: struct_data.methods.clone(),
+                        }))
+                    },
+                    _ => None
+                }
+            },
+            _ => {
+                None
+            }
+        }
+    }
+
     pub fn get_struct_constructor_data(&self) -> Option<FunctionData> {
         match self.get_user_defined_type_data() {
             Some(response) => {
                 match response {
                     UserDefinedTypeData::STRUCT(struct_data) => {
+                        /*
                         if let Some(function_data) = struct_data.methods.get(&struct_data.name) {
                             Some(FunctionData{
                                 params: function_data.params.clone(),
@@ -139,6 +175,11 @@ impl SymbolData {
                         } else {
                             unreachable!("struct type always have constructor with same name")
                         }
+                         */
+                        Some(FunctionData{
+                            params: struct_data.constructor.params.clone(),
+                            return_type: struct_data.constructor.return_type.clone(),
+                        })
                     },
                     _ => None
                 }
@@ -234,7 +275,12 @@ impl SymbolData {
     pub fn get_type_of_identifier(&self) -> &str {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(_) => "identifier",
-            MetaData::USER_DEFINED_TYPE(_) => "user-defined type",
+            MetaData::USER_DEFINED_TYPE(user_defined_type) => {
+                match user_defined_type {
+                    UserDefinedTypeData::STRUCT(_) => "struct",
+                    UserDefinedTypeData::LAMBDA(_) => "lambda",
+                }
+            },
             MetaData::FUNCTION(_) => "function",
         }
     }
@@ -303,14 +349,20 @@ impl Env {
             constructor_data.push((field_name.clone(), data_type.clone()));
             fields_map.insert(field_name.clone(), data_type.clone());
         }
-        let mut methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
+        let methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
+        /*
         methods.insert(identifier_name.clone(), FunctionData {
             params: Rc::new(constructor_data), 
             return_type: Rc::new(Some(identifier_name.clone())),
         });
+         */
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::STRUCT(StructType{
             name: identifier_name.clone(),
             fields: Rc::new(fields_map),
+            constructor: FunctionData{
+                params: Rc::new(constructor_data),
+                return_type: Rc::new(Some(identifier_name.clone())),
+            },
             methods: Rc::new(methods),
         }));
         self.0.borrow_mut().set(identifier_name.clone(), meta_data);
