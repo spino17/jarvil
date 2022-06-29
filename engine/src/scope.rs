@@ -37,7 +37,7 @@ struct IdentifierData {
 
 #[derive(Debug)]
 pub struct StructType {
-    name: Rc<String>,
+    pub name: Rc<String>,
     fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
     constructor: FunctionData,
     methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
@@ -153,12 +153,12 @@ impl SymbolData {
         }
     }
 
-    pub fn get_user_defined_struct_type_data(&self) -> Option<UserDefinedTypeData> {
+    pub fn get_user_defined_struct_type_data(&self) -> Option<StructType> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
                 match data {
                     UserDefinedTypeData::STRUCT(struct_data) => {
-                        Some(UserDefinedTypeData::STRUCT(StructType{
+                        Some(StructType{
                             name: struct_data.name.clone(),
                             fields: struct_data.fields.clone(),
                             constructor: FunctionData{
@@ -167,7 +167,7 @@ impl SymbolData {
                             },
                             methods: struct_data.methods.clone(),
                             class_methods: struct_data.class_methods.clone(),
-                        }))
+                        })
                     },
                     _ => None
                 }
@@ -232,6 +232,32 @@ impl SymbolData {
                 match data {
                     UserDefinedTypeData::STRUCT(data) => {
                         match data.methods.borrow().get(method_name) {
+                            Some(val) => {
+                                Some(FunctionData{
+                                    params: val.params.clone(),
+                                    return_type: val.return_type.clone(),
+                                })
+                            },
+                            None => None,
+                        }
+                    },
+                    _ => {
+                        return None
+                    }
+                }
+            },
+            _ => {
+                None
+            }
+        }
+    }
+
+    pub fn has_class_method_with_name(&self, class_method_name: &Rc<String>) -> Option<FunctionData> {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::STRUCT(data) => {
+                        match data.class_methods.borrow().get(class_method_name) {
                             Some(val) => {
                                 Some(FunctionData{
                                     params: val.params.clone(),
@@ -317,12 +343,6 @@ impl Scope {
 
     fn get(&self, name: &Rc<String>) -> Option<&SymbolData> {
         self.symbol_table.get(name)
-    }
-
-    fn set_method_to_struct(&self, struct_name: &Rc<String>, method_name: &Rc<String>, method_data: StructFunction) {
-        if let Some(symbol_data) = self.get(struct_name) {
-            symbol_data.set_method_to_struct(method_name, method_data);
-        }
     }
 }
 

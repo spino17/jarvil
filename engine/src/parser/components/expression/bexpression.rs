@@ -136,7 +136,7 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
             let index = parser.get_index();
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
             parser.get_code_line(line_number, index),
-            format!("expected '(', 'True', 'False', 'not' or an identifier, got '{}'",
+            format!("expected '(', 'True', 'False', 'not' or identifier, got '{}'",
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
     }

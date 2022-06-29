@@ -96,7 +96,7 @@ pub fn function_declaration(parser: &mut PackratParser) -> Result<ParseSuccess, 
             let index = parser.get_index();
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
             parser.get_code_line(line_number, index),
-            format!("expected '(' or an identifier, got '{}'",
+            format!("expected '(' or identifier, got '{}'",
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
     }

@@ -153,11 +153,27 @@ impl PackratParser {
         }
     }
 
-    pub fn has_method_with_name(&self, data_type: &Rc<String>, 
+    pub fn has_method_with_name(&self, struct_name: &Rc<String>, 
         method_name: &Rc<String>) -> Option<FunctionData> {
-        match self.env.get(data_type) {
+        match self.env.get(struct_name) {
             Some(symbol_data) => {
                 match &symbol_data.has_method_with_name(method_name) {
+                    Some(val) => Some(FunctionData{
+                        params: val.params.clone(),
+                        return_type: val.return_type.clone(),
+                    }),
+                    None => None,
+                }
+            },
+            None => None
+        }
+    }
+
+    pub fn has_class_method_with_name(&self, struct_name: &Rc<String>, 
+        class_method_name: &Rc<String>) -> Option<FunctionData> {
+        match self.env.get(struct_name) {
+            Some(symbol_data) => {
+                match &symbol_data.has_class_method_with_name(class_method_name) {
                     Some(val) => Some(FunctionData{
                         params: val.params.clone(),
                         return_type: val.return_type.clone(),
@@ -309,7 +325,7 @@ impl PackratParser {
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     self.get_code_line(token.line_number, index),
                     format!(
-                    "expected an identifier, got '{}'", 
+                    "expected identifier, got '{}'", 
                     PackratParser::parse_for_err_message(token.name.to_string()))))
                 )
             }
@@ -332,7 +348,7 @@ impl PackratParser {
                 let index = self.get_index();
                 Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     self.get_code_line(token.line_number, index),
-                    format!("expected an identifier, got '{}'",
+                    format!("expected identifier, got '{}'",
                     PackratParser::parse_for_err_message( token.name.to_string()))))
                 )
             }
@@ -356,7 +372,7 @@ impl PackratParser {
                     let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         self.get_code_line(token.line_number, index),
-                        format!("expected an identifier, got a {} '{}'", 
+                        format!("expected identifier, got {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
                 }
@@ -365,7 +381,7 @@ impl PackratParser {
                 let index = self.get_index();
                 Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     self.get_code_line(token.line_number, index),
-                    format!("expected an identifier, got '{}'",
+                    format!("expected identifier, got '{}'",
                     PackratParser::parse_for_err_message( token.name.to_string()))))
                 )
             }
@@ -396,7 +412,7 @@ impl PackratParser {
                     let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         self.get_code_line(token.line_number, index),
-                        format!("expected a type, got a {} '{}'", 
+                        format!("expected type, got {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone()))))
                 }
             },
@@ -404,7 +420,7 @@ impl PackratParser {
                 let index = self.get_index();
                 Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     self.get_code_line(token.line_number, index),
-                    format!("expected a type, got '{}'", 
+                    format!("expected type, got '{}'", 
                     PackratParser::parse_for_err_message( token.name.to_string())))))
             }
         }
@@ -440,7 +456,7 @@ impl PackratParser {
                     let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         self.get_code_line(token.line_number, index),
-                        format!("expected a function or an identifier with lambda type, got a {} '{}'", 
+                        format!("expected function or identifier with lambda type, got {} '{}'", 
                         symbol_data.get_type_of_identifier(), token_value.0.clone())))
                     )
                 }
@@ -828,8 +844,8 @@ impl PackratParser {
         components::atom::atom_factor(self)
     }
     
-    pub fn atom_index_or_propetry_access(&mut self) -> Result<(ParseSuccess, Option<components::atom::CompoundPart>), ParseError> {
-        components::atom::atom_index_or_propetry_access(self)
+    pub fn atom_index_or_propetry_or_method_access(&mut self) -> Result<(ParseSuccess, Option<components::atom::CompoundPart>), ParseError> {
+        components::atom::atom_index_or_propetry_or_method_access(self)
     }
 
     pub fn atom_index_access(&mut self) -> Result<(ParseSuccess, components::atom::CompoundPart), ParseError> {
@@ -838,9 +854,5 @@ impl PackratParser {
     
     pub fn atom_propertry_or_method_access(&mut self) -> Result<(ParseSuccess, components::atom::CompoundPart), ParseError> {
         components::atom::atom_propertry_or_method_access(self)
-    }
-
-    pub fn atom_expr_bexpr_literal(&mut self) -> Result<(ParseSuccess, Rc<String>), ParseError> {
-        components::atom::atom_expr_bexpr_literal(self)
     }
 }

@@ -1,6 +1,7 @@
 use crate::{parser::packrat::{PackratParser, ParseSuccess}, errors::{ParseError, SyntaxError, SemanticError}};
 use std::rc::Rc;
 use crate::lexer::token::CoreToken;
+use crate::parser::components::helper::function_params_semantic_check;
 
 #[derive(Debug)]
 pub enum CompoundPart {
@@ -9,17 +10,11 @@ pub enum CompoundPart {
     METHOD_DATA((Rc<String>, Vec<(Rc<String>, usize)>, usize)),  // (method name, datatype of the params passed, index)
 }
 
-pub fn atom_expr_bexpr_literal(parser: &mut PackratParser) -> Result<(ParseSuccess, Rc<String>), ParseError> {
-    // TODO - match expr, bexpr, literal and atom
-    todo!()
-}
-
 pub fn atom_index_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
     parser.expect("[")?;
-    let index = parser.get_index();
-    let (_, index_data_type) = parser.atom_expr_bexpr_literal()?;
+    let (_, data_type_and_index) = parser.param()?;
     let (response, _) = parser.expect("]")?;
-    Ok((response, CompoundPart::INDEX_TYPE((index_data_type, index))))
+    Ok((response, CompoundPart::INDEX_TYPE(data_type_and_index)))
 }
 
 pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
@@ -39,7 +34,7 @@ pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(Pa
     }
 }
 
-pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<CompoundPart>), ParseError> {
+pub fn atom_index_or_propetry_or_method_access(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<CompoundPart>), ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::LSQUARE => {
             match parser.atom_index_access() {
@@ -68,7 +63,7 @@ pub fn atom_index_or_propetry_access(parser: &mut PackratParser) -> Result<(Pars
 
 pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<CompoundPart>), ParseError> {
     let mut sub_part_access_vec: Vec<CompoundPart> = vec![];
-    let (_, compound_part) = parser.atom_index_or_propetry_access()?;
+    let (_, compound_part) = parser.atom_index_or_propetry_or_method_access()?;
     if let Some(compound_part) = compound_part {
         sub_part_access_vec.push(compound_part);
         let (response, line_number, mut remaining_sub_part_access_vec) = parser.atom_factor()?;
@@ -119,11 +114,12 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                 if let Some(curr_type_val) = curr_type {
                     if let Some(function_data) = 
                     parser.has_method_with_name(&curr_type_val, &method_data.0) {
-                        let params = function_data.params;
                         let return_type = function_data.return_type;
-                        let params_data_type_vec = method_data.1.clone();
-                        let params_len = params.len();
-                        let params_data_type_vec_len = params_data_type_vec.len();
+                        let expected_params = function_data.params;
+                        let curr_params = method_data.1.clone();
+                        /*
+                        let params_len = expected_params.len();
+                        let params_data_type_vec_len = curr_params.len();
                         if params_data_type_vec_len != params_len {
                             return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                                 parser.get_code_line(line_number, method_data.2), 
@@ -132,16 +128,18 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                             )
                         }
                         for i in 0..params_data_type_vec_len {
-                            let curr_data_type = params_data_type_vec[i].0.clone();
-                            let expected_data_type = params[i].1.clone();
+                            let curr_data_type = curr_params[i].0.clone();
+                            let expected_data_type = expected_params[i].1.clone();
                             if !curr_data_type.eq(&expected_data_type) {
                                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                                    parser.get_code_line(line_number, params_data_type_vec[i].1),
+                                    parser.get_code_line(line_number, curr_params[i].1),
                                     format!("expected type '{}' for argument '{}' in method '{}', got '{}'", 
                                     expected_data_type, i, method_data.0, curr_data_type)))
                                 ) 
                             }
                         }
+                         */
+                        function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
                         match return_type.as_ref() {
                             Some(value) => {
                                 curr_type = Some(value.clone());
@@ -175,26 +173,61 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
         token_value, symbol_data) = parser.expect_any_id_in_scope()?;
     let mut is_assignable = true;
     match parser.get_curr_core_token() {
+        CoreToken::DOUBLE_COLON => {
+            if let Some(struct_data) = symbol_data.get_user_defined_struct_type_data() {
+                parser.expect("::")?;
+                let index = parser.get_index();
+                let (_, _, class_method_name) = parser.expect_any_id()?;
+                let (expected_params, return_type)
+                = if let Some(function_data) = parser.has_class_method_with_name(&class_method_name, &struct_data.name) {
+                    (function_data.params, function_data.return_type)
+                } else {
+                    return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                        parser.get_code_line(line_number, index),
+                        format!("type '{}' has no classmethod named '{}'", struct_data.name, class_method_name))
+                    ))
+                };
+                parser.expect("(")?;
+                let (_, line_number, curr_params) = parser.params()?;
+                function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
+                parser.expect(")")?;
+                let data_type: Option<Rc<String>>;
+                match return_type.as_ref() {
+                    Some(value) => {
+                        data_type = Some(value.clone());
+                    },
+                    None => {
+                        data_type = None;
+                    }
+                }
+                is_assignable = false;
+                parser.check_atom_factor(data_type, is_assignable)
+            } else {
+                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                    parser.get_code_line(line_number, index),
+                    format!("expected struct type, got {} '{}'", 
+                    symbol_data.get_type_of_identifier(), token_value.clone())))
+                )
+            }
+        },
         CoreToken::LPAREN => {
-            // TODO - check id for type also (constructor in that case)
-            let params: Rc<Vec<(Rc<String>, Rc<String>)>>;
-            let return_type: Rc<Option<Rc<String>>>;
-            if let Some(function_data) = symbol_data.get_function_data() {
-                (params, return_type) = (function_data.params, function_data.return_type);
+            let (expected_params, return_type) 
+            = if let Some(function_data) = symbol_data.get_function_data() {
+                (function_data.params, function_data.return_type)
             } else if let Some(lambda_data) = parser.has_lambda_type(&symbol_data) {
-                (params, return_type) = (lambda_data.params, lambda_data.return_type);
+                (lambda_data.params, lambda_data.return_type)
             } else if let Some(struct_constructor_data) = symbol_data.get_struct_constructor_data() {
-                (params, return_type) = (struct_constructor_data.params, struct_constructor_data.return_type);
+                (struct_constructor_data.params, struct_constructor_data.return_type)
             } else {
                 // let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
-                    format!("'{}' of type {} is not callable", 
-                    token_value.clone(), symbol_data.get_type_of_identifier())))
+                    format!("'{}' is not callable", token_value.clone())))
                 )
-            }
+            };
             parser.expect("(")?;
-            let (_, line_number, params_data_type_vec) = parser.params()?;
+            let (_, line_number, curr_params) = parser.params()?;
+            /*
             let params_data_type_vec_len = params_data_type_vec.len();
             let params_len = params.len();
             if params_data_type_vec_len != params_len {
@@ -216,6 +249,8 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                     ) 
                 }
             }
+             */
+            function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
             parser.expect(")")?;
             let data_type: Option<Rc<String>>;
             match return_type.as_ref() {
@@ -238,7 +273,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 // let index = parser.get_index();
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     parser.get_code_line(line_number, index),
-                    format!("expected an identifier, got a {} '{}'", 
+                    format!("expected identifier, got {} '{}'", 
                     symbol_data.get_type_of_identifier(), token_value.clone())))
                 )
             }

@@ -74,7 +74,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             let index = parser.get_index();
             Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
             parser.get_code_line(line_number, index), 
-            format!("expected '(', 'int', 'float', '+', '-' or an identifier, got '{}'", 
+            format!("expected '(', 'int', 'float', '+', '-' or identifier, got '{}'", 
             PackratParser::parse_for_err_message(parser.get_curr_token_name().to_string())))))
         }
     }
