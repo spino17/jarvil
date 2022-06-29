@@ -3,7 +3,6 @@
 // linear time parsing!
 // See https://pdos.csail.mit.edu/~baford/packrat/thesis/ for more information.
 
-use crate::parser::core::Parser;
 use crate::lexer::token::{Token, CoreToken};
 use crate::parser::ast::AST;
 use std::rc::Rc;
@@ -14,6 +13,10 @@ use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use crate::parser::helper::{clone_atom_result, clone_expr_result};
+
+pub trait Parser {
+    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError>;  // return an AST
+}
 
 #[derive(Debug)]
 pub enum RoutineCache {
@@ -581,7 +584,6 @@ impl PackratParser {
         let result_entry = clone_result_fn(&result);
         // println!("cache missed: pushing the entry = {:?} in map of {}", result_entry, message);
         cache_map.borrow_mut().insert(curr_lookahead, result_entry);
-        println!("{:?}", cache_map);
         result
     }
 

@@ -3,7 +3,7 @@ use std::vec;
 use crate::context;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError};
-use crate::scope::{Env, StructFunction};
+use crate::scope::{Env};
 
 pub fn check_block_indentation(parser: &mut PackratParser, 
     indent_spaces: i64, err: ParseError, curr_env: &Env, curr_lookahead: usize) -> Result<ParseSuccess, ParseError> {

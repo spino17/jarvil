@@ -11,7 +11,7 @@ use crate::reader::read_file;
 use crate::lexer::lexer::{CoreLexer, Lexer};
 use std::env::args;
 use crate::parser::packrat::PackratParser;
-use crate::parser::core::Parser;
+use crate::parser::packrat::Parser;
 
 fn start_compiler() -> Result<(), CompilationError> {
     let args: Vec<String> = args().collect();
