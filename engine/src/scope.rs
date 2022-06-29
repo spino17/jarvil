@@ -147,7 +147,7 @@ impl SymbolData {
         }
     }
 
-    pub fn has_field_name(&self, field_name: &Rc<String>) -> Option<Rc<String>> {
+    pub fn has_field_with_name(&self, field_name: &Rc<String>) -> Option<Rc<String>> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
                 match data {
@@ -168,7 +168,7 @@ impl SymbolData {
         }
     }
 
-    pub fn has_method_name(&self, method_name: &Rc<String>) -> Option<FunctionData> {
+    pub fn has_method_with_name(&self, method_name: &Rc<String>) -> Option<FunctionData> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
                 match data {

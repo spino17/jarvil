@@ -1,6 +1,6 @@
-// Default parser for jarvil is Packrat developed by Bryan Ford in his master thesis at MIT. It is essentially a top down 
-// recursive parsing with optimized backtracting in order to avoid exponential parse time and provide reliable linear time 
-// parsing!
+// Default parser for jarvil uses Packrat approach, first given by Bryan Ford in his master thesis at MIT. It is essentially a 
+// top down recursive descent parsing with lazy memonization in order to avoid exponential parse time and provide reliable 
+// linear time parsing!
 // See https://pdos.csail.mit.edu/~baford/packrat/thesis/ for more information.
 
 use crate::parser::core::Parser;
@@ -17,6 +17,7 @@ use crate::parser::helper::{clone_atom_result, clone_expr_result};
 
 #[derive(Debug)]
 pub enum RoutineCache {
+    // currently only two routine (atom, expr) results are cached by the parser
     ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError>>>>),
     EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>>>>),
 }
@@ -34,7 +35,6 @@ pub struct PackratParser {
     env: Env,
     code_lines: Vec<(Rc<String>, usize)>,
     cache: Vec<Rc<RoutineCache>>,
-    // TODO - add look up hash table for cached results
     // TODO - add AST data structure
 }
 
@@ -144,7 +144,7 @@ impl PackratParser {
     pub fn has_field_with_name(&self, data_type: &Rc<String>, field_name: &Rc<String>) -> Option<Rc<String>> {
         match self.env.get(data_type) {
             Some(symbol_data) => {
-                match &symbol_data.has_field_name(field_name) {
+                match &symbol_data.has_field_with_name(field_name) {
                     Some(val) => Some(val.clone()),
                     None => None,
                 }
@@ -157,7 +157,7 @@ impl PackratParser {
         method_name: &Rc<String>) -> Option<FunctionData> {
         match self.env.get(data_type) {
             Some(symbol_data) => {
-                match &symbol_data.has_method_name(method_name) {
+                match &symbol_data.has_method_with_name(method_name) {
                     Some(val) => Some(FunctionData{
                         params: val.params.clone(),
                         return_type: val.return_type.clone(),
@@ -430,6 +430,12 @@ impl PackratParser {
                         lookahead: self.lookahead,
                         possible_err: None,
                     }, token.line_number, token_value.0.clone(), lambda_data.params, lambda_data.return_type))
+                } else if let Some(struct_constructor_data) = symbol_data.get_struct_constructor_data() {
+                    self.lookahead = self.lookahead + 1;
+                    return Ok((ParseSuccess{
+                        lookahead: self.lookahead,
+                        possible_err: None,
+                    }, token.line_number, token_value.0.clone(), struct_constructor_data.params, struct_constructor_data.return_type))
                 } else {
                     let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
@@ -574,6 +580,7 @@ impl PackratParser {
         components::stmt::stmt(self)
     }
 
+    // type declaration
     pub fn type_decl_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
         components::compound_stmt::type_declaration_stmt::type_decl_stmt(self)
     }
@@ -586,6 +593,7 @@ impl PackratParser {
         components::compound_stmt::type_declaration_stmt::lambda_stmt(self, identifier_name)
     }
 
+    // function declaration
     pub fn function_input_output(&mut self) 
     -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>, bool, Option<Rc<String>>, Option<ParseError>), ParseError> {
         components::compound_stmt::function_stmt::function_input_output(self)
@@ -603,6 +611,7 @@ impl PackratParser {
         components::compound_stmt::function_stmt::optparams_factor(self)
     }
 
+    // simple statement - variable declaration and assignment
     pub fn simple_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::core::simple_stmt(self)
     }
@@ -611,7 +620,6 @@ impl PackratParser {
         components::simple_stmt::core::simple_stmt_alternatives(self)
     }
 
-    // simple statement - decl, assign
     pub fn decls(&mut self) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::declaration::decls(self)
     }

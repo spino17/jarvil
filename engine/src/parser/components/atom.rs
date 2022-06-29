@@ -170,6 +170,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
 }
 
 pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<String>>, bool), ParseError> {
+    let index = parser.get_index();
     let (_, line_number, 
         token_value, symbol_data) = parser.expect_any_id_in_scope()?;
     let mut is_assignable = true;
@@ -185,7 +186,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
             } else if let Some(struct_constructor_data) = symbol_data.get_struct_constructor_data() {
                 (params, return_type) = (struct_constructor_data.params, struct_constructor_data.return_type);
             } else {
-                let index = parser.get_index();
+                // let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
                     format!("'{}' of type {} is not callable", 
@@ -209,7 +210,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 let expected_data_type = params[i].1.clone();
                 if !curr_data_type.eq(&expected_data_type) {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                        parser.get_code_line(line_number, params_data_type_vec[i].1), 
+                        parser.get_code_line(line_number, params_data_type_vec[i].1),
                         format!("expected type '{}' for argument '{}', got '{}'", 
                         expected_data_type, i, curr_data_type)))
                     ) 
@@ -234,7 +235,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
             if let Some(response) = symbol_data.get_id_data() {
                 (data_type, is_init) = (response.0, response.1);
             } else {
-                let index = parser.get_index();
+                // let index = parser.get_index();
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     parser.get_code_line(line_number, index),
                     format!("expected an identifier, got a {} '{}'", 
@@ -242,7 +243,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 )
             }
             if !is_init {
-                let index = parser.get_index();
+                // let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
                     format!(
