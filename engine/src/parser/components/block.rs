@@ -133,6 +133,7 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
 }
 
 pub fn impl_for_struct_block(parser: &mut PackratParser, 
-    struct_name: &Rc<String>) -> Result<(ParseSuccess, Vec<(Rc<String>, StructFunction)>), ParseError> {
+    struct_name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
+    // TODO - add methods to struct type as soon as a method is parsed
     todo!()
 }

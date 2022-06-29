@@ -12,6 +12,8 @@ use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
 
+use crate::parser::components::function;
+
 #[derive(Debug)]
 struct GenericSymbolVSBounds(Rc<FxHashMap<Rc<String>, Rc<Vec<Rc<String>>>>>);
 
@@ -38,8 +40,8 @@ pub struct StructType {
     name: Rc<String>,
     fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
     constructor: FunctionData,
-    methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
-    // class_methods: Rc<FxHashMap<Rc<String>, FunctionData>>,
+    methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
+    class_methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
     // interfaces: Rc<Vec<Rc<String>>>,
     // generic_symbols: GenericSymbolVSBounds,
 }
@@ -78,14 +80,6 @@ pub struct SymbolData(Rc<RefCell<MetaData>>);
 impl SymbolData {
 
     // identifier specific methods
-    pub fn set_init(&self, is_init: bool) {
-        match &mut *self.0.borrow_mut() {
-            MetaData::IDENTIFIER(data) => data.is_init = is_init,
-            _ => {
-                // do nothing for other branches
-            }
-        }
-    }
     
     pub fn get_type(&self) -> Rc<String> {
         match &*self.0.borrow() {
@@ -108,6 +102,27 @@ impl SymbolData {
     }
 
     // type specific methods
+    pub fn set_method_to_struct(&self, method_name: &Rc<String>, method_data: StructFunction) {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::STRUCT(struct_data) => {
+                        match method_data {
+                            StructFunction::METHOD(function_data) => {
+                                struct_data.methods.borrow_mut().insert(method_name.clone(), function_data);
+                            },
+                            StructFunction::CLASS_METHOD(function_data) => {
+                                struct_data.class_methods.borrow_mut().insert(method_name.clone(), function_data);
+                            }
+                        }
+                    },
+                    _ => {}
+                }
+            },
+            _ => {}
+        }
+    }
+
     pub fn get_user_defined_type_data(&self) -> Option<UserDefinedTypeData> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
@@ -121,6 +136,7 @@ impl SymbolData {
                                 return_type: struct_data.constructor.return_type.clone(),
                             },
                             methods: struct_data.methods.clone(),
+                            class_methods: struct_data.class_methods.clone(),
                         }))
                     },
                     UserDefinedTypeData::LAMBDA(lambda_data) => {
@@ -150,6 +166,7 @@ impl SymbolData {
                                 return_type: struct_data.constructor.return_type.clone(),
                             },
                             methods: struct_data.methods.clone(),
+                            class_methods: struct_data.class_methods.clone(),
                         }))
                     },
                     _ => None
@@ -214,7 +231,7 @@ impl SymbolData {
             MetaData::USER_DEFINED_TYPE(data) => {
                 match data {
                     UserDefinedTypeData::STRUCT(data) => {
-                        match data.methods.get(method_name) {
+                        match data.methods.borrow().get(method_name) {
                             Some(val) => {
                                 Some(FunctionData{
                                     params: val.params.clone(),
@@ -302,9 +319,9 @@ impl Scope {
         self.symbol_table.get(name)
     }
 
-    fn set_init(&self, name: &Rc<String>) {
-        if let Some(symbol_data) = self.get(name) {
-            symbol_data.set_init(true);
+    fn set_method_to_struct(&self, struct_name: &Rc<String>, method_name: &Rc<String>, method_data: StructFunction) {
+        if let Some(symbol_data) = self.get(struct_name) {
+            symbol_data.set_method_to_struct(method_name, method_data);
         }
     }
 }
@@ -338,10 +355,6 @@ impl Env {
         self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
-    pub fn set_identifier_init(&self, identifier_name: &Rc<String>) {
-        self.0.borrow_mut().set_init(identifier_name);
-    }
-
     pub fn set_user_defined_struct_type(&self, identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
         let mut constructor_data: Vec<(Rc<String>, Rc<String>)> = vec![];
         let mut fields_map: FxHashMap<Rc<String>, Rc<String>> = FxHashMap::default();
@@ -350,6 +363,7 @@ impl Env {
             fields_map.insert(field_name.clone(), data_type.clone());
         }
         let methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
+        let class_methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
         /*
         methods.insert(identifier_name.clone(), FunctionData {
             params: Rc::new(constructor_data), 
@@ -363,7 +377,8 @@ impl Env {
                 params: Rc::new(constructor_data),
                 return_type: Rc::new(Some(identifier_name.clone())),
             },
-            methods: Rc::new(methods),
+            methods: Rc::new(RefCell::new(methods)),
+            class_methods: Rc::new(RefCell::new(class_methods)),
         }));
         self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
@@ -384,6 +399,13 @@ impl Env {
             return_type: return_type.clone(),
         });
         self.0.borrow_mut().set(identifier_name.clone(), meta_data);
+    }
+
+    pub fn set_method_to_struct(&self, struct_name: &Rc<String>, method_name: &Rc<String>, method_data: StructFunction) {
+        // self.0.borrow_mut().set_method_to_struct(struct_name, method_name, method_data);
+        if let Some(symbol_data) = self.get(struct_name) {
+            symbol_data.set_method_to_struct(method_name, method_data)
+        }
     }
 
     pub fn get(&self, key: &Rc<String>) -> Option<SymbolData> {

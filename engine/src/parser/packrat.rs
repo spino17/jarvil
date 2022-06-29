@@ -114,10 +114,6 @@ impl PackratParser {
         self.env.set_identifier(identifier_name, data_type, is_init);
     }
 
-    pub fn set_identifier_init_to_scope(&mut self, identifier_name: &Rc<String>) {
-        self.env.set_identifier_init(identifier_name)
-    }
-
     pub fn set_user_defined_struct_type_to_scope(&mut self, 
         identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
         self.env.set_user_defined_struct_type(identifier_name, fields);
@@ -141,8 +137,8 @@ impl PackratParser {
         }
     }
 
-    pub fn set_methods_to_struct(&mut self, struct_name: &Rc<String>, methods_vec: Vec<(Rc<String>, StructFunction)>) {
-        todo!()
+    pub fn set_method_to_struct(&mut self, struct_name: &Rc<String>, method_name: &Rc<String>, method_data: StructFunction) {
+        self.env.set_method_to_struct(struct_name, method_name, method_data);
     }
 
     pub fn has_field_with_name(&self, data_type: &Rc<String>, field_name: &Rc<String>) -> Option<Rc<String>> {
@@ -593,7 +589,7 @@ impl PackratParser {
     }
 
     pub fn impl_for_struct_block(&mut self, 
-        struct_name: &Rc<String>) -> Result<(ParseSuccess, Vec<(Rc<String>, StructFunction)>), ParseError> {
+        struct_name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
         components::block::impl_for_struct_block(self, struct_name)
     }
 

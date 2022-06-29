@@ -72,11 +72,7 @@ pub fn function_input_output(parser: &mut PackratParser)
 
 pub fn function_declaration(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("def")?;
-    // TODO - optionally check for some struct attached methods => [type id]
     match parser.get_curr_core_token() {
-        CoreToken::LPAREN => {
-            unimplemented!("yet to implement for struct methods")
-        },
         CoreToken::IDENTIFIER(_) => {
             let (_, _, token_value) = parser.expect_any_id()?;
             let (_, params, 
