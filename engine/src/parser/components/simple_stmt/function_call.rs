@@ -15,7 +15,7 @@ pub fn function_call(parser: &mut PackratParser,
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     parser.get_code_line(parser.get_curr_line_number(), index),
                     format!(
-                    "expected 'newline', got '{}'",  PackratParser::parse_for_err_message(token_name.to_string()))))
+                    "expected '=' or 'newline', got '{}'",  PackratParser::parse_for_err_message(token_name.to_string()))))
                 )
             }
         }

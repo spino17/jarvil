@@ -22,6 +22,7 @@ pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
 
 pub fn simple_stmt_alternatives(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     match parser.get_curr_core_token() {
+        // TODO - add break, continue, return branches also
         CoreToken::LET => {
             return parser.decls()
         },
