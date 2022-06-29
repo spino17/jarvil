@@ -1,5 +1,5 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
-use crate::errors::{ParseError, aggregate_errors};
+use crate::errors::{ParseError, aggregate_errors, SyntaxError};
 use crate::lexer::token::CoreToken;
 
 pub fn simple_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
@@ -26,16 +26,26 @@ pub fn simple_stmt_alternatives(parser: &mut PackratParser) -> Result<ParseSucce
             return parser.decls()
         },
         _ => {
-            let mut errors_vec: Vec<ParseError> = vec![];
-            let curr_lookahead = parser.get_lookahead();
-            match parser.assign() {
-                Ok(response) => return Ok(response),
-                Err(err) => {
-                    parser.reset_lookahead(curr_lookahead);
-                    errors_vec.push(err);
+            let index = parser.get_index();
+            let (response, data_type, is_assignable, is_function_call) = parser.atom()?;
+            let token_name = parser.get_curr_token_name();
+            match parser.get_curr_core_token() {
+                CoreToken::EQUAL => {
+                    return parser.assign(data_type, is_assignable, index)
+                },
+                CoreToken::NEWLINE => {
+                    return parser.function_call(response, is_function_call, index)
+                },
+                _ => {
+                    let index = parser.get_index();
+                    let line_number = parser.get_curr_line_number();
+                    return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                        parser.get_code_line(line_number, index),
+                        format!("expected '=' or 'newline', got '{}'", 
+                        PackratParser::parse_for_err_message(token_name.to_string()))))
+                    )
                 }
             }
-            Err(aggregate_errors(errors_vec))
         }
     }
     /*

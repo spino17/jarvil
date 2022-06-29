@@ -670,8 +670,14 @@ impl PackratParser {
         components::simple_stmt::declaration::decl_factor(self)
     }
 
-    pub fn assign(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::assignment::assign(self)
+    pub fn assign(&mut self, data_type: Option<Rc<String>>, 
+        is_assignable: bool, index: usize) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::assignment::assign(self, data_type, is_assignable, index)
+    }
+
+    pub fn function_call(&mut self, 
+        response: ParseSuccess, is_function_call: bool, index: usize) -> Result<ParseSuccess, ParseError> {
+        components::simple_stmt::function_call::function_call(self, response, is_function_call, index)
     }
 
     pub fn r_assign(&mut self) -> Result<(ParseSuccess, Rc<String>, usize), ParseError> {

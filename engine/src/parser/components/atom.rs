@@ -219,8 +219,10 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
         CoreToken::LPAREN => {
             let (expected_params, return_type) 
             = if let Some(function_data) = symbol_data.get_function_data() {
+                is_function_call = true;
                 (function_data.params, function_data.return_type)
             } else if let Some(lambda_data) = parser.has_lambda_type(&symbol_data) {
+                is_function_call = true;
                 (lambda_data.params, lambda_data.return_type)
             } else if let Some(struct_constructor_data) = symbol_data.get_struct_constructor_data() {
                 (struct_constructor_data.params, struct_constructor_data.return_type)
@@ -268,7 +270,6 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 }
             }
             is_assignable = false;
-            is_function_call = true;
             parser.check_atom_factor(data_type, is_assignable, is_function_call)
         },
         _ => {
