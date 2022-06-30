@@ -184,6 +184,10 @@ impl SymbolData {
         }
     }
 
+    pub fn is_user_defined_type(&self) -> bool {
+        self.is_user_defined_struct_type() || self.is_user_defined_lambda_type()
+    }
+
     pub fn get_struct_constructor_data(&self) -> Option<FunctionData> {
         match self.get_user_defined_struct_type_data() {
             Some(struct_data) => {
@@ -207,7 +211,7 @@ impl SymbolData {
                         }
                     },
                     _ => {
-                        return None
+                        None
                     }
                 }
             },
@@ -233,7 +237,7 @@ impl SymbolData {
                         }
                     },
                     _ => {
-                        return None
+                        None
                     }
                 }
             },
@@ -259,7 +263,7 @@ impl SymbolData {
                         }
                     },
                     _ => {
-                        return None
+                        None
                     }
                 }
             },
@@ -280,7 +284,7 @@ impl SymbolData {
                         })
                     },
                     _ => {
-                        return None
+                        None
                     }
                 }
             },
@@ -358,12 +362,22 @@ impl Env {
         })))
     }
 
-    pub fn set_identifier(&self, identifier_name: &Rc<String>, data_type: &Type, is_init: bool) -> Option<String> {
-        match self.get(identifier_name) {
+    fn is_already_declared_as_type(&self, key: &Rc<String>) -> Option<String> {
+        match self.get(key) {
             Some(symbol_data) => {
-                return Some(String::from(symbol_data.get_category_of_identifier()))
+                if symbol_data.is_user_defined_type() {
+                    return Some(symbol_data.get_category_of_identifier().to_string())
+                } else {
+                    None
+                }
             },
-            _ => {},
+            None => None,
+        }
+    }
+
+    pub fn set_identifier(&self, identifier_name: &Rc<String>, data_type: &Type, is_init: bool) -> Option<String> {
+        if let Some(category) = self.is_already_declared_as_type(identifier_name) {
+            return Some(category)
         }
         let meta_data = MetaData::IDENTIFIER(IdentifierData{
             data_type: Type(data_type.0.clone()),
@@ -374,11 +388,8 @@ impl Env {
     }
 
     pub fn set_user_defined_struct_type(&self, struct_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Type)>>) -> Option<String> {
-        match self.get(struct_name) {
-            Some(symbol_data) => {
-                return Some(String::from(symbol_data.get_category_of_identifier()))
-            },
-            _ => {},
+        if let Some(category) = self.is_already_declared_as_type(struct_name) {
+            return Some(category)
         }
         let mut constructor_data: Vec<(Rc<String>, Type)> = vec![];
         let mut fields_map: FxHashMap<Rc<String>, Type> = FxHashMap::default();
@@ -412,12 +423,9 @@ impl Env {
 
     pub fn set_user_defined_lambda_type(&self, lambda_name: &Rc<String>, 
         params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) -> Option<String> {
-        match self.get(lambda_name) {
-            Some(symbol_data) => {
-                return Some(String::from(symbol_data.get_category_of_identifier()))
-            },
-            _ => {},
-        }
+            if let Some(category) = self.is_already_declared_as_type(lambda_name) {
+                return Some(category)
+            }
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::LAMBDA(LambdaType{
             name: lambda_name.clone(),
             function_data: FunctionData{
@@ -431,11 +439,8 @@ impl Env {
 
     pub fn set_function(&self, function_name: &Rc<String>, 
         params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) -> Option<String> {
-        match self.get(function_name) {
-            Some(symbol_data) => {
-                return Some(String::from(symbol_data.get_category_of_identifier()))
-            },
-            _ => {},
+        if let Some(category) = self.is_already_declared_as_type(function_name) {
+            return Some(category)
         }
         let meta_data = MetaData::FUNCTION(FunctionData{
             params: params.clone(),
