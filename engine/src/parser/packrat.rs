@@ -13,7 +13,7 @@ use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use crate::parser::helper::{clone_atom_result, clone_expr_result};
-use crate::types::{Type, Struct, CoreType};
+use crate::types::{Type, Struct, CoreType, Lambda};
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError>;  // return an AST
@@ -407,7 +407,7 @@ impl PackratParser {
     }
 
     pub fn expect_type(&mut self)
-    -> Result<(ParseSuccess, usize, Type, Option<UserDefinedTypeData>), ParseError> {
+    -> Result<(ParseSuccess, usize, Type), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -416,18 +416,26 @@ impl PackratParser {
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token.line_number, Type::get_atomic_type(&token_value.0.clone().to_string()), None))
+                }, token.line_number, Type::get_atomic_type(&token_value.0.clone().to_string())))
             },
             CoreToken::IDENTIFIER(token_value) => {
                 let symbol_data = self.check_declaration(&token)?;
-                if let Some(response) = symbol_data.get_user_defined_type_data() {
+                if symbol_data.is_user_defined_struct_type() {
                     self.lookahead = self.lookahead + 1;
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
                     }, token.line_number, Type(Rc::new(CoreType::STRUCT(Struct{
                         name: token_value.0.clone(),
-                    }))), Some(response)))
+                    })))))
+                } else if symbol_data.is_user_defined_lambda_type() {
+                    self.lookahead = self.lookahead + 1;
+                    Ok((ParseSuccess{
+                        lookahead: self.lookahead,
+                        possible_err: None,
+                    }, token.line_number, Type(Rc::new(CoreType::LAMBDA(Lambda{
+                        name: Some(token_value.0.clone()),
+                    })))))
                 } else {
                     let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
@@ -582,7 +590,7 @@ impl PackratParser {
     ) -> Result<T, ParseError> {
         match cache_map.borrow().get(&curr_lookahead) {
             Some(result) => {
-                println!("lookahead for cache hit for {}: {}\n", curr_lookahead, message);
+                // println!("lookahead for cache hit for {}: {}\n", curr_lookahead, message);
                 let result = clone_result_fn(result);
                 match result {
                     Ok(response) => {
@@ -593,7 +601,7 @@ impl PackratParser {
                 }
             },
             _ => {
-                println!("lookahead for cache missed for {}: {}\n", curr_lookahead, message);
+                // println!("lookahead for cache missed for {}: {}\n", curr_lookahead, message);
                 // print!("cache missed!\n");
             }
         }

@@ -61,7 +61,7 @@ pub fn function_input_output(parser: &mut PackratParser)
     let (is_matched, (response, return_type), err) = 
     PackratParser::expect_optionally(|| {
         let (_, _) = parser.expect("->")?;
-        let (response, _, data_type, _) = parser.expect_type()?;
+        let (response, _, data_type) = parser.expect_type()?;
         Ok((response, Some(Type(data_type.0.clone()))))
     }, (ParseSuccess{
         lookahead: curr_lookahead,

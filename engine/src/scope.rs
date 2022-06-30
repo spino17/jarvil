@@ -28,14 +28,14 @@ pub enum StructFunction {
 
 #[derive(Debug)]
 struct IdentifierData {
-    data_type: Type,  // change this to type
+    data_type: Type,
     is_init: bool,
 }
 
 #[derive(Debug)]
 pub struct StructType {
     pub name: Rc<String>,
-    fields: Rc<FxHashMap<Rc<String>, Type>>,  // change this to type
+    fields: Rc<FxHashMap<Rc<String>, Type>>,
     constructor: FunctionData,
     methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
     class_methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
@@ -67,7 +67,6 @@ pub struct SymbolData(Rc<RefCell<MetaData>>);
 impl SymbolData {
 
     // identifier specific methods
-    
     pub fn get_type(&self) -> Type {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => Type(data.data_type.0.clone()),
@@ -110,36 +109,17 @@ impl SymbolData {
         }
     }
 
-    pub fn get_user_defined_type_data(&self) -> Option<UserDefinedTypeData> {
+    pub fn is_user_defined_struct_type(&self) -> bool {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
                 match data {
-                    UserDefinedTypeData::STRUCT(struct_data) => {
-                        Some(UserDefinedTypeData::STRUCT(StructType{
-                            name: struct_data.name.clone(),
-                            fields: struct_data.fields.clone(),
-                            constructor: FunctionData{
-                                params: struct_data.constructor.params.clone(),
-                                return_type: struct_data.constructor.return_type.clone(),
-                            },
-                            methods: struct_data.methods.clone(),
-                            class_methods: struct_data.class_methods.clone(),
-                        }))
+                    UserDefinedTypeData::STRUCT(_) => {
+                        true
                     },
-                    UserDefinedTypeData::LAMBDA(lambda_data) => {
-                        Some(UserDefinedTypeData::LAMBDA(LambdaType{
-                            name: lambda_data.name.clone(),
-                            function_data: FunctionData{
-                                params: lambda_data.function_data.params.clone(),
-                                return_type: lambda_data.function_data.return_type.clone(),
-                            },
-                        }))
-                    }
+                    _ => false
                 }
             },
-            _ => {
-                None
-            }
+            _ => false
         }
     }
 
@@ -168,28 +148,49 @@ impl SymbolData {
         }
     }
 
-    pub fn get_struct_constructor_data(&self) -> Option<FunctionData> {
-        match self.get_user_defined_type_data() {
-            Some(response) => {
-                match response {
-                    UserDefinedTypeData::STRUCT(struct_data) => {
-                        /*
-                        if let Some(function_data) = struct_data.methods.get(&struct_data.name) {
-                            Some(FunctionData{
-                                params: function_data.params.clone(),
-                                return_type: function_data.return_type.clone(),
-                            })
-                        } else {
-                            unreachable!("struct type always have constructor with same name")
-                        }
-                         */
-                        Some(FunctionData{
-                            params: struct_data.constructor.params.clone(),
-                            return_type: struct_data.constructor.return_type.clone(),
+    pub fn is_user_defined_lambda_type(&self) -> bool {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::LAMBDA(_) => {
+                        true
+                    },
+                    _ => false
+                }
+            },
+            _ => false
+        }
+    }
+
+    pub fn get_user_defined_lambda_type_data(&self) -> Option<LambdaType> {
+        match &*self.0.borrow() {
+            MetaData::USER_DEFINED_TYPE(data) => {
+                match data {
+                    UserDefinedTypeData::LAMBDA(lambda_data) => {
+                        Some(LambdaType{
+                            name: lambda_data.name.clone(),
+                            function_data: FunctionData{
+                                params: lambda_data.function_data.params.clone(),
+                                return_type: lambda_data.function_data.return_type.clone(),
+                            }
                         })
                     },
                     _ => None
                 }
+            },
+            _ => {
+                None
+            }
+        }
+    }
+
+    pub fn get_struct_constructor_data(&self) -> Option<FunctionData> {
+        match self.get_user_defined_struct_type_data() {
+            Some(struct_data) => {
+                return Some(FunctionData{
+                    params: struct_data.constructor.params.clone(),
+                    return_type: struct_data.constructor.return_type.clone(),
+                })
             },
             None => None
         }

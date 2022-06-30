@@ -46,7 +46,7 @@ Below is the complete grammer of the language with a custom (mostly copied from 
     # python style of block
     block: NEWLINE (INDENT stmt)*
 
-    atom: (id | id '(' [params] ')' ) atom_factor
+    atom: (id | id '(' [params] ')' | id::id '(' [params] ')' ) atom_factor
     atom_factor:
         | ('[' params ']' | '.' id ['(' [params] ')']) atom_factor
         | ()

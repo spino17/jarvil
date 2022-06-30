@@ -8,7 +8,6 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let (_, _, token_value) = parser.expect_any_id()?;
     parser.expect("=")?;
     let (response, data_type, _) = parser.r_assign()?;
-    println!("{:?}", data_type);
     parser.set_identifier_to_scope(&token_value, &data_type, true);
     Ok(response)
 }

@@ -4,7 +4,7 @@ use std::rc::Rc;
 use crate::types::Type;
 
 pub fn param_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Type, Rc<String>), ParseError> {
-    let (_, _, data_type, _) = parser.expect_type()?;
+    let (_, _, data_type) = parser.expect_type()?;
     let (response, line_number, token_value) = parser.expect_any_id()?;
     Ok((response, line_number, data_type, token_value))
 }
