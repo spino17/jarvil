@@ -1,14 +1,23 @@
 use crate::parser::packrat::PackratParser;
-use crate::errors::{ParseError, SyntaxError};
+use crate::errors::{ParseError, SyntaxError, SemanticError};
 use crate::parser::packrat::ParseSuccess;
 use crate::lexer::token::CoreToken;
 
 pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("let")?;
+    let index = parser.get_index();
     let (_, _, identifier_name) = parser.expect_any_id()?;
     parser.expect("=")?;
     let (response, data_type, _) = parser.r_assign()?;
-    parser.set_identifier_to_scope(&identifier_name, &data_type, true);
+    if let Some(identifier_category) = parser.set_identifier_to_scope(&identifier_name, &data_type, true) {
+        let line_number = parser.get_curr_line_number();
+        return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+            parser.get_code_line(line_number, index),
+            format!(
+            "'{}' already declared in the current scope as '{}'", identifier_name, identifier_category
+            )
+        )));
+    }
     Ok(response)
 }
 

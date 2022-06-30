@@ -57,7 +57,7 @@ pub enum UserDefinedTypeData {
 #[derive(Debug)]
 enum MetaData {
     IDENTIFIER(IdentifierData),
-    USER_DEFINED_TYPE(UserDefinedTypeData),
+    USER_DEFINED_TYPE(UserDefinedTypeData),  // types with same name cannot be overriden in the same scope
     FUNCTION(FunctionData),
 }
 
@@ -306,7 +306,7 @@ impl SymbolData {
     }
 
     // general methods
-    pub fn get_type_of_identifier(&self) -> &str {
+    pub fn get_category_of_identifier(&self) -> &str {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(_) => "identifier",
             MetaData::USER_DEFINED_TYPE(user_defined_type) => {
@@ -358,15 +358,28 @@ impl Env {
         })))
     }
 
-    pub fn set_identifier(&self, identifier_name: &Rc<String>, data_type: &Type, is_init: bool) {
+    pub fn set_identifier(&self, identifier_name: &Rc<String>, data_type: &Type, is_init: bool) -> Option<String> {
+        match self.get(identifier_name) {
+            Some(symbol_data) => {
+                return Some(String::from(symbol_data.get_category_of_identifier()))
+            },
+            _ => {},
+        }
         let meta_data = MetaData::IDENTIFIER(IdentifierData{
             data_type: Type(data_type.0.clone()),
             is_init,
         });
         self.0.borrow_mut().set(identifier_name.clone(), meta_data);
+        None
     }
 
-    pub fn set_user_defined_struct_type(&self, identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Type)>>) {
+    pub fn set_user_defined_struct_type(&self, struct_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Type)>>) -> Option<String> {
+        match self.get(struct_name) {
+            Some(symbol_data) => {
+                return Some(String::from(symbol_data.get_category_of_identifier()))
+            },
+            _ => {},
+        }
         let mut constructor_data: Vec<(Rc<String>, Type)> = vec![];
         let mut fields_map: FxHashMap<Rc<String>, Type> = FxHashMap::default();
         for (field_name, data_type) in fields.as_ref() {
@@ -382,39 +395,54 @@ impl Env {
         });
          */
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::STRUCT(StructType{
-            name: identifier_name.clone(),
+            name: struct_name.clone(),
             fields: Rc::new(fields_map),
             constructor: FunctionData{
                 params: Rc::new(constructor_data),
                 return_type: Rc::new(Some(Type(Rc::new(CoreType::STRUCT(Struct{
-                    name: identifier_name.clone(),
+                    name: struct_name.clone(),
                 }))))),
             },
             methods: Rc::new(RefCell::new(methods)),
             class_methods: Rc::new(RefCell::new(class_methods)),
         }));
-        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
+        self.0.borrow_mut().set(struct_name.clone(), meta_data);
+        None
     }
 
-    pub fn set_user_defined_lambda_type(&self, identifier_name: &Rc<String>, 
-        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) {
+    pub fn set_user_defined_lambda_type(&self, lambda_name: &Rc<String>, 
+        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) -> Option<String> {
+        match self.get(lambda_name) {
+            Some(symbol_data) => {
+                return Some(String::from(symbol_data.get_category_of_identifier()))
+            },
+            _ => {},
+        }
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::LAMBDA(LambdaType{
-            name: identifier_name.clone(),
+            name: lambda_name.clone(),
             function_data: FunctionData{
                 params: params.clone(),
                 return_type: return_type.clone(),
             }
         }));
-        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
+        self.0.borrow_mut().set(lambda_name.clone(), meta_data);
+        None
     }
 
-    pub fn set_function(&self, identifier_name: &Rc<String>, 
-        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) {
+    pub fn set_function(&self, function_name: &Rc<String>, 
+        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) -> Option<String> {
+        match self.get(function_name) {
+            Some(symbol_data) => {
+                return Some(String::from(symbol_data.get_category_of_identifier()))
+            },
+            _ => {},
+        }
         let meta_data = MetaData::FUNCTION(FunctionData{
             params: params.clone(),
             return_type: return_type.clone(),
         });
-        self.0.borrow_mut().set(identifier_name.clone(), meta_data);
+        self.0.borrow_mut().set(function_name.clone(), meta_data);
+        None
     }
 
     pub fn set_method_to_struct(&self, struct_name: &Rc<String>, method_name: &Rc<String>, method_data: StructFunction) {

@@ -2,7 +2,7 @@ use std::rc::Rc;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::ParseError;
 use crate::lexer::token::{CoreToken};
-use crate::errors::SyntaxError;
+use crate::errors::{SyntaxError, SemanticError};
 use crate::types::Type;
 
 pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
@@ -75,6 +75,7 @@ pub fn function_declaration(parser: &mut PackratParser) -> Result<ParseSuccess, 
     parser.expect("def")?;
     match parser.get_curr_core_token() {
         CoreToken::IDENTIFIER(_) => {
+            let index = parser.get_index();
             let (_, _, function_name) = parser.expect_any_id()?;
             let (_, params, 
                 _, return_type, err) = parser.function_input_output()?;
@@ -89,7 +90,15 @@ pub fn function_declaration(parser: &mut PackratParser) -> Result<ParseSuccess, 
                 }
             }
             let response = parser.block(Some(&params))?;
-            parser.set_function_to_scope(&function_name, &Rc::new(params), &Rc::new(return_type));
+            if let Some(identifier_category) = parser.set_function_to_scope(&function_name, &Rc::new(params), &Rc::new(return_type)) {
+                let line_number = parser.get_curr_line_number();
+                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                    parser.get_code_line(line_number, index),
+                    format!(
+                    "'{}' already declared in the current scope as '{}'", function_name, identifier_category
+                    )
+                )));
+            }
             Ok(response)
         },
         _ => {

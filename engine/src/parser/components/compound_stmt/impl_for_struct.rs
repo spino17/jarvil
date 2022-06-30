@@ -15,7 +15,7 @@ pub fn impl_for_struct(parser: &mut PackratParser) -> Result<ParseSuccess, Parse
         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
             parser.get_code_line(line_number, index),
             format!("expected struct type, got {} '{}'",
-            symbol_data.get_type_of_identifier(), struct_name.clone())))
+            symbol_data.get_category_of_identifier(), struct_name.clone())))
         )
     }
 }

@@ -212,7 +212,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
                     format!("expected struct type, got {} '{}'", 
-                    symbol_data.get_type_of_identifier(), token_value.clone())))
+                    symbol_data.get_category_of_identifier(), token_value.clone())))
                 )
             }
         },
@@ -282,7 +282,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     parser.get_code_line(line_number, index),
                     format!("expected identifier, got {} '{}'", 
-                    symbol_data.get_type_of_identifier(), token_value.clone())))
+                    symbol_data.get_category_of_identifier(), token_value.clone())))
                 )
             }
             if !is_init {

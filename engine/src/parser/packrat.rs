@@ -79,7 +79,18 @@ impl PackratParser {
     }
 
     pub fn get_index(&self) -> usize {
-        (self.token_vec[self.lookahead].start_index + self.token_vec[self.lookahead].end_index) / 2 as usize
+        let mut temp_lookahead = self.lookahead;
+        loop {
+            let token = &self.token_vec[temp_lookahead];
+            match token.core_token {
+                CoreToken::BLANK => {
+                    temp_lookahead = temp_lookahead + 1;
+                },
+                _ => {
+                    return (self.token_vec[temp_lookahead].start_index + self.token_vec[temp_lookahead].end_index) / 2 as usize
+                }
+            }
+        }
     }
 
     pub fn get_indent_level(&self) -> i64 {
@@ -114,23 +125,23 @@ impl PackratParser {
         self.env = env;
     }
 
-    pub fn set_identifier_to_scope(&mut self, identifier_name: &Rc<String>, data_type: &Type, is_init: bool) {
-        self.env.set_identifier(identifier_name, data_type, is_init);
+    pub fn set_identifier_to_scope(&mut self, identifier_name: &Rc<String>, data_type: &Type, is_init: bool) -> Option<String> {
+        self.env.set_identifier(identifier_name, data_type, is_init)
     }
 
     pub fn set_user_defined_struct_type_to_scope(&mut self, 
-        identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Type)>>) {
-        self.env.set_user_defined_struct_type(identifier_name, fields);
+        identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Type)>>) -> Option<String> {
+        self.env.set_user_defined_struct_type(identifier_name, fields)
     }
 
     pub fn set_user_defined_lambda_type(&mut self, identifier_name: &Rc<String>, 
-        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) {
-        self.env.set_user_defined_lambda_type(identifier_name, params, return_type);
+        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) -> Option<String> {
+        self.env.set_user_defined_lambda_type(identifier_name, params, return_type)
     }
 
     pub fn set_function_to_scope(&mut self, identifier_name: &Rc<String>, 
-        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) {
-        self.env.set_function(identifier_name, params, return_type);
+        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) -> Option<String> {
+        self.env.set_function(identifier_name, params, return_type)
     }
 
     pub fn set_params_to_scope(&mut self, params: Option<&Vec<(Rc<String>, Type)>>) {
@@ -391,7 +402,7 @@ impl PackratParser {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         self.get_code_line(token.line_number, index),
                         format!("expected identifier, got {} '{}'", 
-                        symbol_data.get_type_of_identifier(), token_value.0.clone())))
+                        symbol_data.get_category_of_identifier(), token_value.0.clone())))
                     )
                 }
             },
@@ -441,7 +452,7 @@ impl PackratParser {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         self.get_code_line(token.line_number, index),
                         format!("expected type, got {} '{}'", 
-                        symbol_data.get_type_of_identifier(), token_value.0.clone()))))
+                        symbol_data.get_category_of_identifier(), token_value.0.clone()))))
                 }
             },
             _ => {
@@ -485,7 +496,7 @@ impl PackratParser {
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                         self.get_code_line(token.line_number, index),
                         format!("expected function or identifier with lambda type, got {} '{}'", 
-                        symbol_data.get_type_of_identifier(), token_value.0.clone())))
+                        symbol_data.get_category_of_identifier(), token_value.0.clone())))
                     )
                 }
             },
@@ -646,12 +657,12 @@ impl PackratParser {
         components::compound_stmt::type_declaration_stmt::type_decl_stmt(self)
     }
 
-    pub fn struct_stmt(&mut self, identifier_name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
-        components::compound_stmt::type_declaration_stmt::struct_stmt(self, identifier_name)
+    pub fn struct_stmt(&mut self, identifier_name: &Rc<String>, index: usize) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::type_declaration_stmt::struct_stmt(self, identifier_name, index)
     }
 
-    pub fn lambda_stmt(&mut self, identifier_name: &Rc<String>) -> Result<ParseSuccess, ParseError> {
-        components::compound_stmt::type_declaration_stmt::lambda_stmt(self, identifier_name)
+    pub fn lambda_stmt(&mut self, identifier_name: &Rc<String>, index: usize) -> Result<ParseSuccess, ParseError> {
+        components::compound_stmt::type_declaration_stmt::lambda_stmt(self, identifier_name, index)
     }
 
     pub fn impl_for_struct(&mut self) -> Result<ParseSuccess, ParseError> {
