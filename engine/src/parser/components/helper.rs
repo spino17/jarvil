@@ -1,9 +1,10 @@
 use std::rc::Rc;
 use crate::errors::{ParseError, SemanticError};
 use crate::parser::packrat::PackratParser;
+use crate::types::{Type, TypeCheck};
 
 pub fn function_params_semantic_check(
-    parser: &mut PackratParser, curr_params: &Vec<(Rc<String>, usize)>, expected_params: &Rc<Vec<(Rc<String>, Rc<String>)>>,
+    parser: &mut PackratParser, curr_params: &Vec<(Type, usize)>, expected_params: &Rc<Vec<(Rc<String>, Type)>>,
     line_number: usize,
 ) -> Result<(), ParseError>{
     let curr_params_len = curr_params.len();
@@ -17,13 +18,13 @@ pub fn function_params_semantic_check(
         )
     }
     for i in 0..curr_params_len {
-        let curr_data_type = curr_params[i].0.clone();
-        let expected_data_type = expected_params[i].1.clone();
-        if !curr_data_type.eq(&expected_data_type) {
+        let curr_data_type = &curr_params[i].0;
+        let expected_data_type = &expected_params[i].1;
+        if !curr_data_type.is_eq(expected_data_type) {
             let param_index = curr_params[i].1;
             return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                 parser.get_code_line(line_number, param_index),
-                format!("expected type '{}' for argument '{}', got '{}'", 
+                format!("expected type '{}' for argument '{}', got '{}'",
                 expected_data_type, i, curr_data_type)))
             )
         }

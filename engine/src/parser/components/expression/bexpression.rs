@@ -1,6 +1,7 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::lexer::token::{CoreToken};
 use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
+use crate::constants::common::BOOL;
 
 pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     match parser.get_curr_core_token() {
@@ -114,7 +115,7 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
             let index = parser.get_index();
             let (response, data_type, _, _) = parser.atom()?;
             if let Some(data_type) = data_type {
-                if data_type.as_ref().eq("bool") {
+                if data_type.is_atomic(BOOL) {
                     return Ok(response)
                 } else {
                     let line_number = parser.get_curr_line_number();

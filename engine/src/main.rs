@@ -5,6 +5,7 @@ mod scope;
 mod context;
 mod constants;
 mod reader;
+mod types;
 
 use errors::CompilationError;
 use crate::reader::read_file;

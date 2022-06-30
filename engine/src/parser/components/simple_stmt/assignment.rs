@@ -1,8 +1,9 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SemanticError};
 use std::rc::Rc;
+use crate::types::{Type, TypeCheck};
 
-pub fn assign(parser: &mut PackratParser, data_type: Option<Rc<String>>, is_assignable: bool, index: usize) -> Result<ParseSuccess, ParseError> {
+pub fn assign(parser: &mut PackratParser, data_type: Option<Type>, is_assignable: bool, index: usize) -> Result<ParseSuccess, ParseError> {
     parser.expect("=")?;
     if !is_assignable {
         let line_number = parser.get_curr_line_number();
@@ -13,7 +14,7 @@ pub fn assign(parser: &mut PackratParser, data_type: Option<Rc<String>>, is_assi
     }
     if let Some(l_data_type) = data_type {
         let (response, r_data_type, index) = parser.r_assign()?;
-        if !l_data_type.eq(&r_data_type) {
+        if !l_data_type.is_eq(&r_data_type) {
             let line_number = parser.get_curr_line_number();
             return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                 parser.get_code_line(line_number, index),

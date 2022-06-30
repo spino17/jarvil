@@ -13,6 +13,7 @@ use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use crate::parser::helper::{clone_atom_result, clone_expr_result};
+use crate::types::{Type, Struct, CoreType};
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError>;  // return an AST
@@ -21,7 +22,7 @@ pub trait Parser {
 #[derive(Debug)]
 pub enum RoutineCache {
     // currently only two routine (atom, expr) results are cached by the parser
-    ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError>>>>),
+    ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>>>>),
     EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>>>>),
 }
 
@@ -44,7 +45,7 @@ pub struct PackratParser {
 impl PackratParser {
     pub fn new(code_lines: Vec<(Rc<String>, usize)>) -> Self {
         let env = Env::new();
-        let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError>> = FxHashMap::default();
+        let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>> = FxHashMap::default();
         let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>> = FxHashMap::default();
         PackratParser {
             token_vec: Vec::new(),
@@ -113,26 +114,26 @@ impl PackratParser {
         self.env = env;
     }
 
-    pub fn set_identifier_to_scope(&mut self, identifier_name: &Rc<String>, data_type: &Rc<String>, is_init: bool) {
+    pub fn set_identifier_to_scope(&mut self, identifier_name: &Rc<String>, data_type: &Type, is_init: bool) {
         self.env.set_identifier(identifier_name, data_type, is_init);
     }
 
     pub fn set_user_defined_struct_type_to_scope(&mut self, 
-        identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
+        identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Type)>>) {
         self.env.set_user_defined_struct_type(identifier_name, fields);
     }
 
     pub fn set_user_defined_lambda_type(&mut self, identifier_name: &Rc<String>, 
-        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
+        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) {
         self.env.set_user_defined_lambda_type(identifier_name, params, return_type);
     }
 
     pub fn set_function_to_scope(&mut self, identifier_name: &Rc<String>, 
-        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
+        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) {
         self.env.set_function(identifier_name, params, return_type);
     }
 
-    pub fn set_params_to_scope(&mut self, params: Option<&Vec<(Rc<String>, Rc<String>)>>) {
+    pub fn set_params_to_scope(&mut self, params: Option<&Vec<(Rc<String>, Type)>>) {
         if let Some(params) = params {
             for (identifier_name, data_type) in params {
                 self.set_identifier_to_scope(identifier_name, data_type, true);
@@ -144,31 +145,40 @@ impl PackratParser {
         self.env.set_method_to_struct(struct_name, method_name, method_data);
     }
 
-    pub fn has_field_with_name(&self, struct_name: &Rc<String>, field_name: &Rc<String>) -> Option<Rc<String>> {
-        match self.env.get(struct_name) {
-            Some(symbol_data) => {
-                match &symbol_data.has_field_with_name(field_name) {
-                    Some(val) => Some(val.clone()),
-                    None => None,
+    pub fn has_field_with_name(&self, data_type: &Type, field_name: &Rc<String>) -> Option<Type> {
+        match data_type.get_user_defined_type_name() {
+            Some(data_type_key) => {
+                match self.env.get(&data_type_key) {
+                    Some(symbol_data) => {
+                        match &symbol_data.has_field_with_name(field_name) {
+                            Some(val) => Some(Type(val.0.clone())),
+                            None => None,
+                        }
+                    },
+                    None => None
                 }
             },
-            None => None
+            None => None,
         }
     }
 
-    pub fn has_method_with_name(&self, struct_name: &Rc<String>, 
-        method_name: &Rc<String>) -> Option<FunctionData> {
-        match self.env.get(struct_name) {
-            Some(symbol_data) => {
-                match &symbol_data.has_method_with_name(method_name) {
-                    Some(val) => Some(FunctionData{
-                        params: val.params.clone(),
-                        return_type: val.return_type.clone(),
-                    }),
-                    None => None,
+    pub fn has_method_with_name(&self, data_type: &Type, method_name: &Rc<String>) -> Option<FunctionData> {
+        match data_type.get_user_defined_type_name() {
+            Some(data_type_key) => {
+                match self.env.get(&data_type_key) {
+                    Some(symbol_data) => {
+                        match &symbol_data.has_method_with_name(method_name) {
+                            Some(val) => Some(FunctionData{
+                                params: val.params.clone(),
+                                return_type: val.return_type.clone(),
+                            }),
+                            None => None,
+                        }
+                    },
+                    None => None
                 }
             },
-            None => None
+            None => None,
         }
     }
 
@@ -274,13 +284,18 @@ impl PackratParser {
 
     pub fn has_lambda_type(&self, symbol_data: &SymbolData) -> Option<FunctionData> {
         let data_type = symbol_data.get_type();
-        match self.env.get(&data_type) {
-            Some(type_data) => {
-                type_data.get_lambda_data()
+        match data_type.get_user_defined_type_name() {
+            Some(data_type_key) => {
+                match self.env.get(&data_type_key) {
+                    Some(type_data) => {
+                        type_data.get_lambda_data()
+                    },
+                    None => {
+                        None
+                    }
+                }
             },
-            None => {
-                None
-            }
+            None => None,
         }
     }
 
@@ -358,7 +373,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_id(&mut self) -> Result<(ParseSuccess, usize, Rc<String>, Rc<String>, bool), ParseError> {
+    pub fn expect_id(&mut self) -> Result<(ParseSuccess, usize, Rc<String>, Type, bool), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -392,7 +407,7 @@ impl PackratParser {
     }
 
     pub fn expect_type(&mut self)
-    -> Result<(ParseSuccess, usize, Rc<String>, Option<UserDefinedTypeData>), ParseError> {
+    -> Result<(ParseSuccess, usize, Type, Option<UserDefinedTypeData>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -401,7 +416,7 @@ impl PackratParser {
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token.line_number, token_value.0.clone(), None))
+                }, token.line_number, Type::get_atomic_type(&token_value.0.clone().to_string()), None))
             },
             CoreToken::IDENTIFIER(token_value) => {
                 let symbol_data = self.check_declaration(&token)?;
@@ -410,7 +425,9 @@ impl PackratParser {
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
-                    }, token.line_number, token_value.0.clone(), Some(response)))
+                    }, token.line_number, Type(Rc::new(CoreType::STRUCT(Struct{
+                        name: token_value.0.clone(),
+                    }))), Some(response)))
                 } else {
                     let index = self.get_index();
                     Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
@@ -430,7 +447,7 @@ impl PackratParser {
     }
 
     pub fn expect_callable(&mut self)
-    -> Result<(ParseSuccess, usize, Rc<String>, Rc<Vec<(Rc<String>, Rc<String>)>>, Rc<Option<Rc<String>>>), ParseError> {
+    -> Result<(ParseSuccess, usize, Rc<String>, Rc<Vec<(Rc<String>, Type)>>, Rc<Option<Type>>), ParseError> {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
@@ -598,11 +615,11 @@ impl PackratParser {
         components::block::check_block_indentation(self, indent_spaces, err, curr_env, curr_lookahead)
     }
 
-    pub fn block(&mut self, params: Option<&Vec<(Rc<String>, Rc<String>)>>) -> Result<ParseSuccess, ParseError> {
+    pub fn block(&mut self, params: Option<&Vec<(Rc<String>, Type)>>) -> Result<ParseSuccess, ParseError> {
         components::block::block(self, params)
     }
 
-    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+    pub fn struct_block(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
         components::block::struct_block(self)
     }
 
@@ -635,7 +652,7 @@ impl PackratParser {
 
     // function declaration
     pub fn function_input_output(&mut self) 
-    -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>, bool, Option<Rc<String>>, Option<ParseError>), ParseError> {
+    -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>, bool, Option<Type>, Option<ParseError>), ParseError> {
         components::compound_stmt::function_stmt::function_input_output(self)
     }
 
@@ -643,11 +660,11 @@ impl PackratParser {
         components::compound_stmt::function_stmt::function_declaration(self)
     }
 
-    pub fn optparams(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+    pub fn optparams(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
         components::compound_stmt::function_stmt::optparams(self)
     }
 
-    pub fn optparams_factor(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+    pub fn optparams_factor(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
         components::compound_stmt::function_stmt::optparams_factor(self)
     }
 
@@ -672,7 +689,7 @@ impl PackratParser {
         components::simple_stmt::declaration::decl_factor(self)
     }
 
-    pub fn assign(&mut self, data_type: Option<Rc<String>>, 
+    pub fn assign(&mut self, data_type: Option<Type>,
         is_assignable: bool, index: usize) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::assignment::assign(self, data_type, is_assignable, index)
     }
@@ -682,11 +699,11 @@ impl PackratParser {
         components::simple_stmt::function_call::function_call(self, response, is_function_call, index)
     }
 
-    pub fn r_assign(&mut self) -> Result<(ParseSuccess, Rc<String>, usize), ParseError> {
+    pub fn r_assign(&mut self) -> Result<(ParseSuccess, Type, usize), ParseError> {
         components::simple_stmt::helper::r_assign(self)
     }
 
-    pub fn param_decl(&mut self) -> Result<(ParseSuccess, usize, Rc<String>, Rc<String>), ParseError> {
+    pub fn param_decl(&mut self) -> Result<(ParseSuccess, usize, Type, Rc<String>), ParseError> {
         components::simple_stmt::helper::param_decl(self)
     }
 
@@ -810,7 +827,7 @@ impl PackratParser {
     }
 
     // atom
-    pub fn atom(&mut self) -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
+    pub fn atom(&mut self) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
         let routine_index = 0;  // routine_index for atom is 0
         let cache_map = self.cache[routine_index].clone();
         self.ignore_blanks();
@@ -818,15 +835,15 @@ impl PackratParser {
         match cache_map.as_ref() {
             RoutineCache::ATOM(atom_cache_map) => {
                 let routine_fn 
-                = move |parser: &mut PackratParser| -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
+                = move |parser: &mut PackratParser| -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
                     components::atom::atom(parser)
                 };
                 let clone_result_fn 
-                = move |result: &Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError>| -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
+                = move |result: &Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>| -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
                     clone_atom_result(result)
                 };
                 let get_lookahead_fn 
-                = move |response: &(ParseSuccess, Option<Rc<String>>, bool, bool)| -> usize {
+                = move |response: &(ParseSuccess, Option<Type>, bool, bool)| -> usize {
                     response.0.lookahead
                 };
                 self.get_or_set_cache(atom_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead, "atom")
@@ -836,16 +853,16 @@ impl PackratParser {
     }
 
     pub fn check_atom_factor(&mut self, 
-        data_type: Option<Rc<String>>, 
-        is_assignable: bool, is_function_call: bool) -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
+        data_type: Option<Type>, 
+        is_assignable: bool, is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
         components::atom::check_atom_factor(self, data_type, is_assignable, is_function_call)
     }
 
-    pub fn params(&mut self) -> Result<(ParseSuccess, usize, Vec<(Rc<String>, usize)>), ParseError> {
+    pub fn params(&mut self) -> Result<(ParseSuccess, usize, Vec<(Type, usize)>), ParseError> {
         components::function::params(self)
     }
 
-    pub fn param(&mut self) -> Result<(ParseSuccess, (Rc<String>, usize)), ParseError> {
+    pub fn param(&mut self) -> Result<(ParseSuccess, (Type, usize)), ParseError> {
         components::function::param(self)
     }
 

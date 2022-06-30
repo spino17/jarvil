@@ -4,6 +4,7 @@ use crate::context;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError};
 use crate::scope::{Env};
+use crate::types::Type;
 
 pub fn check_block_indentation(parser: &mut PackratParser, 
     indent_spaces: i64, err: ParseError, curr_env: &Env, curr_lookahead: usize) -> Result<ParseSuccess, ParseError> {
@@ -28,7 +29,7 @@ pub fn check_block_indentation(parser: &mut PackratParser,
     }
 }
 
-pub fn block(parser: &mut PackratParser, params: Option<&Vec<(Rc<String>, Rc<String>)>>) -> Result<ParseSuccess, ParseError> {
+pub fn block(parser: &mut PackratParser, params: Option<&Vec<(Rc<String>, Type)>>) -> Result<ParseSuccess, ParseError> {
     parser.expect("\n")?;
     // let indent_spaces_unit = context::get_indent();
     let curr_env = parser.get_env();
@@ -78,7 +79,7 @@ pub fn block(parser: &mut PackratParser, params: Option<&Vec<(Rc<String>, Rc<Str
     }
 }
 
-pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
     parser.expect("\n")?;
     let indent_spaces_unit = context::get_indent();
     let curr_env = parser.get_env();
@@ -86,7 +87,7 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
     let mut curr_lookahead = parser.get_lookahead();
     parser.reset_indent_level(parser.get_indent_level() + 1);
     // let mut fields_map: FxHashMap<Rc<String>, Rc<String>> = FxHashMap::default();
-    let mut fields_vec: Vec<(Rc<String>, Rc<String>)> = vec![];
+    let mut fields_vec: Vec<(Rc<String>, Type)> = vec![];
     loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
         if let Some(err) = response.possible_err {

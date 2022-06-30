@@ -1,6 +1,7 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::lexer::token::CoreToken;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
+use crate::constants::common::{INT,FLOAT};
 
 pub fn factor_expr_in_parenthesis(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     parser.expect("(")?;
@@ -25,7 +26,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             return parser.factor_expr_in_parenthesis();
         },
         CoreToken::INTEGER(_) => {
-            match parser.expect("int") {
+            match parser.expect(INT) {
                 Ok((response, _)) => return Ok((response, false)),
                 Err(err) => {
                     return Err(err);
@@ -33,7 +34,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             }
         },
         CoreToken::FLOAT(_) => {
-            match parser.expect("float") {
+            match parser.expect(FLOAT) {
                 Ok((response, _)) => return Ok((response, true)),
                 Err(err) => {
                     return Err(err);
@@ -50,9 +51,9 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
             let index = parser.get_index();
             let (response, data_type, _, _) = parser.atom()?;
             if let Some(data_type) = data_type {
-                if data_type.as_ref().eq("int") {
+                if data_type.is_atomic(INT) {
                     return Ok((response, false))
-                } else if data_type.as_ref().eq("float") {
+                } else if data_type.is_atomic(FLOAT) {
                     return Ok((response, true))
                 } else {
                     let line_number = parser.get_curr_line_number();

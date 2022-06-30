@@ -11,17 +11,16 @@
 use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
-
-#[derive(Debug)]
-struct GenericSymbolVSBounds(Rc<FxHashMap<Rc<String>, Rc<Vec<Rc<String>>>>>);
+use crate::types::{Type, CoreType, Struct};
 
 #[derive(Debug)]
 pub struct FunctionData {
-    pub params: Rc<Vec<(Rc<String>, Rc<String>)>>,
-    pub return_type: Rc<Option<Rc<String>>>,
+    pub params: Rc<Vec<(Rc<String>, Type)>>,  // change second column to type
+    pub return_type: Rc<Option<Type>>,  // change this to type
     // generic_symbols: GenericSymbolVSBounds,
 }
 
+#[derive(Debug)]
 pub enum StructFunction {
     METHOD(FunctionData),
     CLASS_METHOD(FunctionData),
@@ -29,26 +28,23 @@ pub enum StructFunction {
 
 #[derive(Debug)]
 struct IdentifierData {
-    data_type: Rc<String>,
+    data_type: Type,  // change this to type
     is_init: bool,
 }
 
 #[derive(Debug)]
 pub struct StructType {
     pub name: Rc<String>,
-    fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
+    fields: Rc<FxHashMap<Rc<String>, Type>>,  // change this to type
     constructor: FunctionData,
     methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
     class_methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
-    // interfaces: Rc<Vec<Rc<String>>>,
-    // generic_symbols: GenericSymbolVSBounds,
 }
 
 #[derive(Debug)]
-pub struct LambdaType(FunctionData);
-
-pub struct GenericType {
-    bounded_by_interfaces: Rc<Vec<Rc<String>>>,
+pub struct LambdaType {
+    pub name: Rc<String>,
+    function_data: FunctionData,
 }
 
 #[derive(Debug)]
@@ -58,17 +54,10 @@ pub enum UserDefinedTypeData {
     // GENERIC(GenericType),
 }
 
-pub struct InterfaceData {
-    name: Rc<String>,
-    fields: Rc<FxHashMap<Rc<String>, Rc<String>>>,
-    methods: Rc<FxHashMap<Rc<String>, FunctionData>>
-}
-
 #[derive(Debug)]
 enum MetaData {
     IDENTIFIER(IdentifierData),
     USER_DEFINED_TYPE(UserDefinedTypeData),
-    // INTERFACE(InterfaceData),
     FUNCTION(FunctionData),
 }
 
@@ -79,19 +68,19 @@ impl SymbolData {
 
     // identifier specific methods
     
-    pub fn get_type(&self) -> Rc<String> {
+    pub fn get_type(&self) -> Type {
         match &*self.0.borrow() {
-            MetaData::IDENTIFIER(data) => data.data_type.clone(),
+            MetaData::IDENTIFIER(data) => Type(data.data_type.0.clone()),
             _ => {
-                Rc::new(String::from("non-typed"))
+                Type(Rc::new(CoreType::NONE))
             }
         }
     }
 
-    pub fn get_id_data(&self) -> Option<(Rc<String>, bool)> {
+    pub fn get_id_data(&self) -> Option<(Type, bool)> {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => {
-                Some((data.data_type.clone(), data.is_init))
+                Some((Type(data.data_type.0.clone()), data.is_init))
             },
             _ => {
                 None
@@ -138,10 +127,13 @@ impl SymbolData {
                         }))
                     },
                     UserDefinedTypeData::LAMBDA(lambda_data) => {
-                        Some(UserDefinedTypeData::LAMBDA(LambdaType(FunctionData{
-                            params: lambda_data.0.params.clone(),
-                            return_type: lambda_data.0.return_type.clone(),
-                        })))
+                        Some(UserDefinedTypeData::LAMBDA(LambdaType{
+                            name: lambda_data.name.clone(),
+                            function_data: FunctionData{
+                                params: lambda_data.function_data.params.clone(),
+                                return_type: lambda_data.function_data.return_type.clone(),
+                            },
+                        }))
                     }
                 }
             },
@@ -203,13 +195,13 @@ impl SymbolData {
         }
     }
 
-    pub fn has_field_with_name(&self, field_name: &Rc<String>) -> Option<Rc<String>> {
+    pub fn has_field_with_name(&self, field_name: &Rc<String>) -> Option<Type> {
         match &*self.0.borrow() {
             MetaData::USER_DEFINED_TYPE(data) => {
                 match data {
                     UserDefinedTypeData::STRUCT(data) => {
                         match data.fields.get(field_name) {
-                            Some(val) => Some(val.clone()),
+                            Some(val) => Some(Type(val.0.clone())),
                             None => None,
                         }
                     },
@@ -282,8 +274,8 @@ impl SymbolData {
                 match data {
                     UserDefinedTypeData::LAMBDA(data) => {
                         return Some(FunctionData{
-                            params: data.0.params.clone(),
-                            return_type: data.0.return_type.clone(),
+                            params: data.function_data.params.clone(),
+                            return_type: data.function_data.return_type.clone(),
                         })
                     },
                     _ => {
@@ -365,20 +357,20 @@ impl Env {
         })))
     }
 
-    pub fn set_identifier(&self, identifier_name: &Rc<String>, data_type: &Rc<String>, is_init: bool) {
+    pub fn set_identifier(&self, identifier_name: &Rc<String>, data_type: &Type, is_init: bool) {
         let meta_data = MetaData::IDENTIFIER(IdentifierData{
-            data_type: data_type.clone(),
+            data_type: Type(data_type.0.clone()),
             is_init,
         });
         self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
-    pub fn set_user_defined_struct_type(&self, identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Rc<String>)>>) {
-        let mut constructor_data: Vec<(Rc<String>, Rc<String>)> = vec![];
-        let mut fields_map: FxHashMap<Rc<String>, Rc<String>> = FxHashMap::default();
+    pub fn set_user_defined_struct_type(&self, identifier_name: &Rc<String>, fields: &Rc<Vec<(Rc<String>, Type)>>) {
+        let mut constructor_data: Vec<(Rc<String>, Type)> = vec![];
+        let mut fields_map: FxHashMap<Rc<String>, Type> = FxHashMap::default();
         for (field_name, data_type) in fields.as_ref() {
-            constructor_data.push((field_name.clone(), data_type.clone()));
-            fields_map.insert(field_name.clone(), data_type.clone());
+            constructor_data.push((field_name.clone(), Type(data_type.0.clone())));
+            fields_map.insert(field_name.clone(), Type(data_type.0.clone()));
         }
         let methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
         let class_methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
@@ -393,7 +385,9 @@ impl Env {
             fields: Rc::new(fields_map),
             constructor: FunctionData{
                 params: Rc::new(constructor_data),
-                return_type: Rc::new(Some(identifier_name.clone())),
+                return_type: Rc::new(Some(Type(Rc::new(CoreType::STRUCT(Struct{
+                    name: identifier_name.clone(),
+                }))))),
             },
             methods: Rc::new(RefCell::new(methods)),
             class_methods: Rc::new(RefCell::new(class_methods)),
@@ -402,16 +396,19 @@ impl Env {
     }
 
     pub fn set_user_defined_lambda_type(&self, identifier_name: &Rc<String>, 
-        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
-        let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::LAMBDA(LambdaType(FunctionData{
-            params: params.clone(),
-            return_type: return_type.clone(),
-        })));
+        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) {
+        let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::LAMBDA(LambdaType{
+            name: identifier_name.clone(),
+            function_data: FunctionData{
+                params: params.clone(),
+                return_type: return_type.clone(),
+            }
+        }));
         self.0.borrow_mut().set(identifier_name.clone(), meta_data);
     }
 
     pub fn set_function(&self, identifier_name: &Rc<String>, 
-        params: &Rc<Vec<(Rc<String>, Rc<String>)>>, return_type: &Rc<Option<Rc<String>>>) {
+        params: &Rc<Vec<(Rc<String>, Type)>>, return_type: &Rc<Option<Type>>) {
         let meta_data = MetaData::FUNCTION(FunctionData{
             params: params.clone(),
             return_type: return_type.clone(),

@@ -2,12 +2,13 @@ use crate::{parser::packrat::{PackratParser, ParseSuccess}, errors::{ParseError,
 use std::rc::Rc;
 use crate::lexer::token::CoreToken;
 use crate::parser::components::helper::function_params_semantic_check;
+use crate::types::Type;
 
 #[derive(Debug)]
 pub enum CompoundPart {
-    INDEX_TYPE((Rc<String>, usize)),  // (index type, index)
+    INDEX_TYPE((Type, usize)),  // (index type, index)
     PROPERTRY_NAME((Rc<String>, usize)),  // (identifier name, index)
-    METHOD_DATA((Rc<String>, Vec<(Rc<String>, usize)>, usize)),  // (method name, datatype of the params passed, index)
+    METHOD_DATA((Rc<String>, Vec<(Type, usize)>, usize)),  // (method name, datatype of the params passed, index)
 }
 
 pub fn atom_index_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
@@ -78,8 +79,8 @@ pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, V
 }
 
 pub fn check_atom_factor(parser: &mut PackratParser, 
-    data_type: Option<Rc<String>>, 
-    mut is_assignable: bool, mut is_function_call: bool) -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
+    data_type: Option<Type>, 
+    mut is_assignable: bool, mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
     let (response, line_number, sub_part_access_vec) = parser.atom_factor()?;
     let mut curr_type = data_type;
     for entry in &sub_part_access_vec {
@@ -98,7 +99,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
             CompoundPart::PROPERTRY_NAME((property_name, index)) => {
                 if let Some(curr_type_val) = curr_type {
                     if let Some(field_data_type) = parser.has_field_with_name(&curr_type_val, property_name) {
-                        curr_type = Some(field_data_type.clone());
+                        curr_type = Some(Type(field_data_type.0.clone()));
                         is_function_call = false;
                     } else {
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
@@ -119,7 +120,6 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                     parser.has_method_with_name(&curr_type_val, &method_data.0) {
                         let return_type = function_data.return_type;
                         let expected_params = function_data.params;
-                        let curr_params = method_data.1.clone();
                         /*
                         let params_len = expected_params.len();
                         let params_data_type_vec_len = curr_params.len();
@@ -142,10 +142,10 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                             }
                         }
                          */
-                        function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
+                        function_params_semantic_check(parser, &method_data.1, &expected_params, line_number)?;
                         match return_type.as_ref() {
                             Some(value) => {
-                                curr_type = Some(value.clone());
+                                curr_type = Some(Type(value.0.clone()));
                             },
                             None => {
                                 curr_type = None;
@@ -171,7 +171,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
     Ok((response, curr_type, is_assignable, is_function_call))
 }
 
-pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
+pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
     let index = parser.get_index();
     let (_, line_number, 
         token_value, symbol_data) = parser.expect_any_id_in_scope()?;
@@ -196,10 +196,10 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
                 let (_, line_number, curr_params) = parser.params()?;
                 function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
                 parser.expect(")")?;
-                let data_type: Option<Rc<String>>;
+                let data_type: Option<Type>;
                 match return_type.as_ref() {
                     Some(value) => {
-                        data_type = Some(value.clone());
+                        data_type = Some(Type(value.0.clone()));
                     },
                     None => {
                         data_type = None;
@@ -260,10 +260,10 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Rc<Strin
              */
             function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
             parser.expect(")")?;
-            let data_type: Option<Rc<String>>;
+            let data_type: Option<Type>;
             match return_type.as_ref() {
                 Some(value) => {
-                    data_type = Some(value.clone());
+                    data_type = Some(Type(value.0.clone()));
                 },
                 None => {
                     data_type = None;

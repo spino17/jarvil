@@ -2,6 +2,7 @@ use std::rc::Rc;
 use crate::{lexer::token::CoreToken, errors::LexicalError, context};
 use super::token::TokenValue;
 use crate::constants::common::get_token_for_identifier;
+use crate::constants::common::{INT, FLOAT};
 
 // + -> +, ++
 /*
@@ -304,7 +305,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
                 } else {
                     let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
                     *begin_lexeme = forward_lexeme;
-                    return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from("int")))
+                    return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INT)))
                 }
             },
             1 => {
@@ -320,7 +321,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
                 } else {
                     let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
                     *begin_lexeme = forward_lexeme;
-                    return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from("float")))
+                    return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from(FLOAT)))
                 }
             },
             _ => {
@@ -333,7 +334,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
         0 => {
             let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from("int")))
+            return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INT)))
         },
         1 => {
             return Err(LexicalError::new(*line_number, String::from("expected at least one digit after '.'")))
@@ -341,7 +342,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
         2 => {
             let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from("float")))
+            return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from(FLOAT)))
         },
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
     }

@@ -3,8 +3,9 @@ use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::ParseError;
 use crate::lexer::token::{CoreToken};
 use crate::errors::SyntaxError;
+use crate::types::Type;
 
-pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
+pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::COMMA => {
             parser.expect(",")?;
@@ -37,17 +38,17 @@ pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec
     }
 }
 
-pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>), ParseError> {
-    let mut params: Vec<(Rc<String>, Rc<String>)> = vec![];
+pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
+    let mut params: Vec<(Rc<String>, Type)> = vec![];
     let (_, _, data_type, token_value) = parser.param_decl()?;
-    params.push((token_value.clone(), data_type.clone()));
+    params.push((token_value.clone(), Type(data_type.0.clone())));
     let (response, mut remaining_params) = parser.optparams_factor()?;
     params.append(&mut remaining_params);
     Ok((response, params))
 }
 
 pub fn function_input_output(parser: &mut PackratParser)
--> Result<(ParseSuccess, Vec<(Rc<String>, Rc<String>)>, bool, Option<Rc<String>>, Option<ParseError>), ParseError> {
+-> Result<(ParseSuccess, Vec<(Rc<String>, Type)>, bool, Option<Type>, Option<ParseError>), ParseError> {
     // TODO - check for any generic symbols inside '<' '>'
     parser.expect("(")?;
     let mut params = vec![];
@@ -61,7 +62,7 @@ pub fn function_input_output(parser: &mut PackratParser)
     PackratParser::expect_optionally(|| {
         let (_, _) = parser.expect("->")?;
         let (response, _, data_type, _) = parser.expect_type()?;
-        Ok((response, Some(data_type.clone())))
+        Ok((response, Some(Type(data_type.0.clone()))))
     }, (ParseSuccess{
         lookahead: curr_lookahead,
         possible_err: None,

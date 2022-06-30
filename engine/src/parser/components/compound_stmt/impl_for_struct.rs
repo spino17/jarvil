@@ -4,6 +4,7 @@ use crate::errors::{ParseError, SemanticError};
 
 pub fn impl_for_struct(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("impl")?;
+    // TODO - optionally expect an interface name
     parser.expect("for")?;
     let index = parser.get_index();
     let (_, line_number, token_value, symbol_data) = parser.expect_any_id_in_scope()?;

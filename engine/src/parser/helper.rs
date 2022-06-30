@@ -1,6 +1,7 @@
 use crate::parser::packrat::ParseSuccess;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
 use std::rc::Rc;
+use crate::types::Type;
 
 pub fn clone_error(err: &ParseError) -> ParseError {
     match err {
@@ -19,8 +20,8 @@ pub fn clone_error(err: &ParseError) -> ParseError {
     }
 }
 
-pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError>) 
--> Result<(ParseSuccess, Option<Rc<String>>, bool, bool), ParseError> {
+pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>) 
+-> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
     match result {
         Ok(response) => {
             let possible_err = match &response.0.possible_err {
@@ -32,7 +33,7 @@ pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Rc<String>>, bool
                 possible_err,
             };
             let data_type = match &response.1 {
-                Some(data_type) => Some(data_type.clone()),
+                Some(data_type) => Some(Type(data_type.0.clone())),
                 None => None,
             };
             Ok((parse_success, data_type, response.2, response.3))

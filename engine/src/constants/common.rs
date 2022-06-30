@@ -25,6 +25,10 @@ const TRUE:                 &'static str = "True";
 const FALSE:                &'static str = "False";
 const NONE:                 &'static str = "None";
 const RETURN:               &'static str = "return";
+pub const INT:              &'static str = "int";
+pub const FLOAT:            &'static str = "float";
+pub const STRING:           &'static str = "string";
+pub const BOOL:             &'static str = "bool";
 
 pub const KEYWORDS: [&'static str; 23] = [
     FOR,
@@ -53,14 +57,10 @@ pub const KEYWORDS: [&'static str; 23] = [
 ];
 
 pub const TYPES: [&'static str; 4] = [
-    "int",
-    "float",
-    "string",
-    "bool",
-
-    // compound iterable types
-    // "List",
-    // "Dict",
+    INT,
+    FLOAT,
+    STRING,
+    BOOL,
 ];
 
 pub const LETTERS: [char; 53] = [
