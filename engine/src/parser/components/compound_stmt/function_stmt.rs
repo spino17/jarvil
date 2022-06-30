@@ -40,8 +40,8 @@ pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec
 
 pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
     let mut params: Vec<(Rc<String>, Type)> = vec![];
-    let (_, _, data_type, token_value) = parser.param_decl()?;
-    params.push((token_value.clone(), Type(data_type.0.clone())));
+    let (_, _, data_type, param_name) = parser.param_decl()?;
+    params.push((param_name.clone(), Type(data_type.0.clone())));
     let (response, mut remaining_params) = parser.optparams_factor()?;
     params.append(&mut remaining_params);
     Ok((response, params))
@@ -75,7 +75,7 @@ pub fn function_declaration(parser: &mut PackratParser) -> Result<ParseSuccess, 
     parser.expect("def")?;
     match parser.get_curr_core_token() {
         CoreToken::IDENTIFIER(_) => {
-            let (_, _, token_value) = parser.expect_any_id()?;
+            let (_, _, function_name) = parser.expect_any_id()?;
             let (_, params, 
                 _, return_type, err) = parser.function_input_output()?;
             match parser.expect(":") {
@@ -89,7 +89,7 @@ pub fn function_declaration(parser: &mut PackratParser) -> Result<ParseSuccess, 
                 }
             }
             let response = parser.block(Some(&params))?;
-            parser.set_function_to_scope(&token_value, &Rc::new(params), &Rc::new(return_type));
+            parser.set_function_to_scope(&function_name, &Rc::new(params), &Rc::new(return_type));
             Ok(response)
         },
         _ => {

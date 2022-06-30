@@ -114,8 +114,8 @@ pub fn struct_block(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc
             let response = parser.check_block_indentation(indent_spaces, err, &curr_env, curr_lookahead)?;
             return Ok((response, fields_vec))
         }
-        let (_, _, data_type, token_value) = parser.param_decl()?;
-        fields_vec.push((token_value, data_type));
+        let (_, _, data_type, field_name) = parser.param_decl()?;
+        fields_vec.push((field_name, data_type));
         match parser.expect("\n") {
             Ok(_) => {},
             Err(err) => {

@@ -5,10 +5,10 @@ use crate::lexer::token::CoreToken;
 
 pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("let")?;
-    let (_, _, token_value) = parser.expect_any_id()?;
+    let (_, _, identifier_name) = parser.expect_any_id()?;
     parser.expect("=")?;
     let (response, data_type, _) = parser.r_assign()?;
-    parser.set_identifier_to_scope(&token_value, &data_type, true);
+    parser.set_identifier_to_scope(&identifier_name, &data_type, true);
     Ok(response)
 }
 

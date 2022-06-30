@@ -32,14 +32,14 @@ pub fn lambda_stmt(parser: &mut PackratParser, name: &Rc<String>) -> Result<Pars
 
 pub fn type_decl_stmt(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("type")?;
-    let (_, _, token_value) = parser.expect_any_id()?;
+    let (_, _, type_name) = parser.expect_any_id()?;
     parser.expect(":")?;
     match parser.get_curr_core_token() {
         CoreToken::NEWLINE => {
-            return parser.struct_stmt(&token_value)
+            return parser.struct_stmt(&type_name)
         },
         CoreToken::LPAREN => {
-            return parser.lambda_stmt(&token_value)
+            return parser.lambda_stmt(&type_name)
         },
         _ => {
             let line_number = parser.get_curr_line_number();

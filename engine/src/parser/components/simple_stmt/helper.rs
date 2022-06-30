@@ -5,8 +5,8 @@ use crate::types::Type;
 
 pub fn param_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Type, Rc<String>), ParseError> {
     let (_, _, data_type) = parser.expect_type()?;
-    let (response, line_number, token_value) = parser.expect_any_id()?;
-    Ok((response, line_number, data_type, token_value))
+    let (response, line_number, param_name) = parser.expect_any_id()?;
+    Ok((response, line_number, data_type, param_name))
 }
 
 pub fn r_assign(parser: &mut PackratParser) -> Result<(ParseSuccess, Type, usize), ParseError> {

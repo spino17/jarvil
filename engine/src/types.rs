@@ -16,6 +16,7 @@ pub enum CoreType {
     // TUPLES,
     // ARRAY,
     // REFERENCE,
+    // GENERIC(Generic)
     NONE
 }
 
@@ -111,10 +112,10 @@ pub enum Atomic {
 impl Atomic {
     fn get_atomic_type(&self) -> &str {
         match self {
-            Atomic::INT => INT,
-            Atomic::FLOAT => FLOAT,
-            Atomic::STRING => STRING,
-            Atomic::BOOL => BOOL,
+            Atomic::INT     =>  INT,
+            Atomic::FLOAT   =>  FLOAT,
+            Atomic::STRING  =>  STRING,
+            Atomic::BOOL    =>  BOOL,
         }
     }
 
@@ -152,10 +153,10 @@ impl TypeCheck for Atomic {
         match base_type.0.as_ref() {
             CoreType::ATOMIC(atomic_data) => {
                 match atomic_data {
-                    Atomic::INT => self.is_int(),
-                    Atomic::FLOAT => self.is_float(),
-                    Atomic::STRING => self.is_string(),
-                    Atomic::BOOL => self.is_bool(),
+                    Atomic::INT     =>  self.is_int(),
+                    Atomic::FLOAT   =>  self.is_float(),
+                    Atomic::STRING  =>  self.is_string(),
+                    Atomic::BOOL    =>  self.is_bool(),
                 }
             },
             _ => false
