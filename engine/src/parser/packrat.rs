@@ -7,7 +7,7 @@ use crate::lexer::token::{Token, CoreToken};
 use crate::parser::ast::AST;
 use std::rc::Rc;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
-use crate::scope::{Env, SymbolData, UserDefinedTypeData, FunctionData, StructFunction};
+use crate::scope::{Env, SymbolData, FunctionData, StructFunction};
 use crate::parser::components;
 use crate::context;
 use rustc_hash::FxHashMap;

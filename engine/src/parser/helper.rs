@@ -1,6 +1,5 @@
 use crate::parser::packrat::ParseSuccess;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
-use std::rc::Rc;
 use crate::types::Type;
 
 pub fn clone_error(err: &ParseError) -> ParseError {

@@ -1,4 +1,3 @@
-use crate::lexer::token;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SemanticError};
 

@@ -1,6 +1,5 @@
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SemanticError};
-use std::rc::Rc;
 use crate::types::{Type, TypeCheck};
 
 pub fn assign(parser: &mut PackratParser, data_type: Option<Type>, is_assignable: bool, index: usize) -> Result<ParseSuccess, ParseError> {
