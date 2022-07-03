@@ -120,28 +120,6 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                     parser.has_method_with_name(&curr_type_val, &method_data.0) {
                         let return_type = function_data.return_type;
                         let expected_params = function_data.params;
-                        /*
-                        let params_len = expected_params.len();
-                        let params_data_type_vec_len = curr_params.len();
-                        if params_data_type_vec_len != params_len {
-                            return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                                parser.get_code_line(line_number, method_data.2), 
-                                format!("expected '{}' number of arguments to the method '{}', got '{}'", 
-                                params_len, method_data.0, params_data_type_vec_len)))
-                            )
-                        }
-                        for i in 0..params_data_type_vec_len {
-                            let curr_data_type = curr_params[i].0.clone();
-                            let expected_data_type = expected_params[i].1.clone();
-                            if !curr_data_type.eq(&expected_data_type) {
-                                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                                    parser.get_code_line(line_number, curr_params[i].1),
-                                    format!("expected type '{}' for argument '{}' in method '{}', got '{}'", 
-                                    expected_data_type, i, method_data.0, curr_data_type)))
-                                ) 
-                            }
-                        }
-                         */
                         function_params_semantic_check(parser, &method_data.1, &expected_params, line_number)?;
                         match return_type.as_ref() {
                             Some(value) => {
@@ -235,29 +213,6 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
             };
             parser.expect("(")?;
             let (_, line_number, curr_params) = parser.params()?;
-            /*
-            let params_data_type_vec_len = params_data_type_vec.len();
-            let params_len = params.len();
-            if params_data_type_vec_len != params_len {
-                let index = parser.get_index();
-                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                    parser.get_code_line(line_number, index),
-                    format!("expected '{}' number of arguments to the function, got '{}'", 
-                    params_len, params_data_type_vec_len)))
-                )
-            }
-            for i in 0..params_data_type_vec_len {
-                let curr_data_type = params_data_type_vec[i].0.clone();
-                let expected_data_type = params[i].1.clone();
-                if !curr_data_type.eq(&expected_data_type) {
-                    return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                        parser.get_code_line(line_number, params_data_type_vec[i].1),
-                        format!("expected type '{}' for argument '{}', got '{}'", 
-                        expected_data_type, i, curr_data_type)))
-                    ) 
-                }
-            }
-             */
             function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
             parser.expect(")")?;
             let data_type: Option<Type>;
@@ -278,7 +233,6 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
             if let Some(response) = symbol_data.get_id_data() {
                 (data_type, is_init) = (response.0, response.1);
             } else {
-                // let index = parser.get_index();
                 return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
                     parser.get_code_line(line_number, index),
                     format!("expected identifier, got {} '{}'", 
@@ -286,7 +240,6 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
                 )
             }
             if !is_init {
-                // let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
                     format!(

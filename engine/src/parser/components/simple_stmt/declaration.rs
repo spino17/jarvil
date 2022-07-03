@@ -63,6 +63,5 @@ pub fn decls(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
         }
     }
     let response = parser.decl_factor()?;
-    // parser.expect("\n")?;
     Ok(response)
 }

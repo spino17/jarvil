@@ -601,7 +601,6 @@ impl PackratParser {
     ) -> Result<T, ParseError> {
         match cache_map.borrow().get(&curr_lookahead) {
             Some(result) => {
-                // println!("lookahead for cache hit for {}: {}\n", curr_lookahead, message);
                 let result = clone_result_fn(result);
                 match result {
                     Ok(response) => {
@@ -611,10 +610,7 @@ impl PackratParser {
                     Err(err) => return Err(err)
                 }
             },
-            _ => {
-                // println!("lookahead for cache missed for {}: {}\n", curr_lookahead, message);
-                // print!("cache missed!\n");
-            }
+            _ => {}
         }
         let result = routine_fn(self);
         let result_entry = clone_result_fn(&result);
