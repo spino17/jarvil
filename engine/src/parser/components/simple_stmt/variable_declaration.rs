@@ -3,7 +3,7 @@ use crate::errors::{ParseError, SyntaxError, SemanticError};
 use crate::parser::packrat::ParseSuccess;
 use crate::lexer::token::CoreToken;
 
-pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn variable_decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("let")?;
     let index = parser.get_index();
     let (_, _, identifier_name) = parser.expect_any_id()?;
@@ -23,7 +23,7 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     Ok(response)
 }
 
-pub fn decl_factor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn variable_decl_factor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::COMMA => {
             parser.expect(",")?;
@@ -56,7 +56,7 @@ pub fn decl_factor(parser: &mut PackratParser) -> Result<ParseSuccess, ParseErro
     }
 }
 
-pub fn decls(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn variable_decls(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let response = parser.decl()?;
     if let Some(err) = response.possible_err {
         if !parser.check_next_token("\n") 

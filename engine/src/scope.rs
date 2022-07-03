@@ -389,12 +389,6 @@ impl Env {
         }
         let methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
         let class_methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
-        /*
-        methods.insert(identifier_name.clone(), FunctionData {
-            params: Rc::new(constructor_data), 
-            return_type: Rc::new(Some(identifier_name.clone())),
-        });
-         */
         let meta_data = MetaData::USER_DEFINED_TYPE(UserDefinedTypeData::STRUCT(StructType{
             name: struct_name.clone(),
             fields: Rc::new(fields_map),

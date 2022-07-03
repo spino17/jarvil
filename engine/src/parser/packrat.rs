@@ -276,7 +276,7 @@ impl PackratParser {
         let line_number = token.line_number;
         match &token.core_token {
             CoreToken::IDENTIFIER(token_value) => {
-                
+
                 // semantic check - name resolution
                 match self.env.get(&token_value.0) {
                     Some(symbol_data) => Ok(symbol_data),
@@ -695,15 +695,15 @@ impl PackratParser {
     }
 
     pub fn decls(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::declaration::decls(self)
+        components::simple_stmt::variable_declaration::variable_decls(self)
     }
 
     pub fn decl(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::declaration::decl(self)
+        components::simple_stmt::variable_declaration::variable_decl(self)
     }
 
     pub fn decl_factor(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::declaration::decl_factor(self)
+        components::simple_stmt::variable_declaration::variable_decl_factor(self)
     }
 
     pub fn assign(&mut self, data_type: Option<Type>,

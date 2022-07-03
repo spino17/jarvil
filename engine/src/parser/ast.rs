@@ -1,117 +1,106 @@
+use std::cell::{RefCell, Ref};
+use std::rc::Rc;
 use crate::types::Type;
 
 trait Node {
-    fn eval(&self);
+    fn traverse(&self);
 }
 
 pub enum ASTNode {
-    STATEMENT,
-    VARIABLE_DECLARATION,
-    ASSIGNMENT,
-    FUNCTION_DECLARATION,
-    USER_DEFINED_TYPE_DECLARATION,
-    BLOCK,
-    STRUCT_BLOCK,
-    IMPL_FOR_STRUCT_BLOCK,
-    EXPR, 
-    BEXPR,
-    ATOM,
+    VARIABLE_DECLARATION(VariableDeclarationNode),
+    R_ASSIGNMENT(RAssignmentNode),
+    ROUTINE_CALL(RoutineCallNode),
+    PARAM(ParamNode),
+    BEXPR(BexprNode),
+    EXPR(ExprNode),
+    ATOM(AtomNode),
+    IDENTIFIER(IdentifierNode),
+    LITERAL(LiteralNode),
+}
+
+pub struct VariableDeclarationNode(Rc<RefCell<CoreVariableDeclarationNode>>);
+struct CoreVariableDeclarationNode {
+    left_side: IdentifierNode,
+    right_side: RAssignmentNode,
+}
+
+pub struct RAssignmentNode(Rc<RefCell<CoreRAssignmentNode>>);
+enum CoreRAssignmentNode {
+    PARAM(ParamNode),
+}
+
+pub struct RoutineCallNode(Rc<RefCell<CoreRoutineCallNode>>);
+struct CoreRoutineCallNode {
+    name: Rc<String>,
+    kind: RoutineKind,
+    // params
+    // return type
+}
+
+enum RoutineKind {
+    FUNCTION,
+    LAMBDA,
+    CONSTRUCTOR,
+    CLASS_METHOD
+}
+
+pub struct ParamNode(Rc<RefCell<CoreParamNode>>);
+enum CoreParamNode {
+    BXPR(BexprNode),
+    EXPR(ExprNode),
+    ATOM(AtomNode),
+    LITERAL(LiteralNode),
+}
+
+pub struct BexprNode(Rc<RefCell<CoreBexprNode>>);
+struct CoreBexprNode {
+
+}
+
+pub struct ExprNode(Rc<RefCell<CoreExprNode>>);
+struct CoreExprNode {
+
+}
+
+pub struct AtomNode(Rc<RefCell<CoreAtomNode>>);
+enum CoreAtomNode {
+    START(AtomStartNode),
+    INDEX_ACCESS(IndexAccessNode),
+    PROPERTRY_ACCESS(PropertryAccessNode),
+    METHOD_ACCESS(MethodAccessNode),
+}
+
+pub struct AtomStartNode(Rc<RefCell<CoreAtomStartNode>>);
+enum CoreAtomStartNode {
+    ROUTINE_CALL(RoutineCallNode),
     IDENTIFIER,
-    INDEX_ACCESS,
-    PROPERTRY_ACCESS,
-    METHOD_ACCESS,
-    CLASS_METHOD_ACCESS,
-    LITERAL
 }
 
-pub struct StatementNode {
-
+pub struct IndexAccessNode(Rc<RefCell<CoreIndexAccessNode>>);
+struct CoreIndexAccessNode {
+    indexable_atom: AtomNode,
+    index: ParamNode,
 }
 
-pub struct VariableDeclarationNode {
-    left_side: Box<IdentifierNode>,
-    right_side: Box<RAssignmentNode>,
+pub struct PropertryAccessNode(Rc<RefCell<CorePropertryAccessNode>>);
+struct CorePropertryAccessNode {
+    object: AtomNode,
+    propertry: Rc<String>,
 }
 
-impl Node for VariableDeclarationNode {
-    fn eval(&self) {
-        self.left_side.eval();
-        self.right_side.eval();
-    }
+pub struct MethodAccessNode(Rc<RefCell<CoreMethodAccessNode>>);
+struct CoreMethodAccessNode {
+    object: AtomNode,
+    method: RoutineCallNode,
 }
 
-pub struct AssignmentNode {
-
-}
-
-pub struct FunctionDeclarationNode {
-
-}
-
-pub struct UserDefinedTypeDeclarationNode {
-
-}
-
-pub struct IdentifierNode {
+pub struct IdentifierNode(Rc<RefCell<CoreIdentifierNode>>);
+struct CoreIdentifierNode {
+    name: Rc<String>,
     data_type: Type,
 }
 
-impl Node for IdentifierNode {
-    fn eval(&self) {
-        todo!()
-    }
-}
-
-pub struct RAssignmentNode {
-    
-}
-
-impl Node for RAssignmentNode {
-    fn eval(&self) {
-        todo!()
-    }
-}
-
-pub struct BlockNode {
-
-}
-
-pub struct StructBlockNode {
-
-}
-
-pub struct ImplForStructBlockNode {
-
-}
-
-pub struct ExprNode {
-
-}
-
-pub struct BExprNode {
-
-}
-
-pub struct Atom {
-    data_type: Type,
-}
-
-pub struct IndexAccessNode {
-
-}
-
-pub struct PropertryAccessNode {
-
-}
-
-pub struct MethodAccessNode {
-
-}
-
-pub struct ClassMethodAccessNode {
-
-}
-
-pub struct LiteralNode {
-
+pub struct LiteralNode(Rc<RefCell<CoreLiteralNode>>);
+struct CoreLiteralNode {
+    value: Rc<String>,
 }
