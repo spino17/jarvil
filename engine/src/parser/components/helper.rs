@@ -7,6 +7,10 @@ pub fn function_params_semantic_check(
     parser: &mut PackratParser, curr_params: &Vec<(Type, usize)>, expected_params: &Rc<Vec<(Rc<String>, Type)>>,
     line_number: usize,
 ) -> Result<(), ParseError>{
+
+    // semantic check - 
+    //        1. function call number of arguments matches with number of params in function declaration
+    //        2. infered types of arguments matches with datatypes in function declaration
     let curr_params_len = curr_params.len();
     let expected_params_len = expected_params.len();
     if curr_params_len != expected_params_len {

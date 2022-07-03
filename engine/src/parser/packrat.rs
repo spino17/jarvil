@@ -276,6 +276,8 @@ impl PackratParser {
         let line_number = token.line_number;
         match &token.core_token {
             CoreToken::IDENTIFIER(token_value) => {
+                
+                // semantic check - name resolution
                 match self.env.get(&token_value.0) {
                     Some(symbol_data) => Ok(symbol_data),
                     None => {

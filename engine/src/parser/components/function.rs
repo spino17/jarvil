@@ -49,8 +49,9 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Type, usize))
                     errors_vec.push(err)
                 }
             } else {
+
+                // semantic check - error when argument with 'None' datatype is passed
                 let line_number = parser.get_curr_line_number();
-                // let index = parser.get_index();
                 let err = ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
                     String::from("value with type 'None' found"))

@@ -6,6 +6,8 @@ use crate::errors::SyntaxError;
 
 pub fn struct_stmt(parser: &mut PackratParser, name: &Rc<String>, index: usize) -> Result<ParseSuccess, ParseError> {
     let (response, fields_vec) = parser.struct_block()?;
+
+    // semantic check - struct name should not be same as any type in the current scope
     if let Some(identifier_category) = parser.set_user_defined_struct_type_to_scope(name, &Rc::new(fields_vec)) {
         let line_number = parser.get_curr_line_number();
         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
@@ -31,6 +33,8 @@ pub fn lambda_stmt(parser: &mut PackratParser, name: &Rc<String>, index: usize) 
             }
         }
     }
+
+    // semantic check - lambda name should not be same as any type in the current scope
     if let Some(identifier_category) = parser.set_user_defined_lambda_type(name, &Rc::new(params), &Rc::new(return_type)) {
         let line_number = parser.get_curr_line_number();
         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(

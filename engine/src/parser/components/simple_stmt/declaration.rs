@@ -9,6 +9,8 @@ pub fn decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let (_, _, identifier_name) = parser.expect_any_id()?;
     parser.expect("=")?;
     let (response, data_type, _) = parser.r_assign()?;
+
+    // semantic check - identifier name should not be same as any type in the current scope
     if let Some(identifier_category) = parser.set_identifier_to_scope(&identifier_name, &data_type, true) {
         let line_number = parser.get_curr_line_number();
         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(

@@ -50,6 +50,8 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
         CoreToken::IDENTIFIER(_) => {
             let index = parser.get_index();
             let (response, data_type, _, _) = parser.atom()?;
+
+            // semantic check - type of matched atom should be int or float
             if let Some(data_type) = data_type {
                 if data_type.is_atomic(INT) {
                     return Ok((response, false))

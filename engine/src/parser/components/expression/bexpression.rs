@@ -114,6 +114,8 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
         CoreToken::IDENTIFIER(_) => {
             let index = parser.get_index();
             let (response, data_type, _, _) = parser.atom()?;
+
+            // semantic check - type of matched atom should be bool
             if let Some(data_type) = data_type {
                 if data_type.is_atomic(BOOL) {
                     return Ok(response)

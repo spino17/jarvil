@@ -20,6 +20,8 @@ pub fn function_call(parser: &mut PackratParser,
             }
         }
     } else {
+
+        // semantic check - the matched atom should be a function, method or lambda call to be taken as a standalone statement
         let line_number = parser.get_curr_line_number();
         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
             parser.get_code_line(line_number, index),

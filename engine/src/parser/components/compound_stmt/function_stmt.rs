@@ -90,6 +90,8 @@ pub fn function_declaration(parser: &mut PackratParser) -> Result<ParseSuccess, 
                 }
             }
             let response = parser.block(Some(&params))?;
+
+            // semantic check - function name should not be same as any type in the current scope
             if let Some(identifier_category) = parser.set_function_to_scope(&function_name, &Rc::new(params), &Rc::new(return_type)) {
                 let line_number = parser.get_curr_line_number();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(

@@ -49,30 +49,4 @@ pub fn simple_stmt_alternatives(parser: &mut PackratParser) -> Result<ParseSucce
             }
         }
     }
-    /*
-    match parser.decls() {
-        Ok(response) => return Ok(response),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    match parser.atom() {
-        Ok(response) => {
-            return Ok(response.0)
-        },
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }
-    */
-    /*
-    match parser.function_call(false) {
-        Ok(response) => return Ok(response.0),
-        Err(err) => {
-            parser.reset_lookahead(curr_lookahead);
-            errors_vec.push(err);
-        }
-    }*/
 }
