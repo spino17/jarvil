@@ -4,7 +4,6 @@
 // See https://pdos.csail.mit.edu/~baford/packrat/thesis/ for more information.
 
 use crate::lexer::token::{Token, CoreToken};
-use crate::parser::ast::AST;
 use std::rc::Rc;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
 use crate::scope::{Env, SymbolData, FunctionData, StructFunction};
@@ -77,7 +76,7 @@ impl PackratParser {
     pub fn reset_lookahead(&mut self, reset_index: usize) {
         self.lookahead = reset_index;
     }
-
+    
     pub fn get_index(&self) -> usize {
         let mut temp_lookahead = self.lookahead;
         loop {
@@ -455,6 +454,7 @@ impl PackratParser {
                         symbol_data.get_category_of_identifier(), token_value.0.clone()))))
                 }
             },
+            // TODO - parsing methods for array, tuples etc.
             _ => {
                 let index = self.get_index();
                 Err(ParseError::SYNTAX_ERROR(SyntaxError::new(

@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use crate::parser::components::code;
 use crate::parser::packrat::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SemanticError};
 use crate::lexer::token::{CoreToken};

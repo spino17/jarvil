@@ -6,9 +6,9 @@ use crate::types::Type;
 
 #[derive(Debug)]
 pub enum CompoundPart {
-    INDEX_TYPE((Type, usize)),  // (index type, index)
-    PROPERTRY_NAME((Rc<String>, usize)),  // (identifier name, index)
-    METHOD_DATA((Rc<String>, Vec<(Type, usize)>, usize)),  // (method name, datatype of the params passed, index)
+    INDEX_TYPE((Type, usize)),  // (iterable index datatype, error index)
+    PROPERTRY_NAME((Rc<String>, usize)),  // (identifier name, error index)
+    METHOD_DATA((Rc<String>, Vec<(Type, usize)>, usize)),  // (method name, (datatype of the params passed, param error index), error index)
 }
 
 pub fn atom_index_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {

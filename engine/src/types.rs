@@ -5,6 +5,7 @@ use crate::constants::common::{INT, FLOAT, STRING, BOOL};
 
 pub trait TypeCheck {
     fn is_eq(&self, base_type: &Type) -> bool;
+    // fn get_memory_width(&self) -> usize;
 }
 
 #[derive(Debug)]
