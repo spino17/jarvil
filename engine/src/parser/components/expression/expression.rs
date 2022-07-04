@@ -68,7 +68,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
                 let line_number = parser.get_curr_line_number();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
-                    String::from("value with type 'None' found in expression")))
+                    String::from("'None' value found in expression")))
                 );
             }
         },

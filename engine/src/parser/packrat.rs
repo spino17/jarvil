@@ -875,8 +875,9 @@ impl PackratParser {
         components::atom::check_atom_factor(self, data_type, is_assignable, is_function_call)
     }
 
-    pub fn params(&mut self) -> Result<(ParseSuccess, usize, Vec<(Type, usize)>), ParseError> {
-        components::function::params(self)
+    pub fn params(&mut self, 
+        expected_params: &Rc<Vec<(Rc<String>, Type)>>, param_index: usize) -> Result<(ParseSuccess, usize), ParseError> {
+        components::function::params(self, expected_params, param_index)
     }
 
     pub fn param(&mut self) -> Result<(ParseSuccess, (Type, usize)), ParseError> {

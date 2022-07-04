@@ -130,7 +130,7 @@ pub fn bfactor_lookahead_one(parser: &mut PackratParser) -> Result<ParseSuccess,
                 let line_number = parser.get_curr_line_number();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index), 
-                    String::from("value with type 'None' found in boolean expression")))
+                    String::from("'None' value found in boolean expression")))
                 );
             }
         },

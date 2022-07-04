@@ -8,7 +8,7 @@ use crate::types::Type;
 pub enum CompoundPart {
     INDEX_TYPE((Type, usize)),  // (iterable index datatype, error index)
     PROPERTRY_NAME((Rc<String>, usize)),  // (identifier name, error index)
-    METHOD_DATA((Rc<String>, Vec<(Type, usize)>, usize)),  // (method name, (datatype of the params passed, param error index), error index)
+    METHOD_DATA((Rc<String>, usize)),  // (method name, (datatype of the params passed, param error index), error index)
 }
 
 pub fn atom_index_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
@@ -25,9 +25,9 @@ pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(Pa
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
             parser.expect("(")?;
-            let (_, _, params_data_type_vec) = parser.params()?;
+            parser.params()?;
             let (response, _) = parser.expect(")")?;
-            Ok((response, CompoundPart::METHOD_DATA((token_value.clone(), params_data_type_vec, index))))
+            Ok((response, CompoundPart::METHOD_DATA((token_value.clone(), index))))
         },
         _ => {
             Ok((response, CompoundPart::PROPERTRY_NAME((token_value.clone(), index))))
@@ -92,7 +92,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                 } else {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                         parser.get_code_line(line_number, *index),
-                       format!("type 'None' is not indexable with key of type '{}'", key_data_type))
+                       format!("'None' value is not indexable with key of type '{}'", key_data_type))
                     ))
                 }
             },
@@ -110,7 +110,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                 } else {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                         parser.get_code_line(line_number, *index),
-                       format!("type 'None' has no propertry named '{}'", property_name))
+                       format!("'None' value has no propertry named '{}'", property_name))
                     ))
                 }
             },
@@ -120,7 +120,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                     parser.has_method_with_name(&curr_type_val, &method_data.0) {
                         let return_type = function_data.return_type;
                         let expected_params = function_data.params;
-                        function_params_semantic_check(parser, &method_data.1, &expected_params, line_number)?;
+                        // function_params_semantic_check(parser, &method_data.1, &expected_params, line_number)?;
                         match return_type.as_ref() {
                             Some(value) => {
                                 curr_type = Some(Type(value.0.clone()));
@@ -133,14 +133,14 @@ pub fn check_atom_factor(parser: &mut PackratParser,
                         is_function_call = true;
                     } else {
                         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                            parser.get_code_line(line_number, method_data.2),
+                            parser.get_code_line(line_number, method_data.1),
                             format!("type '{}' has no method named '{}'", curr_type_val, method_data.0))
                         ))
                     }
                 } else {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
-                        parser.get_code_line(line_number, method_data.2),
-                       format!("type 'None' has no method named '{}'", method_data.0))
+                        parser.get_code_line(line_number, method_data.1),
+                       format!("'None' value has no method named '{}'", method_data.0))
                     ))
                 }
             },
@@ -171,8 +171,8 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
                     ))
                 };
                 parser.expect("(")?;
-                let (_, line_number, curr_params) = parser.params()?;
-                function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
+                parser.params(&expected_params, 0)?;
+                // function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
                 parser.expect(")")?;
                 let data_type: Option<Type>;
                 match return_type.as_ref() {
@@ -205,15 +205,14 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
             } else if let Some(struct_constructor_data) = symbol_data.get_struct_constructor_data() {
                 (struct_constructor_data.params, struct_constructor_data.return_type)
             } else {
-                // let index = parser.get_index();
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
                     format!("'{}' is not callable", token_value.clone())))
                 )
             };
             parser.expect("(")?;
-            let (_, line_number, curr_params) = parser.params()?;
-            function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
+            parser.params(&expected_params, 0)?;
+            // function_params_semantic_check(parser, &curr_params, &expected_params, line_number)?;
             parser.expect(")")?;
             let data_type: Option<Type>;
             match return_type.as_ref() {

@@ -31,7 +31,7 @@ pub fn assign(parser: &mut PackratParser, data_type: Option<Type>, is_assignable
         let line_number = parser.get_curr_line_number();
         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
             parser.get_code_line(line_number, index),
-            String::from("value with type 'None' is not assignable")))
+            String::from("'None' value is not assignable")))
         )
     }
 }
