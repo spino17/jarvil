@@ -868,12 +868,13 @@ impl PackratParser {
             _ => unreachable!("cache map with routine index 0 should be an atom")
         }
     }
-
+    /*
     pub fn check_atom_factor(&mut self, 
         data_type: Option<Type>, 
         is_assignable: bool, is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
         components::atom::check_atom_factor(self, data_type, is_assignable, is_function_call)
     }
+     */
 
     pub fn params(&mut self, 
         expected_params: &Rc<Vec<(Rc<String>, Type)>>, param_index: usize) -> Result<(ParseSuccess, usize), ParseError> {
@@ -884,19 +885,29 @@ impl PackratParser {
         components::function::param(self)
     }
 
-    pub fn atom_factor(&mut self) -> Result<(ParseSuccess, usize, Vec<components::atom::CompoundPart>), ParseError> {
-        components::atom::atom_factor(self)
+    pub fn atom_factor(&mut self, 
+        data_type: Option<Type>, 
+        mut is_assignable: bool, mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
+        components::atom::atom_factor(self, data_type, is_assignable, is_function_call)
     }
-    
-    pub fn atom_index_or_propetry_or_method_access(&mut self) -> Result<(ParseSuccess, Option<components::atom::CompoundPart>), ParseError> {
-        components::atom::atom_index_or_propetry_or_method_access(self)
+    /*
+    pub fn atom_index_or_propetry_or_method_access(&mut self, 
+        data_type: Option<Type>, 
+        mut is_assignable: bool, 
+        mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
+        components::atom::atom_index_or_propetry_or_method_access(self, 
+            data_type, is_assignable, is_function_call)
     }
+     */
 
-    pub fn atom_index_access(&mut self) -> Result<(ParseSuccess, components::atom::CompoundPart), ParseError> {
-        components::atom::atom_index_access(self)
+    pub fn atom_index_access(&mut self, data_type: Option<Type>, 
+        mut is_assignable: bool, mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
+        components::atom::atom_index_access(self, data_type, is_assignable, is_function_call)
     }
     
-    pub fn atom_propertry_or_method_access(&mut self) -> Result<(ParseSuccess, components::atom::CompoundPart), ParseError> {
-        components::atom::atom_propertry_or_method_access(self)
+    pub fn atom_propertry_or_method_access(&mut self, 
+        data_type: Option<Type>, 
+        mut is_assignable: bool, mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
+        components::atom::atom_propertry_or_method_access(self, data_type, is_assignable, is_function_call)
     }
 }

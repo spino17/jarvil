@@ -1,4 +1,4 @@
-use crate::{parser::packrat::{PackratParser, ParseSuccess}, errors::{ParseError, SyntaxError, SemanticError}};
+use crate::{parser::packrat::{PackratParser, ParseSuccess}, errors::{ParseError, SyntaxError, SemanticError}, lexer::token};
 use std::rc::Rc;
 use crate::lexer::token::CoreToken;
 use crate::parser::components::helper::function_params_semantic_check;
@@ -11,44 +11,108 @@ pub enum CompoundPart {
     METHOD_DATA((Rc<String>, usize)),  // (method name, (datatype of the params passed, param error index), error index)
 }
 
-pub fn atom_index_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
+pub fn atom_index_access(parser: &mut PackratParser, 
+    data_type: Option<Type>, mut is_assignable: bool, 
+    mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
+    let index = parser.get_index();
     parser.expect("[")?;
-    let (_, data_type_and_index) = parser.param()?;
+    let (_, (index_data_type, index)) = parser.param()?;
     let (response, _) = parser.expect("]")?;
-    Ok((response, CompoundPart::INDEX_TYPE(data_type_and_index)))
+    let data_type = match data_type {
+        Some(data_type) => data_type,
+        None => {
+            let line_number = parser.get_curr_line_number();
+            return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                parser.get_code_line(line_number, index),
+               format!("'None' value is not indexable with key of type '{}'", index_data_type))
+            ))
+        }
+    };
+    is_function_call = false;
+    Ok((response, Some(index_data_type), is_assignable, is_function_call))
 }
 
-pub fn atom_propertry_or_method_access(parser: &mut PackratParser) -> Result<(ParseSuccess, CompoundPart), ParseError> {
+pub fn atom_propertry_or_method_access(parser: &mut PackratParser, 
+    data_type: Option<Type>, mut is_assignable: bool, 
+    mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
     parser.expect(".")?;
     let index = parser.get_index();
-    let (response, _, token_value) = parser.expect_any_id()?;
+    let (response, _, method_or_propertry_name) = parser.expect_any_id()?;
+    let data_type = match data_type {
+        Some(data_type) => data_type,
+        None => {
+            let line_number = parser.get_curr_line_number();
+            return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                parser.get_code_line(line_number, index),
+               format!("'None' value has no propertry or method named '{}'", method_or_propertry_name))
+            ))
+        }
+    };
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
+            let (expected_params, return_type)
+            = if let Some(function_data) 
+            = parser.has_method_with_name(&data_type, &method_or_propertry_name) {
+                let return_type = function_data.return_type;
+                let expected_params = function_data.params;
+                // function_params_semantic_check(parser, &method_data.1, &expected_params, line_number)?;
+                (expected_params, return_type)
+            } else {
+                let line_number = parser.get_curr_line_number();
+                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                    parser.get_code_line(line_number, index),
+                    format!("type '{}' has no method named '{}'", data_type, method_or_propertry_name))
+                ))
+            };
             parser.expect("(")?;
-            parser.params()?;
+            parser.params(&expected_params, 0)?;
             let (response, _) = parser.expect(")")?;
-            Ok((response, CompoundPart::METHOD_DATA((token_value.clone(), index))))
+            let return_type = match return_type.as_ref() {
+                Some(value) => {
+                    Some(Type(value.0.clone()))
+                },
+                None => None,
+            };
+            is_assignable = false;
+            is_function_call = true;
+            // TODO - return return_type
+            Ok((response, return_type, is_assignable, is_function_call))
         },
         _ => {
-            Ok((response, CompoundPart::PROPERTRY_NAME((token_value.clone(), index))))
+            let field_data_type
+            = if let Some(field_data_type) = parser.has_field_with_name(&data_type, &method_or_propertry_name) {
+                Type(field_data_type.0.clone())
+            } else {
+                let line_number = parser.get_curr_line_number();
+                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                    parser.get_code_line(line_number, index),
+                   format!("type '{}' has no propertry named '{}'", data_type, method_or_propertry_name))
+                ))
+            };
+            // check method contract with above data_type and token_value (propertry name)
+            is_function_call = false;
+            Ok((response, Some(field_data_type), is_assignable, is_function_call))
         }
     }
 }
-
-pub fn atom_index_or_propetry_or_method_access(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<CompoundPart>), ParseError> {
+/*
+pub fn atom_index_or_propetry_or_method_access(parser: &mut PackratParser, 
+    data_type: Option<Type>,
+    mut is_assignable: bool, 
+    mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
     match parser.get_curr_core_token() {
         CoreToken::LSQUARE => {
-            match parser.atom_index_access() {
+            match parser.atom_index_access(data_type, is_assignable, is_function_call) {
                 Ok(response) => {
-                    Ok((response.0, Some(response.1)))
+                    Ok(response)
                 },
                 Err(err) => Err(err)
             }
         },
         CoreToken::DOT => {
-            match parser.atom_propertry_or_method_access() {
+            match parser.atom_propertry_or_method_access(data_type, is_assignable, is_function_call) {
                 Ok(response) => {
-                    Ok((response.0, Some(response.1)))
+                    Ok(response)
                 },
                 Err(err) => Err(err)
             }
@@ -57,27 +121,37 @@ pub fn atom_index_or_propetry_or_method_access(parser: &mut PackratParser) -> Re
             Ok((ParseSuccess{
                 lookahead: parser.get_lookahead(),
                 possible_err: None,
-            }, None))
+            }, data_type, is_assignable, is_function_call))
         }
     }
 }
+ */
 
-pub fn atom_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Vec<CompoundPart>), ParseError> {
-    let mut sub_part_access_vec: Vec<CompoundPart> = vec![];
-    let (_, compound_part) = parser.atom_index_or_propetry_or_method_access()?;
-    if let Some(compound_part) = compound_part {
-        sub_part_access_vec.push(compound_part);
-        let (response, line_number, mut remaining_sub_part_access_vec) = parser.atom_factor()?;
-        sub_part_access_vec.append(&mut remaining_sub_part_access_vec);
-        Ok((response, line_number, sub_part_access_vec))
-    } else {
-        return Ok((ParseSuccess{
-            lookahead: parser.get_lookahead(),
-            possible_err: None,
-        }, parser.get_curr_line_number(), vec![]))
-    }
+pub fn atom_factor(parser: &mut PackratParser, 
+    data_type: Option<Type>, 
+    mut is_assignable: bool, mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
+    //let (_, return_data_type, return_is_assignable, return_is_function_call) 
+    //= parser.atom_index_or_propetry_or_method_access(data_type, is_assignable, is_function_call)?;
+    let (_, return_data_type, return_is_assignable, return_is_function_call)
+    = match parser.get_curr_core_token() {
+        CoreToken::LSQUARE => {
+            parser.atom_index_access(data_type, is_assignable, is_function_call)?
+        },
+        CoreToken::DOT => {
+            parser.atom_propertry_or_method_access(data_type, is_assignable, is_function_call)?
+        },
+        _ => {
+            return Ok((ParseSuccess{
+                lookahead: parser.get_lookahead(),
+                possible_err: None,
+            }, data_type, is_assignable, is_function_call))
+        }
+    };
+    let (response, final_data_type, final_is_assignable, final_is_function_call)
+    = parser.atom_factor(return_data_type, return_is_assignable, return_is_function_call)?;
+    Ok((response, final_data_type, final_is_assignable, final_is_function_call))
 }
-
+/*
 pub fn check_atom_factor(parser: &mut PackratParser, 
     data_type: Option<Type>, 
     mut is_assignable: bool, mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
@@ -148,6 +222,7 @@ pub fn check_atom_factor(parser: &mut PackratParser,
     }
     Ok((response, curr_type, is_assignable, is_function_call))
 }
+ */
 
 pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
     let index = parser.get_index();
@@ -185,7 +260,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
                 }
                 is_assignable = false;
                 is_function_call = true;
-                parser.check_atom_factor(data_type, is_assignable, is_function_call)
+                parser.atom_factor(data_type, is_assignable, is_function_call)
             } else {
                 return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                     parser.get_code_line(line_number, index),
@@ -224,7 +299,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
                 }
             }
             is_assignable = false;
-            parser.check_atom_factor(data_type, is_assignable, is_function_call)
+            parser.atom_factor(data_type, is_assignable, is_function_call)
         },
         _ => {
             let data_type;
@@ -245,7 +320,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
                         "cannot access parts of uninitialized identifier '{}'", token_value.clone())))
                     )
             }
-            parser.check_atom_factor(Some(data_type), is_assignable, is_function_call)
+            parser.atom_factor(Some(data_type), is_assignable, is_function_call)
         }
     }
 }

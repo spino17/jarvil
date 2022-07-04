@@ -107,18 +107,27 @@ pub fn params(parser: &mut PackratParser,
             expected_params_len)))
         )
     }
-    let expected_param_data_type = expected_params.as_ref()[param_index].1;
+    let expected_param_data_type = &expected_params.as_ref()[param_index].1;
     // params_data_type_vec.push(param_data_type);
-    if !param_data_type.is_eq(&expected_param_data_type) {
+    if !param_data_type.is_eq(expected_param_data_type) {
         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
             parser.get_code_line(line_number, index),
             format!("expected type '{}' for argument '{}', got '{}'",
-            expected_param_data_type, param_index, param_data_type)))
+            expected_param_data_type, param_index + 1, param_data_type)))
         )
     }
     let token_name = parser.get_curr_token_name();
     match parser.get_curr_core_token() {
         CoreToken::RPAREN => {
+            if param_index + 1 < expected_params.as_ref().len() {
+                let index = parser.get_index();
+                let line_number = parser.get_curr_line_number();
+                return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
+                    parser.get_code_line(line_number, index),
+                    format!("expected '{}' number of arguments to the function, got '{}'", 
+                    expected_params_len, param_index + 1)))
+                )
+            }
             Ok((response, line_number))
         },
         CoreToken::COMMA => {
