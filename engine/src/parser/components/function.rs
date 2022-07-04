@@ -78,7 +78,6 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Type, usize))
 
 pub fn params(parser: &mut PackratParser, 
     expected_params: &Rc<Vec<(Rc<String>, Type)>>, param_index: usize) -> Result<(ParseSuccess, usize), ParseError> {
-    // let mut params_data_type_vec: Vec<(Type, usize)> = vec![];
     let expected_params_len = expected_params.as_ref().len();
     match parser.get_curr_core_token() {
         CoreToken::RPAREN => {
@@ -108,7 +107,6 @@ pub fn params(parser: &mut PackratParser,
         )
     }
     let expected_param_data_type = &expected_params.as_ref()[param_index].1;
-    // params_data_type_vec.push(param_data_type);
     if !param_data_type.is_eq(expected_param_data_type) {
         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
             parser.get_code_line(line_number, index),
@@ -134,7 +132,6 @@ pub fn params(parser: &mut PackratParser,
             parser.expect(",")?;
             let (response, line_number)
             = parser.params(expected_params, param_index + 1)?;
-            // params_data_type_vec.append(&mut remaining_params_data_type_vec);
             Ok((response, line_number))
         }
         _ => {
