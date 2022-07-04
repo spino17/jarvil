@@ -18,7 +18,7 @@ pub enum CoreType {
     // ARRAY,
     // REFERENCE,
     // GENERIC(Generic)
-    NONE
+    VOID
 }
 
 #[derive(Debug)]
@@ -76,9 +76,9 @@ impl TypeCheck for Type {
             CoreType::LAMBDA(lambda_data) => {
                 lambda_data.is_eq(base_type)
             },
-            CoreType::NONE => {
+            CoreType::VOID => {
                 match base_type.0.as_ref() {
-                    CoreType::NONE => true,
+                    CoreType::VOID => true,
                     _ => false,
                 }
             }
@@ -97,7 +97,7 @@ impl std::fmt::Display for Type {
                     None => write!(f, "lambda"),
                 }
             },
-            CoreType::NONE => write!(f, "None"),
+            CoreType::VOID => write!(f, "None"),
         }
     }
 }

@@ -158,7 +158,7 @@ impl PackratParser {
     pub fn has_field_with_name(&self, data_type: &Type, field_name: &Rc<String>) -> Option<Type> {
         match data_type.get_user_defined_type_name() {
             Some(data_type_key) => {
-                match self.env.get(&data_type_key) {
+                match self.env.resolve(&data_type_key) {
                     Some(symbol_data) => {
                         match &symbol_data.has_field_with_name(field_name) {
                             Some(val) => Some(Type(val.0.clone())),
@@ -175,7 +175,7 @@ impl PackratParser {
     pub fn has_method_with_name(&self, data_type: &Type, method_name: &Rc<String>) -> Option<FunctionData> {
         match data_type.get_user_defined_type_name() {
             Some(data_type_key) => {
-                match self.env.get(&data_type_key) {
+                match self.env.resolve(&data_type_key) {
                     Some(symbol_data) => {
                         match &symbol_data.has_method_with_name(method_name) {
                             Some(val) => Some(FunctionData{
@@ -194,7 +194,7 @@ impl PackratParser {
 
     pub fn has_class_method_with_name(&self, struct_name: &Rc<String>, 
         class_method_name: &Rc<String>) -> Option<FunctionData> {
-        match self.env.get(struct_name) {
+        match self.env.resolve(struct_name) {
             Some(symbol_data) => {
                 match &symbol_data.has_class_method_with_name(class_method_name) {
                     Some(val) => Some(FunctionData{
@@ -278,7 +278,7 @@ impl PackratParser {
             CoreToken::IDENTIFIER(token_value) => {
 
                 // semantic check - name resolution
-                match self.env.get(&token_value.0) {
+                match self.env.resolve(&token_value.0) {
                     Some(symbol_data) => Ok(symbol_data),
                     None => {
                         let index = self.get_index();
@@ -298,7 +298,7 @@ impl PackratParser {
         let data_type = symbol_data.get_type();
         match data_type.get_user_defined_type_name() {
             Some(data_type_key) => {
-                match self.env.get(&data_type_key) {
+                match self.env.resolve(&data_type_key) {
                     Some(type_data) => {
                         type_data.get_lambda_data()
                     },

@@ -61,7 +61,7 @@ impl SymbolData {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => Type(data.data_type.0.clone()),
             _ => {
-                Type(Rc::new(CoreType::NONE))
+                Type(Rc::new(CoreType::VOID))
             }
         }
     }
@@ -353,7 +353,7 @@ impl Env {
     }
 
     fn is_already_declared_as_type(&self, key: &Rc<String>) -> Option<String> {
-        match self.get(key) {
+        match self.resolve(key) {
             Some(symbol_data) => {
                 if symbol_data.is_user_defined_type() {
                     return Some(symbol_data.get_category_of_identifier().to_string())
@@ -436,12 +436,12 @@ impl Env {
 
     pub fn set_method_to_struct(&self, struct_name: &Rc<String>, method_name: &Rc<String>, method_data: StructFunction) {
         // self.0.borrow_mut().set_method_to_struct(struct_name, method_name, method_data);
-        if let Some(symbol_data) = self.get(struct_name) {
+        if let Some(symbol_data) = self.resolve(struct_name) {
             symbol_data.set_method_to_struct(method_name, method_data)
         }
     }
 
-    pub fn get(&self, key: &Rc<String>) -> Option<SymbolData> {
+    pub fn resolve(&self, key: &Rc<String>) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
 
         // check the identifier name in current scope
@@ -455,7 +455,7 @@ impl Env {
                 if let Some(parent_env) = &scope_ref.parent_env {
 
                     // return from the nearest scope which found the identifier name
-                    parent_env.get(key)
+                    parent_env.resolve(key)
                 } else {
                     None
                 }
