@@ -41,6 +41,7 @@ pub fn atom_propertry_or_method_access(parser: &mut PackratParser,
     };
     match parser.get_curr_core_token() {
         CoreToken::LPAREN => {
+            parser.expect("(")?;
             let (expected_params, return_type)
             = if let Some(function_data) 
             = parser.has_method_with_name(&data_type, &method_or_propertry_name) {
@@ -54,7 +55,6 @@ pub fn atom_propertry_or_method_access(parser: &mut PackratParser,
                     format!("type '{}' has no method named '{}'", data_type, method_or_propertry_name))
                 ))
             };
-            parser.expect("(")?;
             parser.params(&expected_params, 0)?;
             let (response, _) = parser.expect(")")?;
             let return_type = match return_type.as_ref() {
@@ -120,6 +120,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
                 parser.expect("::")?;
                 let index = parser.get_index();
                 let (_, _, class_method_name) = parser.expect_any_id()?;
+                parser.expect("(")?;
                 let (expected_params, return_type)
                 = if let Some(function_data) = parser.has_class_method_with_name(&class_method_name, &struct_data.name) {
                     (function_data.params, function_data.return_type)
@@ -129,7 +130,6 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
                         format!("type '{}' has no classmethod named '{}'", struct_data.name, class_method_name))
                     ))
                 };
-                parser.expect("(")?;
                 parser.params(&expected_params, 0)?;
                 parser.expect(")")?;
                 let data_type: Option<Type>;
@@ -153,6 +153,7 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
             }
         },
         CoreToken::LPAREN => {
+            parser.expect("(")?;
             let (expected_params, return_type) 
             = if let Some(function_data) = symbol_data.get_function_data() {
                 is_function_call = true;
@@ -169,7 +170,6 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
                     format!("'{}' is not callable", token_value.clone())))
                 )
             };
-            parser.expect("(")?;
             parser.params(&expected_params, 0)?;
             parser.expect(")")?;
             let data_type: Option<Type>;

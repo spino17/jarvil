@@ -25,7 +25,7 @@ pub fn function_call(parser: &mut PackratParser,
         let line_number = parser.get_curr_line_number();
         return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
             parser.get_code_line(line_number, index),
-            String::from("expected a function call")))
+            String::from("expected a call expression")))
         )
     }
 }

@@ -51,7 +51,7 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
             Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
             parser.get_code_line(line_number, index),
             String::from(
-                "got a numeric expression inside a boolean expression\n    numeric expression can only be paired using '==', '>=', '>', '<=' or '<' inside a boolean expression")))
+                "got a numeric valued expression inside a boolean expression\n    numeric valued expression can only be paired using '==', '>=', '>', '<=' or '<' inside a boolean expression")))
             )
         }
     }
