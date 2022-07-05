@@ -44,7 +44,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Type, usize))
                     let index = parser.get_index();
                     let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
                         parser.get_code_line(line_number, index),
-                        format!("expected 'newline', ',' or ')', got '{}'",
+                        format!("expected ',', ')' or 'newline', got '{}'",
                         PackratParser::parse_for_err_message(parser.get_next_token_name().to_string())))
                     );
                     parser.reset_lookahead(curr_lookahead);

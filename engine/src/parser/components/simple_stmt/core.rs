@@ -24,7 +24,7 @@ pub fn simple_stmt_alternatives(parser: &mut PackratParser) -> Result<ParseSucce
     match parser.get_curr_core_token() {
         // TODO - add break, continue, return branches also
         CoreToken::LET => {
-            return parser.decls()
+            return parser.variable_decls()
         },
         _ => {
             let index = parser.get_index();

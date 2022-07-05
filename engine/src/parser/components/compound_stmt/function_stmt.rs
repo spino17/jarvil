@@ -5,44 +5,30 @@ use crate::lexer::token::{CoreToken};
 use crate::errors::{SyntaxError, SemanticError};
 use crate::types::Type;
 
-pub fn optparams_factor(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
-    match parser.get_curr_core_token() {
-        CoreToken::COMMA => {
-            parser.expect(",")?;
-            parser.optparams()
-        },
-        _ => {
-            match parser.expect("empty") {
-                Ok((response, _)) => {
-                    // FOLLOW(optparams)
-                    if parser.check_next_token(")") {
-                        return Ok((response, vec![]))
-                    } else {
-                        let line_number = parser.get_curr_line_number();
-                        let index = parser.get_index();
-                        let err = ParseError::SYNTAX_ERROR(SyntaxError::new(
-                            parser.get_code_line(line_number, index),
-                            format!(
-                            "expected ',' or ')', got '{}'", PackratParser::parse_for_err_message(
-                                parser.get_next_token_name().to_string())
-                            )
-                        ));
-                        return Err(err);
-                    }
-                },
-                Err(err) => {
-                    unreachable!("parsing empty string never give error, got {:?}", err)
-                }
-            }
-        }
-    }
-}
-
 pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
     let mut params: Vec<(Rc<String>, Type)> = vec![];
-    let (_, _, data_type, param_name) = parser.param_decl()?;
+    let (response, _, data_type, param_name) = parser.param_decl()?;
     params.push((param_name.clone(), Type(data_type.0.clone())));
-    let (response, mut remaining_params) = parser.optparams_factor()?;
+    let (response, mut remaining_params) = match parser.get_curr_core_token() {
+        CoreToken::COMMA => {
+            parser.expect(",")?;
+            parser.optparams()?
+        },
+        CoreToken::RPAREN => {
+            return Ok((response, params))
+        },
+        _ => {
+            let line_number = parser.get_curr_line_number();
+            let index = parser.get_index();
+            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                parser.get_code_line(line_number, index),
+                format!(
+                "expected ',' or ')', got '{}'", 
+                PackratParser::parse_for_err_message(parser.get_next_token_name().to_string())
+                )
+            )))
+        }
+    };
     params.append(&mut remaining_params);
     Ok((response, params))
 }
@@ -55,6 +41,7 @@ pub fn function_input_output(parser: &mut PackratParser)
     if !parser.check_next_token(")") {
         let (_, opt_params) = parser.optparams()?;
         params = opt_params;
+        println!("{:?}", params);
     }
     parser.expect(")")?;
     let curr_lookahead = parser.get_lookahead();

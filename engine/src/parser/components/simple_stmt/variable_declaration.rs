@@ -27,7 +27,7 @@ pub fn variable_decl_factor(parser: &mut PackratParser) -> Result<ParseSuccess, 
     match parser.get_curr_core_token() {
         CoreToken::COMMA => {
             parser.expect(",")?;
-            parser.decls()
+            parser.variable_decls()
         },
         _ => {
             match parser.expect("empty") {
@@ -58,12 +58,24 @@ pub fn variable_decl_factor(parser: &mut PackratParser) -> Result<ParseSuccess, 
 
 pub fn variable_decls(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     let response = parser.decl()?;
-    if let Some(err) = response.possible_err {
-        if !parser.check_next_token("\n") 
-        && !parser.check_next_token(",") {
-            return Err(err)
+    match parser.get_curr_core_token() {
+        CoreToken::COMMA => {
+            parser.expect(",")?;
+            parser.variable_decls()
+        },
+        CoreToken::NEWLINE => {
+            return Ok(response)
+        },
+        _ => {
+            let line_number = parser.get_curr_line_number();
+            let index = parser.get_index();
+            return Err(ParseError::SYNTAX_ERROR(SyntaxError::new(
+                parser.get_code_line(line_number, index),
+                format!(
+                "expected ',' or 'newline', got '{}'",
+                PackratParser::parse_for_err_message(parser.get_next_token_name().to_string())
+                )
+            )))
         }
     }
-    let response = parser.decl_factor()?;
-    Ok(response)
 }

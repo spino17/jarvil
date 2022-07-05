@@ -681,10 +681,6 @@ impl PackratParser {
         components::compound_stmt::function_stmt::optparams(self)
     }
 
-    pub fn optparams_factor(&mut self) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
-        components::compound_stmt::function_stmt::optparams_factor(self)
-    }
-
     // simple statement - variable declaration and assignment
     pub fn simple_stmt(&mut self) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::core::simple_stmt(self)
@@ -694,7 +690,7 @@ impl PackratParser {
         components::simple_stmt::core::simple_stmt_alternatives(self)
     }
 
-    pub fn decls(&mut self) -> Result<ParseSuccess, ParseError> {
+    pub fn variable_decls(&mut self) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::variable_declaration::variable_decls(self)
     }
 
