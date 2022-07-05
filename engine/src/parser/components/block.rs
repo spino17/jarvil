@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::vec;
 use crate::context;
-use crate::parser::packrat::{PackratParser, ParseSuccess};
+use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError};
 use crate::scope::{Env};
 use crate::types::Type;

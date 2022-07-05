@@ -1,4 +1,4 @@
-use crate::parser::packrat::{PackratParser, ParseSuccess};
+use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SemanticError};
 
 pub fn impl_for_struct(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {

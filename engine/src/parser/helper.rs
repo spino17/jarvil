@@ -1,4 +1,4 @@
-use crate::parser::packrat::ParseSuccess;
+use crate::parser::parser::ParseSuccess;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
 use crate::types::Type;
 

@@ -1,6 +1,5 @@
-use crate::parser::packrat::PackratParser;
+use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SyntaxError, SemanticError};
-use crate::parser::packrat::ParseSuccess;
 use crate::lexer::token::CoreToken;
 
 pub fn variable_decl(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {

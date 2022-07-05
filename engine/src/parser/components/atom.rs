@@ -1,4 +1,4 @@
-use crate::{parser::packrat::{PackratParser, ParseSuccess}, errors::{ParseError, SyntaxError, SemanticError}};
+use crate::{parser::parser::{PackratParser, ParseSuccess}, errors::{ParseError, SyntaxError, SemanticError}};
 use crate::lexer::token::CoreToken;
 use crate::types::Type;
 

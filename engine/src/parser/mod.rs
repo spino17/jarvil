@@ -1,4 +1,4 @@
 pub mod ast;
-pub mod packrat;
+pub mod parser;
 pub mod components;
 pub mod helper;

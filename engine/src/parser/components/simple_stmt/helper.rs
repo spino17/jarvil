@@ -1,4 +1,4 @@
-use crate::parser::packrat::{PackratParser, ParseSuccess};
+use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, aggregate_errors};
 use std::rc::Rc;
 use crate::types::Type;
