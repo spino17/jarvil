@@ -733,15 +733,15 @@ impl PackratParser {
         match cache_map.as_ref() {
             RoutineCache::EXPR(expr_cache_map) => {
                 let routine_fn 
-                = move |parser: &mut PackratParser| -> Result<(ParseSuccess, bool), ParseError> {
+                = |parser: &mut PackratParser| -> Result<(ParseSuccess, bool), ParseError> {
                     components::expression::expression::expr(parser)
                 };
                 let clone_result_fn 
-                = move |result: &Result<(ParseSuccess, bool), ParseError>| -> Result<(ParseSuccess, bool), ParseError> {
+                = |result: &Result<(ParseSuccess, bool), ParseError>| -> Result<(ParseSuccess, bool), ParseError> {
                     clone_expr_result(result)
                 };
                 let get_lookahead_fn 
-                = move |response: &(ParseSuccess, bool)| -> usize {
+                = |response: &(ParseSuccess, bool)| -> usize {
                     response.0.lookahead
                 };
                 self.get_or_set_cache(expr_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead, "expr")
@@ -852,15 +852,15 @@ impl PackratParser {
         match cache_map.as_ref() {
             RoutineCache::ATOM(atom_cache_map) => {
                 let routine_fn 
-                = move |parser: &mut PackratParser| -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
+                = |parser: &mut PackratParser| -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
                     components::atom::atom(parser)
                 };
                 let clone_result_fn 
-                = move |result: &Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>| -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
+                = |result: &Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>| -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
                     clone_atom_result(result)
                 };
                 let get_lookahead_fn 
-                = move |response: &(ParseSuccess, Option<Type>, bool, bool)| -> usize {
+                = |response: &(ParseSuccess, Option<Type>, bool, bool)| -> usize {
                     response.0.lookahead
                 };
                 self.get_or_set_cache(atom_cache_map, routine_fn, clone_result_fn, get_lookahead_fn, curr_lookahead, "atom")
