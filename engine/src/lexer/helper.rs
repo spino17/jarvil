@@ -45,12 +45,12 @@ pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return Ok((CoreToken::MINUS, String::from("-")));
+                return Ok((CoreToken::DASH, String::from("-")));
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return Ok((CoreToken::MINUS, String::from("-")));
+        return Ok((CoreToken::DASH, String::from("-")));
     }
 }
 
@@ -157,7 +157,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
     }
 }
 
-// # -> #......\n
+// # -> #...\n
 pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, 
     line_number: &mut usize, code: &Vec<char>, 
     code_lines: &mut Vec<(Rc<String>, usize)>, line_start_index: &mut usize) -> Result<(CoreToken, String), LexicalError> {
@@ -218,12 +218,12 @@ pub fn extract_greater_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>)
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return Ok((CoreToken::GREATER, String::from(">")));
+                return Ok((CoreToken::RBRACKET, String::from(">")));
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return Ok((CoreToken::GREATER, String::from(">")));
+        return Ok((CoreToken::RBRACKET, String::from(">")));
     }
 }
 
@@ -239,16 +239,16 @@ pub fn extract_less_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return Ok((CoreToken::LESS, String::from("<")));
+                return Ok((CoreToken::LBRACKET, String::from("<")));
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return Ok((CoreToken::LESS, String::from("<")));
+        return Ok((CoreToken::LBRACKET, String::from("<")));
     }
 }
 
-// " -> "......"
+// " -> "..."
 pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, 
     line_number: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;

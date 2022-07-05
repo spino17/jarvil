@@ -43,9 +43,9 @@ pub enum CoreToken {
 
     // operators
     PLUS,               // '+'
-    // DOUBLE_PLUS,        // '++'
-    MINUS,              // '-'
-    // DOUBLE_MINUS,       // '--'
+    // DOUBLE_PLUS,     // '++'
+    DASH,               // '-'
+    // DOUBLE_MINUS,    // '--'
     RIGHT_ARROW,        // '->'
     STAR,               // '*'
     DOUBLE_STAR,        // '**'
@@ -72,12 +72,12 @@ pub enum CoreToken {
     // comparison
     EQUAL,              // '='
     DOUBLE_EQUAL,       // '=='
-    GREATER_EQUAL,      // '>='
-    GREATER,            // '>'
+    LBRACKET,           // '<'
+    RBRACKET,           // '>'
     LESS_EQUAL,         // '<='
-    LESS,               // '<'
+    GREATER_EQUAL,      // '>='
 
-    // others
+    // expression terminals
     // NUMBER(TokenValue),
     INTEGER(TokenValue),
     FLOAT(TokenValue),
@@ -89,12 +89,11 @@ pub enum CoreToken {
     FALSE,              // 'False'
 
     // ignored by parser
-    SINGLE_LINE_COMMENT,// '//......\n' or '#.........\n'
-    BLOCK_COMMENT,      // '/* ..... */'
+    SINGLE_LINE_COMMENT,// '//...\n' or '#...\n'
+    BLOCK_COMMENT,      // '/* ... */'
 
-    // corner cases
+    // termination
     ENDMARKER,
-    NONE,
 }
 
 #[derive(Debug)]
@@ -224,29 +223,6 @@ impl Token {
             start_index,
             end_index,
         })
-    }
-
-    pub fn get_value(&self) -> Option<TokenValue> {
-        match &self.core_token {
-            CoreToken::TYPE(value)          =>      {
-                Some(TokenValue(value.0.clone()))
-            },
-            CoreToken::INTEGER(value)       =>      {
-                Some(TokenValue(value.0.clone()))
-            },
-            CoreToken::FLOAT(value)         =>      {
-                Some(TokenValue(value.0.clone()))
-            },
-            CoreToken::IDENTIFIER(value)    =>      {
-                Some(TokenValue(value.0.clone()))
-            }
-            CoreToken::LITERAL(value)       =>      {
-                Some(TokenValue(value.0.clone()))
-            },
-            _ => {
-                None
-            }
-        }
     }
 
     pub fn is_eq(&self, symbol: &str) -> bool {

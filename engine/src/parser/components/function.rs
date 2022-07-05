@@ -14,6 +14,7 @@ pub fn param(parser: &mut PackratParser) -> Result<(ParseSuccess, (Type, usize))
             return Ok((response, (Type(Rc::new(CoreType::ATOMIC(Atomic::BOOL))), index)))
         },
         Err(err) => {
+            println!("bexpr error: {:?}", err);
             parser.reset_lookahead(curr_lookahead);
             errors_vec.push(err)
         }

@@ -21,7 +21,7 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                 }
             }
         },
-        CoreToken::GREATER => {
+        CoreToken::RBRACKET => {
             match parser.expect(">") {
                 Ok((response, _)) => return Ok(response),
                 Err(err) => {
@@ -37,7 +37,7 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
                 }
             }
         },
-        CoreToken::LESS => {
+        CoreToken::LBRACKET => {
             match parser.expect("<") {
                 Ok((response, _)) => return Ok(response),
                 Err(err) => {

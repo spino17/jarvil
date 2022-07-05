@@ -44,7 +44,7 @@ pub fn factor(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseE
         CoreToken::PLUS => {
             return parser.factor_plus();
         },
-        CoreToken::MINUS => {
+        CoreToken::DASH => {
             return parser.factor_minus();
         },
         CoreToken::IDENTIFIER(_) => {
@@ -182,7 +182,7 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
                 }
             }
         },
-        CoreToken::MINUS => {
+        CoreToken::DASH => {
             match parser.additive_minus() {
                 Ok((response, has_float)) => return Ok((response, has_float)),
                 Err(err) => {

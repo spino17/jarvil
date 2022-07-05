@@ -23,14 +23,13 @@ const IN:                   &'static str = "in";
 const NEW:                  &'static str = "new";
 const TRUE:                 &'static str = "True";
 const FALSE:                &'static str = "False";
-const NONE:                 &'static str = "None";
 const RETURN:               &'static str = "return";
 pub const INT:              &'static str = "int";
 pub const FLOAT:            &'static str = "float";
 pub const STRING:           &'static str = "string";
 pub const BOOL:             &'static str = "bool";
 
-pub const KEYWORDS: [&'static str; 23] = [
+pub const KEYWORDS: [&'static str; 22] = [
     FOR,
     WHILE,
     CONTINUE,
@@ -52,7 +51,6 @@ pub const KEYWORDS: [&'static str; 23] = [
     NEW,
     TRUE,
     FALSE,
-    NONE,
     RETURN,
 ];
 
@@ -178,8 +176,6 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
             (CoreToken::TRUE,               String::from(TRUE))
         } else if value.eq(FALSE)               {
             (CoreToken::FALSE,              String::from(FALSE))
-        } else if value.eq(NONE)                {
-            (CoreToken::NONE,               String::from(NONE))
         } else if value.eq(RETURN)              {
             (CoreToken::RETURN,             String::from(RETURN))
         } else {
