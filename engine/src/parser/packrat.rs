@@ -698,10 +698,6 @@ impl PackratParser {
         components::simple_stmt::variable_declaration::variable_decl(self)
     }
 
-    pub fn decl_factor(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::simple_stmt::variable_declaration::variable_decl_factor(self)
-    }
-
     pub fn assign(&mut self, data_type: Option<Type>,
         is_assignable: bool, index: usize) -> Result<ParseSuccess, ParseError> {
         components::simple_stmt::assignment::assign(self, data_type, is_assignable, index)
