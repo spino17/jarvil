@@ -153,11 +153,7 @@ pub fn multitive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Par
 pub fn term(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     let (_, is_float_in_factor) = parser.factor()?;
     let (response, is_float_in_multitive) = parser.multitive()?;
-    if is_float_in_factor || is_float_in_multitive {
-        Ok((response, true))
-    } else {
-        Ok((response, false))
-    }
+    Ok((response, is_float_in_factor || is_float_in_multitive))
 }
 
 pub fn additive_plus(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
@@ -228,9 +224,5 @@ pub fn additive(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), Pars
 pub fn expr(parser: &mut PackratParser) -> Result<(ParseSuccess, bool), ParseError> {
     let (_, is_float_in_term) = parser.term()?;
     let (response, is_float_in_additive) = parser.additive()?;
-    if is_float_in_term || is_float_in_additive {
-        return Ok((response, true))
-    } else {
-        return Ok((response, false))
-    }
+    Ok((response, is_float_in_term || is_float_in_additive))
 }
