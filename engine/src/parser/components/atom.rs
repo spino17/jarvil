@@ -116,18 +116,19 @@ pub fn atom(parser: &mut PackratParser) -> Result<(ParseSuccess, Option<Type>, b
     let mut is_function_call = false;
     match parser.get_curr_core_token() {
         CoreToken::DOUBLE_COLON => {
-            if let Some(struct_data) = symbol_data.get_user_defined_struct_type_data() {
+            if symbol_data.is_user_defined_struct_type() {
                 parser.expect("::")?;
                 let index = parser.get_index();
                 let (_, _, class_method_name) = parser.expect_any_id()?;
                 parser.expect("(")?;
                 let (expected_params, return_type)
-                = if let Some(function_data) = parser.has_class_method_with_name(&class_method_name, &struct_data.name) {
+                = if let Some(function_data) 
+                = parser.has_class_method_with_name(&token_value, &class_method_name) {
                     (function_data.params, function_data.return_type)
                 } else {
                     return Err(ParseError::SEMANTIC_ERROR(SemanticError::new(
                         parser.get_code_line(line_number, index),
-                        format!("type '{}' has no classmethod named '{}'", struct_data.name, class_method_name))
+                        format!("type '{}' has no classmethod named '{}'", token_value, class_method_name))
                     ))
                 };
                 parser.params(&expected_params, 0)?;

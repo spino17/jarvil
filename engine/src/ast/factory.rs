@@ -1,4 +1,4 @@
-use crate::parser::ast::ast::{VariableDeclarationNode, 
+use crate::ast::ast::{VariableDeclarationNode, 
     IdentifierNode, RAssignmentNode, ParamNode, BexprNode, ExprNode, CoreVariableDeclarationNode, CoreRAssignmentNode,
     RoutineCallNode, RoutineKind, ParamsNode, CoreRoutineCallNode, CoreParamsNode, AtomNode, LiteralNode, AtomStartNode,
     IndexAccessNode};

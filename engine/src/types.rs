@@ -25,19 +25,6 @@ pub enum CoreType {
 pub struct Type(pub Rc<CoreType>);
 
 impl Type {
-    pub fn get_user_defined_type_name(&self) -> Option<Rc<String>> {
-        match self.0.as_ref() {
-            CoreType::STRUCT(struct_data) => Some(struct_data.name.clone()),
-            CoreType::LAMBDA(lambda_data) => {
-                match &lambda_data.name {
-                    Some(name) => Some(name.clone()),
-                    None => None,
-                }
-            },
-            _ => None,
-        }
-    }
-
     pub fn is_atomic(&self, atomic_type_name: &str) -> bool {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic_type) => {
@@ -221,7 +208,6 @@ impl TypeCheck for Lambda {
                 if !is_return_type_eq {
                     return false
                 }
-                // TODO - match datatypes of params
                 for index in 0..self_params_len {
                     if !self.function_data.params.as_ref()[index].1.is_eq(&lambda_data.function_data.params.as_ref()[index].1) {
                         return false
