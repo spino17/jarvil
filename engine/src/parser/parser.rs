@@ -156,6 +156,7 @@ impl PackratParser {
     }
 
     pub fn has_field_with_name(&self, data_type: &Type, field_name: &Rc<String>) -> Option<Type> {
+        /*
         match data_type.get_user_defined_type_name() {
             Some(data_type_key) => {
                 match self.env.resolve(&data_type_key) {
@@ -170,9 +171,26 @@ impl PackratParser {
             },
             None => None,
         }
+         */
+        match data_type.0.as_ref() {
+            CoreType::STRUCT(struct_type_data) => {
+                let struct_name = struct_type_data.name.clone();
+                match self.env.resolve(&struct_name) {
+                    Some(symbol_data) => {
+                        match &symbol_data.has_field_with_name(field_name) {
+                            Some(val) => Some(Type(val.0.clone())),
+                            None => None,
+                        }
+                    },
+                    None => None
+                }
+            },
+            _ => None,
+        }
     }
 
     pub fn has_method_with_name(&self, data_type: &Type, method_name: &Rc<String>) -> Option<FunctionData> {
+        /*
         match data_type.get_user_defined_type_name() {
             Some(data_type_key) => {
                 match self.env.resolve(&data_type_key) {
@@ -189,6 +207,25 @@ impl PackratParser {
                 }
             },
             None => None,
+        }
+         */
+        match data_type.0.as_ref() {
+            CoreType::STRUCT(struct_type_data) => {
+                let struct_name = struct_type_data.name.clone();
+                match self.env.resolve(&struct_name) {
+                    Some(symbol_data) => {
+                        match &symbol_data.has_method_with_name(method_name) {
+                            Some(val) => Some(FunctionData{
+                                params: val.params.clone(),
+                                return_type: val.return_type.clone(),
+                            }),
+                            None => None,
+                        }
+                    },
+                    None => None
+                }
+            },
+            _ => None,
         }
     }
 
@@ -296,6 +333,35 @@ impl PackratParser {
 
     pub fn has_lambda_type(&self, symbol_data: &SymbolData) -> Option<FunctionData> {
         let data_type = symbol_data.get_type();
+        match data_type.0.as_ref() {
+            CoreType::LAMBDA(lambda_type_data) => {
+                match &lambda_type_data.name {
+                    Some(lambda_name) => {
+                        match self.env.resolve(&lambda_name) {
+                            Some(type_data) => {
+                                type_data.get_lambda_data()
+                            },
+                            None => {
+                                None
+                            }
+                        }
+                    },
+                    None => {
+                        match &lambda_type_data.function_data {
+                            Some(function_data) => {
+                                Some(FunctionData{
+                                    params: function_data.params.clone(),
+                                    return_type: function_data.return_type.clone(),
+                                })
+                            },
+                            None => unreachable!("lambda type with no name always have some function data")
+                        }
+                    }
+                }
+            },
+            _ => None,
+        }
+        /*
         match data_type.get_user_defined_type_name() {
             Some(data_type_key) => {
                 match self.env.resolve(&data_type_key) {
@@ -309,6 +375,7 @@ impl PackratParser {
             },
             None => None,
         }
+         */
     }
 
     // parsing routines for terminals
@@ -447,6 +514,7 @@ impl PackratParser {
                         possible_err: None,
                     }, token.line_number, Type(Rc::new(CoreType::LAMBDA(Lambda{
                         name: Some(token_value.0.clone()),
+                        function_data: None,
                     })))))
                 } else {
                     let index = self.get_index();

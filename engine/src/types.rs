@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::str;
 use std::fmt::Formatter;
-use crate::constants::common::{INT, FLOAT, STRING, BOOL};
+use crate::{constants::common::{INT, FLOAT, STRING, BOOL}, scope::FunctionData};
 
 pub trait TypeCheck {
     fn is_eq(&self, base_type: &Type) -> bool;
@@ -18,7 +18,7 @@ pub enum CoreType {
     // ARRAY,
     // REFERENCE,
     // GENERIC(Generic)
-    VOID
+    NON_TYPED,
 }
 
 #[derive(Debug)]
@@ -76,9 +76,9 @@ impl TypeCheck for Type {
             CoreType::LAMBDA(lambda_data) => {
                 lambda_data.is_eq(base_type)
             },
-            CoreType::VOID => {
+            CoreType::NON_TYPED => {
                 match base_type.0.as_ref() {
-                    CoreType::VOID => true,
+                    CoreType::NON_TYPED => true,
                     _ => false,
                 }
             }
@@ -97,7 +97,7 @@ impl std::fmt::Display for Type {
                     None => write!(f, "lambda"),
                 }
             },
-            CoreType::VOID => write!(f, "None"),
+            CoreType::NON_TYPED => write!(f, "non-typed"),
         }
     }
 }
@@ -184,6 +184,7 @@ impl TypeCheck for Struct {
 #[derive(Debug)]
 pub struct Lambda {
     pub name: Option<Rc<String>>,
+    pub function_data: Option<FunctionData>,
 }
 
 impl TypeCheck for Lambda {

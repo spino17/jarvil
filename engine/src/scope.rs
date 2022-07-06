@@ -61,7 +61,7 @@ impl SymbolData {
         match &*self.0.borrow() {
             MetaData::IDENTIFIER(data) => Type(data.data_type.0.clone()),
             _ => {
-                Type(Rc::new(CoreType::VOID))
+                Type(Rc::new(CoreType::NON_TYPED))
             }
         }
     }
