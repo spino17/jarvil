@@ -335,29 +335,10 @@ impl PackratParser {
         let data_type = symbol_data.get_type();
         match data_type.0.as_ref() {
             CoreType::LAMBDA(lambda_type_data) => {
-                match &lambda_type_data.name {
-                    Some(lambda_name) => {
-                        match self.env.resolve(&lambda_name) {
-                            Some(type_data) => {
-                                type_data.get_lambda_data()
-                            },
-                            None => {
-                                None
-                            }
-                        }
-                    },
-                    None => {
-                        match &lambda_type_data.function_data {
-                            Some(function_data) => {
-                                Some(FunctionData{
-                                    params: function_data.params.clone(),
-                                    return_type: function_data.return_type.clone(),
-                                })
-                            },
-                            None => unreachable!("lambda type with no name always have some function data")
-                        }
-                    }
-                }
+                Some(FunctionData{
+                    params: lambda_type_data.function_data.params.clone(),
+                    return_type: lambda_type_data.function_data.return_type.clone(),
+                })
             },
             _ => None,
         }
@@ -507,14 +488,17 @@ impl PackratParser {
                     }, token.line_number, Type(Rc::new(CoreType::STRUCT(Struct{
                         name: token_value.0.clone(),
                     })))))
-                } else if symbol_data.is_user_defined_lambda_type() {
+                } else if let Some(lambda_type_data) = symbol_data.get_user_defined_lambda_type_data() {
                     self.lookahead = self.lookahead + 1;
                     Ok((ParseSuccess{
                         lookahead: self.lookahead,
                         possible_err: None,
                     }, token.line_number, Type(Rc::new(CoreType::LAMBDA(Lambda{
                         name: Some(token_value.0.clone()),
-                        function_data: None,
+                        function_data: FunctionData{
+                            params: lambda_type_data.function_data.params.clone(),
+                            return_type: lambda_type_data.function_data.return_type.clone(),
+                        },
                     })))))
                 } else {
                     let index = self.get_index();

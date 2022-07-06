@@ -34,7 +34,7 @@ pub struct StructType {
 #[derive(Debug)]
 pub struct LambdaType {
     pub name: Rc<String>,
-    function_data: FunctionData,
+    pub function_data: FunctionData,
 }
 
 #[derive(Debug)]
