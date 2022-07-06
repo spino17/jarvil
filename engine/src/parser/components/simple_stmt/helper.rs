@@ -12,7 +12,7 @@ pub fn param_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Ty
 pub fn r_assign(parser: &mut PackratParser) -> Result<(ParseSuccess, Type, usize), ParseError> {
     let mut errors_vec: Vec<ParseError> = vec![];
     let curr_lookahead = parser.get_lookahead();
-    match parser.param() {  // bexpr | expr | literal | atom
+    match parser.expr() {  // bexpr | expr | literal | atom
         Ok(response) => return Ok((response.0, response.1.0, response.1.1)),
         Err(err) => {
             parser.reset_lookahead(curr_lookahead);

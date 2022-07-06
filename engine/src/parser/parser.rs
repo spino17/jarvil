@@ -769,7 +769,7 @@ impl PackratParser {
     }
 
     // expression
-    pub fn expr(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
+    pub fn numeric_expr(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
         let routine_index = 1;  // routine_index for expr is 1
         let cache_map = self.cache[routine_index].clone();
         self.ignore_blanks();
@@ -778,7 +778,7 @@ impl PackratParser {
             RoutineCache::EXPR(expr_cache_map) => {
                 let routine_fn 
                 = |parser: &mut PackratParser| -> Result<(ParseSuccess, bool), ParseError> {
-                    components::expression::expression::expr(parser)
+                    components::expression::nexpression::numeric_expr(parser)
                 };
                 let clone_result_fn 
                 = |result: &Result<(ParseSuccess, bool), ParseError>| -> Result<(ParseSuccess, bool), ParseError> {
@@ -795,52 +795,52 @@ impl PackratParser {
     }
 
     pub fn term(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::term(self)
+        components::expression::nexpression::term(self)
     }
 
     pub fn additive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::additive(self)
+        components::expression::nexpression::additive(self)
     }
 
     pub fn factor(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::factor(self)
+        components::expression::nexpression::factor(self)
     }
 
     pub fn multitive(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::multitive(self)
+        components::expression::nexpression::multitive(self)
     }
 
     pub fn factor_expr_in_parenthesis(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::factor_expr_in_parenthesis(self)
+        components::expression::nexpression::factor_expr_in_parenthesis(self)
     }
 
     pub fn factor_plus(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::factor_plus(self)
+        components::expression::nexpression::factor_plus(self)
     }
 
     pub fn factor_minus(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::factor_minus(self)
+        components::expression::nexpression::factor_minus(self)
     }
 
     pub fn multitive_star(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::multitive_star(self)
+        components::expression::nexpression::multitive_star(self)
     }
 
     pub fn multitive_slash(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::multitive_slash(self)
+        components::expression::nexpression::multitive_slash(self)
     }
 
     pub fn additive_plus(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::additive_plus(self)
+        components::expression::nexpression::additive_plus(self)
     }
 
     pub fn additive_minus(&mut self) -> Result<(ParseSuccess, bool), ParseError> {
-        components::expression::expression::additive_minus(self)
+        components::expression::nexpression::additive_minus(self)
     }
 
     // boolean expression
-    pub fn bexpr(&mut self) -> Result<ParseSuccess, ParseError> {
-        components::expression::bexpression::bexpr(self)
+    pub fn bool_expr(&mut self) -> Result<ParseSuccess, ParseError> {
+        components::expression::bexpression::bool_expr(self)
     }
 
     pub fn ortive(&mut self) -> Result<ParseSuccess, ParseError> {
@@ -897,7 +897,7 @@ impl PackratParser {
             RoutineCache::ATOM(atom_cache_map) => {
                 let routine_fn 
                 = |parser: &mut PackratParser| -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
-                    components::atom::atom(parser)
+                    components::expression::atom::atom(parser)
                 };
                 let clone_result_fn 
                 = |result: &Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>| -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
@@ -915,27 +915,27 @@ impl PackratParser {
 
     pub fn params(&mut self, 
         expected_params: &Rc<Vec<(Rc<String>, Type)>>, param_index: usize) -> Result<(ParseSuccess, usize), ParseError> {
-        components::function::params(self, expected_params, param_index)
+        components::common::params(self, expected_params, param_index)
     }
 
-    pub fn param(&mut self) -> Result<(ParseSuccess, (Type, usize)), ParseError> {
-        components::function::param(self)
+    pub fn expr(&mut self) -> Result<(ParseSuccess, (Type, usize)), ParseError> {
+        components::expression::expression::expr(self)
     }
 
     pub fn atom_factor(&mut self, 
         data_type: Option<Type>, is_assignable: 
         bool, is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
-        components::atom::atom_factor(self, data_type, is_assignable, is_function_call)
+        components::expression::atom::atom_factor(self, data_type, is_assignable, is_function_call)
     }
 
     pub fn atom_index_access(&mut self, data_type: Option<Type>, is_assignable: bool, 
         is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
-        components::atom::atom_index_access(self, data_type, is_assignable, is_function_call)
+        components::expression::atom::atom_index_access(self, data_type, is_assignable, is_function_call)
     }
     
     pub fn atom_propertry_or_method_access(&mut self, 
         data_type: Option<Type>, is_assignable: bool, 
         is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
-        components::atom::atom_propertry_or_method_access(self, data_type, is_assignable, is_function_call)
+        components::expression::atom::atom_propertry_or_method_access(self, data_type, is_assignable, is_function_call)
     }
 }

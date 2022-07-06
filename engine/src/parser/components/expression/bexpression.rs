@@ -58,15 +58,15 @@ pub fn comp_op(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
 }
 
 pub fn bfactor_expr_comp_op_expr(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
-    let (_, has_float_in_expr_one) = parser.expr()?;
+    let (_, has_float_in_expr_one) = parser.numeric_expr()?;
     parser.comp_op()?;
-    let (response, has_float_in_expr_two) = parser.expr()?;
+    let (response, has_float_in_expr_two) = parser.numeric_expr()?;
     Ok(response)
 }
 
 pub fn bfactor_expr_in_parenthesis(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("(")?;
-    parser.bexpr()?;
+    parser.bool_expr()?;
     let (response, _) = parser.expect(")")?;
     Ok(response)
 }
@@ -217,7 +217,7 @@ pub fn bterm(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
 
 pub fn ortive_or(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.expect("or")?;
-    let response = parser.bexpr()?;
+    let response = parser.bool_expr()?;
     Ok(response)
 }
 
@@ -258,7 +258,7 @@ pub fn ortive(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     }
 }
 
-pub fn bexpr(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
+pub fn bool_expr(parser: &mut PackratParser) -> Result<ParseSuccess, ParseError> {
     parser.bterm()?;
     let response = parser.ortive()?;
     Ok(response)

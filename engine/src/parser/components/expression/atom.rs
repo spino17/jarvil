@@ -7,7 +7,7 @@ pub fn atom_index_access(parser: &mut PackratParser,
     mut is_function_call: bool) -> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
     let index = parser.get_index();
     parser.expect("[")?;
-    let (_, (index_data_type, index)) = parser.param()?;
+    let (_, (index_data_type, index)) = parser.expr()?;
     let (response, _) = parser.expect("]")?;
     let data_type = match data_type {
         Some(data_type) => data_type,
