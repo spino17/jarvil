@@ -6,7 +6,7 @@ use crate::scope::identifier::IdentifierData;
 use crate::scope::function::FunctionData;
 
 #[derive(Debug)]
-enum MetaData {
+pub enum MetaData {
     IDENTIFIER(IdentifierData),
     USER_DEFINED_TYPE(UserDefinedTypeData),
     FUNCTION(FunctionData),

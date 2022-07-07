@@ -74,6 +74,7 @@ impl TypeCheck for Type {
     }
 }
 
+// TODO - convert it into to_string type of method
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self.0.as_ref() {
