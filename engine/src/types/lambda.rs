@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use crate::scope::function::FunctionData;
-use crate::types::core::{TypeCheck, Type, CoreType};
+use crate::types::core::{AbstractType, Type, CoreType};
 
 #[derive(Debug)]
 pub struct Lambda {
@@ -8,7 +8,7 @@ pub struct Lambda {
     pub function_data: FunctionData,
 }
 
-impl TypeCheck for Lambda {
+impl AbstractType for Lambda {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
             CoreType::LAMBDA(lambda_data) => {
@@ -50,6 +50,13 @@ impl TypeCheck for Lambda {
                 true
             },
             _ => false
+        }
+    }
+
+    fn to_string(&self) -> Rc<String> {
+        match &self.name {
+            Some(name) => Rc::new(format!("{}: () -> ()", name)),
+            None => Rc::new(format!("() -> ()"))
         }
     }
 }

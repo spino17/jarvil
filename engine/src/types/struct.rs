@@ -1,12 +1,12 @@
 use std::rc::Rc;
-use crate::types::core::{TypeCheck, Type, CoreType};
+use crate::types::core::{AbstractType, Type, CoreType};
 
 #[derive(Debug)]
 pub struct Struct {
     pub name: Rc<String>,
 }
 
-impl TypeCheck for Struct {
+impl AbstractType for Struct {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
             CoreType::STRUCT(struct_data) => {
@@ -14,5 +14,9 @@ impl TypeCheck for Struct {
             },
             _ => false
         }
+    }
+
+    fn to_string(&self) -> Rc<String> {
+        self.name.clone()
     }
 }

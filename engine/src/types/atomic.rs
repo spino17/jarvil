@@ -1,6 +1,6 @@
-use std::str;
+use std::rc::Rc;
 use crate::constants::common::{INT, FLOAT, STRING, BOOL};
-use crate::types::core::{TypeCheck, Type, CoreType};
+use crate::types::core::{AbstractType, Type, CoreType};
 
 #[derive(Debug)]
 pub enum Atomic {
@@ -49,7 +49,7 @@ impl Atomic {
     }
 }
 
-impl TypeCheck for Atomic {
+impl AbstractType for Atomic {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
             CoreType::ATOMIC(atomic_data) => {
@@ -61,6 +61,15 @@ impl TypeCheck for Atomic {
                 }
             },
             _ => false
+        }
+    }
+    
+    fn to_string(&self) -> Rc<String> {
+        match self {
+            Atomic::INT     =>  Rc::new(String::from("int")),
+            Atomic::FLOAT   =>  Rc::new(String::from("float")),
+            Atomic::STRING  =>  Rc::new(String::from("string")),
+            Atomic::BOOL    =>  Rc::new(String::from("bool")),
         }
     }
 }

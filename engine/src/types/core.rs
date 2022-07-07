@@ -1,11 +1,13 @@
 use std::rc::Rc;
 use std::str;
-use std::fmt::Formatter;
+use std::fmt::{Formatter, Debug};
 use crate::constants::common::{INT, FLOAT, STRING, BOOL};
-use crate::types::{r#struct::Struct, atomic::Atomic, lambda::Lambda};
+use crate::lexer::token::CoreToken;
+use crate::types::{r#struct::Struct, atomic::Atomic, lambda::Lambda, array::Array};
 
-pub trait TypeCheck {
+pub trait AbstractType {
     fn is_eq(&self, base_type: &Type) -> bool;
+    fn to_string(&self) -> Rc<String>;
     // fn get_memory_width(&self) -> usize;
 }
 
@@ -14,6 +16,7 @@ pub enum CoreType {
     ATOMIC(Atomic),
     STRUCT(Struct),
     LAMBDA(Lambda),
+    ARRAY(Array),
     // ENUMERATION,
     // TUPLES,
     // ARRAY,
@@ -52,7 +55,7 @@ impl Type {
     }
 }
 
-impl TypeCheck for Type {
+impl AbstractType for Type {
     fn is_eq(&self, base_type: &Type) -> bool {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic_data) => {
@@ -64,6 +67,9 @@ impl TypeCheck for Type {
             CoreType::LAMBDA(lambda_data) => {
                 lambda_data.is_eq(base_type)
             },
+            CoreType::ARRAY(array_data) => {
+                array_data.is_eq(base_type)
+            }
             CoreType::NON_TYPED => {
                 match base_type.0.as_ref() {
                     CoreType::NON_TYPED => true,
@@ -72,20 +78,34 @@ impl TypeCheck for Type {
             }
         }
     }
+
+    fn to_string(&self) -> Rc<String> {
+        match self.0.as_ref() {
+            CoreType::ATOMIC(atomic_data) => {
+                atomic_data.to_string()
+            },
+            CoreType::STRUCT(struct_data) => {
+                struct_data.to_string()
+            },
+            CoreType::LAMBDA(lambda_data) => {
+                lambda_data.to_string()
+            },
+            CoreType::ARRAY(array_data) => {
+                array_data.to_string()
+            }
+            CoreType::NON_TYPED => Rc::new(String::from("non-typed"))
+        }
+    }
 }
 
 // TODO - convert it into to_string type of method
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self.0.as_ref() {
-            CoreType::ATOMIC(atomic_data) => write!(f, "{}", atomic_data.get_atomic_type()),
-            CoreType::STRUCT(struct_data) => write!(f, "{}", struct_data.name),
-            CoreType::LAMBDA(lambda_data) => {
-                match &lambda_data.name {
-                    Some(name) => write!(f, "{}", name),
-                    None => write!(f, "lambda"),
-                }
-            },
+            CoreType::ATOMIC(atomic_data) => write!(f, "{}", atomic_data.to_string()),
+            CoreType::STRUCT(struct_data) => write!(f, "{}", struct_data.to_string()),
+            CoreType::LAMBDA(lambda_data) => write!(f, "{}", lambda_data.to_string()),
+            CoreType::ARRAY(array_data)    => write!(f, "{}", array_data.to_string()),
             CoreType::NON_TYPED => write!(f, "non-typed"),
         }
     }
