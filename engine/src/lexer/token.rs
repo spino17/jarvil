@@ -228,4 +228,8 @@ impl Token {
     pub fn is_eq(&self, symbol: &str) -> bool {
         self.name.as_ref().eq(symbol)
     }
+
+    pub fn index(&self) -> usize {
+        (self.start_index + self.end_index) / 2 as usize
+    }
 }

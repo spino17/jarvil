@@ -2,25 +2,6 @@ use std::{io::Error as IOError, fmt::Display};
 use std::fmt::Formatter;
 use std::rc::Rc;
 
-fn form_code_line(code_line: &(Rc<String>, usize, usize, usize)) -> String {
-    let err_index = code_line.3;
-    let line_start_index = code_line.1;
-    if err_index < line_start_index {
-        unreachable!("lookahead at which error occured can never be less than the start index of the line")
-    }
-    let pointer_index = err_index - line_start_index;
-    let mut pointer_line: Vec<char> = vec![];
-    for (i, _) in code_line.0.as_ref().chars().enumerate() {
-        if i == pointer_index {
-            pointer_line.push('^');
-        } else {
-            pointer_line.push(' ');
-        }
-    }
-    let pointer_line: String = pointer_line.iter().collect();
-    format!("{}\n    {}", code_line.0.clone(), pointer_line)
-}
-
 #[derive(Debug)]
 pub struct LexicalError {
     line_number: usize,
@@ -38,49 +19,51 @@ impl LexicalError {
 
 #[derive(Debug)]
 pub struct SyntaxError {
-    pub code_line: (Rc<String>, usize, usize, usize),  // (code_line string, line_start_index, line_number, err_index)
-    pub err_message: Rc<String>,
+    code_line: Rc<String>,
+    line_start_index: usize,
+    line_number: usize,
+    err_index: usize,
+    err_message: Rc<String>,
 }
 
 impl SyntaxError {
     pub fn new(code_line: (Rc<String>, usize, usize, usize), err_message: String) -> Self {
         SyntaxError {
-            code_line: (code_line.0.clone(), code_line.1, code_line.2, code_line.3),
+            code_line: code_line.0.clone(),
+            line_start_index: code_line.1,
+            line_number: code_line.2,
+            err_index: code_line.3,
             err_message: Rc::new(err_message),
         }
     }
-}
 
-#[derive(Debug)]
-pub struct SemanticError {
-    pub code_line: (Rc<String>, usize, usize, usize),
-    pub err_message: Rc<String>,
-}
-
-impl SemanticError {
-    pub fn new(code_line: (Rc<String>, usize, usize, usize), err_message: String) -> Self {
-        SemanticError {
-            code_line: (code_line.0.clone(), code_line.1, code_line.2, code_line.3),
-            err_message: Rc::new(err_message),
+    fn form_err_code_line(&self) -> String {
+        let err_index = self.err_index;
+        let line_start_index = self.line_start_index;
+        if err_index < line_start_index {
+            unreachable!("lookahead at which error occured can never be less than the start index of the line")
         }
+        let pointer_index = err_index - line_start_index;
+        let mut pointer_line: Vec<char> = vec![];
+        for (i, _) in self.code_line.as_ref().chars().enumerate() {
+            if i == pointer_index {
+                pointer_line.push('^');
+            } else {
+                pointer_line.push(' ');
+            }
+        }
+        let pointer_line: String = pointer_line.iter().collect();
+        format!("{}\n    {}", self.code_line.clone(), pointer_line)
     }
-}
 
-#[derive(Debug)]
-pub enum ParseError {
-    SYNTAX_ERROR(SyntaxError),
-    SEMANTIC_ERROR(SemanticError)
-}
-
-impl From<SyntaxError> for ParseError {
-    fn from(err: SyntaxError) -> Self {
-        ParseError::SYNTAX_ERROR(err)
-    }
-}
-
-impl From<SemanticError> for ParseError {
-    fn from(err: SemanticError) -> Self {
-        ParseError::SEMANTIC_ERROR(err)
+    pub fn clone(&self) -> Self {
+        SyntaxError {
+            code_line: self.code_line.clone(),
+            line_start_index: self.line_start_index,
+            line_number: self.line_number,
+            err_index: self.err_index,
+            err_message: self.err_message.clone(),
+        }
     }
 }
 
@@ -88,7 +71,7 @@ impl From<SemanticError> for ParseError {
 pub enum CompilationError {
     IO_ERROR(IOError),
     LEXICAL_ERROR(LexicalError),
-    PARSE_ERROR(ParseError)
+    SYNTAX_ERROR(SyntaxError)
 }
 
 impl From<IOError> for CompilationError {
@@ -103,9 +86,9 @@ impl From<LexicalError> for CompilationError {
     }
 }
 
-impl From<ParseError> for CompilationError {
-    fn from(err: ParseError) -> Self {
-        CompilationError::PARSE_ERROR(err)
+impl From<SyntaxError> for CompilationError {
+    fn from(err: SyntaxError) -> Self {
+        CompilationError::SYNTAX_ERROR(err)
     }
 }
 
@@ -117,51 +100,29 @@ impl Display for CompilationError {
             CompilationError::LEXICAL_ERROR(lexical_err) => write!(f, 
                 ">>> LexicalError: line {}\n    {}", lexical_err.line_number, 
                 lexical_err.err_message),
-            CompilationError::PARSE_ERROR(err) => {
-                match err {
-                    ParseError::SYNTAX_ERROR(syntax_error) => write!(f, 
-                        ">>> SynatxError: line {}\n    {}\n    {}",
-                        syntax_error.code_line.2, form_code_line(&syntax_error.code_line), 
-                        syntax_error.err_message),
-                    ParseError::SEMANTIC_ERROR(semantic_error) => write!(f, 
-                        ">>> SemanticError: line {}\n    {}\n    {}", 
-                        semantic_error.code_line.2, form_code_line(&semantic_error.code_line), 
-                        semantic_error.err_message)
-                }
+            CompilationError::SYNTAX_ERROR(syntax_err) => {
+                write!(f, ">>> SynatxError: line {}\n    {}\n    {}",
+                syntax_err.line_number, 
+                syntax_err.form_err_code_line(), 
+                syntax_err.err_message)
             }
         }
     }
 }
 
-pub fn aggregate_errors(errors: Vec<ParseError>) -> ParseError {
-    let mut line_number = std::usize::MAX;
-    let mut err_index = 0;
+pub fn aggregate_errors(errors: Vec<SyntaxError>) -> SyntaxError {
+    let mut curr_line_number = std::usize::MAX;
+    let mut curr_err_index = 0;
     let mut curr_error = None;
     for err in errors {
-        match err {
-            ParseError::SYNTAX_ERROR(error) => {
-                if error.code_line.3 > err_index {
-                    err_index = error.code_line.3;
-                    line_number = error.code_line.2;
-                    curr_error = Some(ParseError::SYNTAX_ERROR(error));
-                } else if error.code_line.3 == err_index {
-                    if error.code_line.2 < line_number {
-                        line_number = error.code_line.2;
-                        curr_error = Some(ParseError::SYNTAX_ERROR(error));
-                    }
-                }
-            },
-            ParseError::SEMANTIC_ERROR(error) => {
-                if error.code_line.3 > err_index {
-                    err_index = error.code_line.3;
-                    line_number = error.code_line.2;
-                    curr_error = Some(ParseError::SEMANTIC_ERROR(error));
-                } else if error.code_line.3 == err_index {
-                    if error.code_line.2 < line_number {
-                        line_number = error.code_line.2;
-                        curr_error = Some(ParseError::SEMANTIC_ERROR(error));
-                    }
-                }
+        if err.err_index > curr_err_index {
+            curr_err_index = err.err_index;
+            curr_line_number = err.line_number;
+            curr_error = Some(err);
+        } else if err.err_index == curr_err_index {
+            if err.line_number < curr_line_number {
+                curr_line_number = err.line_number;
+                curr_error = Some(err);
             }
         }
     }
