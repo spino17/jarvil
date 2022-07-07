@@ -1,6 +1,6 @@
 use crate::parser::parser::ParseSuccess;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
-use crate::types::types::Type;
+use crate::types::core::Type;
 
 pub fn clone_error(err: &ParseError) -> ParseError {
     match err {

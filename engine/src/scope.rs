@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
-use crate::types::types::{Type, CoreType, Struct};
+use crate::types::core::{Type, CoreType, Struct};
 
 #[derive(Debug)]
 pub struct FunctionData {

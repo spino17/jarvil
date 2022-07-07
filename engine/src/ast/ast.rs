@@ -1,6 +1,6 @@
 use std::cell::{RefCell};
 use std::rc::Rc;
-use crate::types::types::{Type, CoreType};
+use crate::types::core::{Type, CoreType};
 use crate::scope::Env;
 
 trait Node {

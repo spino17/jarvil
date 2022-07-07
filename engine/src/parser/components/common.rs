@@ -2,8 +2,8 @@ use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::lexer::token::CoreToken;
 use crate::errors::{ParseError, SyntaxError, SemanticError};
 use std::rc::Rc;
-use crate::types::types::{Type};
-use crate::types::types::TypeCheck;
+use crate::types::core::{Type};
+use crate::types::core::TypeCheck;
 
 pub fn params(parser: &mut PackratParser,
     expected_params: &Rc<Vec<(Rc<String>, Type)>>, param_index: usize) -> Result<(ParseSuccess, usize), ParseError> {

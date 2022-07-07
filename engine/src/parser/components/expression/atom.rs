@@ -1,6 +1,6 @@
 use crate::{parser::parser::{PackratParser, ParseSuccess}, errors::{ParseError, SyntaxError, SemanticError}};
 use crate::lexer::token::CoreToken;
-use crate::types::types::Type;
+use crate::types::core::Type;
 
 pub fn atom_index_access(parser: &mut PackratParser, 
     data_type: Option<Type>, mut is_assignable: bool, 

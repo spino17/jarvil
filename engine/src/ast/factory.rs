@@ -5,7 +5,7 @@ use crate::ast::ast::{VariableDeclarationNode,
 use crate::scope::Env;
 use std::cell::RefCell;
 use std::rc::Rc;
-use crate::types::types::Type;
+use crate::types::core::Type;
 
 use super::ast::{PropertryAccessNode, MethodAccessNode};
 
