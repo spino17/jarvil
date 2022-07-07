@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::str;
 use std::fmt::Formatter;
-use crate::{constants::common::{INT, FLOAT, STRING, BOOL}, scope::FunctionData};
+use crate::{constants::common::{INT, FLOAT, STRING, BOOL}, scope::function::FunctionData};
 
 pub trait TypeCheck {
     fn is_eq(&self, base_type: &Type) -> bool;

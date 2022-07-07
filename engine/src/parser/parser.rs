@@ -6,12 +6,10 @@
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
 use crate::errors::{SyntaxError};
-use crate::scope::{Env, SymbolData, FunctionData, StructFunction};
 use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
-use crate::parser::helper::{clone_atom_result, clone_expr_result};
-use crate::types::core::{Type, Struct, CoreType, Lambda};
+use crate::types::core::{Type};
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;  // return an AST
