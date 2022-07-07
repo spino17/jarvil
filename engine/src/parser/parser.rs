@@ -183,7 +183,51 @@ impl PackratParser {
                 return Err(SyntaxError::new(
                     self.get_code_line(token.line_number, token.index()),
                     format!(
-                    "expected positive non-zero integer, got '{}'",
+                    "expected positive integer, got '{}'",
+                    PackratParser::parse_for_err_message(token.name.to_string())))
+                )
+            }
+        }
+    }
+
+    pub fn expect_float(&mut self) -> Result<(ParseSuccess, Rc<String>), SyntaxError> {
+        self.ignore_blanks();
+        let token = &self.token_vec[self.lookahead];
+        match &token.core_token {
+            CoreToken::FLOAT(token_value) => {
+                self.lookahead = self.lookahead + 1;
+                Ok((ParseSuccess{
+                    lookahead: self.lookahead,
+                    possible_err: None,
+                }, token_value.0.clone()))
+            },
+            _ => {
+                return Err(SyntaxError::new(
+                    self.get_code_line(token.line_number, token.index()),
+                    format!(
+                    "expected floating-point number, got '{}'",
+                    PackratParser::parse_for_err_message(token.name.to_string())))
+                )
+            }
+        }
+    }
+
+    pub fn expect_literal(&mut self) -> Result<(ParseSuccess, Rc<String>), SyntaxError> {
+        self.ignore_blanks();
+        let token = &self.token_vec[self.lookahead];
+        match &token.core_token {
+            CoreToken::LITERAL(token_value) => {
+                self.lookahead = self.lookahead + 1;
+                Ok((ParseSuccess{
+                    lookahead: self.lookahead,
+                    possible_err: None,
+                }, token_value.0.clone()))
+            },
+            _ => {
+                return Err(SyntaxError::new(
+                    self.get_code_line(token.line_number, token.index()),
+                    format!(
+                    "expected string literal, got '{}'",
                     PackratParser::parse_for_err_message(token.name.to_string())))
                 )
             }
@@ -218,7 +262,7 @@ impl PackratParser {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
-            CoreToken::TYPE(atomic_type) => {
+            CoreToken::ATOMIC_TYPE(atomic_type) => {
                 self.lookahead = self.lookahead + 1;
                 let node = TypeExpressionNode::new_with_atomic_type(&atomic_type.0);
                 Ok((ParseSuccess{
@@ -250,7 +294,7 @@ impl PackratParser {
                 return Err(SyntaxError::new(
                     self.get_code_line(token.line_number, token.index()),
                     format!(
-                    "expected identifier, got '{}'",
+                    "expected 'int', 'float', 'bool', 'string', identifier or '[', got '{}'",
                     PackratParser::parse_for_err_message(token.name.to_string())))
                 )
             }

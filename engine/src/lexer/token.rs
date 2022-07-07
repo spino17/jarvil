@@ -27,7 +27,7 @@ pub enum CoreToken {
     // types
     // STRUCT,          // 'struct'
     TYPE_KEYWORD,       // 'type'
-    TYPE(TokenValue),
+    ATOMIC_TYPE(TokenValue),
     NEW,                // 'new'
     LET,                // 'let'
     SELF,               // 'self'
