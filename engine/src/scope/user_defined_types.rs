@@ -6,13 +6,13 @@ use crate::scope::function::FunctionData;
 
 #[derive(Debug, Clone)]
 pub enum UserDefinedTypeData {
-    STRUCT(Struct),
-    LAMBDA(Lambda),
+    STRUCT(StructData),
+    LAMBDA(LambdaData),
     // GENERIC(GenericType),
 }
 
 #[derive(Debug, Clone)]
-pub struct Struct {
+pub struct StructData {
     pub name: Rc<String>,
     fields: Rc<FxHashMap<Rc<String>, Type>>,
     constructor: FunctionData,
@@ -21,13 +21,13 @@ pub struct Struct {
 }
 
 #[derive(Debug, Clone)]
-pub enum StructFunction {
+pub enum StructMethod {
     METHOD(FunctionData),
     CLASS_METHOD(FunctionData),
 }
 
 #[derive(Debug, Clone)]
-pub struct Lambda {
+pub struct LambdaData {
     pub name: Rc<String>,
     pub function_data: FunctionData,
 }
