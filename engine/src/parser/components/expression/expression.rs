@@ -1,7 +1,7 @@
 use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SyntaxError, SemanticError, aggregate_errors};
 use std::rc::Rc;
-use crate::types::{Type, CoreType, Atomic};
+use crate::types::types::{Type, CoreType, Atomic};
 
 pub fn expr(parser: &mut PackratParser) -> Result<(ParseSuccess, (Type, usize)), ParseError> {
     let mut errors_vec: Vec<ParseError> = vec![];

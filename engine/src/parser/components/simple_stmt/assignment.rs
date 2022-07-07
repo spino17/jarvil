@@ -1,6 +1,6 @@
 use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, SemanticError};
-use crate::types::{Type, TypeCheck};
+use crate::types::types::{Type, TypeCheck};
 
 pub fn assign(parser: &mut PackratParser, data_type: Option<Type>, is_assignable: bool, index: usize) -> Result<ParseSuccess, ParseError> {
     parser.expect("=")?;

@@ -4,7 +4,7 @@ use crate::context;
 use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError};
 use crate::scope::{Env};
-use crate::types::Type;
+use crate::types::types::Type;
 
 pub fn check_block_indentation(parser: &mut PackratParser, 
     indent_spaces: i64, err: ParseError, curr_env: &Env, curr_lookahead: usize) -> Result<ParseSuccess, ParseError> {

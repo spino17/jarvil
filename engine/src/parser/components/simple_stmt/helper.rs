@@ -1,7 +1,7 @@
 use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::{ParseError, aggregate_errors};
 use std::rc::Rc;
-use crate::types::Type;
+use crate::types::types::Type;
 
 pub fn param_decl(parser: &mut PackratParser) -> Result<(ParseSuccess, usize, Type, Rc<String>), ParseError> {
     let (_, _, data_type) = parser.expect_type()?;

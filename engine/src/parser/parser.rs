@@ -12,7 +12,7 @@ use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use crate::parser::helper::{clone_atom_result, clone_expr_result};
-use crate::types::{Type, Struct, CoreType, Lambda};
+use crate::types::types::{Type, Struct, CoreType, Lambda};
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError>;  // return an AST

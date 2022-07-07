@@ -3,7 +3,7 @@ use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::ParseError;
 use crate::lexer::token::{CoreToken};
 use crate::errors::{SyntaxError, SemanticError};
-use crate::types::Type;
+use crate::types::types::Type;
 
 pub fn optparams(parser: &mut PackratParser) -> Result<(ParseSuccess, Vec<(Rc<String>, Type)>), ParseError> {
     let mut params: Vec<(Rc<String>, Type)> = vec![];
