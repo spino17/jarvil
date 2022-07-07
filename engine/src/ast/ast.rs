@@ -1,4 +1,5 @@
 use std::{rc::Rc, cell::RefCell};
+use crate::scope::core::Scope;
 
 pub enum ASTNode {
     BLOCK(BlockNode),
@@ -8,29 +9,28 @@ pub enum ASTNode {
     TYPE_EXPRESSION(TypeExpressionNode),
 }
 
+#[derive(Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
     pub fn new(stmts: Vec<StatementNode>, params: Vec<ParamNode>) -> Self {
         BlockNode(Rc::new(RefCell::new(CoreBlockNode{
             stmts,
             params,
+            scope: None,
         })))
     }
 }
 struct CoreBlockNode {
     stmts: Vec<StatementNode>,
     params: Vec<ParamNode>,
+    scope: Option<Scope>,
 }
 
+#[derive(Clone)]
 pub struct StatementNode(Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
     pub fn new() -> Self {
         todo!()
-    }
-}
-impl Clone for StatementNode {
-    fn clone(&self) -> Self {
-        StatementNode(self.0.clone())
     }
 }
 enum CoreStatementNode {
@@ -38,6 +38,7 @@ enum CoreStatementNode {
     // continue, break
 }
 
+#[derive(Clone)]
 pub struct ParamNode(Rc<RefCell<CoreParamNode>>);
 impl ParamNode {
     pub fn new(param_name: &IdentifierNode, param_type: &TypeExpressionNode) -> Self {
@@ -52,6 +53,7 @@ struct CoreParamNode {
     param_type: TypeExpressionNode,
 }
 
+#[derive(Clone)]
 pub struct IdentifierNode(Rc<RefCell<CoreIdentifierNode>>);
 impl IdentifierNode {
     pub fn new(value: &Rc<String>, start_index: usize, end_index: usize, line_number: usize) -> Self {
@@ -63,11 +65,6 @@ impl IdentifierNode {
         })))
     }
 }
-impl Clone for IdentifierNode {
-    fn clone(&self) -> Self {
-        IdentifierNode(self.0.clone())
-    }
-}
 struct CoreIdentifierNode {
     value: Rc<String>,
     start_index: usize,
@@ -75,6 +72,7 @@ struct CoreIdentifierNode {
     line_number: usize,
 }
 
+#[derive(Clone)]
 pub struct TypeExpressionNode(Rc<RefCell<CoreTypeExpressionNode>>);
 impl TypeExpressionNode {
     pub fn new_with_atomic_type(atomic_type: &Rc<String>) -> Self {
@@ -87,11 +85,6 @@ impl TypeExpressionNode {
 
     pub fn new_with_array_type(array_size: Rc<String>, sub_type: &TypeExpressionNode) -> Self {
         TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode::ARRAY((array_size, sub_type.clone())))))
-    }
-}
-impl Clone for TypeExpressionNode {
-    fn clone(&self) -> Self {
-        TypeExpressionNode(self.0.clone())
     }
 }
 enum CoreTypeExpressionNode {

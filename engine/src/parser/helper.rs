@@ -7,7 +7,7 @@ pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool
     match result {
         Ok(response) => {
             let possible_err = match &response.0.possible_err {
-                Some(val) => Some(val.clone()),
+                Some(err) => Some(err.clone()),
                 None => None,
             };
             let parse_success = ParseSuccess{
@@ -31,7 +31,7 @@ pub fn clone_expr_result(result: &Result<(ParseSuccess, bool), SyntaxError>)
     match result {
         Ok(response) => {
             let possible_err = match &response.0.possible_err {
-                Some(val) => Some(val.clone()),
+                Some(err) => Some(err.clone()),
                 None => None,
             };
             let parse_success = ParseSuccess{

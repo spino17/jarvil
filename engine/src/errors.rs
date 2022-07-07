@@ -17,7 +17,7 @@ impl LexicalError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SyntaxError {
     code_line: Rc<String>,
     line_start_index: usize,
@@ -25,7 +25,6 @@ pub struct SyntaxError {
     err_index: usize,
     err_message: Rc<String>,
 }
-
 impl SyntaxError {
     pub fn new(code_line: (Rc<String>, usize, usize, usize), err_message: String) -> Self {
         SyntaxError {
@@ -54,16 +53,6 @@ impl SyntaxError {
         }
         let pointer_line: String = pointer_line.iter().collect();
         format!("{}\n    {}", self.code_line.clone(), pointer_line)
-    }
-
-    pub fn clone(&self) -> Self {
-        SyntaxError {
-            code_line: self.code_line.clone(),
-            line_start_index: self.line_start_index,
-            line_number: self.line_number,
-            err_index: self.err_index,
-            err_message: self.err_message.clone(),
-        }
     }
 }
 

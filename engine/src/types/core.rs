@@ -24,7 +24,7 @@ pub enum CoreType {
     NON_TYPED,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Type(pub Rc<CoreType>);
 
 impl Type {

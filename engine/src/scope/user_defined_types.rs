@@ -4,14 +4,14 @@ use std::rc::Rc;
 use crate::types::core::{Type};
 use crate::scope::function::FunctionData;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UserDefinedTypeData {
     STRUCT(Struct),
     LAMBDA(Lambda),
     // GENERIC(GenericType),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Struct {
     pub name: Rc<String>,
     fields: Rc<FxHashMap<Rc<String>, Type>>,
@@ -20,13 +20,13 @@ pub struct Struct {
     class_methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StructFunction {
     METHOD(FunctionData),
     CLASS_METHOD(FunctionData),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Lambda {
     pub name: Rc<String>,
     pub function_data: FunctionData,

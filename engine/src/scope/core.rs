@@ -16,13 +16,13 @@ pub enum MetaData {
 pub struct SymbolData(Rc<RefCell<MetaData>>);
 
 #[derive(Debug)]
-pub struct Scope {
+pub struct CoreScope {
     symbol_table: FxHashMap<Rc<String>, SymbolData>,
-    pub parent_env: Option<Env>,
+    pub parent_env: Option<Scope>,
     return_type: Option<Rc<String>>,  // for functional scope - match return type in nested sub blocks checking this global field
 }
 
-impl Scope {
+impl CoreScope {
     fn set(&mut self, name: Rc<String>, meta_data: MetaData) {
         self.symbol_table.insert(name, SymbolData(Rc::new(RefCell::new(meta_data))));
     }
@@ -32,23 +32,23 @@ impl Scope {
     }
 }
 
-#[derive(Debug)]
-pub struct Env(pub Rc<RefCell<Scope>>);
+#[derive(Debug, Clone)]
+pub struct Scope(pub Rc<RefCell<CoreScope>>);
 
-impl Env {
+impl Scope {
     pub fn new() -> Self {
-        Env(Rc::new(RefCell::new(Scope {
+        Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_env: None,
             return_type: None,
         })))
     }
 
-    pub fn new_with_parent_env(parent_env: &Env) -> Self {
+    pub fn new_with_parent_scope(parent_env: &Scope) -> Self {
         let env = parent_env.0.clone();
-        Env(Rc::new(RefCell::new(Scope {
+        Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
-            parent_env: Some(Env(env)),
+            parent_env: Some(Scope(env)),
             return_type: None,
         })))
     }
@@ -57,7 +57,7 @@ impl Env {
         self.0.borrow_mut().set(key.clone(), meta_data)
     }
 
-    pub fn resolve(&self, key: &Rc<String>) -> Option<SymbolData> {
+    pub fn lookup(&self, key: &Rc<String>) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
 
         // check the identifier name in current scope
@@ -71,7 +71,7 @@ impl Env {
                 if let Some(parent_env) = &scope_ref.parent_env {
 
                     // return from the nearest scope which found the identifier name
-                    parent_env.resolve(key)
+                    parent_env.lookup(key)
                 } else {
                     None
                 }
