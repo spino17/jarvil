@@ -3,7 +3,7 @@ use crate::types::core::{AbstractType, Type, CoreType};
 
 #[derive(Debug)]
 pub struct Struct {
-    pub name: Rc<String>,
+    name: Rc<String>, 
 }
 
 impl AbstractType for Struct {

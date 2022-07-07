@@ -3,7 +3,7 @@
 // linear time parsing!
 // See https://pdos.csail.mit.edu/~baford/packrat/thesis/ for more information.
 
-use crate::ast::ast::{IdentifierNode, TypeExpressionNode};
+use crate::ast::ast::{IdentifierNode, TypeExpressionNode, StatementNode, ParamNode, BlockNode};
 use crate::lexer::token::{Token, CoreToken};
 use crate::scope::identifier;
 use std::rc::Rc;
@@ -12,6 +12,7 @@ use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use crate::types::core::{Type};
+use crate::parser::components;
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;  // return an AST
@@ -36,6 +37,7 @@ pub struct PackratParser {
     indent_level: i64,
     code_lines: Vec<(Rc<String>, usize)>,
     cache: Vec<Rc<RoutineCache>>,
+    // errors: Vec<SyntaxError>  // reported errors during the parsing
     // TODO - add AST data structure
 }
 
@@ -131,11 +133,7 @@ impl PackratParser {
                     temp_lookahead = temp_lookahead + 1;
                 },
                 _ => {
-                    if token.is_eq(symbol) {
-                        return true
-                    } else {
-                        return false
-                    }
+                    return token.is_eq(symbol)
                 }
             }
         }
@@ -410,4 +408,22 @@ impl PackratParser {
 
     // ------------------- production rule matching function for terminals and non-terminals declared below -------------------
     // code
+    pub fn code(&mut self, token_vec: Vec<Token>) -> Result<BlockNode, SyntaxError> {
+        components::code::code(self, token_vec)
+    }
+
+    pub fn check_block_indentation(&mut self, 
+        indent_spaces: i64, err: SyntaxError, curr_lookahead: usize, 
+        params: Vec<ParamNode>, stmts: Vec<StatementNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+        components::block::check_block_indentation(self, indent_spaces, err, curr_lookahead, params, stmts)
+    }
+
+    pub fn block(&mut self, params: Vec<ParamNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+        components::block::block(self, params)
+    }
+
+    // statements
+    pub fn stmt(&mut self) -> Result<(ParseSuccess, StatementNode), SyntaxError> {
+        components::stmt::stmt(self)
+    }
 }

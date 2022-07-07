@@ -2,7 +2,6 @@ use std::rc::Rc;
 use std::str;
 use std::fmt::{Formatter, Debug};
 use crate::constants::common::{INT, FLOAT, STRING, BOOL};
-use crate::lexer::token::CoreToken;
 use crate::types::{r#struct::Struct, atomic::Atomic, lambda::Lambda, array::Array};
 
 pub trait AbstractType {

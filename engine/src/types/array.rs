@@ -4,7 +4,7 @@ use std::rc::Rc;
 #[derive(Debug)]
 pub struct Array {
     pub size: usize,
-    pub sub_type: Type,
+    pub element_type: Type,
 }
 
 impl AbstractType for Array {
@@ -14,7 +14,7 @@ impl AbstractType for Array {
                 if array_data.size != self.size {
                     false
                 } else {
-                    self.sub_type.is_eq(&array_data.sub_type)
+                    self.element_type.is_eq(&array_data.element_type)
                 }
             },
             _ => false
@@ -22,6 +22,6 @@ impl AbstractType for Array {
     }
 
     fn to_string(&self) -> std::rc::Rc<String> {
-        Rc::new(format!("[{}, {}]", AbstractType::to_string(&self.sub_type), self.size))
+        Rc::new(format!("[{}, {}]", AbstractType::to_string(&self.element_type), self.size))
     }
 }
