@@ -413,7 +413,8 @@ impl PackratParser {
 
     pub fn check_block_indentation(&mut self, 
         indent_spaces: i64, err: SyntaxError, curr_lookahead: usize, 
-        params: Vec<ParamNode>, stmts: Vec<StatementNode>, parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+        params: &Rc<Vec<ParamNode>>, stmts: &Rc<Vec<StatementNode>>, 
+        parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
         components::block::check_block_indentation(self, indent_spaces, err, curr_lookahead, params, stmts, parent)
     }
 

@@ -13,6 +13,7 @@ struct Context {
     letters: FxHashMap<char, ()>,
     digits: FxHashMap<char, ()>,
     indent_spaces: i64,
+    max_threads: usize,
 }
 
 impl Context {
@@ -41,6 +42,7 @@ impl Context {
             letters,
             digits,
             indent_spaces: 4,  // default indentation is 4 spaces
+            max_threads: 10,   // default max threads that can be spawned by jarvil is 10
         }
     }
 
@@ -78,6 +80,14 @@ impl Context {
 
     fn get_indent(&self) -> i64 {
         self.indent_spaces
+    }
+
+    fn set_max_threads(&mut self, max_threads: usize) {
+        self.max_threads = max_threads;
+    }
+
+    fn get_max_threads(&self) -> usize {
+        self.max_threads
     }
 }
 
@@ -139,6 +149,28 @@ pub fn set_indent(indent_spaces: i64) {
 pub fn get_indent() -> i64 {
     match CONTEXT.try_with(|ctx| {
         ctx.borrow().get_indent()
+    }) {
+        Ok(val) => val,
+        Err(err) => {
+            panic!("{}", err)
+        }
+    }
+}
+
+pub fn set_max_threads(max_threads: usize) {
+    match CONTEXT.try_with(|ctx| {
+        ctx.borrow_mut().set_max_threads(max_threads)
+    }) {
+        Err(err) => {
+            panic!("{}", err)
+        }
+        _ => {}
+    }
+}
+
+pub fn get_max_threads() -> usize {
+    match CONTEXT.try_with(|ctx| {
+        ctx.borrow().get_max_threads()
     }) {
         Ok(val) => val,
         Err(err) => {

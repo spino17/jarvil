@@ -7,6 +7,7 @@ pub trait Node {
 
 // ASTNode has weak reference to core nodes to avoid memory leaks
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
+#[derive(Clone)]
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
     STATEMENT(Weak<RefCell<CoreStatementNode>>),
@@ -16,8 +17,8 @@ pub enum ASTNode {
 }
 
 pub struct CoreBlockNode {
-    stmts: Vec<StatementNode>,
-    params: Vec<ParamNode>,
+    stmts: Rc<Vec<StatementNode>>,
+    params: Rc<Vec<ParamNode>>,
     scope: Option<Scope>,
     parent: Option<ASTNode>,
 }
@@ -25,14 +26,20 @@ pub struct CoreBlockNode {
 #[derive(Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: Vec<StatementNode>, params: Vec<ParamNode>, parent: Option<ASTNode>) -> Self {
-        let node = BlockNode(Rc::new(RefCell::new(CoreBlockNode{
-            stmts,
-            params,
+    pub fn new(stmts: &Rc<Vec<StatementNode>>, params: &Rc<Vec<ParamNode>>, parent: Option<ASTNode>) -> Self {
+        let node = Rc::new(RefCell::new(CoreBlockNode{
+            stmts: stmts.clone(),
+            params: params.clone(),
             scope: None,
             parent,
-        })));
-        node
+        }));
+        for stmt in stmts.as_ref() {
+            stmt.set_parent(Some(ASTNode::BLOCK(Rc::downgrade(&node))));
+        }
+        for param in params.as_ref() {
+            param.set_parent(Some(ASTNode::BLOCK(Rc::downgrade(&node))));
+        }
+        BlockNode(node)
     }
 }
 impl Node for BlockNode {
