@@ -1,11 +1,7 @@
-use std::rc::Rc;
 use crate::ast::ast::{StatementNode, ParamNode, BlockNode};
 use crate::context;
 use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::SyntaxError;
-use crate::types::core::Type;
-
-use super::stmt;
 
 pub fn check_block_indentation(parser: &mut PackratParser, 
     indent_spaces: i64, err: SyntaxError, curr_lookahead: usize, 

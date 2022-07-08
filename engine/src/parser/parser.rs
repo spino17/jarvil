@@ -5,7 +5,6 @@
 
 use crate::ast::ast::{IdentifierNode, TypeExpressionNode, StatementNode, ParamNode, BlockNode};
 use crate::lexer::token::{Token, CoreToken};
-use crate::scope::identifier;
 use std::rc::Rc;
 use crate::errors::{SyntaxError};
 use crate::context;
