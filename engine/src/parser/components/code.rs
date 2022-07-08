@@ -6,7 +6,7 @@ use crate::errors::{SyntaxError, aggregate_errors};
 pub fn code(parser: &mut PackratParser, token_vec: Vec<Token>) -> Result<BlockNode, SyntaxError> {
     let mut errors_vec: Vec<SyntaxError> = vec![];
     parser.set_token_vec(token_vec);
-    let (response, block_node) = parser.block(vec![])?;
+    let (response, block_node) = parser.block(vec![], None)?;
     if let Some(err) = response.possible_err {
         errors_vec.push(err);
     }

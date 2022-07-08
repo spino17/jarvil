@@ -1,9 +1,9 @@
 // Default parser for jarvil uses Packrat approach, first given by Bryan Ford in his master thesis at MIT. It is essentially a 
 // top down recursive descent parsing with lazy memoization in order to avoid exponential parse time and provide reliable 
 // linear time parsing!
-// See https://pdos.csail.mit.edu/~baford/packrat/thesis/ for more information.
+// See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::{IdentifierNode, TypeExpressionNode, StatementNode, ParamNode, BlockNode};
+use crate::ast::ast::{IdentifierNode, TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode};
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
 use crate::errors::{SyntaxError};
@@ -281,7 +281,7 @@ impl PackratParser {
                 self.expect(",")?;
                 let (_, array_size) = self.expect_int()?;
                 self.expect("]")?;
-                let node = TypeExpressionNode::new_with_array_type(array_size, &sub_type_node);
+                let node = TypeExpressionNode::new_with_array_type(&array_size, &sub_type_node);
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
@@ -413,12 +413,12 @@ impl PackratParser {
 
     pub fn check_block_indentation(&mut self, 
         indent_spaces: i64, err: SyntaxError, curr_lookahead: usize, 
-        params: Vec<ParamNode>, stmts: Vec<StatementNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
-        components::block::check_block_indentation(self, indent_spaces, err, curr_lookahead, params, stmts)
+        params: Vec<ParamNode>, stmts: Vec<StatementNode>, parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+        components::block::check_block_indentation(self, indent_spaces, err, curr_lookahead, params, stmts, parent)
     }
 
-    pub fn block(&mut self, params: Vec<ParamNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
-        components::block::block(self, params)
+    pub fn block(&mut self, params: Vec<ParamNode>, parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+        components::block::block(self, params, parent)
     }
 
     // statements

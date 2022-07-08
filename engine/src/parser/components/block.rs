@@ -1,11 +1,11 @@
-use crate::ast::ast::{StatementNode, ParamNode, BlockNode};
+use crate::ast::ast::{StatementNode, ParamNode, BlockNode, ASTNode};
 use crate::context;
 use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::SyntaxError;
 
 pub fn check_block_indentation(parser: &mut PackratParser, 
     indent_spaces: i64, err: SyntaxError, curr_lookahead: usize, 
-    params: Vec<ParamNode>, stmts: Vec<StatementNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+    params: Vec<ParamNode>, stmts: Vec<StatementNode>, parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
     let indent_spaces_unit = context::get_indent();
     let indent_factor = indent_spaces / indent_spaces_unit as i64;
     let indent_remainder = indent_spaces - indent_factor * indent_spaces_unit;
@@ -18,7 +18,7 @@ pub fn check_block_indentation(parser: &mut PackratParser,
             // block is over
             parser.reset_indent_level(parser.get_indent_level() - 1);
             parser.reset_lookahead(curr_lookahead);
-            let node = BlockNode::new(stmts, params);
+            let node = BlockNode::new(stmts, params, parent);
             return Ok((ParseSuccess{
                 lookahead: parser.get_lookahead(),
                 possible_err: None,
@@ -27,7 +27,7 @@ pub fn check_block_indentation(parser: &mut PackratParser,
     }
 }
 
-pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>, parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
     parser.expect("\n")?;
     let mut curr_lookahead = parser.get_lookahead();
     parser.reset_indent_level(parser.get_indent_level() + 1);
@@ -35,7 +35,7 @@ pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>) -> Result<(Pars
     loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
         if let Some(err) = response.possible_err {
-            return parser.check_block_indentation(indent_spaces, err, curr_lookahead, params, stmts_vec)
+            return parser.check_block_indentation(indent_spaces, err, curr_lookahead, params, stmts_vec, parent)
         }
         match parser.stmt() {
             Ok((_, stmt_node)) => {
@@ -43,7 +43,7 @@ pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>) -> Result<(Pars
             },
             Err(err) => {
                 if parser.check_next_token("endmarker") {
-                    let node = BlockNode::new(stmts_vec, params);
+                    let node = BlockNode::new(stmts_vec, params, parent);
                     return Ok((ParseSuccess{
                         lookahead: parser.get_lookahead(),
                         possible_err: Some(err),
