@@ -69,14 +69,14 @@ pub struct CoreParamNode {
 pub struct ParamNode(Rc<RefCell<CoreParamNode>>);
 impl ParamNode {
     pub fn new(param_name: &IdentifierNode, param_type: &TypeExpressionNode) -> Self {
-        let node = ParamNode(Rc::new(RefCell::new(CoreParamNode{
+        let node = Rc::new(RefCell::new(CoreParamNode{
             param_name: param_name.clone(),
             param_type: param_type.clone(),
             parent: None,
-        })));
-        param_name.set_parent(Some(ASTNode::PARAM(Rc::downgrade(&node.0))));
-        param_type.set_parent(Some(ASTNode::PARAM(Rc::downgrade(&node.0))));
-        node
+        }));
+        param_name.set_parent(Some(ASTNode::PARAM(Rc::downgrade(&node))));
+        param_type.set_parent(Some(ASTNode::PARAM(Rc::downgrade(&node))));
+        ParamNode(node)
     }
 }
 impl Node for ParamNode {
@@ -128,19 +128,19 @@ impl TypeExpressionNode {
     }
 
     pub fn new_with_user_defined_type(identifier: &IdentifierNode) -> Self {
-        let node = TypeExpressionNode(Rc::new(RefCell::new(
+        let node = Rc::new(RefCell::new(
             CoreTypeExpressionNode::USER_DEFINED(identifier.clone())
-        )));
-        identifier.set_parent(Some(ASTNode::TYPE_EXPRESSION(Rc::downgrade(&node.0))));
-        node
+        ));
+        identifier.set_parent(Some(ASTNode::TYPE_EXPRESSION(Rc::downgrade(&node))));
+        TypeExpressionNode(node)
     }
 
     pub fn new_with_array_type(array_size: &Rc<String>, sub_type: &TypeExpressionNode) -> Self {
-        let node = TypeExpressionNode(Rc::new(RefCell::new(
+        let node = Rc::new(RefCell::new(
             CoreTypeExpressionNode::ARRAY(ArrayTypeNode::new(array_size, sub_type, None))
-        )));
-        sub_type.set_parent(Some(ASTNode::TYPE_EXPRESSION(Rc::downgrade(&sub_type.0))));
-        node
+        ));
+        sub_type.set_parent(Some(ASTNode::TYPE_EXPRESSION(Rc::downgrade(&node))));
+        TypeExpressionNode(node)
     }
 }
 impl Node for TypeExpressionNode {
