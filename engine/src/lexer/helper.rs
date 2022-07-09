@@ -27,6 +27,21 @@ pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 }
  */
 
+// ' ' -> '...'
+pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
+    let mut forward_lexeme = *begin_lexeme + 1;
+    while forward_lexeme < code.len() {
+        let next_char = code[forward_lexeme];
+        if next_char != ' ' {
+            *begin_lexeme = forward_lexeme;
+            return Ok((CoreToken::BLANK, String::from(" ")));
+        }
+        forward_lexeme = forward_lexeme + 1;
+    }
+    *begin_lexeme = forward_lexeme;
+    return Ok((CoreToken::BLANK, String::from(" ")));
+}
+
 // - -> -, ->
 pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
@@ -83,14 +98,6 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
-        if next_char == '\n' {
-            let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
-            code_str.push(' ');
-            code_lines.push((Rc::new(code_str), *line_start_index));
-            *begin_lexeme = *begin_lexeme + 1;
-            *line_number = *line_number + 1;
-            *line_start_index = forward_lexeme + 1;
-        }
         match state {
             0 => {
                 match next_char {
@@ -109,8 +116,10 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             1 => {
                 match next_char {
                     '\n' => {
-                        *begin_lexeme = forward_lexeme + 1;
-                        return Ok((CoreToken::SINGLE_LINE_COMMENT, String::from("single_comment")));
+                        let comment_str: String = code[(*begin_lexeme + 2)..forward_lexeme].iter().collect();
+                        *begin_lexeme = forward_lexeme;
+                        return Ok((CoreToken::SINGLE_LINE_COMMENT(TokenValue(Rc::new(comment_str))),
+                        String::from("single line comment")));
                     },
                     _ => {}
                 }
@@ -120,14 +129,24 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
                     '*' => {
                         state = 3;
                     },
+                    '\n' => {
+                        let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
+                        code_str.push(' ');
+                        code_lines.push((Rc::new(code_str), *line_start_index));
+                        // *begin_lexeme = *begin_lexeme + 1;
+                        *line_number = *line_number + 1;
+                        *line_start_index = forward_lexeme + 1;
+                    },
                     _ => {}
                 }
             },
             3 => {
                 match next_char {
                     '/' => {
+                        print!("{}", *begin_lexeme);
+                        let comment_str: String = code[(*begin_lexeme + 2)..(forward_lexeme - 1)].iter().collect();
                         *begin_lexeme = forward_lexeme + 1;
-                        return Ok((CoreToken::BLOCK_COMMENT, String::from("block_comment")));
+                        return Ok((CoreToken::BLOCK_COMMENT(TokenValue(Rc::new(comment_str))), String::from("block comment")));
                     },
                     _ => {
                         state = 2;
@@ -146,8 +165,9 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             return Ok((CoreToken::SLASH, String::from("/")));
         },
         1 => {
+            let comment_str: String = code[(*begin_lexeme + 2)..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return Ok((CoreToken::SINGLE_LINE_COMMENT, String::from("single_comment")));
+            return Ok((CoreToken::SINGLE_LINE_COMMENT(TokenValue(Rc::new(comment_str))), String::from("single line comment")));
         },
         2 => {
             Err(LexicalError::new(*line_number, String::from("no closing tag found for block comment")))
@@ -164,6 +184,7 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize,
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
+        /*
         if next_char == '\n' {
             let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
             code_str.push(' ');
@@ -172,17 +193,20 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize,
             *line_number = *line_number + 1;
             *line_start_index = forward_lexeme + 1;
         }
+         */
         match next_char {
             '\n' => {
-                *begin_lexeme = forward_lexeme + 1;
-                return Ok((CoreToken::SINGLE_LINE_COMMENT, String::from("single_comment")))
+                let comment_str: String = code[(*begin_lexeme + 1)..forward_lexeme].iter().collect();
+                *begin_lexeme = forward_lexeme;
+                return Ok((CoreToken::SINGLE_LINE_COMMENT(TokenValue(Rc::new(comment_str))), String::from("single line comment")))
             },
             _ => {}
         }
         forward_lexeme = forward_lexeme + 1;
     }
+    let comment_str: String = code[*begin_lexeme..].iter().collect();
     *begin_lexeme = forward_lexeme;
-    return Ok((CoreToken::SINGLE_LINE_COMMENT, String::from("single_comment")))
+    return Ok((CoreToken::SINGLE_LINE_COMMENT(TokenValue(Rc::new(comment_str))), String::from("single line comment")))
 }
 
 // = -> =, ==
@@ -278,13 +302,13 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) 
         if context::is_letter(&next_char) || context::is_digit(&next_char) {
             // do nothing
         } else {
-            let value: String = code[(*begin_lexeme)..(forward_lexeme)].iter().collect();
+            let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
             return Ok(get_token_for_identifier(value));
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    let value: String = code[(*begin_lexeme)..(forward_lexeme)].iter().collect();
+    let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
     *begin_lexeme = forward_lexeme;
     return Ok(get_token_for_identifier(value));
 }
@@ -303,7 +327,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
                 } else if next_char == '.' {
                     state = 1;
                 } else {
-                    let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
+                    let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
                     *begin_lexeme = forward_lexeme;
                     return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INT)))
                 }
@@ -319,7 +343,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
                 if context::is_digit(&next_char) {
                     // do nothing
                 } else {
-                    let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
+                    let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
                     *begin_lexeme = forward_lexeme;
                     return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from(FLOAT)))
                 }
@@ -332,7 +356,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
     }
     match state {
         0 => {
-            let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
+            let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
             return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INT)))
         },
@@ -340,7 +364,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
             return Err(LexicalError::new(*line_number, String::from("expected at least one digit after '.'")))
         },
         2 => {
-            let value: String = code[*begin_lexeme..(forward_lexeme)].iter().collect();
+            let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
             return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from(FLOAT)))
         },

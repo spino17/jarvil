@@ -89,8 +89,8 @@ pub enum CoreToken {
     FALSE,              // 'False'
 
     // ignored by parser
-    SINGLE_LINE_COMMENT,// '//...\n' or '#...\n'
-    BLOCK_COMMENT,      // '/* ... */'
+    SINGLE_LINE_COMMENT(TokenValue),// '//...\n' or '#...\n'
+    BLOCK_COMMENT(TokenValue),      // '/* ... */'
 
     // termination
     ENDMARKER,
@@ -167,10 +167,6 @@ impl Token {
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::DOT, String::from("."))
             },
-            ' '         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::BLANK, String::from(" "))
-            },
             '\t'        =>      {
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::TAB, String::from("\t"))
@@ -188,6 +184,11 @@ impl Token {
                 // helper::extract_plus_prefix_lexeme(begin_lexeme, code)?
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::PLUS, String::from("+"))
+            },
+            ' '         =>      {
+                // *begin_lexeme = *begin_lexeme + 1;
+                // (CoreToken::BLANK, String::from(" "))
+                helper::extract_blank_prefix_lexeme(begin_lexeme, code)?
             },
             '-'         =>      {
                 helper::extract_minus_prefix_lexeme(begin_lexeme, code)?

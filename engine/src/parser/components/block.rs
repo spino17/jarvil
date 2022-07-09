@@ -7,56 +7,36 @@ use std::rc::Rc;
 pub fn check_block_indentation(parser: &mut PackratParser, 
     indent_spaces: i64, err: SyntaxError, curr_lookahead: usize, 
     params: &Rc<Vec<ParamNode>>, stmts: &Rc<Vec<StatementNode>>, 
-    parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+    parent: Option<ASTNode>) -> BlockNode {
     let indent_spaces_unit = context::get_indent();
     let indent_factor = indent_spaces / indent_spaces_unit as i64;
     let indent_remainder = indent_spaces - indent_factor * indent_spaces_unit;
     if indent_remainder > 0 {
-        return Err(err)
+        // TODO - handle indentation error here
+        todo!()
     } else {
         if indent_spaces > indent_spaces_unit * parser.get_curr_indent_level() {
-            return Err(err)
+            // TODO - handle indentation error here
+            todo!()
         } else {
             // block is over
             parser.reset_indent_level(parser.get_curr_indent_level() - 1);
             parser.reset_lookahead(curr_lookahead);
-            let node = BlockNode::new(stmts, params, parent);
-            return Ok((ParseSuccess{
-                lookahead: parser.get_curr_lookahead(),
-                possible_err: None,
-            }, node))
+            BlockNode::new(stmts, params, parent)
         }
     }
 }
 
 pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>, 
-    parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+    parent: Option<ASTNode>) -> BlockNode {
     let newline_node = parser.expect("\n");
     let mut curr_lookahead = parser.get_curr_lookahead();
     parser.reset_indent_level(parser.get_curr_indent_level() + 1);
     let mut stmts_vec: Vec<StatementNode> = vec![];
     loop {
-        let (response, indent_spaces) = parser.expect_indent_spaces()?;
-        if let Some(err) = response.possible_err {
-            return parser.check_block_indentation(indent_spaces, err, curr_lookahead, &Rc::new(params), 
-            &Rc::new(stmts_vec), parent)
-        }
-        match parser.stmt() {
-            Ok((_, stmt_node)) => {
-                stmts_vec.push(stmt_node.clone())
-            },
-            Err(err) => {
-                if parser.check_next_token("endmarker") {
-                    let node = BlockNode::new(&Rc::new(stmts_vec), &Rc::new(params), parent);
-                    return Ok((ParseSuccess{
-                        lookahead: parser.get_curr_lookahead(),
-                        possible_err: Some(err),
-                    }, node))
-                } else {
-                    return Err(err)
-                }
-            }
-        }
+        let indent_node = parser.expect_indent_spaces();
+        let stmt_node = parser.stmt();
+        stmts_vec.push(stmt_node);
         curr_lookahead = parser.get_curr_lookahead();
     }
 }

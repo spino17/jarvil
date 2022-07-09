@@ -231,7 +231,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_indent_spaces(&mut self) -> Result<(ParseSuccess, i64), SyntaxError> {
+    pub fn expect_indent_spaces(&mut self) -> TokenNode {
         let expected_indent_spaces = context::get_indent() * self.indent_level;
         let mut indent_spaces = 0;
         loop {
@@ -245,24 +245,13 @@ impl PackratParser {
                         String::from(
                         "incorrectly indented statement\n    tabs are not allowed for indentation")
                     );
-                    return Err(err)
+                    todo!()
                 },
                 _ => {
                     if indent_spaces == expected_indent_spaces {
-                        return Ok((ParseSuccess{
-                            lookahead: self.lookahead,
-                            possible_err: None,
-                        }, indent_spaces))
+                        todo!()
                     } else {
-                        let err = SyntaxError::new(
-                            self.get_code_line(token.line_number, token.index()),
-                            format!(
-                                "incorrectly indented statement\n    expected indent of '{}' spaces, got '{}' spaces", 
-                                expected_indent_spaces, indent_spaces));
-                        return Ok((ParseSuccess{
-                            lookahead: self.lookahead,
-                            possible_err: Some(err),
-                        }, indent_spaces))
+                        todo!()
                     }
                 }
             }
@@ -340,23 +329,23 @@ impl PackratParser {
 
     // ------------------- production rule matching function for terminals and non-terminals declared below -------------------
     // code
-    pub fn code(&mut self, token_vec: Vec<Token>) -> Result<BlockNode, SyntaxError> {
+    pub fn code(&mut self, token_vec: Vec<Token>) -> BlockNode {
         components::code::code(self, token_vec)
     }
 
     pub fn check_block_indentation(&mut self, 
         indent_spaces: i64, err: SyntaxError, curr_lookahead: usize, 
         params: &Rc<Vec<ParamNode>>, stmts: &Rc<Vec<StatementNode>>, 
-        parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+        parent: Option<ASTNode>) -> BlockNode {
         components::block::check_block_indentation(self, indent_spaces, err, curr_lookahead, params, stmts, parent)
     }
 
-    pub fn block(&mut self, params: Vec<ParamNode>, parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+    pub fn block(&mut self, params: Vec<ParamNode>, parent: Option<ASTNode>) -> BlockNode {
         components::block::block(self, params, parent)
     }
 
     // statements
-    pub fn stmt(&mut self) -> Result<(ParseSuccess, StatementNode), SyntaxError> {
+    pub fn stmt(&mut self) -> StatementNode {
         components::stmt::stmt(self)
     }
 

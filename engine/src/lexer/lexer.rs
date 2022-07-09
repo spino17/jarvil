@@ -45,6 +45,9 @@ impl Lexer for CoreLexer {
         });
         while self.begin_lexeme < code.len() {
             let token = self.extract_lexeme(&code)?;
+            println!("{:?}", token);
+            token_vec.push(token);
+            /*
             match token.core_token {
                 
                 // ignore single line and block comments
@@ -61,10 +64,12 @@ impl Lexer for CoreLexer {
                 CoreToken::BLOCK_COMMENT => continue,
                 // CoreToken::BLANK => continue,
                 _ => {
-                    token_vec.push(token)
+                    
                 }
             }
+             */
         }
+        /*
         self.code_lines.push((Rc::new(code[self.line_start_index..].iter().collect()), self.line_start_index));
         token_vec.push(Token {
             line_number: self.line_number,
@@ -73,6 +78,10 @@ impl Lexer for CoreLexer {
             start_index: code.len(),
             end_index: code.len(),
         });
+         */
+        let mut code_str: String = code[self.line_start_index..].iter().collect();
+        code_str.push(' ');
+        self.code_lines.push((Rc::new(code_str), self.line_start_index));
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
@@ -80,6 +89,7 @@ impl Lexer for CoreLexer {
             start_index: code.len(),
             end_index: code.len(),
         });
+        println!("{:?}", self.code_lines);
         Ok(token_vec)
     }
 }
