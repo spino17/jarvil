@@ -1,5 +1,5 @@
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::scope::core::Scope;
+use crate::{scope::core::Scope, lexer::token::{TokenKind, Token, CoreToken, MissingToken}};
 
 pub trait Node {
     fn set_parent(&self, parent_node: Option<ASTNode>);
@@ -207,5 +207,30 @@ impl ArrayTypeNode {
 impl Node for ArrayTypeNode {
     fn set_parent(&self, parent_node: Option<ASTNode>) {
         self.0.as_ref().borrow_mut().parent = parent_node;
+    }
+}
+
+pub struct CoreTokenNode {
+    kind: TokenKind,
+    parent: Option<ASTNode>,
+}
+
+pub struct TokenNode(Rc<RefCell<CoreTokenNode>>);
+impl TokenNode {
+    pub fn new_with_token(token: &Token) -> Self {
+        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
+            kind: TokenKind::TOKEN(token.clone()),
+            parent: None,
+        })))
+    }
+
+    pub fn new_with_missing_token(expected_symbol: &Rc<String>, received_token: &Token) -> Self {
+        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
+            kind: TokenKind::MISSING_TOKEN(MissingToken{
+                expected_symbol: expected_symbol.clone(),
+                received_token: received_token.clone(),
+            }),
+            parent: None,
+        })))
     }
 }

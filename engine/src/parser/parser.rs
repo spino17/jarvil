@@ -3,7 +3,7 @@
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::{IdentifierNode, TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode};
+use crate::ast::ast::{IdentifierNode, TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode, TokenNode};
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
 use crate::errors::{SyntaxError};
@@ -139,29 +139,20 @@ impl PackratParser {
     }
 
     // parsing routines for terminals
-    pub fn expect(&mut self, symbol: &str) -> Result<ParseSuccess, SyntaxError> {
+    pub fn expect(&mut self, symbol: &str) -> (usize, TokenNode) {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
-        if String::from("empty").eq(symbol) {
-            return Ok(ParseSuccess{
-                lookahead: self.lookahead,
-                possible_err: None,
-            })
-        }
         if token.is_eq(symbol) {
             self.lookahead = self.lookahead + 1;
-            Ok(ParseSuccess{
-                lookahead: self.lookahead,
-                possible_err: None,
-            })
+            let node = TokenNode::new_with_token(&token);
+            (self.lookahead, node)
         } else {
-            return Err(SyntaxError::new(
-                self.get_code_line(token.line_number, token.index()),
-                format!(
-                "expected '{}', got '{}'",
-                PackratParser::parse_for_err_message(String::from(symbol)), 
-                PackratParser::parse_for_err_message(token.name.to_string())))
-            )
+            // TODO - return token.clone() and symbol in missing token
+            let node = TokenNode::new_with_missing_token(
+                &Rc::new(String::from(symbol)), 
+                &token
+            );
+            (self.lookahead, node)
         }
     }
 

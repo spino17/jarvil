@@ -3,10 +3,10 @@ use std::rc::Rc;
 use crate::lexer::helper;
 use crate::context;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TokenValue(pub Rc<String>);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CoreToken {
 
     // conditionals
@@ -96,13 +96,25 @@ pub enum CoreToken {
     ENDMARKER,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
     pub name: Rc<String>,
     pub start_index: usize,
     pub end_index: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct MissingToken {
+    pub expected_symbol: Rc<String>,
+    pub received_token: Token,
+}
+
+pub enum TokenKind {
+    TOKEN(Token),
+    MISSING_TOKEN(MissingToken),
+    // SKIPPING_TOKEN(SkippingToken)
 }
 
 impl Token {
