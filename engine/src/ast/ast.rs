@@ -16,7 +16,7 @@ pub enum ASTNode {
 }
 
 pub struct CoreBlockNode {
-    stmts: Rc<Vec<StatementNode>>,
+    stmts: Rc<RefCell<Vec<StatementNode>>>,
     params: Rc<Vec<ParamNode>>,
     scope: Option<Scope>,
     parent: Option<ASTNode>,
@@ -25,14 +25,14 @@ pub struct CoreBlockNode {
 #[derive(Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: &Rc<Vec<StatementNode>>, params: &Rc<Vec<ParamNode>>, parent: Option<ASTNode>) -> Self {
+    pub fn new(stmts: &Rc<RefCell<Vec<StatementNode>>>, params: &Rc<Vec<ParamNode>>, parent: Option<ASTNode>) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode{
             stmts: stmts.clone(),
             params: params.clone(),
             scope: None,
             parent,
         }));
-        for stmt in stmts.as_ref() {
+        for stmt in &*stmts.as_ref().borrow() {
             stmt.set_parent(Some(ASTNode::BLOCK(Rc::downgrade(&node))));
         }
         for param in params.as_ref() {

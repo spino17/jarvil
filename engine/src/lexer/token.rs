@@ -104,15 +104,6 @@ pub enum TokenKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct Token {
-    pub line_number: usize,
-    pub core_token: CoreToken,
-    pub name: Rc<String>,
-    pub start_index: usize,
-    pub end_index: usize,
-}
-
-#[derive(Debug, Clone)]
 pub enum ErrorToken {
     MISSING_TOKEN(MissingToken),
     INCORRECT_INDENT(IncorrectIndentToken),
@@ -128,6 +119,15 @@ pub struct MissingToken {
 pub struct IncorrectIndentToken {
     pub expected_indent: i64,
     pub received_indent: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct Token {
+    pub line_number: usize,
+    pub core_token: CoreToken,
+    pub name: Rc<String>,
+    pub start_index: usize,
+    pub end_index: usize,
 }
 
 impl Token {

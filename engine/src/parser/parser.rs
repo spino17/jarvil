@@ -4,6 +4,7 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode, TokenNode};
+use crate::ast::helper::IndentNode;
 use crate::lexer::token::{Token, CoreToken, ErrorToken, MissingToken};
 use std::rc::Rc;
 use crate::errors::{SyntaxError};
@@ -105,6 +106,35 @@ impl PackratParser {
         self.token_vec[self.lookahead].line_number
     }
 
+    pub fn get_curr_token(&mut self) -> Token {
+        self.ignore_whitespaces();
+        self.token_vec[self.lookahead].clone()
+    }
+
+    pub fn get_curr_token_name(&mut self) -> Rc<String> {
+        self.ignore_whitespaces();
+        self.token_vec[self.lookahead].name.clone()
+    }
+
+    pub fn get_previous_token(&mut self) -> Token {
+        self.token_vec[self.lookahead - 1].clone()
+    }
+
+    pub fn check_next_token(&self, symbol: &str) -> bool {
+        let mut temp_lookahead = self.lookahead;
+        loop {
+            let token = &self.token_vec[temp_lookahead];
+            match token.core_token {
+                CoreToken::BLANK => {
+                    temp_lookahead = temp_lookahead + 1;
+                },
+                _ => {
+                    return token.is_eq(symbol)
+                }
+            }
+        }
+    }
+
     pub fn ignore_whitespaces(&mut self) {
         loop {
             let token = &self.token_vec[self.lookahead];
@@ -143,31 +173,6 @@ impl PackratParser {
             self.ignore_whitespaces_and_newlines();
         } else {
             self.ignore_whitespaces();
-        }
-    }
-
-    pub fn get_curr_token(&mut self) -> Token {
-        self.ignore_whitespaces();
-        self.token_vec[self.lookahead].clone()
-    }
-
-    pub fn get_curr_token_name(&mut self) -> Rc<String> {
-        self.ignore_whitespaces();
-        self.token_vec[self.lookahead].name.clone()
-    }
-
-    pub fn check_next_token(&self, symbol: &str) -> bool {
-        let mut temp_lookahead = self.lookahead;
-        loop {
-            let token = &self.token_vec[temp_lookahead];
-            match token.core_token {
-                CoreToken::BLANK => {
-                    temp_lookahead = temp_lookahead + 1;
-                },
-                _ => {
-                    return token.is_eq(symbol)
-                }
-            }
         }
     }
 
@@ -240,7 +245,8 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_indent_spaces(&mut self) -> TokenNode {
+    pub fn expect_indent_spaces(&mut self, saved_lookahead: usize, 
+        stmts: &Rc<RefCell<Vec<StatementNode>>>, params: &Rc<Vec<ParamNode>>, parent: &Option<ASTNode>) -> IndentNode {
         let expected_indent_spaces = context::get_indent() * self.indent_level;
         let mut indent_spaces = 0;
         loop {
@@ -258,9 +264,25 @@ impl PackratParser {
                 },
                 _ => {
                     if indent_spaces == expected_indent_spaces {
-                        todo!()
+                        return IndentNode::TOKEN(TokenNode::new_with_token(&self.get_previous_token()))
                     } else {
-                        todo!()
+                        let indent_spaces_unit = context::get_indent();
+                        let indent_factor = indent_spaces / indent_spaces_unit as i64;
+                        let indent_remainder = indent_spaces - indent_factor * indent_spaces_unit;
+                        if indent_remainder > 0 {
+                            // TODO - handle indentation error here
+                            todo!()
+                        } else {
+                            if indent_spaces > indent_spaces_unit * self.get_curr_indent_level() {
+                                // TODO - handle indentation error here
+                                todo!()
+                            } else {
+                                // block is over
+                                self.reset_indent_level(self.get_curr_indent_level() - 1);
+                                self.reset_lookahead(saved_lookahead);
+                                return IndentNode::BLOCK(BlockNode::new(stmts, params, parent.clone()))
+                            }
+                        }
                     }
                 }
             }
@@ -344,12 +366,12 @@ impl PackratParser {
 
     pub fn check_block_indentation(&mut self, 
         indent_spaces: i64, err: SyntaxError, curr_lookahead: usize, 
-        params: &Rc<Vec<ParamNode>>, stmts: &Rc<Vec<StatementNode>>, 
+        params: &Rc<Vec<ParamNode>>, stmts: &Rc<RefCell<Vec<StatementNode>>>, 
         parent: Option<ASTNode>) -> BlockNode {
         components::block::check_block_indentation(self, indent_spaces, err, curr_lookahead, params, stmts, parent)
     }
 
-    pub fn block(&mut self, params: Vec<ParamNode>, parent: Option<ASTNode>) -> BlockNode {
+    pub fn block(&mut self, params: &Rc<Vec<ParamNode>>, parent: Option<ASTNode>) -> BlockNode {
         components::block::block(self, params, parent)
     }
 
