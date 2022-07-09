@@ -75,6 +75,10 @@ impl PackratParser {
         self.lookahead = reset_index;
     }
 
+    pub fn scan_next_token(&mut self) {
+        self.lookahead = self.lookahead + 1;
+    }
+
     pub fn get_indent_level(&self) -> i64 {
         self.indent_level
     }
@@ -106,7 +110,7 @@ impl PackratParser {
             let token = &self.token_vec[self.lookahead];
             match token.core_token {
                 CoreToken::BLANK => {
-                    self.lookahead = self.lookahead + 1;
+                    self.scan_next_token();
                 },
                 _ => return
             }
@@ -143,7 +147,7 @@ impl PackratParser {
         self.ignore_blanks();
         let token = &self.token_vec[self.lookahead];
         if token.is_eq(symbol) {
-            self.lookahead = self.lookahead + 1;
+            self.scan_next_token();
             let node = TokenNode::new_with_token(&token);
             (self.lookahead, node)
         } else {
@@ -161,7 +165,7 @@ impl PackratParser {
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
             CoreToken::INTEGER(token_value) => {
-                self.lookahead = self.lookahead + 1;
+                self.scan_next_token();
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
@@ -183,7 +187,7 @@ impl PackratParser {
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
             CoreToken::FLOAT(token_value) => {
-                self.lookahead = self.lookahead + 1;
+                self.scan_next_token();
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
@@ -205,7 +209,7 @@ impl PackratParser {
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
             CoreToken::LITERAL(token_value) => {
-                self.lookahead = self.lookahead + 1;
+                self.scan_next_token();
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
@@ -227,7 +231,7 @@ impl PackratParser {
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
             CoreToken::IDENTIFIER(token_value) => {
-                self.lookahead = self.lookahead + 1;
+                self.scan_next_token();
                 let node = IdentifierNode::new(&token_value.0, token.start_index, 
                     token.end_index, token.line_number);
                 Ok((ParseSuccess{
@@ -251,7 +255,7 @@ impl PackratParser {
         let token = &self.token_vec[self.lookahead];
         match &token.core_token {
             CoreToken::ATOMIC_TYPE(atomic_type) => {
-                self.lookahead = self.lookahead + 1;
+                self.scan_next_token();
                 let node = TypeExpressionNode::new_with_atomic_type(&atomic_type.0);
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
