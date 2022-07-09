@@ -138,6 +138,14 @@ impl PackratParser {
         }
     }
 
+    pub fn ignore_whitespaces_and_optionally_newlines(&mut self, ignore_newline: bool) {
+        if ignore_newline {
+            self.ignore_whitespaces_and_newlines();
+        } else {
+            self.ignore_whitespaces();
+        }
+    }
+
     pub fn get_curr_token(&mut self) -> Token {
         self.ignore_whitespaces();
         self.token_vec[self.lookahead].clone()
@@ -165,27 +173,19 @@ impl PackratParser {
 
     // parsing routines for terminals
     pub fn expect(&mut self, symbol: &str, ignore_newline: bool) -> TokenNode {
-        if ignore_newline {
-            self.ignore_whitespaces_and_newlines();
-        } else {
-            self.ignore_whitespaces();
-        }
+        self.ignore_whitespaces_and_optionally_newlines(ignore_newline);
         let token = self.get_curr_token();
         if token.is_eq(symbol) {
             self.scan_next_token();
             TokenNode::new_with_token(&token)
         } else {
             // TODO - return token.clone() and symbol in missing token
-            let missing_token = MissingToken{
-                expected_symbol: Rc::new(String::from(symbol)),
-                received_token: token.clone(),
-            };
-            TokenNode::new_with_missing_token(&missing_token)
+            TokenNode::new_with_missing_token(&Rc::new(String::from(symbol)), &token)
         }
     }
 
     pub fn expect_int(&mut self, ignore_newline: bool) -> TokenNode {
-        self.ignore_whitespaces();
+        self.ignore_whitespaces_and_optionally_newlines(ignore_newline);
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::INTEGER(_) => {
@@ -193,17 +193,13 @@ impl PackratParser {
                 TokenNode::new_with_token(&token)
             },
             _ => {
-                let missing_token = MissingToken{
-                    expected_symbol: Rc::new(String::from("int")),
-                    received_token: token.clone(),
-                };
-                TokenNode::new_with_missing_token(&missing_token)
+                TokenNode::new_with_missing_token(&Rc::new(String::from("int")), &token)
             }
         }
     }
 
     pub fn expect_float(&mut self, ignore_newline: bool) -> TokenNode {
-        self.ignore_whitespaces();
+        self.ignore_whitespaces_and_optionally_newlines(ignore_newline);
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::FLOAT(_) => {
@@ -211,17 +207,13 @@ impl PackratParser {
                 TokenNode::new_with_token(&token)
             },
             _ => {
-                let missing_token = MissingToken{
-                    expected_symbol: Rc::new(String::from("int")),
-                    received_token: token.clone(),
-                };
-                TokenNode::new_with_missing_token(&missing_token)
+                TokenNode::new_with_missing_token(&Rc::new(String::from("float")), &token)
             }
         }
     }
 
     pub fn expect_literal(&mut self, ignore_newline: bool) -> TokenNode {
-        self.ignore_whitespaces();
+        self.ignore_whitespaces_and_optionally_newlines(ignore_newline);
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::LITERAL(_) => {
@@ -229,17 +221,13 @@ impl PackratParser {
                 TokenNode::new_with_token(&token)
             },
             _ => {
-                let missing_token = MissingToken{
-                    expected_symbol: Rc::new(String::from("string literal")),
-                    received_token: token.clone(),
-                };
-                TokenNode::new_with_missing_token(&missing_token)
+                TokenNode::new_with_missing_token(&Rc::new(String::from("string literal")), &token)
             }
         }
     }
 
     pub fn expect_ident(&mut self, ignore_newline: bool) -> TokenNode {
-        self.ignore_whitespaces();
+        self.ignore_whitespaces_and_optionally_newlines(ignore_newline);
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::IDENTIFIER(_) => {
@@ -247,11 +235,7 @@ impl PackratParser {
                 TokenNode::new_with_token(&token)
             },
             _ => {
-                let missing_token = MissingToken{
-                    expected_symbol: Rc::new(String::from("identifier")),
-                    received_token: token.clone(),
-                };
-                TokenNode::new_with_missing_token(&missing_token)
+                TokenNode::new_with_missing_token(&Rc::new(String::from("identifier")), &token)
             }
         }
     }
@@ -262,7 +246,7 @@ impl PackratParser {
         loop {
             let token = &self.token_vec[self.lookahead];
             match &token.core_token {
-                CoreToken::BLANK => indent_spaces = indent_spaces + 1,
+                CoreToken::BLANK => indent_spaces = (token.end_index - token.start_index) as i64,
                 CoreToken::NEWLINE => indent_spaces = 0,
                 CoreToken::TAB => {
                     let err = SyntaxError::new(

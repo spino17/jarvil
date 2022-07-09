@@ -115,12 +115,19 @@ pub struct Token {
 #[derive(Debug, Clone)]
 pub enum ErrorToken {
     MISSING_TOKEN(MissingToken),
+    INCORRECT_INDENT(IncorrectIndentToken),
 }
 
 #[derive(Debug, Clone)]
 pub struct MissingToken {
     pub expected_symbol: Rc<String>,
     pub received_token: Token,
+}
+
+#[derive(Debug, Clone)]
+pub struct IncorrectIndentToken {
+    pub expected_indent: i64,
+    pub received_indent: i64,
 }
 
 impl Token {
