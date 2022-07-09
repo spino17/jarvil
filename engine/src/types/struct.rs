@@ -15,7 +15,7 @@ impl AbstractType for Struct {
         }
     }
 
-    fn to_string(&self) -> Rc<String> {
+    fn string(&self) -> Rc<String> {
         self.0.name.clone()
     }
 }

@@ -21,7 +21,7 @@ impl AbstractType for Array {
         }
     }
 
-    fn to_string(&self) -> std::rc::Rc<String> {
-        Rc::new(format!("[{}, {}]", AbstractType::to_string(&self.element_type), self.size))
+    fn string(&self) -> std::rc::Rc<String> {
+        Rc::new(format!("[{}, {}]", AbstractType::string(&self.element_type), self.size))
     }
 }

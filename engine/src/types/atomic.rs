@@ -64,7 +64,7 @@ impl AbstractType for Atomic {
         }
     }
     
-    fn to_string(&self) -> Rc<String> {
+    fn string(&self) -> Rc<String> {
         match self {
             Atomic::INT     =>  Rc::new(String::from("int")),
             Atomic::FLOAT   =>  Rc::new(String::from("float")),

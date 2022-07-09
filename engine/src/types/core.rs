@@ -6,7 +6,7 @@ use crate::types::{r#struct::Struct, atomic::Atomic, lambda::Lambda, array::Arra
 
 pub trait AbstractType {
     fn is_eq(&self, base_type: &Type) -> bool;
-    fn to_string(&self) -> Rc<String>;
+    fn string(&self) -> Rc<String>;
     // fn get_memory_width(&self) -> usize;
 }
 
@@ -21,6 +21,7 @@ pub enum CoreType {
     // ARRAY,
     // REFERENCE,
     // GENERIC(Generic)
+    VOID,
     NON_TYPED,
 }
 
@@ -69,6 +70,12 @@ impl AbstractType for Type {
             CoreType::ARRAY(array_data) => {
                 array_data.is_eq(base_type)
             }
+            CoreType::VOID => {
+                match base_type.0.as_ref() {
+                    CoreType::VOID => true,
+                    _ => false,
+                }
+            }
             CoreType::NON_TYPED => {
                 match base_type.0.as_ref() {
                     CoreType::NON_TYPED => true,
@@ -78,20 +85,21 @@ impl AbstractType for Type {
         }
     }
 
-    fn to_string(&self) -> Rc<String> {
+    fn string(&self) -> Rc<String> {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic_data) => {
-                atomic_data.to_string()
+                atomic_data.string()
             },
             CoreType::STRUCT(struct_data) => {
-                struct_data.to_string()
+                struct_data.string()
             },
             CoreType::LAMBDA(lambda_data) => {
-                lambda_data.to_string()
+                lambda_data.string()
             },
             CoreType::ARRAY(array_data) => {
-                array_data.to_string()
-            }
+                array_data.string()
+            },
+            CoreType::VOID => Rc::new(String::from("void")),
             CoreType::NON_TYPED => Rc::new(String::from("non-typed"))
         }
     }
@@ -101,10 +109,11 @@ impl AbstractType for Type {
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self.0.as_ref() {
-            CoreType::ATOMIC(atomic_data) => write!(f, "{}", atomic_data.to_string()),
-            CoreType::STRUCT(struct_data) => write!(f, "{}", struct_data.to_string()),
-            CoreType::LAMBDA(lambda_data) => write!(f, "{}", lambda_data.to_string()),
-            CoreType::ARRAY(array_data)    => write!(f, "{}", array_data.to_string()),
+            CoreType::ATOMIC(atomic_data) => write!(f, "{}", atomic_data.string()),
+            CoreType::STRUCT(struct_data) => write!(f, "{}", struct_data.string()),
+            CoreType::LAMBDA(lambda_data) => write!(f, "{}", lambda_data.string()),
+            CoreType::ARRAY(array_data)    => write!(f, "{}", array_data.string()),
+            CoreType::VOID => write!(f, "void"),
             CoreType::NON_TYPED => write!(f, "non-typed"),
         }
     }

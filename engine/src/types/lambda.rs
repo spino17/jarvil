@@ -53,10 +53,26 @@ impl AbstractType for Lambda {
         }
     }
 
-    fn to_string(&self) -> Rc<String> {
+    fn string(&self) -> Rc<String> {
         match &self.name {
-            Some(name) => Rc::new(format!("{}: () -> ()", name)),
-            None => Rc::new(format!("() -> ()"))
+            Some(name) => Rc::new(format!("{}", name)),
+            None => {
+                let mut params_str = String::from("");
+                let mut flag = false;
+                for param in self.function_data.params.as_ref() {
+                    if flag {
+                        params_str.push_str(",")
+                    }
+                    params_str.push_str(&format!("{}", param.1.string()));
+                    flag = true;
+                }
+                let mut return_type_str = String::from("");
+                match self.function_data.return_type.as_ref() {
+                    Some(return_type) => return_type_str.push_str(&format!("{}", return_type.string())),
+                    None => return_type_str.push_str("void"),
+                }
+                Rc::new(format!("func({}) -> ({})", params_str, return_type_str))
+            }
         }
     }
 }
