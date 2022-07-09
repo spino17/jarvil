@@ -1,6 +1,6 @@
 use crate::ast::ast::{StatementNode, ParamNode, BlockNode, ASTNode};
 use crate::context;
-use crate::parser::parser::{PackratParser, ParseSuccess, tokenize};
+use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::SyntaxError;
 use std::rc::Rc;
 
@@ -14,15 +14,15 @@ pub fn check_block_indentation(parser: &mut PackratParser,
     if indent_remainder > 0 {
         return Err(err)
     } else {
-        if indent_spaces > indent_spaces_unit * parser.get_indent_level() {
+        if indent_spaces > indent_spaces_unit * parser.get_curr_indent_level() {
             return Err(err)
         } else {
             // block is over
-            parser.reset_indent_level(parser.get_indent_level() - 1);
+            parser.reset_indent_level(parser.get_curr_indent_level() - 1);
             parser.reset_lookahead(curr_lookahead);
             let node = BlockNode::new(stmts, params, parent);
             return Ok((ParseSuccess{
-                lookahead: parser.get_lookahead(),
+                lookahead: parser.get_curr_lookahead(),
                 possible_err: None,
             }, node))
         }
@@ -31,9 +31,9 @@ pub fn check_block_indentation(parser: &mut PackratParser,
 
 pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>, 
     parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
-    let newline_node = tokenize(parser.expect("\n"));
-    let mut curr_lookahead = parser.get_lookahead();
-    parser.reset_indent_level(parser.get_indent_level() + 1);
+    let newline_node = parser.expect("\n");
+    let mut curr_lookahead = parser.get_curr_lookahead();
+    parser.reset_indent_level(parser.get_curr_indent_level() + 1);
     let mut stmts_vec: Vec<StatementNode> = vec![];
     loop {
         let (response, indent_spaces) = parser.expect_indent_spaces()?;
@@ -49,7 +49,7 @@ pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>,
                 if parser.check_next_token("endmarker") {
                     let node = BlockNode::new(&Rc::new(stmts_vec), &Rc::new(params), parent);
                     return Ok((ParseSuccess{
-                        lookahead: parser.get_lookahead(),
+                        lookahead: parser.get_curr_lookahead(),
                         possible_err: Some(err),
                     }, node))
                 } else {
@@ -57,6 +57,6 @@ pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>,
                 }
             }
         }
-        curr_lookahead = parser.get_lookahead();
+        curr_lookahead = parser.get_curr_lookahead();
     }
 }

@@ -226,9 +226,9 @@ impl TokenNode {
         })))
     }
 
-    pub fn new_with_missing_token(err_token: &ErrorToken) -> Self {
+    pub fn new_with_missing_token(missing_token: &MissingToken) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenKind::ERROR_TOKEN(err_token.clone()),
+            kind: TokenKind::ERROR_TOKEN(ErrorToken::MISSING_TOKEN(missing_token.clone())),
             parent: None,
         })))
     }

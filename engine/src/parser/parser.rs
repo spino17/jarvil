@@ -17,13 +17,6 @@ pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;  // return an AST
 }
 
-pub fn tokenize(result: Result<(ParseSuccess, Token), ErrorToken>) -> TokenNode {
-    match result {
-        Ok(token) => TokenNode::new_with_token(&token.1),
-        Err(err_token) => TokenNode::new_with_missing_token(&err_token),
-    }
-}
-
 #[derive(Debug)]
 pub enum RoutineCache {
     // currently only two routine (atom, expr) results are cached by the parser
@@ -74,7 +67,7 @@ impl Parser for PackratParser {
 
 impl PackratParser {
     // parsing utilities
-    pub fn get_lookahead(&self) -> usize {
+    pub fn get_curr_lookahead(&self) -> usize {
         self.lookahead
     }
 
@@ -86,7 +79,7 @@ impl PackratParser {
         self.lookahead = self.lookahead + 1;
     }
 
-    pub fn get_indent_level(&self) -> i64 {
+    pub fn get_curr_indent_level(&self) -> i64 {
         self.indent_level
     }
 
@@ -150,105 +143,90 @@ impl PackratParser {
     }
 
     // parsing routines for terminals
-    pub fn expect(&mut self, symbol: &str) -> Result<(ParseSuccess, Token), ErrorToken> {
+    pub fn expect(&mut self, symbol: &str) -> TokenNode {
         self.ignore_blanks();
         let token = self.get_curr_token();
         if token.is_eq(symbol) {
             self.scan_next_token();
-            Ok((ParseSuccess{
-                lookahead: self.lookahead,
-                possible_err: None,
-            }, token.clone()))
+            TokenNode::new_with_token(&token)
         } else {
             // TODO - return token.clone() and symbol in missing token
             let missing_token = MissingToken{
                 expected_symbol: Rc::new(String::from(symbol)),
                 received_token: token.clone(),
             };
-            Err(ErrorToken::MISSING_TOKEN(missing_token))
+            TokenNode::new_with_missing_token(&missing_token)
         }
     }
 
-    pub fn expect_int(&mut self) -> Result<(ParseSuccess, Token), ErrorToken> {
+    pub fn expect_int(&mut self) -> TokenNode {
         self.ignore_blanks();
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::INTEGER(_) => {
                 self.scan_next_token();
-                Ok((ParseSuccess{
-                    lookahead: self.lookahead,
-                    possible_err: None,
-                }, token.clone()))
+                TokenNode::new_with_token(&token)
             },
             _ => {
                 let missing_token = MissingToken{
                     expected_symbol: Rc::new(String::from("int")),
                     received_token: token.clone(),
                 };
-                Err(ErrorToken::MISSING_TOKEN(missing_token))
+                TokenNode::new_with_missing_token(&missing_token)
             }
         }
     }
 
-    pub fn expect_float(&mut self) -> Result<(ParseSuccess, Token), ErrorToken> {
+    pub fn expect_float(&mut self) -> TokenNode {
         self.ignore_blanks();
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::FLOAT(_) => {
                 self.scan_next_token();
-                Ok((ParseSuccess{
-                    lookahead: self.lookahead,
-                    possible_err: None,
-                }, token.clone()))
+                TokenNode::new_with_token(&token)
             },
             _ => {
                 let missing_token = MissingToken{
                     expected_symbol: Rc::new(String::from("int")),
                     received_token: token.clone(),
                 };
-                Err(ErrorToken::MISSING_TOKEN(missing_token))
+                TokenNode::new_with_missing_token(&missing_token)
             }
         }
     }
 
-    pub fn expect_literal(&mut self) -> Result<(ParseSuccess, Token), ErrorToken> {
+    pub fn expect_literal(&mut self) -> TokenNode {
         self.ignore_blanks();
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::LITERAL(_) => {
                 self.scan_next_token();
-                Ok((ParseSuccess{
-                    lookahead: self.lookahead,
-                    possible_err: None,
-                }, token.clone()))
+                TokenNode::new_with_token(&token)
             },
             _ => {
                 let missing_token = MissingToken{
                     expected_symbol: Rc::new(String::from("string literal")),
                     received_token: token.clone(),
                 };
-                Err(ErrorToken::MISSING_TOKEN(missing_token))
+                TokenNode::new_with_missing_token(&missing_token)
             }
         }
     }
 
-    pub fn expect_ident(&mut self) -> Result<(ParseSuccess, Token), ErrorToken> {
+    pub fn expect_ident(&mut self) -> TokenNode {
         self.ignore_blanks();
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::IDENTIFIER(_) => {
                 self.scan_next_token();
-                Ok((ParseSuccess{
-                    lookahead: self.lookahead,
-                    possible_err: None,
-                }, token.clone()))
+                TokenNode::new_with_token(&token)
             },
             _ => {
                 let missing_token = MissingToken{
                     expected_symbol: Rc::new(String::from("identifier")),
                     received_token: token.clone(),
                 };
-                Err(ErrorToken::MISSING_TOKEN(missing_token))
+                TokenNode::new_with_missing_token(&missing_token)
             }
         }
     }
