@@ -1,6 +1,6 @@
 use crate::ast::ast::{StatementNode, ParamNode, BlockNode, ASTNode};
 use crate::context;
-use crate::parser::parser::{PackratParser, ParseSuccess};
+use crate::parser::parser::{PackratParser, ParseSuccess, tokenize};
 use crate::errors::SyntaxError;
 use std::rc::Rc;
 
@@ -29,8 +29,9 @@ pub fn check_block_indentation(parser: &mut PackratParser,
     }
 }
 
-pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>, parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
-    parser.expect("\n")?;
+pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>, 
+    parent: Option<ASTNode>) -> Result<(ParseSuccess, BlockNode), SyntaxError> {
+    let newline_node = tokenize(parser.expect("\n"));
     let mut curr_lookahead = parser.get_lookahead();
     parser.reset_indent_level(parser.get_indent_level() + 1);
     let mut stmts_vec: Vec<StatementNode> = vec![];

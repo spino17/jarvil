@@ -97,6 +97,13 @@ pub enum CoreToken {
 }
 
 #[derive(Debug, Clone)]
+pub enum TokenKind {
+    SUCCESS_TOKEN(Token),
+    ERROR_TOKEN(ErrorToken),
+    // SKIPPING_TOKEN(SkippingToken)
+}
+
+#[derive(Debug, Clone)]
 pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
@@ -106,15 +113,14 @@ pub struct Token {
 }
 
 #[derive(Debug, Clone)]
+pub enum ErrorToken {
+    MISSING_TOKEN(MissingToken),
+}
+
+#[derive(Debug, Clone)]
 pub struct MissingToken {
     pub expected_symbol: Rc<String>,
     pub received_token: Token,
-}
-
-pub enum TokenKind {
-    TOKEN(Token),
-    MISSING_TOKEN(MissingToken),
-    // SKIPPING_TOKEN(SkippingToken)
 }
 
 impl Token {

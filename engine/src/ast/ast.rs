@@ -1,5 +1,5 @@
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::core::Scope, lexer::token::{TokenKind, Token, CoreToken, MissingToken}};
+use crate::{scope::core::Scope, lexer::token::{TokenKind, Token, CoreToken, MissingToken, ErrorToken}};
 
 pub trait Node {
     fn set_parent(&self, parent_node: Option<ASTNode>);
@@ -12,7 +12,6 @@ pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
     STATEMENT(Weak<RefCell<CoreStatementNode>>),
     PARAM(Weak<RefCell<CoreParamNode>>),
-    IDENTIFIER(Weak<RefCell<CoreIdentifierNode>>),
     TYPE_EXPRESSION(Weak<RefCell<CoreTypeExpressionNode>>),
 }
 
@@ -67,7 +66,7 @@ impl Node for StatementNode {
 }
 
 pub struct CoreParamNode {
-    param_name: IdentifierNode,
+    param_name: TokenNode,
     param_type: TypeExpressionNode,
     parent: Option<ASTNode>,
 }
@@ -75,7 +74,7 @@ pub struct CoreParamNode {
 #[derive(Clone)]
 pub struct ParamNode(Rc<RefCell<CoreParamNode>>);
 impl ParamNode {
-    pub fn new(param_name: &IdentifierNode, param_type: &TypeExpressionNode) -> Self {
+    pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreParamNode{
             param_name: param_name.clone(),
             param_type: param_type.clone(),
@@ -92,6 +91,7 @@ impl Node for ParamNode {
     }
 }
 
+/*
 pub struct CoreIdentifierNode {
     value: Rc<String>,
     start_index: usize,
@@ -118,10 +118,11 @@ impl Node for IdentifierNode {
         self.0.as_ref().borrow_mut().parent = parent_node;
     }
 }
+ */
 
 pub enum CoreTypeExpressionNode {
     ATOMIC(AtomicTypeNode),
-    USER_DEFINED(IdentifierNode),
+    USER_DEFINED(TokenNode),
     ARRAY(ArrayTypeNode),
 }
 
@@ -134,7 +135,7 @@ impl TypeExpressionNode {
         )))
     }
 
-    pub fn new_with_user_defined_type(identifier: &IdentifierNode) -> Self {
+    pub fn new_with_user_defined_type(identifier: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(
             CoreTypeExpressionNode::USER_DEFINED(identifier.clone())
         ));
@@ -142,7 +143,7 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
-    pub fn new_with_array_type(array_size: &Rc<String>, sub_type: &TypeExpressionNode) -> Self {
+    pub fn new_with_array_type(array_size: &TokenNode, sub_type: &TypeExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(
             CoreTypeExpressionNode::ARRAY(ArrayTypeNode::new(array_size, sub_type, None))
         ));
@@ -189,14 +190,14 @@ impl Node for AtomicTypeNode {
 
 pub struct CoreArrayTypeNode {
     sub_type: TypeExpressionNode,
-    size: Rc<String>,
+    size: TokenNode,
     parent: Option<ASTNode>,
 }
 
 #[derive(Clone)]
 pub struct ArrayTypeNode(Rc<RefCell<CoreArrayTypeNode>>);
 impl ArrayTypeNode {
-    pub fn new(size: &Rc<String>, sub_type: &TypeExpressionNode, parent: Option<ASTNode>) -> Self {
+    pub fn new(size: &TokenNode, sub_type: &TypeExpressionNode, parent: Option<ASTNode>) -> Self {
         ArrayTypeNode(Rc::new(RefCell::new(CoreArrayTypeNode{
             sub_type: sub_type.clone(),
             size: size.clone(),
@@ -215,22 +216,25 @@ pub struct CoreTokenNode {
     parent: Option<ASTNode>,
 }
 
+#[derive(Clone)]
 pub struct TokenNode(Rc<RefCell<CoreTokenNode>>);
 impl TokenNode {
     pub fn new_with_token(token: &Token) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenKind::TOKEN(token.clone()),
+            kind: TokenKind::SUCCESS_TOKEN(token.clone()),
             parent: None,
         })))
     }
 
-    pub fn new_with_missing_token(expected_symbol: &Rc<String>, received_token: &Token) -> Self {
+    pub fn new_with_missing_token(err_token: &ErrorToken) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenKind::MISSING_TOKEN(MissingToken{
-                expected_symbol: expected_symbol.clone(),
-                received_token: received_token.clone(),
-            }),
+            kind: TokenKind::ERROR_TOKEN(err_token.clone()),
             parent: None,
         })))
+    }
+}
+impl Node for TokenNode {
+    fn set_parent(&self, parent_node: Option<ASTNode>) {
+        self.0.as_ref().borrow_mut().parent = parent_node;
     }
 }

@@ -3,8 +3,8 @@
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::{IdentifierNode, TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode, TokenNode};
-use crate::lexer::token::{Token, CoreToken};
+use crate::ast::ast::{TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode, TokenNode};
+use crate::lexer::token::{Token, CoreToken, ErrorToken, MissingToken};
 use std::rc::Rc;
 use crate::errors::{SyntaxError};
 use crate::context;
@@ -15,6 +15,13 @@ use crate::parser::components;
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;  // return an AST
+}
+
+pub fn tokenize(result: Result<(ParseSuccess, Token), ErrorToken>) -> TokenNode {
+    match result {
+        Ok(token) => TokenNode::new_with_token(&token.1),
+        Err(err_token) => TokenNode::new_with_missing_token(&err_token),
+    }
 }
 
 #[derive(Debug)]
@@ -117,9 +124,9 @@ impl PackratParser {
         }
     }
 
-    pub fn get_curr_core_token(&mut self) -> &CoreToken {
+    pub fn get_curr_token(&mut self) -> Token {
         self.ignore_blanks();
-        &self.token_vec[self.lookahead].core_token
+        self.token_vec[self.lookahead].clone()
     }
 
     pub fn get_curr_token_name(&mut self) -> Rc<String> {
@@ -143,152 +150,105 @@ impl PackratParser {
     }
 
     // parsing routines for terminals
-    pub fn expect(&mut self, symbol: &str) -> (usize, TokenNode) {
+    pub fn expect(&mut self, symbol: &str) -> Result<(ParseSuccess, Token), ErrorToken> {
         self.ignore_blanks();
-        let token = &self.token_vec[self.lookahead];
+        let token = self.get_curr_token();
         if token.is_eq(symbol) {
             self.scan_next_token();
-            let node = TokenNode::new_with_token(&token);
-            (self.lookahead, node)
+            Ok((ParseSuccess{
+                lookahead: self.lookahead,
+                possible_err: None,
+            }, token.clone()))
         } else {
             // TODO - return token.clone() and symbol in missing token
-            let node = TokenNode::new_with_missing_token(
-                &Rc::new(String::from(symbol)), 
-                &token
-            );
-            (self.lookahead, node)
+            let missing_token = MissingToken{
+                expected_symbol: Rc::new(String::from(symbol)),
+                received_token: token.clone(),
+            };
+            Err(ErrorToken::MISSING_TOKEN(missing_token))
         }
     }
 
-    pub fn expect_int(&mut self) -> Result<(ParseSuccess, Rc<String>), SyntaxError> {
+    pub fn expect_int(&mut self) -> Result<(ParseSuccess, Token), ErrorToken> {
         self.ignore_blanks();
-        let token = &self.token_vec[self.lookahead];
+        let token = self.get_curr_token();
         match &token.core_token {
-            CoreToken::INTEGER(token_value) => {
+            CoreToken::INTEGER(_) => {
                 self.scan_next_token();
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token_value.0.clone()))
+                }, token.clone()))
             },
             _ => {
-                return Err(SyntaxError::new(
-                    self.get_code_line(token.line_number, token.index()),
-                    format!(
-                    "expected positive integer, got '{}'",
-                    PackratParser::parse_for_err_message(token.name.to_string())))
-                )
+                let missing_token = MissingToken{
+                    expected_symbol: Rc::new(String::from("int")),
+                    received_token: token.clone(),
+                };
+                Err(ErrorToken::MISSING_TOKEN(missing_token))
             }
         }
     }
 
-    pub fn expect_float(&mut self) -> Result<(ParseSuccess, Rc<String>), SyntaxError> {
+    pub fn expect_float(&mut self) -> Result<(ParseSuccess, Token), ErrorToken> {
         self.ignore_blanks();
-        let token = &self.token_vec[self.lookahead];
+        let token = self.get_curr_token();
         match &token.core_token {
-            CoreToken::FLOAT(token_value) => {
+            CoreToken::FLOAT(_) => {
                 self.scan_next_token();
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token_value.0.clone()))
+                }, token.clone()))
             },
             _ => {
-                return Err(SyntaxError::new(
-                    self.get_code_line(token.line_number, token.index()),
-                    format!(
-                    "expected floating-point number, got '{}'",
-                    PackratParser::parse_for_err_message(token.name.to_string())))
-                )
+                let missing_token = MissingToken{
+                    expected_symbol: Rc::new(String::from("int")),
+                    received_token: token.clone(),
+                };
+                Err(ErrorToken::MISSING_TOKEN(missing_token))
             }
         }
     }
 
-    pub fn expect_literal(&mut self) -> Result<(ParseSuccess, Rc<String>), SyntaxError> {
+    pub fn expect_literal(&mut self) -> Result<(ParseSuccess, Token), ErrorToken> {
         self.ignore_blanks();
-        let token = &self.token_vec[self.lookahead];
+        let token = self.get_curr_token();
         match &token.core_token {
-            CoreToken::LITERAL(token_value) => {
+            CoreToken::LITERAL(_) => {
                 self.scan_next_token();
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, token_value.0.clone()))
+                }, token.clone()))
             },
             _ => {
-                return Err(SyntaxError::new(
-                    self.get_code_line(token.line_number, token.index()),
-                    format!(
-                    "expected string literal, got '{}'",
-                    PackratParser::parse_for_err_message(token.name.to_string())))
-                )
+                let missing_token = MissingToken{
+                    expected_symbol: Rc::new(String::from("string literal")),
+                    received_token: token.clone(),
+                };
+                Err(ErrorToken::MISSING_TOKEN(missing_token))
             }
         }
     }
 
-    pub fn expect_ident(&mut self) -> Result<(ParseSuccess, IdentifierNode), SyntaxError> {
+    pub fn expect_ident(&mut self) -> Result<(ParseSuccess, Token), ErrorToken> {
         self.ignore_blanks();
-        let token = &self.token_vec[self.lookahead];
+        let token = self.get_curr_token();
         match &token.core_token {
-            CoreToken::IDENTIFIER(token_value) => {
-                self.scan_next_token();
-                let node = IdentifierNode::new(&token_value.0, token.start_index, 
-                    token.end_index, token.line_number);
-                Ok((ParseSuccess{
-                    lookahead: self.lookahead,
-                    possible_err: None,
-                }, node))
-            },
-            _ => {
-                return Err(SyntaxError::new(
-                    self.get_code_line(token.line_number, token.index()),
-                    format!(
-                    "expected identifier, got '{}'",
-                    PackratParser::parse_for_err_message(token.name.to_string())))
-                )
-            }
-        }
-    }
-
-    pub fn expect_type_expr(&mut self) -> Result<(ParseSuccess, TypeExpressionNode), SyntaxError> {
-        self.ignore_blanks();
-        let token = &self.token_vec[self.lookahead];
-        match &token.core_token {
-            CoreToken::ATOMIC_TYPE(atomic_type) => {
-                self.scan_next_token();
-                let node = TypeExpressionNode::new_with_atomic_type(&atomic_type.0);
-                Ok((ParseSuccess{
-                    lookahead: self.lookahead,
-                    possible_err: None,
-                }, node))
-            },
             CoreToken::IDENTIFIER(_) => {
-                let (_, identifier_node) = self.expect_ident()?;
-                let node = TypeExpressionNode::new_with_user_defined_type(&identifier_node);
+                self.scan_next_token();
                 Ok((ParseSuccess{
                     lookahead: self.lookahead,
                     possible_err: None,
-                }, node))
-            },
-            CoreToken::LSQUARE => {
-                self.expect("[")?;
-                let (_, sub_type_node) = self.expect_type_expr()?;
-                self.expect(",")?;
-                let (_, array_size) = self.expect_int()?;
-                self.expect("]")?;
-                let node = TypeExpressionNode::new_with_array_type(&array_size, &sub_type_node);
-                Ok((ParseSuccess{
-                    lookahead: self.lookahead,
-                    possible_err: None,
-                }, node))
+                }, token.clone()))
             },
             _ => {
-                return Err(SyntaxError::new(
-                    self.get_code_line(token.line_number, token.index()),
-                    format!(
-                    "expected 'int', 'float', 'bool', 'string', identifier or '[', got '{}'",
-                    PackratParser::parse_for_err_message(token.name.to_string())))
-                )
+                let missing_token = MissingToken{
+                    expected_symbol: Rc::new(String::from("identifier")),
+                    received_token: token.clone(),
+                };
+                Err(ErrorToken::MISSING_TOKEN(missing_token))
             }
         }
     }
@@ -420,5 +380,10 @@ impl PackratParser {
     // statements
     pub fn stmt(&mut self) -> Result<(ParseSuccess, StatementNode), SyntaxError> {
         components::stmt::stmt(self)
+    }
+
+    // expression
+    pub fn expect_type_expr(&mut self) -> TypeExpressionNode {
+        components::expression::type_expression::type_expr(self)
     }
 }
