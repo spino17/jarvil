@@ -105,11 +105,14 @@ impl PackratParser {
         self.token_vec[self.lookahead].line_number
     }
 
-    pub fn ignore_blanks(&mut self) {
+    pub fn ignore_whitespaces(&mut self) {
         loop {
             let token = &self.token_vec[self.lookahead];
             match token.core_token {
                 CoreToken::BLANK => {
+                    self.scan_next_token();
+                },
+                CoreToken::TAB => {
                     self.scan_next_token();
                 },
                 _ => return
@@ -117,13 +120,31 @@ impl PackratParser {
         }
     }
 
+    pub fn ignore_whitespaces_and_newlines(&mut self) {
+        loop {
+            let token = &self.token_vec[self.lookahead];
+            match token.core_token {
+                CoreToken::BLANK => {
+                    self.scan_next_token();
+                },
+                CoreToken::TAB => {
+                    self.scan_next_token();
+                },
+                CoreToken::NEWLINE => {
+                    self.scan_next_token();
+                }
+                _ => return
+            }
+        }
+    }
+
     pub fn get_curr_token(&mut self) -> Token {
-        self.ignore_blanks();
+        self.ignore_whitespaces();
         self.token_vec[self.lookahead].clone()
     }
 
     pub fn get_curr_token_name(&mut self) -> Rc<String> {
-        self.ignore_blanks();
+        self.ignore_whitespaces();
         self.token_vec[self.lookahead].name.clone()
     }
 
@@ -143,8 +164,12 @@ impl PackratParser {
     }
 
     // parsing routines for terminals
-    pub fn expect(&mut self, symbol: &str) -> TokenNode {
-        self.ignore_blanks();
+    pub fn expect(&mut self, symbol: &str, ignore_newline: bool) -> TokenNode {
+        if ignore_newline {
+            self.ignore_whitespaces_and_newlines();
+        } else {
+            self.ignore_whitespaces();
+        }
         let token = self.get_curr_token();
         if token.is_eq(symbol) {
             self.scan_next_token();
@@ -159,8 +184,8 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_int(&mut self) -> TokenNode {
-        self.ignore_blanks();
+    pub fn expect_int(&mut self, ignore_newline: bool) -> TokenNode {
+        self.ignore_whitespaces();
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::INTEGER(_) => {
@@ -177,8 +202,8 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_float(&mut self) -> TokenNode {
-        self.ignore_blanks();
+    pub fn expect_float(&mut self, ignore_newline: bool) -> TokenNode {
+        self.ignore_whitespaces();
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::FLOAT(_) => {
@@ -195,8 +220,8 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_literal(&mut self) -> TokenNode {
-        self.ignore_blanks();
+    pub fn expect_literal(&mut self, ignore_newline: bool) -> TokenNode {
+        self.ignore_whitespaces();
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::LITERAL(_) => {
@@ -213,8 +238,8 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_ident(&mut self) -> TokenNode {
-        self.ignore_blanks();
+    pub fn expect_ident(&mut self, ignore_newline: bool) -> TokenNode {
+        self.ignore_whitespaces();
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::IDENTIFIER(_) => {

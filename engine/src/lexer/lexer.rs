@@ -45,7 +45,6 @@ impl Lexer for CoreLexer {
         });
         while self.begin_lexeme < code.len() {
             let token = self.extract_lexeme(&code)?;
-            println!("{:?}", token);
             token_vec.push(token);
             /*
             match token.core_token {
@@ -89,7 +88,6 @@ impl Lexer for CoreLexer {
             start_index: code.len(),
             end_index: code.len(),
         });
-        println!("{:?}", self.code_lines);
         Ok(token_vec)
     }
 }

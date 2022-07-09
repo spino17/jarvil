@@ -143,7 +143,6 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             3 => {
                 match next_char {
                     '/' => {
-                        print!("{}", *begin_lexeme);
                         let comment_str: String = code[(*begin_lexeme + 2)..(forward_lexeme - 1)].iter().collect();
                         *begin_lexeme = forward_lexeme + 1;
                         return Ok((CoreToken::BLOCK_COMMENT(TokenValue(Rc::new(comment_str))), String::from("block comment")));

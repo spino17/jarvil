@@ -4,7 +4,7 @@ use crate::parser::parser::{PackratParser, ParseSuccess};
 use crate::errors::SyntaxError;
 use std::rc::Rc;
 
-pub fn check_block_indentation(parser: &mut PackratParser, 
+pub fn check_block_indentation(parser: &mut PackratParser,
     indent_spaces: i64, err: SyntaxError, curr_lookahead: usize, 
     params: &Rc<Vec<ParamNode>>, stmts: &Rc<Vec<StatementNode>>, 
     parent: Option<ASTNode>) -> BlockNode {
@@ -29,7 +29,7 @@ pub fn check_block_indentation(parser: &mut PackratParser,
 
 pub fn block(parser: &mut PackratParser, params: Vec<ParamNode>, 
     parent: Option<ASTNode>) -> BlockNode {
-    let newline_node = parser.expect("\n");
+    let newline_node = parser.expect("\n", false);
     let mut curr_lookahead = parser.get_curr_lookahead();
     parser.reset_indent_level(parser.get_curr_indent_level() + 1);
     let mut stmts_vec: Vec<StatementNode> = vec![];
