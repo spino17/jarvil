@@ -108,59 +108,21 @@ impl PackratParser {
     }
 
     pub fn get_curr_token(&mut self) -> Token {
-        self.ignore_whitespaces();
         self.token_vec[self.lookahead].clone()
     }
 
-    pub fn get_curr_token_name(&mut self) -> Rc<String> {
-        self.ignore_whitespaces();
-        self.token_vec[self.lookahead].name.clone()
+    pub fn check_curr_token(&self, symbol: &str) -> bool {
+        self.token_vec[self.lookahead].is_eq(symbol)
     }
 
     pub fn get_previous_token(&mut self) -> Token {
         self.token_vec[self.lookahead - 1].clone()
     }
 
-    pub fn check_next_token(&self, symbol: &str) -> bool {
-        let mut temp_lookahead = self.lookahead;
-        loop {
-            let token = &self.token_vec[temp_lookahead];
-            match token.core_token {
-                CoreToken::BLANK => {
-                    temp_lookahead = temp_lookahead + 1;
-                },
-                _ => {
-                    return token.is_eq(symbol)
-                }
-            }
-        }
-    }
-
-    pub fn ignore_whitespaces(&mut self) {
+    pub fn ignore_newlines(&mut self) {
         loop {
             let token = &self.token_vec[self.lookahead];
             match token.core_token {
-                CoreToken::BLANK => {
-                    self.scan_next_token();
-                },
-                CoreToken::TAB => {
-                    self.scan_next_token();
-                },
-                _ => return
-            }
-        }
-    }
-
-    pub fn ignore_whitespaces_and_newlines(&mut self) {
-        loop {
-            let token = &self.token_vec[self.lookahead];
-            match token.core_token {
-                CoreToken::BLANK => {
-                    self.scan_next_token();
-                },
-                CoreToken::TAB => {
-                    self.scan_next_token();
-                },
                 CoreToken::NEWLINE => {
                     self.scan_next_token();
                 }
@@ -169,17 +131,11 @@ impl PackratParser {
         }
     }
 
-    pub fn ignore_whitespaces_and_optionally_newlines(&mut self, ignore_newline: bool) {
-        if ignore_newline {
-            self.ignore_whitespaces_and_newlines();
-        } else {
-            self.ignore_whitespaces();
-        }
-    }
-
     // parsing routines for terminals
     pub fn expect(&mut self, symbol: &str, ignore_newline: bool) -> TokenNode {
-        self.ignore_whitespaces_and_optionally_newlines(ignore_newline);
+        if ignore_newline {
+            self.ignore_newlines();
+        }
         let token = self.get_curr_token();
         if token.is_eq(symbol) {
             self.scan_next_token();
@@ -191,7 +147,9 @@ impl PackratParser {
     }
 
     pub fn expect_int(&mut self, ignore_newline: bool) -> TokenNode {
-        self.ignore_whitespaces_and_optionally_newlines(ignore_newline);
+        if ignore_newline {
+            self.ignore_newlines();
+        }
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::INTEGER(_) => {
@@ -205,7 +163,9 @@ impl PackratParser {
     }
 
     pub fn expect_float(&mut self, ignore_newline: bool) -> TokenNode {
-        self.ignore_whitespaces_and_optionally_newlines(ignore_newline);
+        if ignore_newline {
+            self.ignore_newlines();
+        }
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::FLOAT(_) => {
@@ -219,7 +179,9 @@ impl PackratParser {
     }
 
     pub fn expect_literal(&mut self, ignore_newline: bool) -> TokenNode {
-        self.ignore_whitespaces_and_optionally_newlines(ignore_newline);
+        if ignore_newline {
+            self.ignore_newlines();
+        }
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::LITERAL(_) => {
@@ -233,7 +195,9 @@ impl PackratParser {
     }
 
     pub fn expect_ident(&mut self, ignore_newline: bool) -> TokenNode {
-        self.ignore_whitespaces_and_optionally_newlines(ignore_newline);
+        if ignore_newline {
+            self.ignore_newlines();
+        }
         let token = self.get_curr_token();
         match &token.core_token {
             CoreToken::IDENTIFIER(_) => {
@@ -246,8 +210,8 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_indent_spaces(&mut self, saved_lookahead: usize, 
-        stmts: &Rc<RefCell<Vec<StatementNode>>>, params: &Rc<Vec<ParamNode>>, parent: &Option<ASTNode>) -> IndentNode {
+    pub fn expect_indent_spaces(&mut self, stmts: &Rc<RefCell<Vec<StatementNode>>>, 
+        params: &Rc<Vec<ParamNode>>, parent: &Option<ASTNode>) -> IndentNode {
         let expected_indent_spaces = context::get_indent() * self.indent_level;
         let mut indent_spaces = 0;
         loop {
@@ -282,7 +246,7 @@ impl PackratParser {
                             } else {
                                 // block is over
                                 self.reset_indent_level(self.get_curr_indent_level() - 1);
-                                self.reset_lookahead(saved_lookahead);
+                                // self.reset_lookahead(saved_lookahead);
                                 return IndentNode::BLOCK(BlockNode::new(stmts, params, parent.clone()))
                             }
                         }
@@ -365,13 +329,6 @@ impl PackratParser {
     // code
     pub fn code(&mut self, token_vec: Vec<Token>) -> BlockNode {
         components::code::code(self, token_vec)
-    }
-
-    pub fn check_block_indentation(&mut self, 
-        indent_spaces: i64, err: SyntaxError, curr_lookahead: usize, 
-        params: &Rc<Vec<ParamNode>>, stmts: &Rc<RefCell<Vec<StatementNode>>>, 
-        parent: Option<ASTNode>) -> BlockNode {
-        components::block::check_block_indentation(self, indent_spaces, err, curr_lookahead, params, stmts, parent)
     }
 
     pub fn block(&mut self, params: &Rc<Vec<ParamNode>>, parent: Option<ASTNode>) -> BlockNode {

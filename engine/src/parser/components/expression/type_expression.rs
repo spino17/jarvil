@@ -3,7 +3,6 @@ use crate::parser::parser::{PackratParser};
 use crate::lexer::token::CoreToken;
 
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
-    parser.ignore_whitespaces();
     let token = parser.get_curr_token();
     match &token.core_token {
         CoreToken::ATOMIC_TYPE(atomic_type) => {
