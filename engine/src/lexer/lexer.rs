@@ -2,6 +2,8 @@ use crate::lexer::token::Token;
 use crate::errors::LexicalError;
 use crate::lexer::token::CoreToken;
 use std::rc::Rc;
+use std::vec;
+use std::mem;
 
 pub trait Lexer {
     fn tokenize(&mut self, code: Vec<char>) -> Result<Vec<Token>, LexicalError>;
@@ -42,10 +44,23 @@ impl Lexer for CoreLexer {
             name: Rc::new(String::from("\n")),
             start_index: 0,
             end_index: 0,
+            trivia: None,
         });
+        let mut trivia_vec: Vec<Token> = vec![];
         while self.begin_lexeme < code.len() {
-            let token = self.extract_lexeme(&code)?;
-            token_vec.push(token);
+            let mut token = self.extract_lexeme(&code)?;
+            match token.core_token {
+                CoreToken::BLANK => trivia_vec.push(token),
+                CoreToken::SINGLE_LINE_COMMENT(_) => trivia_vec.push(token),
+                CoreToken::BLOCK_COMMENT(_) => trivia_vec.push(token),
+                _ => {
+                    if trivia_vec.len() > 0 {
+                        token.set_trivia(mem::take(&mut trivia_vec));
+                    }
+                    println!("{:?}", token);
+                    token_vec.push(token)
+                }
+            }
             /*
             match token.core_token {
                 
@@ -81,13 +96,19 @@ impl Lexer for CoreLexer {
         let mut code_str: String = code[self.line_start_index..].iter().collect();
         code_str.push(' ');
         self.code_lines.push((Rc::new(code_str), self.line_start_index));
-        token_vec.push(Token {
+        let mut token = Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
             name: Rc::new(String::from("endmarker")),
             start_index: code.len(),
             end_index: code.len(),
-        });
+            trivia: None,
+        };
+        if trivia_vec.len() > 0 {
+            token.set_trivia(mem::take(&mut trivia_vec));
+        }
+        println!("{:?}", token);
+        token_vec.push(token);
         Ok(token_vec)
     }
 }

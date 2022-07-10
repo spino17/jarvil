@@ -13,6 +13,7 @@ use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use crate::types::core::{Type};
 use crate::parser::components;
+use crate::constants::common::{INT, FLOAT};
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;  // return an AST
@@ -198,7 +199,7 @@ impl PackratParser {
                 TokenNode::new_with_token(&token)
             },
             _ => {
-                TokenNode::new_with_missing_token(&Rc::new(String::from("int")), &token)
+                TokenNode::new_with_missing_token(&Rc::new(String::from(INT)), &token)
             }
         }
     }
@@ -212,7 +213,7 @@ impl PackratParser {
                 TokenNode::new_with_token(&token)
             },
             _ => {
-                TokenNode::new_with_missing_token(&Rc::new(String::from("float")), &token)
+                TokenNode::new_with_missing_token(&Rc::new(String::from(FLOAT)), &token)
             }
         }
     }
