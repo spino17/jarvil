@@ -229,6 +229,7 @@ impl TokenNode {
     }
 
     pub fn new_with_missing_token(expected_symbol: &Rc<String>, received_token: &Token, lookahead: usize) -> Self {
+        // TODO - log the related error into a error log struct to output on terminal based compilation
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
             kind: TokenKind::ERROR_TOKEN(ErrorToken::MISSING_TOKEN(MissingToken{
                 expected_symbol: expected_symbol.clone(),
@@ -240,6 +241,7 @@ impl TokenNode {
     }
 
     pub fn new_with_incorrect_indent(expected_indent: i64, received_indent: i64, lookahead: usize) -> Self {
+        // TODO - log the related error into a error log struct to output on terminal based compilation
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
             kind: TokenKind::ERROR_TOKEN(ErrorToken::INCORRECT_INDENT(IncorrectIndentToken{
                 expected_indent: expected_indent,

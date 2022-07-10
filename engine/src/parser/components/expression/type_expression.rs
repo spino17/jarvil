@@ -1,6 +1,15 @@
 use crate::ast::ast::TypeExpressionNode; 
 use crate::parser::parser::{PackratParser};
-use crate::lexer::token::CoreToken;
+use crate::lexer::token::{CoreToken, Token};
+
+pub fn is_type_expr_starting_with(token: &Token) -> bool {
+    match token.core_token {
+        CoreToken::ATOMIC_TYPE(_)   => true,
+        CoreToken::IDENTIFIER(_)    => true,
+        CoreToken::LSQUARE          => true,
+        _                           => false
+    }
+}
 
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
     let token = parser.get_curr_token();
@@ -15,14 +24,14 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
         },
         CoreToken::LSQUARE => {
             let l_square_node = parser.expect("[", false);
-            let sub_type_node = parser.expect_type_expr();
-            let common_node = parser.expect(",", false);
+            let sub_type_node = parser.type_expr();
+            let comma_node = parser.expect(",", false);
             let array_size_node = parser.expect_int(false);
             let r_square_node = parser.expect("]", false);
             TypeExpressionNode::new_with_array_type(&array_size_node, &sub_type_node)
         },
         _ => {
-            todo!()
+            unreachable!("curr token not matching with starting token of type expression is not possible")
         }
     }
 }

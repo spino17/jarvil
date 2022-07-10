@@ -37,6 +37,7 @@ pub struct PackratParser {
     indent_level: i64,
     code_lines: Vec<(Rc<String>, usize)>,
     cache: Vec<Rc<RoutineCache>>,
+    // curr_context: ParserContext,
     // errors: Vec<SyntaxError>  // reported errors during the parsing
     // TODO - add AST data structure
 }
@@ -354,7 +355,7 @@ impl PackratParser {
     }
 
     // expression
-    pub fn expect_type_expr(&mut self) -> TypeExpressionNode {
+    pub fn type_expr(&mut self) -> TypeExpressionNode {
         components::expression::type_expression::type_expr(self)
     }
 }
