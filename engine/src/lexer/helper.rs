@@ -4,29 +4,6 @@ use super::token::TokenValue;
 use crate::constants::common::get_token_for_identifier;
 use crate::constants::common::{INT, FLOAT};
 
-// + -> +, ++
-/*
-pub fn extract_plus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
-    let forward_lexeme = *begin_lexeme + 1;
-    if forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
-        match next_char {
-            '+' => {
-                *begin_lexeme = forward_lexeme + 1;  // retract true
-                return Ok((CoreToken::DOUBLE_PLUS, String::from("++")));
-            },
-            _ => {
-                *begin_lexeme = *begin_lexeme + 1;  // retract false
-                return Ok((CoreToken::PLUS, String::from("+")));
-            }
-        }
-    } else {
-        *begin_lexeme = *begin_lexeme + 1;  // retract false
-        return Ok((CoreToken::PLUS, String::from("+")));
-    }
-}
- */
-
 // ' ' -> '...'
 pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
@@ -48,12 +25,6 @@ pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
         match next_char {
-            /*
-            '-' => {
-                *begin_lexeme = forward_lexeme + 1;
-                return Ok((CoreToken::DOUBLE_MINUS, String::from("--")));
-            },
-             */
             '>' => {
                 *begin_lexeme = forward_lexeme + 1;
                 return Ok((CoreToken::RIGHT_ARROW, String::from("->")));
@@ -183,16 +154,6 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize,
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
-        /*
-        if next_char == '\n' {
-            let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
-            code_str.push(' ');
-            code_lines.push((Rc::new(code_str), *line_start_index));
-            *begin_lexeme = *begin_lexeme + 1;
-            *line_number = *line_number + 1;
-            *line_start_index = forward_lexeme + 1;
-        }
-         */
         match next_char {
             '\n' => {
                 let comment_str: String = code[(*begin_lexeme + 1)..forward_lexeme].iter().collect();

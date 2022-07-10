@@ -191,13 +191,10 @@ impl Token {
                 (CoreToken::NEWLINE, String::from("\n"))
             },
             '+'         =>      {
-                // helper::extract_plus_prefix_lexeme(begin_lexeme, code)?
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::PLUS, String::from("+"))
             },
             ' '         =>      {
-                // *begin_lexeme = *begin_lexeme + 1;
-                // (CoreToken::BLANK, String::from(" "))
                 helper::extract_blank_prefix_lexeme(begin_lexeme, code)?
             },
             '-'         =>      {
@@ -225,10 +222,6 @@ impl Token {
                 helper::extract_literal_prefix_lexeme(begin_lexeme, line_number, code)?
             },
             ':'         =>      {
-                /*
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::COLON, String::from(":"))
-                 */
                 helper::extract_colon_prefix_lexeme(begin_lexeme, code)?
             },
             c     =>      {

@@ -1,5 +1,5 @@
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::core::Scope, lexer::token::{TokenKind, Token, CoreToken, MissingToken, ErrorToken, IncorrectIndentToken}};
+use crate::{scope::core::Scope, lexer::token::{TokenKind, Token, MissingToken, ErrorToken, IncorrectIndentToken}};
 
 pub trait Node {
     fn set_parent(&self, parent_node: Option<ASTNode>);
@@ -214,35 +214,39 @@ impl Node for ArrayTypeNode {
 pub struct CoreTokenNode {
     kind: TokenKind,
     parent: Option<ASTNode>,
+    lookahead: usize,
 }
 
 #[derive(Clone)]
 pub struct TokenNode(Rc<RefCell<CoreTokenNode>>);
 impl TokenNode {
-    pub fn new_with_token(token: &Token) -> Self {
+    pub fn new_with_token(token: &Token, lookahead: usize) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
             kind: TokenKind::SUCCESS_TOKEN(token.clone()),
             parent: None,
+            lookahead,
         })))
     }
 
-    pub fn new_with_missing_token(expected_symbol: &Rc<String>, received_token: &Token) -> Self {
+    pub fn new_with_missing_token(expected_symbol: &Rc<String>, received_token: &Token, lookahead: usize) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
             kind: TokenKind::ERROR_TOKEN(ErrorToken::MISSING_TOKEN(MissingToken{
                 expected_symbol: expected_symbol.clone(),
                 received_token: received_token.clone(),
             })),
             parent: None,
+            lookahead,
         })))
     }
 
-    pub fn new_with_incorrect_indent(expected_indent: i64, received_indent: i64) -> Self {
+    pub fn new_with_incorrect_indent(expected_indent: i64, received_indent: i64, lookahead: usize) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
             kind: TokenKind::ERROR_TOKEN(ErrorToken::INCORRECT_INDENT(IncorrectIndentToken{
                 expected_indent: expected_indent,
                 received_indent: received_indent,
             })),
             parent: None,
+            lookahead,
         })))
     }
 }

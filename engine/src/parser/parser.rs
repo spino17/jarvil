@@ -4,8 +4,7 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode, TokenNode};
-use crate::ast::helper::IndentNode;
-use crate::lexer::token::{Token, CoreToken, ErrorToken, MissingToken};
+use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
 use crate::errors::{SyntaxError};
 use crate::context;
@@ -139,10 +138,12 @@ impl PackratParser {
         let token = self.get_curr_token();
         if token.is_eq(symbol) {
             self.scan_next_token();
-            TokenNode::new_with_token(&token)
+            TokenNode::new_with_token(&token, self.get_curr_lookahead())
         } else {
-            // TODO - return token.clone() and symbol in missing token
-            TokenNode::new_with_missing_token(&Rc::new(String::from(symbol)), &token)
+            TokenNode::new_with_missing_token(
+                &Rc::new(String::from(symbol)), 
+                &token, self.get_curr_lookahead()
+            )
         }
     }
 
@@ -154,10 +155,13 @@ impl PackratParser {
         match &token.core_token {
             CoreToken::INTEGER(_) => {
                 self.scan_next_token();
-                TokenNode::new_with_token(&token)
+                TokenNode::new_with_token(&token, self.get_curr_lookahead())
             },
             _ => {
-                TokenNode::new_with_missing_token(&Rc::new(String::from(INT)), &token)
+                TokenNode::new_with_missing_token(
+                    &Rc::new(String::from(INT)),
+                     &token, self.get_curr_lookahead()
+                )
             }
         }
     }
@@ -170,10 +174,13 @@ impl PackratParser {
         match &token.core_token {
             CoreToken::FLOAT(_) => {
                 self.scan_next_token();
-                TokenNode::new_with_token(&token)
+                TokenNode::new_with_token(&token, self.get_curr_lookahead())
             },
             _ => {
-                TokenNode::new_with_missing_token(&Rc::new(String::from(FLOAT)), &token)
+                TokenNode::new_with_missing_token(
+                    &Rc::new(String::from(FLOAT)), 
+                    &token, self.get_curr_lookahead()
+                )
             }
         }
     }
@@ -186,10 +193,13 @@ impl PackratParser {
         match &token.core_token {
             CoreToken::LITERAL(_) => {
                 self.scan_next_token();
-                TokenNode::new_with_token(&token)
+                TokenNode::new_with_token(&token, self.get_curr_lookahead())
             },
             _ => {
-                TokenNode::new_with_missing_token(&Rc::new(String::from("string literal")), &token)
+                TokenNode::new_with_missing_token(
+                    &Rc::new(String::from("string literal")), 
+                    &token, self.get_curr_lookahead()
+                )
             }
         }
     }
@@ -202,16 +212,19 @@ impl PackratParser {
         match &token.core_token {
             CoreToken::IDENTIFIER(_) => {
                 self.scan_next_token();
-                TokenNode::new_with_token(&token)
+                TokenNode::new_with_token(&token, self.get_curr_lookahead())
             },
             _ => {
-                TokenNode::new_with_missing_token(&Rc::new(String::from("identifier")), &token)
+                TokenNode::new_with_missing_token(
+                    &Rc::new(String::from("identifier")),
+                     &token, self.get_curr_lookahead()
+                )
             }
         }
     }
 
     pub fn expect_indent_spaces(&mut self, stmts: &Rc<RefCell<Vec<StatementNode>>>, 
-        params: &Rc<Vec<ParamNode>>, parent: &Option<ASTNode>) -> IndentNode {
+        params: &Rc<Vec<ParamNode>>, parent: &Option<ASTNode>) -> Option<BlockNode> {
         let expected_indent_spaces = context::get_indent() * self.indent_level;
         let mut indent_spaces = 0;
         loop {
@@ -231,7 +244,7 @@ impl PackratParser {
                         None => indent_spaces = 0,
                     }
                     if indent_spaces == expected_indent_spaces {
-                        return IndentNode::TOKEN(TokenNode::new_with_token(&token))
+                        return None
                     } else {
                         let indent_spaces_unit = context::get_indent();
                         let indent_factor = indent_spaces / indent_spaces_unit as i64;
@@ -247,7 +260,7 @@ impl PackratParser {
                                 // block is over
                                 self.reset_indent_level(self.get_curr_indent_level() - 1);
                                 // self.reset_lookahead(saved_lookahead);
-                                return IndentNode::BLOCK(BlockNode::new(stmts, params, parent.clone()))
+                                return Some(BlockNode::new(stmts, params, parent.clone()))
                             }
                         }
                     }
