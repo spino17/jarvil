@@ -264,7 +264,7 @@ impl PackratParser {
                 },
                 _ => {
                     if indent_spaces == expected_indent_spaces {
-                        return IndentNode::TOKEN(TokenNode::new_with_token(&self.get_previous_token()))
+                        return IndentNode::TOKEN(TokenNode::new_with_token(&token))
                     } else {
                         let indent_spaces_unit = context::get_indent();
                         let indent_factor = indent_spaces / indent_spaces_unit as i64;

@@ -78,7 +78,7 @@ pub enum CoreToken {
     GREATER_EQUAL,      // '>='
 
     // expression terminals
-    // NUMBER(TokenValue),
+    // NUMBER((TokenValue, bool)),
     INTEGER(TokenValue),
     FLOAT(TokenValue),
     IDENTIFIER(TokenValue),
