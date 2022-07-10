@@ -253,17 +253,19 @@ impl PackratParser {
         loop {
             let token = &self.token_vec[self.lookahead];
             match &token.core_token {
-                CoreToken::BLANK => indent_spaces = (token.end_index - token.start_index) as i64,
                 CoreToken::NEWLINE => indent_spaces = 0,
-                CoreToken::TAB => {
-                    let err = SyntaxError::new(
-                        self.get_code_line(token.line_number, token.index()),
-                        String::from(
-                        "incorrectly indented statement\n    tabs are not allowed for indentation")
-                    );
-                    todo!()
-                },
                 _ => {
+                    match &token.trivia {
+                        Some(trivia_vec) => {
+                            match trivia_vec[0].core_token {
+                                CoreToken::BLANK => {
+                                    indent_spaces = (token.end_index - token.start_index) as i64;
+                                },
+                                _ => indent_spaces = 0,
+                            }
+                        },
+                        None => indent_spaces = 0,
+                    }
                     if indent_spaces == expected_indent_spaces {
                         return IndentNode::TOKEN(TokenNode::new_with_token(&token))
                     } else {

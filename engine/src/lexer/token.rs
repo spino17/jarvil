@@ -175,10 +175,12 @@ impl Token {
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::DOT, String::from("."))
             },
+            /*
             '\t'        =>      {
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::TAB, String::from("\t"))
             },
+             */
             '\n'        =>      {
                 let mut code_str: String = code[*line_start_index..*begin_lexeme].iter().collect();
                 code_str.push(' ');
