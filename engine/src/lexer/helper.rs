@@ -2,7 +2,6 @@ use std::rc::Rc;
 use crate::{lexer::token::CoreToken, errors::LexicalError, context};
 use super::token::TokenValue;
 use crate::constants::common::{get_token_for_identifier, STRING_LITERAL, INTEGER, FLOATING_POINT_NUMBER};
-use crate::constants::common::{INT, FLOAT};
 
 // ' ' -> '...'
 pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
@@ -330,6 +329,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
     }
 }
 
+// : -> :, ::
 pub fn extract_colon_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {

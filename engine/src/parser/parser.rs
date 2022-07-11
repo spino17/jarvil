@@ -141,8 +141,9 @@ impl PackratParser {
             TokenNode::new_with_token(&token, self.get_curr_lookahead())
         } else {
             TokenNode::new_with_missing_token(
-                &Rc::new(String::from(symbol)), 
-                &token, self.get_curr_lookahead()
+                &Rc::new(String::from(symbol)),
+                &token,
+                self.get_curr_lookahead()
             )
         }
     }

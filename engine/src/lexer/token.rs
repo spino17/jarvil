@@ -128,7 +128,7 @@ pub struct Token {
     pub name: Rc<String>,
     pub start_index: usize,
     pub end_index: usize,
-    pub trivia: Option<Vec<Token>>,  // whitespaces and comments
+    pub trivia: Option<Rc<Vec<Token>>>,  // whitespaces and comments
 }
 
 impl Token {
@@ -249,7 +249,7 @@ impl Token {
     }
 
     pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
-        self.trivia = Some(trivia_vec);
+        self.trivia = Some(Rc::new(trivia_vec));
     }
 
     pub fn is_eq(&self, symbol: &str) -> bool {
