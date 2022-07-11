@@ -38,6 +38,7 @@ pub struct PackratParser {
     indent_level: i64,
     code_lines: Vec<(Rc<String>, usize)>,
     cache: Vec<Rc<RoutineCache>>,
+    ignore_all_errors: bool,  // if this is set, no errors during parsing is saved inside error logs
     // curr_context: ParserContext,
     // errors: Vec<SyntaxError>  // reported errors during the parsing
     // TODO - add AST data structure
@@ -57,6 +58,7 @@ impl PackratParser {
                 Rc::new(RoutineCache::ATOM(Rc::new(RefCell::new(atom_cache_map)))),
                 Rc::new(RoutineCache::EXPR(Rc::new(RefCell::new(expr_cache_map)))),
             ],
+            ignore_all_errors: false,
         }
     }
 }
@@ -92,6 +94,14 @@ impl PackratParser {
 
     pub fn reset_indent_level(&mut self, reset_indent: i64) {
         self.indent_level = reset_indent;
+    }
+
+    pub fn is_ignore_all_errors(&self) -> bool {
+        self.ignore_all_errors
+    }
+
+    pub fn set_ignore_all_errors(&mut self, is_ignore_all_errors: bool) {
+        self.ignore_all_errors = is_ignore_all_errors;
     }
 
     pub fn get_code_line(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
@@ -199,9 +209,9 @@ impl PackratParser {
                     } else if indent_spaces < expected_indent_spaces {
                         // over the block
                         self.reset_indent_level(self.get_curr_indent_level() - 1);
-                        // self.reset_lookahead(saved_lookahead);
                         return IndentResult::BLOCK_OVER(BlockNode::new(stmts, params, parent.clone()))
                     } else {
+                        // incorrectly indented statement
                         return IndentResult::INCORRECT_INDENTATION((expected_indent_spaces, indent_spaces))
                     }
                 }
