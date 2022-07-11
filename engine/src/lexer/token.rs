@@ -80,7 +80,7 @@ pub enum CoreToken {
     // expression terminals
     // NUMBER((TokenValue, bool)),
     INTEGER(TokenValue),
-    FLOAT(TokenValue),
+    FLOATING_POINT_NUMBER(TokenValue),
     IDENTIFIER(TokenValue),
     LITERAL(TokenValue),
 
@@ -207,7 +207,7 @@ impl Token {
                 helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)?
             },
             '#'         =>      {
-                helper::extract_hash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)?
+                helper::extract_hash_prefix_lexeme(begin_lexeme, code)?
             }
             '='         =>      {
                 helper::extract_equal_prefix_lexeme(begin_lexeme, code)?

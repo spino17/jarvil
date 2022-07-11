@@ -12,7 +12,6 @@ use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use crate::types::core::{Type};
 use crate::parser::components;
-use crate::constants::common::{INT, FLOAT};
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;  // return an AST
@@ -69,6 +68,10 @@ impl Parser for PackratParser {
 
 impl PackratParser {
     // parsing utilities
+    pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
+        self.token_vec = token_vec;
+    }
+
     pub fn get_curr_lookahead(&self) -> usize {
         self.lookahead
     }
@@ -97,10 +100,6 @@ impl PackratParser {
             }
             curr_line_number = curr_line_number - 1;
         }
-    }
-
-    pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
-        self.token_vec = token_vec;
     }
 
     pub fn get_curr_line_number(&self) -> usize {
@@ -145,82 +144,6 @@ impl PackratParser {
                 &Rc::new(String::from(symbol)), 
                 &token, self.get_curr_lookahead()
             )
-        }
-    }
-
-    pub fn expect_int(&mut self, ignore_newline: bool) -> TokenNode {
-        if ignore_newline {
-            self.ignore_newlines();
-        }
-        let token = self.get_curr_token();
-        match &token.core_token {
-            CoreToken::INTEGER(_) => {
-                self.scan_next_token();
-                TokenNode::new_with_token(&token, self.get_curr_lookahead())
-            },
-            _ => {
-                TokenNode::new_with_missing_token(
-                    &Rc::new(String::from(INT)),
-                     &token, self.get_curr_lookahead()
-                )
-            }
-        }
-    }
-
-    pub fn expect_float(&mut self, ignore_newline: bool) -> TokenNode {
-        if ignore_newline {
-            self.ignore_newlines();
-        }
-        let token = self.get_curr_token();
-        match &token.core_token {
-            CoreToken::FLOAT(_) => {
-                self.scan_next_token();
-                TokenNode::new_with_token(&token, self.get_curr_lookahead())
-            },
-            _ => {
-                TokenNode::new_with_missing_token(
-                    &Rc::new(String::from(FLOAT)), 
-                    &token, self.get_curr_lookahead()
-                )
-            }
-        }
-    }
-
-    pub fn expect_literal(&mut self, ignore_newline: bool) -> TokenNode {
-        if ignore_newline {
-            self.ignore_newlines();
-        }
-        let token = self.get_curr_token();
-        match &token.core_token {
-            CoreToken::LITERAL(_) => {
-                self.scan_next_token();
-                TokenNode::new_with_token(&token, self.get_curr_lookahead())
-            },
-            _ => {
-                TokenNode::new_with_missing_token(
-                    &Rc::new(String::from("string literal")), 
-                    &token, self.get_curr_lookahead()
-                )
-            }
-        }
-    }
-
-    pub fn expect_ident(&mut self, ignore_newline: bool) -> TokenNode {
-        if ignore_newline {
-            self.ignore_newlines();
-        }
-        let token = self.get_curr_token();
-        match &token.core_token {
-            CoreToken::IDENTIFIER(_) => {
-                self.scan_next_token();
-                TokenNode::new_with_token(&token, self.get_curr_lookahead())
-            },
-            _ => {
-                TokenNode::new_with_missing_token(
-                    &Rc::new(String::from("identifier")),
-                     &token, self.get_curr_lookahead()
-                )
-            }
         }
     }
 

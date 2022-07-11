@@ -2,32 +2,37 @@ use crate::lexer::token::{CoreToken, TokenValue};
 use crate::context;
 use std::rc::Rc;
 
-const FOR:                  &'static str = "for";
-const WHILE:                &'static str = "while";
-const CONTINUE:             &'static str = "continue";
-const BREAK:                &'static str = "break";
-const IF:                   &'static str = "if";
-const ELIF:                 &'static str = "elif";
-const ELSE:                 &'static str = "else";
-const TYPE_KEYWORD:         &'static str = "type";
-const INTERFACE_KEYWORD:    &'static str = "interface";
-const DEF:                  &'static str = "def";
-const LET:                  &'static str = "let";
-const SELF:                 &'static str = "self";
-const IMPL:                 &'static str = "impl";
-const AND:                  &'static str = "and";
-const NOT:                  &'static str = "not";
-const OR:                   &'static str = "or";
-const IS:                   &'static str = "is";
-const IN:                   &'static str = "in";
-const NEW:                  &'static str = "new";
-const TRUE:                 &'static str = "True";
-const FALSE:                &'static str = "False";
-const RETURN:               &'static str = "return";
-pub const INT:              &'static str = "int";
-pub const FLOAT:            &'static str = "float";
-pub const STRING:           &'static str = "string";
-pub const BOOL:             &'static str = "bool";
+const FOR:                          &'static str = "for";
+const WHILE:                        &'static str = "while";
+const CONTINUE:                     &'static str = "continue";
+const BREAK:                        &'static str = "break";
+const IF:                           &'static str = "if";
+const ELIF:                         &'static str = "elif";
+const ELSE:                         &'static str = "else";
+const TYPE_KEYWORD:                 &'static str = "type";
+const INTERFACE_KEYWORD:            &'static str = "interface";
+const DEF:                          &'static str = "def";
+const LET:                          &'static str = "let";
+const SELF:                         &'static str = "self";
+const IMPL:                         &'static str = "impl";
+const AND:                          &'static str = "and";
+const NOT:                          &'static str = "not";
+const OR:                           &'static str = "or";
+const IS:                           &'static str = "is";
+const IN:                           &'static str = "in";
+const NEW:                          &'static str = "new";
+const TRUE:                         &'static str = "True";
+const FALSE:                        &'static str = "False";
+const RETURN:                       &'static str = "return";
+pub const INT:                      &'static str = "int";
+pub const INTEGER:                  &'static str = "integer";
+pub const FLOAT:                    &'static str = "float";
+pub const FLOATING_POINT_NUMBER:    &'static str = "floating point number";
+pub const STRING:                   &'static str = "string";
+pub const BOOL:                     &'static str = "bool";
+pub const STRING_LITERAL:           &'static str = "string literal";
+pub const IDENTIFIER:               &'static str = "identifier";
+pub const ATOMIC_TYPE:              &'static str = "atomic type";
 
 pub const KEYWORDS: [&'static str; 22] = [
     FOR,
@@ -182,8 +187,8 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
             unreachable!("keyword missing in the matching arms")
         }
     } else if context::is_type(&value) {
-        (CoreToken::ATOMIC_TYPE(TokenValue(Rc::new(value))), String::from("type"))  // TODO - add value also in name
+        (CoreToken::ATOMIC_TYPE(TokenValue(Rc::new(value))), String::from(ATOMIC_TYPE))  // TODO - add value also in name
     } else {
-        (CoreToken::IDENTIFIER(TokenValue(Rc::new(value))), String::from("identifier"))  // TODO - add value also in name
+        (CoreToken::IDENTIFIER(TokenValue(Rc::new(value))), String::from(IDENTIFIER))    // TODO - add value also in name
     }
 }

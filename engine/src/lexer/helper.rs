@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use crate::{lexer::token::CoreToken, errors::LexicalError, context};
 use super::token::TokenValue;
-use crate::constants::common::get_token_for_identifier;
+use crate::constants::common::{get_token_for_identifier, STRING_LITERAL, INTEGER, FLOATING_POINT_NUMBER};
 use crate::constants::common::{INT, FLOAT};
 
 // ' ' -> '...'
@@ -11,12 +11,12 @@ pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
         let next_char = code[forward_lexeme];
         if next_char != ' ' {
             *begin_lexeme = forward_lexeme;
-            return Ok((CoreToken::BLANK, String::from(" ")));
+            return Ok((CoreToken::BLANK, String::from("blank")));
         }
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
-    return Ok((CoreToken::BLANK, String::from(" ")));
+    return Ok((CoreToken::BLANK, String::from("blank")));
 }
 
 // - -> -, ->
@@ -148,9 +148,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
 }
 
 // # -> #...\n
-pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Vec<char>, 
-    code_lines: &mut Vec<(Rc<String>, usize)>, line_start_index: &mut usize) -> Result<(CoreToken, String), LexicalError> {
+pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
@@ -245,7 +243,7 @@ pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize,
             '"' => {
                 let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
                 *begin_lexeme = forward_lexeme + 1;
-                return Ok((CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from("literal")))
+                return Ok((CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from(STRING_LITERAL)))
             },
             _ => {}
         }
@@ -274,7 +272,7 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) 
 }
 
 // digit -> digit((digit)*(.digit(digit*)|empty))
-pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, 
+pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
     line_number: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
@@ -289,7 +287,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
                 } else {
                     let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
                     *begin_lexeme = forward_lexeme;
-                    return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INT)))
+                    return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INTEGER)))
                 }
             },
             1 => {
@@ -305,7 +303,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
                 } else {
                     let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
                     *begin_lexeme = forward_lexeme;
-                    return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from(FLOAT)))
+                    return Ok((CoreToken::FLOATING_POINT_NUMBER(TokenValue(Rc::new(value))), String::from(FLOATING_POINT_NUMBER)))
                 }
             },
             _ => {
@@ -318,7 +316,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
         0 => {
             let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INT)))
+            return Ok((CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INTEGER)))
         },
         1 => {
             return Err(LexicalError::new(*line_number, String::from("expected at least one digit after '.'")))
@@ -326,7 +324,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
         2 => {
             let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return Ok((CoreToken::FLOAT(TokenValue(Rc::new(value))), String::from(FLOAT)))
+            return Ok((CoreToken::FLOATING_POINT_NUMBER(TokenValue(Rc::new(value))), String::from(FLOATING_POINT_NUMBER)))
         },
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
     }
