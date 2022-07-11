@@ -39,6 +39,7 @@ pub struct PackratParser {
     code_lines: Vec<(Rc<String>, usize)>,
     cache: Vec<Rc<RoutineCache>>,
     ignore_all_errors: bool,  // if this is set, no errors during parsing is saved inside error logs
+    correction_indent: i64,  // if it is Some, then always add this extra bit to expected spaces
     // curr_context: ParserContext,
     // errors: Vec<SyntaxError>  // reported errors during the parsing
     // TODO - add AST data structure
@@ -59,6 +60,7 @@ impl PackratParser {
                 Rc::new(RoutineCache::EXPR(Rc::new(RefCell::new(expr_cache_map)))),
             ],
             ignore_all_errors: false,
+            correction_indent: 0,
         }
     }
 }
@@ -102,6 +104,14 @@ impl PackratParser {
 
     pub fn set_ignore_all_errors(&mut self, is_ignore_all_errors: bool) {
         self.ignore_all_errors = is_ignore_all_errors;
+    }
+
+    pub fn get_correction_indent(&self) -> i64 {
+        self.correction_indent
+    }
+
+    pub fn set_correction_indent(&mut self, correction_indent: i64) {
+        self.correction_indent = correction_indent;
     }
 
     pub fn get_code_line(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
@@ -203,7 +213,7 @@ impl PackratParser {
                         }
                     }
                      */
-                    if indent_spaces == expected_indent_spaces {
+                    if indent_spaces == expected_indent_spaces + self.get_correction_indent() {
                         // correctly indented statement
                         return IndentResult::CORRECT_INDENTATION
                     } else if indent_spaces < expected_indent_spaces {

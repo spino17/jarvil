@@ -22,11 +22,16 @@ pub fn block(parser: &mut PackratParser, params: &Rc<Vec<ParamNode>>,
                     parser.stmt()
                 } else {
                     parser.set_ignore_all_errors(true);
+                    let before_line_number = parser.get_curr_line_number();
+                    parser.set_correction_indent(indent_data.1 - indent_data.0);
                     let stmt_node = parser.stmt();
                     parser.set_ignore_all_errors(false);
+                    let after_line_number = parser.get_curr_line_number();
+                    parser.set_correction_indent(0);
+                    // TODO - log the related error into a error log struct to output on terminal based compilation
+                    // (use before and after line_number to show the non-local nature of the error)
                     stmt_node
                 };
-                // TODO - log the related error into a error log struct to output on terminal based compilation
                 stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::INCORRECTLY_INDENTED((stmt_node, indent_data)));
             },
             None => {
