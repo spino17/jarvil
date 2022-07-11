@@ -15,8 +15,13 @@ pub enum ASTNode {
     TYPE_EXPRESSION(Weak<RefCell<CoreTypeExpressionNode>>),
 }
 
+pub enum StatemenIndentWrapper {
+    CORRECTLY_INDENTED(StatementNode),
+    INCORRECTLY_INDENTED((StatementNode, (i64, i64))),
+}
+
 pub struct CoreBlockNode {
-    stmts: Rc<RefCell<Vec<StatementNode>>>,
+    stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
     params: Rc<Vec<ParamNode>>,
     scope: Option<Scope>,
     parent: Option<ASTNode>,
@@ -25,7 +30,7 @@ pub struct CoreBlockNode {
 #[derive(Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: &Rc<RefCell<Vec<StatementNode>>>, params: &Rc<Vec<ParamNode>>, parent: Option<ASTNode>) -> Self {
+    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, params: &Rc<Vec<ParamNode>>, parent: Option<ASTNode>) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode{
             stmts: stmts.clone(),
             params: params.clone(),
@@ -33,7 +38,14 @@ impl BlockNode {
             parent,
         }));
         for stmt in &*stmts.as_ref().borrow() {
-            stmt.set_parent(Some(ASTNode::BLOCK(Rc::downgrade(&node))));
+            match stmt {
+                StatemenIndentWrapper::CORRECTLY_INDENTED(correct_indented_stmt) => {
+                    correct_indented_stmt.set_parent(Some(ASTNode::BLOCK(Rc::downgrade(&node))));
+                }
+                StatemenIndentWrapper::INCORRECTLY_INDENTED((incorrect_indented_stmt, _)) => {
+                    incorrect_indented_stmt.set_parent(Some(ASTNode::BLOCK(Rc::downgrade(&node))));
+                }
+            }
         }
         for param in params.as_ref() {
             param.set_parent(Some(ASTNode::BLOCK(Rc::downgrade(&node))));

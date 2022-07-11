@@ -1,6 +1,13 @@
+use crate::ast::ast::BlockNode;
 use crate::parser::parser::ParseSuccess;
 use crate::errors::{SyntaxError};
 use crate::types::core::Type;
+
+pub enum IndentResult {
+    CORRECT_INDENTATION,
+    INCORRECT_INDENTATION((i64, i64)),  // (expected_indent, received_indent)
+    BLOCK_OVER(BlockNode)
+}
 
 pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool), SyntaxError>) 
 -> Result<(ParseSuccess, Option<Type>, bool, bool), SyntaxError> {

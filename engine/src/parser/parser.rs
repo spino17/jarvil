@@ -3,7 +3,7 @@
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::{TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode, TokenNode};
+use crate::ast::ast::{TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode, TokenNode, StatemenIndentWrapper};
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
 use crate::errors::{SyntaxError};
@@ -12,6 +12,8 @@ use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use crate::types::core::{Type};
 use crate::parser::components;
+
+use super::helper::IndentResult;
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;  // return an AST
@@ -148,8 +150,8 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_indent_spaces(&mut self, stmts: &Rc<RefCell<Vec<StatementNode>>>, 
-        params: &Rc<Vec<ParamNode>>, parent: &Option<ASTNode>) -> Option<BlockNode> {
+    pub fn expect_indent_spaces(&mut self, stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>,
+        params: &Rc<Vec<ParamNode>>, parent: &Option<ASTNode>) -> IndentResult {
         let expected_indent_spaces = context::get_indent() * self.indent_level;
         let mut indent_spaces = 0;
         loop {
@@ -168,6 +170,7 @@ impl PackratParser {
                         },
                         None => indent_spaces = 0,
                     }
+                    /*
                     if indent_spaces == expected_indent_spaces {
                         return None
                     } else {
@@ -188,6 +191,18 @@ impl PackratParser {
                                 return Some(BlockNode::new(stmts, params, parent.clone()))
                             }
                         }
+                    }
+                     */
+                    if indent_spaces == expected_indent_spaces {
+                        // correctly indented statement
+                        return IndentResult::CORRECT_INDENTATION
+                    } else if indent_spaces < expected_indent_spaces {
+                        // over the block
+                        self.reset_indent_level(self.get_curr_indent_level() - 1);
+                        // self.reset_lookahead(saved_lookahead);
+                        return IndentResult::BLOCK_OVER(BlockNode::new(stmts, params, parent.clone()))
+                    } else {
+                        return IndentResult::INCORRECT_INDENTATION((expected_indent_spaces, indent_spaces))
                     }
                 }
             }
