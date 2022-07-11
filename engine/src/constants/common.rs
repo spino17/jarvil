@@ -33,6 +33,7 @@ pub const BOOL:                     &'static str = "bool";
 pub const STRING_LITERAL:           &'static str = "string literal";
 pub const IDENTIFIER:               &'static str = "identifier";
 pub const ATOMIC_TYPE:              &'static str = "atomic type";
+pub const ENDMARKER:               &'static str = "endmarker";
 
 pub const KEYWORDS: [&'static str; 22] = [
     FOR,

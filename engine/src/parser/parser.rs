@@ -3,7 +3,8 @@
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::{TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode, TokenNode, StatemenIndentWrapper};
+use crate::ast::ast::{TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode, TokenNode};
+use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
 use crate::errors::{SyntaxError};
@@ -13,10 +14,10 @@ use std::cell::RefCell;
 use crate::types::core::{Type};
 use crate::parser::components;
 
-use super::helper::IndentResult;
+use super::helper::{IndentResult, IndentResultKind};
 
 pub trait Parser {
-    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;  // return an AST
+    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;
 }
 
 #[derive(Debug)]
@@ -147,11 +148,44 @@ impl PackratParser {
     pub fn ignore_newlines(&mut self) {
         loop {
             let token = &self.token_vec[self.lookahead];
-            match token.core_token {
-                CoreToken::NEWLINE => {
-                    self.scan_next_token();
-                }
-                _ => return
+            if token.is_eq("\n") {
+                self.scan_next_token();
+            } else {
+                return;
+            }
+        }
+    }
+
+    pub fn is_eof_reached(&self) -> bool {
+        if self.token_vec[self.lookahead].is_eq(ENDMARKER) {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_curr_token_on_newline(&self) -> bool {
+        if self.lookahead == 0 {
+            return true
+        }
+        if self.token_vec[self.lookahead].is_eq("\n")
+        || self.token_vec[self.lookahead - 1].is_eq("\n") {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn skip_to_newline(&mut self) -> Vec<Token> {
+        let mut skipped_tokens: Vec<Token> = vec![];
+        loop {
+            let token = &self.token_vec[self.lookahead];
+            if token.is_eq("\n") {
+                self.scan_next_token();
+                return skipped_tokens
+            } else {
+                skipped_tokens.push(token.clone());
+                self.scan_next_token();
             }
         }
     }
@@ -174,8 +208,12 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_indent_spaces(&mut self, stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>,
-        params: &Rc<Vec<ParamNode>>, parent: &Option<ASTNode>) -> IndentResult {
+    pub fn expect_indent_spaces(&mut self) -> IndentResult {
+        let mut skipped_tokens: Vec<Token> = vec![];
+        if !self.is_curr_token_on_newline() {
+            // start skipping tokens until you reach newline and declare that chain of tokens as skipped
+            skipped_tokens = self.skip_to_newline();  // save this vector somewhere to keep track of skipped tokens in AST
+        }
         let mut expected_indent_spaces = context::get_indent() * self.indent_level;
         let mut indent_spaces = 0;
         loop {
@@ -220,14 +258,23 @@ impl PackratParser {
                     expected_indent_spaces = expected_indent_spaces + self.get_correction_indent();
                     if indent_spaces == expected_indent_spaces {
                         // correctly indented statement
-                        return IndentResult::CORRECT_INDENTATION
+                        return IndentResult{
+                            kind: IndentResultKind::CORRECT_INDENTATION,
+                            skipped_tokens,
+                        }
                     } else if indent_spaces < expected_indent_spaces {
                         // over the block
                         self.reset_indent_level(self.get_curr_indent_level() - 1);
-                        return IndentResult::BLOCK_OVER(BlockNode::new(stmts, params, parent.clone()))
+                        return IndentResult{
+                            kind: IndentResultKind::BLOCK_OVER,
+                            skipped_tokens,
+                        }
                     } else {
                         // incorrectly indented statement
-                        return IndentResult::INCORRECT_INDENTATION((expected_indent_spaces, indent_spaces))
+                        return IndentResult{
+                            kind: IndentResultKind::INCORRECT_INDENTATION((expected_indent_spaces, indent_spaces)),
+                            skipped_tokens,
+                        }
                     }
                 }
             }
@@ -303,7 +350,7 @@ impl PackratParser {
         result
     }
 
-    // ------------------- production rule matching function for terminals and non-terminals declared below -------------------
+    // ------------------- production rule matching function for terminals and non-terminals -------------------
     // code
     pub fn code(&mut self, token_vec: Vec<Token>) -> BlockNode {
         components::code::code(self, token_vec)

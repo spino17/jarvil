@@ -1,3 +1,4 @@
+use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
 use crate::errors::LexicalError;
 use crate::lexer::token::CoreToken;
@@ -68,7 +69,7 @@ impl Lexer for CoreLexer {
         let mut token = Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
-            name: Rc::new(String::from("endmarker")),
+            name: Rc::new(String::from(ENDMARKER)),
             start_index: code.len(),
             end_index: code.len(),
             trivia: None,

@@ -1,5 +1,5 @@
 use crate::ast::ast::{StatementNode, ParamNode, BlockNode, ASTNode, StatemenIndentWrapper};
-use crate::parser::helper::IndentResult;
+use crate::parser::helper::{IndentResult, IndentResultKind};
 use crate::parser::parser::{PackratParser};
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -10,21 +10,41 @@ pub fn block(parser: &mut PackratParser, params: &Rc<Vec<ParamNode>>,
     parser.reset_indent_level(parser.get_curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
     loop {
+        let indent_result = parser.expect_indent_spaces();
+        let skipped_tokens = indent_result.skipped_tokens;
         let incorrect_indent_data  // (expected_indent_spaces, received_indent_spaces)
-        = match parser.expect_indent_spaces(&stmts_vec, params, &parent) {
-            IndentResult::CORRECT_INDENTATION => None,
-            IndentResult::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
-            IndentResult::BLOCK_OVER(block_node) => return block_node
+        = match indent_result.kind {
+            IndentResultKind::CORRECT_INDENTATION => None,
+            IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
+            IndentResultKind::BLOCK_OVER => {
+                // use skipped_token_vec
+                return BlockNode::new(&stmts_vec, params, parent)
+            }
         };
+        // check it's not endmarker and current token lies in FIRST(stmt) - if not then declare it as skipping token and advance
+        // lookahead by one and continue to next loop iteration
+        /*
+        if parser.is_eof_reached() {
+            return BlockNode::new(&stmts_vec, params, parent)
+        }
+        if !parser.is_stmt_starting_with(&parser.get_curr_token()) {
+            // skip the current token and set the skippped token trivia to the next token and continue to next loop iteration
+            todo!()
+        }
+         */
         match incorrect_indent_data {
             Some(indent_data) => {
-                let stmt_node = if parser.is_ignore_all_errors() {  // a sub stmt of already incorrectly indented stmt
+                let stmt_node = if parser.is_ignore_all_errors() {
+
+                    // a sub stmt of already incorrectly indented stmt some levels higher
                     let saved_correction_indent = parser.get_correction_indent();
                     parser.add_to_correction_indent(indent_data.1 - indent_data.0);
                     let stmt_node = parser.stmt();
                     parser.set_correction_indent(saved_correction_indent);
                     stmt_node
                 } else {
+
+                    // the highest level incorrectly indented stmt
                     parser.set_ignore_all_errors(true);
                     let before_line_number = parser.get_curr_line_number();
                     parser.set_correction_indent(indent_data.1 - indent_data.0);

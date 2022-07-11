@@ -1,12 +1,18 @@
 use crate::ast::ast::BlockNode;
+use crate::lexer::token::Token;
 use crate::parser::parser::ParseSuccess;
 use crate::errors::{SyntaxError};
 use crate::types::core::Type;
 
-pub enum IndentResult {
+pub enum IndentResultKind {
     CORRECT_INDENTATION,
     INCORRECT_INDENTATION((i64, i64)),  // (expected_indent, received_indent)
-    BLOCK_OVER(BlockNode)
+    BLOCK_OVER,
+}
+
+pub struct IndentResult {
+    pub kind: IndentResultKind,
+    pub skipped_tokens: Vec<Token>,
 }
 
 pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool), SyntaxError>) 
