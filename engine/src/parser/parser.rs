@@ -88,6 +88,9 @@ impl PackratParser {
     }
 
     pub fn scan_next_token(&mut self) {
+        if self.lookahead == self.token_vec.len() - 1 {  // if token is endmarker, don't change
+            return;
+        }
         self.lookahead = self.lookahead + 1;
     }
 
@@ -169,7 +172,8 @@ impl PackratParser {
             return true
         }
         if self.token_vec[self.lookahead].is_eq("\n")
-        || self.token_vec[self.lookahead - 1].is_eq("\n") {
+        || self.token_vec[self.lookahead - 1].is_eq("\n")
+        || self.token_vec[self.lookahead].is_eq(ENDMARKER) {
             true
         } else {
             false
@@ -180,7 +184,7 @@ impl PackratParser {
         let mut skipped_tokens: Vec<Token> = vec![];
         loop {
             let token = &self.token_vec[self.lookahead];
-            if token.is_eq("\n") {
+            if token.is_eq("\n") || token.is_eq(ENDMARKER) {
                 self.scan_next_token();
                 return skipped_tokens
             } else {
@@ -220,6 +224,13 @@ impl PackratParser {
             let token = &self.token_vec[self.lookahead];
             match &token.core_token {
                 CoreToken::NEWLINE => indent_spaces = 0,
+                CoreToken::ENDMARKER => {
+                    self.reset_indent_level(self.get_curr_indent_level() - 1);
+                    return IndentResult{
+                        kind: IndentResultKind::BLOCK_OVER,
+                        skipped_tokens,
+                    }
+                },
                 _ => {
                     match &token.trivia {
                         Some(trivia_vec) => {
@@ -278,7 +289,7 @@ impl PackratParser {
                     }
                 }
             }
-            self.lookahead = self.lookahead + 1;
+            self.scan_next_token();
         }
     }
 
