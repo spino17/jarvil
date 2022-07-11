@@ -18,8 +18,12 @@ pub fn block(parser: &mut PackratParser, params: &Rc<Vec<ParamNode>>,
         };
         match incorrect_indent_data {
             Some(indent_data) => {
-                let stmt_node = if parser.is_ignore_all_errors() {
-                    parser.stmt()
+                let stmt_node = if parser.is_ignore_all_errors() {  // a sub stmt of already incorrectly indented stmt
+                    let saved_correction_indent = parser.get_correction_indent();
+                    parser.add_to_correction_indent(indent_data.1 - indent_data.0);
+                    let stmt_node = parser.stmt();
+                    parser.set_correction_indent(saved_correction_indent);
+                    stmt_node
                 } else {
                     parser.set_ignore_all_errors(true);
                     let before_line_number = parser.get_curr_line_number();

@@ -114,6 +114,10 @@ impl PackratParser {
         self.correction_indent = correction_indent;
     }
 
+    pub fn add_to_correction_indent(&mut self, addition: i64) {
+        self.correction_indent = self.correction_indent + addition;
+    }
+
     pub fn get_code_line(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
         loop {
             let (s, line_start_index) = &self.code_lines[curr_line_number - 1];
@@ -172,7 +176,7 @@ impl PackratParser {
 
     pub fn expect_indent_spaces(&mut self, stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>,
         params: &Rc<Vec<ParamNode>>, parent: &Option<ASTNode>) -> IndentResult {
-        let expected_indent_spaces = context::get_indent() * self.indent_level;
+        let mut expected_indent_spaces = context::get_indent() * self.indent_level;
         let mut indent_spaces = 0;
         loop {
             let token = &self.token_vec[self.lookahead];
@@ -213,7 +217,8 @@ impl PackratParser {
                         }
                     }
                      */
-                    if indent_spaces == expected_indent_spaces + self.get_correction_indent() {
+                    expected_indent_spaces = expected_indent_spaces + self.get_correction_indent();
+                    if indent_spaces == expected_indent_spaces {
                         // correctly indented statement
                         return IndentResult::CORRECT_INDENTATION
                     } else if indent_spaces < expected_indent_spaces {
