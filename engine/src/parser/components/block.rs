@@ -7,7 +7,7 @@ use std::mem;
 use std::cell::RefCell;
 use crate::lexer::token::Token;
  
-pub fn block<F: FnOnce(&Token) -> bool + Clone>(parser: &mut PackratParser, 
+pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser, 
     params: Option<&ParamsNode>, is_starting_with_fn: F) -> BlockNode {
     let newline_node = parser.expect("\n", false);
     parser.reset_indent_level(parser.get_curr_indent_level() + 1);
@@ -15,7 +15,7 @@ pub fn block<F: FnOnce(&Token) -> bool + Clone>(parser: &mut PackratParser,
     let mut is_indent_check_enabled = true;
     let mut leading_skipped_tokens: Vec<TokenNode> = vec![];
     loop {
-        let is_starting_with_fn_clone = is_starting_with_fn.clone();
+        // let is_starting_with_fn_clone = is_starting_with_fn.clone();
         let mut incorrect_indent_data: Option<(i64, i64)> = None;
         if is_indent_check_enabled {
             let indent_result = parser.expect_indent_spaces();
@@ -62,7 +62,7 @@ pub fn block<F: FnOnce(&Token) -> bool + Clone>(parser: &mut PackratParser,
             parser.scan_next_token();
             continue;
         }
-        if !is_starting_with_fn_clone(token) {
+        if !is_starting_with_fn(token) {
             is_indent_check_enabled = false;
             leading_skipped_tokens.push(TokenNode::new_with_skipped_token(token, parser.get_curr_lookahead()));
             parser.scan_next_token();

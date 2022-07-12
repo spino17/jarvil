@@ -363,7 +363,7 @@ impl PackratParser {
         components::code::code(self, token_vec)
     }
 
-    pub fn block<F: FnOnce(&Token) -> bool + Clone>(&mut self, 
+    pub fn block<F: Fn(&Token) -> bool>(&mut self, 
         params: Option<&ParamsNode>, is_starting_with_fn: F) -> BlockNode {
         components::block::block(self, params, is_starting_with_fn)
     }
