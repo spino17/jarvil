@@ -5,6 +5,7 @@ pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
 }
 
+// AST Nodes have inner mutability to enable dynamic changes to AST like monomorphism of generics or macro expansion.
 // ASTNode has weak reference to core nodes to avoid memory leaks
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 #[derive(Clone)]
@@ -25,13 +26,13 @@ pub enum ASTNode {
 pub enum StatemenIndentWrapper {
     CORRECTLY_INDENTED(StatementNode),
     INCORRECTLY_INDENTED((StatementNode, (i64, i64))),
-    LEADING_SKIPPED_TOKENS(SkippedTokens),
-    TRAILING_SKIPPED_TOKENS(SkippedTokens),
+    LEADING_SKIPPED_TOKENS(SkippedTokens),      // skipped tokens leading to the next stmt in block
+    TRAILING_SKIPPED_TOKENS(SkippedTokens),     // skipped tokens trailing to the previous stmt in block
     EXTRA_NEWLINES(SkippedTokens),
 }
 
 pub struct CoreBlockNode {
-    stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
+    stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,  // RefCell is used as we may require to add statements while monomorphism of generics phase
     params: Option<ParamsNode>,
     scope: Option<Scope>,
     parent: Option<ASTNode>,

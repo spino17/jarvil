@@ -5,8 +5,7 @@ use crate::parser::parser::{PackratParser};
 use std::rc::Rc;
 use std::mem;
 use std::cell::RefCell;
-
-use super::stmt::is_statement_starting_with;
+use crate::parser::components::stmt::is_statement_starting_with;
  
 pub fn block(parser: &mut PackratParser, params: Option<&ParamsNode>) -> BlockNode {
     let newline_node = parser.expect("\n", false);
