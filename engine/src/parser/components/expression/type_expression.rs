@@ -1,14 +1,23 @@
 use crate::ast::ast::TypeExpressionNode; 
-use crate::constants::common::{INTEGER, IDENTIFIER};
+use crate::constants::common::{INTEGER, IDENTIFIER, ATOMIC_TYPE};
 use crate::parser::parser::{PackratParser};
-use crate::lexer::token::{CoreToken};
+use crate::lexer::token::{CoreToken, Token};
+
+pub fn is_type_expression_starting_with(token: &Token) -> bool {
+    match token.core_token {
+        CoreToken::ATOMIC_TYPE(_)   => true,
+        CoreToken::IDENTIFIER(_)    => true,
+        CoreToken::LSQUARE          => true,
+        _                           => false,
+    }
+}
 
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
     let token = parser.get_curr_token();
     match &token.core_token {
-        CoreToken::ATOMIC_TYPE(atomic_type) => {
-            parser.scan_next_token();
-            TypeExpressionNode::new_with_atomic_type(&atomic_type.0)
+        CoreToken::ATOMIC_TYPE(_) => {
+            let atomic_type_node = parser.expect(ATOMIC_TYPE, false);
+            TypeExpressionNode::new_with_atomic_type(&atomic_type_node)
         },
         CoreToken::IDENTIFIER(_) => {
             let identifier_node = parser.expect(IDENTIFIER, false);
@@ -23,7 +32,7 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
             TypeExpressionNode::new_with_array_type(&array_size_node, &sub_type_node)
         },
         _ => {
-            unreachable!("curr token not matching with starting token of type expression is not possible")
+            unreachable!("current token not matching with starting token of type expression is not possible")
         }
     }
 }

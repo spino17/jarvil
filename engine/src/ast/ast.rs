@@ -14,6 +14,7 @@ pub enum ASTNode {
     PARAMS(Weak<RefCell<CoreParamsNode>>),
     PARAM(Weak<RefCell<CoreParamNode>>),
     TYPE_EXPRESSION(Weak<RefCell<CoreTypeExpressionNode>>),
+    ATOMIC_TYPE(Weak<RefCell<CoreAtomicTypeNode>>),
     ARRAY_TYPE(Weak<RefCell<CoreArrayTypeNode>>),
     USER_DEFINED_TYPE(Weak<RefCell<CoreUserDefinedTypeNode>>),
     TRAILING_SKIPPED_TOKEN(Weak<RefCell<CoreTrailingSkippedTokens>>),
@@ -226,24 +227,22 @@ pub enum CoreTypeExpressionNode {
 #[derive(Clone)]
 pub struct TypeExpressionNode(Rc<RefCell<CoreTypeExpressionNode>>);
 impl TypeExpressionNode {
-    pub fn new_with_atomic_type(atomic_type: &Rc<String>) -> Self {
+    pub fn new_with_atomic_type(atomic_type: &TokenNode) -> Self {
         TypeExpressionNode(Rc::new(RefCell::new(
             CoreTypeExpressionNode::ATOMIC(AtomicTypeNode::new(atomic_type))
         )))
     }
 
     pub fn new_with_user_defined_type(identifier: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(
+        TypeExpressionNode(Rc::new(RefCell::new(
             CoreTypeExpressionNode::USER_DEFINED(UserDefinedTypeNode::new(identifier))
-        ));
-        TypeExpressionNode(node)
+        )))
     }
 
     pub fn new_with_array_type(array_size: &TokenNode, sub_type: &TypeExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(
+        TypeExpressionNode(Rc::new(RefCell::new(
             CoreTypeExpressionNode::ARRAY(ArrayTypeNode::new(array_size, sub_type))
-        ));
-        TypeExpressionNode(node)
+        )))
     }
 }
 impl Node for TypeExpressionNode {
@@ -263,18 +262,20 @@ impl Node for TypeExpressionNode {
 }
 
 pub struct CoreAtomicTypeNode {
-    kind: Rc<String>,
+    kind: TokenNode,
     parent: Option<ASTNode>,
 }
 
 #[derive(Clone)]
 pub struct AtomicTypeNode(Rc<RefCell<CoreAtomicTypeNode>>);
 impl AtomicTypeNode {
-    pub fn new(kind: &Rc<String>) -> Self {
-        AtomicTypeNode(Rc::new(RefCell::new(CoreAtomicTypeNode{
+    pub fn new(kind: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomicTypeNode{
             kind: kind.clone(),
             parent: None,
-        })))
+        }));
+        kind.set_parent(ASTNode::ATOMIC_TYPE(Rc::downgrade(&node)));
+        AtomicTypeNode(node)
     }
 }
 impl Node for AtomicTypeNode {

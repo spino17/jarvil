@@ -13,8 +13,7 @@ use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use crate::types::core::{Type};
 use crate::parser::components;
-
-use super::helper::{IndentResult, IndentResultKind};
+use crate::parser::helper::{IndentResult, IndentResultKind};
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;
