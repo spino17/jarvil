@@ -1,16 +1,7 @@
 use crate::ast::ast::TypeExpressionNode; 
 use crate::constants::common::{INTEGER, IDENTIFIER};
 use crate::parser::parser::{PackratParser};
-use crate::lexer::token::{CoreToken, Token};
-
-pub fn is_type_expr_starting_with(token: &Token) -> bool {
-    match token.core_token {
-        CoreToken::ATOMIC_TYPE(_)   => true,
-        CoreToken::IDENTIFIER(_)    => true,
-        CoreToken::LSQUARE          => true,
-        _                           => false
-    }
-}
+use crate::lexer::token::{CoreToken};
 
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
     let token = parser.get_curr_token();
