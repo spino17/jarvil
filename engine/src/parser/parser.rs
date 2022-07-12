@@ -195,6 +195,7 @@ impl PackratParser {
         loop {
             let token = &self.token_vec[self.lookahead];
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
+                skipped_tokens.push(TokenNode::new_with_skipped_token(&token, self.get_curr_lookahead()));
                 self.scan_next_token();
                 return skipped_tokens
             } else {
@@ -224,21 +225,26 @@ impl PackratParser {
 
     pub fn expect_indent_spaces(&mut self) -> IndentResult {
         let mut skipped_tokens: Vec<TokenNode> = vec![];
+        let mut extra_newlines: Vec<TokenNode> = vec![];
         if !self.is_curr_token_on_newline() {
             // start skipping tokens until you reach newline and declare that chain of tokens as skipped
-            skipped_tokens = self.skip_to_newline();  // save this vector somewhere to keep track of skipped tokens in AST
+            skipped_tokens = self.skip_to_newline();
         }
         let mut expected_indent_spaces = context::get_indent() * self.indent_level;
         let mut indent_spaces = 0;
         loop {
             let token = &self.token_vec[self.lookahead];
             match &token.core_token {
-                CoreToken::NEWLINE => indent_spaces = 0,
+                CoreToken::NEWLINE => {
+                    extra_newlines.push(TokenNode::new_with_token(token, self.get_curr_lookahead()));
+                    indent_spaces = 0;
+                }
                 CoreToken::ENDMARKER => {
                     self.reset_indent_level(self.get_curr_indent_level() - 1);
                     return IndentResult{
                         kind: IndentResultKind::BLOCK_OVER,
                         skipped_tokens,
+                        extra_newlines,
                     }
                 },
                 _ => {
@@ -253,50 +259,30 @@ impl PackratParser {
                         },
                         None => indent_spaces = 0,
                     }
-                    /*
-                    if indent_spaces == expected_indent_spaces {
-                        return None
-                    } else {
-                        let indent_spaces_unit = context::get_indent();
-                        let indent_factor = indent_spaces / indent_spaces_unit as i64;
-                        let indent_remainder = indent_spaces - indent_factor * indent_spaces_unit;
-                        if indent_remainder > 0 {
-                            // TODO - handle indentation error here
-                            todo!()
-                        } else {
-                            if indent_spaces > indent_spaces_unit * self.get_curr_indent_level() {
-                                // TODO - handle indentation error here
-                                todo!()
-                            } else {
-                                // block is over
-                                self.reset_indent_level(self.get_curr_indent_level() - 1);
-                                // self.reset_lookahead(saved_lookahead);
-                                return Some(BlockNode::new(stmts, params, parent.clone()))
-                            }
-                        }
-                    }
-                     */
                     expected_indent_spaces = expected_indent_spaces + self.get_correction_indent();
                     if indent_spaces == expected_indent_spaces {
                         // correctly indented statement
                         return IndentResult{
                             kind: IndentResultKind::CORRECT_INDENTATION,
                             skipped_tokens,
+                            extra_newlines,
                         }
-                    } else if indent_spaces < expected_indent_spaces {
+                    } else if indent_spaces > expected_indent_spaces {
+                        // incorrectly indented statement
+                        return IndentResult{
+                            kind: IndentResultKind::INCORRECT_INDENTATION((expected_indent_spaces, indent_spaces)),
+                            skipped_tokens,
+                            extra_newlines,
+                        }
+                    } else {
                         // over the block
                         self.reset_indent_level(self.get_curr_indent_level() - 1);
                         return IndentResult{
                             kind: IndentResultKind::BLOCK_OVER,
                             skipped_tokens,
+                            extra_newlines,
                         }
-                    } else {
-                        // incorrectly indented statement
-                        return IndentResult{
-                            kind: IndentResultKind::INCORRECT_INDENTATION((expected_indent_spaces, indent_spaces)),
-                            skipped_tokens,
-                        }
-                    }
+                    } 
                 }
             }
             self.scan_next_token();

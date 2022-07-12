@@ -13,6 +13,7 @@ pub enum IndentResultKind {
 pub struct IndentResult {
     pub kind: IndentResultKind,
     pub skipped_tokens: Vec<TokenNode>,
+    pub extra_newlines: Vec<TokenNode>,
 }
 
 pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool), SyntaxError>) 

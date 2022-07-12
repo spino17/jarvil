@@ -11,10 +11,18 @@ pub fn block(parser: &mut PackratParser, params: Option<&ParamsNode>) -> BlockNo
     loop {
         let indent_result = parser.expect_indent_spaces();
         let skipped_tokens = indent_result.skipped_tokens;
-        stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(
-            TrailingSkippedTokens::new(&Rc::new(skipped_tokens))
-        ));
-        let incorrect_indent_data  // (expected_indent_spaces, received_indent_spaces)
+        if skipped_tokens.len() > 0 {
+            stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(
+                TrailingSkippedTokens::new_with_trailing_skipped_tokens(&Rc::new(skipped_tokens))
+            ));
+        }
+        let extra_newlines = indent_result.extra_newlines;
+        if extra_newlines.len() > 0 {
+            stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::EXTRA_NEWLINES(
+                TrailingSkippedTokens::new_with_extra_newlines(&Rc::new(extra_newlines))
+            ));
+        }
+        let incorrect_indent_data
         = match indent_result.kind {
             IndentResultKind::CORRECT_INDENTATION => None,
             IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),

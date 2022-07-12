@@ -17,12 +17,14 @@ pub enum ASTNode {
     ARRAY_TYPE(Weak<RefCell<CoreArrayTypeNode>>),
     USER_DEFINED_TYPE(Weak<RefCell<CoreUserDefinedTypeNode>>),
     TRAILING_SKIPPED_TOKEN(Weak<RefCell<CoreTrailingSkippedTokens>>),
+    EXTRA_NEWLINES(Weak<RefCell<CoreTrailingSkippedTokens>>),
 }
 
 pub enum StatemenIndentWrapper {
     CORRECTLY_INDENTED(StatementNode),
     INCORRECTLY_INDENTED((StatementNode, (i64, i64))),
     TRAILING_SKIPPED_TOKENS(TrailingSkippedTokens),
+    EXTRA_NEWLINES(TrailingSkippedTokens),
 }
 
 pub struct CoreBlockNode {
@@ -56,6 +58,9 @@ impl BlockNode {
                 StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(trailing_skipped_tokens) => {
                     trailing_skipped_tokens.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
                 }
+                StatemenIndentWrapper::EXTRA_NEWLINES(extra_newlines) => {
+                    extra_newlines.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                }
             }
         }
         match params {
@@ -79,13 +84,24 @@ pub struct CoreTrailingSkippedTokens {
 #[derive(Clone)]
 pub struct TrailingSkippedTokens(Rc<RefCell<CoreTrailingSkippedTokens>>);
 impl TrailingSkippedTokens {
-    pub fn new(skipped_tokens: &Rc<Vec<TokenNode>>) -> Self {
+    pub fn new_with_trailing_skipped_tokens(skipped_tokens: &Rc<Vec<TokenNode>>) -> Self {
         let node = Rc::new(RefCell::new(CoreTrailingSkippedTokens{
             skipped_tokens: skipped_tokens.clone(),
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
             skipped_token.set_parent(ASTNode::TRAILING_SKIPPED_TOKEN(Rc::downgrade(&node)));
+        }
+        TrailingSkippedTokens(node)
+    }
+
+    pub fn new_with_extra_newlines(extra_newlines: &Rc<Vec<TokenNode>>) -> Self {
+        let node = Rc::new(RefCell::new(CoreTrailingSkippedTokens{
+            skipped_tokens: extra_newlines.clone(),
+            parent: None,
+        }));
+        for skipped_token in extra_newlines.as_ref() {
+            skipped_token.set_parent(ASTNode::EXTRA_NEWLINES(Rc::downgrade(&node)));
         }
         TrailingSkippedTokens(node)
     }
