@@ -41,17 +41,8 @@ pub fn block(parser: &mut PackratParser, params: Option<&ParamsNode>) -> BlockNo
             };
             incorrect_indent_data = local_incorrect_indent_data;
         }
-        // check if current token lies in FIRST(stmt) - if not then declare it as skipping token and advance
-        // lookahead by one and continue to next loop iteration
-        /*
-        if !parser.is_stmt_starting_with(&parser.get_curr_token()) {
-            // skip the current token and set the skippped token trivia to the next token and continue to next loop iteration
-            todo!()
-        }
-         */
-        let token = &parser.get_curr_token(); // => can be good token, bad token, newline or EOF (as the check for EOF is disabled)
+        let token = &parser.get_curr_token();
         if token.is_eq(ENDMARKER) {
-            // TODO - push leading_skipped_tokens to stmts_vec => use mem::take()
             if leading_skipped_tokens.len() > 0 {
                 stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(
                     SkippedTokens::new_with_leading_skipped_tokens(&Rc::new(mem::take(&mut leading_skipped_tokens)))
@@ -76,7 +67,14 @@ pub fn block(parser: &mut PackratParser, params: Option<&ParamsNode>) -> BlockNo
             parser.scan_next_token();
             continue;
         }
-        is_indent_check_enabled = true;
+        else {
+            is_indent_check_enabled = true;
+            if leading_skipped_tokens.len() > 0 {
+                stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(
+                    SkippedTokens::new_with_leading_skipped_tokens(&Rc::new(mem::take(&mut leading_skipped_tokens)))
+                ));
+            }
+        }
         match incorrect_indent_data {
             Some(indent_data) => {
                 let stmt_node = if parser.is_ignore_all_errors() {
