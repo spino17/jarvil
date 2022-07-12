@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 pub fn code(parser: &mut PackratParser, token_vec: Vec<Token>) -> BlockNode {
     parser.set_token_vec(token_vec);
-    let block_node = parser.block(&Rc::new(vec![]), None);
+    let block_node = parser.block(&Rc::new(vec![]));
     parser.expect("endmarker", true);
     block_node
 }

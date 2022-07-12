@@ -98,27 +98,16 @@ pub enum CoreToken {
 
 #[derive(Debug, Clone)]
 pub enum TokenKind {
-    SUCCESS_TOKEN(Token),
-    ERROR_TOKEN(ErrorToken),
+    AVAILABLE(Token),
+    MISSING(MissingToken),
+    SKIPPED(Token),
     // SKIPPING_TOKEN(SkippingToken)
-}
-
-#[derive(Debug, Clone)]
-pub enum ErrorToken {
-    MISSING_TOKEN(MissingToken),
-    INCORRECT_INDENT(IncorrectIndentToken),
 }
 
 #[derive(Debug, Clone)]
 pub struct MissingToken {
     pub expected_symbol: Rc<String>,
     pub received_token: Token,
-}
-
-#[derive(Debug, Clone)]
-pub struct IncorrectIndentToken {
-    pub expected_indent: i64,
-    pub received_indent: i64,
 }
 
 #[derive(Debug, Clone)]

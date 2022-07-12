@@ -4,8 +4,7 @@ use crate::parser::parser::{PackratParser};
 use std::rc::Rc;
 use std::cell::RefCell;
 
-pub fn block(parser: &mut PackratParser, params: &Rc<Vec<ParamNode>>, 
-    parent: Option<ASTNode>) -> BlockNode {
+pub fn block(parser: &mut PackratParser, params: &Rc<Vec<ParamNode>>) -> BlockNode {
     let newline_node = parser.expect("\n", false);
     parser.reset_indent_level(parser.get_curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
@@ -18,15 +17,12 @@ pub fn block(parser: &mut PackratParser, params: &Rc<Vec<ParamNode>>,
             IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
             IndentResultKind::BLOCK_OVER => {
                 // use skipped_token_vec
-                return BlockNode::new(&stmts_vec, params, parent)
+                return BlockNode::new(&stmts_vec, params)
             }
         };
-        // check it's not endmarker and current token lies in FIRST(stmt) - if not then declare it as skipping token and advance
+        // check if current token lies in FIRST(stmt) - if not then declare it as skipping token and advance
         // lookahead by one and continue to next loop iteration
         /*
-        if parser.is_eof_reached() {
-            return BlockNode::new(&stmts_vec, params, parent)
-        }
         if !parser.is_stmt_starting_with(&parser.get_curr_token()) {
             // skip the current token and set the skippped token trivia to the next token and continue to next loop iteration
             todo!()

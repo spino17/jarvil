@@ -377,8 +377,8 @@ impl PackratParser {
         components::code::code(self, token_vec)
     }
 
-    pub fn block(&mut self, params: &Rc<Vec<ParamNode>>, parent: Option<ASTNode>) -> BlockNode {
-        components::block::block(self, params, parent)
+    pub fn block(&mut self, params: &Rc<Vec<ParamNode>>) -> BlockNode {
+        components::block::block(self, params)
     }
 
     // statements

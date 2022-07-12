@@ -1,8 +1,8 @@
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::core::Scope, lexer::token::{TokenKind, Token, MissingToken, ErrorToken, IncorrectIndentToken}};
+use crate::{scope::core::Scope, lexer::token::{TokenKind, Token, MissingToken}};
 
 pub trait Node {
-    fn set_parent(&self, parent_node: Option<ASTNode>);
+    fn set_parent(&self, parent_node: ASTNode);
 }
 
 // ASTNode has weak reference to core nodes to avoid memory leaks
@@ -13,11 +13,14 @@ pub enum ASTNode {
     STATEMENT(Weak<RefCell<CoreStatementNode>>),
     PARAM(Weak<RefCell<CoreParamNode>>),
     TYPE_EXPRESSION(Weak<RefCell<CoreTypeExpressionNode>>),
+    ARRAY_TYPE(Weak<RefCell<CoreArrayTypeNode>>),
+    TRAILING_SKIPPED_TOKEN(Weak<RefCell<CoreTrailingSkippedTokens>>),
 }
 
 pub enum StatemenIndentWrapper {
     CORRECTLY_INDENTED(StatementNode),
     INCORRECTLY_INDENTED((StatementNode, (i64, i64))),
+    TRAILING_SKIPPED_TOKENS(TrailingSkippedTokens),
 }
 
 pub struct CoreBlockNode {
@@ -30,32 +33,60 @@ pub struct CoreBlockNode {
 #[derive(Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, params: &Rc<Vec<ParamNode>>, parent: Option<ASTNode>) -> Self {
+    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, params: &Rc<Vec<ParamNode>>) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode{
             stmts: stmts.clone(),
             params: params.clone(),
             scope: None,
-            parent,
+            parent: None,
         }));
         for stmt in &*stmts.as_ref().borrow() {
             match stmt {
                 StatemenIndentWrapper::CORRECTLY_INDENTED(correct_indented_stmt) => {
-                    correct_indented_stmt.set_parent(Some(ASTNode::BLOCK(Rc::downgrade(&node))));
+                    correct_indented_stmt.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
                 }
                 StatemenIndentWrapper::INCORRECTLY_INDENTED((incorrect_indented_stmt, _)) => {
-                    incorrect_indented_stmt.set_parent(Some(ASTNode::BLOCK(Rc::downgrade(&node))));
+                    incorrect_indented_stmt.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                }
+                StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(trailing_skipped_tokens) => {
+                    trailing_skipped_tokens.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
                 }
             }
         }
         for param in params.as_ref() {
-            param.set_parent(Some(ASTNode::BLOCK(Rc::downgrade(&node))));
+            param.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
         }
         BlockNode(node)
     }
 }
 impl Node for BlockNode {
-    fn set_parent(&self, parent_node: Option<ASTNode>) {
-        self.0.as_ref().borrow_mut().parent = parent_node;
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+pub struct CoreTrailingSkippedTokens {
+    skipped_tokens: Rc<Vec<TokenNode>>,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Clone)]
+pub struct TrailingSkippedTokens(Rc<RefCell<CoreTrailingSkippedTokens>>);
+impl TrailingSkippedTokens {
+    pub fn new(skipped_tokens: &Rc<Vec<TokenNode>>) -> Self {
+        let node = Rc::new(RefCell::new(CoreTrailingSkippedTokens{
+            skipped_tokens: skipped_tokens.clone(),
+            parent: None,
+        }));
+        for skipped_token in &*skipped_tokens.as_ref() {
+            skipped_token.set_parent(ASTNode::TRAILING_SKIPPED_TOKEN(Rc::downgrade(&node)));
+        }
+        TrailingSkippedTokens(node)
+    }
+}
+impl Node for TrailingSkippedTokens {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
 
@@ -72,7 +103,7 @@ impl StatementNode {
     }
 }
 impl Node for StatementNode {
-    fn set_parent(&self, parent_node: Option<ASTNode>) {
+    fn set_parent(&self, parent_node: ASTNode) {
         todo!()
     }
 }
@@ -92,14 +123,14 @@ impl ParamNode {
             param_type: param_type.clone(),
             parent: None,
         }));
-        param_name.set_parent(Some(ASTNode::PARAM(Rc::downgrade(&node))));
-        param_type.set_parent(Some(ASTNode::PARAM(Rc::downgrade(&node))));
+        param_name.set_parent(ASTNode::PARAM(Rc::downgrade(&node)));
+        param_type.set_parent(ASTNode::PARAM(Rc::downgrade(&node)));
         ParamNode(node)
     }
 }
 impl Node for ParamNode {
-    fn set_parent(&self, parent_node: Option<ASTNode>) {
-        self.0.as_ref().borrow_mut().parent = parent_node;
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
 
@@ -143,7 +174,7 @@ pub struct TypeExpressionNode(Rc<RefCell<CoreTypeExpressionNode>>);
 impl TypeExpressionNode {
     pub fn new_with_atomic_type(atomic_type: &Rc<String>) -> Self {
         TypeExpressionNode(Rc::new(RefCell::new(
-            CoreTypeExpressionNode::ATOMIC(AtomicTypeNode::new(atomic_type, None))
+            CoreTypeExpressionNode::ATOMIC(AtomicTypeNode::new(atomic_type))
         )))
     }
 
@@ -151,20 +182,19 @@ impl TypeExpressionNode {
         let node = Rc::new(RefCell::new(
             CoreTypeExpressionNode::USER_DEFINED(identifier.clone())
         ));
-        identifier.set_parent(Some(ASTNode::TYPE_EXPRESSION(Rc::downgrade(&node))));
+        identifier.set_parent(ASTNode::TYPE_EXPRESSION(Rc::downgrade(&node)));
         TypeExpressionNode(node)
     }
 
     pub fn new_with_array_type(array_size: &TokenNode, sub_type: &TypeExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(
-            CoreTypeExpressionNode::ARRAY(ArrayTypeNode::new(array_size, sub_type, None))
+            CoreTypeExpressionNode::ARRAY(ArrayTypeNode::new(array_size, sub_type))
         ));
-        sub_type.set_parent(Some(ASTNode::TYPE_EXPRESSION(Rc::downgrade(&node))));
         TypeExpressionNode(node)
     }
 }
 impl Node for TypeExpressionNode {
-    fn set_parent(&self, parent_node: Option<ASTNode>) {
+    fn set_parent(&self, parent_node: ASTNode) {
         match &*self.0.as_ref().borrow_mut() {
             CoreTypeExpressionNode::ATOMIC(atomic_node_data) => {
                 atomic_node_data.set_parent(parent_node);
@@ -187,16 +217,16 @@ pub struct CoreAtomicTypeNode {
 #[derive(Clone)]
 pub struct AtomicTypeNode(Rc<RefCell<CoreAtomicTypeNode>>);
 impl AtomicTypeNode {
-    pub fn new(kind: &Rc<String>, parent: Option<ASTNode>) -> Self {
+    pub fn new(kind: &Rc<String>) -> Self {
         AtomicTypeNode(Rc::new(RefCell::new(CoreAtomicTypeNode{
             kind: kind.clone(),
-            parent,
+            parent: None,
         })))
     }
 }
 impl Node for AtomicTypeNode {
-    fn set_parent(&self, parent_node: Option<ASTNode>) {
-        self.0.as_ref().borrow_mut().parent = parent_node;
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
 
@@ -209,17 +239,20 @@ pub struct CoreArrayTypeNode {
 #[derive(Clone)]
 pub struct ArrayTypeNode(Rc<RefCell<CoreArrayTypeNode>>);
 impl ArrayTypeNode {
-    pub fn new(size: &TokenNode, sub_type: &TypeExpressionNode, parent: Option<ASTNode>) -> Self {
-        ArrayTypeNode(Rc::new(RefCell::new(CoreArrayTypeNode{
+    pub fn new(size: &TokenNode, sub_type: &TypeExpressionNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreArrayTypeNode{
             sub_type: sub_type.clone(),
             size: size.clone(),
-            parent,
-        })))
+            parent: None,
+        }));
+        size.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
+        sub_type.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
+        ArrayTypeNode(node)
     }
 }
 impl Node for ArrayTypeNode {
-    fn set_parent(&self, parent_node: Option<ASTNode>) {
-        self.0.as_ref().borrow_mut().parent = parent_node;
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
 
@@ -234,7 +267,7 @@ pub struct TokenNode(Rc<RefCell<CoreTokenNode>>);
 impl TokenNode {
     pub fn new_with_token(token: &Token, lookahead: usize) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenKind::SUCCESS_TOKEN(token.clone()),
+            kind: TokenKind::AVAILABLE(token.clone()),
             parent: None,
             lookahead,
         })))
@@ -243,29 +276,26 @@ impl TokenNode {
     pub fn new_with_missing_token(expected_symbol: &Rc<String>, received_token: &Token, lookahead: usize) -> Self {
         // TODO - log the related error into a error log struct to output on terminal based compilation
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenKind::ERROR_TOKEN(ErrorToken::MISSING_TOKEN(MissingToken{
+            kind: TokenKind::MISSING(MissingToken{
                 expected_symbol: expected_symbol.clone(),
                 received_token: received_token.clone(),
-            })),
+            }),
             parent: None,
             lookahead,
         })))
     }
 
-    pub fn new_with_incorrect_indent(expected_indent: i64, received_indent: i64, lookahead: usize) -> Self {
+    pub fn new_with_skipped_token(skipped_token: &Token, lookahead: usize) -> Self {
         // TODO - log the related error into a error log struct to output on terminal based compilation
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenKind::ERROR_TOKEN(ErrorToken::INCORRECT_INDENT(IncorrectIndentToken{
-                expected_indent: expected_indent,
-                received_indent: received_indent,
-            })),
+            kind: TokenKind::SKIPPED(skipped_token.clone()),
             parent: None,
             lookahead,
         })))
     }
 }
 impl Node for TokenNode {
-    fn set_parent(&self, parent_node: Option<ASTNode>) {
-        self.0.as_ref().borrow_mut().parent = parent_node;
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
