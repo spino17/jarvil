@@ -1,4 +1,4 @@
-use std::{rc::{Rc, Weak}, cell::RefCell};
+use std::{rc::{Rc, Weak}, cell::RefCell, iter::Skip};
 use crate::{scope::core::Scope, lexer::token::{TokenKind, Token, MissingToken}};
 
 pub trait Node {
@@ -17,15 +17,17 @@ pub enum ASTNode {
     ATOMIC_TYPE(Weak<RefCell<CoreAtomicTypeNode>>),
     ARRAY_TYPE(Weak<RefCell<CoreArrayTypeNode>>),
     USER_DEFINED_TYPE(Weak<RefCell<CoreUserDefinedTypeNode>>),
-    TRAILING_SKIPPED_TOKEN(Weak<RefCell<CoreTrailingSkippedTokens>>),
-    EXTRA_NEWLINES(Weak<RefCell<CoreTrailingSkippedTokens>>),
+    LEADING_SKIPPED_TOKENS(Weak<RefCell<CoreSkippedTokens>>),
+    TRAILING_SKIPPED_TOKEN(Weak<RefCell<CoreSkippedTokens>>),
+    EXTRA_NEWLINES(Weak<RefCell<CoreSkippedTokens>>),
 }
 
 pub enum StatemenIndentWrapper {
     CORRECTLY_INDENTED(StatementNode),
     INCORRECTLY_INDENTED((StatementNode, (i64, i64))),
-    TRAILING_SKIPPED_TOKENS(TrailingSkippedTokens),
-    EXTRA_NEWLINES(TrailingSkippedTokens),
+    LEADING_SKIPPED_TOKENS(SkippedTokens),
+    TRAILING_SKIPPED_TOKENS(SkippedTokens),
+    EXTRA_NEWLINES(SkippedTokens),
 }
 
 pub struct CoreBlockNode {
@@ -56,12 +58,15 @@ impl BlockNode {
                 StatemenIndentWrapper::INCORRECTLY_INDENTED((incorrect_indented_stmt, _)) => {
                     incorrect_indented_stmt.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
                 }
+                StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(leading_skipped_tokens) => {
+                    leading_skipped_tokens.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                }
                 StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(trailing_skipped_tokens) => {
                     trailing_skipped_tokens.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
                 }
                 StatemenIndentWrapper::EXTRA_NEWLINES(extra_newlines) => {
                     extra_newlines.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
-                }
+                },
             }
         }
         match params {
@@ -77,37 +82,48 @@ impl Node for BlockNode {
     }
 }
 
-pub struct CoreTrailingSkippedTokens {
+pub struct CoreSkippedTokens {
     skipped_tokens: Rc<Vec<TokenNode>>,
     parent: Option<ASTNode>,
 }
 
 #[derive(Clone)]
-pub struct TrailingSkippedTokens(Rc<RefCell<CoreTrailingSkippedTokens>>);
-impl TrailingSkippedTokens {
+pub struct SkippedTokens(Rc<RefCell<CoreSkippedTokens>>);
+impl SkippedTokens {
+    pub fn new_with_leading_skipped_tokens(skipped_tokens: &Rc<Vec<TokenNode>>) -> Self {
+        let node = Rc::new(RefCell::new(CoreSkippedTokens{
+            skipped_tokens: skipped_tokens.clone(),
+            parent: None,
+        }));
+        for skipped_token in skipped_tokens.as_ref() {
+            skipped_token.set_parent(ASTNode::LEADING_SKIPPED_TOKENS(Rc::downgrade(&node)));
+        }
+        SkippedTokens(node)
+    }
+
     pub fn new_with_trailing_skipped_tokens(skipped_tokens: &Rc<Vec<TokenNode>>) -> Self {
-        let node = Rc::new(RefCell::new(CoreTrailingSkippedTokens{
+        let node = Rc::new(RefCell::new(CoreSkippedTokens{
             skipped_tokens: skipped_tokens.clone(),
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
             skipped_token.set_parent(ASTNode::TRAILING_SKIPPED_TOKEN(Rc::downgrade(&node)));
         }
-        TrailingSkippedTokens(node)
+        SkippedTokens(node)
     }
 
     pub fn new_with_extra_newlines(extra_newlines: &Rc<Vec<TokenNode>>) -> Self {
-        let node = Rc::new(RefCell::new(CoreTrailingSkippedTokens{
+        let node = Rc::new(RefCell::new(CoreSkippedTokens{
             skipped_tokens: extra_newlines.clone(),
             parent: None,
         }));
         for skipped_token in extra_newlines.as_ref() {
             skipped_token.set_parent(ASTNode::EXTRA_NEWLINES(Rc::downgrade(&node)));
         }
-        TrailingSkippedTokens(node)
+        SkippedTokens(node)
     }
 }
-impl Node for TrailingSkippedTokens {
+impl Node for SkippedTokens {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
