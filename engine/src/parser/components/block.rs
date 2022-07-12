@@ -5,15 +5,17 @@ use crate::parser::parser::{PackratParser};
 use std::rc::Rc;
 use std::mem;
 use std::cell::RefCell;
-use crate::parser::components::stmt::is_statement_starting_with;
+use crate::lexer::token::Token;
  
-pub fn block(parser: &mut PackratParser, params: Option<&ParamsNode>) -> BlockNode {
+pub fn block<F: FnOnce(&Token) -> bool + Clone>(parser: &mut PackratParser, 
+    params: Option<&ParamsNode>, is_starting_with_fn: F) -> BlockNode {
     let newline_node = parser.expect("\n", false);
     parser.reset_indent_level(parser.get_curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
     let mut is_indent_check_enabled = true;
     let mut leading_skipped_tokens: Vec<TokenNode> = vec![];
     loop {
+        let is_starting_with_fn_clone = is_starting_with_fn.clone();
         let mut incorrect_indent_data: Option<(i64, i64)> = None;
         if is_indent_check_enabled {
             let indent_result = parser.expect_indent_spaces();
@@ -60,7 +62,7 @@ pub fn block(parser: &mut PackratParser, params: Option<&ParamsNode>) -> BlockNo
             parser.scan_next_token();
             continue;
         }
-        if !is_statement_starting_with(token) {
+        if !is_starting_with_fn_clone(token) {
             is_indent_check_enabled = false;
             leading_skipped_tokens.push(TokenNode::new_with_skipped_token(token, parser.get_curr_lookahead()));
             parser.scan_next_token();

@@ -131,8 +131,8 @@ impl Node for SkippedTokens {
 }
 
 pub enum CoreStatementNode {
-    // expr, variable declaration, type struct declaration, type lambda declaration, assignment, if, for, while, return,
-    // continue, break
+    // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration, 
+    // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
 }
 
 #[derive(Clone)]
