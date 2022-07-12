@@ -145,6 +145,16 @@ impl PackratParser {
     }
 
     pub fn get_previous_token(&mut self) -> Token {
+        if self.lookahead == 0 {
+            return Token {
+                line_number: 1,
+                core_token: CoreToken::NEWLINE,
+                name: Rc::new(String::from("\n")),
+                start_index: 0,
+                end_index: 0,
+                trivia: None,
+            }
+        }
         self.token_vec[self.lookahead - 1].clone()
     }
 
@@ -171,8 +181,8 @@ impl PackratParser {
         if self.lookahead == 0 {
             return true
         }
-        if self.token_vec[self.lookahead].is_eq("\n")
-        || self.token_vec[self.lookahead - 1].is_eq("\n")
+        if self.token_vec[self.lookahead - 1].is_eq("\n")
+        || self.token_vec[self.lookahead].is_eq("\n")
         || self.token_vec[self.lookahead].is_eq(ENDMARKER) {
             true
         } else {
