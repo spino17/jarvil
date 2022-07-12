@@ -121,7 +121,7 @@ impl PackratParser {
         self.correction_indent = self.correction_indent + addition;
     }
 
-    pub fn get_code_line(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
+    pub fn get_code_line_data(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
         loop {
             let (s, line_start_index) = &self.code_lines[curr_line_number - 1];
             if index >= *line_start_index {
@@ -214,6 +214,7 @@ impl PackratParser {
             self.scan_next_token();
             TokenNode::new_with_token(&token, self.get_curr_lookahead())
         } else {
+            // TODO - log the related error into a error log struct to output on terminal based compilation
             TokenNode::new_with_missing_token(
                 &Rc::new(String::from(symbol)),
                 &token,

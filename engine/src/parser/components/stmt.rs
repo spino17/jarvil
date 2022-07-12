@@ -1,8 +1,7 @@
 use crate::ast::ast::StatementNode;
 use crate::parser::parser::{PackratParser};
 use crate::lexer::token::{Token,CoreToken};
-
-use super::expression::core::is_expression_starting_with;
+use crate::parser::components::expression::core::is_expression_starting_with;
 
 pub fn is_statement_starting_with(token: &Token) -> bool {
     match token.core_token {

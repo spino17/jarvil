@@ -189,35 +189,6 @@ impl Node for ParamNode {
     }
 }
 
-/*
-pub struct CoreIdentifierNode {
-    value: Rc<String>,
-    start_index: usize,
-    end_index: usize,
-    line_number: usize,
-    parent: Option<ASTNode>,
-}
-
-#[derive(Clone)]
-pub struct IdentifierNode(Rc<RefCell<CoreIdentifierNode>>);
-impl IdentifierNode {
-    pub fn new(value: &Rc<String>, start_index: usize, end_index: usize, line_number: usize) -> Self {
-        IdentifierNode(Rc::new(RefCell::new(CoreIdentifierNode{
-            value: value.clone(),
-            start_index,
-            end_index,
-            line_number,
-            parent: None,
-        })))
-    }
-}
-impl Node for IdentifierNode {
-    fn set_parent(&self, parent_node: Option<ASTNode>) {
-        self.0.as_ref().borrow_mut().parent = parent_node;
-    }
-}
- */
-
 pub enum CoreTypeExpressionNode {
     ATOMIC(AtomicTypeNode),
     USER_DEFINED(UserDefinedTypeNode),
@@ -351,7 +322,6 @@ impl TokenNode {
     }
 
     pub fn new_with_missing_token(expected_symbol: &Rc<String>, received_token: &Token, lookahead: usize) -> Self {
-        // TODO - log the related error into a error log struct to output on terminal based compilation
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
             kind: TokenKind::MISSING(MissingToken{
                 expected_symbol: expected_symbol.clone(),
@@ -363,7 +333,6 @@ impl TokenNode {
     }
 
     pub fn new_with_skipped_token(skipped_token: &Token, lookahead: usize) -> Self {
-        // TODO - log the related error into a error log struct to output on terminal based compilation
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
             kind: TokenKind::SKIPPED(skipped_token.clone()),
             parent: None,
