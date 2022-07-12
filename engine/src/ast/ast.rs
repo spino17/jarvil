@@ -11,9 +11,11 @@ pub trait Node {
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
     STATEMENT(Weak<RefCell<CoreStatementNode>>),
+    PARAMS(Weak<RefCell<CoreParamsNode>>),
     PARAM(Weak<RefCell<CoreParamNode>>),
     TYPE_EXPRESSION(Weak<RefCell<CoreTypeExpressionNode>>),
     ARRAY_TYPE(Weak<RefCell<CoreArrayTypeNode>>),
+    USER_DEFINED_TYPE(Weak<RefCell<CoreUserDefinedTypeNode>>),
     TRAILING_SKIPPED_TOKEN(Weak<RefCell<CoreTrailingSkippedTokens>>),
 }
 
@@ -25,7 +27,7 @@ pub enum StatemenIndentWrapper {
 
 pub struct CoreBlockNode {
     stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
-    params: Rc<Vec<ParamNode>>,
+    params: Option<ParamsNode>,
     scope: Option<Scope>,
     parent: Option<ASTNode>,
 }
@@ -33,10 +35,13 @@ pub struct CoreBlockNode {
 #[derive(Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, params: &Rc<Vec<ParamNode>>) -> Self {
+    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, params: Option<&ParamsNode>) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode{
             stmts: stmts.clone(),
-            params: params.clone(),
+            params: match params {
+                Some(params) => Some(params.clone()),
+                None => None,
+            },
             scope: None,
             parent: None,
         }));
@@ -53,8 +58,9 @@ impl BlockNode {
                 }
             }
         }
-        for param in params.as_ref() {
-            param.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+        match params {
+            Some(params) => params.set_parent(ASTNode::BLOCK(Rc::downgrade(&node))),
+            None => {}
         }
         BlockNode(node)
     }
@@ -78,7 +84,7 @@ impl TrailingSkippedTokens {
             skipped_tokens: skipped_tokens.clone(),
             parent: None,
         }));
-        for skipped_token in &*skipped_tokens.as_ref() {
+        for skipped_token in skipped_tokens.as_ref() {
             skipped_token.set_parent(ASTNode::TRAILING_SKIPPED_TOKEN(Rc::downgrade(&node)));
         }
         TrailingSkippedTokens(node)
@@ -105,6 +111,38 @@ impl StatementNode {
 impl Node for StatementNode {
     fn set_parent(&self, parent_node: ASTNode) {
         todo!()
+    }
+}
+
+pub struct CoreParamsNode {
+    param: ParamNode,
+    remaining_params: Option<ParamsNode>,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Clone)]
+pub struct ParamsNode(Rc<RefCell<CoreParamsNode>>);
+impl ParamsNode {
+    pub fn new(param: &ParamNode, remaining_params: Option<&ParamsNode>) -> Self {
+        let node = Rc::new(RefCell::new(CoreParamsNode{
+            param: param.clone(),
+            remaining_params: match remaining_params {
+                Some(remaining_params) => Some(remaining_params.clone()),
+                None => None,
+            },
+            parent: None,
+        }));
+        param.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
+        match remaining_params {
+            Some(remaining_params) => remaining_params.set_parent(ASTNode::PARAMS(Rc::downgrade(&node))),
+            None => {}
+        }
+        ParamsNode(node)
+    }
+}
+impl Node for ParamsNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
 
@@ -165,7 +203,7 @@ impl Node for IdentifierNode {
 
 pub enum CoreTypeExpressionNode {
     ATOMIC(AtomicTypeNode),
-    USER_DEFINED(TokenNode),
+    USER_DEFINED(UserDefinedTypeNode),
     ARRAY(ArrayTypeNode),
 }
 
@@ -180,9 +218,8 @@ impl TypeExpressionNode {
 
     pub fn new_with_user_defined_type(identifier: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(
-            CoreTypeExpressionNode::USER_DEFINED(identifier.clone())
+            CoreTypeExpressionNode::USER_DEFINED(UserDefinedTypeNode::new(identifier))
         ));
-        identifier.set_parent(ASTNode::TYPE_EXPRESSION(Rc::downgrade(&node)));
         TypeExpressionNode(node)
     }
 
@@ -251,6 +288,29 @@ impl ArrayTypeNode {
     }
 }
 impl Node for ArrayTypeNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+pub struct CoreUserDefinedTypeNode {
+    token: TokenNode,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Clone)]
+pub struct UserDefinedTypeNode(Rc<RefCell<CoreUserDefinedTypeNode>>);
+impl UserDefinedTypeNode {
+    pub fn new(identifier: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreUserDefinedTypeNode{
+            token: identifier.clone(),
+            parent: None,
+        }));
+        identifier.set_parent(ASTNode::USER_DEFINED_TYPE(Rc::downgrade(&node)));
+        UserDefinedTypeNode(node)
+    }
+}
+impl Node for UserDefinedTypeNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }

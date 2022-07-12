@@ -1,16 +1,19 @@
-use crate::ast::ast::{StatementNode, ParamNode, BlockNode, ASTNode, StatemenIndentWrapper};
-use crate::parser::helper::{IndentResult, IndentResultKind};
+use crate::ast::ast::{BlockNode, ParamsNode, StatemenIndentWrapper, TrailingSkippedTokens};
+use crate::parser::helper::{IndentResultKind};
 use crate::parser::parser::{PackratParser};
 use std::rc::Rc;
 use std::cell::RefCell;
 
-pub fn block(parser: &mut PackratParser, params: &Rc<Vec<ParamNode>>) -> BlockNode {
+pub fn block(parser: &mut PackratParser, params: Option<&ParamsNode>) -> BlockNode {
     let newline_node = parser.expect("\n", false);
     parser.reset_indent_level(parser.get_curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
     loop {
         let indent_result = parser.expect_indent_spaces();
         let skipped_tokens = indent_result.skipped_tokens;
+        stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(
+            TrailingSkippedTokens::new(&Rc::new(skipped_tokens))
+        ));
         let incorrect_indent_data  // (expected_indent_spaces, received_indent_spaces)
         = match indent_result.kind {
             IndentResultKind::CORRECT_INDENTATION => None,

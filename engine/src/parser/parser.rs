@@ -3,7 +3,7 @@
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::{TypeExpressionNode, StatementNode, ParamNode, BlockNode, ASTNode, TokenNode};
+use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, ParamsNode};
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
@@ -190,15 +190,15 @@ impl PackratParser {
         }
     }
 
-    pub fn skip_to_newline(&mut self) -> Vec<Token> {
-        let mut skipped_tokens: Vec<Token> = vec![];
+    pub fn skip_to_newline(&mut self) -> Vec<TokenNode> {
+        let mut skipped_tokens: Vec<TokenNode> = vec![];
         loop {
             let token = &self.token_vec[self.lookahead];
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
                 self.scan_next_token();
                 return skipped_tokens
             } else {
-                skipped_tokens.push(token.clone());
+                skipped_tokens.push(TokenNode::new_with_skipped_token(&token, self.get_curr_lookahead()));
                 self.scan_next_token();
             }
         }
@@ -223,7 +223,7 @@ impl PackratParser {
     }
 
     pub fn expect_indent_spaces(&mut self) -> IndentResult {
-        let mut skipped_tokens: Vec<Token> = vec![];
+        let mut skipped_tokens: Vec<TokenNode> = vec![];
         if !self.is_curr_token_on_newline() {
             // start skipping tokens until you reach newline and declare that chain of tokens as skipped
             skipped_tokens = self.skip_to_newline();  // save this vector somewhere to keep track of skipped tokens in AST
@@ -377,7 +377,7 @@ impl PackratParser {
         components::code::code(self, token_vec)
     }
 
-    pub fn block(&mut self, params: &Rc<Vec<ParamNode>>) -> BlockNode {
+    pub fn block(&mut self, params: Option<&ParamsNode>) -> BlockNode {
         components::block::block(self, params)
     }
 
