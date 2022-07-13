@@ -12,69 +12,49 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
     let newline_node = parser.expect("\n", false);
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
-    let mut is_indent_check_enabled = true;
     let mut leading_skipped_tokens: Vec<TokenNode> = vec![];
     loop {
-        let mut incorrect_indent_data: Option<(i64, i64)> = None;
-        if is_indent_check_enabled {
-            let indent_result = parser.expect_indent_spaces();
-            let skipped_tokens = indent_result.skipped_tokens;
-            if skipped_tokens.len() > 0 {
-                stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(
-                    SkippedTokens::new_with_trailing_skipped_tokens(&Rc::new(skipped_tokens))
-                ));
-            }
-            let extra_newlines = indent_result.extra_newlines;
-            if extra_newlines.len() > 0 {
-                stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::EXTRA_NEWLINES(
-                    SkippedTokens::new_with_extra_newlines(&Rc::new(extra_newlines))
-                ));
-            }
-            let local_incorrect_indent_data
-            = match indent_result.kind {
-                IndentResultKind::CORRECT_INDENTATION => None,
-                IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
-                IndentResultKind::BLOCK_OVER => {
-                    // use skipped_token_vec
-                    return BlockNode::new(&stmts_vec, params)
-                }
-            };
-            incorrect_indent_data = local_incorrect_indent_data;
+        let indent_result = parser.expect_indent_spaces();
+        let skipped_tokens = indent_result.skipped_tokens;
+        if skipped_tokens.len() > 0 {
+            stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(
+                SkippedTokens::new_with_trailing_skipped_tokens(&Rc::new(skipped_tokens))
+            ));
         }
-        let token = &parser.curr_token();
-        if token.is_eq(ENDMARKER) {
-            if leading_skipped_tokens.len() > 0 {
-                stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(
-                    SkippedTokens::new_with_leading_skipped_tokens(&Rc::new(mem::take(&mut leading_skipped_tokens)))
-                ));
-            }
-            return BlockNode::new(&stmts_vec, params)
+        let extra_newlines = indent_result.extra_newlines;
+        if extra_newlines.len() > 0 {
+            stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::EXTRA_NEWLINES(
+                SkippedTokens::new_with_extra_newlines(&Rc::new(extra_newlines))
+            ));
         }
-        if token.is_eq("\n") {
-            is_indent_check_enabled = true;
-            leading_skipped_tokens.push(TokenNode::new_with_skipped_token(token, parser.curr_lookahead()));
-            if leading_skipped_tokens.len() > 0 {
-                stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(
-                    SkippedTokens::new_with_leading_skipped_tokens(&Rc::new(mem::take(&mut leading_skipped_tokens)))
-                ));
+        let incorrect_indent_data
+        = match indent_result.kind {
+            IndentResultKind::CORRECT_INDENTATION => None,
+            IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
+            IndentResultKind::BLOCK_OVER => {
+                // use skipped_token_vec
+                return BlockNode::new(&stmts_vec, params)
             }
-            parser.scan_next_token();
-            continue;
-        }
-        if !is_starting_with_fn(token) {
-            is_indent_check_enabled = false;
+        };
+        while !is_starting_with_fn(&parser.curr_token())
+        || parser.curr_token().is_eq("\n") 
+        || parser.curr_token().is_eq(ENDMARKER) {
+            let token = &parser.curr_token();
             leading_skipped_tokens.push(TokenNode::new_with_skipped_token(token, parser.curr_lookahead()));
             parser.log_skipped_token_error(expected_symbols, token);
             parser.scan_next_token();
-            continue;
         }
-        else {
-            is_indent_check_enabled = true;
-            if leading_skipped_tokens.len() > 0 {
-                stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(
-                    SkippedTokens::new_with_leading_skipped_tokens(&Rc::new(mem::take(&mut leading_skipped_tokens)))
-                ));
-            }
+        if leading_skipped_tokens.len() > 0 {
+            stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(
+                SkippedTokens::new_with_leading_skipped_tokens(&Rc::new(mem::take(&mut leading_skipped_tokens)))
+            ));
+        }
+        let token = &parser.curr_token();
+        if token.is_eq(ENDMARKER) {
+            return BlockNode::new(&stmts_vec, params)
+        }
+        if token.is_eq("\n") {
+            continue;
         }
         match incorrect_indent_data {
             Some(indent_data) => {
