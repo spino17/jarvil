@@ -72,7 +72,7 @@ impl Parser for PackratParser {
 }
 
 impl PackratParser {
-    // parsing utilities
+    // ------------------- parsing utilities -------------------
     pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
         self.token_vec = token_vec;
     }
@@ -220,7 +220,7 @@ impl PackratParser {
             for (code_line, _) in &self.code_lines[start_line_number - 1 .. end_line_number - 1] {
                 code_lines.push(code_line.clone());
             }
-            let err_str = format!("expected an indented block, expected indent `{}` spaces, got `{}` spaces", 
+            let err_str = format!("expected an indented block\n    expected indentation with `{}` spaces, got `{}` spaces", 
             expected_indent, received_indent);
             let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
                 code_lines, err_str, ErrorKind::SYNTAX_ERROR);
@@ -277,7 +277,7 @@ impl PackratParser {
         }
     }
 
-    // parsing routines for terminals
+    // ------------------- parsing routines for terminals and block indentation -------------------
     pub fn expect(&mut self, symbol: &str, ignore_newline: bool) -> TokenNode {
         if ignore_newline {
             self.ignore_newlines();
@@ -399,6 +399,7 @@ impl PackratParser {
         parsed_message
     }
 
+    // ------------------- packrat parser caching utilities -------------------
     pub fn get_or_set_cache<T: std::fmt::Debug,
     F: FnOnce(&mut PackratParser) -> Result<T, ParseError>, 
     G: FnOnce(&Result<T, ParseError>) -> Result<T, ParseError>,
