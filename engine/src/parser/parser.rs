@@ -178,8 +178,33 @@ impl PackratParser {
         }
     }
 
-    pub fn log_skipped_token_error(&mut self, expected_symbols: &[&str], recevied_token: &Token) {
-        todo!()
+    pub fn log_skipped_token_error(&mut self, expected_symbols: &[&'static str], recevied_token: &Token) {
+        if self.ignore_all_errors {
+            return;
+        }
+        let errors_len = self.errors.len();
+        let (code_line, line_start_index, line_number, err_index) 
+        = self.get_code_line_data(recevied_token.line_number, recevied_token.index());
+        if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
+            return;
+        } else {
+            let mut err_str = String::from("expected ");
+            let mut flag = false;
+            let symbols_len = expected_symbols.len();
+            for index in 0..symbols_len - 1 {
+                if flag {
+                    err_str.push_str(", ");
+                }
+                err_str.push_str(&format!("`{}`", expected_symbols[index]));
+                flag = true;
+            }
+            err_str.push_str(&format!(" or `{}`", expected_symbols[symbols_len - 1]));
+            let err_message = ParseError::form_single_line_error(err_index, line_number, line_start_index, 
+                code_line, err_str, ErrorKind::SYNTAX_ERROR);
+            let err 
+            = ParseError::new(line_number, line_number, err_message);
+            self.errors.push(err);
+        }
     }
 
     pub fn log_incorrectly_indented_block_error(&mut self, start_line_number: usize, end_line_number: usize, 
@@ -413,8 +438,8 @@ impl PackratParser {
     }
 
     pub fn block<F: Fn(&Token) -> bool>(&mut self, 
-        params: Option<&ParamsNode>, is_starting_with_fn: F) -> BlockNode {
-        components::block::block(self, params, is_starting_with_fn)
+        params: Option<&ParamsNode>, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
+        components::block::block(self, params, is_starting_with_fn, expected_symbols)
     }
 
     // statements

@@ -8,7 +8,7 @@ use std::cell::RefCell;
 use crate::lexer::token::Token;
  
 pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser, 
-    params: Option<&ParamsNode>, is_starting_with_fn: F) -> BlockNode {
+    params: Option<&ParamsNode>, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
     let newline_node = parser.expect("\n", false);
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
@@ -64,6 +64,7 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
         if !is_starting_with_fn(token) {
             is_indent_check_enabled = false;
             leading_skipped_tokens.push(TokenNode::new_with_skipped_token(token, parser.curr_lookahead()));
+            parser.log_skipped_token_error(expected_symbols, token);
             parser.scan_next_token();
             continue;
         }
