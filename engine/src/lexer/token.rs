@@ -253,6 +253,9 @@ impl Token {
     }
 
     pub fn name(&self) -> Rc<String> {
-        self.name.clone()
+        match self.core_token {
+            CoreToken::NEWLINE => Rc::new(String::from("newline")),
+            _ => self.name.clone(),
+        }
     }
 }

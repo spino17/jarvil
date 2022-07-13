@@ -120,7 +120,7 @@ impl PackratParser {
         self.correction_indent = self.correction_indent + addition;
     }
 
-    pub fn code_line_data(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
+    pub fn get_code_line_data(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
         loop {
             let (s, line_start_index) = &self.code_lines[curr_line_number - 1];
             if index >= *line_start_index {
@@ -161,17 +161,17 @@ impl PackratParser {
         if self.ignore_all_errors {
             return;
         }
-        let (err_code_line, err_line_start_index, err_line_number, err_index) 
-        = self.code_line_data(recevied_token.line_number, recevied_token.index());
+        let (code_line, line_start_index, line_number, err_index) 
+        = self.get_code_line_data(recevied_token.line_number, recevied_token.index());
         let errors_len = self.errors.len();
-        if errors_len > 0 && self.errors[errors_len - 1].end_line_number == err_line_number {
+        if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
             return;
         } else {
             let err_str = format!("expected `{}`, got `{}`", expected_symbol, recevied_token.name());
-            let err_message = ParseError::form_single_line_error(err_index, err_line_number, err_line_start_index, 
-                err_code_line, err_str, ErrorKind::SYNTAX_ERROR);
+            let err_message = ParseError::form_single_line_error(err_index, line_number, line_start_index, 
+                code_line, err_str, ErrorKind::SYNTAX_ERROR);
             let err 
-            = ParseError::new(err_line_number, err_line_number, err_message);
+            = ParseError::new(line_number, line_number, err_message);
             self.errors.push(err);
         }
     }
