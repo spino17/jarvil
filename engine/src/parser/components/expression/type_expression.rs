@@ -13,7 +13,7 @@ pub fn is_type_expression_starting_with(token: &Token) -> bool {
 }
 
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
-    let token = parser.get_curr_token();
+    let token = parser.curr_token();
     match &token.core_token {
         CoreToken::ATOMIC_TYPE(_) => {
             let atomic_type_node = parser.expect(ATOMIC_TYPE, false);

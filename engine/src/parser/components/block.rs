@@ -10,7 +10,7 @@ use crate::lexer::token::Token;
 pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser, 
     params: Option<&ParamsNode>, is_starting_with_fn: F) -> BlockNode {
     let newline_node = parser.expect("\n", false);
-    parser.reset_indent_level(parser.get_curr_indent_level() + 1);
+    parser.set_indent_level(parser.curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
     let mut is_indent_check_enabled = true;
     let mut leading_skipped_tokens: Vec<TokenNode> = vec![];
@@ -42,7 +42,7 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
             };
             incorrect_indent_data = local_incorrect_indent_data;
         }
-        let token = &parser.get_curr_token();
+        let token = &parser.curr_token();
         if token.is_eq(ENDMARKER) {
             if leading_skipped_tokens.len() > 0 {
                 stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(
@@ -53,7 +53,7 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
         }
         if token.is_eq("\n") {
             is_indent_check_enabled = true;
-            leading_skipped_tokens.push(TokenNode::new_with_skipped_token(token, parser.get_curr_lookahead()));
+            leading_skipped_tokens.push(TokenNode::new_with_skipped_token(token, parser.curr_lookahead()));
             if leading_skipped_tokens.len() > 0 {
                 stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(
                     SkippedTokens::new_with_leading_skipped_tokens(&Rc::new(mem::take(&mut leading_skipped_tokens)))
@@ -64,7 +64,7 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
         }
         if !is_starting_with_fn(token) {
             is_indent_check_enabled = false;
-            leading_skipped_tokens.push(TokenNode::new_with_skipped_token(token, parser.get_curr_lookahead()));
+            leading_skipped_tokens.push(TokenNode::new_with_skipped_token(token, parser.curr_lookahead()));
             parser.scan_next_token();
             continue;
         }
@@ -81,7 +81,7 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
                 let stmt_node = if parser.is_ignore_all_errors() {
 
                     // a sub stmt of already incorrectly indented stmt some levels higher
-                    let saved_correction_indent = parser.get_correction_indent();
+                    let saved_correction_indent = parser.correction_indent();
                     parser.add_to_correction_indent(indent_data.1 - indent_data.0);
                     let stmt_node = parser.stmt();
                     parser.set_correction_indent(saved_correction_indent);
@@ -90,11 +90,11 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
 
                     // the highest level incorrectly indented stmt
                     parser.set_ignore_all_errors(true);
-                    let before_line_number = parser.get_curr_line_number();
+                    let before_line_number = parser.curr_line_number();
                     parser.set_correction_indent(indent_data.1 - indent_data.0);
                     let stmt_node = parser.stmt();
                     parser.set_ignore_all_errors(false);
-                    let after_line_number = parser.get_curr_line_number();
+                    let after_line_number = parser.curr_line_number();
                     parser.set_correction_indent(0);
                     // TODO - log the related error into a error log struct to output on terminal based compilation
                     // (use before and after line_number to show the non-local nature of the error)

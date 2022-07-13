@@ -78,11 +78,11 @@ impl PackratParser {
         self.token_vec = token_vec;
     }
 
-    pub fn get_curr_lookahead(&self) -> usize {
+    pub fn curr_lookahead(&self) -> usize {
         self.lookahead
     }
 
-    pub fn reset_lookahead(&mut self, reset_index: usize) {
+    pub fn set_lookahead(&mut self, reset_index: usize) {
         self.lookahead = reset_index;
     }
 
@@ -93,11 +93,11 @@ impl PackratParser {
         self.lookahead = self.lookahead + 1;
     }
 
-    pub fn get_curr_indent_level(&self) -> i64 {
+    pub fn curr_indent_level(&self) -> i64 {
         self.indent_level
     }
 
-    pub fn reset_indent_level(&mut self, reset_indent: i64) {
+    pub fn set_indent_level(&mut self, reset_indent: i64) {
         self.indent_level = reset_indent;
     }
 
@@ -109,7 +109,7 @@ impl PackratParser {
         self.ignore_all_errors = is_ignore_all_errors;
     }
 
-    pub fn get_correction_indent(&self) -> i64 {
+    pub fn correction_indent(&self) -> i64 {
         self.correction_indent
     }
 
@@ -121,7 +121,7 @@ impl PackratParser {
         self.correction_indent = self.correction_indent + addition;
     }
 
-    pub fn get_code_line_data(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
+    pub fn code_line_data(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
         loop {
             let (s, line_start_index) = &self.code_lines[curr_line_number - 1];
             if index >= *line_start_index {
@@ -131,11 +131,11 @@ impl PackratParser {
         }
     }
 
-    pub fn get_curr_line_number(&self) -> usize {
+    pub fn curr_line_number(&self) -> usize {
         self.token_vec[self.lookahead].line_number
     }
 
-    pub fn get_curr_token(&mut self) -> Token {
+    pub fn curr_token(&mut self) -> Token {
         self.token_vec[self.lookahead].clone()
     }
 
@@ -143,7 +143,7 @@ impl PackratParser {
         self.token_vec[self.lookahead].is_eq(symbol)
     }
 
-    pub fn get_previous_token(&mut self) -> Token {
+    pub fn previous_token(&mut self) -> Token {
         if self.lookahead == 0 {
             return Token {
                 line_number: 1,
@@ -194,11 +194,11 @@ impl PackratParser {
         loop {
             let token = &self.token_vec[self.lookahead];
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
-                skipped_tokens.push(TokenNode::new_with_skipped_token(&token, self.get_curr_lookahead()));
+                skipped_tokens.push(TokenNode::new_with_skipped_token(&token, self.curr_lookahead()));
                 self.scan_next_token();
                 return skipped_tokens
             } else {
-                skipped_tokens.push(TokenNode::new_with_skipped_token(&token, self.get_curr_lookahead()));
+                skipped_tokens.push(TokenNode::new_with_skipped_token(&token, self.curr_lookahead()));
                 self.scan_next_token();
             }
         }
@@ -209,16 +209,16 @@ impl PackratParser {
         if ignore_newline {
             self.ignore_newlines();
         }
-        let token = self.get_curr_token();
+        let token = self.curr_token();
         if token.is_eq(symbol) {
             self.scan_next_token();
-            TokenNode::new_with_token(&token, self.get_curr_lookahead())
+            TokenNode::new_with_token(&token, self.curr_lookahead())
         } else {
             // TODO - log the related error into a error log struct to output on terminal based compilation
             TokenNode::new_with_missing_token(
                 &Rc::new(String::from(symbol)),
                 &token,
-                self.get_curr_lookahead()
+                self.curr_lookahead()
             )
         }
     }
@@ -236,11 +236,11 @@ impl PackratParser {
             let token = &self.token_vec[self.lookahead];
             match &token.core_token {
                 CoreToken::NEWLINE => {
-                    extra_newlines.push(TokenNode::new_with_token(token, self.get_curr_lookahead()));
+                    extra_newlines.push(TokenNode::new_with_token(token, self.curr_lookahead()));
                     indent_spaces = 0;
                 }
                 CoreToken::ENDMARKER => {
-                    self.reset_indent_level(self.get_curr_indent_level() - 1);
+                    self.set_indent_level(self.curr_indent_level() - 1);
                     return IndentResult{
                         kind: IndentResultKind::BLOCK_OVER,
                         skipped_tokens,
@@ -259,7 +259,7 @@ impl PackratParser {
                         },
                         None => indent_spaces = 0,
                     }
-                    expected_indent_spaces = expected_indent_spaces + self.get_correction_indent();
+                    expected_indent_spaces = expected_indent_spaces + self.correction_indent();
                     if indent_spaces == expected_indent_spaces {
                         // correctly indented statement
                         return IndentResult{
@@ -276,7 +276,7 @@ impl PackratParser {
                         }
                     } else {
                         // over the block
-                        self.reset_indent_level(self.get_curr_indent_level() - 1);
+                        self.set_indent_level(self.curr_indent_level() - 1);
                         return IndentResult{
                             kind: IndentResultKind::BLOCK_OVER,
                             skipped_tokens,
@@ -342,7 +342,7 @@ impl PackratParser {
                 let result = clone_result_fn(result);
                 match result {
                     Ok(response) => {
-                        self.reset_lookahead(get_lookahead_fn(&response));
+                        self.set_lookahead(get_lookahead_fn(&response));
                         return Ok(response)
                     },
                     Err(err) => return Err(err)

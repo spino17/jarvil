@@ -7,11 +7,8 @@ pub fn is_statement_starting_with(token: &Token) -> bool {
     match token.core_token {
         CoreToken::LET                  => true,
         CoreToken::DEF                  => true,
-        CoreToken::RETURN               => true,
         CoreToken::FOR                  => true,
         CoreToken::WHILE                => true,
-        CoreToken::CONTINUE             => true,
-        CoreToken::BREAK                => true,
         CoreToken::IF                   => true,
         CoreToken::TYPE_KEYWORD         => true,
         CoreToken::INTERFACE_KEYWORD    => true,
