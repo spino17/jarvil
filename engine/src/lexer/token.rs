@@ -1,3 +1,4 @@
+use crate::ast::ast::{ASTNode, Node};
 use crate::errors::{LexicalError};
 use std::rc::Rc;
 use crate::lexer::helper;
@@ -118,6 +119,7 @@ pub struct Token {
     pub start_index: usize,
     pub end_index: usize,
     pub trivia: Option<Rc<Vec<Token>>>,  // whitespaces and comments
+    pub parent: Option<ASTNode>,
 }
 
 impl Token {
@@ -234,6 +236,7 @@ impl Token {
             start_index,
             end_index,
             trivia: None,
+            parent: None,
         })
     }
 
@@ -247,5 +250,9 @@ impl Token {
 
     pub fn index(&self) -> usize {
         (self.start_index + self.end_index) / 2 as usize
+    }
+
+    pub fn name(&self) -> Rc<String> {
+        self.name.clone()
     }
 }

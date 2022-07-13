@@ -1,7 +1,7 @@
 use crate::ast::ast::{BlockNode, TokenNode};
 use crate::lexer::token::Token;
 use crate::parser::parser::ParseSuccess;
-use crate::errors::{SyntaxError};
+use crate::errors::{ParseError};
 use crate::types::core::Type;
 
 pub enum IndentResultKind {
@@ -16,8 +16,8 @@ pub struct IndentResult {
     pub extra_newlines: Vec<TokenNode>,
 }
 
-pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool), SyntaxError>) 
--> Result<(ParseSuccess, Option<Type>, bool, bool), SyntaxError> {
+pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>) 
+-> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
     match result {
         Ok(response) => {
             let possible_err = match &response.0.possible_err {
@@ -40,8 +40,8 @@ pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool
     }
 }
 
-pub fn clone_expr_result(result: &Result<(ParseSuccess, bool), SyntaxError>) 
--> Result<(ParseSuccess, bool), SyntaxError> {
+pub fn clone_expr_result(result: &Result<(ParseSuccess, bool), ParseError>) 
+-> Result<(ParseSuccess, bool), ParseError> {
     match result {
         Ok(response) => {
             let possible_err = match &response.0.possible_err {

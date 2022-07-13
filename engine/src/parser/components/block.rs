@@ -15,7 +15,6 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
     let mut is_indent_check_enabled = true;
     let mut leading_skipped_tokens: Vec<TokenNode> = vec![];
     loop {
-        // let is_starting_with_fn_clone = is_starting_with_fn.clone();
         let mut incorrect_indent_data: Option<(i64, i64)> = None;
         if is_indent_check_enabled {
             let indent_result = parser.expect_indent_spaces();

@@ -24,6 +24,7 @@ fn start_compiler() -> Result<(), CompilationError> {
     let mut parser = PackratParser::new(code_lines);
     if token_vec.len() > 0 {
         let ast = parser.parse(token_vec, )?;  // TODO - do bytecode generation using this ast object
+        println!("{:?}", ast);
     }
     Ok(())
 }

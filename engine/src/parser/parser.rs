@@ -7,7 +7,7 @@ use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, P
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
-use crate::errors::{SyntaxError};
+use crate::errors::{ParseError, ErrorKind};
 use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
@@ -16,20 +16,20 @@ use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
 
 pub trait Parser {
-    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError>;
+    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError>;
 }
 
 #[derive(Debug)]
 pub enum RoutineCache {
     // currently only two routine (atom, expr) results are cached by the parser
-    ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), SyntaxError>>>>),
-    EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), SyntaxError>>>>),
+    ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>>>>),
+    EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>>>>),
 }
 
 #[derive(Debug)]
 pub struct ParseSuccess {
     pub lookahead: usize,
-    pub possible_err: Option<SyntaxError>,
+    pub possible_err: Option<ParseError>,
 }
 
 pub struct PackratParser {
@@ -39,17 +39,15 @@ pub struct PackratParser {
     code_lines: Vec<(Rc<String>, usize)>,
     cache: Vec<Rc<RoutineCache>>,
     ignore_all_errors: bool,  // if this is set, no errors during parsing is saved inside error logs
-    correction_indent: i64,  // if it is Some, then always add this extra bit to expected spaces
-    // curr_context: ParserContext,
-    // errors: Vec<SyntaxError>  // reported errors during the parsing
-    // TODO - add AST data structure
+    correction_indent: i64,
+    errors: Vec<ParseError>  // reported errors during the parsing
 }
 
 impl PackratParser {
     pub fn new(code_lines: Vec<(Rc<String>, usize)>) -> Self {
-        let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), SyntaxError>> 
+        let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>> 
         = FxHashMap::default();
-        let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), SyntaxError>> = FxHashMap::default();
+        let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>> = FxHashMap::default();
         PackratParser {
             token_vec: Vec::new(),
             lookahead: 0,
@@ -61,12 +59,13 @@ impl PackratParser {
             ],
             ignore_all_errors: false,
             correction_indent: 0,
+            errors: vec![],
         }
     }
 }
 
 impl Parser for PackratParser {
-    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), SyntaxError> {
+    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
         //self.code(token_vec)?;
         Ok(())
     }
@@ -152,9 +151,36 @@ impl PackratParser {
                 start_index: 0,
                 end_index: 0,
                 trivia: None,
+                parent: None,
             }
         }
         self.token_vec[self.lookahead - 1].clone()
+    }
+
+    pub fn log_missing_token_error(&mut self, expected_symbol: &str, recevied_token: &Token) {
+        if self.ignore_all_errors {
+            return;
+        }
+        let (err_code_line, err_line_start_index, err_line_number, err_index) 
+        = self.code_line_data(recevied_token.line_number, recevied_token.index());
+        let errors_len = self.errors.len();
+        if errors_len > 0 && self.errors[errors_len - 1].end_line_number == err_line_number {
+            return;
+        } else {
+            let err_str = format!("expected `{}`, got `{}`", expected_symbol, recevied_token.name());
+            let err_message = ParseError::form_single_line_error(err_index, err_line_number, err_line_start_index, 
+                err_code_line, err_str, ErrorKind::SYNTAX_ERROR);
+            let err 
+            = ParseError::new(err_line_number, err_line_number, err_message);
+            self.errors.push(err);
+        }
+    }
+
+    pub fn log_incorrectly_indented_block_error(&mut self, start_line_number: usize, end_line_number: usize) {
+        if self.ignore_all_errors {
+            return;
+        }
+
     }
 
     pub fn ignore_newlines(&mut self) {
@@ -215,6 +241,7 @@ impl PackratParser {
             TokenNode::new_with_token(&token, self.curr_lookahead())
         } else {
             // TODO - log the related error into a error log struct to output on terminal based compilation
+            self.log_missing_token_error(symbol, &token);
             TokenNode::new_with_missing_token(
                 &Rc::new(String::from(symbol)),
                 &token,
@@ -289,7 +316,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_zero_or_more<F: FnMut() -> Result<ParseSuccess, SyntaxError>>(mut f: F, 
+    pub fn expect_zero_or_more<F: FnMut() -> Result<ParseSuccess, ParseError>>(mut f: F, 
         initial_lookahead: usize) -> ParseSuccess {
         let mut curr_lookahead = initial_lookahead;
         loop {
@@ -308,7 +335,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expect_optionally<T, F: FnMut() -> Result<T, SyntaxError>>(mut f: F, curr_value: T) -> (bool, T, Option<SyntaxError>) {
+    pub fn expect_optionally<T, F: FnMut() -> Result<T, ParseError>>(mut f: F, curr_value: T) -> (bool, T, Option<ParseError>) {
         match f() {
             Ok(response) => (true, response, None),
             Err(err) => {
@@ -326,17 +353,17 @@ impl PackratParser {
     }
 
     pub fn get_or_set_cache<T: std::fmt::Debug,
-    F: FnOnce(&mut PackratParser) -> Result<T, SyntaxError>, 
-    G: FnOnce(&Result<T, SyntaxError>) -> Result<T, SyntaxError>,
+    F: FnOnce(&mut PackratParser) -> Result<T, ParseError>, 
+    G: FnOnce(&Result<T, ParseError>) -> Result<T, ParseError>,
     H: FnOnce(&T) -> usize>(
         &mut self,
-        cache_map: &Rc<RefCell<FxHashMap<usize, Result<T, SyntaxError>>>>,
+        cache_map: &Rc<RefCell<FxHashMap<usize, Result<T, ParseError>>>>,
         routine_fn: F,
         clone_result_fn: G,
         get_lookahead_fn: H,
         curr_lookahead: usize,
         message: &str,
-    ) -> Result<T, SyntaxError> {
+    ) -> Result<T, ParseError> {
         match cache_map.borrow().get(&curr_lookahead) {
             Some(result) => {
                 let result = clone_result_fn(result);

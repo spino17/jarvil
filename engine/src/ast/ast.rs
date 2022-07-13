@@ -8,7 +8,7 @@ pub trait Node {
 // AST Nodes have inner mutability to enable dynamic changes to AST like monomorphism of generics or macro expansion.
 // ASTNode has weak reference to core nodes to avoid memory leaks
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
     STATEMENT(Weak<RefCell<CoreStatementNode>>),
@@ -23,6 +23,7 @@ pub enum ASTNode {
     EXTRA_NEWLINES(Weak<RefCell<CoreSkippedTokens>>),
 }
 
+#[derive(Debug, Clone)]
 pub enum StatemenIndentWrapper {
     CORRECTLY_INDENTED(StatementNode),
     INCORRECTLY_INDENTED((StatementNode, (i64, i64))),
@@ -31,6 +32,7 @@ pub enum StatemenIndentWrapper {
     EXTRA_NEWLINES(SkippedTokens),
 }
 
+#[derive(Debug, Clone)]
 pub struct CoreBlockNode {
     stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,  // RefCell is used as we may require to add statements while monomorphism of generics phase
     params: Option<ParamsNode>,
@@ -38,7 +40,7 @@ pub struct CoreBlockNode {
     parent: Option<ASTNode>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
     pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, params: Option<&ParamsNode>) -> Self {
@@ -83,12 +85,13 @@ impl Node for BlockNode {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CoreSkippedTokens {
     skipped_tokens: Rc<Vec<TokenNode>>,
     parent: Option<ASTNode>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct SkippedTokens(Rc<RefCell<CoreSkippedTokens>>);
 impl SkippedTokens {
     pub fn new_with_leading_skipped_tokens(skipped_tokens: &Rc<Vec<TokenNode>>) -> Self {
@@ -130,12 +133,13 @@ impl Node for SkippedTokens {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum CoreStatementNode {
     // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration, 
     // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct StatementNode(Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
     pub fn new() -> Self {
@@ -148,13 +152,14 @@ impl Node for StatementNode {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CoreParamsNode {
     param: ParamNode,
     remaining_params: Option<ParamsNode>,
     parent: Option<ASTNode>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ParamsNode(Rc<RefCell<CoreParamsNode>>);
 impl ParamsNode {
     pub fn new(param: &ParamNode, remaining_params: Option<&ParamsNode>) -> Self {
@@ -180,13 +185,14 @@ impl Node for ParamsNode {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CoreParamNode {
     param_name: TokenNode,
     param_type: TypeExpressionNode,
     parent: Option<ASTNode>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ParamNode(Rc<RefCell<CoreParamNode>>);
 impl ParamNode {
     pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode) -> Self {
@@ -206,13 +212,14 @@ impl Node for ParamNode {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum CoreTypeExpressionNode {
     ATOMIC(AtomicTypeNode),
     USER_DEFINED(UserDefinedTypeNode),
     ARRAY(ArrayTypeNode),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TypeExpressionNode(Rc<RefCell<CoreTypeExpressionNode>>);
 impl TypeExpressionNode {
     pub fn new_with_atomic_type(atomic_type: &TokenNode) -> Self {
@@ -249,12 +256,13 @@ impl Node for TypeExpressionNode {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CoreAtomicTypeNode {
     kind: TokenNode,
     parent: Option<ASTNode>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct AtomicTypeNode(Rc<RefCell<CoreAtomicTypeNode>>);
 impl AtomicTypeNode {
     pub fn new(kind: &TokenNode) -> Self {
@@ -272,13 +280,14 @@ impl Node for AtomicTypeNode {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CoreArrayTypeNode {
     sub_type: TypeExpressionNode,
     size: TokenNode,
     parent: Option<ASTNode>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ArrayTypeNode(Rc<RefCell<CoreArrayTypeNode>>);
 impl ArrayTypeNode {
     pub fn new(size: &TokenNode, sub_type: &TypeExpressionNode) -> Self {
@@ -298,12 +307,13 @@ impl Node for ArrayTypeNode {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CoreUserDefinedTypeNode {
     token: TokenNode,
     parent: Option<ASTNode>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct UserDefinedTypeNode(Rc<RefCell<CoreUserDefinedTypeNode>>);
 impl UserDefinedTypeNode {
     pub fn new(identifier: &TokenNode) -> Self {
@@ -321,13 +331,14 @@ impl Node for UserDefinedTypeNode {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CoreTokenNode {
     kind: TokenKind,
     parent: Option<ASTNode>,
     lookahead: usize,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TokenNode(Rc<RefCell<CoreTokenNode>>);
 impl TokenNode {
     pub fn new_with_token(token: &Token, lookahead: usize) -> Self {

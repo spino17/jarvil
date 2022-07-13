@@ -46,6 +46,7 @@ impl Lexer for CoreLexer {
             start_index: 0,
             end_index: 0,
             trivia: None,
+            parent: None,
         });
         let mut trivia_vec: Vec<Token> = vec![];
         while self.begin_lexeme < code.len() {
@@ -73,6 +74,7 @@ impl Lexer for CoreLexer {
             start_index: code.len(),
             end_index: code.len(),
             trivia: None,
+            parent: None,
         };
         if trivia_vec.len() > 0 {
             token.set_trivia(mem::take(&mut trivia_vec));
