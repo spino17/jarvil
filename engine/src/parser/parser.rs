@@ -158,6 +158,8 @@ impl PackratParser {
     }
 
     pub fn log_missing_token_error(&mut self, expected_symbol: &str, recevied_token: &Token) {
+        // This type of error handling is taken from Golang programming language
+        // See /src/go/parser/parser.go -> `func (p *parser) error(pos token.Pos, msg string) {...}`
         if self.ignore_all_errors {
             return;
         }
@@ -176,11 +178,31 @@ impl PackratParser {
         }
     }
 
-    pub fn log_incorrectly_indented_block_error(&mut self, start_line_number: usize, end_line_number: usize) {
+    pub fn log_skipped_token_error(&mut self, expected_symbols: &[&str], recevied_token: &Token) {
+        todo!()
+    }
+
+    pub fn log_incorrectly_indented_block_error(&mut self, start_line_number: usize, end_line_number: usize, 
+        expected_indent: i64, received_indent: i64) {
         if self.ignore_all_errors {
             return;
         }
-
+        let errors_len = self.errors.len();
+        if errors_len > 0 && self.errors[errors_len - 1].end_line_number == start_line_number {
+            return;
+        } else {
+            let mut code_lines: Vec<Rc<String>> = vec![];
+            for (code_line, _) in &self.code_lines[start_line_number - 1 .. end_line_number - 1] {
+                code_lines.push(code_line.clone());
+            }
+            let err_str = format!("expected an indented block, expected indent `{}` spaces, got `{}` spaces", 
+            expected_indent, received_indent);
+            let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
+                code_lines, err_str, ErrorKind::SYNTAX_ERROR);
+            let err 
+            = ParseError::new(start_line_number, end_line_number, err_message);
+            self.errors.push(err);
+        }
     }
 
     pub fn ignore_newlines(&mut self) {

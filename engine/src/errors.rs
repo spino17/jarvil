@@ -67,6 +67,26 @@ impl ParseError {
         let err_code_part = format!("{}\n    {}", code_line.clone(), pointer_line);
         format!(">>> {}: line {}\n    {}\n    {}", err_kind, line_number, err_code_part, err_message)
     }
+
+    pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, code_lines: Vec<Rc<String>>, 
+        err_message: String, err_kind: ErrorKind) -> String {
+        if end_line_number < start_line_number {
+            unreachable!("end line number cannot be less than start line number")
+        }
+        if end_line_number == start_line_number {
+            unreachable!("use `form_single_line_error` method for formaing errors occuring on the same line")
+        }
+        let mut err_code_part: String = String::from("");
+        let mut flag = false;
+        for code_line in &code_lines {
+            if flag {
+                err_code_part.push_str("\n    ");
+            }
+            err_code_part.push_str(&format!("| {}", code_line));
+            flag = true;
+        }
+        format!(">>> {}: lines {} - {}\n    {}\n    {}", err_kind, start_line_number, end_line_number, err_code_part, err_message)
+    }
 }
 
 #[derive(Debug)]
