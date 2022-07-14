@@ -40,7 +40,7 @@ pub struct PackratParser {
     cache: Vec<Rc<RoutineCache>>,
     ignore_all_errors: bool,  // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
-    errors: Vec<ParseError>  // reported errors during the parsing
+    errors: Vec<ParseError>  // reported errors during the parsing, useful for terminal based compilation
 }
 
 impl PackratParser {
@@ -86,7 +86,7 @@ impl PackratParser {
     }
 
     pub fn scan_next_token(&mut self) {
-        if self.lookahead == self.token_vec.len() - 1 {  // if token is endmarker, don't change
+        if self.lookahead == self.token_vec.len() - 1 {
             return;
         }
         self.lookahead = self.lookahead + 1;
@@ -287,7 +287,6 @@ impl PackratParser {
             self.scan_next_token();
             TokenNode::new_with_token(&token, self.curr_lookahead())
         } else {
-            // TODO - log the related error into a error log struct to output on terminal based compilation
             self.log_missing_token_error(symbol, &token);
             TokenNode::new_with_missing_token(
                 &Rc::new(String::from(symbol)),
@@ -301,7 +300,6 @@ impl PackratParser {
         let mut skipped_tokens: Vec<TokenNode> = vec![];
         let mut extra_newlines: Vec<TokenNode> = vec![];
         if !self.is_curr_token_on_newline() {
-            // start skipping tokens until you reach newline and declare that chain of tokens as skipped
             skipped_tokens = self.skip_to_newline();
         }
         let mut expected_indent_spaces = context::get_indent() * self.indent_level;
@@ -335,21 +333,18 @@ impl PackratParser {
                     }
                     expected_indent_spaces = expected_indent_spaces + self.correction_indent();
                     if indent_spaces == expected_indent_spaces {
-                        // correctly indented statement
                         return IndentResult{
                             kind: IndentResultKind::CORRECT_INDENTATION,
                             skipped_tokens,
                             extra_newlines,
                         }
                     } else if indent_spaces > expected_indent_spaces {
-                        // incorrectly indented statement
                         return IndentResult{
                             kind: IndentResultKind::INCORRECT_INDENTATION((expected_indent_spaces, indent_spaces)),
                             skipped_tokens,
                             extra_newlines,
                         }
                     } else {
-                        // over the block
                         self.set_indent_level(self.curr_indent_level() - 1);
                         return IndentResult{
                             kind: IndentResultKind::BLOCK_OVER,

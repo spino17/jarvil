@@ -26,7 +26,6 @@ pub enum CoreToken {
     RETURN,             // 'return'
 
     // types
-    // STRUCT,          // 'struct'
     TYPE_KEYWORD,       // 'type'
     ATOMIC_TYPE(TokenValue),
     NEW,                // 'new'
@@ -44,9 +43,7 @@ pub enum CoreToken {
 
     // operators
     PLUS,               // '+'
-    // DOUBLE_PLUS,     // '++'
     DASH,               // '-'
-    // DOUBLE_MINUS,    // '--'
     RIGHT_ARROW,        // '->'
     STAR,               // '*'
     DOUBLE_STAR,        // '**'
@@ -79,7 +76,6 @@ pub enum CoreToken {
     GREATER_EQUAL,      // '>='
 
     // expression terminals
-    // NUMBER((TokenValue, bool)),
     INTEGER(TokenValue),
     FLOATING_POINT_NUMBER(TokenValue),
     IDENTIFIER(TokenValue),
@@ -102,7 +98,6 @@ pub enum TokenKind {
     AVAILABLE(Token),
     MISSING(MissingToken),
     SKIPPED(Token),
-    // SKIPPING_TOKEN(SkippingToken)
 }
 
 #[derive(Debug, Clone)]
@@ -118,7 +113,7 @@ pub struct Token {
     pub name: Rc<String>,
     pub start_index: usize,
     pub end_index: usize,
-    pub trivia: Option<Rc<Vec<Token>>>,  // whitespaces and comments
+    pub trivia: Option<Rc<Vec<Token>>>,
     pub parent: Option<ASTNode>,
 }
 

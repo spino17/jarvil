@@ -6,7 +6,7 @@ use crate::types::core::Type;
 
 pub enum IndentResultKind {
     CORRECT_INDENTATION,
-    INCORRECT_INDENTATION((i64, i64)),  // (expected_indent, received_indent)
+    INCORRECT_INDENTATION((i64, i64)),
     BLOCK_OVER,
 }
 

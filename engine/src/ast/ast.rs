@@ -1,13 +1,13 @@
-use std::{rc::{Rc, Weak}, cell::RefCell, iter::Skip};
+// AST Nodes have inner mutability to enable dynamic changes to AST like monomorphism of generics or macro expansion.
+// ASTNode has weak reference to core nodes to avoid memory leaks. See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
+
+use std::{rc::{Rc, Weak}, cell::RefCell};
 use crate::{scope::core::Scope, lexer::token::{TokenKind, Token, MissingToken}};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
 }
 
-// AST Nodes have inner mutability to enable dynamic changes to AST like monomorphism of generics or macro expansion.
-// ASTNode has weak reference to core nodes to avoid memory leaks
-// See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 #[derive(Debug, Clone)]
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
@@ -34,7 +34,7 @@ pub enum StatemenIndentWrapper {
 
 #[derive(Debug, Clone)]
 pub struct CoreBlockNode {
-    stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,  // RefCell is used as we may require to add statements while monomorphism of generics phase
+    stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
     params: Option<ParamsNode>,
     scope: Option<Scope>,
     parent: Option<ASTNode>,
