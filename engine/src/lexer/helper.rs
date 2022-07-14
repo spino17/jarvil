@@ -19,7 +19,7 @@ pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
 }
 
 // - -> -, ->
-pub fn extract_minus_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
+pub fn extract_dash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
@@ -188,7 +188,7 @@ pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
 }
 
 // > -> >, >=
-pub fn extract_greater_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
+pub fn extract_rbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
@@ -209,7 +209,7 @@ pub fn extract_greater_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>)
 }
 
 // < -> <, <=
-pub fn extract_less_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
+pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
@@ -231,24 +231,29 @@ pub fn extract_less_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 
 // " -> "..."
 pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Vec<char>) -> Result<(CoreToken, String), LexicalError> {
+    line_number: &mut usize, code: &Vec<char>, code_lines: &mut Vec<(Rc<String>, usize)>, 
+    line_start_index: &mut usize) -> Result<(CoreToken, String), LexicalError> {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code[forward_lexeme];
-        if next_char == '\n' {
-            *line_number = *line_number + 1;
-        }
         match next_char {
             '"' => {
                 let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
                 *begin_lexeme = forward_lexeme + 1;
                 return Ok((CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from(STRING_LITERAL)))
             },
+            '\n' => {
+                let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
+                code_str.push(' ');
+                code_lines.push((Rc::new(code_str), *line_start_index));
+                *line_number = *line_number + 1;
+                *line_start_index = forward_lexeme + 1;
+            },
             _ => {}
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    Err(LexicalError::new(*line_number, String::from(r#"no closing " found for literal"#)))
+    Err(LexicalError::new(*line_number, String::from(r#"no closing `"` found for literal"#)))
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type

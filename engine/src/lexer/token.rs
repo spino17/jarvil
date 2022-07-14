@@ -11,69 +11,73 @@ pub struct TokenValue(pub Rc<String>);
 pub enum CoreToken {
 
     // conditionals
-    IF,                 // 'if'
-    ELSE,               // 'else'
-    ELIF,               // 'elif'
+    IF,                                 // 'if'
+    ELSE,                               // 'else'
+    ELIF,                               // 'elif'
 
     // loops
-    FOR,                // 'for'
-    WHILE,              // 'while'
-    CONTINUE,           // 'continue'
-    BREAK,              // 'break'
+    FOR,                                // 'for'
+    WHILE,                              // 'while'
+    CONTINUE,                           // 'continue'
+    BREAK,                              // 'break'
 
     // functions
-    DEF,                // 'def'
-    RETURN,             // 'return'
+    DEF,                                // 'def'
+    RETURN,                             // 'return'
 
     // types
-    TYPE_KEYWORD,       // 'type'
+    TYPE_KEYWORD,                       // 'type'
     ATOMIC_TYPE(TokenValue),
-    NEW,                // 'new'
-    LET,                // 'let'
-    SELF,               // 'self'
-    IMPL,               // 'impl'
-    INTERFACE_KEYWORD,  // 'interface'
+    NEW,                                // 'new'
+    LET,                                // 'let'
+    SELF,                               // 'self'
+    IMPL,                               // 'impl'
+    INTERFACE_KEYWORD,                  // 'interface'
 
-    // bitwise operators
-    AND,                // 'and'
-    NOT,                // 'not'
-    OR,                 // 'or'
-    IS,                 // 'is'
-    IN,                 // 'in'
+    // logical operators
+    AND,                                // 'and'
+    NOT,                                // 'not'
+    OR,                                 // 'or'
+    IS,                                 // 'is'
+    IN,                                 // 'in'
+
+    // booleans
+    TRUE,                               // 'True'
+    FALSE,                              // 'False'
 
     // operators
-    PLUS,               // '+'
-    DASH,               // '-'
-    RIGHT_ARROW,        // '->'
-    STAR,               // '*'
-    DOUBLE_STAR,        // '**'
-    SLASH,              // '/'
+    PLUS,                               // '+'
+    DASH,                               // '-'
+    RIGHT_ARROW,                        // '->'
+    STAR,                               // '*'
+    DOUBLE_STAR,                        // '**'
+    SLASH,                              // '/'
 
     // wrappers
-    LPAREN,             // '('
-    RPAREN,             // ')'
-    LBRACE,             // '{'
-    RBRACE,             // '}'
-    LSQUARE,            // '['
-    RSQUARE,            // ']'
+    LPAREN,                             // '('
+    RPAREN,                             // ')'
+    LBRACE,                             // '{'
+    RBRACE,                             // '}'
+    LSQUARE,                            // '['
+    RSQUARE,                            // ']'
 
     // delimiters
-    SEMICOLON,          // ';'
-    COLON,              // ':'
-    DOUBLE_COLON,       // '::'
-    COMMA,              // ','
-    DOT,                // '.'
-    BLANK,              // ' '
-    TAB,                // '\t'
-    NEWLINE,            // '\n'
+    SEMICOLON,                          // ';'
+    COLON,                              // ':'
+    DOUBLE_COLON,                       // '::'
+    COMMA,                              // ','
+    DOT,                                // '.'
+    BLANK,                              // ' '
+    // TAB,                             // '\t'
+    NEWLINE,                            // '\n'
 
     // comparison
-    EQUAL,              // '='
-    DOUBLE_EQUAL,       // '=='
-    LBRACKET,           // '<'
-    RBRACKET,           // '>'
-    LESS_EQUAL,         // '<='
-    GREATER_EQUAL,      // '>='
+    EQUAL,                              // '='
+    DOUBLE_EQUAL,                       // '=='
+    LBRACKET,                           // '<'
+    RBRACKET,                           // '>'
+    LESS_EQUAL,                         // '<='
+    GREATER_EQUAL,                      // '>='
 
     // expression terminals
     INTEGER(TokenValue),
@@ -81,13 +85,9 @@ pub enum CoreToken {
     IDENTIFIER(TokenValue),
     LITERAL(TokenValue),
 
-    // booleans
-    TRUE,               // 'True'
-    FALSE,              // 'False'
-
     // ignored by parser
-    SINGLE_LINE_COMMENT(TokenValue),// '//...\n' or '#...\n'
-    BLOCK_COMMENT(TokenValue),      // '/* ... */'
+    SINGLE_LINE_COMMENT(TokenValue),    // '//...\n' or '#...\n'
+    BLOCK_COMMENT(TokenValue),          // '/* ... */'
 
     // termination
     ENDMARKER,
@@ -180,17 +180,20 @@ impl Token {
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::PLUS, String::from("+"))
             },
+            '/'         =>      {
+                helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)?
+            },
+            '"'         =>      {
+                helper::extract_literal_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)?
+            },
             ' '         =>      {
                 helper::extract_blank_prefix_lexeme(begin_lexeme, code)?
             },
             '-'         =>      {
-                helper::extract_minus_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_dash_prefix_lexeme(begin_lexeme, code)?
             }
             '*'         =>      {
                 helper::extract_star_prefix_lexeme(begin_lexeme, code)?
-            },
-            '/'         =>      {
-                helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)?
             },
             '#'         =>      {
                 helper::extract_hash_prefix_lexeme(begin_lexeme, code)?
@@ -199,13 +202,10 @@ impl Token {
                 helper::extract_equal_prefix_lexeme(begin_lexeme, code)?
             },
             '>'         =>      {
-                helper::extract_greater_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_rbracket_prefix_lexeme(begin_lexeme, code)?
             },
             '<'         =>      {
-                helper::extract_less_prefix_lexeme(begin_lexeme, code)?
-            },
-            '"'         =>      {
-                helper::extract_literal_prefix_lexeme(begin_lexeme, line_number, code)?
+                helper::extract_lbracket_prefix_lexeme(begin_lexeme, code)?
             },
             ':'         =>      {
                 helper::extract_colon_prefix_lexeme(begin_lexeme, code)?

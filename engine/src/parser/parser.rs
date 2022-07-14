@@ -351,7 +351,7 @@ impl PackratParser {
                             skipped_tokens,
                             extra_newlines,
                         }
-                    } 
+                    }
                 }
             }
             self.scan_next_token();

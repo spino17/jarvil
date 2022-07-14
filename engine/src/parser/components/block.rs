@@ -1,11 +1,8 @@
-// jarvil compiler is designed to be IDE-first (and not terminal-first), meaning it always build the AST even if there are errors 
+// jarvil parser is designed to be IDE-first (and not terminal-first), meaning it always build the AST even if there are errors 
 // in the code. To deal with such kind of robust error-tolerant recovery while parsing we use an approach which is popularized by 
 // Microsoft and has been used in their technologies like Roslyn, TypeScript and tolerant-php-parser.
 // See `https://github.com/microsoft/tolerant-php-parser/blob/main/docs/HowItWorks.md` for more information.
-// Most of the VS code and similar editor's language extensions are designed using this approach. IDE-first designed compilers
-// can take advantage of Langauge Server Protocol to provide out-of-the-box code editing functionalities from day one without
-// putting much efforts in developing `developement tools` for the language.
-// Few other languages are:
+// Below are similar docs for rust and swift:
 // Rust  - `https://github.com/rust-lang/rust-analyzer/blob/1d53f695f0408f47c5cce5cefa471eb0e86b0db7/docs/dev/guide.md`
 // Swift - `https://github.com/apple/swift/tree/5e2c815edfd758f9b1309ce07bfc01c4bc20ec23/lib/Syntax`
 
@@ -43,7 +40,6 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
             IndentResultKind::CORRECT_INDENTATION => None,
             IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
             IndentResultKind::BLOCK_OVER => {
-                // use skipped_token_vec
                 return BlockNode::new(&stmts_vec, params)
             }
         };
@@ -70,7 +66,6 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
         match incorrect_indent_data {
             Some(indent_data) => {
                 let stmt_node = if parser.is_ignore_all_errors() {
-
                     // a sub stmt of already incorrectly indented stmt some levels higher
                     let saved_correction_indent = parser.correction_indent();
                     parser.add_to_correction_indent(indent_data.1 - indent_data.0);
@@ -78,7 +73,6 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
                     parser.set_correction_indent(saved_correction_indent);
                     stmt_node
                 } else {
-
                     // the highest level incorrectly indented stmt
                     parser.set_ignore_all_errors(true);
                     let before_line_number = parser.curr_line_number();
