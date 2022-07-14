@@ -1,13 +1,12 @@
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
-use crate::errors::LexicalError;
 use crate::lexer::token::CoreToken;
 use std::rc::Rc;
 use std::vec;
 use std::mem;
 
 pub trait Lexer {
-    fn tokenize(&mut self, code: Vec<char>) -> Result<Vec<Token>, LexicalError>;
+    fn tokenize(&mut self, code: Vec<char>) -> Vec<Token>;
 }
 
 pub struct CoreLexer {
@@ -15,6 +14,7 @@ pub struct CoreLexer {
     line_number: usize,
     code_lines: Vec<(Rc<String>, usize)>,
     line_start_index: usize,
+    // errors: Vec<ParseError>
 }
 
 impl CoreLexer {
@@ -27,8 +27,9 @@ impl CoreLexer {
         }
     }
 
-    pub fn extract_lexeme(&mut self, code: &Vec<char>) -> Result<Token, LexicalError> {
-        Token::extract_lexeme(&mut self.begin_lexeme, &mut self.line_number, code, &mut self.code_lines, &mut self.line_start_index)
+    pub fn extract_lexeme(&mut self, code: &Vec<char>) -> Token {
+        Token::extract_lexeme(&mut self.begin_lexeme, &mut self.line_number, code, &mut self.code_lines, 
+            &mut self.line_start_index)
     }
 
     pub fn get_code_lines(self) -> Vec<(Rc<String>, usize)> {
@@ -37,7 +38,7 @@ impl CoreLexer {
 }
 
 impl Lexer for CoreLexer {
-    fn tokenize(&mut self, code: Vec<char>) -> Result<Vec<Token>, LexicalError> {
+    fn tokenize(&mut self, code: Vec<char>) -> Vec<Token> {
         let mut token_vec: Vec<Token> = Vec::new();
         token_vec.push(Token {
             line_number: self.line_number,
@@ -50,7 +51,7 @@ impl Lexer for CoreLexer {
         });
         let mut trivia_vec: Vec<Token> = vec![];
         while self.begin_lexeme < code.len() {
-            let mut token = self.extract_lexeme(&code)?;
+            let mut token = self.extract_lexeme(&code);
             match token.core_token {
                 CoreToken::BLANK => trivia_vec.push(token),
                 CoreToken::SINGLE_LINE_COMMENT(_) => trivia_vec.push(token),
@@ -81,6 +82,6 @@ impl Lexer for CoreLexer {
         }
         println!("{:?}", token);
         token_vec.push(token);
-        Ok(token_vec)
+        token_vec
     }
 }

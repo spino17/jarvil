@@ -1,4 +1,5 @@
 use crate::ast::ast::{ASTNode, Node};
+use crate::constants::common::LEXICAL_ERROR;
 use crate::errors::{LexicalError};
 use std::rc::Rc;
 use crate::lexer::helper;
@@ -91,6 +92,9 @@ pub enum CoreToken {
 
     // termination
     ENDMARKER,
+
+    // error
+    LEXICAL_ERROR(TokenValue)
 }
 
 #[derive(Debug, Clone)]
@@ -121,7 +125,7 @@ impl Token {
     // This method tokenize the code in O(|code|)
     pub fn extract_lexeme(begin_lexeme: &mut usize, 
         line_number: &mut usize, code: &Vec<char>, 
-        code_lines: &mut Vec<(Rc<String>, usize)>, line_start_index: &mut usize) -> Result<Token, LexicalError> {
+        code_lines: &mut Vec<(Rc<String>, usize)>, line_start_index: &mut usize) -> Token {
         let start_index = *begin_lexeme;
         let critical_char = code[*begin_lexeme];
         let (core_token, name) = match critical_char {
@@ -181,50 +185,51 @@ impl Token {
                 (CoreToken::PLUS, String::from("+"))
             },
             '/'         =>      {
-                helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)?
+                helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
             },
             '"'         =>      {
-                helper::extract_literal_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)?
+                helper::extract_literal_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
             },
             ' '         =>      {
-                helper::extract_blank_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_blank_prefix_lexeme(begin_lexeme, code)
             },
             '-'         =>      {
-                helper::extract_dash_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_dash_prefix_lexeme(begin_lexeme, code)
             }
             '*'         =>      {
-                helper::extract_star_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_star_prefix_lexeme(begin_lexeme, code)
             },
             '#'         =>      {
-                helper::extract_hash_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_hash_prefix_lexeme(begin_lexeme, code)
             }
             '='         =>      {
-                helper::extract_equal_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_equal_prefix_lexeme(begin_lexeme, code)
             },
             '>'         =>      {
-                helper::extract_rbracket_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_rbracket_prefix_lexeme(begin_lexeme, code)
             },
             '<'         =>      {
-                helper::extract_lbracket_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_lbracket_prefix_lexeme(begin_lexeme, code)
             },
             ':'         =>      {
-                helper::extract_colon_prefix_lexeme(begin_lexeme, code)?
+                helper::extract_colon_prefix_lexeme(begin_lexeme, code)
             },
             c     =>      {
                 let token: CoreToken;
                 let name: String;
                 if context::is_letter(&c) {
-                    (token, name) = helper::extract_letter_prefix_lexeme(begin_lexeme, code)?;
+                    (token, name) = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
                 } else if context::is_digit(&c) {
-                    (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, line_number, code)?;
+                    (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, line_number, code);
                 } else {
-                    return Err(LexicalError::new(*line_number, format!("invalid character '{}' found", c)))
+                    (token, name) = (CoreToken::LEXICAL_ERROR(TokenValue(Rc::new(format!("invalid character `{}` found", c)))), String::from(LEXICAL_ERROR));
+                    *begin_lexeme = *begin_lexeme + 1;
                 }
                 (token, name)
             }
         };
         let end_index = *begin_lexeme;
-        Ok(Token {
+        Token {
             line_number: *line_number,
             core_token,
             name: Rc::new(name),
@@ -232,7 +237,7 @@ impl Token {
             end_index,
             trivia: None,
             parent: None,
-        })
+        }
     }
 
     pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {

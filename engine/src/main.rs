@@ -19,7 +19,7 @@ fn start_compiler() -> Result<(), CompilationError> {
     let args: Vec<String> = args().collect();
     let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;
     let mut core_lexer = CoreLexer::new();
-    let token_vec = core_lexer.tokenize(char_vec)?;
+    let token_vec = core_lexer.tokenize(char_vec);
     let code_lines = core_lexer.get_code_lines();
     let mut parser = PackratParser::new(code_lines);
     if token_vec.len() > 0 {
