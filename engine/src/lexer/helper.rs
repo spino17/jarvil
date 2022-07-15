@@ -140,10 +140,14 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
         },
         2 => {
             *begin_lexeme = forward_lexeme;
-            let err_str = Rc::new(String::from("no closing tag found for block comment"));
+            let err_str = Rc::new(String::from("missing trailing symbol `*/` for block comment"));
             return (CoreToken::LEXICAL_ERROR(TokenValue(err_str)), String::from(LEXICAL_ERROR))
         },
-        3 => unreachable!("found state 3 which is not possible as state 3 either returns or always transition to state 2"),
+        3 => {
+            *begin_lexeme = forward_lexeme;
+            let err_str = Rc::new(String::from("missing trailing symbol `*/` for block comment"));
+            return (CoreToken::LEXICAL_ERROR(TokenValue(err_str)), String::from(LEXICAL_ERROR))
+        },
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
     }
 }
@@ -372,7 +376,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
             *begin_lexeme = forward_lexeme;
             return (CoreToken::FLOATING_POINT_NUMBER(TokenValue(Rc::new(value))), String::from(FLOATING_POINT_NUMBER))
         },
-        _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
+        _ => unreachable!("any state other than 0, 1, and 2 is not reachable")
     }
 }
 
