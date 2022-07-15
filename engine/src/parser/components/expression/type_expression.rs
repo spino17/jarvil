@@ -37,6 +37,7 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
             TypeExpressionNode::new_with_array_type(&array_size_node, &sub_type_node)
         },
         _ => {
+            parser.log_skipped_token_error(&TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS, &token);
             TypeExpressionNode::new_with_missing_tokens(
                 &Rc::new(TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
                 &token,

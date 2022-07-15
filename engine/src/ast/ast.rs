@@ -366,7 +366,7 @@ impl TokenNode {
 impl Node for TokenNode {
     fn set_parent(&self, parent_node: ASTNode) {
         match &*self.0.as_ref().borrow() {
-            CoreTokenNode::OK(ok_token_node) => ok_token_node.set_parent(parent_node),
+            CoreTokenNode::OK(ok_token_node)                => ok_token_node.set_parent(parent_node),
             CoreTokenNode::MISSING(missing_token_node) => missing_token_node.set_parent(parent_node),
             CoreTokenNode::SKIPPED(skipped_token_node) => skipped_token_node.set_parent(parent_node),
         }
