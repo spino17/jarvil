@@ -3,6 +3,7 @@ use crate::constants::common::{INTEGER, IDENTIFIER, ATOMIC_TYPE};
 use crate::parser::parser::{PackratParser};
 use crate::lexer::token::{CoreToken, Token};
 use std::rc::Rc;
+use crate::ast::ast::MissingTokenNode;
 
 pub fn is_type_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
@@ -36,12 +37,11 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
             TypeExpressionNode::new_with_array_type(&array_size_node, &sub_type_node)
         },
         _ => {
-            TokenNode::new_with_missing_token(
+            TypeExpressionNode::new_with_missing_tokens(
                 &Rc::new(TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
                 &token,
                 parser.curr_lookahead(),
-            );
-            todo!()
+            )
         }
     }
 }

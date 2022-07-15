@@ -106,13 +106,6 @@ pub enum LexicalErrorKind {
 }
 
 #[derive(Debug, Clone)]
-pub enum TokenKind {
-    AVAILABLE(Token),
-    MISSING(MissingToken),
-    SKIPPED(Token),
-}
-
-#[derive(Debug, Clone)]
 pub struct MissingToken {
     pub expected_symbols: Rc<Vec<&'static str>>,
     pub received_token: Token,

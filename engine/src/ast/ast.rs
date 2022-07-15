@@ -2,7 +2,7 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks. See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::core::Scope, lexer::token::{TokenKind, Token, MissingToken}};
+use crate::{scope::core::Scope, lexer::token::Token};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
@@ -87,14 +87,14 @@ impl Node for BlockNode {
 
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokens {
-    skipped_tokens: Rc<Vec<TokenNode>>,
+    skipped_tokens: Rc<Vec<SkippedTokenNode>>,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
 pub struct SkippedTokens(Rc<RefCell<CoreSkippedTokens>>);
 impl SkippedTokens {
-    pub fn new_with_leading_skipped_tokens(skipped_tokens: &Rc<Vec<TokenNode>>) -> Self {
+    pub fn new_with_leading_skipped_tokens(skipped_tokens: &Rc<Vec<SkippedTokenNode>>) -> Self {
         let node = Rc::new(RefCell::new(CoreSkippedTokens{
             skipped_tokens: skipped_tokens.clone(),
             parent: None,
@@ -105,7 +105,7 @@ impl SkippedTokens {
         SkippedTokens(node)
     }
 
-    pub fn new_with_trailing_skipped_tokens(skipped_tokens: &Rc<Vec<TokenNode>>) -> Self {
+    pub fn new_with_trailing_skipped_tokens(skipped_tokens: &Rc<Vec<SkippedTokenNode>>) -> Self {
         let node = Rc::new(RefCell::new(CoreSkippedTokens{
             skipped_tokens: skipped_tokens.clone(),
             parent: None,
@@ -116,7 +116,7 @@ impl SkippedTokens {
         SkippedTokens(node)
     }
 
-    pub fn new_with_extra_newlines(extra_newlines: &Rc<Vec<TokenNode>>) -> Self {
+    pub fn new_with_extra_newlines(extra_newlines: &Rc<Vec<SkippedTokenNode>>) -> Self {
         let node = Rc::new(RefCell::new(CoreSkippedTokens{
             skipped_tokens: extra_newlines.clone(),
             parent: None,
@@ -217,7 +217,7 @@ pub enum CoreTypeExpressionNode {
     ATOMIC(AtomicTypeNode),
     USER_DEFINED(UserDefinedTypeNode),
     ARRAY(ArrayTypeNode),
-    ERROR(TokenNode),
+    MISSING_TOKENS(MissingTokenNode),
 }
 
 #[derive(Debug, Clone)]
@@ -241,9 +241,9 @@ impl TypeExpressionNode {
         )))
     }
 
-    pub fn new_with_error(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+    pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
         TypeExpressionNode(Rc::new(RefCell::new(
-            CoreTypeExpressionNode::ERROR(TokenNode::new_with_missing_token(expected_symbols, received_token, lookahead))
+            CoreTypeExpressionNode::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead))
         )))
     }
 }
@@ -259,7 +259,7 @@ impl Node for TypeExpressionNode {
             CoreTypeExpressionNode::ARRAY(array_node) => {
                 array_node.set_parent(parent_node);
             },
-            CoreTypeExpressionNode::ERROR(error_node) => {
+            CoreTypeExpressionNode::MISSING_TOKENS(error_node) => {
                 error_node.set_parent(parent_node)
             }
         }
@@ -342,44 +342,109 @@ impl Node for UserDefinedTypeNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct CoreTokenNode {
-    kind: TokenKind,
-    parent: Option<ASTNode>,
-    lookahead: usize,
+pub enum CoreTokenNode {
+    OK(OkTokenNode),
+    MISSING(MissingTokenNode),
+    SKIPPED(SkippedTokenNode),
 }
 
 #[derive(Debug, Clone)]
 pub struct TokenNode(Rc<RefCell<CoreTokenNode>>);
 impl TokenNode {
-    pub fn new_with_token(token: &Token, lookahead: usize) -> Self {
-        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenKind::AVAILABLE(token.clone()),
-            parent: None,
-            lookahead,
-        })))
+    pub fn new_with_ok_token(token: &Token, lookahead: usize) -> Self {
+        TokenNode(Rc::new(RefCell::new(CoreTokenNode::OK(OkTokenNode::new(token, lookahead)))))
     }
 
     pub fn new_with_missing_token(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenKind::MISSING(MissingToken{
-                expected_symbols: expected_symbols.clone(),
-                received_token: received_token.clone(),
-            }),
-            parent: None,
-            lookahead,
-        })))
+        TokenNode(Rc::new(RefCell::new(CoreTokenNode::MISSING(MissingTokenNode::new(expected_symbols, received_token, lookahead)))))
     }
 
     pub fn new_with_skipped_token(skipped_token: &Token, lookahead: usize) -> Self {
-        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenKind::SKIPPED(skipped_token.clone()),
-            parent: None,
-            lookahead,
-        })))
+        TokenNode(Rc::new(RefCell::new(CoreTokenNode::SKIPPED(SkippedTokenNode::new(skipped_token, lookahead)))))
     }
 }
 impl Node for TokenNode {
     fn set_parent(&self, parent_node: ASTNode) {
+        match &*self.0.as_ref().borrow() {
+            CoreTokenNode::OK(ok_token_node) => ok_token_node.set_parent(parent_node),
+            CoreTokenNode::MISSING(missing_token_node) => missing_token_node.set_parent(parent_node),
+            CoreTokenNode::SKIPPED(skipped_token_node) => skipped_token_node.set_parent(parent_node),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreOkTokenNode {
+    token: Token,
+    lookahead: usize,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct OkTokenNode(Rc<RefCell<CoreOkTokenNode>>);
+impl OkTokenNode {
+    pub fn new(token: &Token, lookahead: usize) -> Self {
+        OkTokenNode(Rc::new(RefCell::new(CoreOkTokenNode{
+            token: token.clone(),
+            lookahead,
+            parent: None,
+        })))
+    }
+}
+impl Node for OkTokenNode {
+    fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct CoreMissingTokenNode {
+    expected_symbols: Rc<Vec<&'static str>>,
+    received_token: Token,
+    lookahead: usize, 
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct MissingTokenNode(Rc<RefCell<CoreMissingTokenNode>>);
+impl MissingTokenNode {
+    pub fn new(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        MissingTokenNode(Rc::new(RefCell::new(CoreMissingTokenNode{
+            expected_symbols: expected_symbols.clone(),
+            received_token: received_token.clone(),
+            lookahead,
+            parent: None,
+        })))
+    }
+}
+impl Node for MissingTokenNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreSkippedTokenNode {
+    skipped_token: Token,
+    lookahead: usize,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SkippedTokenNode(Rc<RefCell<CoreSkippedTokenNode>>);
+impl SkippedTokenNode {
+    pub fn new(skipped_token: &Token, lookahead: usize) -> Self {
+        SkippedTokenNode(Rc::new(RefCell::new(CoreSkippedTokenNode{
+            skipped_token: skipped_token.clone(),
+            lookahead,
+            parent: None,
+        })))
+    }
+}
+impl Node for SkippedTokenNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+

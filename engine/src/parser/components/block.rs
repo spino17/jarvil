@@ -6,7 +6,7 @@
 // Rust  - `https://github.com/rust-lang/rust-analyzer/blob/1d53f695f0408f47c5cce5cefa471eb0e86b0db7/docs/dev/guide.md`
 // Swift - `https://github.com/apple/swift/tree/5e2c815edfd758f9b1309ce07bfc01c4bc20ec23/lib/Syntax`
 
-use crate::ast::ast::{BlockNode, ParamsNode, StatemenIndentWrapper, SkippedTokens, TokenNode};
+use crate::ast::ast::{BlockNode, ParamsNode, StatemenIndentWrapper, SkippedTokens, SkippedTokenNode};
 use crate::constants::common::ENDMARKER;
 use crate::parser::helper::{IndentResultKind};
 use crate::parser::parser::{PackratParser};
@@ -20,7 +20,7 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
     let newline_node = parser.expect("\n", false);
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
-    let mut leading_skipped_tokens: Vec<TokenNode> = vec![];
+    let mut leading_skipped_tokens: Vec<SkippedTokenNode> = vec![];
     loop {
         let indent_result = parser.expect_indent_spaces();
         let skipped_tokens = indent_result.skipped_tokens;
@@ -47,7 +47,7 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
         || parser.curr_token().is_eq("\n") 
         || parser.curr_token().is_eq(ENDMARKER) {
             let token = &parser.curr_token();
-            leading_skipped_tokens.push(TokenNode::new_with_skipped_token(token, parser.curr_lookahead()));
+            leading_skipped_tokens.push(SkippedTokenNode::new(token, parser.curr_lookahead()));
             parser.log_skipped_token_error(expected_symbols, token);
             parser.scan_next_token();
         }

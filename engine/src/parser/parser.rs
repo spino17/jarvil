@@ -3,7 +3,7 @@
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, ParamsNode};
+use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, ParamsNode, SkippedTokenNode};
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
@@ -253,16 +253,16 @@ impl PackratParser {
         }
     }
 
-    pub fn skip_to_newline(&mut self) -> Vec<TokenNode> {
-        let mut skipped_tokens: Vec<TokenNode> = vec![];
+    pub fn skip_to_newline(&mut self) -> Vec<SkippedTokenNode> {
+        let mut skipped_tokens: Vec<SkippedTokenNode> = vec![];
         loop {
             let token = &self.token_vec[self.lookahead];
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
-                skipped_tokens.push(TokenNode::new_with_skipped_token(&token, self.curr_lookahead()));
+                skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
                 self.scan_next_token();
                 return skipped_tokens
             } else {
-                skipped_tokens.push(TokenNode::new_with_skipped_token(&token, self.curr_lookahead()));
+                skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
                 self.scan_next_token();
             }
         }
@@ -276,7 +276,7 @@ impl PackratParser {
         let token = self.curr_token();
         if token.is_eq(symbol) {
             self.scan_next_token();
-            TokenNode::new_with_token(&token, self.curr_lookahead())
+            TokenNode::new_with_ok_token(&token, self.curr_lookahead())
         } else {
             self.log_missing_token_error(symbol, &token);
             TokenNode::new_with_missing_token(
@@ -288,8 +288,8 @@ impl PackratParser {
     }
 
     pub fn expect_indent_spaces(&mut self) -> IndentResult {
-        let mut skipped_tokens: Vec<TokenNode> = vec![];
-        let mut extra_newlines: Vec<TokenNode> = vec![];
+        let mut skipped_tokens: Vec<SkippedTokenNode> = vec![];
+        let mut extra_newlines: Vec<SkippedTokenNode> = vec![];
         if !self.is_curr_token_on_newline() {
             skipped_tokens = self.skip_to_newline();
         }
@@ -299,7 +299,7 @@ impl PackratParser {
             let token = &self.token_vec[self.lookahead];
             match &token.core_token {
                 CoreToken::NEWLINE => {
-                    extra_newlines.push(TokenNode::new_with_token(token, self.curr_lookahead()));
+                    extra_newlines.push(SkippedTokenNode::new(token, self.curr_lookahead()));
                     indent_spaces = 0;
                 }
                 CoreToken::ENDMARKER => {

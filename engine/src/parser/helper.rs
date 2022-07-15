@@ -1,4 +1,4 @@
-use crate::ast::ast::{BlockNode, TokenNode};
+use crate::ast::ast::{BlockNode, TokenNode, SkippedTokenNode};
 use crate::lexer::token::Token;
 use crate::parser::parser::ParseSuccess;
 use crate::errors::{ParseError};
@@ -12,8 +12,8 @@ pub enum IndentResultKind {
 
 pub struct IndentResult {
     pub kind: IndentResultKind,
-    pub skipped_tokens: Vec<TokenNode>,
-    pub extra_newlines: Vec<TokenNode>,
+    pub skipped_tokens: Vec<SkippedTokenNode>,
+    pub extra_newlines: Vec<SkippedTokenNode>,
 }
 
 pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>) 
