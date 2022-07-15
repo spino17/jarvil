@@ -7,12 +7,16 @@ thread_local! {
     static CONTEXT: RefCell<Context> = RefCell::new(Context::new())
 }
 
+// TODO - indent_spaces and max_error_lines take default values while initialization of thread local but should provide
+// overriding mechanism to set custom values through command line or IDE settings.
+
 struct Context {
     keywords: FxHashMap<String, ()>,
     types: FxHashMap<String, ()>,
     letters: FxHashMap<char, ()>,
     digits: FxHashMap<char, ()>,
     indent_spaces: i64,
+    max_error_lines: usize,
 }
 
 impl Context {
@@ -40,7 +44,8 @@ impl Context {
             types,
             letters,
             digits,
-            indent_spaces: 4,  // default indentation is 4 spaces
+            indent_spaces: 4,       // default indentation is 4 spaces
+            max_error_lines: 10,    // default max lines shown in error messages
         }
     }
 
@@ -76,8 +81,16 @@ impl Context {
         self.indent_spaces = indent_spaces;
     }
 
-    fn get_indent(&self) -> i64 {
+    fn indent_spaces(&self) -> i64 {
         self.indent_spaces
+    }
+
+    fn set_max_error_lines(&mut self, max_error_lines: usize) {
+        self.max_error_lines = max_error_lines;
+    }
+
+    fn max_error_lines(&self) -> usize {
+        self.max_error_lines
     }
 }
 
@@ -136,9 +149,31 @@ pub fn set_indent(indent_spaces: i64) {
     }
 }
 
-pub fn get_indent() -> i64 {
+pub fn indent_spaces() -> i64 {
     match CONTEXT.try_with(|ctx| {
-        ctx.borrow().get_indent()
+        ctx.borrow().indent_spaces()
+    }) {
+        Ok(val) => val,
+        Err(err) => {
+            panic!("{}", err)
+        }
+    }
+}
+
+pub fn set_max_error_lines(max_error_lines: usize) {
+    match CONTEXT.try_with(|ctx| {
+        ctx.borrow_mut().set_max_error_lines(max_error_lines)
+    }) {
+        Err(err) => {
+            panic!("{}", err)
+        }
+        _ => {}
+    }
+}
+
+pub fn max_error_lines() -> usize {
+    match CONTEXT.try_with(|ctx| {
+        ctx.borrow().max_error_lines()
     }) {
         Ok(val) => val,
         Err(err) => {

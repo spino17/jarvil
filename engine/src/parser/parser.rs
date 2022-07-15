@@ -217,7 +217,7 @@ impl PackratParser {
             return;
         } else {
             let mut code_lines: Vec<Rc<String>> = vec![];
-            for (code_line, _) in &self.code_lines[start_line_number - 1 .. end_line_number - 1] {
+            for (code_line, _) in &self.code_lines[(start_line_number - 1)..end_line_number] {
                 code_lines.push(code_line.clone());
             }
             let err_str = format!("expected an indented block\n    expected indentation with `{}` spaces, got `{}` spaces", 
@@ -302,7 +302,7 @@ impl PackratParser {
         if !self.is_curr_token_on_newline() {
             skipped_tokens = self.skip_to_newline();
         }
-        let mut expected_indent_spaces = context::get_indent() * self.indent_level;
+        let mut expected_indent_spaces = context::indent_spaces() * self.indent_level;
         let mut indent_spaces = 0;
         loop {
             let token = &self.token_vec[self.lookahead];

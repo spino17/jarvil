@@ -2,6 +2,7 @@ use std::error::Error;
 use std::{io::Error as IOError, fmt::Display};
 use std::fmt::{Formatter};
 use std::rc::Rc;
+use crate::context;
 
 pub enum ErrorKind {
     LEXICAL_ERROR,
@@ -55,13 +56,17 @@ impl ParseError {
         format!(">>> {}: line {}\n    {}\n    {}", err_kind, line_number, err_code_part, err_message)
     }
 
-    pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, code_lines: Vec<Rc<String>>, 
+    pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, mut code_lines: Vec<Rc<String>>, 
         err_message: String, err_kind: ErrorKind) -> String {
         if end_line_number < start_line_number {
             unreachable!("end line number cannot be less than start line number")
         }
         if end_line_number == start_line_number {
             unreachable!("use `form_single_line_error` method for formaing errors occuring on the same line")
+        }
+        if end_line_number - start_line_number + 1 > context::max_error_lines() {
+            code_lines = code_lines[start_line_number..(start_line_number + context::max_error_lines())].to_vec();
+            code_lines.push(Rc::new(String::from("...")));
         }
         let mut err_code_part: String = String::from("");
         let mut flag = false;
