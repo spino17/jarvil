@@ -3,6 +3,42 @@ use std::{io::Error as IOError, fmt::Display};
 use std::fmt::{Formatter};
 use std::rc::Rc;
 use crate::context;
+use crate::lexer::token::Token;
+
+pub struct InvalidCharLexicalErrorData {
+    line_number: usize,
+    invalid_token: Token,
+    err_message: Rc<String>,
+}
+
+pub struct NoClosingSymbolsLexicalErrorData {
+    start_line_number: usize,
+    end_line_number: usize,
+    err_message: Rc<String>,
+}
+
+pub enum LexicalErrorData {
+    INVALID_CHAR(InvalidCharLexicalErrorData),
+    NO_CLOSING_SYMBOLS(NoClosingSymbolsLexicalErrorData),
+}
+
+impl LexicalErrorData {
+    pub fn new_with_invalid_char(line_number: usize, invalid_token: &Token, err_message: &Rc<String>) -> Self {
+        LexicalErrorData::INVALID_CHAR(InvalidCharLexicalErrorData{
+            line_number,
+            invalid_token: invalid_token.clone(),
+            err_message: err_message.clone(),
+        })
+    }
+
+    pub fn new_with_no_closing_symbols(start_line_number: usize, end_line_number: usize, err_message: &Rc<String>) -> Self {
+        LexicalErrorData::NO_CLOSING_SYMBOLS(NoClosingSymbolsLexicalErrorData{
+            start_line_number,
+            end_line_number,
+            err_message: err_message.clone(),
+        })
+    }
+}
 
 pub enum ErrorKind {
     LEXICAL_ERROR,

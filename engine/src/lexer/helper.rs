@@ -1,6 +1,6 @@
 use std::rc::Rc;
-use crate::{lexer::token::CoreToken, context, constants::common::{LEXICAL_ERROR, BLOCK_COMMENT, SINGLE_LINE_COMMENT, BLANK}, errors::ParseError};
-use super::token::TokenValue;
+use crate::{lexer::token::CoreToken, context, constants::common::{LEXICAL_ERROR, BLOCK_COMMENT, SINGLE_LINE_COMMENT, BLANK}};
+use super::token::{TokenValue, LexicalErrorKind};
 use crate::constants::common::{get_token_for_identifier, STRING_LITERAL, INTEGER, FLOATING_POINT_NUMBER};
 
 // ' ' -> '...'
@@ -141,12 +141,12 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
         2 => {
             *begin_lexeme = forward_lexeme;
             let err_str = Rc::new(String::from("missing trailing symbol `*/` for block comment"));
-            return (CoreToken::LEXICAL_ERROR(TokenValue(err_str)), String::from(LEXICAL_ERROR))
+            return (CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, TokenValue(err_str))), String::from(LEXICAL_ERROR))
         },
         3 => {
             *begin_lexeme = forward_lexeme;
             let err_str = Rc::new(String::from("missing trailing symbol `*/` for block comment"));
-            return (CoreToken::LEXICAL_ERROR(TokenValue(err_str)), String::from(LEXICAL_ERROR))
+            return (CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, TokenValue(err_str))), String::from(LEXICAL_ERROR))
         },
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
     }
@@ -262,7 +262,7 @@ pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize,
     *begin_lexeme = forward_lexeme;
     let err_str = Rc::new(String::from(r#"no closing `'` found for literal"#));
     return (
-        CoreToken::LEXICAL_ERROR(TokenValue(err_str)),
+        CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, TokenValue(err_str))),
         String::from(LEXICAL_ERROR)
     )
 }
@@ -294,7 +294,7 @@ pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize,
     *begin_lexeme = forward_lexeme;
     let err_str = Rc::new(String::from(r#"no closing `"` found for literal"#));
     return (
-        CoreToken::LEXICAL_ERROR(TokenValue(err_str)),
+        CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, TokenValue(err_str))),
         String::from(LEXICAL_ERROR)
     )
 }

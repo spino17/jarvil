@@ -1,5 +1,5 @@
 use crate::constants::common::ENDMARKER;
-use crate::errors::ParseError;
+use crate::errors::LexicalErrorData;
 use crate::lexer::token::Token;
 use crate::lexer::token::CoreToken;
 use std::rc::Rc;
@@ -15,7 +15,7 @@ pub struct CoreLexer {
     pub line_number: usize,
     pub code_lines: Vec<(Rc<String>, usize)>,
     pub line_start_index: usize,
-    pub errors: Vec<ParseError>,
+    pub lexical_errors: Vec<LexicalErrorData>,
 }
 
 impl CoreLexer {
@@ -25,7 +25,7 @@ impl CoreLexer {
             line_number: 1,
             code_lines: vec![],
             line_start_index: 0,
-            errors: vec![],
+            lexical_errors: vec![],
         }
     }
 
@@ -35,6 +35,15 @@ impl CoreLexer {
 
     pub fn get_code_lines(self) -> Vec<(Rc<String>, usize)> {
         self.code_lines
+    }
+
+    pub fn log_invalid_char_lexical_error(&mut self, line_number: usize, invalid_token: &Token, err_message: &Rc<String>) {
+        self.lexical_errors.push(LexicalErrorData::new_with_invalid_char(line_number, invalid_token, err_message))
+    }
+
+    pub fn log_no_closing_symbols_lexical_error(&mut self, start_line_number: usize, end_line_number: usize, 
+        err_message: &Rc<String>) {
+        self.lexical_errors.push(LexicalErrorData::new_with_no_closing_symbols(start_line_number, end_line_number, err_message))
     }
 }
 

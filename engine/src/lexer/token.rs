@@ -96,7 +96,13 @@ pub enum CoreToken {
     ENDMARKER,
 
     // error
-    LEXICAL_ERROR(TokenValue)
+    LEXICAL_ERROR((LexicalErrorKind, TokenValue))
+}
+
+#[derive(Debug, Clone)]
+pub enum LexicalErrorKind {
+    INVALID_CHAR,
+    NO_CLOSING_SYMBOLS,
 }
 
 #[derive(Debug, Clone)]
@@ -130,9 +136,9 @@ impl Token {
         let line_number = &mut lexer.line_number;
         let code_lines = &mut lexer.code_lines;
         let line_start_index = &mut lexer.line_start_index;
-        let errors = &mut lexer.errors;
 
         let start_index = *begin_lexeme;
+        let start_line_number = *line_number;
         let critical_char = code[*begin_lexeme];
         let (core_token, name) = match critical_char {
             '('         =>      {
@@ -232,27 +238,42 @@ impl Token {
                     (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
                 } else {
                     let error_str = Rc::new(format!("invalid character `{}` found", c));
-                    (token, name) = (CoreToken::LEXICAL_ERROR(TokenValue(error_str.clone())), String::from(LEXICAL_ERROR));
-                    errors.push(ParseError{
-                        start_line_number: *line_number,
-                        end_line_number: *line_number,
-                        err_message: error_str.to_string(),
-                    });
+                    (token, name) = (CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, TokenValue(error_str.clone()))), String::from(LEXICAL_ERROR));
                     *begin_lexeme = *begin_lexeme + 1;
                 }
                 (token, name)
             }
         };
         let end_index = *begin_lexeme;
-        Token {
+        let end_line_number = *line_number;
+        let token = Token {
             line_number: *line_number,
-            core_token,
+            core_token: core_token.clone(),
             name: Rc::new(name),
             start_index,
             end_index,
             trivia: None,
             parent: None,
+        };
+        match &core_token {
+            CoreToken::LEXICAL_ERROR(lexical_err_value) => {
+                match lexical_err_value.0 {
+                    LexicalErrorKind::INVALID_CHAR => {
+                        if end_line_number != start_line_number {
+                            unreachable!("invalid char should occur on the same line")
+                        }
+                        lexer.log_invalid_char_lexical_error(start_line_number, &token, 
+                            &lexical_err_value.1.0);
+                    },
+                    LexicalErrorKind::NO_CLOSING_SYMBOLS => {
+                        lexer.log_no_closing_symbols_lexical_error(start_line_number, end_line_number, 
+                            &lexical_err_value.1.0);
+                    }
+                }
+            },
+            _ => {}
         }
+        token
     }
 
     pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
