@@ -12,6 +12,9 @@ pub fn is_type_expression_starting_with(token: &Token) -> bool {
     }
 }
 
+pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 3] 
+= [ATOMIC_TYPE, IDENTIFIER, "["];
+
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
     let token = parser.curr_token();
     match &token.core_token {
@@ -26,7 +29,7 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
         CoreToken::LSQUARE => {
             let l_square_node = parser.expect("[", false);
             let sub_type_node = parser.type_expr();
-            let comma_node = parser.expect(",", false);
+            let semicolon_node = parser.expect(";", false);
             let array_size_node = parser.expect(INTEGER, false);
             let r_square_node = parser.expect("]", false);
             TypeExpressionNode::new_with_array_type(&array_size_node, &sub_type_node)
