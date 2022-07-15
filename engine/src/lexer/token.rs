@@ -114,7 +114,7 @@ pub enum TokenKind {
 
 #[derive(Debug, Clone)]
 pub struct MissingToken {
-    pub expected_symbol: Rc<String>,
+    pub expected_symbols: Rc<Vec<&'static str>>,
     pub received_token: Token,
 }
 

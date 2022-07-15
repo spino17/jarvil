@@ -217,6 +217,7 @@ pub enum CoreTypeExpressionNode {
     ATOMIC(AtomicTypeNode),
     USER_DEFINED(UserDefinedTypeNode),
     ARRAY(ArrayTypeNode),
+    ERROR(TokenNode),
 }
 
 #[derive(Debug, Clone)]
@@ -239,18 +240,27 @@ impl TypeExpressionNode {
             CoreTypeExpressionNode::ARRAY(ArrayTypeNode::new(array_size, sub_type))
         )))
     }
+
+    pub fn new_with_error(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        TypeExpressionNode(Rc::new(RefCell::new(
+            CoreTypeExpressionNode::ERROR(TokenNode::new_with_missing_token(expected_symbols, received_token, lookahead))
+        )))
+    }
 }
 impl Node for TypeExpressionNode {
     fn set_parent(&self, parent_node: ASTNode) {
         match &*self.0.as_ref().borrow_mut() {
-            CoreTypeExpressionNode::ATOMIC(atomic_node_data) => {
-                atomic_node_data.set_parent(parent_node);
+            CoreTypeExpressionNode::ATOMIC(atomic_node) => {
+                atomic_node.set_parent(parent_node);
             },
-            CoreTypeExpressionNode::USER_DEFINED(user_defined_node_data) => {
-                user_defined_node_data.set_parent(parent_node);
+            CoreTypeExpressionNode::USER_DEFINED(user_defined_node) => {
+                user_defined_node.set_parent(parent_node);
             },
-            CoreTypeExpressionNode::ARRAY(array_node_data) => {
-                array_node_data.set_parent(parent_node);
+            CoreTypeExpressionNode::ARRAY(array_node) => {
+                array_node.set_parent(parent_node);
+            },
+            CoreTypeExpressionNode::ERROR(error_node) => {
+                error_node.set_parent(parent_node)
             }
         }
     }
@@ -349,10 +359,10 @@ impl TokenNode {
         })))
     }
 
-    pub fn new_with_missing_token(expected_symbol: &Rc<String>, received_token: &Token, lookahead: usize) -> Self {
+    pub fn new_with_missing_token(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
             kind: TokenKind::MISSING(MissingToken{
-                expected_symbol: expected_symbol.clone(),
+                expected_symbols: expected_symbols.clone(),
                 received_token: received_token.clone(),
             }),
             parent: None,

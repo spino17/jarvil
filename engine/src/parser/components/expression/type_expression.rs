@@ -1,7 +1,8 @@
-use crate::ast::ast::TypeExpressionNode; 
+use crate::ast::ast::{TypeExpressionNode, TokenNode}; 
 use crate::constants::common::{INTEGER, IDENTIFIER, ATOMIC_TYPE};
 use crate::parser::parser::{PackratParser};
 use crate::lexer::token::{CoreToken, Token};
+use std::rc::Rc;
 
 pub fn is_type_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
@@ -35,7 +36,12 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
             TypeExpressionNode::new_with_array_type(&array_size_node, &sub_type_node)
         },
         _ => {
-            unreachable!("current token not matching with starting token of type expression is not possible")
+            TokenNode::new_with_missing_token(
+                &Rc::new(TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
+                &token,
+                parser.curr_lookahead(),
+            );
+            todo!()
         }
     }
 }

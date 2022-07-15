@@ -269,7 +269,7 @@ impl PackratParser {
     }
 
     // ------------------- parsing routines for terminals and block indentation -------------------
-    pub fn expect(&mut self, symbol: &str, ignore_newline: bool) -> TokenNode {
+    pub fn expect(&mut self, symbol: &'static str, ignore_newline: bool) -> TokenNode {
         if ignore_newline {
             self.ignore_newlines();
         }
@@ -280,7 +280,7 @@ impl PackratParser {
         } else {
             self.log_missing_token_error(symbol, &token);
             TokenNode::new_with_missing_token(
-                &Rc::new(String::from(symbol)),
+                &Rc::new(vec![symbol]),
                 &token,
                 self.curr_lookahead()
             )
