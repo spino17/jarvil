@@ -1,9 +1,8 @@
-use crate::ast::ast::{TypeExpressionNode, TokenNode}; 
+use crate::ast::ast::TypeExpressionNode;
 use crate::constants::common::{INTEGER, IDENTIFIER, ATOMIC_TYPE};
 use crate::parser::parser::{PackratParser};
 use crate::lexer::token::{CoreToken, Token};
 use std::rc::Rc;
-use crate::ast::ast::MissingTokenNode;
 
 pub fn is_type_expression_starting_with(token: &Token) -> bool {
     match token.core_token {

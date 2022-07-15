@@ -1,6 +1,5 @@
-use crate::ast::ast::{ASTNode, Node};
+use crate::ast::ast::ASTNode;
 use crate::constants::common::LEXICAL_ERROR;
-use crate::errors::ParseError;
 use std::rc::Rc;
 use crate::lexer::helper;
 use crate::context;
