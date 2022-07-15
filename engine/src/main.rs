@@ -7,6 +7,7 @@ mod constants;
 mod reader;
 mod types;
 mod ast;
+mod utils;
 
 use errors::CompilationError;
 use crate::reader::read_file;

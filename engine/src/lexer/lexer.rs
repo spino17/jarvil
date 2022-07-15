@@ -16,6 +16,7 @@ pub struct CoreLexer {
     pub code_lines: Vec<(Rc<String>, usize)>,
     pub line_start_index: usize,
     pub lexical_errors: Vec<LexicalErrorData>,
+    //
 }
 
 impl CoreLexer {
@@ -92,6 +93,8 @@ impl Lexer for CoreLexer {
         }
         println!("{:?}", token);
         token_vec.push(token);
+        println!("{:?}", self.lexical_errors);
+        // fill up the errors
         token_vec
     }
 }

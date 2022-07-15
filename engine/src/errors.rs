@@ -5,18 +5,21 @@ use std::rc::Rc;
 use crate::context;
 use crate::lexer::token::Token;
 
+#[derive(Debug)]
 pub struct InvalidCharLexicalErrorData {
     line_number: usize,
     invalid_token: Token,
     err_message: Rc<String>,
 }
 
+#[derive(Debug)]
 pub struct NoClosingSymbolsLexicalErrorData {
     start_line_number: usize,
     end_line_number: usize,
     err_message: Rc<String>,
 }
 
+#[derive(Debug)]
 pub enum LexicalErrorData {
     INVALID_CHAR(InvalidCharLexicalErrorData),
     NO_CLOSING_SYMBOLS(NoClosingSymbolsLexicalErrorData),

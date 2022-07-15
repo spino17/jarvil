@@ -262,11 +262,11 @@ impl Token {
                         if end_line_number != start_line_number {
                             unreachable!("invalid char should occur on the same line")
                         }
-                        lexer.log_invalid_char_lexical_error(start_line_number, &token, 
+                        lexer.log_invalid_char_lexical_error(start_line_number, &token,
                             &lexical_err_value.1.0);
                     },
                     LexicalErrorKind::NO_CLOSING_SYMBOLS => {
-                        lexer.log_no_closing_symbols_lexical_error(start_line_number, end_line_number, 
+                        lexer.log_no_closing_symbols_lexical_error(start_line_number, end_line_number,
                             &lexical_err_value.1.0);
                     }
                 }

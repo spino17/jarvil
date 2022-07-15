@@ -14,6 +14,7 @@ use std::cell::RefCell;
 use crate::types::core::{Type};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
+use crate::utils::common::get_code_line_data;
 
 pub trait Parser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError>;
@@ -120,16 +121,6 @@ impl PackratParser {
         self.correction_indent = self.correction_indent + addition;
     }
 
-    pub fn get_code_line_data(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
-        loop {
-            let (s, line_start_index) = &self.code_lines[curr_line_number - 1];
-            if index >= *line_start_index {
-                return (s.clone(), *line_start_index, curr_line_number, index)
-            }
-            curr_line_number = curr_line_number - 1;
-        }
-    }
-
     pub fn curr_line_number(&self) -> usize {
         self.token_vec[self.lookahead].line_number
     }
@@ -164,7 +155,7 @@ impl PackratParser {
             return;
         }
         let (code_line, line_start_index, line_number, err_index) 
-        = self.get_code_line_data(recevied_token.line_number, recevied_token.index());
+        = get_code_line_data(&self.code_lines, recevied_token.line_number, recevied_token.index());
         let errors_len = self.errors.len();
         if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
             return;
@@ -184,7 +175,7 @@ impl PackratParser {
         }
         let errors_len = self.errors.len();
         let (code_line, line_start_index, line_number, err_index) 
-        = self.get_code_line_data(recevied_token.line_number, recevied_token.index());
+        = get_code_line_data(&self.code_lines, recevied_token.line_number, recevied_token.index());
         if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
             return;
         } else {
