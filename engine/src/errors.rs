@@ -1,24 +1,10 @@
 use std::error::Error;
 use std::{io::Error as IOError, fmt::Display};
-use std::fmt::{Formatter, write};
+use std::fmt::{Formatter};
 use std::rc::Rc;
 
-#[derive(Debug)]
-pub struct LexicalError {
-    line_number: usize,
-    err_message: String,
-}
-
-impl LexicalError {
-    pub fn new(line_number: usize, err_message: String) -> Self {
-        LexicalError{
-            line_number,
-            err_message,
-        }
-    }
-}
-
 pub enum ErrorKind {
+    LEXICAL_ERROR,
     SYNTAX_ERROR,
     SEMANTIC_ERROR,
 }
@@ -26,8 +12,9 @@ pub enum ErrorKind {
 impl Display for ErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            ErrorKind::SYNTAX_ERROR => write!(f, "Syntax Error"),
-            ErrorKind::SEMANTIC_ERROR => write!(f, "Semantic Error"),
+            ErrorKind::LEXICAL_ERROR    => write!(f, "Lexical Error"),
+            ErrorKind::SYNTAX_ERROR     => write!(f, "Syntax Error"),
+            ErrorKind::SEMANTIC_ERROR   => write!(f, "Semantic Error"),
         }
     }
 }
@@ -92,7 +79,7 @@ impl ParseError {
 #[derive(Debug)]
 pub enum CompilationError {
     IO_ERROR(IOError),
-    LEXICAL_ERROR(LexicalError),
+    LEXICAL_ERROR(ParseError),
     SYNTAX_ERROR(ParseError),
     // SEMANTIC_ERROR(ParseError),
 }
@@ -100,12 +87,6 @@ pub enum CompilationError {
 impl From<IOError> for CompilationError {
     fn from(err: IOError) -> Self {
         CompilationError::IO_ERROR(err)
-    }
-}
-
-impl From<LexicalError> for CompilationError {
-    fn from(err: LexicalError) -> Self {
-        CompilationError::LEXICAL_ERROR(err)
     }
 }
 
@@ -120,9 +101,9 @@ impl Display for CompilationError {
         match self {
             CompilationError::IO_ERROR(err) => write!(
                 f, ">>> IOErrror:\n    {}", err.to_string()),
-            CompilationError::LEXICAL_ERROR(lexical_err) => write!(f, 
-                ">>> LexicalError: line {}\n    {}", lexical_err.line_number,
-                lexical_err.err_message),
+            CompilationError::LEXICAL_ERROR(lexical_err) => {
+                write!(f, "{}", lexical_err.err_message)
+            }
             CompilationError::SYNTAX_ERROR(syntax_err) => {
                 write!(f, "{}", syntax_err.err_message)
             }

@@ -1,4 +1,5 @@
 use crate::constants::common::ENDMARKER;
+use crate::errors::ParseError;
 use crate::lexer::token::Token;
 use crate::lexer::token::CoreToken;
 use std::rc::Rc;
@@ -10,11 +11,11 @@ pub trait Lexer {
 }
 
 pub struct CoreLexer {
-    begin_lexeme: usize,
-    line_number: usize,
-    code_lines: Vec<(Rc<String>, usize)>,
-    line_start_index: usize,
-    // errors: Vec<ParseError>
+    pub begin_lexeme: usize,
+    pub line_number: usize,
+    pub code_lines: Vec<(Rc<String>, usize)>,
+    pub line_start_index: usize,
+    pub errors: Vec<ParseError>,
 }
 
 impl CoreLexer {
@@ -24,12 +25,12 @@ impl CoreLexer {
             line_number: 1,
             code_lines: vec![],
             line_start_index: 0,
+            errors: vec![],
         }
     }
 
     pub fn extract_lexeme(&mut self, code: &Vec<char>) -> Token {
-        Token::extract_lexeme(&mut self.begin_lexeme, &mut self.line_number, code, &mut self.code_lines, 
-            &mut self.line_start_index)
+        Token::extract_lexeme(self, code)
     }
 
     pub fn get_code_lines(self) -> Vec<(Rc<String>, usize)> {

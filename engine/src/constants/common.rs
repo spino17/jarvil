@@ -37,6 +37,7 @@ pub const ENDMARKER:                &'static str = "endmarker";
 pub const LEXICAL_ERROR:            &'static str = "lexical error";
 pub const SINGLE_LINE_COMMENT:      &'static str = "single line comment";
 pub const BLOCK_COMMENT:            &'static str = "block comment";
+pub const BLANK:                    &'static str = "blank";
 
 pub const KEYWORDS: [&'static str; 22] = [
     FOR,

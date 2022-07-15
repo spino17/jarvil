@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use crate::{lexer::token::CoreToken, errors::LexicalError, context, constants::common::{LEXICAL_ERROR, BLOCK_COMMENT, SINGLE_LINE_COMMENT}};
+use crate::{lexer::token::CoreToken, context, constants::common::{LEXICAL_ERROR, BLOCK_COMMENT, SINGLE_LINE_COMMENT, BLANK}, errors::ParseError};
 use super::token::TokenValue;
 use crate::constants::common::{get_token_for_identifier, STRING_LITERAL, INTEGER, FLOATING_POINT_NUMBER};
 
@@ -10,12 +10,12 @@ pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
         let next_char = code[forward_lexeme];
         if next_char != ' ' {
             *begin_lexeme = forward_lexeme;
-            return (CoreToken::BLANK, String::from("blank"));
+            return (CoreToken::BLANK, String::from(BLANK));
         }
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
-    return (CoreToken::BLANK, String::from("blank"));
+    return (CoreToken::BLANK, String::from(BLANK));
 }
 
 // - -> -, ->
@@ -140,7 +140,8 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
         },
         2 => {
             *begin_lexeme = forward_lexeme;
-            return (CoreToken::LEXICAL_ERROR(TokenValue(Rc::new(String::from("no closing tag found for block comment")))), String::from(LEXICAL_ERROR))
+            let err_str = Rc::new(String::from("no closing tag found for block comment"));
+            return (CoreToken::LEXICAL_ERROR(TokenValue(err_str)), String::from(LEXICAL_ERROR))
         },
         3 => unreachable!("found state 3 which is not possible as state 3 either returns or always transition to state 2"),
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
@@ -230,8 +231,40 @@ pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>
     }
 }
 
+// ' -> '...'
+pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize, 
+    line_number: &mut usize, code: &Vec<char>, code_lines: &mut Vec<(Rc<String>, usize)>, 
+    line_start_index: &mut usize) -> (CoreToken, String) {
+    let mut forward_lexeme = *begin_lexeme + 1;
+    while forward_lexeme < code.len() {
+        let next_char = code[forward_lexeme];
+        match next_char {
+            '\'' => {
+                let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
+                *begin_lexeme = forward_lexeme + 1;
+                return (CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from(STRING_LITERAL))
+            },
+            '\n' => {
+                let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
+                code_str.push(' ');
+                code_lines.push((Rc::new(code_str), *line_start_index));
+                *line_number = *line_number + 1;
+                *line_start_index = forward_lexeme + 1;
+            },
+            _ => {}
+        }
+        forward_lexeme = forward_lexeme + 1;
+    }
+    *begin_lexeme = forward_lexeme;
+    let err_str = Rc::new(String::from(r#"no closing `'` found for literal"#));
+    return (
+        CoreToken::LEXICAL_ERROR(TokenValue(err_str)),
+        String::from(LEXICAL_ERROR)
+    )
+}
+
 // " -> "..."
-pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize, 
+pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize, 
     line_number: &mut usize, code: &Vec<char>, code_lines: &mut Vec<(Rc<String>, usize)>, 
     line_start_index: &mut usize) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
@@ -255,8 +288,9 @@ pub fn extract_literal_prefix_lexeme(begin_lexeme: &mut usize,
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
+    let err_str = Rc::new(String::from(r#"no closing `"` found for literal"#));
     return (
-        CoreToken::LEXICAL_ERROR(TokenValue(Rc::new(String::from(r#"no closing `"` found for literal"#)))), 
+        CoreToken::LEXICAL_ERROR(TokenValue(err_str)),
         String::from(LEXICAL_ERROR)
     )
 }
@@ -281,8 +315,7 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) 
 }
 
 // digit -> digit((digit)*(.digit(digit*)|empty))
-pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize,
-    line_number: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {

@@ -1,9 +1,11 @@
 use crate::ast::ast::{ASTNode, Node};
 use crate::constants::common::LEXICAL_ERROR;
-use crate::errors::{LexicalError};
+use crate::errors::ParseError;
 use std::rc::Rc;
 use crate::lexer::helper;
 use crate::context;
+
+use super::lexer::CoreLexer;
 
 #[derive(Debug, Clone)]
 pub struct TokenValue(pub Rc<String>);
@@ -123,9 +125,13 @@ pub struct Token {
 
 impl Token {
     // This method tokenize the code in O(|code|)
-    pub fn extract_lexeme(begin_lexeme: &mut usize, 
-        line_number: &mut usize, code: &Vec<char>, 
-        code_lines: &mut Vec<(Rc<String>, usize)>, line_start_index: &mut usize) -> Token {
+    pub fn extract_lexeme(lexer: &mut CoreLexer, code: &Vec<char>) -> Token {
+        let begin_lexeme = &mut lexer.begin_lexeme;
+        let line_number = &mut lexer.line_number;
+        let code_lines = &mut lexer.code_lines;
+        let line_start_index = &mut lexer.line_start_index;
+        let errors = &mut lexer.errors;
+
         let start_index = *begin_lexeme;
         let critical_char = code[*begin_lexeme];
         let (core_token, name) = match critical_char {
@@ -171,6 +177,10 @@ impl Token {
                 (CoreToken::TAB, String::from("\t"))
             },
              */
+            '+'         =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                (CoreToken::PLUS, String::from("+"))
+            },
             '\n'        =>      {
                 let mut code_str: String = code[*line_start_index..*begin_lexeme].iter().collect();
                 code_str.push(' ');
@@ -180,15 +190,14 @@ impl Token {
                 *line_number = *line_number + 1;
                 (CoreToken::NEWLINE, String::from("\n"))
             },
-            '+'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::PLUS, String::from("+"))
-            },
             '/'         =>      {
                 helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
             },
             '"'         =>      {
-                helper::extract_literal_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
+                helper::extract_double_quote_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
+            },
+            '\''         =>      {
+                helper::extract_single_quote_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
             },
             ' '         =>      {
                 helper::extract_blank_prefix_lexeme(begin_lexeme, code)
@@ -220,9 +229,15 @@ impl Token {
                 if context::is_letter(&c) {
                     (token, name) = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
                 } else if context::is_digit(&c) {
-                    (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, line_number, code);
+                    (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
                 } else {
-                    (token, name) = (CoreToken::LEXICAL_ERROR(TokenValue(Rc::new(format!("invalid character `{}` found", c)))), String::from(LEXICAL_ERROR));
+                    let error_str = Rc::new(format!("invalid character `{}` found", c));
+                    (token, name) = (CoreToken::LEXICAL_ERROR(TokenValue(error_str.clone())), String::from(LEXICAL_ERROR));
+                    errors.push(ParseError{
+                        start_line_number: *line_number,
+                        end_line_number: *line_number,
+                        err_message: error_str.to_string(),
+                    });
                     *begin_lexeme = *begin_lexeme + 1;
                 }
                 (token, name)
