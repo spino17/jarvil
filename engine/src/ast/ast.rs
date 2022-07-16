@@ -1,5 +1,6 @@
 // AST Nodes have inner mutability to enable dynamic changes to AST like monomorphism of generics or macro expansion.
-// ASTNode has weak reference to core nodes to avoid memory leaks. See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
+// ASTNode has weak reference to core nodes to avoid memory leaks. 
+// See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use std::{rc::{Rc, Weak}, cell::RefCell};
 use crate::{scope::core::Scope, lexer::token::Token};
@@ -453,5 +454,64 @@ impl Node for SkippedTokenNode {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
+
+#[derive(Debug, Clone)]
+pub enum CoreExpressionNode {
+    ATOMIC(AtomicExpressionNode),
+    UNARY(UnaryExpressionNode),
+    BINARY(BinaryExpression),
+}
+
+#[derive(Debug, Clone)]
+pub struct ExpressionNode(Rc<RefCell<CoreExpressionNode>>);
+
+#[derive(Debug, Clone)]
+pub enum CoreAtomicExpressionNode {
+    // TRUE, FALSE, ATOM, INTEGER, FLOATING_POINT_NUMBER, LITERAL, PARENTHESISED_EXPRESSION
+}
+
+#[derive(Debug, Clone)]
+pub struct AtomicExpressionNode(Rc<RefCell<CoreAtomicExpressionNode>>);
+
+#[derive(Debug, Clone)]
+pub enum CoreUnaryExpressionNode {
+    ATOMIC(AtomicExpressionNode),
+    UNARY((UnaryOperatorKind, UnaryExpressionNode))
+}
+
+#[derive(Debug, Clone)]
+pub struct UnaryExpressionNode(Rc<RefCell<CoreUnaryExpressionNode>>);
+
+#[derive(Debug, Clone)]
+pub enum UnaryOperatorKind {
+    PLUS,
+    DASH,
+    NOT,
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreBinaryExpression {
+    operator_kind: BinaryOperatorKind,
+    left_expr: ExpressionNode,
+    right_expr: ExpressionNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct BinaryExpression(Rc<RefCell<CoreBinaryExpression>>);
+
+#[derive(Debug, Clone)]
+pub enum BinaryOperatorKind {
+    NOT_EQUAL,
+    DOUBLE_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
+    LESS,
+    LESS_EQUAL,
+    MINUS,
+    PLUS,
+    DIVIDE,
+    MULTIPLY,
+}
+
 
 

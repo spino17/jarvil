@@ -15,9 +15,11 @@ pub fn expr(parser: &mut PackratParser) {
         parser.log_skipped_token_error(&EXPRESSION_EXPECTED_STARTING_SYMBOLS, token);
         // TODO - return missing tokens AST node
     }
+    /*
     while let Some(node) = parser.expects(&["+", "-"], false).is_ok() {
         todo!()
     }
+     */
 }
 
 pub fn is_unary_expression_starting_with(token: &Token) -> bool {
