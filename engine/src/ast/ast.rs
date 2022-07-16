@@ -3,7 +3,7 @@
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::core::Scope, lexer::token::Token};
+use crate::{scope::core::Scope, lexer::token::Token, types::atomic};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
@@ -214,7 +214,13 @@ impl Node for ParamNode {
 }
 
 #[derive(Debug, Clone)]
-pub enum CoreTypeExpressionNode {
+pub struct CoreTypeExpressionNode {
+    kind: TypeExpressionKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum TypeExpressionKind {
     ATOMIC(AtomicTypeNode),
     USER_DEFINED(UserDefinedTypeNode),
     ARRAY(ArrayTypeNode),
@@ -225,45 +231,36 @@ pub enum CoreTypeExpressionNode {
 pub struct TypeExpressionNode(Rc<RefCell<CoreTypeExpressionNode>>);
 impl TypeExpressionNode {
     pub fn new_with_atomic_type(atomic_type: &TokenNode) -> Self {
-        TypeExpressionNode(Rc::new(RefCell::new(
-            CoreTypeExpressionNode::ATOMIC(AtomicTypeNode::new(atomic_type))
-        )))
+        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
+            kind: TypeExpressionKind::ATOMIC(AtomicTypeNode::new(atomic_type)),
+            parent: None,
+        })))
     }
 
     pub fn new_with_user_defined_type(identifier: &TokenNode) -> Self {
-        TypeExpressionNode(Rc::new(RefCell::new(
-            CoreTypeExpressionNode::USER_DEFINED(UserDefinedTypeNode::new(identifier))
-        )))
+        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
+            kind: TypeExpressionKind::USER_DEFINED(UserDefinedTypeNode::new(identifier)),
+            parent: None,
+        })))
     }
 
     pub fn new_with_array_type(array_size: &TokenNode, sub_type: &TypeExpressionNode) -> Self {
-        TypeExpressionNode(Rc::new(RefCell::new(
-            CoreTypeExpressionNode::ARRAY(ArrayTypeNode::new(array_size, sub_type))
-        )))
+        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
+            kind: TypeExpressionKind::ARRAY(ArrayTypeNode::new(array_size, sub_type)),
+            parent: None,
+        })))
     }
 
     pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        TypeExpressionNode(Rc::new(RefCell::new(
-            CoreTypeExpressionNode::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead))
-        )))
+        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
+            kind: TypeExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
     }
 }
 impl Node for TypeExpressionNode {
     fn set_parent(&self, parent_node: ASTNode) {
-        match &*self.0.as_ref().borrow_mut() {
-            CoreTypeExpressionNode::ATOMIC(atomic_node) => {
-                atomic_node.set_parent(parent_node);
-            },
-            CoreTypeExpressionNode::USER_DEFINED(user_defined_node) => {
-                user_defined_node.set_parent(parent_node);
-            },
-            CoreTypeExpressionNode::ARRAY(array_node) => {
-                array_node.set_parent(parent_node);
-            },
-            CoreTypeExpressionNode::MISSING_TOKENS(error_node) => {
-                error_node.set_parent(parent_node)
-            }
-        }
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
 
@@ -276,12 +273,12 @@ pub struct CoreAtomicTypeNode {
 #[derive(Debug, Clone)]
 pub struct AtomicTypeNode(Rc<RefCell<CoreAtomicTypeNode>>);
 impl AtomicTypeNode {
-    pub fn new(kind: &TokenNode) -> Self {
+    pub fn new(token: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomicTypeNode{
-            kind: kind.clone(),
+            kind: token.clone(),
             parent: None,
         }));
-        kind.set_parent(ASTNode::ATOMIC_TYPE(Rc::downgrade(&node)));
+        token.set_parent(ASTNode::ATOMIC_TYPE(Rc::downgrade(&node)));
         AtomicTypeNode(node)
     }
 }
@@ -343,7 +340,13 @@ impl Node for UserDefinedTypeNode {
 }
 
 #[derive(Debug, Clone)]
-pub enum CoreTokenNode {
+pub struct CoreTokenNode {
+    kind: TokenNodeKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum TokenNodeKind {
     OK(OkTokenNode),
     MISSING(MissingTokenNode),
     SKIPPED(SkippedTokenNode),
@@ -353,31 +356,36 @@ pub enum CoreTokenNode {
 pub struct TokenNode(Rc<RefCell<CoreTokenNode>>);
 impl TokenNode {
     pub fn new_with_ok_token(token: &Token, lookahead: usize) -> Self {
-        TokenNode(Rc::new(RefCell::new(CoreTokenNode::OK(OkTokenNode::new(token, lookahead)))))
+        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
+            kind: TokenNodeKind::OK(OkTokenNode::new(token, lookahead)),
+            parent: None,
+        })))
     }
 
     pub fn new_with_missing_token(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        TokenNode(Rc::new(RefCell::new(CoreTokenNode::MISSING(MissingTokenNode::new(expected_symbols, received_token, lookahead)))))
+        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
+            kind: TokenNodeKind::MISSING(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
     }
 
     pub fn new_with_skipped_token(skipped_token: &Token, lookahead: usize) -> Self {
-        TokenNode(Rc::new(RefCell::new(CoreTokenNode::SKIPPED(SkippedTokenNode::new(skipped_token, lookahead)))))
+        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
+            kind: TokenNodeKind::SKIPPED(SkippedTokenNode::new(skipped_token, lookahead)),
+            parent: None,
+        })))
     }
 
     pub fn is_ok(&self) -> Option<TokenNode> {
-        match &*self.0.as_ref().borrow() {
-            CoreTokenNode::OK(_) => Some(self.clone()),
+        match &self.0.as_ref().borrow().kind {
+            TokenNodeKind::OK(_) => Some(self.clone()),
             _                    => None,
         }
     }
 }
 impl Node for TokenNode {
     fn set_parent(&self, parent_node: ASTNode) {
-        match &*self.0.as_ref().borrow() {
-            CoreTokenNode::OK(ok_token_node)                => ok_token_node.set_parent(parent_node),
-            CoreTokenNode::MISSING(missing_token_node) => missing_token_node.set_parent(parent_node),
-            CoreTokenNode::SKIPPED(skipped_token_node) => skipped_token_node.set_parent(parent_node),
-        }
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
 
@@ -456,7 +464,13 @@ impl Node for SkippedTokenNode {
 }
 
 #[derive(Debug, Clone)]
-pub enum CoreExpressionNode {
+pub struct CoreExpressionNode {
+    kind: CoreExpressionKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum CoreExpressionKind {
     ATOMIC(AtomicExpressionNode),
     UNARY(UnaryExpressionNode),
     BINARY(BinaryExpressionNode),
@@ -466,7 +480,13 @@ pub enum CoreExpressionNode {
 pub struct ExpressionNode(Rc<RefCell<CoreExpressionNode>>);
 
 #[derive(Debug, Clone)]
-pub enum CoreAtomicExpressionNode {
+pub struct  CoreAtomicExpressionNode {
+    kind: AtomicExpressionKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum AtomicExpressionKind {
     TRUE,
     FALSE,
     INTEGER,
@@ -480,46 +500,52 @@ pub enum CoreAtomicExpressionNode {
 pub struct AtomicExpressionNode(Rc<RefCell<CoreAtomicExpressionNode>>);
 impl AtomicExpressionNode {
     pub fn new_with_true() -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::TRUE)))
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::TRUE,
+            parent: None,
+        })))
     }
 
     pub fn new_with_false() -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::FALSE)))
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::FALSE,
+            parent: None,
+        })))
     }
 
     pub fn new_with_integer() -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::INTEGER)))
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::INTEGER,
+            parent: None,
+        })))
     }
 
     pub fn new_with_floating_point_number() -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::FLOATING_POINT_NUMBER)))
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::FLOATING_POINT_NUMBER,
+            parent: None,
+        })))
     }
 
     pub fn new_with_parenthesised_expr(expr: &ExpressionNode) -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(expr.clone()))))
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::PARENTHESISED_EXPRESSION(expr.clone()),
+            parent: None,
+        })))
     }
 
     pub fn new_with_atom() -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::ATOM())))
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::ATOM(),
+            parent: None,
+        })))
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum CoreUnaryExpressionNode {
-    ATOMIC(AtomicExpressionNode),
-    UNARY((UnaryOperatorKind, UnaryExpressionNode))
-}
-
-#[derive(Debug, Clone)]
-pub struct UnaryExpressionNode(Rc<RefCell<CoreUnaryExpressionNode>>);
-impl UnaryExpressionNode {
-    pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
-        UnaryExpressionNode(Rc::new(RefCell::new(CoreUnaryExpressionNode::ATOMIC(atomic_expr.clone()))))
-    }
-
-    pub fn new_with_unary(operator: UnaryOperatorKind, unary_expr: &UnaryExpressionNode) -> Self {
-        UnaryExpressionNode(Rc::new(RefCell::new(CoreUnaryExpressionNode::UNARY((operator, unary_expr.clone())))))
-    }
+pub struct  CoreUnaryExpressionNode {
+    kind: UnaryExpressionKind,
+    parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -530,22 +556,35 @@ pub enum UnaryOperatorKind {
 }
 
 #[derive(Debug, Clone)]
+pub enum UnaryExpressionKind {
+    ATOMIC(AtomicExpressionNode),
+    UNARY((UnaryOperatorKind, UnaryExpressionNode))
+}
+
+#[derive(Debug, Clone)]
+pub struct UnaryExpressionNode(Rc<RefCell<CoreUnaryExpressionNode>>);
+impl UnaryExpressionNode {
+    pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
+        UnaryExpressionNode(Rc::new(RefCell::new(CoreUnaryExpressionNode{
+            kind: UnaryExpressionKind::ATOMIC(atomic_expr.clone()),
+            parent: None,
+        })))
+    }
+
+    pub fn new_with_unary(operator: UnaryOperatorKind, unary_expr: &UnaryExpressionNode) -> Self {
+        UnaryExpressionNode(Rc::new(RefCell::new(CoreUnaryExpressionNode{
+            kind: UnaryExpressionKind::UNARY((operator, unary_expr.clone())),
+            parent: None,
+        })))
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct CoreBinaryExpressionNode {
     operator_kind: BinaryOperatorKind,
     left_expr: ExpressionNode,
     right_expr: ExpressionNode,
-}
-
-#[derive(Debug, Clone)]
-pub struct BinaryExpressionNode(Rc<RefCell<CoreBinaryExpressionNode>>);
-impl BinaryExpressionNode {
-    pub fn new(operator: BinaryOperatorKind, left_expr: &ExpressionNode, right_expr: &ExpressionNode) -> Self {
-        BinaryExpressionNode(Rc::new(RefCell::new(CoreBinaryExpressionNode{
-            operator_kind: operator,
-            left_expr: left_expr.clone(),
-            right_expr: right_expr.clone(),
-        })))
-    }
+    parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -560,6 +599,19 @@ pub enum BinaryOperatorKind {
     PLUS,
     DIVIDE,
     MULTIPLY,
+}
+
+#[derive(Debug, Clone)]
+pub struct BinaryExpressionNode(Rc<RefCell<CoreBinaryExpressionNode>>);
+impl BinaryExpressionNode {
+    pub fn new(operator: BinaryOperatorKind, left_expr: &ExpressionNode, right_expr: &ExpressionNode) -> Self {
+        BinaryExpressionNode(Rc::new(RefCell::new(CoreBinaryExpressionNode{
+            operator_kind: operator,
+            left_expr: left_expr.clone(),
+            right_expr: right_expr.clone(),
+            parent: None,
+        })))
+    }
 }
 
 
