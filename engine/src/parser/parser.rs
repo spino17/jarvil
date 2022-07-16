@@ -465,6 +465,22 @@ impl PackratParser {
         components::expression::core::unary_expr(self)
     }
 
+    pub fn factor(&mut self) -> ExpressionNode {
+        components::expression::core::factor(self)
+    }
+
+    pub fn term(&mut self) -> ExpressionNode {
+        components::expression::core::term(self)
+    }
+
+    pub fn comparison(&mut self) -> ExpressionNode {
+        components::expression::core::comparison(self)
+    }
+
+    pub fn logical(&mut self) -> ExpressionNode {
+        components::expression::core::logical(self)
+    }
+
     pub fn expr(&mut self) -> ExpressionNode {
         components::expression::core::expr(self)
     }

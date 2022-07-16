@@ -432,6 +432,8 @@ impl OkTokenNode {
             CoreToken::PLUS             => Some(BinaryOperatorKind::PLUS),
             CoreToken::SLASH            => Some(BinaryOperatorKind::DIVIDE),
             CoreToken::STAR             => Some(BinaryOperatorKind::MULTIPLY),
+            CoreToken::AND              => Some(BinaryOperatorKind::AND),
+            CoreToken::OR               => Some(BinaryOperatorKind::OR),
             _ => None,
         }
     }
@@ -719,6 +721,8 @@ pub enum BinaryOperatorKind {
     PLUS,
     DIVIDE,
     MULTIPLY,
+    AND,
+    OR,
 }
 
 #[derive(Debug, Clone)]
