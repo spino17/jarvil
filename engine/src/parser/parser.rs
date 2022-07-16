@@ -287,6 +287,23 @@ impl PackratParser {
         }
     }
 
+    pub fn expects(&mut self, symbols: &[&'static str], ignore_newline: bool) -> TokenNode {
+        if ignore_newline {
+            self.ignore_newlines();
+        }
+        let token = self.curr_token();
+        for &symbol in symbols {
+            if token.is_eq(symbol) {
+                self.scan_next_token();
+                return TokenNode::new_with_ok_token(&token, self.curr_lookahead())
+            }
+        }
+        self.log_skipped_token_error(symbols, &token);
+        TokenNode::new_with_missing_token(
+            &Rc::new(symbols.to_vec()), &token, self.curr_lookahead()
+        )
+    }
+
     pub fn expect_indent_spaces(&mut self) -> IndentResult {
         let mut skipped_tokens: Vec<SkippedTokenNode> = vec![];
         let mut extra_newlines: Vec<SkippedTokenNode> = vec![];

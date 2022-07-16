@@ -362,6 +362,13 @@ impl TokenNode {
     pub fn new_with_skipped_token(skipped_token: &Token, lookahead: usize) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode::SKIPPED(SkippedTokenNode::new(skipped_token, lookahead)))))
     }
+
+    pub fn is_ok(&self) -> Option<TokenNode> {
+        match &*self.0.as_ref().borrow() {
+            CoreTokenNode::OK(_) => Some(self.clone()),
+            _                    => None,
+        }
+    }
 }
 impl Node for TokenNode {
     fn set_parent(&self, parent_node: ASTNode) {
