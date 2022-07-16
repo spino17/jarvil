@@ -451,8 +451,21 @@ impl PackratParser {
         components::stmt::stmt(self)
     }
 
-    // expression
+    // type expression
     pub fn type_expr(&mut self) -> TypeExpressionNode {
         components::expression::type_expression::type_expr(self)
+    }
+
+    // expression
+    pub fn atomic_expr(&mut self) {
+        components::expression::core::atomic_expr(self)
+    }
+
+    pub fn unary_expr(&mut self) {
+        components::expression::core::unary_expr(self)
+    }
+
+    pub fn expr(&mut self) {
+        components::expression::core::expr(self)
     }
 }
