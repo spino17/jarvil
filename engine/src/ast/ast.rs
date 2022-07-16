@@ -459,7 +459,7 @@ impl Node for SkippedTokenNode {
 pub enum CoreExpressionNode {
     ATOMIC(AtomicExpressionNode),
     UNARY(UnaryExpressionNode),
-    BINARY(BinaryExpression),
+    BINARY(BinaryExpressionNode),
 }
 
 #[derive(Debug, Clone)]
@@ -467,11 +467,42 @@ pub struct ExpressionNode(Rc<RefCell<CoreExpressionNode>>);
 
 #[derive(Debug, Clone)]
 pub enum CoreAtomicExpressionNode {
-    // TRUE, FALSE, ATOM, INTEGER, FLOATING_POINT_NUMBER, LITERAL, PARENTHESISED_EXPRESSION
+    TRUE,
+    FALSE,
+    INTEGER,
+    FLOATING_POINT_NUMBER,
+    STRING_LITERAL,
+    PARENTHESISED_EXPRESSION(ExpressionNode),
+    ATOM(),  // add atom node here
 }
 
 #[derive(Debug, Clone)]
 pub struct AtomicExpressionNode(Rc<RefCell<CoreAtomicExpressionNode>>);
+impl AtomicExpressionNode {
+    pub fn new_with_true() -> Self {
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::TRUE)))
+    }
+
+    pub fn new_with_false() -> Self {
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::FALSE)))
+    }
+
+    pub fn new_with_integer() -> Self {
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::INTEGER)))
+    }
+
+    pub fn new_with_floating_point_number() -> Self {
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::FLOATING_POINT_NUMBER)))
+    }
+
+    pub fn new_with_parenthesised_expr(expr: &ExpressionNode) -> Self {
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(expr.clone()))))
+    }
+
+    pub fn new_with_atom() -> Self {
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode::ATOM())))
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum CoreUnaryExpressionNode {
@@ -481,6 +512,15 @@ pub enum CoreUnaryExpressionNode {
 
 #[derive(Debug, Clone)]
 pub struct UnaryExpressionNode(Rc<RefCell<CoreUnaryExpressionNode>>);
+impl UnaryExpressionNode {
+    pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
+        UnaryExpressionNode(Rc::new(RefCell::new(CoreUnaryExpressionNode::ATOMIC(atomic_expr.clone()))))
+    }
+
+    pub fn new_with_unary(operator: UnaryOperatorKind, unary_expr: &UnaryExpressionNode) -> Self {
+        UnaryExpressionNode(Rc::new(RefCell::new(CoreUnaryExpressionNode::UNARY((operator, unary_expr.clone())))))
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum UnaryOperatorKind {
@@ -490,14 +530,23 @@ pub enum UnaryOperatorKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct CoreBinaryExpression {
+pub struct CoreBinaryExpressionNode {
     operator_kind: BinaryOperatorKind,
     left_expr: ExpressionNode,
     right_expr: ExpressionNode,
 }
 
 #[derive(Debug, Clone)]
-pub struct BinaryExpression(Rc<RefCell<CoreBinaryExpression>>);
+pub struct BinaryExpressionNode(Rc<RefCell<CoreBinaryExpressionNode>>);
+impl BinaryExpressionNode {
+    pub fn new(operator: BinaryOperatorKind, left_expr: &ExpressionNode, right_expr: &ExpressionNode) -> Self {
+        BinaryExpressionNode(Rc::new(RefCell::new(CoreBinaryExpressionNode{
+            operator_kind: operator,
+            left_expr: left_expr.clone(),
+            right_expr: right_expr.clone(),
+        })))
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum BinaryOperatorKind {
