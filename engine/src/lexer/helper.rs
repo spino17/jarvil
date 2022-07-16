@@ -235,6 +235,35 @@ pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>
     }
 }
 
+// ! -> !=
+pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+    let forward_lexeme = *begin_lexeme + 1;
+    if forward_lexeme < code.len() {
+        let next_char = code[forward_lexeme];
+        match next_char {
+            '=' => {
+                *begin_lexeme = forward_lexeme + 1;
+                return (CoreToken::NOT_EQUAL, String::from("!="));
+            },
+            _ => {
+                let error_str = Rc::new(String::from("invalid character `!` found"));
+                *begin_lexeme = *begin_lexeme + 1;
+                (
+                    CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, TokenValue(error_str.clone()))), 
+                    String::from(LEXICAL_ERROR)
+                )
+            }
+        }
+    } else {
+        let error_str = Rc::new(String::from("invalid character `!` found"));
+        *begin_lexeme = *begin_lexeme + 1;
+        (
+            CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, TokenValue(error_str.clone()))), 
+            String::from(LEXICAL_ERROR)
+        )
+    }
+}
+
 // ' -> '...'
 pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize, 
     line_number: &mut usize, code: &Vec<char>, code_lines: &mut Vec<(Rc<String>, usize)>, 

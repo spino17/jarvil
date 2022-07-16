@@ -2,8 +2,8 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks. 
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
-use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::core::Scope, lexer::token::{Token, self}};
+use std::{rc::{Rc, Weak}, cell::RefCell, fmt::Binary};
+use crate::{scope::core::Scope, lexer::token::{Token, CoreToken}};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
@@ -384,6 +384,18 @@ impl TokenNode {
             _                    => None,
         }
     }
+
+    pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
+        match &self.0.as_ref().borrow().kind {
+            TokenNodeKind::OK(ok_token) => {
+                match ok_token.is_binary_operator() {
+                    Some(operator) => return Some(operator),
+                    None => None,
+                }
+            },
+            _ => None,
+        }
+    }
 }
 impl Node for TokenNode {
     fn set_parent(&self, parent_node: ASTNode) {
@@ -407,6 +419,21 @@ impl OkTokenNode {
             lookahead,
             parent: None,
         })))
+    }
+
+    pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
+        match self.0.as_ref().borrow().token.core_token {
+            CoreToken::NOT_EQUAL        => Some(BinaryOperatorKind::NOT_EQUAL),
+            CoreToken::DOUBLE_EQUAL     => Some(BinaryOperatorKind::DOUBLE_EQUAL),
+            CoreToken::RBRACKET         => Some(BinaryOperatorKind::GREATER),
+            CoreToken::GREATER_EQUAL    => Some(BinaryOperatorKind::GREATER_EQUAL),
+            CoreToken::LBRACKET         => Some(BinaryOperatorKind::LESS),
+            CoreToken::DASH             => Some(BinaryOperatorKind::MINUS),
+            CoreToken::PLUS             => Some(BinaryOperatorKind::PLUS),
+            CoreToken::SLASH            => Some(BinaryOperatorKind::DIVIDE),
+            CoreToken::STAR             => Some(BinaryOperatorKind::MULTIPLY),
+            _ => None,
+        }
     }
 }
 impl Node for OkTokenNode {
@@ -500,12 +527,16 @@ impl ExpressionNode {
         ExpressionNode(node)
     }
 
-    pub fn new_with_binary(binary_expr: &BinaryExpressionNode) -> Self {
+    pub fn new_with_binary(operator: &TokenNode, left_expr: &ExpressionNode, right_expr: &ExpressionNode) -> Self {
+        let operator_kind = match operator.is_binary_operator() {
+            Some(operator_kind) => operator_kind,
+            None => unreachable!("any node passed in this method as operator should be a valid operator"),
+        };
         let node = Rc::new(RefCell::new(CoreExpressionNode{
-            kind: ExpressionKind::BINARY(binary_expr.clone()),
+            kind: ExpressionKind::BINARY(BinaryExpressionNode::new(operator_kind, left_expr, right_expr)),
             parent: None,
         }));
-        binary_expr.set_parent(ASTNode::EXPRESSION(Rc::downgrade(&node)));
+        // binary_expr.set_parent(ASTNode::EXPRESSION(Rc::downgrade(&node)));
         ExpressionNode(node)
     }
 

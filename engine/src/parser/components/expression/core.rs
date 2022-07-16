@@ -1,5 +1,6 @@
 use crate::{lexer::token::{Token, CoreToken}, constants::common::{INTEGER, FLOATING_POINT_NUMBER, STRING_LITERAL, 
-IDENTIFIER}, parser::parser::PackratParser, ast::ast::{ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, UnaryOperatorKind}};
+IDENTIFIER}, parser::parser::PackratParser, ast::ast::{ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, 
+    UnaryOperatorKind, BinaryOperatorKind}};
 use std::rc::Rc;
 
 pub fn is_expression_starting_with(token: &Token) -> bool {
@@ -26,6 +27,18 @@ pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
         todo!()
     }
      */
+}
+
+pub fn factor(parser: &mut PackratParser) -> ExpressionNode {
+    let leading_unary_expr_node = parser.unary_expr();
+    let mut left_expr: ExpressionNode = ExpressionNode::new_with_unary(&leading_unary_expr_node);
+    while let Some(node) = parser.expects(&["/", "*"], false).is_ok() {
+        let operator_node = node;
+        let trailing_unary_expr_node = parser.unary_expr();
+        let right_expr = ExpressionNode::new_with_unary(&trailing_unary_expr_node);
+        left_expr = ExpressionNode::new_with_binary(&operator_node, &left_expr, &right_expr);
+    }
+    left_expr
 }
 
 pub fn is_unary_expression_starting_with(token: &Token) -> bool {

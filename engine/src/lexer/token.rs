@@ -80,6 +80,7 @@ pub enum CoreToken {
     RBRACKET,                           // '>'
     LESS_EQUAL,                         // '<='
     GREATER_EQUAL,                      // '>='
+    NOT_EQUAL,                          // '!='
 
     // expression terminals
     INTEGER(TokenValue),
@@ -196,6 +197,9 @@ impl Token {
             },
             '\''         =>      {
                 helper::extract_single_quote_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
+            },
+            '!'         =>      {
+                helper::extract_exclaimation_prefix_lexeme(begin_lexeme, code)
             },
             ' '         =>      {
                 helper::extract_blank_prefix_lexeme(begin_lexeme, code)
