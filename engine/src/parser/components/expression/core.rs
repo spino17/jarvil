@@ -1,11 +1,19 @@
 use crate::{lexer::token::{Token, CoreToken}, constants::common::{INTEGER, FLOATING_POINT_NUMBER, STRING_LITERAL, 
 IDENTIFIER}, parser::parser::PackratParser, ast::ast::{ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, 
-    UnaryOperatorKind, BinaryOperatorKind}};
+    UnaryOperatorKind}};
 use std::rc::Rc;
+
+// all the unary operators are right assosiative and all the binary operators are left assosiative. 
+// below is the operator precedence in jarvil (lower to higher). This may be quite resembling with Python programming language.
+// "and", "or"
+// ">", ">=", "<", "<=", "==", "!="
+// "-", "+"
+// "/", "*"
+// +, -, not, ()
 
 pub fn is_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
-        _  => is_atomic_expression_starting_with(token) || is_unary_expression_starting_with(token),
+        _  => is_unary_expression_starting_with(token),
     }
 }
 
