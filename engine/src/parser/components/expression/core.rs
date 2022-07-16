@@ -47,6 +47,8 @@ pub fn logical(parser: &mut PackratParser) -> ExpressionNode {
 pub fn comparison(parser: &mut PackratParser) -> ExpressionNode {
     let mut leading_term_expr_node = parser.term();
     while let Some(node) = parser.expects(&[">", ">=", "<", "<=", "==", "!="], false).is_ok() {
+        println!("Inside comparsion routine");
+        println!("{:?}", node);
         let operator_node = node;
         let trailing_term_expr_node = parser.term();
         leading_term_expr_node = ExpressionNode::new_with_binary(

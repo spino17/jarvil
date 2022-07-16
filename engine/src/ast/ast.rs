@@ -137,21 +137,31 @@ impl Node for SkippedTokens {
 }
 
 #[derive(Debug, Clone)]
-pub enum CoreStatementNode {
+pub struct CoreStatementNode {
+    kind: StatementNodeKind,
+    parent: Option<ASTNode>,
     // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration, 
     // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
 }
 
 #[derive(Debug, Clone)]
+pub enum StatementNodeKind {
+    EXPRESSION(ExpressionNode),
+}
+
+#[derive(Debug, Clone)]
 pub struct StatementNode(Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
-    pub fn new() -> Self {
-        todo!()
+    pub fn new_with_expression(expr_node: &ExpressionNode) -> Self {
+        StatementNode(Rc::new(RefCell::new(CoreStatementNode{
+            kind: StatementNodeKind::EXPRESSION(expr_node.clone()),
+            parent: None,
+        })))
     }
 }
 impl Node for StatementNode {
     fn set_parent(&self, parent_node: ASTNode) {
-        todo!()
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
 
@@ -428,6 +438,7 @@ impl OkTokenNode {
             CoreToken::RBRACKET         => Some(BinaryOperatorKind::GREATER),
             CoreToken::GREATER_EQUAL    => Some(BinaryOperatorKind::GREATER_EQUAL),
             CoreToken::LBRACKET         => Some(BinaryOperatorKind::LESS),
+            CoreToken::LESS_EQUAL       => Some(BinaryOperatorKind::LESS_EQUAL),
             CoreToken::DASH             => Some(BinaryOperatorKind::MINUS),
             CoreToken::PLUS             => Some(BinaryOperatorKind::PLUS),
             CoreToken::SLASH            => Some(BinaryOperatorKind::DIVIDE),

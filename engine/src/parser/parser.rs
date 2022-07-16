@@ -17,7 +17,7 @@ use crate::parser::helper::{IndentResult, IndentResultKind};
 use crate::utils::common::get_code_line_data;
 
 pub trait Parser {
-    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError>;
+    fn parse(&mut self, token_vec: Vec<Token>) -> Result<BlockNode, ParseError>;
 }
 
 #[derive(Debug)]
@@ -66,9 +66,9 @@ impl PackratParser {
 }
 
 impl Parser for PackratParser {
-    fn parse(&mut self, token_vec: Vec<Token>) -> Result<(), ParseError> {
-        //self.code(token_vec)?;
-        Ok(())
+    fn parse(&mut self, token_vec: Vec<Token>) -> Result<BlockNode, ParseError> {
+        let code_node = self.code(token_vec);
+        Ok(code_node)
     }
 }
 
@@ -448,7 +448,7 @@ impl PackratParser {
 
     // statements
     pub fn stmt(&mut self) -> StatementNode {
-        components::stmt::stmt(self)
+        components::statement::core::stmt(self)
     }
 
     // type expression
