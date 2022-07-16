@@ -467,15 +467,16 @@ impl Node for SkippedTokenNode {
 
 #[derive(Debug, Clone)]
 pub struct CoreExpressionNode {
-    kind: CoreExpressionKind,
+    kind: ExpressionKind,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub enum CoreExpressionKind {
+pub enum ExpressionKind {
     ATOMIC(AtomicExpressionNode),
     UNARY(UnaryExpressionNode),
     BINARY(BinaryExpressionNode),
+    MISSING_TOKENS(MissingTokenNode),
 }
 
 #[derive(Debug, Clone)]
@@ -483,7 +484,7 @@ pub struct ExpressionNode(Rc<RefCell<CoreExpressionNode>>);
 impl ExpressionNode {
     pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreExpressionNode{
-            kind: CoreExpressionKind::ATOMIC(atomic_expr.clone()),
+            kind: ExpressionKind::ATOMIC(atomic_expr.clone()),
             parent: None,
         }));
         atomic_expr.set_parent(ASTNode::EXPRESSION(Rc::downgrade(&node)));
@@ -492,7 +493,7 @@ impl ExpressionNode {
 
     pub fn new_with_unary(unary_expr: &UnaryExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreExpressionNode{
-            kind: CoreExpressionKind::UNARY(unary_expr.clone()),
+            kind: ExpressionKind::UNARY(unary_expr.clone()),
             parent: None,
         }));
         unary_expr.set_parent(ASTNode::EXPRESSION(Rc::downgrade(&node)));
@@ -501,11 +502,18 @@ impl ExpressionNode {
 
     pub fn new_with_binary(binary_expr: &BinaryExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreExpressionNode{
-            kind: CoreExpressionKind::BINARY(binary_expr.clone()),
+            kind: ExpressionKind::BINARY(binary_expr.clone()),
             parent: None,
         }));
         binary_expr.set_parent(ASTNode::EXPRESSION(Rc::downgrade(&node)));
         ExpressionNode(node)
+    }
+
+    pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        ExpressionNode(Rc::new(RefCell::new(CoreExpressionNode{
+            kind: ExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
     }
 }
 
@@ -530,6 +538,7 @@ pub enum AtomicExpressionKind {
     LITERAL(TokenNode),
     PARENTHESISED_EXPRESSION(ExpressionNode),
     ATOM(),  // add atom node here
+    MISSING_TOKENS(MissingTokenNode),
 }
 
 #[derive(Debug, Clone)]
@@ -591,6 +600,13 @@ impl AtomicExpressionNode {
             parent: None,
         })))
     }
+
+    pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
+    }
 }
 impl Node for AtomicExpressionNode {
     fn set_parent(&self, parent_node: ASTNode) {
@@ -614,7 +630,8 @@ pub enum UnaryOperatorKind {
 #[derive(Debug, Clone)]
 pub enum UnaryExpressionKind {
     ATOMIC(AtomicExpressionNode),
-    UNARY((UnaryOperatorKind, UnaryExpressionNode))
+    UNARY((UnaryOperatorKind, UnaryExpressionNode)),
+    MISSING_TOKENS(MissingTokenNode),
 }
 
 #[derive(Debug, Clone)]
@@ -636,6 +653,13 @@ impl UnaryExpressionNode {
         }));
         unary_expr.set_parent(ASTNode::UNARY_EXPRESSION(Rc::downgrade(&node)));
         UnaryExpressionNode(node)
+    }
+
+    pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        UnaryExpressionNode(Rc::new(RefCell::new(CoreUnaryExpressionNode{
+            kind: UnaryExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
     }
 }
 impl Node for UnaryExpressionNode {

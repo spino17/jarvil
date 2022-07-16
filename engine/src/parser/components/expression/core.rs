@@ -1,5 +1,6 @@
 use crate::{lexer::token::{Token, CoreToken}, constants::common::{INTEGER, FLOATING_POINT_NUMBER, STRING_LITERAL, 
 IDENTIFIER}, parser::parser::PackratParser, ast::ast::{ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, UnaryOperatorKind}};
+use std::rc::Rc;
 
 pub fn is_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
@@ -13,7 +14,11 @@ pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
     let token = &parser.curr_token();
     if !is_expression_starting_with(token) {
         parser.log_skipped_token_error(&EXPRESSION_EXPECTED_STARTING_SYMBOLS, token);
-        // TODO - return missing tokens AST node
+        return ExpressionNode::new_with_missing_tokens(
+            &Rc::new(EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
+            token,
+            parser.curr_lookahead(),
+        )
     }
     todo!()
     /*
@@ -38,7 +43,12 @@ pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10]
 pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
     let token = &parser.curr_token();
     if !is_unary_expression_starting_with(token) {
-        parser.log_skipped_token_error(&UNARY_EXPRESSION_STARTING_SYMBOLS, token)
+        parser.log_skipped_token_error(&UNARY_EXPRESSION_STARTING_SYMBOLS, token);
+        return UnaryExpressionNode::new_with_missing_tokens(
+            &Rc::new(UNARY_EXPRESSION_STARTING_SYMBOLS.to_vec()),
+            token,
+            parser.curr_lookahead(),
+        )
     }
     let unary_expr_node = match token.core_token {
         CoreToken::PLUS => {
@@ -83,7 +93,12 @@ pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 7]
 pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
     let token = &parser.curr_token();
     if !is_atomic_expression_starting_with(token) {
-        parser.log_skipped_token_error(&ATOMIC_EXPRESSION_STARTING_SYMBOLS, token)
+        parser.log_skipped_token_error(&ATOMIC_EXPRESSION_STARTING_SYMBOLS, token);
+        return AtomicExpressionNode::new_with_missing_tokens(
+            &Rc::new(ATOMIC_EXPRESSION_STARTING_SYMBOLS.to_vec()),
+            token,
+            parser.curr_lookahead(),
+        )
     }
     let atomic_expr_node = match token.core_token {
         CoreToken::TRUE                         => {
