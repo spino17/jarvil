@@ -1,5 +1,5 @@
 use crate::{lexer::token::{Token, CoreToken}, constants::common::{INTEGER, FLOATING_POINT_NUMBER, STRING_LITERAL, 
-IDENTIFIER}, parser::parser::PackratParser};
+IDENTIFIER}, parser::parser::PackratParser, ast::ast::{ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, UnaryOperatorKind}};
 
 pub fn is_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
@@ -9,12 +9,13 @@ pub fn is_expression_starting_with(token: &Token) -> bool {
 
 pub const EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 10] = UNARY_EXPRESSION_STARTING_SYMBOLS;
 
-pub fn expr(parser: &mut PackratParser) {
+pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
     let token = &parser.curr_token();
     if !is_expression_starting_with(token) {
         parser.log_skipped_token_error(&EXPRESSION_EXPECTED_STARTING_SYMBOLS, token);
         // TODO - return missing tokens AST node
     }
+    todo!()
     /*
     while let Some(node) = parser.expects(&["+", "-"], false).is_ok() {
         todo!()
@@ -34,26 +35,33 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
 pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10] 
 = ["+", "-", "not", "true", "false", INTEGER, FLOATING_POINT_NUMBER, STRING_LITERAL, IDENTIFIER, "("];
 
-pub fn unary_expr(parser: &mut PackratParser) {
+pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
     let token = &parser.curr_token();
     if !is_unary_expression_starting_with(token) {
         parser.log_skipped_token_error(&UNARY_EXPRESSION_STARTING_SYMBOLS, token)
     }
-    match token.core_token {
+    let unary_expr_node = match token.core_token {
         CoreToken::PLUS => {
             let plus_node = parser.expect("+", false);
-            parser.unary_expr();
+            let unary_expr_node = parser.unary_expr();
+            UnaryExpressionNode::new_with_unary(UnaryOperatorKind::PLUS, &unary_expr_node)
         },
         CoreToken::DASH => {
             let dash_node = parser.expect("-", false);
-            parser.unary_expr();
+            let unary_expr_node = parser.unary_expr();
+            UnaryExpressionNode::new_with_unary(UnaryOperatorKind::MINUS, &unary_expr_node)
         },
         CoreToken::NOT  => {
             let not_node = parser.expect("not", false);
-            parser.unary_expr();
+            let unary_expr_node = parser.unary_expr();
+            UnaryExpressionNode::new_with_unary(UnaryOperatorKind::NOT, &unary_expr_node)
         },
-        _ => return parser.atomic_expr()
-    }
+        _ => {
+            let atomic_expr_node = parser.atomic_expr();
+            UnaryExpressionNode::new_with_atomic(&atomic_expr_node)
+        }
+    };
+    unary_expr_node
 }
 
 pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
@@ -72,27 +80,43 @@ pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
 pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 7] 
 = ["true", "false", INTEGER, FLOATING_POINT_NUMBER, STRING_LITERAL, IDENTIFIER, "("];
 
-pub fn atomic_expr(parser: &mut PackratParser) {
+pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
     let token = &parser.curr_token();
     if !is_atomic_expression_starting_with(token) {
         parser.log_skipped_token_error(&ATOMIC_EXPRESSION_STARTING_SYMBOLS, token)
     }
-    let token_node = match token.core_token {
-        CoreToken::TRUE                         => parser.expect("true", false),
-        CoreToken::FALSE                        => parser.expect("false", false),
-        CoreToken::INTEGER(_)                   => parser.expect(INTEGER, false),
-        CoreToken::FLOATING_POINT_NUMBER(_)     => parser.expect(FLOATING_POINT_NUMBER, false),
-        CoreToken::LITERAL(_)                   => parser.expect(STRING_LITERAL, false),
+    let atomic_expr_node = match token.core_token {
+        CoreToken::TRUE                         => {
+            let true_node = parser.expect("true", false);
+            AtomicExpressionNode::new_with_true()
+        }
+        CoreToken::FALSE                        => {
+            let false_node = parser.expect("false", false);
+            AtomicExpressionNode::new_with_false()
+        }
+        CoreToken::INTEGER(_)                   => {
+            let integer_node = parser.expect(INTEGER, false);
+            AtomicExpressionNode::new_with_integer(&integer_node)
+        }
+        CoreToken::FLOATING_POINT_NUMBER(_)     => {
+            let floating_point_number_node = parser.expect(FLOATING_POINT_NUMBER, false);
+            AtomicExpressionNode::new_with_floating_point_number(&floating_point_number_node)
+        }
+        CoreToken::LITERAL(_)                   => {
+            let literal_node = parser.expect(STRING_LITERAL, false);
+            AtomicExpressionNode::new_with_literal(&literal_node)
+        }
         CoreToken::IDENTIFIER(_)                => {
             // parser.atom();
             todo!("parsing routine for atom is yet to be implemented")
         }
         CoreToken::LPAREN                       => {
             let lparen_node = parser.expect("(", false);
-            parser.expr();
+            let expr_node = parser.expr();
             let rparen_node = parser.expect(")", false);
-            todo!()
+            AtomicExpressionNode::new_with_parenthesised_expr(&expr_node)
         }
         _ => unreachable!("tokens not matching `starting_with_symbols` for atomic expression would already be eliminated")
     };
+    atomic_expr_node
 }

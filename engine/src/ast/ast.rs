@@ -3,7 +3,7 @@
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::core::Scope, lexer::token::Token, types::atomic};
+use crate::{scope::core::Scope, lexer::token::{Token, self}};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
@@ -19,9 +19,7 @@ pub enum ASTNode {
     ATOMIC_TYPE(Weak<RefCell<CoreAtomicTypeNode>>),
     ARRAY_TYPE(Weak<RefCell<CoreArrayTypeNode>>),
     USER_DEFINED_TYPE(Weak<RefCell<CoreUserDefinedTypeNode>>),
-    LEADING_SKIPPED_TOKENS(Weak<RefCell<CoreSkippedTokens>>),
-    TRAILING_SKIPPED_TOKEN(Weak<RefCell<CoreSkippedTokens>>),
-    EXTRA_NEWLINES(Weak<RefCell<CoreSkippedTokens>>),
+    SKIPPED_TOKENS(Weak<RefCell<CoreSkippedTokens>>),
     EXPRESSION(Weak<RefCell<CoreExpressionNode>>),
     ATOMIC_EXPRESSION(Weak<RefCell<CoreAtomicExpressionNode>>),
     UNARY_EXPRESSION(Weak<RefCell<CoreUnaryExpressionNode>>),
@@ -105,7 +103,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
-            skipped_token.set_parent(ASTNode::LEADING_SKIPPED_TOKENS(Rc::downgrade(&node)));
+            skipped_token.set_parent(ASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
         }
         SkippedTokens(node)
     }
@@ -116,7 +114,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
-            skipped_token.set_parent(ASTNode::TRAILING_SKIPPED_TOKEN(Rc::downgrade(&node)));
+            skipped_token.set_parent(ASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
         }
         SkippedTokens(node)
     }
@@ -127,7 +125,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in extra_newlines.as_ref() {
-            skipped_token.set_parent(ASTNode::EXTRA_NEWLINES(Rc::downgrade(&node)));
+            skipped_token.set_parent(ASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
         }
         SkippedTokens(node)
     }
@@ -527,9 +525,9 @@ pub struct  CoreAtomicExpressionNode {
 pub enum AtomicExpressionKind {
     TRUE,
     FALSE,
-    INTEGER,
-    FLOATING_POINT_NUMBER,
-    STRING_LITERAL,
+    INTEGER(TokenNode),
+    FLOATING_POINT_NUMBER(TokenNode),
+    LITERAL(TokenNode),
     PARENTHESISED_EXPRESSION(ExpressionNode),
     ATOM(),  // add atom node here
 }
@@ -551,18 +549,31 @@ impl AtomicExpressionNode {
         })))
     }
 
-    pub fn new_with_integer() -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
-            kind: AtomicExpressionKind::INTEGER,
+    pub fn new_with_integer(token: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::INTEGER(token.clone()),
             parent: None,
-        })))
+        }));
+        token.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+        AtomicExpressionNode(node)
     }
 
-    pub fn new_with_floating_point_number() -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
-            kind: AtomicExpressionKind::FLOATING_POINT_NUMBER,
+    pub fn new_with_floating_point_number(token: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::FLOATING_POINT_NUMBER(token.clone()),
             parent: None,
-        })))
+        }));
+        token.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_literal(token: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::LITERAL(token.clone()),
+            parent: None,
+        }));
+        token.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+        AtomicExpressionNode(node)
     }
 
     pub fn new_with_parenthesised_expr(expr: &ExpressionNode) -> Self {
@@ -596,7 +607,7 @@ pub struct  CoreUnaryExpressionNode {
 #[derive(Debug, Clone)]
 pub enum UnaryOperatorKind {
     PLUS,
-    DASH,
+    MINUS,
     NOT,
 }
 
