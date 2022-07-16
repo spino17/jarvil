@@ -68,6 +68,7 @@ impl PackratParser {
 impl Parser for PackratParser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<BlockNode, ParseError> {
         let code_node = self.code(token_vec);
+        println!("{:?}", self.errors);
         Ok(code_node)
     }
 }
@@ -189,7 +190,7 @@ impl PackratParser {
                 err_str.push_str(&format!("`{}`", expected_symbols[index]));
                 flag = true;
             }
-            err_str.push_str(&format!(" or `{}`", expected_symbols[symbols_len - 1]));
+            err_str.push_str(&format!(" or `{}`, got `{}`", expected_symbols[symbols_len - 1], recevied_token.name()));
             let err_message = ParseError::form_single_line_error(err_index, line_number, line_start_index, 
                 code_line, err_str, ErrorKind::SYNTAX_ERROR);
             let err 
@@ -298,7 +299,7 @@ impl PackratParser {
                 return TokenNode::new_with_ok_token(&token, self.curr_lookahead())
             }
         }
-        self.log_skipped_token_error(symbols, &token);
+        // self.log_skipped_token_error(symbols, &token);
         TokenNode::new_with_missing_token(
             &Rc::new(symbols.to_vec()), &token, self.curr_lookahead()
         )

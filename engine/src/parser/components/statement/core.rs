@@ -19,8 +19,8 @@ pub fn is_statement_starting_with(token: &Token) -> bool {
     }
 }
 
-pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 9]
-= ["let", "def", "for", "while", "if", "type", "interface", "impl", IDENTIFIER];
+pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 10]
+= ["let", "def", "for", "while", "if", "type", "interface", "impl", IDENTIFIER, "expression"];
 
 pub fn stmt(parser: &mut PackratParser) -> StatementNode {
     let token = &parser.curr_token();
