@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::{io::Error as IOError, fmt::Display};
 use std::fmt::{Formatter};
 use std::rc::Rc;
@@ -59,8 +58,6 @@ impl Display for ParseErrorKind {
 
 #[derive(Debug, Clone)]
 pub struct ParseError {
-    //code_line: Rc<String>,
-    //line_start_index: usize,
     pub start_line_number: usize,
     pub end_line_number: usize,
     pub err_message: String,
@@ -127,11 +124,6 @@ impl ParseError {
         if end_line_number < start_line_number {
             unreachable!("end line number cannot be less than start line number")
         }
-        /*
-        if end_line_number == start_line_number {
-            unreachable!("use `form_single_line_error` method for formaing errors occuring on the same line")
-        }
-         */
         if end_line_number - start_line_number + 1 > context::max_error_lines() {
             code_lines = code_lines[start_line_number..(start_line_number + context::max_error_lines())].to_vec();
             code_lines.push(Rc::new(String::from("...")));

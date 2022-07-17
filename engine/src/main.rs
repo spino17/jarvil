@@ -9,7 +9,6 @@ mod types;
 mod ast;
 mod utils;
 
-use errors::CompilationError;
 use crate::reader::read_file;
 use crate::lexer::lexer::{CoreLexer, Lexer};
 use std::env::args;
@@ -27,11 +26,7 @@ fn start_compiler() {
         return;
     }
     let mut parser = PackratParser::new(code_lines);
-    let x = 3 * 5;
-    if token_vec.len() > 0 {
-        let ast = parser.parse(token_vec);  // TODO - do bytecode generation using this ast object
-        // println!("{:?}", ast);
-    }
+    let ast = parser.parse(token_vec);
 }
 
 fn main() {

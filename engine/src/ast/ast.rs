@@ -3,7 +3,7 @@
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::{core::Scope, function}, lexer::token::{Token, CoreToken}};
+use crate::{scope::{core::Scope}, lexer::token::{Token, CoreToken}};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
@@ -25,6 +25,7 @@ pub enum ASTNode {
     UNARY_EXPRESSION(Weak<RefCell<CoreUnaryExpressionNode>>),
     BINARY_EXPRESSION(Weak<RefCell<CoreBinaryExpressionNode>>),
     PARAMS(Weak<RefCell<CoreParamsNode>>),
+    CLASS_METHOD_CALL(Weak<RefCell<CoreClassMethodCallNode>>),
     CALL_EXPRESSION(Weak<RefCell<CoreCallExpressionNode>>),
     ATOM(Weak<RefCell<CoreAtomNode>>),
     PROPERTY_ACCESS(Weak<RefCell<CorePropertyAccessNode>>),
@@ -147,12 +148,12 @@ impl Node for SkippedTokens {
 pub struct CoreStatementNode {
     kind: StatementNodeKind,
     parent: Option<ASTNode>,
-    // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration, 
-    // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
 }
 
 #[derive(Debug, Clone)]
 pub enum StatementNodeKind {
+    // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration, 
+    // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
     EXPRESSION(ExpressionNode),
 }
 
@@ -160,10 +161,12 @@ pub enum StatementNodeKind {
 pub struct StatementNode(Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
     pub fn new_with_expression(expr_node: &ExpressionNode) -> Self {
-        StatementNode(Rc::new(RefCell::new(CoreStatementNode{
+        let node = Rc::new(RefCell::new(CoreStatementNode{
             kind: StatementNodeKind::EXPRESSION(expr_node.clone()),
             parent: None,
-        })))
+        }));
+        expr_node.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        StatementNode(node)
     }
 }
 impl Node for StatementNode {
@@ -564,7 +567,6 @@ impl ExpressionNode {
             kind: ExpressionKind::BINARY(BinaryExpressionNode::new(operator_kind, left_expr, right_expr)),
             parent: None,
         }));
-        // binary_expr.set_parent(ASTNode::EXPRESSION(Rc::downgrade(&node)));
         ExpressionNode(node)
     }
 
@@ -654,10 +656,12 @@ impl AtomicExpressionNode {
     }
 
     pub fn new_with_atom(atom: &AtomNode) -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
             kind: AtomicExpressionKind::ATOM(atom.clone()),
             parent: None,
-        })))
+        }));
+        atom.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+        AtomicExpressionNode(node)
     }
 
     pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
@@ -851,12 +855,19 @@ pub struct CoreClassMethodCallNode {
 pub struct ClassMethodCallNode(Rc<RefCell<CoreClassMethodCallNode>>);
 impl ClassMethodCallNode {
     pub fn new(class_name: &TokenNode, class_method_name: &TokenNode, params: &Option<ParamsNode>) -> Self {
-        ClassMethodCallNode(Rc::new(RefCell::new(CoreClassMethodCallNode{
+        let node = Rc::new(RefCell::new(CoreClassMethodCallNode{
             class_name: class_name.clone(),
             class_method_name: class_method_name.clone(),
             params: params.clone(),
             parent: None,
-        })))
+        }));
+        class_name.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+        class_method_name.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+        match params {
+            Some(params) => params.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node))),
+            None => {},
+        }
+        ClassMethodCallNode(node)
     }
 }
 impl Node for ClassMethodCallNode {
@@ -961,12 +972,6 @@ impl AtomStartNode {
             kind: AtomStartKind::CLASS_METHOD_CALL(ClassMethodCallNode::new(class_name, class_method_name, params)),
             parent: None,
         }));
-        class_name.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
-        class_method_name.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
-        match params {
-            Some(params) => params.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node))),
-            None => {},
-        }
         AtomStartNode(node)
     }
 }
