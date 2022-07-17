@@ -7,16 +7,15 @@ use crate::lexer::token::Token;
 
 #[derive(Debug)]
 pub struct InvalidCharLexicalErrorData {
-    line_number: usize,
-    invalid_token: Token,
-    err_message: Rc<String>,
+    pub invalid_token: Token,
+    pub err_message: Rc<String>,
 }
 
 #[derive(Debug)]
 pub struct NoClosingSymbolsLexicalErrorData {
-    start_line_number: usize,
-    end_line_number: usize,
-    err_message: Rc<String>,
+    pub start_line_number: usize,
+    pub end_line_number: usize,
+    pub err_message: Rc<String>,
 }
 
 #[derive(Debug)]
@@ -26,9 +25,8 @@ pub enum LexicalErrorData {
 }
 
 impl LexicalErrorData {
-    pub fn new_with_invalid_char(line_number: usize, invalid_token: &Token, err_message: &Rc<String>) -> Self {
+    pub fn new_with_invalid_char(invalid_token: &Token, err_message: &Rc<String>) -> Self {
         LexicalErrorData::INVALID_CHAR(InvalidCharLexicalErrorData{
-            line_number,
             invalid_token: invalid_token.clone(),
             err_message: err_message.clone(),
         })
@@ -43,18 +41,18 @@ impl LexicalErrorData {
     }
 }
 
-pub enum ErrorKind {
+pub enum ParseErrorKind {
     LEXICAL_ERROR,
     SYNTAX_ERROR,
     SEMANTIC_ERROR,
 }
 
-impl Display for ErrorKind {
+impl Display for ParseErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            ErrorKind::LEXICAL_ERROR    => write!(f, "Lexical Error"),
-            ErrorKind::SYNTAX_ERROR     => write!(f, "Syntax Error"),
-            ErrorKind::SEMANTIC_ERROR   => write!(f, "Semantic Error"),
+            ParseErrorKind::LEXICAL_ERROR    => write!(f, "Lexical Error"),
+            ParseErrorKind::SYNTAX_ERROR     => write!(f, "Syntax Error"),
+            ParseErrorKind::SEMANTIC_ERROR   => write!(f, "Semantic Error"),
         }
     }
 }
@@ -77,7 +75,7 @@ impl ParseError {
     }
 
     pub fn form_single_line_single_pointer_error(err_index: usize, line_number: usize, line_start_index: usize, 
-        code_line: Rc<String>, err_message: String, err_kind: ErrorKind) -> String {
+        code_line: Rc<String>, err_message: String, err_kind: ParseErrorKind) -> String {
         if err_index < line_start_index {
             unreachable!("lookahead at which error occured can never be less than the start index of the line")
         }
@@ -96,7 +94,7 @@ impl ParseError {
     }
 
     pub fn form_single_line_underline_pointer_error(start_err_index: usize, end_err_index: usize, line_number: usize, 
-        line_start_index: usize, code_line: Rc<String>, err_message: String, err_kind: ErrorKind) -> String {
+        line_start_index: usize, code_line: Rc<String>, err_message: String, err_kind: ParseErrorKind) -> String {
         if start_err_index < line_start_index || end_err_index < line_start_index {
             unreachable!("lookahead at which error occured can never be less than the start index of the line")
         }
@@ -125,7 +123,7 @@ impl ParseError {
     }
 
     pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, mut code_lines: Vec<Rc<String>>, 
-        err_message: String, err_kind: ErrorKind) -> String {
+        err_message: String, err_kind: ParseErrorKind) -> String {
         if end_line_number < start_line_number {
             unreachable!("end line number cannot be less than start line number")
         }
@@ -161,9 +159,7 @@ impl Display for ParseError {
 #[derive(Debug)]
 pub enum CompilationError {
     IO_ERROR(IOError),
-    LEXICAL_ERROR(ParseError),
-    SYNTAX_ERROR(ParseError),
-    // SEMANTIC_ERROR(ParseError),
+    PARSE_ERROR(ParseError),
 }
 
 impl From<IOError> for CompilationError {
@@ -174,7 +170,7 @@ impl From<IOError> for CompilationError {
 
 impl From<ParseError> for CompilationError {
     fn from(err: ParseError) -> Self {
-        CompilationError::SYNTAX_ERROR(err)
+        CompilationError::PARSE_ERROR(err)
     }
 }
 
@@ -183,11 +179,8 @@ impl Display for CompilationError {
         match self {
             CompilationError::IO_ERROR(err) => write!(
                 f, ">>> IOErrror:\n    {}", err.to_string()),
-            CompilationError::LEXICAL_ERROR(lexical_err) => {
-                write!(f, "{}", lexical_err.err_message)
-            }
-            CompilationError::SYNTAX_ERROR(syntax_err) => {
-                write!(f, "{}", syntax_err.err_message)
+            CompilationError::PARSE_ERROR(parse_error) => {
+                write!(f, "{}", parse_error.err_message)
             }
         }
     }

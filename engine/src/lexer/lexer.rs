@@ -1,10 +1,13 @@
 use crate::constants::common::ENDMARKER;
 use crate::errors::LexicalErrorData;
+use crate::errors::ParseError;
+use crate::errors::ParseErrorKind;
 use crate::lexer::token::Token;
 use crate::lexer::token::CoreToken;
 use std::rc::Rc;
 use std::vec;
 use std::mem;
+use crate::utils::common::get_code_line_data;
 
 pub trait Lexer {
     fn tokenize(&mut self, code: Vec<char>) -> Vec<Token>;
@@ -15,7 +18,8 @@ pub struct CoreLexer {
     pub line_number: usize,
     pub code_lines: Vec<(Rc<String>, usize)>,
     pub line_start_index: usize,
-    pub lexical_errors: Vec<LexicalErrorData>,
+    pub lexical_errors_data: Vec<LexicalErrorData>,
+    pub lexical_errors: Vec<ParseError>,
     //
 }
 
@@ -26,6 +30,7 @@ impl CoreLexer {
             line_number: 1,
             code_lines: vec![],
             line_start_index: 0,
+            lexical_errors_data: vec![],
             lexical_errors: vec![],
         }
     }
@@ -38,13 +43,47 @@ impl CoreLexer {
         self.code_lines
     }
 
-    pub fn log_invalid_char_lexical_error(&mut self, line_number: usize, invalid_token: &Token, err_message: &Rc<String>) {
-        self.lexical_errors.push(LexicalErrorData::new_with_invalid_char(line_number, invalid_token, err_message))
+    pub fn log_invalid_char_lexical_error(&mut self, invalid_token: &Token, err_message: &Rc<String>) {
+        self.lexical_errors_data.push(LexicalErrorData::new_with_invalid_char(invalid_token, err_message))
     }
 
     pub fn log_no_closing_symbols_lexical_error(&mut self, start_line_number: usize, end_line_number: usize, 
         err_message: &Rc<String>) {
-        self.lexical_errors.push(LexicalErrorData::new_with_no_closing_symbols(start_line_number, end_line_number, err_message))
+        self.lexical_errors_data.push(LexicalErrorData::new_with_no_closing_symbols(start_line_number, end_line_number, err_message))
+    }
+
+    pub fn log_all_lexical_errors(&mut self) {
+        let mut errors: Vec<ParseError> = vec![];
+        for error_data in &self.lexical_errors_data {
+            let error: ParseError;
+            match error_data {
+                LexicalErrorData::INVALID_CHAR(invalid_char_lexical_error_data) => {
+                    let invalid_token = invalid_char_lexical_error_data.invalid_token.clone();
+                    let err_str = invalid_char_lexical_error_data.err_message.clone();
+                    let (code_line, line_start_index, line_number, err_index)
+                    = get_code_line_data(&self.code_lines, invalid_token.line_number, invalid_token.index());
+                    let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
+                        code_line, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
+                    error = ParseError::new(line_number, line_number, err_message);
+                },
+                LexicalErrorData::NO_CLOSING_SYMBOLS(
+                    no_closing_symbols_lexical_error_data
+                ) => {
+                    let start_line_number = no_closing_symbols_lexical_error_data.start_line_number;
+                    let end_line_number = no_closing_symbols_lexical_error_data.end_line_number;
+                    let err_str = no_closing_symbols_lexical_error_data.err_message.clone();
+                    let mut code_lines: Vec<Rc<String>> = vec![];
+                    for (code_line, _) in &self.code_lines[(start_line_number - 1)..end_line_number] {
+                        code_lines.push(code_line.clone());
+                    }
+                    let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
+                        code_lines, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
+                    error = ParseError::new(start_line_number, end_line_number, err_message);
+                }
+            }
+            errors.push(error);
+        }
+        self.lexical_errors = errors;
     }
 }
 
@@ -71,7 +110,6 @@ impl Lexer for CoreLexer {
                     if trivia_vec.len() > 0 {
                         token.set_trivia(mem::take(&mut trivia_vec));
                     }
-                    println!("{:?}\n", token);
                     token_vec.push(token)
                 }
             }
@@ -92,7 +130,10 @@ impl Lexer for CoreLexer {
             token.set_trivia(mem::take(&mut trivia_vec));
         }
         token_vec.push(token);
-        // fill up the errors
+        self.log_all_lexical_errors();
+        if self.lexical_errors.len() > 0 {
+            println!("{}", self.lexical_errors[0]);
+        }
         token_vec
     }
 }

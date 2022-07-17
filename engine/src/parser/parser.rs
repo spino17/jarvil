@@ -7,7 +7,7 @@ use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, N
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
-use crate::errors::{ParseError, ErrorKind};
+use crate::errors::{ParseError, ParseErrorKind};
 use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
@@ -163,7 +163,7 @@ impl PackratParser {
         } else {
             let err_str = format!("expected `{}`, got `{}`", expected_symbol, recevied_token.name());
             let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
-                code_line, err_str, ErrorKind::SYNTAX_ERROR);
+                code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 
             = ParseError::new(line_number, line_number, err_message);
             self.errors.push(err);
@@ -193,7 +193,7 @@ impl PackratParser {
             }
             err_str.push_str(&format!(" or `{}`, got `{}`", expected_symbols[symbols_len - 1], recevied_token.name()));
             let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
-                code_line, err_str, ErrorKind::SYNTAX_ERROR);
+                code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 
             = ParseError::new(line_number, line_number, err_message);
             self.errors.push(err);
@@ -215,7 +215,7 @@ impl PackratParser {
             let end_err_index = skipped_tokens[skipped_tokens_len - 1].index();
             let err_message = ParseError::form_single_line_underline_pointer_error(
                 start_err_index, end_err_index, line_number, line_start_index, 
-                code_line, err_str, ErrorKind::SYNTAX_ERROR
+                code_line, err_str, ParseErrorKind::SYNTAX_ERROR
             );
             let err 
             = ParseError::new(line_number, line_number, err_message);
@@ -239,7 +239,7 @@ impl PackratParser {
             let err_str = format!("expected an indented block\n    expected indentation with `{}` spaces, got `{}` spaces", 
             expected_indent, received_indent);
             let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
-                code_lines, err_str, ErrorKind::SYNTAX_ERROR);
+                code_lines, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 
             = ParseError::new(start_line_number, end_line_number, err_message);
             self.errors.push(err);
@@ -361,7 +361,6 @@ impl PackratParser {
                             match blank_token.core_token {
                                 CoreToken::BLANK => {
                                     indent_spaces = (blank_token.end_index - blank_token.start_index) as i64;
-                                    println!("inside blank: {}", indent_spaces);
                                 },
                                 _ => indent_spaces = 0,
                             }
