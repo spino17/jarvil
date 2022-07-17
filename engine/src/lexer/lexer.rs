@@ -18,9 +18,8 @@ pub struct CoreLexer {
     pub line_number: usize,
     pub code_lines: Vec<(Rc<String>, usize)>,
     pub line_start_index: usize,
-    pub lexical_errors_data: Vec<LexicalErrorData>,
+    pub lexical_errors_data: Vec<LexicalErrorData>,  // temp storage for lexical error data uptill code_lines are built
     pub lexical_errors: Vec<ParseError>,
-    //
 }
 
 impl CoreLexer {
@@ -39,8 +38,8 @@ impl CoreLexer {
         Token::extract_lexeme(self, code)
     }
 
-    pub fn get_code_lines(self) -> Vec<(Rc<String>, usize)> {
-        self.code_lines
+    pub fn get_lexical_data_useful_for_parser(self) -> (Vec<(Rc<String>, usize)>, Vec<ParseError>) {
+        (self.code_lines, self.lexical_errors)
     }
 
     pub fn log_invalid_char_lexical_error(&mut self, invalid_token: &Token, err_message: &Rc<String>) {
@@ -84,6 +83,8 @@ impl CoreLexer {
             errors.push(error);
         }
         self.lexical_errors = errors;
+        let errors_data = mem::take(&mut self.lexical_errors_data);
+        drop(errors_data);
     }
 }
 
@@ -131,9 +132,6 @@ impl Lexer for CoreLexer {
         }
         token_vec.push(token);
         self.log_all_lexical_errors();
-        if self.lexical_errors.len() > 0 {
-            println!("{}", self.lexical_errors[0]);
-        }
         token_vec
     }
 }

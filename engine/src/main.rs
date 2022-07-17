@@ -16,26 +16,24 @@ use std::env::args;
 use crate::parser::parser::PackratParser;
 use crate::parser::parser::Parser;
 
-fn start_compiler() -> Result<(), CompilationError> {
+fn start_compiler() {
     let args: Vec<String> = args().collect();
-    let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;
+    let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     let mut core_lexer = CoreLexer::new();
     let token_vec = core_lexer.tokenize(char_vec);
-    let code_lines = core_lexer.get_code_lines();
+    let (code_lines, lexical_errors) = core_lexer.get_lexical_data_useful_for_parser();
+    if lexical_errors.len() > 0 {
+        print!("{}\n", lexical_errors[0]);
+        return;
+    }
     let mut parser = PackratParser::new(code_lines);
     let x = 3 * 5;
     if token_vec.len() > 0 {
-        let ast = parser.parse(token_vec, )?;  // TODO - do bytecode generation using this ast object
+        let ast = parser.parse(token_vec);  // TODO - do bytecode generation using this ast object
         // println!("{:?}", ast);
     }
-    Ok(())
 }
 
 fn main() {
-    match start_compiler() {
-        Ok(()) => {},
-        Err(err) => {
-            println!("{}", err);
-        }
-    }
+    start_compiler();
 }
