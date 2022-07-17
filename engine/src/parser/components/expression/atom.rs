@@ -41,12 +41,6 @@ pub fn atom(parser: &mut PackratParser) -> AtomNode {
     let leading_identifier_node = parser.expect(IDENTIFIER, false);
     let token = &parser.curr_token();
     match token.core_token {
-        CoreToken::DOT              => {
-            // return parser.atom(leading_identifier_node);
-            let atom_start_node = AtomStartNode::new_with_identifier(&leading_identifier_node);
-            let atom_node = AtomNode::new_with_atom_start(&atom_start_node);
-            return parser.trailing_atom(atom_node)
-        },
         CoreToken::LPAREN           => {
             let params_node = parser.params_within_parenthesis();
             let call_expr = CallExpressionNode::new(&leading_identifier_node, &params_node);
@@ -64,14 +58,10 @@ pub fn atom(parser: &mut PackratParser) -> AtomNode {
             let atom_node = AtomNode::new_with_atom_start(&atom_start_node);
             return parser.trailing_atom(atom_node)
         },
-        CoreToken::LSQUARE          => {
+        _                           => {
             let atom_start_node = AtomStartNode::new_with_identifier(&leading_identifier_node);
             let atom_node = AtomNode::new_with_atom_start(&atom_start_node);
             return parser.trailing_atom(atom_node)
-        },
-        _                           => {
-            let atom_start_node = AtomStartNode::new_with_identifier(&leading_identifier_node);
-            AtomNode::new_with_atom_start(&atom_start_node)
         }
     }
 }

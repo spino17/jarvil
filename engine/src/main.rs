@@ -23,9 +23,10 @@ fn start_compiler() -> Result<(), CompilationError> {
     let token_vec = core_lexer.tokenize(char_vec);
     let code_lines = core_lexer.get_code_lines();
     let mut parser = PackratParser::new(code_lines);
+    let x = 3 * 5;
     if token_vec.len() > 0 {
         let ast = parser.parse(token_vec, )?;  // TODO - do bytecode generation using this ast object
-        println!("{:?}", ast);
+        // println!("{:?}", ast);
     }
     Ok(())
 }

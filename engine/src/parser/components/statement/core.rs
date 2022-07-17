@@ -25,7 +25,7 @@ pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 10]
 pub fn stmt(parser: &mut PackratParser) -> StatementNode {
     let token = &parser.curr_token();
     if !is_statement_starting_with(token) {
-        parser.log_skipped_token_error(&STATEMENT_EXPECTED_STARTING_SYMBOLS, token);
+        parser.log_missing_token_error_for_multiple_expected_symbols(&STATEMENT_EXPECTED_STARTING_SYMBOLS, token);
         // TODO - return missing tokens statement node
     }
     let statement_node = match token.core_token {

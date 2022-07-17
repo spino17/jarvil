@@ -505,6 +505,14 @@ impl SkippedTokenNode {
             parent: None,
         })))
     }
+
+    pub fn index(&self) -> usize {
+        self.0.as_ref().borrow().skipped_token.index()
+    }
+
+    pub fn line_number(&self) -> usize {
+        self.0.as_ref().borrow().skipped_token.line_number
+    }
 }
 impl Node for SkippedTokenNode {
     fn set_parent(&self, parent_node: ASTNode) {
@@ -843,7 +851,12 @@ pub struct CoreClassMethodCallNode {
 pub struct ClassMethodCallNode(Rc<RefCell<CoreClassMethodCallNode>>);
 impl ClassMethodCallNode {
     pub fn new(class_name: &TokenNode, class_method_name: &TokenNode, params: &Option<ParamsNode>) -> Self {
-        todo!()
+        ClassMethodCallNode(Rc::new(RefCell::new(CoreClassMethodCallNode{
+            class_name: class_name.clone(),
+            class_method_name: class_method_name.clone(),
+            params: params.clone(),
+            parent: None,
+        })))
     }
 }
 impl Node for ClassMethodCallNode {

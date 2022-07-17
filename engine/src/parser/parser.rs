@@ -68,7 +68,9 @@ impl PackratParser {
 impl Parser for PackratParser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<BlockNode, ParseError> {
         let code_node = self.code(token_vec);
-        println!("{:?}", self.errors);
+        if self.errors.len() > 0 {
+            println!("{}", self.errors[0]);
+        }
         Ok(code_node)
     }
 }
@@ -149,7 +151,7 @@ impl PackratParser {
         self.token_vec[self.lookahead - 1].clone()
     }
 
-    pub fn log_missing_token_error(&mut self, expected_symbol: &str, recevied_token: &Token) {
+    pub fn log_missing_token_error_for_single_expected_symbol(&mut self, expected_symbol: &str, recevied_token: &Token) {
         // This type of error handling is taken from Golang programming language
         // See /src/go/parser/parser.go -> `func (p *parser) error(pos token.Pos, msg string) {...}`
         if self.ignore_all_errors {
@@ -162,7 +164,7 @@ impl PackratParser {
             return;
         } else {
             let err_str = format!("expected `{}`, got `{}`", expected_symbol, recevied_token.name());
-            let err_message = ParseError::form_single_line_error(err_index, line_number, line_start_index, 
+            let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
                 code_line, err_str, ErrorKind::SYNTAX_ERROR);
             let err 
             = ParseError::new(line_number, line_number, err_message);
@@ -170,7 +172,8 @@ impl PackratParser {
         }
     }
 
-    pub fn log_skipped_token_error(&mut self, expected_symbols: &[&'static str], recevied_token: &Token) {
+    pub fn log_missing_token_error_for_multiple_expected_symbols(&mut self, 
+        expected_symbols: &[&'static str], recevied_token: &Token) {
         if self.ignore_all_errors {
             return;
         }
@@ -191,8 +194,31 @@ impl PackratParser {
                 flag = true;
             }
             err_str.push_str(&format!(" or `{}`, got `{}`", expected_symbols[symbols_len - 1], recevied_token.name()));
-            let err_message = ParseError::form_single_line_error(err_index, line_number, line_start_index, 
+            let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
                 code_line, err_str, ErrorKind::SYNTAX_ERROR);
+            let err 
+            = ParseError::new(line_number, line_number, err_message);
+            self.errors.push(err);
+        }
+    }
+
+    pub fn log_trailing_skipped_tokens_error(&mut self, skipped_tokens: &Vec<SkippedTokenNode>) {
+        if self.ignore_all_errors {
+            return;
+        }
+        let errors_len = self.errors.len();
+        let skipped_tokens_len = skipped_tokens.len();
+        let (code_line, line_start_index, line_number, start_err_index) 
+        = get_code_line_data(&self.code_lines, skipped_tokens[0].line_number(), skipped_tokens[0].index());
+        if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
+            return;
+        } else {
+            let err_str = String::from("invalid sequence of tokens found at the trail of the line");
+            let end_err_index = skipped_tokens[skipped_tokens_len - 1].index();
+            let err_message = ParseError::form_single_line_underline_pointer_error(
+                start_err_index, end_err_index, line_number, line_start_index, 
+                code_line, err_str, ErrorKind::SYNTAX_ERROR
+            );
             let err 
             = ParseError::new(line_number, line_number, err_message);
             self.errors.push(err);
@@ -257,8 +283,10 @@ impl PackratParser {
     pub fn skip_to_newline(&mut self) -> Vec<SkippedTokenNode> {
         let mut skipped_tokens: Vec<SkippedTokenNode> = vec![];
         loop {
-            let token = &self.token_vec[self.lookahead];
+            let token = &self.token_vec[self.lookahead].clone();
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
+                // TODO - log skipped tokens error
+                self.log_trailing_skipped_tokens_error(&skipped_tokens);
                 skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
                 self.scan_next_token();
                 return skipped_tokens
@@ -279,7 +307,7 @@ impl PackratParser {
             self.scan_next_token();
             TokenNode::new_with_ok_token(&token, self.curr_lookahead())
         } else {
-            self.log_missing_token_error(symbol, &token);
+            self.log_missing_token_error_for_single_expected_symbol(symbol, &token);
             TokenNode::new_with_missing_token(
                 &Rc::new(vec![symbol]),
                 &token,

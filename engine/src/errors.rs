@@ -76,7 +76,7 @@ impl ParseError {
         }
     }
 
-    pub fn form_single_line_error(err_index: usize, line_number: usize, line_start_index: usize, 
+    pub fn form_single_line_single_pointer_error(err_index: usize, line_number: usize, line_start_index: usize, 
         code_line: Rc<String>, err_message: String, err_kind: ErrorKind) -> String {
         if err_index < line_start_index {
             unreachable!("lookahead at which error occured can never be less than the start index of the line")
@@ -88,6 +88,35 @@ impl ParseError {
                 pointer_line.push('^');
             } else {
                 pointer_line.push(' ');
+            }
+        }
+        let pointer_line: String = pointer_line.iter().collect();
+        let err_code_part = format!("{}\n    {}", code_line.clone(), pointer_line);
+        format!(">>> {}: line {}\n    {}\n    {}", err_kind, line_number, err_code_part, err_message)
+    }
+
+    pub fn form_single_line_underline_pointer_error(start_err_index: usize, end_err_index: usize, line_number: usize, 
+        line_start_index: usize, code_line: Rc<String>, err_message: String, err_kind: ErrorKind) -> String {
+        if start_err_index < line_start_index || end_err_index < line_start_index {
+            unreachable!("lookahead at which error occured can never be less than the start index of the line")
+        }
+        let start_pointer_index = start_err_index - line_start_index;
+        let end_pointer_index = end_err_index - line_start_index;
+        let mut pointer_line: Vec<char> = vec![];
+        let mut flag = false;
+        for (i, _) in code_line.as_ref().chars().enumerate() {
+            if i == start_pointer_index {
+                pointer_line.push('^');
+                flag = true;
+            } else if i == end_pointer_index {
+                pointer_line.push('^');
+                flag = false;
+            } else {
+                if flag {
+                    pointer_line.push('-')
+                } else {
+                    pointer_line.push(' ');
+                }
             }
         }
         let pointer_line: String = pointer_line.iter().collect();
@@ -121,6 +150,13 @@ impl ParseError {
         format!(">>> {}: lines {} - {}\n    {}\n    {}", err_kind, start_line_number, end_line_number, err_code_part, err_message)
     }
 }
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.err_message)
+    }
+}
+
 
 #[derive(Debug)]
 pub enum CompilationError {

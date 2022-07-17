@@ -48,7 +48,7 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
         || parser.curr_token().is_eq(ENDMARKER) {
             let token = &parser.curr_token();
             leading_skipped_tokens.push(SkippedTokenNode::new(token, parser.curr_lookahead()));
-            parser.log_skipped_token_error(expected_symbols, token);
+            parser.log_missing_token_error_for_multiple_expected_symbols(expected_symbols, token);
             parser.scan_next_token();
         }
         if leading_skipped_tokens.len() > 0 {
