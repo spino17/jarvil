@@ -4,7 +4,6 @@ use crate::lexer::token::CoreToken;
 
 pub fn params(parser: &mut PackratParser) -> ParamsNode {
     let first_param_node = parser.expr();
-    println!("{:?}", first_param_node);
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::COMMA => {
