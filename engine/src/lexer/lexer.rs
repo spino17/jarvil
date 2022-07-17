@@ -71,6 +71,7 @@ impl Lexer for CoreLexer {
                     if trivia_vec.len() > 0 {
                         token.set_trivia(mem::take(&mut trivia_vec));
                     }
+                    println!("{:?}\n", token);
                     token_vec.push(token)
                 }
             }

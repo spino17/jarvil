@@ -79,8 +79,11 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
                     parser.set_correction_indent(indent_data.1 - indent_data.0);
                     let stmt_node = parser.stmt();
                     parser.set_ignore_all_errors(false);
-                    let after_line_number = parser.curr_line_number();
+                    let mut after_line_number = parser.curr_line_number();
                     parser.set_correction_indent(0);
+                    if after_line_number > before_line_number {
+                        after_line_number = after_line_number - 1;
+                    }
                     parser.log_incorrectly_indented_block_error(before_line_number, 
                         after_line_number, indent_data.0, indent_data.1);
                     stmt_node

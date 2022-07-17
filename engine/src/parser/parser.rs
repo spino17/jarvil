@@ -68,9 +68,7 @@ impl PackratParser {
 impl Parser for PackratParser {
     fn parse(&mut self, token_vec: Vec<Token>) -> Result<BlockNode, ParseError> {
         let code_node = self.code(token_vec);
-        if self.errors.len() > 0 {
-            println!("{}", self.errors[0]);
-        }
+        println!("{:?}", self.errors);
         Ok(code_node)
     }
 }
@@ -359,9 +357,11 @@ impl PackratParser {
                 _ => {
                     match &token.trivia {
                         Some(trivia_vec) => {
-                            match trivia_vec[0].core_token {
+                            let blank_token = &trivia_vec[0];
+                            match blank_token.core_token {
                                 CoreToken::BLANK => {
-                                    indent_spaces = (token.end_index - token.start_index) as i64;
+                                    indent_spaces = (blank_token.end_index - blank_token.start_index) as i64;
+                                    println!("inside blank: {}", indent_spaces);
                                 },
                                 _ => indent_spaces = 0,
                             }
@@ -514,19 +514,20 @@ impl PackratParser {
         components::expression::core::expr(self)
     }
 
-    pub fn params(&mut self) -> ParamsNode {
-        components::expression::common::params(self)
-    }
-
-    pub fn params_within_parenthesis(&mut self) -> Option<ParamsNode> {
-        components::expression::common::params_within_parenthesis(self)
-    }
-
     pub fn trailing_atom(&mut self, atom_start: AtomNode) -> AtomNode {
         components::expression::atom::trailing_atom(self, atom_start)
     }
 
     pub fn atom(&mut self) -> AtomNode {
         components::expression::atom::atom(self)
+    }
+
+    // function
+    pub fn params(&mut self) -> ParamsNode {
+        components::expression::common::params(self)
+    }
+
+    pub fn params_within_parenthesis(&mut self) -> Option<ParamsNode> {
+        components::expression::common::params_within_parenthesis(self)
     }
 }
