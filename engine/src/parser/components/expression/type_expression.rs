@@ -17,8 +17,18 @@ pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 3]
 = [ATOMIC_TYPE, IDENTIFIER, "["];
 
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
-    let token = parser.curr_token();
-    match &token.core_token {
+    let token = &parser.curr_token();
+    if !is_type_expression_starting_with(token) {
+        parser.log_missing_token_error_for_multiple_expected_symbols(
+            &TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS, &token
+        );
+        return TypeExpressionNode::new_with_missing_tokens(
+            &Rc::new(TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
+            &token,
+            parser.curr_lookahead(),
+        )
+    }
+    match token.core_token {
         CoreToken::ATOMIC_TYPE(_) => {
             let atomic_type_node = parser.expect(ATOMIC_TYPE, false);
             TypeExpressionNode::new_with_atomic_type(&atomic_type_node)
@@ -35,13 +45,6 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
             let r_square_node = parser.expect("]", false);
             TypeExpressionNode::new_with_array_type(&array_size_node, &sub_type_node)
         },
-        _ => {
-            parser.log_missing_token_error_for_multiple_expected_symbols(&TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS, &token);
-            TypeExpressionNode::new_with_missing_tokens(
-                &Rc::new(TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
-                &token,
-                parser.curr_lookahead(),
-            )
-        }
+        _ => unreachable!("tokens not matching `starting_with_symbols` for type expression would already be eliminated")
     }
 }
