@@ -22,7 +22,9 @@ pub const EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 10] = UNARY_EXPRE
 pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
     let token = &parser.curr_token();
     if !is_expression_starting_with(token) {
-        parser.log_missing_token_error_for_multiple_expected_symbols(&EXPRESSION_EXPECTED_STARTING_SYMBOLS, token);
+        parser.log_missing_token_error_for_multiple_expected_symbols(
+            &EXPRESSION_EXPECTED_STARTING_SYMBOLS, token
+        );
         return ExpressionNode::new_with_missing_tokens(
             &Rc::new(EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
             token,

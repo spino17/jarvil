@@ -155,6 +155,7 @@ pub enum StatementNodeKind {
     // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration, 
     // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
     EXPRESSION(ExpressionNode),
+    MISSING_TOKENS(MissingTokenNode),
 }
 
 #[derive(Debug, Clone)]
@@ -167,6 +168,13 @@ impl StatementNode {
         }));
         expr_node.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
         StatementNode(node)
+    }
+
+    pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        StatementNode(Rc::new(RefCell::new(CoreStatementNode{
+            kind: StatementNodeKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
     }
 }
 impl Node for StatementNode {
