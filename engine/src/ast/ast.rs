@@ -588,7 +588,7 @@ pub enum AtomicExpressionKind {
     FLOATING_POINT_NUMBER(TokenNode),
     LITERAL(TokenNode),
     PARENTHESISED_EXPRESSION(ExpressionNode),
-    ATOM(),  // add atom node here
+    ATOM(AtomNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -645,9 +645,9 @@ impl AtomicExpressionNode {
         AtomicExpressionNode(node)
     }
 
-    pub fn new_with_atom() -> Self {
+    pub fn new_with_atom(atom: &AtomNode) -> Self {
         AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
-            kind: AtomicExpressionKind::ATOM(),
+            kind: AtomicExpressionKind::ATOM(atom.clone()),
             parent: None,
         })))
     }

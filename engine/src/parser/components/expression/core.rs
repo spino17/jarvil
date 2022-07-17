@@ -176,8 +176,8 @@ pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
             AtomicExpressionNode::new_with_literal(&literal_node)
         }
         CoreToken::IDENTIFIER(_)                => {
-            // parser.atom();
-            todo!("parsing routine for atom is yet to be implemented")
+            let atom = parser.atom();
+            AtomicExpressionNode::new_with_atom(&atom)
         }
         CoreToken::LPAREN                       => {
             let lparen_node = parser.expect("(", false);

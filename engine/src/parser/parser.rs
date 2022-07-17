@@ -494,7 +494,11 @@ impl PackratParser {
         components::expression::common::params_within_parenthesis(self)
     }
 
-    pub fn atom(&mut self, atom_start: AtomNode) -> AtomNode {
-        components::expression::atom::atom(self, atom_start)
+    pub fn trailing_atom(&mut self, atom_start: AtomNode) -> AtomNode {
+        components::expression::atom::trailing_atom(self, atom_start)
+    }
+
+    pub fn atom(&mut self) -> AtomNode {
+        components::expression::atom::atom(self)
     }
 }
