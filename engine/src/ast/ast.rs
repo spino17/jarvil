@@ -2,7 +2,7 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks. 
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
-use std::{rc::{Rc, Weak}, cell::RefCell, fmt::Binary};
+use std::{rc::{Rc, Weak}, cell::RefCell};
 use crate::{scope::core::Scope, lexer::token::{Token, CoreToken}};
 
 pub trait Node {
@@ -13,8 +13,8 @@ pub trait Node {
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
     STATEMENT(Weak<RefCell<CoreStatementNode>>),
-    PARAMS(Weak<RefCell<CoreParamsNode>>),
-    PARAM(Weak<RefCell<CoreParamNode>>),
+    NAME_TYPE_SPECS(Weak<RefCell<CoreNameTypeSpecsNode>>),
+    NAME_TYPE_SPEC(Weak<RefCell<CoreNameTypeSpecNode>>),
     TYPE_EXPRESSION(Weak<RefCell<CoreTypeExpressionNode>>),
     ATOMIC_TYPE(Weak<RefCell<CoreAtomicTypeNode>>),
     ARRAY_TYPE(Weak<RefCell<CoreArrayTypeNode>>),
@@ -24,6 +24,7 @@ pub enum ASTNode {
     ATOMIC_EXPRESSION(Weak<RefCell<CoreAtomicExpressionNode>>),
     UNARY_EXPRESSION(Weak<RefCell<CoreUnaryExpressionNode>>),
     BINARY_EXPRESSION(Weak<RefCell<CoreBinaryExpressionNode>>),
+    PARAMS(Weak<RefCell<CoreParamsNode>>),
 }
 
 #[derive(Debug, Clone)]
@@ -38,7 +39,7 @@ pub enum StatemenIndentWrapper {
 #[derive(Debug, Clone)]
 pub struct CoreBlockNode {
     stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
-    params: Option<ParamsNode>,
+    params: Option<NameTypeSpecsNode>,
     scope: Option<Scope>,
     parent: Option<ASTNode>,
 }
@@ -46,7 +47,7 @@ pub struct CoreBlockNode {
 #[derive(Debug, Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, params: Option<&ParamsNode>) -> Self {
+    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, params: Option<&NameTypeSpecsNode>) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode{
             stmts: stmts.clone(),
             params: match params {
@@ -166,17 +167,17 @@ impl Node for StatementNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct CoreParamsNode {
-    param: ParamNode,
-    remaining_params: Option<ParamsNode>,
+pub struct CoreNameTypeSpecsNode {
+    param: NameTypeSpecNode,
+    remaining_params: Option<NameTypeSpecsNode>,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub struct ParamsNode(Rc<RefCell<CoreParamsNode>>);
-impl ParamsNode {
-    pub fn new(param: &ParamNode, remaining_params: Option<&ParamsNode>) -> Self {
-        let node = Rc::new(RefCell::new(CoreParamsNode{
+pub struct NameTypeSpecsNode(Rc<RefCell<CoreNameTypeSpecsNode>>);
+impl NameTypeSpecsNode {
+    pub fn new(param: &NameTypeSpecNode, remaining_params: Option<&NameTypeSpecsNode>) -> Self {
+        let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode{
             param: param.clone(),
             remaining_params: match remaining_params {
                 Some(remaining_params) => Some(remaining_params.clone()),
@@ -184,42 +185,42 @@ impl ParamsNode {
             },
             parent: None,
         }));
-        param.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
+        param.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
         match remaining_params {
-            Some(remaining_params) => remaining_params.set_parent(ASTNode::PARAMS(Rc::downgrade(&node))),
+            Some(remaining_params) => remaining_params.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node))),
             None => {}
         }
-        ParamsNode(node)
+        NameTypeSpecsNode(node)
     }
 }
-impl Node for ParamsNode {
+impl Node for NameTypeSpecsNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct CoreParamNode {
+pub struct CoreNameTypeSpecNode {
     param_name: TokenNode,
     param_type: TypeExpressionNode,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub struct ParamNode(Rc<RefCell<CoreParamNode>>);
-impl ParamNode {
+pub struct NameTypeSpecNode(Rc<RefCell<CoreNameTypeSpecNode>>);
+impl NameTypeSpecNode {
     pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreParamNode{
+        let node = Rc::new(RefCell::new(CoreNameTypeSpecNode{
             param_name: param_name.clone(),
             param_type: param_type.clone(),
             parent: None,
         }));
-        param_name.set_parent(ASTNode::PARAM(Rc::downgrade(&node)));
-        param_type.set_parent(ASTNode::PARAM(Rc::downgrade(&node)));
-        ParamNode(node)
+        param_name.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
+        param_type.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
+        NameTypeSpecNode(node)
     }
 }
-impl Node for ParamNode {
+impl Node for NameTypeSpecNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
@@ -754,6 +755,43 @@ impl BinaryExpressionNode {
 impl Node for BinaryExpressionNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreParamsNode {
+    param: ExpressionNode,
+    remaining_params: Option<ParamsNode>,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ParamsNode(Rc<RefCell<CoreParamsNode>>);
+impl ParamsNode {
+    pub fn new_with_single_param(param: &ExpressionNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreParamsNode{
+            param: param.clone(),
+            remaining_params: None,
+            parent: None,
+        }));
+        param.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
+        ParamsNode(node)
+    }
+
+    pub fn new_with_params(param: &ExpressionNode, remaining_params: &ParamsNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreParamsNode{
+            param: param.clone(),
+            remaining_params: Some(remaining_params.clone()),
+            parent: None,
+        }));
+        param.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
+        remaining_params.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
+        ParamsNode(node)
+    }
+}
+impl Node for ParamsNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node)
     }
 }
 

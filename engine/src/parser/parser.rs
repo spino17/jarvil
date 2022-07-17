@@ -3,7 +3,7 @@
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, ParamsNode, SkippedTokenNode, ExpressionNode, AtomicExpressionNode, UnaryExpressionNode};
+use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, NameTypeSpecsNode, SkippedTokenNode, ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode};
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
@@ -443,7 +443,7 @@ impl PackratParser {
     }
 
     pub fn block<F: Fn(&Token) -> bool>(&mut self, 
-        params: Option<&ParamsNode>, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
+        params: Option<&NameTypeSpecsNode>, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
         components::block::block(self, params, is_starting_with_fn, expected_symbols)
     }
 
@@ -484,5 +484,9 @@ impl PackratParser {
 
     pub fn expr(&mut self) -> ExpressionNode {
         components::expression::core::expr(self)
+    }
+
+    pub fn params(&mut self) -> ParamsNode {
+        components::expression::common::params(self)
     }
 }

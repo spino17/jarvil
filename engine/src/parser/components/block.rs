@@ -6,7 +6,7 @@
 // Rust  - `https://github.com/rust-lang/rust-analyzer/blob/1d53f695f0408f47c5cce5cefa471eb0e86b0db7/docs/dev/guide.md`
 // Swift - `https://github.com/apple/swift/tree/5e2c815edfd758f9b1309ce07bfc01c4bc20ec23/lib/Syntax`
 
-use crate::ast::ast::{BlockNode, ParamsNode, StatemenIndentWrapper, SkippedTokens, SkippedTokenNode};
+use crate::ast::ast::{BlockNode, NameTypeSpecsNode, StatemenIndentWrapper, SkippedTokens, SkippedTokenNode};
 use crate::constants::common::ENDMARKER;
 use crate::parser::helper::{IndentResultKind};
 use crate::parser::parser::{PackratParser};
@@ -16,7 +16,7 @@ use std::cell::RefCell;
 use crate::lexer::token::Token;
 
 pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser, 
-    params: Option<&ParamsNode>, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
+    params: Option<&NameTypeSpecsNode>, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
     let newline_node = parser.expect("\n", false);
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
