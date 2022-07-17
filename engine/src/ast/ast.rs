@@ -3,7 +3,7 @@
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::core::Scope, lexer::token::{Token, CoreToken}};
+use crate::{scope::{core::Scope, function}, lexer::token::{Token, CoreToken}};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
@@ -25,6 +25,12 @@ pub enum ASTNode {
     UNARY_EXPRESSION(Weak<RefCell<CoreUnaryExpressionNode>>),
     BINARY_EXPRESSION(Weak<RefCell<CoreBinaryExpressionNode>>),
     PARAMS(Weak<RefCell<CoreParamsNode>>),
+    CALL_EXPRESSION(Weak<RefCell<CoreCallExpressionNode>>),
+    ATOM(Weak<RefCell<CoreAtomNode>>),
+    PROPERTY_ACCESS(Weak<RefCell<CorePropertyAccessNode>>),
+    METHOD_ACCESS(Weak<RefCell<CoreMethodAccessNode>>),
+    INDEX_ACCESS(Weak<RefCell<CoreIndexAccessNode>>),
+    ATOM_START(Weak<RefCell<CoreAtomStartNode>>),
 }
 
 #[derive(Debug, Clone)]
@@ -795,5 +801,220 @@ impl Node for ParamsNode {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct CoreCallExpressionNode {
+    function_name: TokenNode,
+    params: ParamsNode,
+    parent: Option<ASTNode>,
+}
 
+#[derive(Debug, Clone)]
+pub struct CallExpressionNode(Rc<RefCell<CoreCallExpressionNode>>);
+impl CallExpressionNode {
+    pub fn new(function_name: &TokenNode, params: &ParamsNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreCallExpressionNode{
+            function_name: function_name.clone(),
+            params: params.clone(),
+            parent: None,
+        }));
+        function_name.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
+        params.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
+        CallExpressionNode(node)
+    }
+}
+impl Node for CallExpressionNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreAtomNode {
+    kind: AtomKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum AtomKind {
+    ATOM_START(AtomStartNode),
+    PROPERTRY_ACCESS(PropertyAccessNode),
+    METHOD_ACCESS(MethodAccessNode),
+    INDEX_ACCESS(IndexAccessNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct AtomNode(Rc<RefCell<CoreAtomNode>>);
+impl AtomNode {
+    pub fn new_with_atom_start(atom_start: &AtomStartNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomNode{
+            kind: AtomKind::ATOM_START(atom_start.clone()),
+            parent: None,
+        }));
+        atom_start.set_parent(ASTNode::ATOM(Rc::downgrade(&node)));
+        AtomNode(node)
+    }
+
+    pub fn new_with_propertry_access(atom: &AtomNode, propertry: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomNode{
+            kind: AtomKind::PROPERTRY_ACCESS(PropertyAccessNode::new(atom, propertry)),
+            parent: None,
+        }));
+        AtomNode(node)
+    }
+
+    pub fn new_with_method_access(atom: &AtomNode, method_name: &TokenNode, params: &ParamsNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomNode{
+            kind: AtomKind::METHOD_ACCESS(MethodAccessNode::new(atom, method_name, params)),
+            parent: None,
+        }));
+        AtomNode(node)
+    }
+
+    pub fn new_with_index_access(atom: &AtomNode, index: &ExpressionNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomNode{
+            kind: AtomKind::INDEX_ACCESS(IndexAccessNode::new(atom, index)),
+            parent: None,
+        }));
+        AtomNode(node)
+    }
+}
+impl Node for AtomNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreAtomStartNode {
+    kind: AtomStartKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum AtomStartKind {
+    IDENTIFIER(TokenNode),                      // id
+    FUNCTION_CALL(CallExpressionNode),          // id(...)
+    CLASS_METHOD_CALL((TokenNode, TokenNode))   // id::id(...)
+}
+
+#[derive(Debug, Clone)]
+pub struct AtomStartNode(Rc<RefCell<CoreAtomStartNode>>);
+impl AtomStartNode {
+    pub fn new_with_identifier(token: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomStartNode{
+            kind: AtomStartKind::IDENTIFIER(token.clone()),
+            parent: None,
+        }));
+        token.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+        AtomStartNode(node)
+    }
+
+    pub fn new_with_function_call(call_expr: &CallExpressionNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomStartNode{
+            kind: AtomStartKind::FUNCTION_CALL(call_expr.clone()),
+            parent: None,
+        }));
+        call_expr.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+        AtomStartNode(node)
+    }
+
+    pub fn new_with_class_method_call(class: &TokenNode, class_method: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomStartNode{
+            kind: AtomStartKind::CLASS_METHOD_CALL((class.clone(), class_method.clone())),
+            parent: None,
+        }));
+        class.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+        class_method.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+        AtomStartNode(node)
+    }
+}
+impl Node for AtomStartNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CorePropertyAccessNode {
+    atom: AtomNode,
+    propertry: TokenNode,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PropertyAccessNode(Rc<RefCell<CorePropertyAccessNode>>);
+impl PropertyAccessNode {
+    fn new(atom: &AtomNode, propertry: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CorePropertyAccessNode{
+            atom: atom.clone(),
+            propertry: propertry.clone(),
+            parent: None,
+        }));
+        atom.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
+        propertry.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
+        PropertyAccessNode(node)
+    }
+}
+impl Node for PropertyAccessNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreMethodAccessNode {
+    atom: AtomNode,
+    method_name: TokenNode,
+    params: ParamsNode,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct MethodAccessNode(Rc<RefCell<CoreMethodAccessNode>>);
+impl MethodAccessNode {
+    pub fn new(atom: &AtomNode, method_name: &TokenNode, params: &ParamsNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreMethodAccessNode{
+            atom: atom.clone(),
+            method_name: method_name.clone(),
+            params: params.clone(),
+            parent: None,
+        }));
+        atom.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+        method_name.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+        params.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+        MethodAccessNode(node)
+    }
+}
+impl Node for MethodAccessNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreIndexAccessNode {
+    atom: AtomNode,
+    index: ExpressionNode,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct IndexAccessNode(Rc<RefCell<CoreIndexAccessNode>>);
+impl IndexAccessNode {
+    pub fn new(atom: &AtomNode, index: &ExpressionNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreIndexAccessNode{
+            atom: atom.clone(),
+            index: index.clone(),
+            parent: None,
+        }));
+        atom.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
+        index.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
+        IndexAccessNode(node)
+    }
+}
+impl Node for IndexAccessNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
 
