@@ -804,25 +804,49 @@ impl Node for ParamsNode {
 #[derive(Debug, Clone)]
 pub struct CoreCallExpressionNode {
     function_name: TokenNode,
-    params: ParamsNode,
+    params: Option<ParamsNode>,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
 pub struct CallExpressionNode(Rc<RefCell<CoreCallExpressionNode>>);
 impl CallExpressionNode {
-    pub fn new(function_name: &TokenNode, params: &ParamsNode) -> Self {
+    pub fn new(function_name: &TokenNode, params: &Option<ParamsNode>) -> Self {
         let node = Rc::new(RefCell::new(CoreCallExpressionNode{
             function_name: function_name.clone(),
             params: params.clone(),
             parent: None,
         }));
         function_name.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
-        params.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
+        match params {
+            Some(params) => params.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node))),
+            None => {},
+        }
         CallExpressionNode(node)
     }
 }
 impl Node for CallExpressionNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreClassMethodCallNode {
+    class_name: TokenNode,
+    class_method_name: TokenNode,
+    params: Option<ParamsNode>,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ClassMethodCallNode(Rc<RefCell<CoreClassMethodCallNode>>);
+impl ClassMethodCallNode {
+    pub fn new(class_name: &TokenNode, class_method_name: &TokenNode, params: &Option<ParamsNode>) -> Self {
+        todo!()
+    }
+}
+impl Node for ClassMethodCallNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
@@ -862,7 +886,7 @@ impl AtomNode {
         AtomNode(node)
     }
 
-    pub fn new_with_method_access(atom: &AtomNode, method_name: &TokenNode, params: &ParamsNode) -> Self {
+    pub fn new_with_method_access(atom: &AtomNode, method_name: &TokenNode, params: &Option<ParamsNode>) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomNode{
             kind: AtomKind::METHOD_ACCESS(MethodAccessNode::new(atom, method_name, params)),
             parent: None,
@@ -894,7 +918,7 @@ pub struct CoreAtomStartNode {
 pub enum AtomStartKind {
     IDENTIFIER(TokenNode),                      // id
     FUNCTION_CALL(CallExpressionNode),          // id(...)
-    CLASS_METHOD_CALL((TokenNode, TokenNode))   // id::id(...)
+    CLASS_METHOD_CALL(ClassMethodCallNode)   // id::id(...)
 }
 
 #[derive(Debug, Clone)]
@@ -918,13 +942,18 @@ impl AtomStartNode {
         AtomStartNode(node)
     }
 
-    pub fn new_with_class_method_call(class: &TokenNode, class_method: &TokenNode) -> Self {
+    pub fn new_with_class_method_call(class_name: &TokenNode, class_method_name: &TokenNode, 
+        params: &Option<ParamsNode>) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomStartNode{
-            kind: AtomStartKind::CLASS_METHOD_CALL((class.clone(), class_method.clone())),
+            kind: AtomStartKind::CLASS_METHOD_CALL(ClassMethodCallNode::new(class_name, class_method_name, params)),
             parent: None,
         }));
-        class.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
-        class_method.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+        class_name.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+        class_method_name.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+        match params {
+            Some(params) => params.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node))),
+            None => {},
+        }
         AtomStartNode(node)
     }
 }
@@ -965,14 +994,14 @@ impl Node for PropertyAccessNode {
 pub struct CoreMethodAccessNode {
     atom: AtomNode,
     method_name: TokenNode,
-    params: ParamsNode,
+    params: Option<ParamsNode>,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
 pub struct MethodAccessNode(Rc<RefCell<CoreMethodAccessNode>>);
 impl MethodAccessNode {
-    pub fn new(atom: &AtomNode, method_name: &TokenNode, params: &ParamsNode) -> Self {
+    pub fn new(atom: &AtomNode, method_name: &TokenNode, params: &Option<ParamsNode>) -> Self {
         let node = Rc::new(RefCell::new(CoreMethodAccessNode{
             atom: atom.clone(),
             method_name: method_name.clone(),
@@ -981,7 +1010,10 @@ impl MethodAccessNode {
         }));
         atom.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
         method_name.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
-        params.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+        match params {
+            Some(params) => params.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node))),
+            None => {}
+        }
         MethodAccessNode(node)
     }
 }

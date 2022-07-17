@@ -15,3 +15,13 @@ pub fn params(parser: &mut PackratParser) -> ParamsNode {
         }
     }
 }
+
+pub fn params_within_parenthesis(parser: &mut PackratParser) -> Option<ParamsNode> {
+    let lparen_node = parser.expect("(", false);
+    let mut params: Option<ParamsNode> = None;
+    if !parser.check_curr_token(")") {
+        params = Some(parser.params());
+    }
+    let rparen_node = parser.expect(")", false);
+    params
+}

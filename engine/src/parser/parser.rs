@@ -490,6 +490,10 @@ impl PackratParser {
         components::expression::common::params(self)
     }
 
+    pub fn params_within_parenthesis(&mut self) -> Option<ParamsNode> {
+        components::expression::common::params_within_parenthesis(self)
+    }
+
     pub fn atom(&mut self, atom_start: AtomNode) -> AtomNode {
         components::expression::atom::atom(self, atom_start)
     }
