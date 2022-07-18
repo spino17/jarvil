@@ -51,14 +51,6 @@ pub fn function_decl(parser: &mut PackratParser) -> FunctionDeclarationNode {
     let args_node = parser.name_type_specs_within_parenthesis();
     let token = &parser.curr_token();
     match token.core_token {
-        CoreToken::COLON        => {
-            let colon_node = parser.expect(":", false);
-            let func_block_node = parser.block(
-                |token| {is_statement_within_function_starting_with(token)}, 
-                &STATEMENT__WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS
-            );
-            return FunctionDeclarationNode::new(&name_node, &args_node, &None, &func_block_node)
-        },
         CoreToken::RIGHT_ARROW  => {
             let r_arrow_node = parser.expect("->", false);
             let return_type = parser.type_expr();
@@ -70,14 +62,12 @@ pub fn function_decl(parser: &mut PackratParser) -> FunctionDeclarationNode {
             return FunctionDeclarationNode::new(&name_node, &args_node, &Some(return_type), &func_block_node)
         },
         _                       => {
-            parser.log_missing_token_error_for_multiple_expected_symbols(
-                &[":", "->"], &token
+            let colon_node = parser.expect(":", false);
+            let func_block_node = parser.block(
+                |token| {is_statement_within_function_starting_with(token)}, 
+                &STATEMENT__WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS
             );
-            return FunctionDeclarationNode::new_with_missing_tokens(
-                &Rc::new([":", "->"].to_vec()),
-                &token,
-                parser.curr_lookahead(),
-            )
+            return FunctionDeclarationNode::new(&name_node, &args_node, &None, &func_block_node)
         }
     }
 }
