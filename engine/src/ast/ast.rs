@@ -32,6 +32,7 @@ pub enum ASTNode {
     METHOD_ACCESS(Weak<RefCell<CoreMethodAccessNode>>),
     INDEX_ACCESS(Weak<RefCell<CoreIndexAccessNode>>),
     ATOM_START(Weak<RefCell<CoreAtomStartNode>>),
+    VARIABLE_DECLARATION(Weak<RefCell<CoreVariableDeclarationNode>>),
 }
 
 #[derive(Debug, Clone)]
@@ -155,6 +156,7 @@ pub enum StatementNodeKind {
     // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration, 
     // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
     EXPRESSION(ExpressionNode),
+    VARIABLE_DECLARATION(VariableDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -170,6 +172,15 @@ impl StatementNode {
         StatementNode(node)
     }
 
+    pub fn new_with_variable_declaration(decl_node: &VariableDeclarationNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreStatementNode{
+            kind: StatementNodeKind::VARIABLE_DECLARATION(decl_node.clone()),
+            parent: None,
+        }));
+        decl_node.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        StatementNode(node)
+    }
+
     pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
         StatementNode(Rc::new(RefCell::new(CoreStatementNode{
             kind: StatementNodeKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
@@ -178,6 +189,33 @@ impl StatementNode {
     }
 }
 impl Node for StatementNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreVariableDeclarationNode {
+    name: TokenNode,
+    r_expr: ExpressionNode,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct VariableDeclarationNode(Rc<RefCell<CoreVariableDeclarationNode>>);
+impl VariableDeclarationNode {
+    pub fn new(name: &TokenNode, r_expr: &ExpressionNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreVariableDeclarationNode{
+            name: name.clone(),
+            r_expr: r_expr.clone(),
+            parent: None,
+        }));
+        name.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
+        r_expr.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
+        VariableDeclarationNode(node)
+    }
+}
+impl Node for VariableDeclarationNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }

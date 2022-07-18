@@ -27,6 +27,7 @@ fn start_compiler() {
     }
     let mut parser = PackratParser::new(code_lines);
     let ast = parser.parse(token_vec);
+    // println!("{:?}", ast);
 }
 
 fn main() {

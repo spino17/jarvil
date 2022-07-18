@@ -36,7 +36,10 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
         )
     }
     let statement_node = match token.core_token {
-        CoreToken::LET                  => todo!(),
+        CoreToken::LET                  => {
+            let variable_decl_node = parser.variable_decl();
+            StatementNode::new_with_variable_declaration(&variable_decl_node)
+        },
         CoreToken::DEF                  => todo!(),
         CoreToken::FOR                  => todo!(),
         CoreToken::WHILE                => todo!(),
