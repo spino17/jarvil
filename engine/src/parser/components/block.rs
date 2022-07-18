@@ -15,8 +15,7 @@ use std::mem;
 use std::cell::RefCell;
 use crate::lexer::token::Token;
 
-pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser, 
-    params: Option<&NameTypeSpecsNode>, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
+pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
     let newline_node = parser.expect("\n", false);
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
@@ -40,7 +39,7 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
             IndentResultKind::CORRECT_INDENTATION => None,
             IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
             IndentResultKind::BLOCK_OVER => {
-                return BlockNode::new(&stmts_vec, params)
+                return BlockNode::new(&stmts_vec)
             }
         };
         while !is_starting_with_fn(&parser.curr_token())
@@ -58,7 +57,7 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser,
         }
         let token = &parser.curr_token();
         if token.is_eq(ENDMARKER) {
-            return BlockNode::new(&stmts_vec, params)
+            return BlockNode::new(&stmts_vec)
         }
         if token.is_eq("\n") {
             continue;

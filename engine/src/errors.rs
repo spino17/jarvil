@@ -87,7 +87,7 @@ impl ParseError {
         }
         let pointer_line: String = pointer_line.iter().collect();
         let err_code_part = format!("{}\n    {}", code_line.clone(), pointer_line);
-        format!(">>> {}: line {}\n    {}\n    {}", err_kind, line_number, err_code_part, err_message)
+        format!(">>> {}: line {}\n    {}\n    {}\n", err_kind, line_number, err_code_part, err_message)
     }
 
     pub fn form_single_line_underline_pointer_error(start_err_index: usize, end_err_index: usize, line_number: usize, 
@@ -116,7 +116,7 @@ impl ParseError {
         }
         let pointer_line: String = pointer_line.iter().collect();
         let err_code_part = format!("{}\n    {}", code_line.clone(), pointer_line);
-        format!(">>> {}: line {}\n    {}\n    {}", err_kind, line_number, err_code_part, err_message)
+        format!(">>> {}: line {}\n    {}\n    {}\n", err_kind, line_number, err_code_part, err_message)
     }
 
     pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, mut code_lines: Vec<Rc<String>>, 
@@ -137,7 +137,7 @@ impl ParseError {
             err_code_part.push_str(&format!("| {}", code_line));
             flag = true;
         }
-        format!(">>> {}: lines {} - {}\n    {}\n    {}", err_kind, start_line_number, end_line_number, err_code_part, err_message)
+        format!(">>> {}: lines {} - {}\n    {}\n    {}\n", err_kind, start_line_number, end_line_number, err_code_part, err_message)
     }
 }
 

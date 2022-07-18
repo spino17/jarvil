@@ -33,6 +33,7 @@ pub enum ASTNode {
     INDEX_ACCESS(Weak<RefCell<CoreIndexAccessNode>>),
     ATOM_START(Weak<RefCell<CoreAtomStartNode>>),
     VARIABLE_DECLARATION(Weak<RefCell<CoreVariableDeclarationNode>>),
+    FUNCTION_DECLARATION(Weak<RefCell<CoreFunctionDeclarationNode>>),
 }
 
 #[derive(Debug, Clone)]
@@ -47,7 +48,6 @@ pub enum StatemenIndentWrapper {
 #[derive(Debug, Clone)]
 pub struct CoreBlockNode {
     stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
-    params: Option<NameTypeSpecsNode>,
     scope: Option<Scope>,
     parent: Option<ASTNode>,
 }
@@ -55,13 +55,9 @@ pub struct CoreBlockNode {
 #[derive(Debug, Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, params: Option<&NameTypeSpecsNode>) -> Self {
+    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode{
             stmts: stmts.clone(),
-            params: match params {
-                Some(params) => Some(params.clone()),
-                None => None,
-            },
             scope: None,
             parent: None,
         }));
@@ -83,10 +79,6 @@ impl BlockNode {
                     extra_newlines.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
                 },
             }
-        }
-        match params {
-            Some(params) => params.set_parent(ASTNode::BLOCK(Rc::downgrade(&node))),
-            None => {}
         }
         BlockNode(node)
     }
@@ -157,6 +149,7 @@ pub enum StatementNodeKind {
     // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
     EXPRESSION(ExpressionNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
+    FUNCTION_DECLARATION(FunctionDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -195,6 +188,45 @@ impl Node for StatementNode {
 }
 
 #[derive(Debug, Clone)]
+pub struct CoreFunctionDeclarationNode {
+    name: TokenNode,
+    args: Option<NameTypeSpecsNode>,
+    return_type: Option<TypeExpressionNode>,
+    block: BlockNode,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionDeclarationNode(Rc<RefCell<CoreFunctionDeclarationNode>>);
+impl FunctionDeclarationNode {
+    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, return_type: &Option<TypeExpressionNode>, block: &BlockNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreFunctionDeclarationNode{
+            name: name.clone(),
+            args: args.clone(),
+            return_type: return_type.clone(),
+            block: block.clone(),
+            parent: None,
+        }));
+        name.set_parent(ASTNode::FUNCTION_DECLARATION(Rc::downgrade(&node)));
+        match args {
+            Some(args) => args.set_parent(ASTNode::FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            None => {},
+        }
+        match return_type {
+            Some(return_type) => return_type.set_parent(ASTNode::FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            None => {},
+        }
+        block.set_parent(ASTNode::FUNCTION_DECLARATION(Rc::downgrade(&node)));
+        FunctionDeclarationNode(node)
+    }
+}
+impl Node for FunctionDeclarationNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct CoreVariableDeclarationNode {
     name: TokenNode,
     r_expr: ExpressionNode,
@@ -223,28 +255,32 @@ impl Node for VariableDeclarationNode {
 
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecsNode {
-    param: NameTypeSpecNode,
-    remaining_params: Option<NameTypeSpecsNode>,
+    arg: NameTypeSpecNode,
+    remaining_args: Option<NameTypeSpecsNode>,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecsNode(Rc<RefCell<CoreNameTypeSpecsNode>>);
 impl NameTypeSpecsNode {
-    pub fn new(param: &NameTypeSpecNode, remaining_params: Option<&NameTypeSpecsNode>) -> Self {
+    pub fn new_with_args(arg: &NameTypeSpecNode, remaining_args: &NameTypeSpecsNode) -> Self {
         let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode{
-            param: param.clone(),
-            remaining_params: match remaining_params {
-                Some(remaining_params) => Some(remaining_params.clone()),
-                None => None,
-            },
+            arg: arg.clone(),
+            remaining_args: Some(remaining_args.clone()),
             parent: None,
         }));
-        param.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
-        match remaining_params {
-            Some(remaining_params) => remaining_params.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node))),
-            None => {}
-        }
+        arg.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
+        remaining_args.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
+        NameTypeSpecsNode(node)
+    }
+
+    pub fn new_with_single_arg(arg: &NameTypeSpecNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode{
+            arg: arg.clone(),
+            remaining_args: None,
+            parent: None,
+        }));
+        arg.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
         NameTypeSpecsNode(node)
     }
 }

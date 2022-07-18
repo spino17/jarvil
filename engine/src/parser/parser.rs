@@ -4,7 +4,7 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, NameTypeSpecsNode, SkippedTokenNode, 
-    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode};
+    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, NameTypeSpecNode};
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
@@ -469,9 +469,8 @@ impl PackratParser {
         components::code::code(self, token_vec)
     }
 
-    pub fn block<F: Fn(&Token) -> bool>(&mut self, 
-        params: Option<&NameTypeSpecsNode>, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
-        components::block::block(self, params, is_starting_with_fn, expected_symbols)
+    pub fn block<F: Fn(&Token) -> bool>(&mut self, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
+        components::block::block(self, is_starting_with_fn, expected_symbols)
     }
 
     // statements
@@ -533,5 +532,17 @@ impl PackratParser {
     // declaration
     pub fn variable_decl(&mut self) -> VariableDeclarationNode {
         components::variable_declaration::variable_decl(self)
+    }
+
+    pub fn name_type_spec(&mut self) -> NameTypeSpecNode {
+        components::function_declaration::name_type_spec(self)
+    }
+
+    pub fn name_type_specs(&mut self) ->NameTypeSpecsNode {
+        components::function_declaration::name_type_specs(self)
+    }
+
+    pub fn name_type_specs_within_parenthesis(&mut self) -> Option<NameTypeSpecsNode> {
+        components::function_declaration::name_type_specs_within_parenthesis(self)
     }
 }
