@@ -9,6 +9,16 @@ pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
 }
 
+macro_rules! default_node_impl {
+    ($t: ident) => {
+        impl Node for $t {
+            fn set_parent(&self, parent_node: ASTNode) {
+                self.0.as_ref().borrow_mut().parent = Some(parent_node);
+            }
+        }
+    };
+}
+
 #[derive(Debug, Clone)]
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
@@ -83,11 +93,14 @@ impl BlockNode {
         BlockNode(node)
     }
 }
+default_node_impl!(BlockNode);
+/*
 impl Node for BlockNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
+ */
 
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokens {
