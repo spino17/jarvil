@@ -4,7 +4,7 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, NameTypeSpecsNode, SkippedTokenNode, 
-    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, NameTypeSpecNode};
+    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, NameTypeSpecNode, FunctionDeclarationNode};
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
@@ -149,7 +149,7 @@ impl PackratParser {
         self.token_vec[self.lookahead - 1].clone()
     }
 
-    pub fn log_missing_token_error_for_single_expected_symbol(&mut self, expected_symbol: &str, recevied_token: &Token) {
+    pub fn log_missing_token_error_for_single_expected_symbol(&mut self, mut expected_symbol: &str, recevied_token: &Token) {
         // This type of error handling is taken from Golang programming language
         // See /src/go/parser/parser.go -> `func (p *parser) error(pos token.Pos, msg string) {...}`
         if self.ignore_all_errors {
@@ -161,6 +161,9 @@ impl PackratParser {
         if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
             return;
         } else {
+            if expected_symbol == "\n" {
+                expected_symbol = "newline";
+            }
             let err_str = format!("expected `{}`, got `{}`", expected_symbol, recevied_token.name());
             let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
                 code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
@@ -544,5 +547,9 @@ impl PackratParser {
 
     pub fn name_type_specs_within_parenthesis(&mut self) -> Option<NameTypeSpecsNode> {
         components::function_declaration::name_type_specs_within_parenthesis(self)
+    }
+
+    pub fn function_decl(&mut self) -> FunctionDeclarationNode {
+        components::function_declaration::function_decl(self)
     }
 }

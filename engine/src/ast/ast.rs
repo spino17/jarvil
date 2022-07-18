@@ -165,12 +165,21 @@ impl StatementNode {
         StatementNode(node)
     }
 
-    pub fn new_with_variable_declaration(decl_node: &VariableDeclarationNode) -> Self {
+    pub fn new_with_variable_declaration(variable_decl_node: &VariableDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode{
-            kind: StatementNodeKind::VARIABLE_DECLARATION(decl_node.clone()),
+            kind: StatementNodeKind::VARIABLE_DECLARATION(variable_decl_node.clone()),
             parent: None,
         }));
-        decl_node.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        variable_decl_node.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        StatementNode(node)
+    }
+
+    pub fn new_with_function_declaration(function_decl_node: &FunctionDeclarationNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreStatementNode{
+            kind: StatementNodeKind::FUNCTION_DECLARATION(function_decl_node.clone()),
+            parent: None,
+        }));
+        function_decl_node.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
         StatementNode(node)
     }
 

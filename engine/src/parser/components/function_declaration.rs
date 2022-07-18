@@ -3,6 +3,8 @@ use crate::{parser::parser::PackratParser, constants::common::IDENTIFIER, ast::a
 use crate::lexer::token::{CoreToken, Token};
 use std::rc::Rc;
 
+use super::statement::core::is_statement_starting_with;
+
 pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
     let name_node = parser.expect(IDENTIFIER, true);
     let colon_node = parser.expect(":", false);
@@ -41,7 +43,7 @@ pub const STATEMENT__WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS: [&'static str; 11]
 pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
     match token.core_token {
         CoreToken::RETURN => true,
-        _                 => is_statement_within_function_starting_with(token),
+        _                 => is_statement_starting_with(token),
     }
 }
 

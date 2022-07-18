@@ -6,7 +6,7 @@
 // Rust  - `https://github.com/rust-lang/rust-analyzer/blob/1d53f695f0408f47c5cce5cefa471eb0e86b0db7/docs/dev/guide.md`
 // Swift - `https://github.com/apple/swift/tree/5e2c815edfd758f9b1309ce07bfc01c4bc20ec23/lib/Syntax`
 
-use crate::ast::ast::{BlockNode, NameTypeSpecsNode, StatemenIndentWrapper, SkippedTokens, SkippedTokenNode};
+use crate::ast::ast::{BlockNode, StatemenIndentWrapper, SkippedTokens, SkippedTokenNode};
 use crate::constants::common::ENDMARKER;
 use crate::parser::helper::{IndentResultKind};
 use crate::parser::parser::{PackratParser};
