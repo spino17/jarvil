@@ -117,13 +117,6 @@ impl BlockNode {
     }
 }
 default_node_impl!(BlockNode);
-/*
-impl Node for BlockNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
- */
 
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokens {
@@ -221,16 +214,6 @@ impl StatementNode {
 }
 default_node_impl!(StatementNode);
 default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementNodeKind);
-/*
-impl ErrornousNode for StatementNode {
-    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        StatementNode(Rc::new(RefCell::new(CoreStatementNode{
-            kind: StatementNodeKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
-}
- */
 
 #[derive(Debug, Clone)]
 pub struct CoreFunctionDeclarationNode {
@@ -258,16 +241,6 @@ impl FunctionDeclarationNode {
 }
 default_node_impl!(FunctionDeclarationNode);
 default_errornous_node_impl!(FunctionDeclarationNode, CoreFunctionDeclarationNode, FunctionDeclarationKind);
-/*
-impl ErrornousNode for FunctionDeclarationNode {
-    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        FunctionDeclarationNode(Rc::new(RefCell::new(CoreFunctionDeclarationNode{
-            kind: FunctionDeclarationKind::ERROR(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
-}
- */
 
 #[derive(Debug, Clone)]
 pub struct CoreOkFunctionDeclarationNode {
