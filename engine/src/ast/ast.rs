@@ -9,6 +9,10 @@ pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
 }
 
+pub trait ErrornousNode {
+    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self;
+}
+
 macro_rules! default_node_impl {
     ($t: ident) => {
         impl Node for $t {
@@ -35,6 +39,7 @@ pub enum ASTNode {
     UNARY_EXPRESSION(Weak<RefCell<CoreUnaryExpressionNode>>),
     BINARY_EXPRESSION(Weak<RefCell<CoreBinaryExpressionNode>>),
     PARAMS(Weak<RefCell<CoreParamsNode>>),
+    OK_PARAMS(Weak<RefCell<CoreOkParamsNode>>),
     CLASS_METHOD_CALL(Weak<RefCell<CoreClassMethodCallNode>>),
     CALL_EXPRESSION(Weak<RefCell<CoreCallExpressionNode>>),
     ATOM(Weak<RefCell<CoreAtomNode>>),
@@ -44,6 +49,8 @@ pub enum ASTNode {
     ATOM_START(Weak<RefCell<CoreAtomStartNode>>),
     VARIABLE_DECLARATION(Weak<RefCell<CoreVariableDeclarationNode>>),
     FUNCTION_DECLARATION(Weak<RefCell<CoreFunctionDeclarationNode>>),
+    OK_FUNCTION_DECLARATION(Weak<RefCell<CoreOkFunctionDeclarationNode>>),
+    OK_NAME_TYPE_SPECS(Weak<RefCell<CoreOkNameTypeSpecsNode>>),
 }
 
 #[derive(Debug, Clone)]
@@ -195,22 +202,61 @@ impl StatementNode {
         function_decl_node.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
         StatementNode(node)
     }
-
-    pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        StatementNode(Rc::new(RefCell::new(CoreStatementNode{
-            kind: StatementNodeKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
 }
 impl Node for StatementNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
+impl ErrornousNode for StatementNode {
+    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        StatementNode(Rc::new(RefCell::new(CoreStatementNode{
+            kind: StatementNodeKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreFunctionDeclarationNode {
+    kind: FunctionDeclarationKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum FunctionDeclarationKind {
+    OK(OkFunctionDeclarationNode),
+    ERROR(MissingTokenNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionDeclarationNode(Rc<RefCell<CoreFunctionDeclarationNode>>);
+impl FunctionDeclarationNode {
+    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, 
+        return_type: &Option<TypeExpressionNode>, block: &BlockNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreFunctionDeclarationNode{
+            kind: FunctionDeclarationKind::OK(OkFunctionDeclarationNode::new(name, args, return_type, block)),
+            parent: None,
+        }));
+        FunctionDeclarationNode(node)
+    }
+}
+impl Node for FunctionDeclarationNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+impl ErrornousNode for FunctionDeclarationNode {
+    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        FunctionDeclarationNode(Rc::new(RefCell::new(CoreFunctionDeclarationNode{
+            kind: FunctionDeclarationKind::ERROR(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreOkFunctionDeclarationNode {
     name: TokenNode,
     args: Option<NameTypeSpecsNode>,
     return_type: Option<TypeExpressionNode>,
@@ -219,30 +265,34 @@ pub struct CoreFunctionDeclarationNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct FunctionDeclarationNode(Rc<RefCell<CoreFunctionDeclarationNode>>);
-impl FunctionDeclarationNode {
+pub struct OkFunctionDeclarationNode(Rc<RefCell<CoreOkFunctionDeclarationNode>>);
+impl OkFunctionDeclarationNode {
     pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, return_type: &Option<TypeExpressionNode>, block: &BlockNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreFunctionDeclarationNode{
+        let node = Rc::new(RefCell::new(CoreOkFunctionDeclarationNode{
             name: name.clone(),
             args: args.clone(),
             return_type: return_type.clone(),
             block: block.clone(),
             parent: None,
         }));
-        name.set_parent(ASTNode::FUNCTION_DECLARATION(Rc::downgrade(&node)));
+        name.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
         match args {
-            Some(args) => args.set_parent(ASTNode::FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            Some(args) => args.set_parent(
+                ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))
+            ),
             None => {},
         }
         match return_type {
-            Some(return_type) => return_type.set_parent(ASTNode::FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            Some(return_type) => return_type.set_parent(
+                ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))
+            ),
             None => {},
         }
-        block.set_parent(ASTNode::FUNCTION_DECLARATION(Rc::downgrade(&node)));
-        FunctionDeclarationNode(node)
+        block.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+        OkFunctionDeclarationNode(node)
     }
 }
-impl Node for FunctionDeclarationNode {
+impl Node for OkFunctionDeclarationNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
@@ -277,36 +327,75 @@ impl Node for VariableDeclarationNode {
 
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecsNode {
+    kind: NameTypeSpecsKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum NameTypeSpecsKind {
+    OK(OkNameTypeSpecsNode),
+    ERROR(MissingTokenNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct NameTypeSpecsNode(Rc<RefCell<CoreNameTypeSpecsNode>>);
+impl NameTypeSpecsNode {
+    pub fn new(ok_name_type_specs: &OkNameTypeSpecsNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode{
+            kind: NameTypeSpecsKind::OK(ok_name_type_specs.clone()),
+            parent: None,
+        }));
+        ok_name_type_specs.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
+        NameTypeSpecsNode(node)
+    }
+}
+impl Node for NameTypeSpecsNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+impl ErrornousNode for NameTypeSpecsNode {
+    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode{
+            kind: NameTypeSpecsKind::ERROR(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        }));
+        NameTypeSpecsNode(node)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreOkNameTypeSpecsNode {
     arg: NameTypeSpecNode,
     remaining_args: Option<NameTypeSpecsNode>,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub struct NameTypeSpecsNode(Rc<RefCell<CoreNameTypeSpecsNode>>);
-impl NameTypeSpecsNode {
+pub struct OkNameTypeSpecsNode(Rc<RefCell<CoreOkNameTypeSpecsNode>>);
+impl OkNameTypeSpecsNode {
     pub fn new_with_args(arg: &NameTypeSpecNode, remaining_args: &NameTypeSpecsNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode{
+        let node = Rc::new(RefCell::new(CoreOkNameTypeSpecsNode{
             arg: arg.clone(),
             remaining_args: Some(remaining_args.clone()),
             parent: None,
         }));
-        arg.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
-        remaining_args.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
-        NameTypeSpecsNode(node)
+        arg.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
+        remaining_args.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
+        OkNameTypeSpecsNode(node)
     }
 
     pub fn new_with_single_arg(arg: &NameTypeSpecNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode{
+        let node = Rc::new(RefCell::new(CoreOkNameTypeSpecsNode{
             arg: arg.clone(),
             remaining_args: None,
             parent: None,
         }));
-        arg.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
-        NameTypeSpecsNode(node)
+        arg.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
+        OkNameTypeSpecsNode(node)
     }
 }
-impl Node for NameTypeSpecsNode {
+impl Node for OkNameTypeSpecsNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
@@ -376,17 +465,18 @@ impl TypeExpressionNode {
             parent: None,
         })))
     }
-
-    pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
-            kind: TypeExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
 }
 impl Node for TypeExpressionNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+impl ErrornousNode for TypeExpressionNode {
+    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
+            kind: TypeExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
     }
 }
 
@@ -673,18 +763,19 @@ impl ExpressionNode {
         }));
         ExpressionNode(node)
     }
-
-    pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        ExpressionNode(Rc::new(RefCell::new(CoreExpressionNode{
-            kind: ExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
 }
 
 impl Node for ExpressionNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+impl ErrornousNode for ExpressionNode {
+    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        ExpressionNode(Rc::new(RefCell::new(CoreExpressionNode{
+            kind: ExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
     }
 }
 
@@ -767,17 +858,18 @@ impl AtomicExpressionNode {
         atom.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
         AtomicExpressionNode(node)
     }
-
-    pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
-            kind: AtomicExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
 }
 impl Node for AtomicExpressionNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+impl ErrornousNode for AtomicExpressionNode {
+    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
+            kind: AtomicExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
     }
 }
 
@@ -821,17 +913,18 @@ impl UnaryExpressionNode {
         unary_expr.set_parent(ASTNode::UNARY_EXPRESSION(Rc::downgrade(&node)));
         UnaryExpressionNode(node)
     }
-
-    pub fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        UnaryExpressionNode(Rc::new(RefCell::new(CoreUnaryExpressionNode{
-            kind: UnaryExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
 }
 impl Node for UnaryExpressionNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
+    }
+}
+impl ErrornousNode for UnaryExpressionNode {
+    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        UnaryExpressionNode(Rc::new(RefCell::new(CoreUnaryExpressionNode{
+            kind: UnaryExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
     }
 }
 
@@ -882,36 +975,74 @@ impl Node for BinaryExpressionNode {
 
 #[derive(Debug, Clone)]
 pub struct CoreParamsNode {
+    kind: ParamsKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum ParamsKind {
+    OK(OkParamsNode),
+    ERROR(MissingTokenNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct ParamsNode(Rc<RefCell<CoreParamsNode>>);
+impl ParamsNode {
+    pub fn new(ok_params_node: &OkParamsNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreParamsNode{
+            kind: ParamsKind::OK(ok_params_node.clone()),
+            parent: None,
+        }));
+        ok_params_node.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
+        ParamsNode(node)
+    }
+}
+impl Node for ParamsNode {
+    fn set_parent(&self, parent_node: ASTNode) {
+        self.0.as_ref().borrow_mut().parent = Some(parent_node)
+    }
+}
+impl ErrornousNode for ParamsNode {
+    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
+        ParamsNode(Rc::new(RefCell::new(CoreParamsNode{
+            kind: ParamsKind::ERROR(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            parent: None,
+        })))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreOkParamsNode {
     param: ExpressionNode,
     remaining_params: Option<ParamsNode>,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub struct ParamsNode(Rc<RefCell<CoreParamsNode>>);
-impl ParamsNode {
+pub struct OkParamsNode(Rc<RefCell<CoreOkParamsNode>>);
+impl OkParamsNode {
     pub fn new_with_single_param(param: &ExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreParamsNode{
+        let node = Rc::new(RefCell::new(CoreOkParamsNode{
             param: param.clone(),
             remaining_params: None,
             parent: None,
         }));
-        param.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
-        ParamsNode(node)
+        param.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
+        OkParamsNode(node)
     }
 
     pub fn new_with_params(param: &ExpressionNode, remaining_params: &ParamsNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreParamsNode{
+        let node = Rc::new(RefCell::new(CoreOkParamsNode{
             param: param.clone(),
             remaining_params: Some(remaining_params.clone()),
             parent: None,
         }));
-        param.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
-        remaining_params.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
-        ParamsNode(node)
+        param.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
+        remaining_params.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
+        OkParamsNode(node)
     }
 }
-impl Node for ParamsNode {
+impl Node for OkParamsNode {
     fn set_parent(&self, parent_node: ASTNode) {
         self.0.as_ref().borrow_mut().parent = Some(parent_node)
     }
@@ -1044,8 +1175,8 @@ pub struct CoreAtomStartNode {
 
 #[derive(Debug, Clone)]
 pub enum AtomStartKind {
-    IDENTIFIER(TokenNode),                      // id
-    FUNCTION_CALL(CallExpressionNode),          // id(...)
+    IDENTIFIER(TokenNode),                   // id
+    FUNCTION_CALL(CallExpressionNode),       // id(...)
     CLASS_METHOD_CALL(ClassMethodCallNode)   // id::id(...)
 }
 

@@ -2,6 +2,7 @@ use crate::{lexer::token::{Token, CoreToken}, constants::common::{INTEGER, FLOAT
 IDENTIFIER}, parser::parser::PackratParser, ast::ast::{ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, 
     UnaryOperatorKind}};
 use std::rc::Rc;
+use crate::ast::ast::ErrornousNode;
 
 // all the unary operators are right assosiative and all the binary operators are left assosiative. 
 // below is the operator precedence in jarvil (lower to higher). This may be quite resembling with Python programming language.

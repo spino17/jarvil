@@ -3,6 +3,7 @@ use crate::constants::common::{INTEGER, IDENTIFIER, ATOMIC_TYPE};
 use crate::parser::parser::{PackratParser};
 use crate::lexer::token::{CoreToken, Token};
 use std::rc::Rc;
+use crate::ast::ast::ErrornousNode;
 
 pub fn is_type_expression_starting_with(token: &Token) -> bool {
     match token.core_token {

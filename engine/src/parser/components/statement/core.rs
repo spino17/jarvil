@@ -3,7 +3,7 @@ use crate::constants::common::IDENTIFIER;
 use crate::parser::parser::{PackratParser};
 use crate::lexer::token::{Token,CoreToken};
 use crate::parser::components::expression::core::is_expression_starting_with;
-use crate::scope::function;
+use crate::ast::ast::ErrornousNode;
 use std::rc::Rc;
 
 pub fn is_statement_starting_with(token: &Token) -> bool {

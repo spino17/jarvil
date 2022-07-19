@@ -30,7 +30,7 @@ fn start_compiler() {
     let (ast, syntax_errors) = parser.parse(token_vec);
     if syntax_errors.len() > 0 {
         println!("{}", syntax_errors[0]);
-        println!("{:?}", ast);
+        // println!("{:?}", ast);
         // TODO - dump all other errors in some log file, let users choose how many errors to show
         return;
     }
