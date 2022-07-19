@@ -23,6 +23,22 @@ macro_rules! default_node_impl {
     };
 }
 
+macro_rules! default_errornous_node_impl {
+    ($t: ident, $u: ident, $v: ident) => {
+        impl ErrornousNode for $t {
+            fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, 
+            received_token: &Token, lookahead: usize) -> Self {
+                $t(Rc::new(RefCell::new($u{
+                    kind: $v::MISSING_TOKENS(MissingTokenNode::new(
+                        expected_symbols, received_token, lookahead
+                    )),
+                    parent: None,
+                })))
+            }
+        }
+    };
+}
+
 #[derive(Debug, Clone)]
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
@@ -208,6 +224,8 @@ impl Node for StatementNode {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
+default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementNodeKind);
+/*
 impl ErrornousNode for StatementNode {
     fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
         StatementNode(Rc::new(RefCell::new(CoreStatementNode{
@@ -216,6 +234,7 @@ impl ErrornousNode for StatementNode {
         })))
     }
 }
+ */
 
 #[derive(Debug, Clone)]
 pub struct CoreFunctionDeclarationNode {
@@ -226,7 +245,7 @@ pub struct CoreFunctionDeclarationNode {
 #[derive(Debug, Clone)]
 pub enum FunctionDeclarationKind {
     OK(OkFunctionDeclarationNode),
-    ERROR(MissingTokenNode),
+    MISSING_TOKENS(MissingTokenNode),
 }
 
 #[derive(Debug, Clone)]
@@ -246,6 +265,8 @@ impl Node for FunctionDeclarationNode {
         self.0.as_ref().borrow_mut().parent = Some(parent_node);
     }
 }
+default_errornous_node_impl!(FunctionDeclarationNode, CoreFunctionDeclarationNode, FunctionDeclarationKind);
+/*
 impl ErrornousNode for FunctionDeclarationNode {
     fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
         FunctionDeclarationNode(Rc::new(RefCell::new(CoreFunctionDeclarationNode{
@@ -254,6 +275,7 @@ impl ErrornousNode for FunctionDeclarationNode {
         })))
     }
 }
+ */
 
 #[derive(Debug, Clone)]
 pub struct CoreOkFunctionDeclarationNode {
