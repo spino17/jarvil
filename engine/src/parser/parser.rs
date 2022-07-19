@@ -16,6 +16,7 @@ use crate::types::core::{Type};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
 use crate::utils::common::get_code_line_data;
+use crate::ast::ast::ErrornousNode;
 
 pub trait Parser {
     fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<ParseError>);
@@ -309,7 +310,7 @@ impl PackratParser {
             TokenNode::new_with_ok_token(&token, self.curr_lookahead())
         } else {
             self.log_missing_token_error_for_single_expected_symbol(symbol, &token);
-            TokenNode::new_with_missing_token(
+            TokenNode::new_with_missing_tokens(
                 &Rc::new(vec![symbol]),
                 &token,
                 self.curr_lookahead()
@@ -329,7 +330,7 @@ impl PackratParser {
             }
         }
         // self.log_skipped_token_error(symbols, &token);
-        TokenNode::new_with_missing_token(
+        TokenNode::new_with_missing_tokens(
             &Rc::new(symbols.to_vec()), &token, self.curr_lookahead()
         )
     }

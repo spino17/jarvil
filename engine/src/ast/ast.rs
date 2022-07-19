@@ -2,7 +2,7 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks. 
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
-use std::{rc::{Rc, Weak}, cell::RefCell};
+use std::{rc::{Rc, Weak}, cell::RefCell, default};
 use crate::{scope::{core::Scope}, lexer::token::{Token, CoreToken}};
 
 pub trait Node {
@@ -219,11 +219,7 @@ impl StatementNode {
         StatementNode(node)
     }
 }
-impl Node for StatementNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(StatementNode);
 default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementNodeKind);
 /*
 impl ErrornousNode for StatementNode {
@@ -260,11 +256,7 @@ impl FunctionDeclarationNode {
         FunctionDeclarationNode(node)
     }
 }
-impl Node for FunctionDeclarationNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(FunctionDeclarationNode);
 default_errornous_node_impl!(FunctionDeclarationNode, CoreFunctionDeclarationNode, FunctionDeclarationKind);
 /*
 impl ErrornousNode for FunctionDeclarationNode {
@@ -314,11 +306,7 @@ impl OkFunctionDeclarationNode {
         OkFunctionDeclarationNode(node)
     }
 }
-impl Node for OkFunctionDeclarationNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(OkFunctionDeclarationNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreVariableDeclarationNode {
@@ -341,11 +329,7 @@ impl VariableDeclarationNode {
         VariableDeclarationNode(node)
     }
 }
-impl Node for VariableDeclarationNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(VariableDeclarationNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecsNode {
@@ -356,7 +340,7 @@ pub struct CoreNameTypeSpecsNode {
 #[derive(Debug, Clone)]
 pub enum NameTypeSpecsKind {
     OK(OkNameTypeSpecsNode),
-    ERROR(MissingTokenNode),
+    MISSING_TOKENS(MissingTokenNode),
 }
 
 #[derive(Debug, Clone)]
@@ -371,20 +355,8 @@ impl NameTypeSpecsNode {
         NameTypeSpecsNode(node)
     }
 }
-impl Node for NameTypeSpecsNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
-impl ErrornousNode for NameTypeSpecsNode {
-    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode{
-            kind: NameTypeSpecsKind::ERROR(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        }));
-        NameTypeSpecsNode(node)
-    }
-}
+default_node_impl!(NameTypeSpecsNode);
+default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode, NameTypeSpecsKind);
 
 #[derive(Debug, Clone)]
 pub struct CoreOkNameTypeSpecsNode {
@@ -417,11 +389,7 @@ impl OkNameTypeSpecsNode {
         OkNameTypeSpecsNode(node)
     }
 }
-impl Node for OkNameTypeSpecsNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(OkNameTypeSpecsNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecNode {
@@ -444,11 +412,7 @@ impl NameTypeSpecNode {
         NameTypeSpecNode(node)
     }
 }
-impl Node for NameTypeSpecNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(NameTypeSpecNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreTypeExpressionNode {
@@ -488,19 +452,8 @@ impl TypeExpressionNode {
         })))
     }
 }
-impl Node for TypeExpressionNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
-impl ErrornousNode for TypeExpressionNode {
-    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
-            kind: TypeExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
-}
+default_node_impl!(TypeExpressionNode);
+default_errornous_node_impl!(TypeExpressionNode, CoreTypeExpressionNode, TypeExpressionKind);
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomicTypeNode {
@@ -520,11 +473,7 @@ impl AtomicTypeNode {
         AtomicTypeNode(node)
     }
 }
-impl Node for AtomicTypeNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(AtomicTypeNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreArrayTypeNode {
@@ -547,11 +496,7 @@ impl ArrayTypeNode {
         ArrayTypeNode(node)
     }
 }
-impl Node for ArrayTypeNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(ArrayTypeNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreUserDefinedTypeNode {
@@ -571,22 +516,18 @@ impl UserDefinedTypeNode {
         UserDefinedTypeNode(node)
     }
 }
-impl Node for UserDefinedTypeNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(UserDefinedTypeNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreTokenNode {
-    kind: TokenNodeKind,
+    kind: TokenKind,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub enum TokenNodeKind {
+pub enum TokenKind {
     OK(OkTokenNode),
-    MISSING(MissingTokenNode),
+    MISSING_TOKENS(MissingTokenNode),
     SKIPPED(SkippedTokenNode),
 }
 
@@ -595,35 +536,28 @@ pub struct TokenNode(Rc<RefCell<CoreTokenNode>>);
 impl TokenNode {
     pub fn new_with_ok_token(token: &Token, lookahead: usize) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenNodeKind::OK(OkTokenNode::new(token, lookahead)),
-            parent: None,
-        })))
-    }
-
-    pub fn new_with_missing_token(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenNodeKind::MISSING(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
+            kind: TokenKind::OK(OkTokenNode::new(token, lookahead)),
             parent: None,
         })))
     }
 
     pub fn new_with_skipped_token(skipped_token: &Token, lookahead: usize) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
-            kind: TokenNodeKind::SKIPPED(SkippedTokenNode::new(skipped_token, lookahead)),
+            kind: TokenKind::SKIPPED(SkippedTokenNode::new(skipped_token, lookahead)),
             parent: None,
         })))
     }
 
     pub fn is_ok(&self) -> Option<TokenNode> {
         match &self.0.as_ref().borrow().kind {
-            TokenNodeKind::OK(_) => Some(self.clone()),
+            TokenKind::OK(_) => Some(self.clone()),
             _                    => None,
         }
     }
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match &self.0.as_ref().borrow().kind {
-            TokenNodeKind::OK(ok_token) => {
+            TokenKind::OK(ok_token) => {
                 match ok_token.is_binary_operator() {
                     Some(operator) => return Some(operator),
                     None => None,
@@ -633,11 +567,8 @@ impl TokenNode {
         }
     }
 }
-impl Node for TokenNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(TokenNode);
+default_errornous_node_impl!(TokenNode, CoreTokenNode, TokenKind);
 
 #[derive(Debug, Clone)]
 pub struct CoreOkTokenNode {
@@ -675,11 +606,7 @@ impl OkTokenNode {
         }
     }
 }
-impl Node for OkTokenNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(OkTokenNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreMissingTokenNode {
@@ -701,11 +628,7 @@ impl MissingTokenNode {
         })))
     }
 }
-impl Node for MissingTokenNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(MissingTokenNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokenNode {
@@ -733,11 +656,7 @@ impl SkippedTokenNode {
         self.0.as_ref().borrow().skipped_token.line_number
     }
 }
-impl Node for SkippedTokenNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(SkippedTokenNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreExpressionNode {
@@ -786,20 +705,8 @@ impl ExpressionNode {
         ExpressionNode(node)
     }
 }
-
-impl Node for ExpressionNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
-impl ErrornousNode for ExpressionNode {
-    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        ExpressionNode(Rc::new(RefCell::new(CoreExpressionNode{
-            kind: ExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
-}
+default_node_impl!(ExpressionNode);
+default_errornous_node_impl!(ExpressionNode, CoreExpressionNode, ExpressionKind);
 
 #[derive(Debug, Clone)]
 pub struct  CoreAtomicExpressionNode {
@@ -881,19 +788,8 @@ impl AtomicExpressionNode {
         AtomicExpressionNode(node)
     }
 }
-impl Node for AtomicExpressionNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
-impl ErrornousNode for AtomicExpressionNode {
-    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
-            kind: AtomicExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
-}
+default_node_impl!(AtomicExpressionNode);
+default_errornous_node_impl!(AtomicExpressionNode, CoreAtomicExpressionNode, AtomicExpressionKind);
 
 #[derive(Debug, Clone)]
 pub struct  CoreUnaryExpressionNode {
@@ -936,19 +832,8 @@ impl UnaryExpressionNode {
         UnaryExpressionNode(node)
     }
 }
-impl Node for UnaryExpressionNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
-impl ErrornousNode for UnaryExpressionNode {
-    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        UnaryExpressionNode(Rc::new(RefCell::new(CoreUnaryExpressionNode{
-            kind: UnaryExpressionKind::MISSING_TOKENS(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
-}
+default_node_impl!(UnaryExpressionNode);
+default_errornous_node_impl!(UnaryExpressionNode, CoreUnaryExpressionNode, UnaryExpressionKind);
 
 #[derive(Debug, Clone)]
 pub struct CoreBinaryExpressionNode {
@@ -989,11 +874,7 @@ impl BinaryExpressionNode {
         BinaryExpressionNode(node)
     }
 }
-impl Node for BinaryExpressionNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(BinaryExpressionNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreParamsNode {
@@ -1004,7 +885,7 @@ pub struct CoreParamsNode {
 #[derive(Debug, Clone)]
 pub enum ParamsKind {
     OK(OkParamsNode),
-    ERROR(MissingTokenNode),
+    MISSING_TOKENS(MissingTokenNode),
 }
 
 #[derive(Debug, Clone)]
@@ -1019,19 +900,8 @@ impl ParamsNode {
         ParamsNode(node)
     }
 }
-impl Node for ParamsNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node)
-    }
-}
-impl ErrornousNode for ParamsNode {
-    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        ParamsNode(Rc::new(RefCell::new(CoreParamsNode{
-            kind: ParamsKind::ERROR(MissingTokenNode::new(expected_symbols, received_token, lookahead)),
-            parent: None,
-        })))
-    }
-}
+default_node_impl!(ParamsNode);
+default_errornous_node_impl!(ParamsNode, CoreParamsNode, ParamsKind);
 
 #[derive(Debug, Clone)]
 pub struct CoreOkParamsNode {
@@ -1064,11 +934,7 @@ impl OkParamsNode {
         OkParamsNode(node)
     }
 }
-impl Node for OkParamsNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node)
-    }
-}
+default_node_impl!(OkParamsNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreCallExpressionNode {
@@ -1094,11 +960,7 @@ impl CallExpressionNode {
         CallExpressionNode(node)
     }
 }
-impl Node for CallExpressionNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(CallExpressionNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreClassMethodCallNode {
@@ -1127,11 +989,7 @@ impl ClassMethodCallNode {
         ClassMethodCallNode(node)
     }
 }
-impl Node for ClassMethodCallNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(ClassMethodCallNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomNode {
@@ -1183,11 +1041,7 @@ impl AtomNode {
         AtomNode(node)
     }
 }
-impl Node for AtomNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(AtomNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomStartNode {
@@ -1232,11 +1086,7 @@ impl AtomStartNode {
         AtomStartNode(node)
     }
 }
-impl Node for AtomStartNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(AtomStartNode);
 
 #[derive(Debug, Clone)]
 pub struct CorePropertyAccessNode {
@@ -1259,11 +1109,7 @@ impl PropertyAccessNode {
         PropertyAccessNode(node)
     }
 }
-impl Node for PropertyAccessNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(PropertyAccessNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreMethodAccessNode {
@@ -1292,11 +1138,7 @@ impl MethodAccessNode {
         MethodAccessNode(node)
     }
 }
-impl Node for MethodAccessNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(MethodAccessNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreIndexAccessNode {
@@ -1319,9 +1161,5 @@ impl IndexAccessNode {
         IndexAccessNode(node)
     }
 }
-impl Node for IndexAccessNode {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(IndexAccessNode);
 
