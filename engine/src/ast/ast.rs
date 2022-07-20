@@ -160,11 +160,7 @@ impl SkippedTokens {
         SkippedTokens(node)
     }
 }
-impl Node for SkippedTokens {
-    fn set_parent(&self, parent_node: ASTNode) {
-        self.0.as_ref().borrow_mut().parent = Some(parent_node);
-    }
-}
+default_node_impl!(SkippedTokens);
 
 #[derive(Debug, Clone)]
 pub struct CoreStatementNode {
