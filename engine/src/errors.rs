@@ -5,6 +5,21 @@ use crate::context;
 use crate::lexer::token::Token;
 use colored::Colorize;
 
+pub fn int_length(n: usize) -> usize {
+    let base = 10;
+    let mut power = base;
+    let mut count = 1;
+    while n >= power {
+        count += 1;
+        if let Some(new_power) = power.checked_mul(base) {
+            power = new_power;
+        } else {
+            break;
+        }
+    }
+    count
+}
+
 #[derive(Debug)]
 pub struct InvalidCharLexicalErrorData {
     pub invalid_token: Token,
@@ -50,9 +65,9 @@ pub enum ParseErrorKind {
 impl Display for ParseErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            ParseErrorKind::LEXICAL_ERROR    => write!(f, "Lexical Error"),
-            ParseErrorKind::SYNTAX_ERROR     => write!(f, "Syntax Error"),
-            ParseErrorKind::SEMANTIC_ERROR   => write!(f, "Semantic Error"),
+            ParseErrorKind::LEXICAL_ERROR    => write!(f, "{}", format!("{}", "Lexical Error".bright_red())),
+            ParseErrorKind::SYNTAX_ERROR     => write!(f, "{}", format!("{}", "Syntax Error".bright_red())),
+            ParseErrorKind::SEMANTIC_ERROR   => write!(f, "{}", format!("{}", "Semantic Error".bright_red())),
         }
     }
 }
@@ -87,9 +102,10 @@ impl ParseError {
             }
         }
         let pointer_line: String = pointer_line.iter().collect();
-        let err_code_part = format!("|\n  {} | {}\n    | {}", 
-        line_number, code_line.clone(), pointer_line.yellow()).bright_blue();
-        format!(">>> {}: line {}\n    {}\n    {}\n", err_kind, line_number, err_code_part, err_message.bold())
+        let blank_str = " ".repeat(int_length(line_number));
+        let err_code_part = format!("{} |\n{} | {}\n{} | {}", 
+        blank_str, line_number, code_line.clone(), blank_str, pointer_line.yellow()).bright_blue();
+        format!("{}\n{}\n{}\n", err_kind, err_code_part, err_message.bold())
     }
 
     pub fn form_single_line_underline_pointer_error(start_err_index: usize, end_err_index: usize, line_number: usize, 
@@ -118,8 +134,10 @@ impl ParseError {
             }
         }
         let pointer_line: String = pointer_line.iter().collect();
-        let err_code_part = format!("{}\n    {}", code_line.clone(), pointer_line.yellow()).bright_blue();
-        format!(">>> {}: line {}\n    {}\n    {}\n", err_kind, line_number, err_code_part, err_message.bold())
+        let blank_str = " ".repeat(int_length(line_number));
+        let err_code_part = format!("{} |\n{} | {}\n{} | {}", 
+        blank_str, line_number, code_line.clone(), blank_str, pointer_line.yellow()).bright_blue();
+        format!("{}\n{}\n{}\n", err_kind, err_code_part, err_message.bold())
     }
 
     pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, mut code_lines: Vec<Rc<String>>, 
@@ -137,10 +155,10 @@ impl ParseError {
             if flag {
                 err_code_part.push_str("\n    ");
             }
-            err_code_part.push_str(&format!("{} {}", "|".yellow(), code_line));
+            err_code_part.push_str(&format!("| {}", code_line));
             flag = true;
         }
-        format!(">>> {}: lines {} - {}\n    {}\n    {}\n", 
+        format!("{}: lines {} - {}\n{}\n{}\n", 
         err_kind, start_line_number, end_line_number, err_code_part.bright_blue(), err_message.bold())
     }
 }

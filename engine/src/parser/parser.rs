@@ -240,7 +240,7 @@ impl PackratParser {
             for (code_line, _) in &self.code_lines[(start_line_number - 1)..end_line_number] {
                 code_lines.push(code_line.clone());
             }
-            let err_str = format!("expected an indented block\n    expected indentation with `{}` spaces, got `{}` spaces", 
+            let err_str = format!("expected an indented block\nexpected indentation with `{}` spaces, got `{}` spaces", 
             expected_indent, received_indent);
             let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
                 code_lines, err_str, ParseErrorKind::SYNTAX_ERROR);
