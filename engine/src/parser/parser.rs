@@ -554,4 +554,8 @@ impl PackratParser {
     pub fn function_decl(&mut self) -> FunctionDeclarationNode {
         components::function_declaration::function_decl(self)
     }
+
+    pub fn struct_stmt(&mut self) {
+        components::statement::core::struct_stmt(self)
+    }
 }

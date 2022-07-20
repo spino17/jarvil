@@ -15,9 +15,8 @@ pub fn type_decl(parser: &mut PackratParser) {
                     _ => false,
                 }
             }, 
-            |parser| {
-                parser.struct_stmt()
-            }, &[IDENTIFIER]);
+            |parser| {parser.struct_stmt();todo!()},
+            &[IDENTIFIER]);
         },
         CoreToken::LPAREN   => {
             // lambda type

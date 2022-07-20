@@ -112,7 +112,7 @@ impl ParseError {
         let blank_str = " ".repeat(int_length(line_number));
         let err_code_part = format!("{} |\n{} | {}\n{} | {}", 
         blank_str, line_number, code_line.clone(), blank_str, pointer_line.yellow()).bright_blue();
-        format!("\n{}\n{}\n\n{}\n", err_kind, err_code_part, err_message.yellow().bold())
+        format!("\n{}\n{}\n{}\n", err_kind, err_code_part, err_message.yellow().bold())
     }
 
     pub fn form_single_line_underline_pointer_error(start_err_index: usize, end_err_index: usize, line_number: usize, 
@@ -144,7 +144,7 @@ impl ParseError {
         let blank_str = " ".repeat(int_length(line_number));
         let err_code_part = format!("{} |\n{} | {}\n{} | {}", 
         blank_str, line_number, code_line.clone(), blank_str, pointer_line.yellow()).bright_blue();
-        format!("\n{}\n{}\n\n{}\n", err_kind, err_code_part, err_message.yellow().bold())
+        format!("\n{}\n{}\n{}\n", err_kind, err_code_part, err_message.yellow().bold())
     }
 
     pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, mut code_lines: Vec<Rc<String>>, 
@@ -162,7 +162,7 @@ impl ParseError {
         let mut line_number = start_line_number;
         let max_line_number = start_line_number + code_lines_len - 1;
         let blank_str = " ".repeat(int_length(max_line_number));
-        let mut err_code_part: String = format!("{} -->\n", blank_str);
+        let mut err_code_part: String = format!("{} |\n", blank_str);
         for code_line in &code_lines {
             if flag {
                 err_code_part.push_str("\n");
@@ -172,8 +172,8 @@ impl ParseError {
             line_number = line_number + 1;
         }
         err_code_part.push_str("\n");
-        err_code_part.push_str(&format!("{} -->\n", blank_str));
-        format!("\n{}\n{}\n\n{}\n", err_kind, err_code_part.bright_blue(), err_message.yellow().bold())
+        err_code_part.push_str(&format!("{} |\n", blank_str));
+        format!("\n{}\n{}\n{}\n", err_kind, err_code_part.bright_blue(), err_message.yellow().bold())
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::ast::ast::StatementNode;
-use crate::constants::common::IDENTIFIER;
+use crate::constants::common::{IDENTIFIER, ENDMARKER};
 use crate::parser::parser::{PackratParser};
 use crate::lexer::token::{Token,CoreToken};
 use crate::parser::components::expression::core::is_expression_starting_with;
@@ -57,4 +57,11 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
         }
     };
     statement_node
+}
+
+pub fn struct_stmt(parser: &mut PackratParser) {
+    let struct_name = parser.expect(IDENTIFIER, false);
+    let colon_node = parser.expect(":", false);
+    let type_expr_node = parser.type_expr();
+    let newline_node = parser.expects(&["\n", ENDMARKER], false);
 }
