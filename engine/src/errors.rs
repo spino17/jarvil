@@ -87,7 +87,8 @@ impl ParseError {
             }
         }
         let pointer_line: String = pointer_line.iter().collect();
-        let err_code_part = format!("{}\n    {}", code_line.clone().bright_blue(), pointer_line.yellow());
+        let err_code_part = format!("|\n  {} | {}\n    | {}", 
+        line_number, code_line.clone(), pointer_line.yellow()).bright_blue();
         format!(">>> {}: line {}\n    {}\n    {}\n", err_kind, line_number, err_code_part, err_message.bold())
     }
 
@@ -117,7 +118,7 @@ impl ParseError {
             }
         }
         let pointer_line: String = pointer_line.iter().collect();
-        let err_code_part = format!("{}\n    {}", code_line.clone().bright_blue(), pointer_line.yellow());
+        let err_code_part = format!("{}\n    {}", code_line.clone(), pointer_line.yellow()).bright_blue();
         format!(">>> {}: line {}\n    {}\n    {}\n", err_kind, line_number, err_code_part, err_message.bold())
     }
 
@@ -136,11 +137,11 @@ impl ParseError {
             if flag {
                 err_code_part.push_str("\n    ");
             }
-            err_code_part.push_str(&format!("{} {}", "|".yellow(), code_line.bright_blue()));
+            err_code_part.push_str(&format!("{} {}", "|".yellow(), code_line));
             flag = true;
         }
         format!(">>> {}: lines {} - {}\n    {}\n    {}\n", 
-        err_kind, start_line_number, end_line_number, err_code_part, err_message.bold())
+        err_kind, start_line_number, end_line_number, err_code_part.bright_blue(), err_message.bold())
     }
 }
 
