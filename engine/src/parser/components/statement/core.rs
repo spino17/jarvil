@@ -48,9 +48,15 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
         CoreToken::FOR                  => todo!(),
         CoreToken::WHILE                => todo!(),
         CoreToken::IF                   => todo!(),
-        CoreToken::TYPE_KEYWORD         => todo!(),
+        CoreToken::TYPE_KEYWORD         => {
+            let type_decl_node = parser.type_decl();
+            StatementNode::new_with_type_declaration(&type_decl_node)
+        },
         CoreToken::INTERFACE_KEYWORD    => todo!(),
         CoreToken::IMPL                 => todo!(),
+        CoreToken::RETURN               => todo!(),
+        CoreToken::BREAK                => todo!(),
+        CoreToken::CONTINUE             => todo!(),
         _                               => {
             let expr_node = parser.expr();
             StatementNode::new_with_expression(&expr_node)

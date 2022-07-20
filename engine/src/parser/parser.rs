@@ -4,7 +4,7 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, NameTypeSpecsNode, SkippedTokenNode, 
-    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, NameTypeSpecNode, OkFunctionDeclarationNode, FunctionDeclarationNode};
+    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, NameTypeSpecNode, OkFunctionDeclarationNode, FunctionDeclarationNode, TypeDeclarationNode};
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
@@ -557,5 +557,9 @@ impl PackratParser {
 
     pub fn struct_stmt(&mut self) -> StatementNode {
         components::statement::core::struct_stmt(self)
+    }
+
+    pub fn type_decl(&mut self) -> TypeDeclarationNode {
+        components::type_declaration::type_decl(self)
     }
 }
