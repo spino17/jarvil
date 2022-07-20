@@ -158,10 +158,11 @@ impl ParseError {
             code_lines = code_lines[..max_error_lines].to_vec();
             code_lines.push(Rc::new(String::from("...")));
         }
-        let mut err_code_part: String = String::from("");
         let mut flag = false;
         let mut line_number = start_line_number;
         let max_line_number = start_line_number + code_lines_len - 1;
+        let blank_str = " ".repeat(int_length(max_line_number));
+        let mut err_code_part: String = format!("{} -->\n", blank_str);
         for code_line in &code_lines {
             if flag {
                 err_code_part.push_str("\n");
@@ -170,6 +171,8 @@ impl ParseError {
             flag = true;
             line_number = line_number + 1;
         }
+        err_code_part.push_str("\n");
+        err_code_part.push_str(&format!("{} -->\n", blank_str));
         format!("{}\n{}\n{}\n", err_kind, err_code_part.bright_blue(), err_message.yellow().bold())
     }
 }
