@@ -14,6 +14,7 @@ use crate::lexer::lexer::{CoreLexer, Lexer};
 use std::env::args;
 use crate::parser::parser::PackratParser;
 use crate::parser::parser::Parser;
+use colored::Colorize;
 
 fn start_compiler() {
     let args: Vec<String> = args().collect();
