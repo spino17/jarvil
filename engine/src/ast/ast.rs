@@ -2,7 +2,7 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks. 
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
-use std::{rc::{Rc, Weak}, cell::RefCell, default};
+use std::{rc::{Rc, Weak}, cell::RefCell};
 use crate::{scope::{core::Scope}, lexer::token::{Token, CoreToken}};
 
 pub trait Node {

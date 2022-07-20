@@ -6,7 +6,7 @@
 // Rust  - `https://github.com/rust-lang/rust-analyzer/blob/1d53f695f0408f47c5cce5cefa471eb0e86b0db7/docs/dev/guide.md`
 // Swift - `https://github.com/apple/swift/tree/5e2c815edfd758f9b1309ce07bfc01c4bc20ec23/lib/Syntax`
 
-use crate::ast::ast::{BlockNode, StatemenIndentWrapper, SkippedTokens, SkippedTokenNode};
+use crate::ast::ast::{BlockNode, StatemenIndentWrapper, SkippedTokens, SkippedTokenNode, StatementNode};
 use crate::constants::common::ENDMARKER;
 use crate::parser::helper::{IndentResultKind};
 use crate::parser::parser::{PackratParser};
@@ -15,7 +15,8 @@ use std::mem;
 use std::cell::RefCell;
 use crate::lexer::token::Token;
 
-pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
+pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(parser: &mut PackratParser, 
+    is_starting_with_fn: F, statement_parsing_fn: G, expected_symbols: &[&'static str]) -> BlockNode {
     let newline_node = parser.expect("\n", false);
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
@@ -68,7 +69,8 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser, is_starting_with
                     // a sub stmt of already incorrectly indented stmt some levels higher
                     let saved_correction_indent = parser.correction_indent();
                     parser.add_to_correction_indent(indent_data.1 - indent_data.0);
-                    let stmt_node = parser.stmt();
+                    // let stmt_node = parser.stmt();
+                    let stmt_node = statement_parsing_fn(parser);
                     parser.set_correction_indent(saved_correction_indent);
                     stmt_node
                 } else {
@@ -76,7 +78,8 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser, is_starting_with
                     parser.set_ignore_all_errors(true);
                     let before_line_number = parser.curr_line_number();
                     parser.set_correction_indent(indent_data.1 - indent_data.0);
-                    let stmt_node = parser.stmt();
+                    // let stmt_node = parser.stmt();
+                    let stmt_node = statement_parsing_fn(parser);
                     parser.set_ignore_all_errors(false);
                     let mut after_line_number = parser.curr_line_number();
                     parser.set_correction_indent(0);
@@ -90,7 +93,8 @@ pub fn block<F: Fn(&Token) -> bool>(parser: &mut PackratParser, is_starting_with
                 stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::INCORRECTLY_INDENTED((stmt_node, indent_data)));
             },
             None => {
-                let stmt_node = parser.stmt();
+                // let stmt_node = parser.stmt();
+                let stmt_node = statement_parsing_fn(parser);
                 stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::CORRECTLY_INDENTED(stmt_node));
             }
         }

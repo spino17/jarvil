@@ -473,8 +473,9 @@ impl PackratParser {
         components::code::code(self, token_vec)
     }
 
-    pub fn block<F: Fn(&Token) -> bool>(&mut self, is_starting_with_fn: F, expected_symbols: &[&'static str]) -> BlockNode {
-        components::block::block(self, is_starting_with_fn, expected_symbols)
+    pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(&mut self, 
+        is_starting_with_fn: F, statement_parsing_fn: G, expected_symbols: &[&'static str]) -> BlockNode {
+        components::block::block(self, is_starting_with_fn, statement_parsing_fn, expected_symbols)
     }
 
     // statements

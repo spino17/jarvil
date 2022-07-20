@@ -1,10 +1,9 @@
-use crate::ast::ast::{NameTypeSpecNode, OkFunctionDeclarationNode, OkNameTypeSpecsNode, FunctionDeclarationNode};
+use crate::ast::ast::{NameTypeSpecNode, OkNameTypeSpecsNode, FunctionDeclarationNode};
 use crate::{parser::parser::PackratParser, constants::common::IDENTIFIER, ast::ast::NameTypeSpecsNode};
 use crate::lexer::token::{CoreToken, Token};
 use std::rc::Rc;
 use crate::ast::ast::ErrornousNode;
-
-use super::statement::core::is_statement_starting_with;
+use super::statement::core::{is_statement_starting_with, stmt};
 
 pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
     let name_node = parser.expect(IDENTIFIER, true);
@@ -75,6 +74,7 @@ pub fn function_decl(parser: &mut PackratParser) -> FunctionDeclarationNode {
             let colon_node = parser.expect(":", false);
             let func_block_node = parser.block(
                 |token| {is_statement_within_function_starting_with(token)}, 
+                |parser| {parser.stmt()},
                 &STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS
             );
             return FunctionDeclarationNode::new(&name_node, &args_node, &Some(return_type), &func_block_node)
@@ -82,7 +82,8 @@ pub fn function_decl(parser: &mut PackratParser) -> FunctionDeclarationNode {
         CoreToken::COLON        => {
             let colon_node = parser.expect(":", false);
             let func_block_node = parser.block(
-                |token| {is_statement_within_function_starting_with(token)}, 
+                |token| {is_statement_within_function_starting_with(token)},
+                |parser| {parser.stmt()},
                 &STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS
             );
             return FunctionDeclarationNode::new(&name_node, &args_node, &None, &func_block_node)
