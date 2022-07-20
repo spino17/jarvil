@@ -20,6 +20,13 @@ pub fn int_length(n: usize) -> usize {
     count
 }
 
+pub fn format_line_number(line_number: usize, max_line_number: usize) -> String {
+    let line_number_len = int_length(line_number);
+    let max_line_number_len = int_length(max_line_number);
+    let blank_str = " ".repeat(max_line_number_len - line_number_len);
+    format!("{}{}", line_number, blank_str)
+}
+
 #[derive(Debug)]
 pub struct InvalidCharLexicalErrorData {
     pub invalid_token: Token,
@@ -65,9 +72,9 @@ pub enum ParseErrorKind {
 impl Display for ParseErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            ParseErrorKind::LEXICAL_ERROR    => write!(f, "{}", format!("{}", "Lexical Error".bright_red())),
-            ParseErrorKind::SYNTAX_ERROR     => write!(f, "{}", format!("{}", "Syntax Error".bright_red())),
-            ParseErrorKind::SEMANTIC_ERROR   => write!(f, "{}", format!("{}", "Semantic Error".bright_red())),
+            ParseErrorKind::LEXICAL_ERROR    => write!(f, "{}", format!("{}", ">>> Lexical Error".bright_red())),
+            ParseErrorKind::SYNTAX_ERROR     => write!(f, "{}", format!("{}", ">>> Syntax Error".bright_red())),
+            ParseErrorKind::SEMANTIC_ERROR   => write!(f, "{}", format!("{}", ">>> Semantic Error".bright_red())),
         }
     }
 }
@@ -105,7 +112,7 @@ impl ParseError {
         let blank_str = " ".repeat(int_length(line_number));
         let err_code_part = format!("{} |\n{} | {}\n{} | {}", 
         blank_str, line_number, code_line.clone(), blank_str, pointer_line.yellow()).bright_blue();
-        format!("{}\n{}\n{}\n", err_kind, err_code_part, err_message.bold())
+        format!("{}\n{}\n{}\n", err_kind, err_code_part, err_message.yellow().bold())
     }
 
     pub fn form_single_line_underline_pointer_error(start_err_index: usize, end_err_index: usize, line_number: usize, 
@@ -137,7 +144,7 @@ impl ParseError {
         let blank_str = " ".repeat(int_length(line_number));
         let err_code_part = format!("{} |\n{} | {}\n{} | {}", 
         blank_str, line_number, code_line.clone(), blank_str, pointer_line.yellow()).bright_blue();
-        format!("{}\n{}\n{}\n", err_kind, err_code_part, err_message.bold())
+        format!("{}\n{}\n{}\n", err_kind, err_code_part, err_message.yellow().bold())
     }
 
     pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, mut code_lines: Vec<Rc<String>>, 
@@ -145,21 +152,25 @@ impl ParseError {
         if end_line_number < start_line_number {
             unreachable!("end line number cannot be less than start line number")
         }
-        if end_line_number - start_line_number + 1 > context::max_error_lines() {
-            code_lines = code_lines[start_line_number..(start_line_number + context::max_error_lines())].to_vec();
+        let code_lines_len = code_lines.len();
+        let max_error_lines = context::max_error_lines();
+        if code_lines_len > max_error_lines {
+            code_lines = code_lines[..max_error_lines].to_vec();
             code_lines.push(Rc::new(String::from("...")));
         }
         let mut err_code_part: String = String::from("");
         let mut flag = false;
+        let mut line_number = start_line_number;
+        let max_line_number = start_line_number + code_lines_len - 1;
         for code_line in &code_lines {
             if flag {
-                err_code_part.push_str("\n    ");
+                err_code_part.push_str("\n");
             }
-            err_code_part.push_str(&format!("| {}", code_line));
+            err_code_part.push_str(&format!("{} | {}", format_line_number(line_number, max_line_number), code_line));
             flag = true;
+            line_number = line_number + 1;
         }
-        format!("{}: lines {} - {}\n{}\n{}\n", 
-        err_kind, start_line_number, end_line_number, err_code_part.bright_blue(), err_message.bold())
+        format!("{}\n{}\n{}\n", err_kind, err_code_part.bright_blue(), err_message.yellow().bold())
     }
 }
 
