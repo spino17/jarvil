@@ -100,6 +100,7 @@ impl ParseError {
         let end_pointer_index = end_err_index - line_start_index;
         let mut pointer_line: Vec<char> = vec![];
         let mut flag = false;
+        let code_line_len = code_line.len();
         for (i, _) in code_line.as_ref().chars().enumerate() {
             if i == start_pointer_index {
                 pointer_line.push('^');
@@ -108,7 +109,7 @@ impl ParseError {
                 pointer_line.push('^');
                 flag = false;
             } else {
-                if flag {
+                if flag && i < code_line_len - 1 {
                     pointer_line.push('-')
                 } else {
                     pointer_line.push(' ');
