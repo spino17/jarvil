@@ -1,4 +1,4 @@
-use crate::ast::ast::StatementNode;
+use crate::ast::ast::{StatementNode, StructStatementNode};
 use crate::constants::common::{IDENTIFIER, ENDMARKER};
 use crate::parser::parser::{PackratParser};
 use crate::lexer::token::{Token,CoreToken};
@@ -59,9 +59,11 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
     statement_node
 }
 
-pub fn struct_stmt(parser: &mut PackratParser) {
+pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {
     let struct_name = parser.expect(IDENTIFIER, false);
     let colon_node = parser.expect(":", false);
     let type_expr_node = parser.type_expr();
     let newline_node = parser.expects(&["\n", ENDMARKER], false);
+    let struct_stmt = StructStatementNode::new(&struct_name, &type_expr_node);
+    StatementNode::new_with_struct_stmt(&struct_stmt)
 }

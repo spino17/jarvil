@@ -43,6 +43,7 @@ macro_rules! default_errornous_node_impl {
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
     STATEMENT(Weak<RefCell<CoreStatementNode>>),
+    STRUCT_STATEMENT(Weak<RefCell<CoreStructStatementNode>>),
     NAME_TYPE_SPECS(Weak<RefCell<CoreNameTypeSpecsNode>>),
     NAME_TYPE_SPEC(Weak<RefCell<CoreNameTypeSpecNode>>),
     TYPE_EXPRESSION(Weak<RefCell<CoreTypeExpressionNode>>),
@@ -65,7 +66,10 @@ pub enum ASTNode {
     ATOM_START(Weak<RefCell<CoreAtomStartNode>>),
     VARIABLE_DECLARATION(Weak<RefCell<CoreVariableDeclarationNode>>),
     FUNCTION_DECLARATION(Weak<RefCell<CoreFunctionDeclarationNode>>),
+    STRUCT_DECLARATION(Weak<RefCell<CoreStructDeclarationNode>>),
+    TYPE_DECLARATION(Weak<RefCell<CoreTypeDeclarationNode>>),
     OK_FUNCTION_DECLARATION(Weak<RefCell<CoreOkFunctionDeclarationNode>>),
+    OK_LAMDA_DECLARATION(Weak<RefCell<CoreOkLambdaDeclarationNode>>),
     OK_NAME_TYPE_SPECS(Weak<RefCell<CoreOkNameTypeSpecsNode>>),
 }
 
@@ -175,41 +179,199 @@ pub enum StatementNodeKind {
     EXPRESSION(ExpressionNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
     FUNCTION_DECLARATION(FunctionDeclarationNode),
+    TYPE_DECLARATION(TypeDeclarationNode),
+    STRUCT_STATEMENT(StructStatementNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
 #[derive(Debug, Clone)]
 pub struct StatementNode(Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
-    pub fn new_with_expression(expr_node: &ExpressionNode) -> Self {
+    pub fn new_with_expression(expr: &ExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode{
-            kind: StatementNodeKind::EXPRESSION(expr_node.clone()),
+            kind: StatementNodeKind::EXPRESSION(expr.clone()),
             parent: None,
         }));
-        expr_node.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        expr.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
         StatementNode(node)
     }
 
-    pub fn new_with_variable_declaration(variable_decl_node: &VariableDeclarationNode) -> Self {
+    pub fn new_with_variable_declaration(variable_decl: &VariableDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode{
-            kind: StatementNodeKind::VARIABLE_DECLARATION(variable_decl_node.clone()),
+            kind: StatementNodeKind::VARIABLE_DECLARATION(variable_decl.clone()),
             parent: None,
         }));
-        variable_decl_node.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        variable_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
         StatementNode(node)
     }
 
-    pub fn new_with_function_declaration(function_decl_node: &FunctionDeclarationNode) -> Self {
+    pub fn new_with_function_declaration(function_decl: &FunctionDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode{
-            kind: StatementNodeKind::FUNCTION_DECLARATION(function_decl_node.clone()),
+            kind: StatementNodeKind::FUNCTION_DECLARATION(function_decl.clone()),
             parent: None,
         }));
-        function_decl_node.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        function_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        StatementNode(node)
+    }
+
+    pub fn new_with_type_declaration(type_decl: &TypeDeclarationNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreStatementNode{
+            kind: StatementNodeKind::TYPE_DECLARATION(type_decl.clone()),
+            parent: None,
+        }));
+        type_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        StatementNode(node)
+    }
+
+    pub fn new_with_struct_stmt(struct_stmt: &StructStatementNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreStatementNode{
+            kind: StatementNodeKind::STRUCT_STATEMENT(struct_stmt.clone()),
+            parent: None,
+        }));
+        struct_stmt.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
         StatementNode(node)
     }
 }
 default_node_impl!(StatementNode);
 default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementNodeKind);
+
+#[derive(Debug, Clone)]
+pub struct CoreStructStatementNode {
+    name_type_spec: NameTypeSpecNode,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StructStatementNode(Rc<RefCell<CoreStructStatementNode>>);
+impl StructStatementNode {
+    pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreStructStatementNode{
+            name_type_spec: NameTypeSpecNode::new(param_name, param_type),
+            parent: None,
+        }));
+        StructStatementNode(node)
+    }
+}
+default_node_impl!(StructStatementNode);
+
+#[derive(Debug, Clone)]
+pub struct CoreTypeDeclarationNode {
+    kind: TypeDeclarationKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum TypeDeclarationKind {
+    STRUCT(StructDeclarationNode),
+    LAMBDA(LambdaDeclarationNode),
+    MISSING_TOKENS(MissingTokenNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct TypeDeclarationNode(Rc<RefCell<CoreTypeDeclarationNode>>);
+impl TypeDeclarationNode {
+    pub fn new_with_struct(name: &TokenNode, block: &BlockNode) -> Self {
+        TypeDeclarationNode(Rc::new(RefCell::new(CoreTypeDeclarationNode{
+            kind: TypeDeclarationKind::STRUCT(StructDeclarationNode::new(name, block)),
+            parent: None,
+        })))
+    }
+
+    pub fn new_with_lambda(lambda: &LambdaDeclarationNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreTypeDeclarationNode{
+            kind: TypeDeclarationKind::LAMBDA(lambda.clone()),
+            parent: None,
+        }));
+        lambda.set_parent(ASTNode::TYPE_DECLARATION(Rc::downgrade(&node)));
+        TypeDeclarationNode(node)
+    }
+}
+default_node_impl!(TypeDeclarationNode);
+default_errornous_node_impl!(TypeDeclarationNode, CoreTypeDeclarationNode, TypeDeclarationKind);
+
+#[derive(Debug, Clone)]
+pub struct CoreStructDeclarationNode {
+    name: TokenNode,
+    block: BlockNode,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StructDeclarationNode(Rc<RefCell<CoreStructDeclarationNode>>);
+impl StructDeclarationNode {
+    pub fn new(name: &TokenNode, block: &BlockNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreStructDeclarationNode{
+            name: name.clone(),
+            block: block.clone(),
+            parent: None,
+        }));
+        name.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
+        block.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
+        StructDeclarationNode(node)
+    }
+}
+default_node_impl!(StructDeclarationNode);
+
+#[derive(Debug, Clone)]
+pub struct CoreLambdaDeclarationNode {
+    kind: LambdaDeclarationKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum LambdaDeclarationKind {
+    OK(OkLambdaDeclarationNode),
+    MISSING_TOKENS(MissingTokenNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct LambdaDeclarationNode(Rc<RefCell<CoreLambdaDeclarationNode>>);
+impl LambdaDeclarationNode {
+    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, return_type: &Option<TypeExpressionNode>) -> Self {
+        LambdaDeclarationNode(Rc::new(RefCell::new(CoreLambdaDeclarationNode{
+            kind: LambdaDeclarationKind::OK(OkLambdaDeclarationNode::new(name, args, return_type)),
+            parent: None,
+        })))
+    }
+}
+default_node_impl!(LambdaDeclarationNode);
+default_errornous_node_impl!(LambdaDeclarationNode, CoreLambdaDeclarationNode, LambdaDeclarationKind);
+
+#[derive(Debug, Clone)]
+pub struct CoreOkLambdaDeclarationNode {
+    name: TokenNode,
+    args: Option<NameTypeSpecsNode>,
+    return_type: Option<TypeExpressionNode>,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct OkLambdaDeclarationNode(Rc<RefCell<CoreOkLambdaDeclarationNode>>);
+impl OkLambdaDeclarationNode {
+    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, return_type: &Option<TypeExpressionNode>) -> Self {
+        let node = Rc::new(RefCell::new(CoreOkLambdaDeclarationNode{
+            name: name.clone(),
+            args: args.clone(),
+            return_type: return_type.clone(),
+            parent: None,
+        }));
+        name.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+        match args {
+            Some(args) => args.set_parent(
+                ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node))
+            ),
+            None => {},
+        }
+        match return_type {
+            Some(return_type) => return_type.set_parent(
+                ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node))
+            ),
+            None => {},
+        }
+        OkLambdaDeclarationNode(node)
+    }
+}
+default_node_impl!(OkLambdaDeclarationNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreFunctionDeclarationNode {
