@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use crate::{lexer::token::CoreToken, context, constants::common::{LEXICAL_ERROR, BLOCK_COMMENT, SINGLE_LINE_COMMENT, BLANK}};
 use super::token::{TokenValue, LexicalErrorKind};
-use crate::constants::common::{get_token_for_identifier, STRING_LITERAL, INTEGER, FLOATING_POINT_NUMBER};
+use crate::constants::common::{get_token_for_identifier, LITERAL, INTEGER, FLOATING_POINT_NUMBER};
 
 // ' ' -> '...'
 pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
@@ -275,7 +275,7 @@ pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize,
             '\'' => {
                 let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from(STRING_LITERAL))
+                return (CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from(LITERAL))
             },
             '\n' => {
                 let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
@@ -307,7 +307,7 @@ pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize,
             '"' => {
                 let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from(STRING_LITERAL))
+                return (CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from(LITERAL))
             },
             '\n' => {
                 let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();

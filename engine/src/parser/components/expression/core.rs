@@ -1,5 +1,5 @@
-use crate::{lexer::token::{Token, CoreToken}, constants::common::{INTEGER, FLOATING_POINT_NUMBER, STRING_LITERAL, 
-IDENTIFIER}, parser::parser::PackratParser, ast::ast::{ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, 
+use crate::{lexer::token::{Token, CoreToken}, constants::common::{INTEGER, FLOATING_POINT_NUMBER, LITERAL, 
+IDENTIFIER, TRUE, FALSE, NOT}, parser::parser::PackratParser, ast::ast::{ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, 
     UnaryOperatorKind}};
 use std::rc::Rc;
 use crate::ast::ast::ErrornousNode;
@@ -93,7 +93,7 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
 }
 
 pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10] 
-= ["+", "-", "not", "true", "false", INTEGER, FLOATING_POINT_NUMBER, STRING_LITERAL, IDENTIFIER, "("];
+= ["+", "-", NOT, TRUE, FALSE, INTEGER, FLOATING_POINT_NUMBER, LITERAL, IDENTIFIER, "("];
 
 pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
     let token = &parser.curr_token();
@@ -143,7 +143,7 @@ pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
 }
 
 pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 7] 
-= ["true", "false", INTEGER, FLOATING_POINT_NUMBER, STRING_LITERAL, IDENTIFIER, "("];
+= [TRUE, FALSE, INTEGER, FLOATING_POINT_NUMBER, LITERAL, IDENTIFIER, "("];
 
 pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
     let token = &parser.curr_token();
@@ -157,11 +157,11 @@ pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
     }
     let atomic_expr_node = match token.core_token {
         CoreToken::TRUE                         => {
-            let true_node = parser.expect("true", false);
+            let true_node = parser.expect(TRUE, false);
             AtomicExpressionNode::new_with_true()
         }
         CoreToken::FALSE                        => {
-            let false_node = parser.expect("false", false);
+            let false_node = parser.expect(FALSE, false);
             AtomicExpressionNode::new_with_false()
         }
         CoreToken::INTEGER(_)                   => {
@@ -173,7 +173,7 @@ pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
             AtomicExpressionNode::new_with_floating_point_number(&floating_point_number_node)
         }
         CoreToken::LITERAL(_)                   => {
-            let literal_node = parser.expect(STRING_LITERAL, false);
+            let literal_node = parser.expect(LITERAL, false);
             AtomicExpressionNode::new_with_literal(&literal_node)
         }
         CoreToken::IDENTIFIER(_)                => {
