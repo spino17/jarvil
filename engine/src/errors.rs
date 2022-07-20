@@ -206,7 +206,7 @@ impl Display for CompilationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             CompilationError::IO_ERROR(err) => write!(
-                f, ">>> IOErrror:\n    {}", err.to_string()),
+                f, ">>> IOErrror\n{}", err.to_string()),
             CompilationError::PARSE_ERROR(parse_error) => {
                 write!(f, "{}", parse_error.err_message)
             }
