@@ -18,6 +18,8 @@ use crate::parser::helper::{IndentResult, IndentResultKind};
 use crate::utils::common::get_code_line_data;
 use crate::ast::ast::ErrornousNode;
 
+use super::helper::format_symbol;
+
 pub trait Parser {
     fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<ParseError>);
 }
@@ -162,10 +164,7 @@ impl PackratParser {
         if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
             return;
         } else {
-            if expected_symbol == "\n" {
-                expected_symbol = "newline";
-            }
-            let err_str = format!("expected `{}`, got `{}`", expected_symbol, recevied_token.name());
+            let err_str = format!("expected `{}`, got `{}`", format_symbol(expected_symbol), recevied_token.name());
             let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
                 code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 
@@ -192,10 +191,12 @@ impl PackratParser {
                 if flag {
                     err_str.push_str(", ");
                 }
-                err_str.push_str(&format!("`{}`", expected_symbols[index]));
+                err_str.push_str(&format!("`{}`", format_symbol(expected_symbols[index])));
                 flag = true;
             }
-            err_str.push_str(&format!(" or `{}`, got `{}`", expected_symbols[symbols_len - 1], recevied_token.name()));
+            err_str.push_str(&format!(
+                " or `{}`, got `{}`", format_symbol(expected_symbols[symbols_len - 1]), recevied_token.name()
+            ));
             let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
                 code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 

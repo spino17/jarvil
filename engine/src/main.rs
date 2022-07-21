@@ -28,9 +28,9 @@ fn start_compiler() {
     }
     let mut parser = PackratParser::new(code_lines);
     let (ast, syntax_errors) = parser.parse(token_vec);
+    println!("{:?}", ast);
     if syntax_errors.len() > 0 {
         println!("{}", syntax_errors[0]);
-        // println!("{:?}", ast);
         // TODO - dump all other errors in some log file, let users choose how many errors to show
         return;
     }

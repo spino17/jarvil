@@ -59,3 +59,10 @@ pub fn clone_expr_result(result: &Result<(ParseSuccess, bool), ParseError>)
         }
     }
 }
+
+pub fn format_symbol(symbol: &str) -> &str {
+    if symbol == "\n" {
+        return "newline"
+    }
+    return symbol
+}
