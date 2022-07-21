@@ -556,15 +556,15 @@ impl PackratParser {
         components::function_declaration::name_type_specs_within_parenthesis(self)
     }
 
-    pub fn r_assign(&mut self) -> RAssignmentNode {
-        components::common::r_assign(self)
+    pub fn r_assign(&mut self, identifier_name: Option<&TokenNode>) -> RAssignmentNode {
+        components::common::r_assign(self, identifier_name)
     }
 
     pub fn function_name(&mut self) -> TokenNode {
         components::function_declaration::function_name(self)
     }
 
-    pub fn function_decl(&mut self, name: Option<TokenNode>) -> FunctionDeclarationNode {
+    pub fn function_decl(&mut self, name: Option<&TokenNode>) -> FunctionDeclarationNode {
         components::function_declaration::function_decl(self, name)
     }
 

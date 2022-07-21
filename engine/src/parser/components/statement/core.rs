@@ -4,7 +4,6 @@ use crate::parser::parser::{PackratParser};
 use crate::lexer::token::{Token,CoreToken};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::ast::ast::ErrornousNode;
-use crate::scope::function;
 use std::rc::Rc;
 
 pub fn is_statement_starting_with(token: &Token) -> bool {
@@ -44,7 +43,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
         },
         CoreToken::DEF                  => {
             let function_name = parser.function_name();
-            let function_decl_node = parser.function_decl(Some(function_name));
+            let function_decl_node = parser.function_decl(Some(&function_name));
             StatementNode::new_with_function_declaration(&function_decl_node)
         },
         CoreToken::FOR                  => todo!(),

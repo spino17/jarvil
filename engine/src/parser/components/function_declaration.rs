@@ -59,7 +59,7 @@ pub fn function_name(parser: &mut PackratParser) -> TokenNode {
     name_node
 }
 
-pub fn function_decl(parser: &mut PackratParser, name_node: Option<TokenNode>) -> FunctionDeclarationNode {
+pub fn function_decl(parser: &mut PackratParser, name_node: Option<&TokenNode>) -> FunctionDeclarationNode {
     let args_node = parser.name_type_specs_within_parenthesis();
     let token = &parser.curr_token();
     match token.core_token {
@@ -72,6 +72,10 @@ pub fn function_decl(parser: &mut PackratParser, name_node: Option<TokenNode>) -
                 |parser| {parser.stmt()},
                 &STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS
             );
+            let name_node = match name_node {
+                Some(name_node) => Some(name_node.clone()),
+                None => None,
+            };
             return FunctionDeclarationNode::new(&name_node, &args_node, &Some(return_type), &func_block_node)
         },
         CoreToken::COLON        => {
@@ -81,6 +85,10 @@ pub fn function_decl(parser: &mut PackratParser, name_node: Option<TokenNode>) -
                 |parser| {parser.stmt()},
                 &STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS
             );
+            let name_node = match name_node {
+                Some(name_node) => Some(name_node.clone()),
+                None => None,
+            };
             return FunctionDeclarationNode::new(&name_node, &args_node, &None, &func_block_node)
         },
         _                       => {
