@@ -43,6 +43,7 @@ macro_rules! default_errornous_node_impl {
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
     STATEMENT(Weak<RefCell<CoreStatementNode>>),
+    ASSIGNMENT(Weak<RefCell<CoreAssignmentNode>>),
     STRUCT_STATEMENT(Weak<RefCell<CoreStructStatementNode>>),
     NAME_TYPE_SPECS(Weak<RefCell<CoreNameTypeSpecsNode>>),
     NAME_TYPE_SPEC(Weak<RefCell<CoreNameTypeSpecNode>>),
@@ -71,6 +72,7 @@ pub enum ASTNode {
     OK_FUNCTION_DECLARATION(Weak<RefCell<CoreOkFunctionDeclarationNode>>),
     OK_LAMDA_DECLARATION(Weak<RefCell<CoreOkLambdaDeclarationNode>>),
     OK_NAME_TYPE_SPECS(Weak<RefCell<CoreOkNameTypeSpecsNode>>),
+    R_ASSIGNMENT(Weak<RefCell<CoreRAssignmentNode>>),
 }
 
 #[derive(Debug, Clone)]
@@ -236,6 +238,29 @@ default_node_impl!(StatementNode);
 default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementNodeKind);
 
 #[derive(Debug, Clone)]
+pub struct CoreAssignmentNode {
+    l_atom: AtomNode,
+    r_assign: RAssignmentNode,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AssignmentNode(Rc<RefCell<CoreAssignmentNode>>);
+impl AssignmentNode {
+    pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAssignmentNode{
+            l_atom: l_atom.clone(),
+            r_assign: r_assign.clone(),
+            parent: None,
+        }));
+        l_atom.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
+        r_assign.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
+        AssignmentNode(node)
+    }
+}
+default_node_impl!(AssignmentNode);
+
+#[derive(Debug, Clone)]
 pub struct CoreStructStatementNode {
     name_type_spec: NameTypeSpecNode,
     parent: Option<ASTNode>,
@@ -388,7 +413,7 @@ pub enum FunctionDeclarationKind {
 #[derive(Debug, Clone)]
 pub struct FunctionDeclarationNode(Rc<RefCell<CoreFunctionDeclarationNode>>);
 impl FunctionDeclarationNode {
-    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, 
+    pub fn new(name: &Option<TokenNode>, args: &Option<NameTypeSpecsNode>, 
         return_type: &Option<TypeExpressionNode>, block: &BlockNode) -> Self {
         let node = Rc::new(RefCell::new(CoreFunctionDeclarationNode{
             kind: FunctionDeclarationKind::OK(OkFunctionDeclarationNode::new(name, args, return_type, block)),
@@ -402,7 +427,7 @@ default_errornous_node_impl!(FunctionDeclarationNode, CoreFunctionDeclarationNod
 
 #[derive(Debug, Clone)]
 pub struct CoreOkFunctionDeclarationNode {
-    name: TokenNode,
+    name: Option<TokenNode>,
     args: Option<NameTypeSpecsNode>,
     return_type: Option<TypeExpressionNode>,
     block: BlockNode,
@@ -412,7 +437,8 @@ pub struct CoreOkFunctionDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct OkFunctionDeclarationNode(Rc<RefCell<CoreOkFunctionDeclarationNode>>);
 impl OkFunctionDeclarationNode {
-    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, return_type: &Option<TypeExpressionNode>, block: &BlockNode) -> Self {
+    pub fn new(name: &Option<TokenNode>, args: &Option<NameTypeSpecsNode>, 
+        return_type: &Option<TypeExpressionNode>, block: &BlockNode) -> Self {
         let node = Rc::new(RefCell::new(CoreOkFunctionDeclarationNode{
             name: name.clone(),
             args: args.clone(),
@@ -420,7 +446,10 @@ impl OkFunctionDeclarationNode {
             block: block.clone(),
             parent: None,
         }));
-        name.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+        match name {
+            Some(name) => name.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            None => {},
+        }
         match args {
             Some(args) => args.set_parent(
                 ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))
@@ -1293,4 +1322,41 @@ impl IndexAccessNode {
     }
 }
 default_node_impl!(IndexAccessNode);
+
+#[derive(Debug, Clone)]
+pub struct CoreRAssignmentNode {
+    kind: RAssignmentKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum RAssignmentKind {
+    LAMBDA(FunctionDeclarationNode),
+    EXPRESSION(ExpressionNode),
+    MISSING_TOKENS(MissingTokenNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct RAssignmentNode(Rc<RefCell<CoreRAssignmentNode>>);
+impl RAssignmentNode {
+    pub fn new_with_lambda(lambda_decl: &FunctionDeclarationNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreRAssignmentNode{
+            kind: RAssignmentKind::LAMBDA(lambda_decl.clone()),
+            parent: None,
+        }));
+        lambda_decl.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
+        RAssignmentNode(node)
+    }
+
+    pub fn new_with_expr(expr: &ExpressionNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreRAssignmentNode{
+            kind: RAssignmentKind::EXPRESSION(expr.clone()),
+            parent: None,
+        }));
+        expr.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
+        RAssignmentNode(node)
+    }
+}
+default_node_impl!(RAssignmentNode);
+default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode, RAssignmentKind);
 

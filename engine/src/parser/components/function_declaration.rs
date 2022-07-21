@@ -1,10 +1,10 @@
-use crate::ast::ast::{NameTypeSpecNode, OkNameTypeSpecsNode, FunctionDeclarationNode};
+use crate::ast::ast::{NameTypeSpecNode, OkNameTypeSpecsNode, FunctionDeclarationNode, TokenNode};
 use crate::{parser::parser::PackratParser, constants::common::IDENTIFIER, ast::ast::NameTypeSpecsNode};
 use crate::lexer::token::{CoreToken};
 use std::rc::Rc;
 use crate::ast::ast::ErrornousNode;
-use crate::parser::components::statement::core::{is_statement_starting_with, stmt, 
-    is_statement_within_function_starting_with, STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS};
+use crate::parser::components::statement::core::{is_statement_within_function_starting_with, 
+    STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS};
 
 pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
     let name_node = parser.expect(IDENTIFIER, true);
@@ -53,9 +53,13 @@ pub fn name_type_specs_within_parenthesis(parser: &mut PackratParser) -> Option<
     args
 }
 
-pub fn function_decl(parser: &mut PackratParser) -> FunctionDeclarationNode {
+pub fn function_name(parser: &mut PackratParser) -> TokenNode {
     let def_node = parser.expect("def", false);
     let name_node = parser.expect(IDENTIFIER, false);
+    name_node
+}
+
+pub fn function_decl(parser: &mut PackratParser, name_node: Option<TokenNode>) -> FunctionDeclarationNode {
     let args_node = parser.name_type_specs_within_parenthesis();
     let token = &parser.curr_token();
     match token.core_token {

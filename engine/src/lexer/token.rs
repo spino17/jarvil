@@ -26,6 +26,7 @@ pub enum CoreToken {
     // functions
     DEF,                                // 'def'
     RETURN,                             // 'return'
+    FUNC,                               // 'func'
 
     // types
     TYPE_KEYWORD,                       // 'type'

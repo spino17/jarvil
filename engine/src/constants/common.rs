@@ -23,6 +23,7 @@ const IN:                           &'static str = "in";
 const NEW:                          &'static str = "new";
 pub const TRUE:                     &'static str = "True";
 pub const FALSE:                    &'static str = "False";
+pub const FUNC:                     &'static str = "func";
 pub const RETURN:                   &'static str = "return";
 pub const INT:                      &'static str = "int";
 pub const INTEGER:                  &'static str = "<integer>";
@@ -39,7 +40,7 @@ pub const SINGLE_LINE_COMMENT:      &'static str = "single line comment";
 pub const BLOCK_COMMENT:            &'static str = "block comment";
 pub const BLANK:                    &'static str = "blank";
 
-pub const KEYWORDS: [&'static str; 22] = [
+pub const KEYWORDS: [&'static str; 23] = [
     FOR,
     WHILE,
     CONTINUE,
@@ -61,6 +62,7 @@ pub const KEYWORDS: [&'static str; 22] = [
     NEW,
     TRUE,
     FALSE,
+    FUNC,
     RETURN,
 ];
 
@@ -186,6 +188,8 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
             (CoreToken::TRUE,               String::from(TRUE))
         } else if value.eq(FALSE)               {
             (CoreToken::FALSE,              String::from(FALSE))
+        } else if value.eq(FUNC)               {
+            (CoreToken::FUNC,              String::from(FUNC))
         } else if value.eq(RETURN)              {
             (CoreToken::RETURN,             String::from(RETURN))
         } else {

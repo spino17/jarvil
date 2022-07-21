@@ -4,7 +4,7 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, NameTypeSpecsNode, SkippedTokenNode, 
-    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, NameTypeSpecNode, OkFunctionDeclarationNode, FunctionDeclarationNode, TypeDeclarationNode};
+    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, NameTypeSpecNode, OkFunctionDeclarationNode, FunctionDeclarationNode, TypeDeclarationNode, RAssignmentNode, AssignmentNode};
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
@@ -484,6 +484,10 @@ impl PackratParser {
         components::statement::core::stmt(self)
     }
 
+    pub fn assignment(&mut self) -> AssignmentNode {
+        components::assignment::assignment(self)
+    }
+
     // type expression
     pub fn type_expr(&mut self) -> TypeExpressionNode {
         components::expression::type_expression::type_expr(self)
@@ -552,8 +556,16 @@ impl PackratParser {
         components::function_declaration::name_type_specs_within_parenthesis(self)
     }
 
-    pub fn function_decl(&mut self) -> FunctionDeclarationNode {
-        components::function_declaration::function_decl(self)
+    pub fn r_assign(&mut self) -> RAssignmentNode {
+        components::common::r_assign(self)
+    }
+
+    pub fn function_name(&mut self) -> TokenNode {
+        components::function_declaration::function_name(self)
+    }
+
+    pub fn function_decl(&mut self, name: Option<TokenNode>) -> FunctionDeclarationNode {
+        components::function_declaration::function_decl(self, name)
     }
 
     pub fn struct_stmt(&mut self) -> StatementNode {
