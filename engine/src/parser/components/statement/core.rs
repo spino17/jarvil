@@ -22,7 +22,7 @@ pub fn is_statement_starting_with(token: &Token) -> bool {
 }
 
 pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 10]
-= ["let", "def", "for", "while", "if", "type", "interface", "impl", IDENTIFIER, "expression"];
+= ["let", "def", "for", "while", "if", "type", "interface", "impl", IDENTIFIER, "<expression>"];
 
 pub fn stmt(parser: &mut PackratParser) -> StatementNode {
     let token = &parser.curr_token();
@@ -63,6 +63,16 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
         }
     };
     statement_node
+}
+
+pub const STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS: [&'static str; 11]
+= ["let", "def", "for", "while", "if", "type", "interface", "impl", IDENTIFIER, "<expression>", "return"];
+
+pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
+    match token.core_token {
+        CoreToken::RETURN => true,
+        _                 => is_statement_starting_with(token),
+    }
 }
 
 pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {

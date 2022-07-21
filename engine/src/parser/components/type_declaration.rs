@@ -38,11 +38,17 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                     )
                 }, 
                 CoreToken::NEWLINE      => {
-                    let newline_node = parser.expects(&["\n", ENDMARKER], false);
+                    let newline_node = parser.expect("\n", false);
                     LambdaDeclarationNode::new(
                         &type_name_node, &args_node, &None
                     )
                 },
+                CoreToken::ENDMARKER    => {
+                    let endmarker_node = parser.expect(ENDMARKER, false);
+                    LambdaDeclarationNode::new(
+                        &type_name_node, &args_node, &None
+                    )
+                }
                 _                       => {
                     parser.log_missing_token_error_for_multiple_expected_symbols(
                         &["->", "\n"], token

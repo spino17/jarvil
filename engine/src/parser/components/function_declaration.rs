@@ -1,9 +1,10 @@
 use crate::ast::ast::{NameTypeSpecNode, OkNameTypeSpecsNode, FunctionDeclarationNode};
 use crate::{parser::parser::PackratParser, constants::common::IDENTIFIER, ast::ast::NameTypeSpecsNode};
-use crate::lexer::token::{CoreToken, Token};
+use crate::lexer::token::{CoreToken};
 use std::rc::Rc;
 use crate::ast::ast::ErrornousNode;
-use super::statement::core::{is_statement_starting_with, stmt};
+use crate::parser::components::statement::core::{is_statement_starting_with, stmt, 
+    is_statement_within_function_starting_with, STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS};
 
 pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
     let name_node = parser.expect(IDENTIFIER, true);
@@ -50,16 +51,6 @@ pub fn name_type_specs_within_parenthesis(parser: &mut PackratParser) -> Option<
     }
     let rparen_node = parser.expect(")", true);
     args
-}
-
-pub const STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS: [&'static str; 11]
-= ["let", "def", "for", "while", "if", "type", "interface", "impl", IDENTIFIER, "expression", "return"];
-
-pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
-    match token.core_token {
-        CoreToken::RETURN => true,
-        _                 => is_statement_starting_with(token),
-    }
 }
 
 pub fn function_decl(parser: &mut PackratParser) -> FunctionDeclarationNode {
