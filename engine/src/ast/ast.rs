@@ -471,21 +471,21 @@ default_node_impl!(OkFunctionDeclarationNode);
 #[derive(Debug, Clone)]
 pub struct CoreVariableDeclarationNode {
     name: TokenNode,
-    r_expr: ExpressionNode,
+    r_assign: RAssignmentNode,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
 pub struct VariableDeclarationNode(Rc<RefCell<CoreVariableDeclarationNode>>);
 impl VariableDeclarationNode {
-    pub fn new(name: &TokenNode, r_expr: &ExpressionNode) -> Self {
+    pub fn new(name: &TokenNode, r_assign: &RAssignmentNode) -> Self {
         let node = Rc::new(RefCell::new(CoreVariableDeclarationNode{
             name: name.clone(),
-            r_expr: r_expr.clone(),
+            r_assign: r_assign.clone(),
             parent: None,
         }));
         name.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
-        r_expr.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
+        r_assign.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
         VariableDeclarationNode(node)
     }
 }
