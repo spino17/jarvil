@@ -16,7 +16,6 @@ pub trait Lexer {
 pub struct CoreLexer {
     pub begin_lexeme: usize,
     pub line_number: usize,
-    // pub code_lines: Vec<(Rc<String>, usize)>,
     pub code_lines: Vec<usize>,
     pub line_start_index: usize,
     pub lexical_errors_data: Vec<LexicalErrorData>,  // temp storage for lexical error data uptill code_lines are built

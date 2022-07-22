@@ -237,7 +237,7 @@ impl PackratParser {
         if errors_len > 0 && self.errors[errors_len - 1].end_line_number == start_line_number {
             return;
         } else {
-            let mut code_lines: Vec<Rc<String>> = self.code.lines(start_line_number, end_line_number);
+            let code_lines: Vec<String> = self.code.lines(start_line_number, end_line_number);
             let err_str = format!("expected an indented block\nexpected indentation with `{}` spaces, got `{}` spaces", 
             expected_indent, received_indent);
             let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 

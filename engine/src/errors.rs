@@ -95,13 +95,13 @@ impl ParseError {
     }
 
     pub fn form_single_line_single_pointer_error(err_index: usize, line_number: usize, line_start_index: usize, 
-        code_line: Rc<String>, err_message: String, err_kind: ParseErrorKind) -> String {
+        code_line: String, err_message: String, err_kind: ParseErrorKind) -> String {
         if err_index < line_start_index {
             unreachable!("lookahead at which error occured can never be less than the start index of the line")
         }
         let pointer_index = err_index - line_start_index;
         let mut pointer_line: Vec<char> = vec![];
-        for (i, _) in code_line.as_ref().chars().enumerate() {
+        for (i, _) in code_line.chars().enumerate() {
             if i == pointer_index {
                 pointer_line.push('^');
             } else {
@@ -116,7 +116,7 @@ impl ParseError {
     }
 
     pub fn form_single_line_underline_pointer_error(start_err_index: usize, end_err_index: usize, line_number: usize, 
-        line_start_index: usize, code_line: Rc<String>, err_message: String, err_kind: ParseErrorKind) -> String {
+        line_start_index: usize, code_line: String, err_message: String, err_kind: ParseErrorKind) -> String {
         if start_err_index < line_start_index || end_err_index < line_start_index {
             unreachable!("lookahead at which error occured can never be less than the start index of the line")
         }
@@ -125,7 +125,7 @@ impl ParseError {
         let mut pointer_line: Vec<char> = vec![];
         let mut flag = false;
         let code_line_len = code_line.len();
-        for (i, _) in code_line.as_ref().chars().enumerate() {
+        for (i, _) in code_line.chars().enumerate() {
             if i == start_pointer_index {
                 pointer_line.push('^');
                 flag = true;
@@ -147,7 +147,7 @@ impl ParseError {
         format!("\n{}\n{}\n{}\n", err_kind, err_code_part, err_message.yellow().bold())
     }
 
-    pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, mut code_lines: Vec<Rc<String>>, 
+    pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, mut code_lines: Vec<String>, 
         err_message: String, err_kind: ParseErrorKind) -> String {
         if end_line_number < start_line_number {
             unreachable!("end line number cannot be less than start line number")
@@ -155,8 +155,8 @@ impl ParseError {
         let code_lines_len = code_lines.len();
         let max_error_lines = context::max_error_lines();
         if code_lines_len > max_error_lines {
-            code_lines = code_lines[..max_error_lines].to_vec();
-            code_lines.push(Rc::new(String::from("...")));
+            code_lines.resize(max_error_lines, String::default());
+            code_lines.push(String::from("..."));
         }
         let mut flag = false;
         let mut line_number = start_line_number;

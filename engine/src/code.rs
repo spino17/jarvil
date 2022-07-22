@@ -49,22 +49,22 @@ impl Code {
         }
     }
     
-    pub fn lines(&self, start_line_number: usize, end_line_number: usize) -> Vec<Rc<String>> {
-        let mut code_lines_vec: Vec<Rc<String>> = vec![];
+    pub fn lines(&self, start_line_number: usize, end_line_number: usize) -> Vec<String> {
+        let mut code_lines_vec: Vec<String> = vec![];
         for line_number in start_line_number..(end_line_number + 1) {
-            code_lines_vec.push(Rc::new(self.line(line_number)))
+            code_lines_vec.push(self.line(line_number))
         }
         code_lines_vec
     }
     
-    pub fn line_data(&self, mut curr_line_number: usize, index: usize) -> (Rc<String>, usize, usize, usize) {
+    pub fn line_data(&self, mut curr_line_number: usize, index: usize) -> (String, usize, usize, usize) {
         match &self.code_lines {
             Some(code_lines) => {
                 loop {
                     let line_start_index = code_lines[curr_line_number - 1];
                     if index >= line_start_index {
-                        let s = Rc::new(self.line(curr_line_number));
-                        return (s.clone(), line_start_index, curr_line_number, index)
+                        let s = self.line(curr_line_number);
+                        return (s, line_start_index, curr_line_number, index)
                     }
                     curr_line_number = curr_line_number - 1;
                 }
