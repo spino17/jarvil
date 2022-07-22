@@ -19,7 +19,7 @@ fn start_compiler() {
     let args: Vec<String> = args().collect();
     let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     let mut core_lexer = CoreLexer::new();
-    let token_vec = core_lexer.tokenize(char_vec);
+    let token_vec = core_lexer.tokenize(&char_vec);
     let (code_lines, lexical_errors) = core_lexer.get_lexical_data_useful_for_parser();
     if lexical_errors.len() > 0 {
         print!("{}", lexical_errors[0]);

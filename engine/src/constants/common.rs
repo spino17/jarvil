@@ -1,4 +1,4 @@
-use crate::lexer::token::{CoreToken, TokenValue};
+use crate::lexer::token::{CoreToken};
 use crate::context;
 use std::rc::Rc;
 
@@ -196,8 +196,8 @@ pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
             unreachable!("keyword missing in the matching arms")
         }
     } else if context::is_type(&value) {
-        (CoreToken::ATOMIC_TYPE(TokenValue(Rc::new(value))), String::from(ATOMIC_TYPE))
+        (CoreToken::ATOMIC_TYPE, String::from(ATOMIC_TYPE))
     } else {
-        (CoreToken::IDENTIFIER(TokenValue(Rc::new(value))), String::from(IDENTIFIER))
+        (CoreToken::IDENTIFIER, String::from(IDENTIFIER))
     }
 }

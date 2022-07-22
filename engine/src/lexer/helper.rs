@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use crate::{lexer::token::CoreToken, context, constants::common::{LEXICAL_ERROR, BLOCK_COMMENT, SINGLE_LINE_COMMENT, BLANK}};
-use super::token::{TokenValue, LexicalErrorKind};
+use super::token::{LexicalErrorKind};
 use crate::constants::common::{get_token_for_identifier, LITERAL, INTEGER, FLOATING_POINT_NUMBER};
 
 // ' ' -> '...'
@@ -86,10 +86,9 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             1 => {
                 match next_char {
                     '\n' => {
-                        let comment_str: String = code[(*begin_lexeme + 2)..forward_lexeme].iter().collect();
+                        // let comment_str: String = code[(*begin_lexeme + 2)..forward_lexeme].iter().collect();
                         *begin_lexeme = forward_lexeme;
-                        return (CoreToken::SINGLE_LINE_COMMENT(TokenValue(Rc::new(comment_str))),
-                        String::from(SINGLE_LINE_COMMENT));
+                        return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT));
                     },
                     _ => {}
                 }
@@ -113,9 +112,9 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             3 => {
                 match next_char {
                     '/' => {
-                        let comment_str: String = code[(*begin_lexeme + 2)..(forward_lexeme - 1)].iter().collect();
+                        // let comment_str: String = code[(*begin_lexeme + 2)..(forward_lexeme - 1)].iter().collect();
                         *begin_lexeme = forward_lexeme + 1;
-                        return (CoreToken::BLOCK_COMMENT(TokenValue(Rc::new(comment_str))), String::from(BLOCK_COMMENT));
+                        return (CoreToken::BLOCK_COMMENT, String::from(BLOCK_COMMENT));
                     },
                     _ => {
                         state = 2;
@@ -134,19 +133,19 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             return (CoreToken::SLASH, String::from("/"));
         },
         1 => {
-            let comment_str: String = code[(*begin_lexeme + 2)..forward_lexeme].iter().collect();
+            // let comment_str: String = code[(*begin_lexeme + 2)..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return (CoreToken::SINGLE_LINE_COMMENT(TokenValue(Rc::new(comment_str))), String::from(SINGLE_LINE_COMMENT));
+            return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT));
         },
         2 => {
             *begin_lexeme = forward_lexeme;
             let err_str = Rc::new(String::from("missing trailing symbol `*/` for block comment"));
-            return (CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, TokenValue(err_str))), String::from(LEXICAL_ERROR))
+            return (CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str)), String::from(LEXICAL_ERROR))
         },
         3 => {
             *begin_lexeme = forward_lexeme;
             let err_str = Rc::new(String::from("missing trailing symbol `*/` for block comment"));
-            return (CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, TokenValue(err_str))), String::from(LEXICAL_ERROR))
+            return (CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str)), String::from(LEXICAL_ERROR))
         },
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
     }
@@ -159,17 +158,17 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
         let next_char = code[forward_lexeme];
         match next_char {
             '\n' => {
-                let comment_str: String = code[(*begin_lexeme + 1)..forward_lexeme].iter().collect();
+                // let comment_str: String = code[(*begin_lexeme + 1)..forward_lexeme].iter().collect();
                 *begin_lexeme = forward_lexeme;
-                return (CoreToken::SINGLE_LINE_COMMENT(TokenValue(Rc::new(comment_str))), String::from(SINGLE_LINE_COMMENT))
+                return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT))
             },
             _ => {}
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    let comment_str: String = code[*begin_lexeme..].iter().collect();
+    // let comment_str: String = code[*begin_lexeme..].iter().collect();
     *begin_lexeme = forward_lexeme;
-    return (CoreToken::SINGLE_LINE_COMMENT(TokenValue(Rc::new(comment_str))), String::from(SINGLE_LINE_COMMENT))
+    return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT))
 }
 
 // = -> =, ==
@@ -249,7 +248,7 @@ pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<c
                 let error_str = Rc::new(String::from("invalid character `!` found"));
                 *begin_lexeme = *begin_lexeme + 1;
                 (
-                    CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, TokenValue(error_str.clone()))), 
+                    CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone())),
                     String::from(LEXICAL_ERROR)
                 )
             }
@@ -258,7 +257,7 @@ pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<c
         let error_str = Rc::new(String::from("invalid character `!` found"));
         *begin_lexeme = *begin_lexeme + 1;
         (
-            CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, TokenValue(error_str.clone()))), 
+            CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone())),
             String::from(LEXICAL_ERROR)
         )
     }
@@ -273,9 +272,9 @@ pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize,
         let next_char = code[forward_lexeme];
         match next_char {
             '\'' => {
-                let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
+                // let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from(LITERAL))
+                return (CoreToken::LITERAL, String::from(LITERAL))
             },
             '\n' => {
                 let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
@@ -291,7 +290,7 @@ pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize,
     *begin_lexeme = forward_lexeme;
     let err_str = Rc::new(String::from(r#"no closing `'` found for literal"#));
     return (
-        CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, TokenValue(err_str))),
+        CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str)),
         String::from(LEXICAL_ERROR)
     )
 }
@@ -305,9 +304,9 @@ pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize,
         let next_char = code[forward_lexeme];
         match next_char {
             '"' => {
-                let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
+                // let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::LITERAL(TokenValue(Rc::new(literal_value))), String::from(LITERAL))
+                return (CoreToken::LITERAL, String::from(LITERAL))
             },
             '\n' => {
                 let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
@@ -323,7 +322,7 @@ pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize,
     *begin_lexeme = forward_lexeme;
     let err_str = Rc::new(String::from(r#"no closing `"` found for literal"#));
     return (
-        CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, TokenValue(err_str))),
+        CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str)),
         String::from(LEXICAL_ERROR)
     )
 }
@@ -360,27 +359,27 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
                 } else if next_char == '.' {
                     state = 1;
                 } else {
-                    let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
+                    // let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
                     *begin_lexeme = forward_lexeme;
-                    return (CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INTEGER))
+                    return (CoreToken::INTEGER, String::from(INTEGER))
                 }
             },
             1 => {
                 if context::is_digit(&next_char) {
                     state = 2;
                 } else {
-                    let value: String = code[*begin_lexeme..(forward_lexeme - 1)].iter().collect();
+                    // let value: String = code[*begin_lexeme..(forward_lexeme - 1)].iter().collect();
                     *begin_lexeme = forward_lexeme - 1;
-                    return (CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INTEGER))
+                    return (CoreToken::INTEGER, String::from(INTEGER))
                 }
             },
             2 => {
                 if context::is_digit(&next_char) {
                     // do nothing
                 } else {
-                    let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
+                    // let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
                     *begin_lexeme = forward_lexeme;
-                    return (CoreToken::FLOATING_POINT_NUMBER(TokenValue(Rc::new(value))), String::from(FLOATING_POINT_NUMBER))
+                    return (CoreToken::FLOATING_POINT_NUMBER, String::from(FLOATING_POINT_NUMBER))
                 }
             },
             _ => {
@@ -391,19 +390,19 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
     }
     match state {
         0 => {
-            let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
+            // let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return (CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INTEGER))
+            return (CoreToken::INTEGER, String::from(INTEGER))
         },
         1 => {
-            let value: String = code[*begin_lexeme..(forward_lexeme - 1)].iter().collect();
+            // let value: String = code[*begin_lexeme..(forward_lexeme - 1)].iter().collect();
             *begin_lexeme = forward_lexeme - 1;
-            return (CoreToken::INTEGER(TokenValue(Rc::new(value))), String::from(INTEGER))
+            return (CoreToken::INTEGER, String::from(INTEGER))
         },
         2 => {
-            let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
+            // let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
-            return (CoreToken::FLOATING_POINT_NUMBER(TokenValue(Rc::new(value))), String::from(FLOATING_POINT_NUMBER))
+            return (CoreToken::FLOATING_POINT_NUMBER, String::from(FLOATING_POINT_NUMBER))
         },
         _ => unreachable!("any state other than 0, 1, and 2 is not reachable")
     }

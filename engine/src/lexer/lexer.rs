@@ -10,7 +10,7 @@ use std::mem;
 use crate::utils::common::get_code_line_data;
 
 pub trait Lexer {
-    fn tokenize(&mut self, code: Vec<char>) -> Vec<Token>;
+    fn tokenize(&mut self, code: &Vec<char>) -> Vec<Token>;
 }
 
 pub struct CoreLexer {
@@ -89,7 +89,7 @@ impl CoreLexer {
 }
 
 impl Lexer for CoreLexer {
-    fn tokenize(&mut self, code: Vec<char>) -> Vec<Token> {
+    fn tokenize(&mut self, code: &Vec<char>) -> Vec<Token> {
         let mut token_vec: Vec<Token> = Vec::new();
         token_vec.push(Token {
             line_number: self.line_number,
@@ -105,8 +105,8 @@ impl Lexer for CoreLexer {
             let mut token = self.extract_lexeme(&code);
             match token.core_token {
                 CoreToken::BLANK => trivia_vec.push(token),
-                CoreToken::SINGLE_LINE_COMMENT(_) => trivia_vec.push(token),
-                CoreToken::BLOCK_COMMENT(_) => trivia_vec.push(token),
+                CoreToken::SINGLE_LINE_COMMENT => trivia_vec.push(token),
+                CoreToken::BLOCK_COMMENT => trivia_vec.push(token),
                 _ => {
                     if trivia_vec.len() > 0 {
                         token.set_trivia(mem::take(&mut trivia_vec));

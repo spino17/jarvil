@@ -6,8 +6,8 @@ use crate::context;
 
 use super::lexer::CoreLexer;
 
-#[derive(Debug, Clone)]
-pub struct TokenValue(pub Rc<String>);
+// #[derive(Debug, Clone)]
+// pub struct TokenValue(pub Rc<String>);
 
 #[derive(Debug, Clone)]
 pub enum CoreToken {
@@ -30,7 +30,7 @@ pub enum CoreToken {
 
     // types
     TYPE_KEYWORD,                       // 'type'
-    ATOMIC_TYPE(TokenValue),
+    ATOMIC_TYPE,
     NEW,                                // 'new'
     LET,                                // 'let'
     SELF,                               // 'self'
@@ -84,20 +84,20 @@ pub enum CoreToken {
     NOT_EQUAL,                          // '!='
 
     // expression terminals
-    INTEGER(TokenValue),
-    FLOATING_POINT_NUMBER(TokenValue),
-    IDENTIFIER(TokenValue),
-    LITERAL(TokenValue),
+    INTEGER,
+    FLOATING_POINT_NUMBER,
+    IDENTIFIER,
+    LITERAL,
 
     // ignored by parser
-    SINGLE_LINE_COMMENT(TokenValue),    // '//...\n' or '#...\n'
-    BLOCK_COMMENT(TokenValue),          // '/* ... */'
+    SINGLE_LINE_COMMENT,                // '//...\n' or '#...\n'
+    BLOCK_COMMENT,                      // '/* ... */'
 
     // termination
     ENDMARKER,
 
     // error
-    LEXICAL_ERROR((LexicalErrorKind, TokenValue))
+    LEXICAL_ERROR((LexicalErrorKind, Rc<String>)),
 }
 
 #[derive(Debug, Clone)]
@@ -235,7 +235,7 @@ impl Token {
                     (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
                 } else {
                     let error_str = Rc::new(format!("invalid character `{}` found", c));
-                    (token, name) = (CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, TokenValue(error_str.clone()))), String::from(LEXICAL_ERROR));
+                    (token, name) = (CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone())), String::from(LEXICAL_ERROR));
                     *begin_lexeme = *begin_lexeme + 1;
                 }
                 (token, name)
@@ -245,7 +245,7 @@ impl Token {
         let end_line_number = *line_number;
         let token = Token {
             line_number: *line_number,
-            core_token: core_token.clone(),
+            core_token: core_token,
             name: Rc::new(name),
             start_index,
             end_index,
@@ -259,11 +259,11 @@ impl Token {
                         if end_line_number != start_line_number {
                             unreachable!("invalid char should occur on the same line")
                         }
-                        lexer.log_invalid_char_lexical_error(&token, &lexical_err_value.1.0);
+                        lexer.log_invalid_char_lexical_error(&token, &lexical_err_value.1);
                     },
                     LexicalErrorKind::NO_CLOSING_SYMBOLS => {
                         lexer.log_no_closing_symbols_lexical_error(start_line_number, end_line_number,
-                            &lexical_err_value.1.0);
+                            &lexical_err_value.1);
                     }
                 }
             },
