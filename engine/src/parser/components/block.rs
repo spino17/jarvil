@@ -45,8 +45,6 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             }
         };
         while !is_starting_with_fn(&parser.curr_token()) {
-        // || !parser.curr_token().is_eq("\n")
-        // || !parser.curr_token().is_eq(ENDMARKER) {
             let token = &parser.curr_token();
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
                 break;
@@ -74,7 +72,6 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                     // a sub stmt of already incorrectly indented stmt some levels higher
                     let saved_correction_indent = parser.correction_indent();
                     parser.add_to_correction_indent(indent_data.1 - indent_data.0);
-                    // let stmt_node = parser.stmt();
                     let stmt_node = statement_parsing_fn(parser);
                     parser.set_correction_indent(saved_correction_indent);
                     stmt_node
@@ -83,7 +80,6 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                     parser.set_ignore_all_errors(true);
                     let before_line_number = parser.curr_line_number();
                     parser.set_correction_indent(indent_data.1 - indent_data.0);
-                    // let stmt_node = parser.stmt();
                     let stmt_node = statement_parsing_fn(parser);
                     parser.set_ignore_all_errors(false);
                     let mut after_line_number = parser.curr_line_number();
@@ -98,7 +94,6 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                 stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::INCORRECTLY_INDENTED((stmt_node, indent_data)));
             },
             None => {
-                // let stmt_node = parser.stmt();
                 let stmt_node = statement_parsing_fn(parser);
                 stmts_vec.as_ref().borrow_mut().push(StatemenIndentWrapper::CORRECTLY_INDENTED(stmt_node));
             }
