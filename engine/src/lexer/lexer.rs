@@ -50,8 +50,6 @@ impl Lexer for CoreLexer {
                 }
             }
         }
-        // let mut code_str: String = code[self.line_start_index..].iter().collect();
-        // code_str.push(' ');
         self.code_lines.push(self.line_start_index);
         code.set_lines(mem::take(&mut self.code_lines));
         println!("{:?}", code.line(26));
@@ -112,8 +110,10 @@ impl CoreLexer {
                     let err_str = invalid_char_lexical_error_data.err_message.clone();
                     let (code_line, line_start_index, line_number, err_index)
                     = code.line_data(invalid_token.line_number, invalid_token.index());
-                    let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
-                        code_line, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
+                    let err_message = ParseError::form_single_line_single_pointer_error(
+                        err_index, line_number, line_start_index, code_line, err_str.to_string(),
+                        ParseErrorKind::LEXICAL_ERROR
+                    );
                     error = ParseError::new(line_number, line_number, err_message);
                 },
                 LexicalErrorData::NO_CLOSING_SYMBOLS(

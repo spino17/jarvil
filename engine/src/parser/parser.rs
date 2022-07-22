@@ -152,7 +152,7 @@ impl PackratParser {
         self.token_vec[self.lookahead - 1].clone()
     }
 
-    pub fn log_missing_token_error_for_single_expected_symbol(&mut self, mut expected_symbol: &str, recevied_token: &Token) {
+    pub fn log_missing_token_error_for_single_expected_symbol(&mut self, expected_symbol: &str, recevied_token: &Token) {
         // This type of error handling is taken from Golang programming language
         // See /src/go/parser/parser.go -> `func (p *parser) error(pos token.Pos, msg string) {...}`
         if self.ignore_all_errors {
@@ -381,7 +381,6 @@ impl PackratParser {
                             extra_newlines,
                         }
                     } else {
-                        // self.set_indent_level(self.curr_indent_level() - 1);
                         return IndentResult{
                             kind: IndentResultKind::BLOCK_OVER,
                             skipped_tokens,

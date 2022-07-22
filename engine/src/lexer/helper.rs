@@ -86,7 +86,6 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             1 => {
                 match next_char {
                     '\n' => {
-                        // let comment_str: String = code[(*begin_lexeme + 2)..forward_lexeme].iter().collect();
                         *begin_lexeme = forward_lexeme;
                         return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT));
                     },
@@ -99,10 +98,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
                         state = 3;
                     },
                     '\n' => {
-                        // let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
-                        // code_str.push(' ');
                         code_lines.push(*line_start_index);
-                        // *begin_lexeme = *begin_lexeme + 1;
                         *line_number = *line_number + 1;
                         *line_start_index = forward_lexeme + 1;
                     },
@@ -112,7 +108,6 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             3 => {
                 match next_char {
                     '/' => {
-                        // let comment_str: String = code[(*begin_lexeme + 2)..(forward_lexeme - 1)].iter().collect();
                         *begin_lexeme = forward_lexeme + 1;
                         return (CoreToken::BLOCK_COMMENT, String::from(BLOCK_COMMENT));
                     },
@@ -133,7 +128,6 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
             return (CoreToken::SLASH, String::from("/"));
         },
         1 => {
-            // let comment_str: String = code[(*begin_lexeme + 2)..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
             return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT));
         },
@@ -158,7 +152,6 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (Cor
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '\n' => {
-                // let comment_str: String = code[(*begin_lexeme + 1)..forward_lexeme].iter().collect();
                 *begin_lexeme = forward_lexeme;
                 return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT))
             },
@@ -166,7 +159,6 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (Cor
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    // let comment_str: String = code[*begin_lexeme..].iter().collect();
     *begin_lexeme = forward_lexeme;
     return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT))
 }
@@ -272,13 +264,10 @@ pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize,
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '\'' => {
-                // let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
                 *begin_lexeme = forward_lexeme + 1;
                 return (CoreToken::LITERAL, String::from(LITERAL))
             },
             '\n' => {
-                // let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
-                // code_str.push(' ');
                 code_lines.push(*line_start_index);
                 *line_number = *line_number + 1;
                 *line_start_index = forward_lexeme + 1;
@@ -304,13 +293,10 @@ pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize,
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '"' => {
-                // let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
                 *begin_lexeme = forward_lexeme + 1;
                 return (CoreToken::LITERAL, String::from(LITERAL))
             },
             '\n' => {
-                // let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
-                // code_str.push(' ');
                 code_lines.push(*line_start_index);
                 *line_number = *line_number + 1;
                 *line_start_index = forward_lexeme + 1;
@@ -359,7 +345,6 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (Co
                 } else if next_char == '.' {
                     state = 1;
                 } else {
-                    // let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
                     *begin_lexeme = forward_lexeme;
                     return (CoreToken::INTEGER, String::from(INTEGER))
                 }
@@ -368,7 +353,6 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (Co
                 if context::is_digit(&next_char) {
                     state = 2;
                 } else {
-                    // let value: String = code[*begin_lexeme..(forward_lexeme - 1)].iter().collect();
                     *begin_lexeme = forward_lexeme - 1;
                     return (CoreToken::INTEGER, String::from(INTEGER))
                 }
@@ -377,7 +361,6 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (Co
                 if context::is_digit(&next_char) {
                     // do nothing
                 } else {
-                    // let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
                     *begin_lexeme = forward_lexeme;
                     return (CoreToken::FLOATING_POINT_NUMBER, String::from(FLOATING_POINT_NUMBER))
                 }
@@ -390,17 +373,14 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (Co
     }
     match state {
         0 => {
-            // let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
             return (CoreToken::INTEGER, String::from(INTEGER))
         },
         1 => {
-            // let value: String = code[*begin_lexeme..(forward_lexeme - 1)].iter().collect();
             *begin_lexeme = forward_lexeme - 1;
             return (CoreToken::INTEGER, String::from(INTEGER))
         },
         2 => {
-            // let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
             *begin_lexeme = forward_lexeme;
             return (CoreToken::FLOATING_POINT_NUMBER, String::from(FLOATING_POINT_NUMBER))
         },

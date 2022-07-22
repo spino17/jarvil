@@ -183,8 +183,6 @@ impl Token {
                 (CoreToken::PLUS, String::from("+"))
             },
             '\n'        =>      {
-                // let mut code_str: String = code[*line_start_index..*begin_lexeme].iter().collect();
-                // code_str.push(' ');
                 code_lines.push(*line_start_index);
                 *line_start_index = *begin_lexeme + 1;
                 *begin_lexeme = *begin_lexeme + 1;
