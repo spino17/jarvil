@@ -131,12 +131,12 @@ pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
 
 pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
-        CoreToken::INTEGER(_)                   => true,
-        CoreToken::FLOATING_POINT_NUMBER(_)     => true,
-        CoreToken::LITERAL(_)                   => true,
+        CoreToken::INTEGER                      => true,
+        CoreToken::FLOATING_POINT_NUMBER        => true,
+        CoreToken::LITERAL                      => true,
         CoreToken::TRUE                         => true,
         CoreToken::FALSE                        => true,
-        CoreToken::IDENTIFIER(_)                => true,
+        CoreToken::IDENTIFIER                   => true,
         CoreToken::LPAREN                       => true,
         _                                       => false,
     }
@@ -164,19 +164,19 @@ pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
             let false_node = parser.expect(FALSE, false);
             AtomicExpressionNode::new_with_false()
         }
-        CoreToken::INTEGER(_)                   => {
+        CoreToken::INTEGER                      => {
             let integer_node = parser.expect(INTEGER, false);
             AtomicExpressionNode::new_with_integer(&integer_node)
         }
-        CoreToken::FLOATING_POINT_NUMBER(_)     => {
+        CoreToken::FLOATING_POINT_NUMBER        => {
             let floating_point_number_node = parser.expect(FLOATING_POINT_NUMBER, false);
             AtomicExpressionNode::new_with_floating_point_number(&floating_point_number_node)
         }
-        CoreToken::LITERAL(_)                   => {
+        CoreToken::LITERAL                      => {
             let literal_node = parser.expect(LITERAL, false);
             AtomicExpressionNode::new_with_literal(&literal_node)
         }
-        CoreToken::IDENTIFIER(_)                => {
+        CoreToken::IDENTIFIER                   => {
             let atom = parser.atom();
             AtomicExpressionNode::new_with_atom(&atom)
         }

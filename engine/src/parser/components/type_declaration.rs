@@ -15,7 +15,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
             // struct type
             let block_node = parser.block(|token| {
                 match token.core_token {
-                    CoreToken::IDENTIFIER(_) => true,
+                    CoreToken::IDENTIFIER => true,
                     _ => false,
                 }
             }, 

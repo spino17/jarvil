@@ -7,8 +7,8 @@ use crate::ast::ast::ErrornousNode;
 
 pub fn is_type_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
-        CoreToken::ATOMIC_TYPE(_)   => true,
-        CoreToken::IDENTIFIER(_)    => true,
+        CoreToken::ATOMIC_TYPE      => true,
+        CoreToken::IDENTIFIER       => true,
         CoreToken::LSQUARE          => true,
         _                           => false,
     }
@@ -30,15 +30,15 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
         )
     }
     match token.core_token {
-        CoreToken::ATOMIC_TYPE(_) => {
+        CoreToken::ATOMIC_TYPE  => {
             let atomic_type_node = parser.expect(ATOMIC_TYPE, false);
             TypeExpressionNode::new_with_atomic_type(&atomic_type_node)
         },
-        CoreToken::IDENTIFIER(_) => {
+        CoreToken::IDENTIFIER   => {
             let identifier_node = parser.expect(IDENTIFIER, false);
             TypeExpressionNode::new_with_user_defined_type(&identifier_node)
         },
-        CoreToken::LSQUARE => {
+        CoreToken::LSQUARE      => {
             let l_square_node = parser.expect("[", false);
             let sub_type_node = parser.type_expr();
             let semicolon_node = parser.expect(";", false);

@@ -16,7 +16,7 @@ pub fn is_statement_starting_with(token: &Token) -> bool {
         CoreToken::TYPE_KEYWORD         => true,
         CoreToken::INTERFACE_KEYWORD    => true,
         CoreToken::IMPL                 => true,
-        CoreToken::IDENTIFIER(_)        => true,
+        CoreToken::IDENTIFIER           => true,
         _                               => is_expression_starting_with(token),
     }
 }

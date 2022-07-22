@@ -245,7 +245,7 @@ impl Token {
         let end_line_number = *line_number;
         let token = Token {
             line_number: *line_number,
-            core_token: core_token,
+            core_token: core_token.clone(),
             name: Rc::new(name),
             start_index,
             end_index,
