@@ -49,7 +49,7 @@ pub struct PackratParser {
 }
 
 impl PackratParser {
-    pub fn new(code: &Code, code_lines: Vec<usize>) -> Self {
+    pub fn new(code: &Code) -> Self {
         let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>> 
         = FxHashMap::default();
         let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>> = FxHashMap::default();

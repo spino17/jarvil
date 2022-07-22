@@ -23,69 +23,6 @@ pub struct CoreLexer {
     pub lexical_errors: Vec<ParseError>,
 }
 
-impl CoreLexer {
-    pub fn new() -> Self {
-        CoreLexer {
-            begin_lexeme: 0,
-            line_number: 1,
-            code_lines: vec![],
-            line_start_index: 0,
-            lexical_errors_data: vec![],
-            lexical_errors: vec![],
-        }
-    }
-
-    pub fn extract_lexeme(&mut self, code: &Code) -> Token {
-        Token::extract_lexeme(self, code)
-    }
-
-    pub fn get_lexical_data_useful_for_parser(self) -> (Vec<usize>, Vec<ParseError>) {
-        (self.code_lines, self.lexical_errors)
-    }
-
-    pub fn log_invalid_char_lexical_error(&mut self, invalid_token: &Token, err_message: &Rc<String>) {
-        self.lexical_errors_data.push(LexicalErrorData::new_with_invalid_char(invalid_token, err_message))
-    }
-
-    pub fn log_no_closing_symbols_lexical_error(&mut self, start_line_number: usize, end_line_number: usize, 
-        err_message: &Rc<String>) {
-        self.lexical_errors_data.push(LexicalErrorData::new_with_no_closing_symbols(start_line_number, end_line_number, err_message))
-    }
-
-    pub fn log_all_lexical_errors(&mut self, code: &Code) {
-        let mut errors: Vec<ParseError> = vec![];
-        for error_data in &self.lexical_errors_data {
-            let error: ParseError;
-            match error_data {
-                LexicalErrorData::INVALID_CHAR(invalid_char_lexical_error_data) => {
-                    let invalid_token = invalid_char_lexical_error_data.invalid_token.clone();
-                    let err_str = invalid_char_lexical_error_data.err_message.clone();
-                    let (code_line, line_start_index, line_number, err_index)
-                    = code.line_data(invalid_token.line_number, invalid_token.index());
-                    let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
-                        code_line, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
-                    error = ParseError::new(line_number, line_number, err_message);
-                },
-                LexicalErrorData::NO_CLOSING_SYMBOLS(
-                    no_closing_symbols_lexical_error_data
-                ) => {
-                    let start_line_number = no_closing_symbols_lexical_error_data.start_line_number;
-                    let end_line_number = no_closing_symbols_lexical_error_data.end_line_number;
-                    let err_str = no_closing_symbols_lexical_error_data.err_message.clone();
-                    let code_lines = code.lines(start_line_number, end_line_number);
-                    let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
-                        code_lines, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
-                    error = ParseError::new(start_line_number, end_line_number, err_message);
-                }
-            }
-            errors.push(error);
-        }
-        self.lexical_errors = errors;
-        let errors_data = mem::take(&mut self.lexical_errors_data);
-        drop(errors_data);
-    }
-}
-
 impl Lexer for CoreLexer {
     fn tokenize(&mut self, code: &mut Code) -> Vec<Token> {
         let mut token_vec: Vec<Token> = Vec::new();
@@ -134,5 +71,67 @@ impl Lexer for CoreLexer {
         token_vec.push(token);
         self.log_all_lexical_errors(code);
         token_vec
+    }
+}
+
+impl CoreLexer {
+    pub fn new() -> Self {
+        CoreLexer {
+            begin_lexeme: 0,
+            line_number: 1,
+            code_lines: vec![],
+            line_start_index: 0,
+            lexical_errors_data: vec![],
+            lexical_errors: vec![],
+        }
+    }
+
+    pub fn extract_lexeme(&mut self, code: &Code) -> Token {
+        Token::extract_lexeme(self, code)
+    }
+
+    pub fn get_lexical_data_useful_for_parser(self) -> Vec<ParseError> {
+        self.lexical_errors
+    }
+
+    pub fn log_invalid_char_lexical_error(&mut self, invalid_token: &Token, err_message: &Rc<String>) {
+        self.lexical_errors_data.push(LexicalErrorData::new_with_invalid_char(invalid_token, err_message))
+    }
+
+    pub fn log_no_closing_symbols_lexical_error(&mut self, start_line_number: usize, end_line_number: usize, 
+        err_message: &Rc<String>) {
+        self.lexical_errors_data.push(LexicalErrorData::new_with_no_closing_symbols(start_line_number, end_line_number, err_message))
+    }
+
+    pub fn log_all_lexical_errors(&mut self, code: &Code) {
+        let mut errors: Vec<ParseError> = vec![];
+        for error_data in &self.lexical_errors_data {
+            let error: ParseError;
+            match error_data {
+                LexicalErrorData::INVALID_CHAR(invalid_char_lexical_error_data) => {
+                    let invalid_token = invalid_char_lexical_error_data.invalid_token.clone();
+                    let err_str = invalid_char_lexical_error_data.err_message.clone();
+                    let (code_line, line_start_index, line_number, err_index)
+                    = code.line_data(invalid_token.line_number, invalid_token.index());
+                    let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
+                        code_line, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
+                    error = ParseError::new(line_number, line_number, err_message);
+                },
+                LexicalErrorData::NO_CLOSING_SYMBOLS(
+                    no_closing_symbols_lexical_error_data
+                ) => {
+                    let start_line_number = no_closing_symbols_lexical_error_data.start_line_number;
+                    let end_line_number = no_closing_symbols_lexical_error_data.end_line_number;
+                    let err_str = no_closing_symbols_lexical_error_data.err_message.clone();
+                    let code_lines = code.lines(start_line_number, end_line_number);
+                    let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
+                        code_lines, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
+                    error = ParseError::new(start_line_number, end_line_number, err_message);
+                }
+            }
+            errors.push(error);
+        }
+        self.lexical_errors = errors;
+        let _errors_data = mem::take(&mut self.lexical_errors_data);
     }
 }
