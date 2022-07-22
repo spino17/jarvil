@@ -63,7 +63,7 @@ pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 // / -> /, /*, //
 pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, 
     line_number: &mut usize, code: &Vec<char>, 
-    code_lines: &mut Vec<(Rc<String>, usize)>, line_start_index: &mut usize) -> (CoreToken, String) {
+    code_lines: &mut Vec<usize>, line_start_index: &mut usize) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
@@ -99,9 +99,9 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
                         state = 3;
                     },
                     '\n' => {
-                        let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
-                        code_str.push(' ');
-                        code_lines.push((Rc::new(code_str), *line_start_index));
+                        // let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
+                        // code_str.push(' ');
+                        code_lines.push(*line_start_index);
                         // *begin_lexeme = *begin_lexeme + 1;
                         *line_number = *line_number + 1;
                         *line_start_index = forward_lexeme + 1;
@@ -265,7 +265,7 @@ pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<c
 
 // ' -> '...'
 pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Vec<char>, code_lines: &mut Vec<(Rc<String>, usize)>, 
+    line_number: &mut usize, code: &Vec<char>, code_lines: &mut Vec<usize>, 
     line_start_index: &mut usize) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
@@ -279,7 +279,7 @@ pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize,
             '\n' => {
                 let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
                 code_str.push(' ');
-                code_lines.push((Rc::new(code_str), *line_start_index));
+                code_lines.push(*line_start_index);
                 *line_number = *line_number + 1;
                 *line_start_index = forward_lexeme + 1;
             },
@@ -297,7 +297,7 @@ pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize,
 
 // " -> "..."
 pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Vec<char>, code_lines: &mut Vec<(Rc<String>, usize)>, 
+    line_number: &mut usize, code: &Vec<char>, code_lines: &mut Vec<usize>, 
     line_start_index: &mut usize) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
@@ -311,7 +311,7 @@ pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize,
             '\n' => {
                 let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
                 code_str.push(' ');
-                code_lines.push((Rc::new(code_str), *line_start_index));
+                code_lines.push(*line_start_index);
                 *line_number = *line_number + 1;
                 *line_start_index = forward_lexeme + 1;
             },
