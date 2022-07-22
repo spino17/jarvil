@@ -352,6 +352,7 @@ impl PackratParser {
                 }
                 CoreToken::ENDMARKER => {
                     // self.set_indent_level(self.curr_indent_level() - 1);
+                    println!("inside parser: {}", self.curr_indent_level());
                     return IndentResult{
                         kind: IndentResultKind::BLOCK_OVER,
                         skipped_tokens,
