@@ -1,6 +1,6 @@
 use crate::ast::ast::ASTNode;
 use crate::code::Code;
-use crate::constants::common::LEXICAL_ERROR;
+use crate::constants::common::{LEXICAL_ERROR, FOR};
 use std::rc::Rc;
 use crate::lexer::helper;
 use crate::context;
@@ -9,6 +9,17 @@ use super::lexer::CoreLexer;
 
 // #[derive(Debug, Clone)]
 // pub struct TokenValue(pub Rc<String>);
+
+macro_rules! impl_symbol_check {
+    ($t: ident) => {
+        pub fn $t(&self) -> bool {
+            match self.core_token {
+                CoreToken::$t => true,
+                _ => false,
+            }
+        }
+    };
+}
 
 #[derive(Debug, Clone)]
 pub enum CoreToken {
@@ -280,6 +291,17 @@ impl Token {
 
     pub fn is_eq(&self, symbol: &str) -> bool {
         self.name.as_ref().eq(symbol)
+    }
+
+    impl_symbol_check!(FOR);
+
+    pub fn new_is_eq(&self, symbol: &str) -> bool {
+        match symbol {
+            FOR => self.FOR(),
+            _ => {
+                todo!()
+            }
+        }
     }
 
     pub fn index(&self) -> usize {
