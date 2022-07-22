@@ -288,7 +288,6 @@ impl PackratParser {
         loop {
             let token = &self.token_vec[self.lookahead].clone();
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
-                // TODO - log skipped tokens error
                 self.log_trailing_skipped_tokens_error(&skipped_tokens);
                 skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
                 self.scan_next_token();
@@ -352,7 +351,7 @@ impl PackratParser {
                     indent_spaces = 0;
                 }
                 CoreToken::ENDMARKER => {
-                    self.set_indent_level(self.curr_indent_level() - 1);
+                    // self.set_indent_level(self.curr_indent_level() - 1);
                     return IndentResult{
                         kind: IndentResultKind::BLOCK_OVER,
                         skipped_tokens,
@@ -386,7 +385,7 @@ impl PackratParser {
                             extra_newlines,
                         }
                     } else {
-                        self.set_indent_level(self.curr_indent_level() - 1);
+                        // self.set_indent_level(self.curr_indent_level() - 1);
                         return IndentResult{
                             kind: IndentResultKind::BLOCK_OVER,
                             skipped_tokens,

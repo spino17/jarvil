@@ -40,13 +40,18 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             IndentResultKind::CORRECT_INDENTATION => None,
             IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
             IndentResultKind::BLOCK_OVER => {
+                parser.set_indent_level(parser.curr_indent_level() - 1);
                 return BlockNode::new(&stmts_vec)
             }
         };
-        while !is_starting_with_fn(&parser.curr_token())
-        || parser.curr_token().is_eq("\n") 
-        || parser.curr_token().is_eq(ENDMARKER) {
+        while !is_starting_with_fn(&parser.curr_token()) {
+        // || !parser.curr_token().is_eq("\n")
+        // || !parser.curr_token().is_eq(ENDMARKER) {
             let token = &parser.curr_token();
+            if token.is_eq("\n") || token.is_eq(ENDMARKER) {
+                break;
+            }
+            println!("inside token: {:?}", token);
             leading_skipped_tokens.push(SkippedTokenNode::new(token, parser.curr_lookahead()));
             parser.log_missing_token_error_for_multiple_expected_symbols(expected_symbols, token);
             parser.scan_next_token();
@@ -57,7 +62,11 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             ));
         }
         let token = &parser.curr_token();
+        println!("outside token: {:?}", token);
         if token.is_eq(ENDMARKER) {
+            println!("Hello");
+            println!("{}", parser.curr_indent_level());
+            parser.set_indent_level(parser.curr_indent_level() - 1);
             return BlockNode::new(&stmts_vec)
         }
         if token.is_eq("\n") {
