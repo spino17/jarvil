@@ -4,6 +4,7 @@ use crate::errors::ParseError;
 use crate::errors::ParseErrorKind;
 use crate::lexer::token::Token;
 use crate::lexer::token::CoreToken;
+use crate::utils::common::get_token_value;
 use std::rc::Rc;
 use std::vec;
 use std::mem;
@@ -103,6 +104,7 @@ impl Lexer for CoreLexer {
         let mut trivia_vec: Vec<Token> = vec![];
         while self.begin_lexeme < code.len() {
             let mut token = self.extract_lexeme(&code);
+            println!("{}\n", get_token_value(code, token.start_index, token.end_index));
             match token.core_token {
                 CoreToken::BLANK => trivia_vec.push(token),
                 CoreToken::SINGLE_LINE_COMMENT => trivia_vec.push(token),
