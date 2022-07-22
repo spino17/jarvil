@@ -8,6 +8,7 @@ mod reader;
 mod types;
 mod ast;
 mod utils;
+mod code;
 
 use crate::reader::read_file;
 use crate::lexer::lexer::{CoreLexer, Lexer};

@@ -4,6 +4,7 @@ use crate::errors::ParseError;
 use crate::errors::ParseErrorKind;
 use crate::lexer::token::Token;
 use crate::lexer::token::CoreToken;
+use crate::utils::common::get_code_line_str;
 use crate::utils::common::get_code_lines_str;
 use crate::utils::common::get_token_value;
 use std::rc::Rc;
@@ -121,6 +122,7 @@ impl Lexer for CoreLexer {
         // let mut code_str: String = code[self.line_start_index..].iter().collect();
         // code_str.push(' ');
         self.code_lines.push(self.line_start_index);
+        println!("{:?}", get_code_line_str(code, &self.code_lines, 26));
         let mut token = Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
