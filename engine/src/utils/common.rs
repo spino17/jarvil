@@ -1,5 +1,5 @@
 use std::rc::Rc;
-
+/*
 pub fn get_token_value(code: &Vec<char>, start_index: usize, end_index: Option<usize>) -> String {
     match end_index {
         Some(end_index) => code[start_index..end_index].iter().collect(),
@@ -39,3 +39,4 @@ pub fn get_code_line_data(code: &Vec<char>, code_lines: &Vec<usize>, mut curr_li
         curr_line_number = curr_line_number - 1;
     }
 }
+ */

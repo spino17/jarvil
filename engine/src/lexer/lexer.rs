@@ -1,19 +1,16 @@
+use crate::code::Code;
 use crate::constants::common::ENDMARKER;
 use crate::errors::LexicalErrorData;
 use crate::errors::ParseError;
 use crate::errors::ParseErrorKind;
 use crate::lexer::token::Token;
 use crate::lexer::token::CoreToken;
-use crate::utils::common::get_code_line_str;
-use crate::utils::common::get_code_lines_str;
-use crate::utils::common::get_token_value;
 use std::rc::Rc;
 use std::vec;
 use std::mem;
-use crate::utils::common::get_code_line_data;
 
 pub trait Lexer {
-    fn tokenize(&mut self, code: &Rc<Vec<char>>) -> Vec<Token>;
+    fn tokenize(&mut self, code: &mut Code) -> Vec<Token>;
 }
 
 pub struct CoreLexer {
@@ -38,7 +35,7 @@ impl CoreLexer {
         }
     }
 
-    pub fn extract_lexeme(&mut self, code: &Vec<char>) -> Token {
+    pub fn extract_lexeme(&mut self, code: &Code) -> Token {
         Token::extract_lexeme(self, code)
     }
 
@@ -55,7 +52,7 @@ impl CoreLexer {
         self.lexical_errors_data.push(LexicalErrorData::new_with_no_closing_symbols(start_line_number, end_line_number, err_message))
     }
 
-    pub fn log_all_lexical_errors(&mut self, code: &Rc<Vec<char>>) {
+    pub fn log_all_lexical_errors(&mut self, code: &Code) {
         let mut errors: Vec<ParseError> = vec![];
         for error_data in &self.lexical_errors_data {
             let error: ParseError;
@@ -64,7 +61,7 @@ impl CoreLexer {
                     let invalid_token = invalid_char_lexical_error_data.invalid_token.clone();
                     let err_str = invalid_char_lexical_error_data.err_message.clone();
                     let (code_line, line_start_index, line_number, err_index)
-                    = get_code_line_data(code, &self.code_lines, invalid_token.line_number, invalid_token.index());
+                    = code.line_data(invalid_token.line_number, invalid_token.index());
                     let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
                         code_line, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
                     error = ParseError::new(line_number, line_number, err_message);
@@ -75,9 +72,7 @@ impl CoreLexer {
                     let start_line_number = no_closing_symbols_lexical_error_data.start_line_number;
                     let end_line_number = no_closing_symbols_lexical_error_data.end_line_number;
                     let err_str = no_closing_symbols_lexical_error_data.err_message.clone();
-                    let code_lines = get_code_lines_str(
-                        code, &self.code_lines, start_line_number, end_line_number
-                    );
+                    let code_lines = code.lines(start_line_number, end_line_number);
                     let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
                         code_lines, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
                     error = ParseError::new(start_line_number, end_line_number, err_message);
@@ -92,7 +87,7 @@ impl CoreLexer {
 }
 
 impl Lexer for CoreLexer {
-    fn tokenize(&mut self, code: &Rc<Vec<char>>) -> Vec<Token> {
+    fn tokenize(&mut self, code: &mut Code) -> Vec<Token> {
         let mut token_vec: Vec<Token> = Vec::new();
         token_vec.push(Token {
             line_number: self.line_number,
@@ -106,7 +101,7 @@ impl Lexer for CoreLexer {
         let mut trivia_vec: Vec<Token> = vec![];
         while self.begin_lexeme < code.len() {
             let mut token = self.extract_lexeme(&code);
-            println!("{}\n", get_token_value(code, token.start_index, Some(token.end_index)));
+            println!("{}\n", code.token_value(token.start_index, Some(token.end_index)));
             match token.core_token {
                 CoreToken::BLANK => trivia_vec.push(token),
                 CoreToken::SINGLE_LINE_COMMENT => trivia_vec.push(token),
@@ -122,7 +117,8 @@ impl Lexer for CoreLexer {
         // let mut code_str: String = code[self.line_start_index..].iter().collect();
         // code_str.push(' ');
         self.code_lines.push(self.line_start_index);
-        println!("{:?}", get_code_line_str(code, &self.code_lines, 26));
+        code.set_lines(mem::take(&mut self.code_lines));
+        println!("{:?}", code.line(26));
         let mut token = Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,

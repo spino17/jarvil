@@ -1,4 +1,5 @@
 use crate::ast::ast::ASTNode;
+use crate::code::Code;
 use crate::constants::common::LEXICAL_ERROR;
 use std::rc::Rc;
 use crate::lexer::helper;
@@ -125,7 +126,7 @@ pub struct Token {
 
 impl Token {
     // This method tokenize the code in O(|code|)
-    pub fn extract_lexeme(lexer: &mut CoreLexer, code: &Vec<char>) -> Token {
+    pub fn extract_lexeme(lexer: &mut CoreLexer, code: &Code) -> Token {
         let begin_lexeme = &mut lexer.begin_lexeme;
         let line_number = &mut lexer.line_number;
         let code_lines = &mut lexer.code_lines;
@@ -133,7 +134,7 @@ impl Token {
 
         let start_index = *begin_lexeme;
         let start_line_number = *line_number;
-        let critical_char = code[*begin_lexeme];
+        let critical_char = code.get_char(*begin_lexeme);
         let (core_token, name) = match critical_char {
             '('         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
@@ -235,7 +236,10 @@ impl Token {
                     (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
                 } else {
                     let error_str = Rc::new(format!("invalid character `{}` found", c));
-                    (token, name) = (CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone())), String::from(LEXICAL_ERROR));
+                    (token, name) = (
+                        CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone())), 
+                        String::from(LEXICAL_ERROR)
+                    );
                     *begin_lexeme = *begin_lexeme + 1;
                 }
                 (token, name)

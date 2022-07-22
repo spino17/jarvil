@@ -1,13 +1,13 @@
 use std::rc::Rc;
-use crate::{lexer::token::CoreToken, context, constants::common::{LEXICAL_ERROR, BLOCK_COMMENT, SINGLE_LINE_COMMENT, BLANK}};
+use crate::{lexer::token::CoreToken, context, constants::common::{LEXICAL_ERROR, BLOCK_COMMENT, SINGLE_LINE_COMMENT, BLANK}, code::Code};
 use super::token::{LexicalErrorKind};
 use crate::constants::common::{get_token_for_identifier, LITERAL, INTEGER, FLOATING_POINT_NUMBER};
 
 // ' ' -> '...'
-pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         if next_char != ' ' {
             *begin_lexeme = forward_lexeme;
             return (CoreToken::BLANK, String::from(BLANK));
@@ -19,10 +19,10 @@ pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
 }
 
 // - -> -, ->
-pub fn extract_dash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_dash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match next_char {
             '>' => {
                 *begin_lexeme = forward_lexeme + 1;
@@ -40,10 +40,10 @@ pub fn extract_dash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 }
 
 // * -> *, **
-pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match next_char {
             '*' => {
                 *begin_lexeme = forward_lexeme + 1;
@@ -62,12 +62,12 @@ pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 
 // / -> /, /*, //
 pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Vec<char>, 
+    line_number: &mut usize, code: &Code,
     code_lines: &mut Vec<usize>, line_start_index: &mut usize) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match state {
             0 => {
                 match next_char {
@@ -152,10 +152,10 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
 }
 
 // # -> #...\n
-pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match next_char {
             '\n' => {
                 // let comment_str: String = code[(*begin_lexeme + 1)..forward_lexeme].iter().collect();
@@ -172,10 +172,10 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) ->
 }
 
 // = -> =, ==
-pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
@@ -193,10 +193,10 @@ pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
 }
 
 // > -> >, >=
-pub fn extract_rbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_rbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
@@ -214,10 +214,10 @@ pub fn extract_rbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>
 }
 
 // < -> <, <=
-pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
@@ -235,10 +235,10 @@ pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>
 }
 
 // ! -> !=
-pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
@@ -265,11 +265,11 @@ pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<c
 
 // ' -> '...'
 pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Vec<char>, code_lines: &mut Vec<usize>, 
+    line_number: &mut usize, code: &Code, code_lines: &mut Vec<usize>, 
     line_start_index: &mut usize) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match next_char {
             '\'' => {
                 // let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
@@ -277,8 +277,8 @@ pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize,
                 return (CoreToken::LITERAL, String::from(LITERAL))
             },
             '\n' => {
-                let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
-                code_str.push(' ');
+                // let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
+                // code_str.push(' ');
                 code_lines.push(*line_start_index);
                 *line_number = *line_number + 1;
                 *line_start_index = forward_lexeme + 1;
@@ -297,11 +297,11 @@ pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize,
 
 // " -> "..."
 pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Vec<char>, code_lines: &mut Vec<usize>, 
+    line_number: &mut usize, code: &Code, code_lines: &mut Vec<usize>,
     line_start_index: &mut usize) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match next_char {
             '"' => {
                 // let literal_value: String = code[(*begin_lexeme + 1)..(forward_lexeme)].iter().collect();
@@ -309,8 +309,8 @@ pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize,
                 return (CoreToken::LITERAL, String::from(LITERAL))
             },
             '\n' => {
-                let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
-                code_str.push(' ');
+                // let mut code_str: String = code[*line_start_index..forward_lexeme].iter().collect();
+                // code_str.push(' ');
                 code_lines.push(*line_start_index);
                 *line_number = *line_number + 1;
                 *line_start_index = forward_lexeme + 1;
@@ -328,30 +328,30 @@ pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize,
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type
-pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         if context::is_letter(&next_char) || context::is_digit(&next_char) {
             // do nothing
         } else {
-            let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
+            let value: String = code.token_value(*begin_lexeme, Some(forward_lexeme));
             *begin_lexeme = forward_lexeme;
             return get_token_for_identifier(value);
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    let value: String = code[*begin_lexeme..forward_lexeme].iter().collect();
+    let value: String = code.token_value(*begin_lexeme, Some(forward_lexeme));
     *begin_lexeme = forward_lexeme;
     return get_token_for_identifier(value);
 }
 
 // digit -> digit((digit)*(.digit(digit*)|empty))
-pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match state {
             0 => {
                 if context::is_digit(&next_char) {
@@ -409,10 +409,10 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -
 }
 
 // : -> :, ::
-pub fn extract_colon_prefix_lexeme(begin_lexeme: &mut usize, code: &Vec<char>) -> (CoreToken, String) {
+pub fn extract_colon_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
-        let next_char = code[forward_lexeme];
+        let next_char = code.get_char(forward_lexeme);
         match next_char {
             ':' => {
                 *begin_lexeme = forward_lexeme + 1;

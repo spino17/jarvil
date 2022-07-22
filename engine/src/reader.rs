@@ -1,9 +1,9 @@
 use std::io;
 use std::{fs};
-use std::rc::Rc;
+use crate::code::Code;
 
-pub fn read_file(file_name: &str) -> io::Result<Rc<Vec<char>>> {
+pub fn read_file(file_name: &str) -> io::Result<Code> {
     let contents = fs::read_to_string(file_name)?;
     let char_vec: Vec<char> = contents.chars().collect();
-    Ok(Rc::new(char_vec))
+    Ok(Code::new(char_vec))
 }

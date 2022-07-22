@@ -18,9 +18,9 @@ use crate::parser::parser::Parser;
 
 fn start_compiler() {
     let args: Vec<String> = args().collect();
-    let char_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
+    let mut code = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     let mut core_lexer = CoreLexer::new();
-    let token_vec = core_lexer.tokenize(&char_vec);
+    let token_vec = core_lexer.tokenize(&mut code);
     let (code_lines, lexical_errors) 
     = core_lexer.get_lexical_data_useful_for_parser();
     if lexical_errors.len() > 0 {
@@ -28,7 +28,7 @@ fn start_compiler() {
         // TODO - dump all other errors in some log file, let users choose how many errors to show
         return;
     }
-    let mut parser = PackratParser::new(&char_vec, code_lines);
+    let mut parser = PackratParser::new(&code, code_lines);
     let (ast, syntax_errors) = parser.parse(token_vec);
     // println!("{:?}", ast);
     if syntax_errors.len() > 0 {

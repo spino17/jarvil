@@ -5,6 +5,7 @@
 
 use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, NameTypeSpecsNode, SkippedTokenNode, 
     ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, NameTypeSpecNode, OkFunctionDeclarationNode, FunctionDeclarationNode, TypeDeclarationNode, RAssignmentNode, AssignmentNode};
+use crate::code::Code;
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
@@ -15,7 +16,6 @@ use std::cell::RefCell;
 use crate::types::core::{Type};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
-use crate::utils::common::{get_code_line_data, get_code_lines_str};
 use crate::ast::ast::ErrornousNode;
 
 use super::helper::format_symbol;
@@ -41,8 +41,7 @@ pub struct PackratParser {
     token_vec: Vec<Token>,
     lookahead: usize,
     indent_level: i64,
-    code_vec: Rc<Vec<char>>,
-    code_lines: Vec<usize>,
+    code: Code,
     cache: Vec<Rc<RoutineCache>>,
     ignore_all_errors: bool,  // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
@@ -50,7 +49,7 @@ pub struct PackratParser {
 }
 
 impl PackratParser {
-    pub fn new(code: &Rc<Vec<char>>, code_lines: Vec<usize>) -> Self {
+    pub fn new(code: &Code, code_lines: Vec<usize>) -> Self {
         let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>> 
         = FxHashMap::default();
         let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>> = FxHashMap::default();
@@ -58,8 +57,7 @@ impl PackratParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
-            code_lines,
-            code_vec: code.clone(),
+            code: code.clone(),
             cache: vec![
                 Rc::new(RoutineCache::ATOM(Rc::new(RefCell::new(atom_cache_map)))),
                 Rc::new(RoutineCache::EXPR(Rc::new(RefCell::new(expr_cache_map)))),
@@ -161,9 +159,7 @@ impl PackratParser {
             return;
         }
         let (code_line, line_start_index, line_number, err_index) 
-        = get_code_line_data(
-            &self.code_vec, &self.code_lines, recevied_token.line_number, recevied_token.index()
-        );
+        = self.code.line_data(recevied_token.line_number, recevied_token.index());
         let errors_len = self.errors.len();
         if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
             return;
@@ -184,9 +180,7 @@ impl PackratParser {
         }
         let errors_len = self.errors.len();
         let (code_line, line_start_index, line_number, err_index) 
-        = get_code_line_data(
-            &self.code_vec, &self.code_lines, recevied_token.line_number, recevied_token.index()
-        );
+        = self.code.line_data(recevied_token.line_number, recevied_token.index());
         if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
             return;
         } else {
@@ -218,9 +212,7 @@ impl PackratParser {
         let errors_len = self.errors.len();
         let skipped_tokens_len = skipped_tokens.len();
         let (code_line, line_start_index, line_number, start_err_index) 
-        = get_code_line_data(
-            &self.code_vec, &self.code_lines, skipped_tokens[0].line_number(), skipped_tokens[0].index()
-        );
+        = self.code.line_data(skipped_tokens[0].line_number(), skipped_tokens[0].index());
         if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
             return;
         } else {
@@ -245,9 +237,7 @@ impl PackratParser {
         if errors_len > 0 && self.errors[errors_len - 1].end_line_number == start_line_number {
             return;
         } else {
-            let mut code_lines: Vec<Rc<String>> = get_code_lines_str(
-                &self.code_vec, &self.code_lines, start_line_number, end_line_number
-            );
+            let mut code_lines: Vec<Rc<String>> = self.code.lines(start_line_number, end_line_number);
             let err_str = format!("expected an indented block\nexpected indentation with `{}` spaces, got `{}` spaces", 
             expected_indent, received_indent);
             let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
