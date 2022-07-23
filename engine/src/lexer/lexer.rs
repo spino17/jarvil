@@ -36,7 +36,6 @@ impl Lexer for CoreLexer {
         let mut trivia_vec: Vec<Token> = vec![];
         while self.begin_lexeme < code.len() {
             let mut token = self.extract_lexeme(&code);
-            println!("{}\n", code.token_value(token.start_index, Some(token.end_index)));
             match token.core_token {
                 CoreToken::BLANK => trivia_vec.push(token),
                 CoreToken::SINGLE_LINE_COMMENT => trivia_vec.push(token),
@@ -50,8 +49,7 @@ impl Lexer for CoreLexer {
             }
         }
         self.code_lines.push(self.line_start_index);
-        code.set_lines(mem::take(&mut self.code_lines));
-        println!("{:?}", code.line(26));
+        code.set_code_lines(mem::take(&mut self.code_lines));
         let mut token = Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
@@ -65,7 +63,6 @@ impl Lexer for CoreLexer {
         }
         token_vec.push(token);
         self.log_all_lexical_errors(code);
-        println!("{:?}-{}", token_vec[1], token_vec[1].is_eq(IDENTIFIER));
         token_vec
     }
 }

@@ -21,7 +21,7 @@ impl Code {
         self.code_vec[index]
     }
 
-    pub fn set_lines(&mut self, code_lines: Vec<usize>) {
+    pub fn set_code_lines(&mut self, code_lines: Vec<usize>) {
         self.code_lines = Some(Rc::new(code_lines));
     }
 
@@ -36,7 +36,7 @@ impl Code {
         match &self.code_lines {
             Some(code_lines) => {
                 let start_index = code_lines[line_number - 1];
-                let end_index = if line_number == code_lines.len() {
+                let end_index = if line_number >= code_lines.len() {
                     None
                 } else {
                     Some(code_lines[line_number] - 1)
