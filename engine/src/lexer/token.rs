@@ -206,7 +206,7 @@ impl Token {
             '"'         =>      {
                 helper::extract_double_quote_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
             },
-            '\''         =>      {
+            '\''         =>     {
                 helper::extract_single_quote_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
             },
             '!'         =>      {
