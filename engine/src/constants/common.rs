@@ -167,61 +167,61 @@ pub const DIGITS: [char; 10] = [
 ];
 
 // everytime there is an addition in keyword, add here also!
-pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
+pub fn get_token_for_identifier(value: String) -> CoreToken {
     // TODO - try to keep in the same map
     if context::is_keyword(&value) {
         if value.eq(FOR)                        {
-            (CoreToken::FOR,                String::from(FOR))
+            CoreToken::FOR
         } else if value.eq(WHILE)               {
-            (CoreToken::WHILE,              String::from(WHILE))
+            CoreToken::WHILE
         } else if value.eq(CONTINUE)            {
-            (CoreToken::CONTINUE,           String::from(CONTINUE))
+            CoreToken::CONTINUE
         } else if value.eq(BREAK)               {
-            (CoreToken::BREAK,              String::from(BREAK))
+            CoreToken::BREAK
         } else if value.eq(IF)                  {
-            (CoreToken::IF,                 String::from(IF))
+            CoreToken::IF
         } else if value.eq(ELIF)                {
-            (CoreToken::ELIF,               String::from(ELIF))
+            CoreToken::ELIF
         } else if value.eq(ELSE)                {
-            (CoreToken::ELSE,               String::from(ELSE))
+            CoreToken::ELSE
         }  else if value.eq(TYPE_KEYWORD)       {
-            (CoreToken::TYPE_KEYWORD,       String::from(TYPE_KEYWORD))
+            CoreToken::TYPE_KEYWORD
         } else if value.eq(INTERFACE_KEYWORD)   {
-            (CoreToken::INTERFACE_KEYWORD,  String::from(INTERFACE_KEYWORD))
+            CoreToken::INTERFACE_KEYWORD
         } else if value.eq(DEF)                 {
-            (CoreToken::DEF,                String::from(DEF))
+            CoreToken::DEF
         } else if value.eq(LET)                 {
-            (CoreToken::LET,                String::from(LET))
-        } else if value.eq(SELF)                 {
-            (CoreToken::SELF,               String::from(SELF))
-        } else if value.eq(IMPL)                 {
-            (CoreToken::IMPL,               String::from(IMPL))
+            CoreToken::LET
+        } else if value.eq(SELF)                {
+            CoreToken::SELF
+        } else if value.eq(IMPL)                {
+            CoreToken::IMPL
         } else if value.eq(AND)                 {
-            (CoreToken::AND,                String::from(AND))
+            CoreToken::AND
         } else if value.eq(NOT)                 {
-            (CoreToken::NOT,                String::from(NOT))
+            CoreToken::NOT
         } else if value.eq(OR)                  {
-            (CoreToken::OR,                 String::from(OR))
+            CoreToken::OR
         } else if value.eq(IS)                  {
-            (CoreToken::IS,                 String::from(IS))
+            CoreToken::IS
         } else if value.eq(IN)                  {
-            (CoreToken::IN,                 String::from(IN))
+            CoreToken::IN
         } else if value.eq(NEW)                 {
-            (CoreToken::NEW,                String::from(NEW))
+            CoreToken::NEW
         } else if value.eq(TRUE)                {
-            (CoreToken::TRUE,               String::from(TRUE))
+            CoreToken::TRUE
         } else if value.eq(FALSE)               {
-            (CoreToken::FALSE,              String::from(FALSE))
-        } else if value.eq(FUNC)               {
-            (CoreToken::FUNC,              String::from(FUNC))
+            CoreToken::FALSE
+        } else if value.eq(FUNC)                {
+            CoreToken::FUNC
         } else if value.eq(RETURN)              {
-            (CoreToken::RETURN,             String::from(RETURN))
+            CoreToken::RETURN
         } else {
             unreachable!("keyword missing in the matching arms")
         }
     } else if context::is_type(&value) {
-        (CoreToken::ATOMIC_TYPE, String::from(ATOMIC_TYPE))
+        CoreToken::ATOMIC_TYPE
     } else {
-        (CoreToken::IDENTIFIER, String::from(IDENTIFIER))
+        CoreToken::IDENTIFIER
     }
 }

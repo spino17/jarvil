@@ -4,66 +4,66 @@ use super::token::{LexicalErrorKind};
 use crate::constants::common::{get_token_for_identifier, LITERAL, INTEGER, FLOATING_POINT_NUMBER};
 
 // ' ' -> '...'
-pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         if next_char != ' ' {
             *begin_lexeme = forward_lexeme;
-            return (CoreToken::BLANK, String::from(BLANK));
+            return CoreToken::BLANK
         }
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
-    return (CoreToken::BLANK, String::from(BLANK));
+    return CoreToken::BLANK
 }
 
 // - -> -, ->
-pub fn extract_dash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_dash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '>' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::RIGHT_ARROW, String::from("->"));
+                return CoreToken::RIGHT_ARROW
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return (CoreToken::DASH, String::from("-"));
+                return CoreToken::DASH
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return (CoreToken::DASH, String::from("-"));
+        return CoreToken::DASH
     }
 }
 
 // * -> *, **
-pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '*' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::DOUBLE_STAR, String::from("**"));
+                return CoreToken::DOUBLE_STAR
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return (CoreToken::STAR, String::from("*"));
+                return CoreToken::STAR
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return (CoreToken::STAR, String::from("*"));
+        return CoreToken::STAR
     }
 }
 
 // / -> /, /*, //
 pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize, 
     line_number: &mut usize, code: &Code,
-    code_lines: &mut Vec<usize>, line_start_index: &mut usize) -> (CoreToken, String) {
+    code_lines: &mut Vec<usize>, line_start_index: &mut usize) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
@@ -79,7 +79,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
                     },
                     _ => {
                         *begin_lexeme = *begin_lexeme + 1;
-                        return (CoreToken::SLASH, String::from("/"));
+                        return CoreToken::SLASH
                     }
                 }
             },
@@ -87,7 +87,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
                 match next_char {
                     '\n' => {
                         *begin_lexeme = forward_lexeme;
-                        return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT));
+                        return CoreToken::SINGLE_LINE_COMMENT
                     },
                     _ => {}
                 }
@@ -109,7 +109,7 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
                 match next_char {
                     '/' => {
                         *begin_lexeme = forward_lexeme + 1;
-                        return (CoreToken::BLOCK_COMMENT, String::from(BLOCK_COMMENT));
+                        return CoreToken::BLOCK_COMMENT
                     },
                     _ => {
                         state = 2;
@@ -125,147 +125,140 @@ pub fn extract_slash_prefix_lexeme(begin_lexeme: &mut usize,
     match state {
         0 => {
             *begin_lexeme = *begin_lexeme + 1;
-            return (CoreToken::SLASH, String::from("/"));
+            return CoreToken::SLASH
         },
         1 => {
             *begin_lexeme = forward_lexeme;
-            return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT));
+            return CoreToken::SINGLE_LINE_COMMENT
         },
         2 => {
             *begin_lexeme = forward_lexeme;
             let err_str = Rc::new(String::from("missing trailing symbol `*/` for block comment"));
-            return (CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str)), String::from(LEXICAL_ERROR))
+            return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str))
         },
         3 => {
             *begin_lexeme = forward_lexeme;
             let err_str = Rc::new(String::from("missing trailing symbol `*/` for block comment"));
-            return (CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str)), String::from(LEXICAL_ERROR))
+            return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str))
         },
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
     }
 }
 
 // # -> #...\n
-pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '\n' => {
                 *begin_lexeme = forward_lexeme;
-                return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT))
+                return CoreToken::SINGLE_LINE_COMMENT
             },
             _ => {}
         }
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
-    return (CoreToken::SINGLE_LINE_COMMENT, String::from(SINGLE_LINE_COMMENT))
+    return CoreToken::SINGLE_LINE_COMMENT
 }
 
 // = -> =, ==
-pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::DOUBLE_EQUAL, String::from("=="));
+                return CoreToken::DOUBLE_EQUAL
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return (CoreToken::EQUAL, String::from("="));
+                return CoreToken::EQUAL
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return (CoreToken::EQUAL, String::from("="));
+        return CoreToken::EQUAL
     }
 }
 
 // > -> >, >=
-pub fn extract_rbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_rbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::GREATER_EQUAL, String::from(">="));
+                return CoreToken::GREATER_EQUAL
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return (CoreToken::RBRACKET, String::from(">"));
+                return CoreToken::RBRACKET
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return (CoreToken::RBRACKET, String::from(">"));
+        return CoreToken::RBRACKET
     }
 }
 
 // < -> <, <=
-pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::LESS_EQUAL, String::from("<="));
+                return CoreToken::LESS_EQUAL
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return (CoreToken::LBRACKET, String::from("<"));
+                return CoreToken::LBRACKET
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return (CoreToken::LBRACKET, String::from("<"));
+        return CoreToken::LBRACKET
     }
 }
 
 // ! -> !=
-pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::NOT_EQUAL, String::from("!="));
+                return CoreToken::NOT_EQUAL
             },
             _ => {
                 let error_str = Rc::new(String::from("invalid character `!` found"));
                 *begin_lexeme = *begin_lexeme + 1;
-                (
-                    CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone())),
-                    String::from(LEXICAL_ERROR)
-                )
+                CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone()))
             }
         }
     } else {
         let error_str = Rc::new(String::from("invalid character `!` found"));
         *begin_lexeme = *begin_lexeme + 1;
-        (
-            CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone())),
-            String::from(LEXICAL_ERROR)
-        )
+        CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone()))
     }
 }
 
 // ' -> '...'
 pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Code, code_lines: &mut Vec<usize>, 
-    line_start_index: &mut usize) -> (CoreToken, String) {
+    line_number: &mut usize, code: &Code, code_lines: &mut Vec<usize>, line_start_index: &mut usize) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '\'' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::LITERAL, String::from(LITERAL))
+                return CoreToken::LITERAL
             },
             '\n' => {
                 code_lines.push(*line_start_index);
@@ -278,23 +271,19 @@ pub fn extract_single_quote_prefix_lexeme(begin_lexeme: &mut usize,
     }
     *begin_lexeme = forward_lexeme;
     let err_str = Rc::new(String::from(r#"no closing `'` found for literal"#));
-    return (
-        CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str)),
-        String::from(LEXICAL_ERROR)
-    )
+    return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str))
 }
 
 // " -> "..."
 pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize, 
-    line_number: &mut usize, code: &Code, code_lines: &mut Vec<usize>,
-    line_start_index: &mut usize) -> (CoreToken, String) {
+    line_number: &mut usize, code: &Code, code_lines: &mut Vec<usize>, line_start_index: &mut usize) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             '"' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::LITERAL, String::from(LITERAL))
+                return CoreToken::LITERAL
             },
             '\n' => {
                 code_lines.push(*line_start_index);
@@ -307,14 +296,11 @@ pub fn extract_double_quote_prefix_lexeme(begin_lexeme: &mut usize,
     }
     *begin_lexeme = forward_lexeme;
     let err_str = Rc::new(String::from(r#"no closing `"` found for literal"#));
-    return (
-        CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str)),
-        String::from(LEXICAL_ERROR)
-    )
+    return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str))
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type
-pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
@@ -333,7 +319,7 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (C
 }
 
 // digit -> digit((digit)*(.digit(digit*)|empty))
-pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
@@ -346,7 +332,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (Co
                     state = 1;
                 } else {
                     *begin_lexeme = forward_lexeme;
-                    return (CoreToken::INTEGER, String::from(INTEGER))
+                    return CoreToken::INTEGER
                 }
             },
             1 => {
@@ -354,7 +340,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (Co
                     state = 2;
                 } else {
                     *begin_lexeme = forward_lexeme - 1;
-                    return (CoreToken::INTEGER, String::from(INTEGER))
+                    return CoreToken::INTEGER
                 }
             },
             2 => {
@@ -362,7 +348,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (Co
                     // do nothing
                 } else {
                     *begin_lexeme = forward_lexeme;
-                    return (CoreToken::FLOATING_POINT_NUMBER, String::from(FLOATING_POINT_NUMBER))
+                    return CoreToken::FLOATING_POINT_NUMBER
                 }
             },
             _ => {
@@ -374,37 +360,37 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (Co
     match state {
         0 => {
             *begin_lexeme = forward_lexeme;
-            return (CoreToken::INTEGER, String::from(INTEGER))
+            return CoreToken::INTEGER
         },
         1 => {
             *begin_lexeme = forward_lexeme - 1;
-            return (CoreToken::INTEGER, String::from(INTEGER))
+            return CoreToken::INTEGER
         },
         2 => {
             *begin_lexeme = forward_lexeme;
-            return (CoreToken::FLOATING_POINT_NUMBER, String::from(FLOATING_POINT_NUMBER))
+            return CoreToken::FLOATING_POINT_NUMBER
         },
         _ => unreachable!("any state other than 0, 1, and 2 is not reachable")
     }
 }
 
 // : -> :, ::
-pub fn extract_colon_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> (CoreToken, String) {
+pub fn extract_colon_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
         match next_char {
             ':' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return (CoreToken::DOUBLE_COLON, String::from("::"));
+                return CoreToken::DOUBLE_COLON
             },
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                return (CoreToken::COLON, String::from(":"));
+                return CoreToken::COLON
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        return (CoreToken::COLON, String::from(":"));
+        return CoreToken::COLON
     }
 }

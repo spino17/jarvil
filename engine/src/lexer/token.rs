@@ -147,42 +147,42 @@ impl Token {
         let start_index = *begin_lexeme;
         let start_line_number = *line_number;
         let critical_char = code.get_char(*begin_lexeme);
-        let (core_token, name) = match critical_char {
+        let core_token = match critical_char {
             '('         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::LPAREN, String::from("("))
+                CoreToken::LPAREN
             },
             ')'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::RPAREN, String::from(")"))
+                CoreToken::RPAREN
             },
             '{'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::LBRACE, String::from("{"))
+                CoreToken::LBRACE
             },
             '}'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::RBRACE, String::from("}"))
+                CoreToken::RBRACE
             },
             '['         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::LSQUARE, String::from("["))
+                CoreToken::LSQUARE
             },
             ']'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::RSQUARE, String::from("]"))
+                CoreToken::RSQUARE
             },
             ';'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::SEMICOLON, String::from(";"))
+                CoreToken::SEMICOLON
             },
             ','         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::COMMA, String::from(","))
+                CoreToken::COMMA
             },
             '.'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::DOT, String::from("."))
+                CoreToken::DOT
             },
             /*
             '\t'        =>      {
@@ -192,14 +192,14 @@ impl Token {
              */
             '+'         =>      {
                 *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::PLUS, String::from("+"))
+                CoreToken::PLUS
             },
             '\n'        =>      {
                 code_lines.push(*line_start_index);
                 *line_start_index = *begin_lexeme + 1;
                 *begin_lexeme = *begin_lexeme + 1;
                 *line_number = *line_number + 1;
-                (CoreToken::NEWLINE, String::from("\n"))
+                CoreToken::NEWLINE
             },
             '/'         =>      {
                 helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
@@ -241,18 +241,15 @@ impl Token {
                 let token: CoreToken;
                 let name: String;
                 if context::is_letter(&c) {
-                    (token, name) = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
+                    token = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
                 } else if context::is_digit(&c) {
-                    (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
+                    token = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
                 } else {
                     let error_str = Rc::new(format!("invalid character `{}` found", c));
-                    (token, name) = (
-                        CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone())), 
-                        String::from(LEXICAL_ERROR)
-                    );
+                    token = CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone()));
                     *begin_lexeme = *begin_lexeme + 1;
                 }
-                (token, name)
+                token
             }
         };
         let end_index = *begin_lexeme;
