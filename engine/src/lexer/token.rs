@@ -1,18 +1,14 @@
 use crate::ast::ast::ASTNode;
 use crate::code::Code;
-use crate::constants::common::{LEXICAL_ERROR, FOR};
+use crate::constants::common::{LEXICAL_ERROR, NEWLINE, IF, ELSE, ELIF, IDENTIFIER};
 use std::rc::Rc;
 use crate::lexer::helper;
 use crate::context;
-
 use super::lexer::CoreLexer;
-
-// #[derive(Debug, Clone)]
-// pub struct TokenValue(pub Rc<String>);
 
 macro_rules! impl_symbol_check {
     ($t: ident) => {
-        pub fn $t(&self) -> bool {
+        fn $t(&self) -> bool {
             match self.core_token {
                 CoreToken::$t => true,
                 _ => false,
@@ -293,25 +289,82 @@ impl Token {
         self.name.as_ref().eq(symbol)
     }
 
-    impl_symbol_check!(FOR);
-
-    pub fn new_is_eq(&self, symbol: &str) -> bool {
-        match symbol {
-            FOR => self.FOR(),
-            _ => {
-                todo!()
-            }
-        }
-    }
-
     pub fn index(&self) -> usize {
         (self.start_index + self.end_index) / 2 as usize
     }
 
     pub fn name(&self) -> Rc<String> {
         match self.core_token {
-            CoreToken::NEWLINE => Rc::new(String::from("newline")),
+            CoreToken::NEWLINE => Rc::new(String::from(NEWLINE)),
             _ => self.name.clone(),
+        }
+    }
+
+    impl_symbol_check!(IF);
+    impl_symbol_check!(ELSE);
+    impl_symbol_check!(ELIF);
+    impl_symbol_check!(FOR);
+    impl_symbol_check!(WHILE);
+    impl_symbol_check!(CONTINUE);
+    impl_symbol_check!(BREAK);
+    impl_symbol_check!(DEF);
+    impl_symbol_check!(RETURN);
+    impl_symbol_check!(FUNC);
+    impl_symbol_check!(TYPE_KEYWORD);
+    impl_symbol_check!(ATOMIC_TYPE);
+    impl_symbol_check!(NEW);
+    impl_symbol_check!(LET);
+    impl_symbol_check!(SELF);
+    impl_symbol_check!(IMPL);
+    impl_symbol_check!(INTERFACE_KEYWORD);
+    impl_symbol_check!(AND);
+    impl_symbol_check!(NOT);
+    impl_symbol_check!(OR);
+    impl_symbol_check!(IS);
+    impl_symbol_check!(IN);
+    impl_symbol_check!(TRUE);
+    impl_symbol_check!(FALSE);
+    impl_symbol_check!(PLUS);
+    impl_symbol_check!(DASH);
+    impl_symbol_check!(RIGHT_ARROW);
+    impl_symbol_check!(STAR);
+    impl_symbol_check!(DOUBLE_STAR);
+    impl_symbol_check!(SLASH);
+    impl_symbol_check!(LPAREN);
+    impl_symbol_check!(RPAREN);
+    impl_symbol_check!(LBRACE);
+    impl_symbol_check!(RBRACE);
+    impl_symbol_check!(LSQUARE);
+    impl_symbol_check!(RSQUARE);
+    impl_symbol_check!(SEMICOLON);
+    impl_symbol_check!(COLON);
+    impl_symbol_check!(DOUBLE_COLON);
+    impl_symbol_check!(COMMA);
+    impl_symbol_check!(DOT);
+    impl_symbol_check!(BLANK);
+    impl_symbol_check!(NEWLINE);
+    impl_symbol_check!(EQUAL);
+    impl_symbol_check!(DOUBLE_EQUAL);
+    impl_symbol_check!(LBRACKET);
+    impl_symbol_check!(RBRACKET);
+    impl_symbol_check!(LESS_EQUAL);
+    impl_symbol_check!(GREATER_EQUAL);
+    impl_symbol_check!(NOT_EQUAL);
+    impl_symbol_check!(INTEGER);
+    impl_symbol_check!(FLOATING_POINT_NUMBER);
+    impl_symbol_check!(IDENTIFIER);
+    impl_symbol_check!(LITERAL);
+    impl_symbol_check!(SINGLE_LINE_COMMENT);
+    impl_symbol_check!(BLOCK_COMMENT);
+    impl_symbol_check!(ENDMARKER);
+
+    pub fn new_is_eq(&self, symbol: &str) -> bool {
+        match symbol {
+            IF => self.IF(),
+            ELSE => self.ELSE(),
+            ELIF => self.ELIF(),
+            IDENTIFIER => self.IDENTIFIER(),
+            _ => unreachable!("token `{}` missing from matching arm", symbol)
         }
     }
 }

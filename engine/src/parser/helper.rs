@@ -1,4 +1,5 @@
 use crate::ast::ast::{SkippedTokenNode};
+use crate::constants::common::NEWLINE;
 use crate::parser::parser::ParseSuccess;
 use crate::errors::{ParseError};
 use crate::types::core::Type;
@@ -61,7 +62,7 @@ pub fn clone_expr_result(result: &Result<(ParseSuccess, bool), ParseError>)
 
 pub fn format_symbol(symbol: &str) -> &str {
     if symbol == "\n" {
-        return "newline"
+        return NEWLINE
     }
     return symbol
 }

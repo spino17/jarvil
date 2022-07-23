@@ -1,6 +1,31 @@
 use crate::lexer::token::{CoreToken};
 use crate::context;
 
+pub const PLUS:                     &'static str = "+";                         
+pub const DASH:                     &'static str = "-";
+pub const RIGHT_ARROW:              &'static str = "->";
+pub const STAR:                     &'static str = "*";
+pub const DOUBLE_STAR:              &'static str = "**";
+pub const SLASH:                    &'static str = "/";
+pub const LPAREN:                   &'static str = "(";
+pub const RPAREN:                   &'static str = ")";
+pub const LBRACE:                   &'static str = "{";
+pub const RBRACE:                   &'static str = "}";
+pub const LSQUARE:                  &'static str = "[";
+pub const RSQUARE:                  &'static str = "]";
+pub const SEMICOLON:                &'static str = ";";
+pub const COLON:                    &'static str = ":";
+pub const DOUBLE_COLON:             &'static str = "::";
+pub const COMMA:                    &'static str = ",";
+pub const DOT:                      &'static str = ".";
+pub const NEWLINE:                  &'static str = "newline";
+pub const EQUAL:                    &'static str = "=";
+pub const DOUBLE_EQUAL:             &'static str = "==";
+pub const LBRACKET:                 &'static str = "<";
+pub const RBRACKET:                 &'static str = ">";
+pub const LESS_EQUAL:               &'static str = "<=";
+pub const GREATER_EQUAL:            &'static str = ">=";
+pub const NOT_EQUAL:                &'static str = "!=";
 pub const FOR:                      &'static str = "for";
 pub const WHILE:                    &'static str = "while";
 pub const CONTINUE:                 &'static str = "continue";
@@ -33,11 +58,11 @@ pub const BOOL:                     &'static str = "bool";
 pub const LITERAL:                  &'static str = "<literal>";
 pub const IDENTIFIER:               &'static str = "<identifier>";
 pub const ATOMIC_TYPE:              &'static str = "<atomic type>";
-pub const ENDMARKER:                &'static str = "endmarker";
+pub const ENDMARKER:                &'static str = "<endmarker>";
 pub const LEXICAL_ERROR:            &'static str = "lexical error";
-pub const SINGLE_LINE_COMMENT:      &'static str = "single line comment";
-pub const BLOCK_COMMENT:            &'static str = "block comment";
-pub const BLANK:                    &'static str = "blank";
+pub const SINGLE_LINE_COMMENT:      &'static str = "<single line comment>";
+pub const BLOCK_COMMENT:            &'static str = "<block comment>";
+pub const BLANK:                    &'static str = "<blank>";
 
 pub const KEYWORDS: [&'static str; 23] = [
     FOR,

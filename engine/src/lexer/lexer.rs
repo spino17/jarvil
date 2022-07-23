@@ -1,5 +1,6 @@
 use crate::code::Code;
 use crate::constants::common::ENDMARKER;
+use crate::constants::common::IDENTIFIER;
 use crate::errors::LexicalErrorData;
 use crate::errors::ParseError;
 use crate::errors::ParseErrorKind;
@@ -67,6 +68,7 @@ impl Lexer for CoreLexer {
         }
         token_vec.push(token);
         self.log_all_lexical_errors(code);
+        println!("{:?}-{}", token_vec[1], token_vec[1].new_is_eq(IDENTIFIER));
         token_vec
     }
 }
