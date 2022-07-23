@@ -5,7 +5,9 @@ use std::rc::Rc;
 use crate::ast::ast::ErrornousNode;
 
 pub fn params(parser: &mut PackratParser) -> ParamsNode {
+    parser.ignore_newlines();
     let first_param_node = parser.expr();
+    parser.ignore_newlines();
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::COMMA    => {
@@ -37,6 +39,6 @@ pub fn params_within_parenthesis(parser: &mut PackratParser) -> Option<ParamsNod
     if !parser.check_curr_token(")") {
         params = Some(parser.params());
     }
-    let rparen_node = parser.expect(")", false);
+    let rparen_node = parser.expect(")", true);
     params
 }
