@@ -12,11 +12,7 @@ mod code;
 
 use crate::utils::common::build_ast;
 use crate::reader::read_file;
-use crate::lexer::lexer::{CoreLexer, Lexer};
 use std::env::args;
-use crate::parser::parser::PackratParser;
-use crate::parser::parser::Parser;
-use crate::code::Code;
 
 fn start_compiler() {
     let mut code = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
