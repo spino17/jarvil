@@ -22,7 +22,7 @@ use crate::ast::ast::ErrornousNode;
 use super::helper::format_symbol;
 
 pub trait Parser {
-    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<ParseError>);
+    fn parse(self, token_vec: Vec<Token>) -> BlockNode;
 }
 
 #[derive(Debug)]
@@ -46,7 +46,7 @@ pub struct PackratParser {
     cache: Vec<Rc<RoutineCache>>,
     ignore_all_errors: bool,  // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
-    errors: Vec<ParseError>  // reported errors during the parsing, useful for terminal based compilation
+    // errors: Vec<ParseError>  // reported errors during the parsing, useful for terminal based compilation
 }
 
 impl PackratParser {
@@ -65,15 +65,15 @@ impl PackratParser {
             ],
             ignore_all_errors: false,
             correction_indent: 0,
-            errors: vec![],
+            // errors: vec![],
         }
     }
 }
 
 impl Parser for PackratParser {
-    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<ParseError>) {
+    fn parse(mut self, token_vec: Vec<Token>) -> BlockNode {
         let code_node = self.code(token_vec);
-        (code_node, self.errors)
+        code_node
     }
 }
 
@@ -200,8 +200,8 @@ impl PackratParser {
         }
         let (code_line, line_start_index, line_number, err_index) 
         = self.code.line_data(recevied_token.line_number, recevied_token.index());
-        let errors_len = self.errors.len();
-        if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
+        let errors_len = context::errors_len();
+        if errors_len > 0 && context::curr_error_line_number() == line_number {
             return;
         } else {
             let err_str = format!("expected `{}`, got `{}`", format_symbol(expected_symbol), recevied_token.name());
@@ -209,7 +209,7 @@ impl PackratParser {
                 code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 
             = ParseError::new(line_number, line_number, err_message);
-            self.errors.push(err);
+            context::push_error(err);
         }
     }
 
@@ -218,10 +218,10 @@ impl PackratParser {
         if self.ignore_all_errors {
             return;
         }
-        let errors_len = self.errors.len();
+        let errors_len = context::errors_len();
         let (code_line, line_start_index, line_number, err_index) 
         = self.code.line_data(recevied_token.line_number, recevied_token.index());
-        if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
+        if errors_len > 0 && context::curr_error_line_number() == line_number {
             return;
         } else {
             let mut err_str = String::from("expected ");
@@ -241,7 +241,7 @@ impl PackratParser {
                 code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 
             = ParseError::new(line_number, line_number, err_message);
-            self.errors.push(err);
+            context::push_error(err);
         }
     }
 
@@ -249,11 +249,11 @@ impl PackratParser {
         if self.ignore_all_errors {
             return;
         }
-        let errors_len = self.errors.len();
+        let errors_len = context::errors_len();
         let skipped_tokens_len = skipped_tokens.len();
         let (code_line, line_start_index, line_number, start_err_index) 
         = self.code.line_data(skipped_tokens[0].line_number(), skipped_tokens[0].index());
-        if errors_len > 0 && self.errors[errors_len - 1].end_line_number == line_number {
+        if errors_len > 0 && context::curr_error_line_number() == line_number {
             return;
         } else {
             let err_str = String::from("invalid sequence of tokens found at the trail of the line");
@@ -264,7 +264,7 @@ impl PackratParser {
             );
             let err 
             = ParseError::new(line_number, line_number, err_message);
-            self.errors.push(err);
+            context::push_error(err);
         }
     }
 
@@ -273,8 +273,8 @@ impl PackratParser {
         if self.ignore_all_errors {
             return;
         }
-        let errors_len = self.errors.len();
-        if errors_len > 0 && self.errors[errors_len - 1].end_line_number == start_line_number {
+        let errors_len = context::errors_len();
+        if errors_len > 0 && context::curr_error_line_number() == start_line_number {
             return;
         } else {
             let code_lines: Vec<String> = self.code.lines(start_line_number, end_line_number);
@@ -284,7 +284,7 @@ impl PackratParser {
                 code_lines, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 
             = ParseError::new(start_line_number, end_line_number, err_message);
-            self.errors.push(err);
+            context::push_error(err);
         }
     }
 

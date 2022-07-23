@@ -31,12 +31,14 @@ fn start_compiler() {
         None => {}
     }
     let mut parser = PackratParser::new(&code);
-    let (ast, syntax_errors) = parser.parse(token_vec);
+    let ast = parser.parse(token_vec);
     // println!("{:?}", ast);
-    if syntax_errors.len() > 0 {
-        println!("{}", syntax_errors[0]);
-        // TODO - dump all other errors in some log file, let users choose how many errors to show
-        return;
+    match context::first_error() {
+        Some(error) => {
+            print!("{}", error);
+            return;
+        },
+        None => {}
     }
 }
 

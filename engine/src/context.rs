@@ -83,6 +83,14 @@ impl Context {
         self.parse_errors = err;
     }
 
+    fn push_error(&mut self, err: ParseError) {
+        self.parse_errors.push(err);
+    }
+
+    fn curr_error_line_number(&self) -> usize {
+        self.parse_errors[self.parse_errors.len() - 1].end_line_number
+    }
+
     pub fn first_error(&self) -> Option<ParseError> {
         let errors_len = self.parse_errors.len();
         if errors_len == 0 {
@@ -165,6 +173,28 @@ pub fn set_errors(err: Vec<ParseError>) {
             panic!("{}", err)
         }
         _ => {}
+    }
+}
+
+pub fn push_error(err: ParseError) {
+    match CONTEXT.try_with(|ctx| {
+        ctx.borrow_mut().push_error(err)
+    }) {
+        Err(err) => {
+            panic!("{}", err)
+        }
+        _ => {}
+    }
+}
+
+pub fn curr_error_line_number() -> usize {
+    match CONTEXT.try_with(|ctx| {
+        ctx.borrow().curr_error_line_number()
+    }) {
+        Ok(val) => val,
+        Err(err) => {
+            panic!("{}", err)
+        }
     }
 }
 

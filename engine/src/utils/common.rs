@@ -13,6 +13,6 @@ pub fn build_ast(mut code: Code) -> Result<BlockNode, ParseError> {
         None => {}
     }
     let mut parser = PackratParser::new(&code);
-    let (ast, _) = parser.parse(token_vec);
+    let ast = parser.parse(token_vec);
     Ok(ast)
 }
