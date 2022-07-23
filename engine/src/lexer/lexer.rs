@@ -29,7 +29,7 @@ impl Lexer for CoreLexer {
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::NEWLINE,
-            name: Rc::new(String::from("\n")),
+            // name: Rc::new(String::from("\n")),
             start_index: 0,
             end_index: 0,
             trivia: None,
@@ -57,7 +57,7 @@ impl Lexer for CoreLexer {
         let mut token = Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
-            name: Rc::new(String::from(ENDMARKER)),
+            // name: Rc::new(String::from(ENDMARKER)),
             start_index: code.len(),
             end_index: code.len(),
             trivia: None,
@@ -68,7 +68,7 @@ impl Lexer for CoreLexer {
         }
         token_vec.push(token);
         self.log_all_lexical_errors(code);
-        println!("{:?}-{}", token_vec[1], token_vec[1].new_is_eq(IDENTIFIER));
+        println!("{:?}-{}", token_vec[1], token_vec[1].is_eq(IDENTIFIER));
         token_vec
     }
 }

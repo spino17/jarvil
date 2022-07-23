@@ -4,7 +4,8 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, NameTypeSpecsNode, SkippedTokenNode, 
-    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, NameTypeSpecNode, OkFunctionDeclarationNode, FunctionDeclarationNode, TypeDeclarationNode, RAssignmentNode, AssignmentNode};
+    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, 
+    NameTypeSpecNode, FunctionDeclarationNode, TypeDeclarationNode, RAssignmentNode, AssignmentNode};
 use crate::code::Code;
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
@@ -142,7 +143,7 @@ impl PackratParser {
             return Token {
                 line_number: 1,
                 core_token: CoreToken::NEWLINE,
-                name: Rc::new(String::from("\n")),
+                // name: Rc::new(String::from("\n")),
                 start_index: 0,
                 end_index: 0,
                 trivia: None,
