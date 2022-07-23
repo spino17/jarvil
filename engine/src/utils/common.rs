@@ -5,9 +5,10 @@ use crate::errors::ParseError;
 use crate::lexer::lexer::{CoreLexer, Lexer};
 use crate::parser::parser::{PackratParser, Parser};
 
-pub fn build_ast(mut code: Code) -> Result<BlockNode, ParseError> {
+pub fn build_ast(code: &mut Code) -> Result<BlockNode, ParseError> {
+    // let mut code = code.clone();
     let mut core_lexer = CoreLexer::new();
-    let token_vec = core_lexer.tokenize(&mut code);
+    let token_vec = core_lexer.tokenize(code);
     match context::first_error() {
         Some(error) => return Err(error),
         None => {}
