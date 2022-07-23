@@ -29,7 +29,6 @@ impl Lexer for CoreLexer {
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::NEWLINE,
-            // name: Rc::new(String::from("\n")),
             start_index: 0,
             end_index: 0,
             trivia: None,
@@ -57,7 +56,6 @@ impl Lexer for CoreLexer {
         let mut token = Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
-            // name: Rc::new(String::from(ENDMARKER)),
             start_index: code.len(),
             end_index: code.len(),
             trivia: None,

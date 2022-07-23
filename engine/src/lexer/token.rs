@@ -129,7 +129,6 @@ pub struct MissingToken {
 pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
-    // pub name: Rc<String>,
     pub start_index: usize,
     pub end_index: usize,
     pub trivia: Option<Rc<Vec<Token>>>,
@@ -239,7 +238,6 @@ impl Token {
             },
             c     =>      {
                 let token: CoreToken;
-                let name: String;
                 if context::is_letter(&c) {
                     token = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
                 } else if context::is_digit(&c) {
@@ -257,7 +255,6 @@ impl Token {
         let token = Token {
             line_number: *line_number,
             core_token: core_token.clone(),
-            // name: Rc::new(name),
             start_index,
             end_index,
             trivia: None,
@@ -286,12 +283,6 @@ impl Token {
     pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
         self.trivia = Some(Rc::new(trivia_vec));
     }
-
-    /*
-    pub fn is_eq(&self, symbol: &str) -> bool {
-        self.name.as_ref().eq(symbol)
-    }
-     */
 
     pub fn index(&self) -> usize {
         (self.start_index + self.end_index) / 2 as usize

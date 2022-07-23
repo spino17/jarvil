@@ -1,7 +1,7 @@
 use std::rc::Rc;
-use crate::{lexer::token::CoreToken, context, constants::common::{LEXICAL_ERROR, BLOCK_COMMENT, SINGLE_LINE_COMMENT, BLANK}, code::Code};
+use crate::{lexer::token::CoreToken, context, code::Code};
 use super::token::{LexicalErrorKind};
-use crate::constants::common::{get_token_for_identifier, LITERAL, INTEGER, FLOATING_POINT_NUMBER};
+use crate::constants::common::get_token_for_identifier;
 
 // ' ' -> '...'
 pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
