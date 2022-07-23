@@ -1,5 +1,4 @@
 use crate::code::Code;
-use crate::constants::common::ENDMARKER;
 use crate::constants::common::IDENTIFIER;
 use crate::errors::LexicalErrorData;
 use crate::errors::ParseError;

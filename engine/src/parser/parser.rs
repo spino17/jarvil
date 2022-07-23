@@ -143,7 +143,6 @@ impl PackratParser {
             return Token {
                 line_number: 1,
                 core_token: CoreToken::NEWLINE,
-                // name: Rc::new(String::from("\n")),
                 start_index: 0,
                 end_index: 0,
                 trivia: None,
@@ -151,6 +150,46 @@ impl PackratParser {
             }
         }
         self.token_vec[self.lookahead - 1].clone()
+    }
+
+    pub fn ignore_newlines(&mut self) {
+        loop {
+            let token = &self.token_vec[self.lookahead];
+            if token.is_eq("\n") {
+                self.scan_next_token();
+            } else {
+                return;
+            }
+        }
+    }
+
+    pub fn is_curr_token_on_newline(&self) -> bool {
+        if self.lookahead == 0 {
+            return true
+        }
+        if self.token_vec[self.lookahead - 1].is_eq("\n")
+        || self.token_vec[self.lookahead].is_eq("\n")
+        || self.token_vec[self.lookahead].is_eq(ENDMARKER) {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn skip_to_newline(&mut self) -> Vec<SkippedTokenNode> {
+        let mut skipped_tokens: Vec<SkippedTokenNode> = vec![];
+        loop {
+            let token = &self.token_vec[self.lookahead].clone();
+            if token.is_eq("\n") || token.is_eq(ENDMARKER) {
+                self.log_trailing_skipped_tokens_error(&skipped_tokens);
+                skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
+                self.scan_next_token();
+                return skipped_tokens
+            } else {
+                skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
+                self.scan_next_token();
+            }
+        }
     }
 
     pub fn log_missing_token_error_for_single_expected_symbol(&mut self, expected_symbol: &str, recevied_token: &Token) {
@@ -246,54 +285,6 @@ impl PackratParser {
             let err 
             = ParseError::new(start_line_number, end_line_number, err_message);
             self.errors.push(err);
-        }
-    }
-
-    pub fn ignore_newlines(&mut self) {
-        loop {
-            let token = &self.token_vec[self.lookahead];
-            if token.is_eq("\n") {
-                self.scan_next_token();
-            } else {
-                return;
-            }
-        }
-    }
-
-    pub fn is_eof_reached(&self) -> bool {
-        if self.token_vec[self.lookahead].is_eq(ENDMARKER) {
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn is_curr_token_on_newline(&self) -> bool {
-        if self.lookahead == 0 {
-            return true
-        }
-        if self.token_vec[self.lookahead - 1].is_eq("\n")
-        || self.token_vec[self.lookahead].is_eq("\n")
-        || self.token_vec[self.lookahead].is_eq(ENDMARKER) {
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn skip_to_newline(&mut self) -> Vec<SkippedTokenNode> {
-        let mut skipped_tokens: Vec<SkippedTokenNode> = vec![];
-        loop {
-            let token = &self.token_vec[self.lookahead].clone();
-            if token.is_eq("\n") || token.is_eq(ENDMARKER) {
-                self.log_trailing_skipped_tokens_error(&skipped_tokens);
-                skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
-                self.scan_next_token();
-                return skipped_tokens
-            } else {
-                skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
-                self.scan_next_token();
-            }
         }
     }
 
