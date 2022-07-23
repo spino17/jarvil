@@ -9,3 +9,4 @@ pub mod types;
 pub mod ast;
 pub mod utils;
 pub mod code;
+pub mod cmd;

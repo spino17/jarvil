@@ -8,6 +8,7 @@ use crate::lexer::token::CoreToken;
 use std::rc::Rc;
 use std::vec;
 use std::mem;
+use crate::context;
 
 pub trait Lexer {
     fn tokenize(&mut self, code: &mut Code) -> Vec<Token>;
@@ -19,7 +20,7 @@ pub struct CoreLexer {
     pub code_lines: Vec<usize>,
     pub line_start_index: usize,
     pub lexical_errors_data: Vec<LexicalErrorData>,  // temp storage for lexical error data uptill code_lines are built
-    pub lexical_errors: Vec<ParseError>,
+    // pub lexical_errors: Vec<ParseError>,
 }
 
 impl Lexer for CoreLexer {
@@ -75,7 +76,7 @@ impl CoreLexer {
             code_lines: vec![],
             line_start_index: 0,
             lexical_errors_data: vec![],
-            lexical_errors: vec![],
+            // lexical_errors: vec![],
         }
     }
 
@@ -83,9 +84,11 @@ impl CoreLexer {
         Token::extract_lexeme(self, code)
     }
 
+    /*
     pub fn get_lexical_data_useful_for_parser(self) -> Vec<ParseError> {
         self.lexical_errors
     }
+     */
 
     pub fn log_invalid_char_lexical_error(&mut self, invalid_token: &Token, err_message: &Rc<String>) {
         self.lexical_errors_data.push(LexicalErrorData::new_with_invalid_char(invalid_token, err_message))
@@ -126,7 +129,7 @@ impl CoreLexer {
             }
             errors.push(error);
         }
-        self.lexical_errors = errors;
+        context::set_errors(errors);
         let _errors_data = mem::take(&mut self.lexical_errors_data);
     }
 }

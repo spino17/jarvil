@@ -83,14 +83,14 @@ impl Display for ParseErrorKind {
 pub struct ParseError {
     pub start_line_number: usize,
     pub end_line_number: usize,
-    pub err_message: String,
+    pub err_message: Rc<String>,
 }
 impl ParseError {
     pub fn new(start_line_number: usize, end_line_number: usize, err_message: String) -> Self {
         ParseError {
             start_line_number,
             end_line_number,
-            err_message,
+            err_message: Rc::new(err_message),
         }
     }
 

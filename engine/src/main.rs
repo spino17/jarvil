@@ -21,11 +21,14 @@ fn start_compiler() {
     let mut code = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     let mut core_lexer = CoreLexer::new();
     let token_vec = core_lexer.tokenize(&mut code);
-    let lexical_errors = core_lexer.get_lexical_data_useful_for_parser();
-    if lexical_errors.len() > 0 {
-        print!("{}", lexical_errors[0]);
-        // TODO - dump all other errors in some log file, let users choose how many errors to show
-        return;
+    // let lexical_errors = core_lexer.get_lexical_data_useful_for_parser();
+    // TODO - dump all other errors in some log file, let users choose how many errors to show
+    match context::first_error() {
+        Some(error) => {
+            print!("{}", error);
+            return;
+        },
+        None => {}
     }
     let mut parser = PackratParser::new(&code);
     let (ast, syntax_errors) = parser.parse(token_vec);
