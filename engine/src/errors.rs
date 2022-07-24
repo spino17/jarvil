@@ -72,9 +72,9 @@ pub enum ParseErrorKind {
 impl Display for ParseErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            ParseErrorKind::LEXICAL_ERROR    => write!(f, "{}", format!("{}", "--> Lexical Error".bright_red())),
-            ParseErrorKind::SYNTAX_ERROR     => write!(f, "{}", format!("{}", "--> Syntax Error".bright_red())),
-            ParseErrorKind::SEMANTIC_ERROR   => write!(f, "{}", format!("{}", "--> Semantic Error".bright_red())),
+            ParseErrorKind::LEXICAL_ERROR    => write!(f, "{}", format!("{}", "---> Lexical Error".bright_red())),
+            ParseErrorKind::SYNTAX_ERROR     => write!(f, "{}", format!("{}", "---> Syntax Error".bright_red())),
+            ParseErrorKind::SEMANTIC_ERROR   => write!(f, "{}", format!("{}", "---> Semantic Error".bright_red())),
         }
     }
 }

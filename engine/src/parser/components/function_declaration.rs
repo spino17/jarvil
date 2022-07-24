@@ -7,13 +7,14 @@ use crate::parser::components::statement::core::{is_statement_within_function_st
     STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS};
 
 pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
-    let name_node = parser.expect(IDENTIFIER, true);
+    let name_node = parser.expect(IDENTIFIER, false);
     let colon_node = parser.expect(":", false);
     let type_expr_node = parser.type_expr();
     NameTypeSpecNode::new(&name_node, &type_expr_node)
 }
 
 pub fn name_type_specs(parser: &mut PackratParser) ->NameTypeSpecsNode {
+    parser.ignore_newlines();
     let first_arg_node = parser.name_type_spec();
     parser.ignore_newlines();
     let token = &parser.curr_token();

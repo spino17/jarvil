@@ -3,6 +3,7 @@ use crate::{parser::parser::PackratParser, constants::common::IDENTIFIER};
 use crate::lexer::token::CoreToken;
 
 pub fn trailing_atom(parser: &mut PackratParser, atom_start: AtomNode) -> AtomNode {
+    parser.ignore_newlines();
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::DOT => {
