@@ -15,7 +15,7 @@ use crate::reader::read_file;
 use std::env::args;
 
 fn start_compiler() {
-    let mut code = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
+    let code_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     /*
     let mut core_lexer = CoreLexer::new();
     let token_vec = core_lexer.tokenize(&mut code);
@@ -31,7 +31,8 @@ fn start_compiler() {
     let mut parser = PackratParser::new(&code);
     let ast = parser.parse(token_vec);
      */
-    let ast_result = build_ast(&mut code);
+    // let mut code = Code::new(code_vec);
+    let ast_result = build_ast(code_vec);
     let ast = match ast_result {
         Ok(ast) => ast,
         Err(err) => {
@@ -51,6 +52,7 @@ fn start_compiler() {
 
 fn main() {
     let args: Vec<String> = args().collect();
+    println!("{:?}", args);
     // Use args to check which cmd to run
     start_compiler();
 }
