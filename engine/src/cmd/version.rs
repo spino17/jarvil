@@ -7,6 +7,6 @@ pub fn jarvil_version() -> String {
         base_str.push_str(&line[start..end]);
         base_str
     } else {
-        panic!("failed parsing version from Cagro.toml");
+        panic!("parsing toml file failed!\n...raise an issue on jarvil tracker if you see this message");
     }
 }
