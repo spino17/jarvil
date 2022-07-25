@@ -16,7 +16,7 @@ impl Code {
     pub fn extract_code_lines(&self) -> Rc<Vec<usize>> {
         match &self.code_lines {
             Some(code_lines) => return code_lines.clone(),
-            None => unreachable!("This method should always be called once code_lines has been set by the lexer")
+            None => unreachable!("this method should always be called once code_lines has been set by the lexer")
         }
     }
 

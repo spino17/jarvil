@@ -10,6 +10,8 @@ mod ast;
 mod utils;
 mod code;
 
+use jarvil::cmd::version::jarvil_version;
+
 use crate::utils::common::build_ast;
 use crate::reader::read_file;
 use std::env::args;
@@ -55,4 +57,5 @@ fn main() {
     println!("{:?}", args);
     // Use args to check which cmd to run
     start_compiler();
+    println!("{}", jarvil_version());
 }

@@ -49,7 +49,8 @@ pub fn logical(parser: &mut PackratParser) -> ExpressionNode {
 
 pub fn comparison(parser: &mut PackratParser) -> ExpressionNode {
     let mut leading_term_expr_node = parser.term();
-    while let Some(node) = parser.expects(&[">", ">=", "<", "<=", "==", "!="], false).is_ok() {
+    while let Some(node) 
+    = parser.expects(&[">", ">=", "<", "<=", "==", "!="], false).is_ok() {
         let operator_node = node;
         let trailing_term_expr_node = parser.term();
         leading_term_expr_node = ExpressionNode::new_with_binary(
@@ -98,7 +99,9 @@ pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10]
 pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
     let token = &parser.curr_token();
     if !is_unary_expression_starting_with(token) {
-        parser.log_missing_token_error_for_multiple_expected_symbols(&UNARY_EXPRESSION_STARTING_SYMBOLS, token);
+        parser.log_missing_token_error_for_multiple_expected_symbols(
+            &UNARY_EXPRESSION_STARTING_SYMBOLS, token
+        );
         return UnaryExpressionNode::new_with_missing_tokens(
             &Rc::new(UNARY_EXPRESSION_STARTING_SYMBOLS.to_vec()),
             token,
@@ -148,7 +151,9 @@ pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 7]
 pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
     let token = &parser.curr_token();
     if !is_atomic_expression_starting_with(token) {
-        parser.log_missing_token_error_for_multiple_expected_symbols(&ATOMIC_EXPRESSION_STARTING_SYMBOLS, token);
+        parser.log_missing_token_error_for_multiple_expected_symbols(
+            &ATOMIC_EXPRESSION_STARTING_SYMBOLS, token
+        );
         return AtomicExpressionNode::new_with_missing_tokens(
             &Rc::new(ATOMIC_EXPRESSION_STARTING_SYMBOLS.to_vec()),
             token,
