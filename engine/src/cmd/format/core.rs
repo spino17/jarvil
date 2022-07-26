@@ -5,7 +5,31 @@
 // http://journal.stuffwithstuff.com/2015/09/08/the-hardest-program-ive-ever-written/
 
 use crate::code::Code;
+use crate::errors::ParseError;
+use crate::utils::common::build_ast;
+use crate::context;
 
-pub trait Formatter {
-    fn format(code: &mut Code) -> String;
+pub struct Formatter {
+
+}
+
+impl Formatter {
+    pub fn new() -> Self {
+        Formatter {
+
+        }
+    }
+
+    pub fn format(code_vec: Vec<char>) -> Result<(), ParseError> {
+        let ast = build_ast(code_vec);
+        match context::first_error() {
+            Some(err) => {
+                return Err(err)
+            },
+            None => {}
+        }
+        let formatter = Formatter::new();
+        // TODO - use `ast` to get the formatter version of code
+        Ok(())
+    }
 }

@@ -10,5 +10,6 @@ pub fn build(code_vec: Vec<char>) -> Result<(), ParseError> {
         },
         None => {}
     }
+    // TODO - use `ast` for name resolution, type checking and code generation
     Ok(())
 }
