@@ -36,7 +36,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                     LambdaDeclarationNode::new(
                         &type_name_node, &args_node, &return_type_node
                     )
-                }, 
+                },
                 CoreToken::NEWLINE      => {
                     let newline_node = parser.expect("\n");
                     LambdaDeclarationNode::new(

@@ -152,13 +152,15 @@ impl PackratParser {
         self.token_vec[self.lookahead - 1].clone()
     }
 
-    pub fn ignore_newlines(&mut self) {
+    pub fn ignore_newlines(&mut self) -> Vec<SkippedTokenNode> {
+        let mut ignored_newlines_vec = vec![];
         loop {
             let token = &self.token_vec[self.lookahead];
             if token.is_eq("\n") {
+                ignored_newlines_vec.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
                 self.scan_next_token();
             } else {
-                return;
+                return ignored_newlines_vec;
             }
         }
     }
@@ -192,6 +194,7 @@ impl PackratParser {
         }
     }
 
+    // ------------------- error logging utilities for terminal-based compilation -------------------
     pub fn log_missing_token_error_for_single_expected_symbol(&mut self, expected_symbol: &str, recevied_token: &Token) {
         // This type of error handling is taken from Golang programming language
         // See /src/go/parser/parser.go -> `func (p *parser) error(pos token.Pos, msg string) {...}`
@@ -381,34 +384,6 @@ impl PackratParser {
                 }
             }
             self.scan_next_token();
-        }
-    }
-
-    pub fn expect_zero_or_more<F: FnMut() -> Result<ParseSuccess, ParseError>>(mut f: F, 
-        initial_lookahead: usize) -> ParseSuccess {
-        let mut curr_lookahead = initial_lookahead;
-        loop {
-            match f() {
-                Ok(response) => {
-                    curr_lookahead = response.lookahead;
-                    continue;
-                },
-                Err(err) => {
-                    return ParseSuccess{
-                        lookahead: curr_lookahead,
-                        possible_err: Some(err)
-                    };
-                }
-            }
-        }
-    }
-
-    pub fn expect_optionally<T, F: FnMut() -> Result<T, ParseError>>(mut f: F, curr_value: T) -> (bool, T, Option<ParseError>) {
-        match f() {
-            Ok(response) => (true, response, None),
-            Err(err) => {
-                (false, curr_value, Some(err))
-            }
         }
     }
 
