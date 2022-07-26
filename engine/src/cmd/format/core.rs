@@ -29,7 +29,10 @@ impl Formatter {
             None => {}
         }
         let formatter = Formatter::new();
-        // TODO - use `ast` to get the formatter version of code
+        // TODO - use `ast` to get the formatted version of code
+        // 1. walk the ast and get chunks, rules and spans tree
+        // 2. use A* algorithm with number of overflowing chars and minimum splits as heuristics function
+        // 3. For each value of rule, have a print method which will add appropiate line-breaks, indentation and comments
         Ok(())
     }
 }
