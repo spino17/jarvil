@@ -218,6 +218,11 @@ impl PackratParser {
         if self.ignore_all_errors {
             return;
         }
+        if expected_symbols.len() == 1 {
+            return self.log_missing_token_error_for_single_expected_symbol(
+                expected_symbols[0], recevied_token
+            )
+        }
         let errors_len = context::errors_len();
         let (code_line, line_start_index, line_number, err_index) 
         = self.code.line_data(recevied_token.line_number, recevied_token.index());
