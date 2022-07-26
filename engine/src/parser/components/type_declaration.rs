@@ -6,9 +6,9 @@ use crate::ast::ast::ErrornousNode;
 use std::rc::Rc;
 
 pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
-    let type_keyword_node = parser.expect("type", false);
-    let type_name_node = parser.expect(IDENTIFIER, false);
-    let colon_node = parser.expect(":", false);
+    let type_keyword_node = parser.expect("type");
+    let type_name_node = parser.expect(IDENTIFIER);
+    let colon_node = parser.expect(":");
     let token = &parser.curr_token();
     let type_decl_node = match token.core_token {
         CoreToken::NEWLINE  => {
@@ -30,21 +30,21 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
             let mut return_type_node: Option<TypeExpressionNode> = None;
             let lambda_node = match token.core_token {
                 CoreToken::RIGHT_ARROW  => {
-                    let r_arrow_node = parser.expect("->", false);
+                    let r_arrow_node = parser.expect("->");
                     return_type_node = Some(parser.type_expr());
-                    let newline_node = parser.expects(&["\n", ENDMARKER], false);
+                    let newline_node = parser.expects(&["\n", ENDMARKER]);
                     LambdaDeclarationNode::new(
                         &type_name_node, &args_node, &return_type_node
                     )
                 }, 
                 CoreToken::NEWLINE      => {
-                    let newline_node = parser.expect("\n", false);
+                    let newline_node = parser.expect("\n");
                     LambdaDeclarationNode::new(
                         &type_name_node, &args_node, &None
                     )
                 },
                 CoreToken::ENDMARKER    => {
-                    let endmarker_node = parser.expect(ENDMARKER, false);
+                    let endmarker_node = parser.expect(ENDMARKER);
                     LambdaDeclarationNode::new(
                         &type_name_node, &args_node, &None
                     )

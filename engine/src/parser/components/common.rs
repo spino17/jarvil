@@ -27,7 +27,7 @@ pub fn r_assign(parser: &mut PackratParser, identifier_name: Option<&TokenNode>)
     }
     match token.core_token {
         CoreToken::FUNC => {
-            let func_keyword_node = parser.expect("func", false);
+            let func_keyword_node = parser.expect("func");
             let func_decl_node = parser.function_decl(identifier_name);
             RAssignmentNode::new_with_lambda(&func_decl_node)
         },

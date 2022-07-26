@@ -7,6 +7,7 @@ use crate::{scope::{core::Scope}, lexer::token::{Token, CoreToken}};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
+    // fn width(&self) -> usize;  // TODO - width of the node
 }
 
 pub trait ErrornousNode {

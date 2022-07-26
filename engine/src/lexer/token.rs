@@ -293,6 +293,10 @@ impl Token {
         self.to_string()
     }
 
+    pub fn width(&self) -> usize {
+        self.end_index - self.start_index
+    }
+
     impl_symbol_check!(IF);
     impl_symbol_check!(ELSE);
     impl_symbol_check!(ELIF);

@@ -11,6 +11,6 @@ pub fn code(parser: &mut PackratParser, token_vec: Vec<Token>) -> BlockNode {
         |parser| {parser.stmt()}, 
         &STATEMENT_EXPECTED_STARTING_SYMBOLS
     );
-    parser.expect(ENDMARKER, true);
+    parser.expect(ENDMARKER);
     block_node
 }

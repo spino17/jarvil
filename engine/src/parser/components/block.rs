@@ -17,7 +17,7 @@ use crate::lexer::token::Token;
 
 pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(parser: &mut PackratParser, 
     is_starting_with_fn: F, statement_parsing_fn: G, expected_symbols: &[&'static str]) -> BlockNode {
-    let newline_node = parser.expect("\n", false);
+    let newline_node = parser.expect("\n");
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
     let mut leading_skipped_tokens: Vec<SkippedTokenNode> = vec![];

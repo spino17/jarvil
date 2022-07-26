@@ -9,6 +9,7 @@ mod types;
 mod ast;
 mod utils;
 mod code;
+mod server;
 
 use crate::utils::common::build_ast;
 use crate::reader::read_file;

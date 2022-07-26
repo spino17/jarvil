@@ -289,10 +289,7 @@ impl PackratParser {
     }
 
     // ------------------- parsing routines for terminals and block indentation -------------------
-    pub fn expect(&mut self, symbol: &'static str, ignore_newline: bool) -> TokenNode {
-        if ignore_newline {
-            self.ignore_newlines();
-        }
+    pub fn expect(&mut self, symbol: &'static str) -> TokenNode {
         let token = self.curr_token();
         if token.is_eq(symbol) {
             self.scan_next_token();
@@ -307,10 +304,7 @@ impl PackratParser {
         }
     }
 
-    pub fn expects(&mut self, symbols: &[&'static str], ignore_newline: bool) -> TokenNode {
-        if ignore_newline {
-            self.ignore_newlines();
-        }
+    pub fn expects(&mut self, symbols: &[&'static str]) -> TokenNode {
         let token = self.curr_token();
         for &symbol in symbols {
             if token.is_eq(symbol) {

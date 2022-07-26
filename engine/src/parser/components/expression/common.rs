@@ -5,13 +5,13 @@ use std::rc::Rc;
 use crate::ast::ast::ErrornousNode;
 
 pub fn params(parser: &mut PackratParser) -> ParamsNode {
-    parser.ignore_newlines();
+    // parser.ignore_newlines();
     let first_param_node = parser.expr();
-    parser.ignore_newlines();
+    // parser.ignore_newlines();
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::COMMA    => {
-            let comma_node = parser.expect(",", false);
+            let comma_node = parser.expect(",");
             let remaining_params_node = parser.params();
             let ok_params_node = OkParamsNode::new_with_params(&first_param_node, &remaining_params_node);
             return ParamsNode::new(&ok_params_node)
@@ -34,11 +34,11 @@ pub fn params(parser: &mut PackratParser) -> ParamsNode {
 }
 
 pub fn params_within_parenthesis(parser: &mut PackratParser) -> Option<ParamsNode> {
-    let lparen_node = parser.expect("(", false);
+    let lparen_node = parser.expect("(");
     let mut params: Option<ParamsNode> = None;
     if !parser.check_curr_token(")") {
         params = Some(parser.params());
     }
-    let rparen_node = parser.expect(")", true);
+    let rparen_node = parser.expect(")");
     params
 }

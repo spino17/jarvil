@@ -31,19 +31,19 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
     }
     match token.core_token {
         CoreToken::ATOMIC_TYPE  => {
-            let atomic_type_node = parser.expect(ATOMIC_TYPE, false);
+            let atomic_type_node = parser.expect(ATOMIC_TYPE);
             TypeExpressionNode::new_with_atomic_type(&atomic_type_node)
         },
         CoreToken::IDENTIFIER   => {
-            let identifier_node = parser.expect(IDENTIFIER, false);
+            let identifier_node = parser.expect(IDENTIFIER);
             TypeExpressionNode::new_with_user_defined_type(&identifier_node)
         },
         CoreToken::LSQUARE      => {
-            let l_square_node = parser.expect("[", false);
+            let l_square_node = parser.expect("[");
             let sub_type_node = parser.type_expr();
-            let semicolon_node = parser.expect(";", false);
-            let array_size_node = parser.expect(INTEGER, false);
-            let r_square_node = parser.expect("]", false);
+            let semicolon_node = parser.expect(";");
+            let array_size_node = parser.expect(INTEGER);
+            let r_square_node = parser.expect("]");
             TypeExpressionNode::new_with_array_type(&array_size_node, &sub_type_node)
         },
         _ => unreachable!("tokens not matching `starting_with_symbols` for type expression would already be eliminated")

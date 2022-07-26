@@ -7,20 +7,20 @@ use crate::parser::components::statement::core::{is_statement_within_function_st
     STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS};
 
 pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
-    let name_node = parser.expect(IDENTIFIER, false);
-    let colon_node = parser.expect(":", false);
+    let name_node = parser.expect(IDENTIFIER);
+    let colon_node = parser.expect(":");
     let type_expr_node = parser.type_expr();
     NameTypeSpecNode::new(&name_node, &type_expr_node)
 }
 
-pub fn name_type_specs(parser: &mut PackratParser) ->NameTypeSpecsNode {
-    parser.ignore_newlines();
+pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
+    // parser.ignore_newlines();
     let first_arg_node = parser.name_type_spec();
-    parser.ignore_newlines();
+    // parser.ignore_newlines();
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::COMMA => {
-            let comma_node = parser.expect(",", false);
+            let comma_node = parser.expect(",");
             let remaining_args_node = parser.name_type_specs();
             let ok_name_type_specs_node = OkNameTypeSpecsNode::new_with_args(
                 &first_arg_node, &remaining_args_node
@@ -45,18 +45,18 @@ pub fn name_type_specs(parser: &mut PackratParser) ->NameTypeSpecsNode {
 }
 
 pub fn name_type_specs_within_parenthesis(parser: &mut PackratParser) -> Option<NameTypeSpecsNode> {
-    let lparen_node = parser.expect("(", false);
+    let lparen_node = parser.expect("(");
     let mut args: Option<NameTypeSpecsNode> = None;
     if !parser.check_curr_token(")") {
         args = Some(parser.name_type_specs());
     }
-    let rparen_node = parser.expect(")", true);
+    let rparen_node = parser.expect(")");
     args
 }
 
 pub fn function_name(parser: &mut PackratParser) -> TokenNode {
-    let def_node = parser.expect("def", false);
-    let name_node = parser.expect(IDENTIFIER, false);
+    let def_node = parser.expect("def");
+    let name_node = parser.expect(IDENTIFIER);
     name_node
 }
 
@@ -65,9 +65,9 @@ pub fn function_decl(parser: &mut PackratParser, name_node: Option<&TokenNode>) 
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::RIGHT_ARROW  => {
-            let r_arrow_node = parser.expect("->", false);
+            let r_arrow_node = parser.expect("->");
             let return_type = parser.type_expr();
-            let colon_node = parser.expect(":", false);
+            let colon_node = parser.expect(":");
             let func_block_node = parser.block(
                 |token| {is_statement_within_function_starting_with(token)}, 
                 |parser| {parser.stmt()},
@@ -80,7 +80,7 @@ pub fn function_decl(parser: &mut PackratParser, name_node: Option<&TokenNode>) 
             return FunctionDeclarationNode::new(&name_node, &args_node, &Some(return_type), &func_block_node)
         },
         CoreToken::COLON        => {
-            let colon_node = parser.expect(":", false);
+            let colon_node = parser.expect(":");
             let func_block_node = parser.block(
                 |token| {is_statement_within_function_starting_with(token)},
                 |parser| {parser.stmt()},

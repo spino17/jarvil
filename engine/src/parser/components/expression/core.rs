@@ -37,7 +37,7 @@ pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
 
 pub fn logical(parser: &mut PackratParser) -> ExpressionNode {
     let mut leading_comparison_expr_node = parser.comparison();
-    while let Some(node) = parser.expects(&["and", "or"], false).is_ok() {
+    while let Some(node) = parser.expects(&["and", "or"]).is_ok() {
         let operator_node = node;
         let trailing_comparison_expr_node = parser.comparison();
         leading_comparison_expr_node = ExpressionNode::new_with_binary(
@@ -50,7 +50,7 @@ pub fn logical(parser: &mut PackratParser) -> ExpressionNode {
 pub fn comparison(parser: &mut PackratParser) -> ExpressionNode {
     let mut leading_term_expr_node = parser.term();
     while let Some(node) 
-    = parser.expects(&[">", ">=", "<", "<=", "==", "!="], false).is_ok() {
+    = parser.expects(&[">", ">=", "<", "<=", "==", "!="]).is_ok() {
         let operator_node = node;
         let trailing_term_expr_node = parser.term();
         leading_term_expr_node = ExpressionNode::new_with_binary(
@@ -62,7 +62,7 @@ pub fn comparison(parser: &mut PackratParser) -> ExpressionNode {
 
 pub fn term(parser: &mut PackratParser) -> ExpressionNode {
     let mut leading_factor_expr_node = parser.factor();
-    while let Some(node) = parser.expects(&["-", "+"], false).is_ok() {
+    while let Some(node) = parser.expects(&["-", "+"]).is_ok() {
         let operator_node = node;
         let trailing_factor_expr_node = parser.factor();
         leading_factor_expr_node = ExpressionNode::new_with_binary(
@@ -75,7 +75,7 @@ pub fn term(parser: &mut PackratParser) -> ExpressionNode {
 pub fn factor(parser: &mut PackratParser) -> ExpressionNode {
     let leading_unary_expr_node = parser.unary_expr();
     let mut left_expr: ExpressionNode = ExpressionNode::new_with_unary(&leading_unary_expr_node);
-    while let Some(node) = parser.expects(&["/", "*"], false).is_ok() {
+    while let Some(node) = parser.expects(&["/", "*"]).is_ok() {
         let operator_node = node;
         let trailing_unary_expr_node = parser.unary_expr();
         let right_expr = ExpressionNode::new_with_unary(&trailing_unary_expr_node);
@@ -110,17 +110,17 @@ pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
     }
     let unary_expr_node = match token.core_token {
         CoreToken::PLUS => {
-            let plus_node = parser.expect("+", false);
+            let plus_node = parser.expect("+");
             let unary_expr_node = parser.unary_expr();
             UnaryExpressionNode::new_with_unary(UnaryOperatorKind::PLUS, &unary_expr_node)
         },
         CoreToken::DASH => {
-            let dash_node = parser.expect("-", false);
+            let dash_node = parser.expect("-");
             let unary_expr_node = parser.unary_expr();
             UnaryExpressionNode::new_with_unary(UnaryOperatorKind::MINUS, &unary_expr_node)
         },
         CoreToken::NOT  => {
-            let not_node = parser.expect("not", false);
+            let not_node = parser.expect("not");
             let unary_expr_node = parser.unary_expr();
             UnaryExpressionNode::new_with_unary(UnaryOperatorKind::NOT, &unary_expr_node)
         },
@@ -162,23 +162,23 @@ pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
     }
     let atomic_expr_node = match token.core_token {
         CoreToken::TRUE                         => {
-            let true_node = parser.expect(TRUE, false);
+            let true_node = parser.expect(TRUE);
             AtomicExpressionNode::new_with_true()
         }
         CoreToken::FALSE                        => {
-            let false_node = parser.expect(FALSE, false);
+            let false_node = parser.expect(FALSE);
             AtomicExpressionNode::new_with_false()
         }
         CoreToken::INTEGER                      => {
-            let integer_node = parser.expect(INTEGER, false);
+            let integer_node = parser.expect(INTEGER);
             AtomicExpressionNode::new_with_integer(&integer_node)
         }
         CoreToken::FLOATING_POINT_NUMBER        => {
-            let floating_point_number_node = parser.expect(FLOATING_POINT_NUMBER, false);
+            let floating_point_number_node = parser.expect(FLOATING_POINT_NUMBER);
             AtomicExpressionNode::new_with_floating_point_number(&floating_point_number_node)
         }
         CoreToken::LITERAL                      => {
-            let literal_node = parser.expect(LITERAL, false);
+            let literal_node = parser.expect(LITERAL);
             AtomicExpressionNode::new_with_literal(&literal_node)
         }
         CoreToken::IDENTIFIER                   => {
@@ -186,9 +186,9 @@ pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
             AtomicExpressionNode::new_with_atom(&atom)
         }
         CoreToken::LPAREN                       => {
-            let lparen_node = parser.expect("(", false);
+            let lparen_node = parser.expect("(");
             let expr_node = parser.expr();
-            let rparen_node = parser.expect(")", false);
+            let rparen_node = parser.expect(")");
             AtomicExpressionNode::new_with_parenthesised_expr(&expr_node)
         }
         _ => unreachable!("tokens not matching `starting_with_symbols` for atomic expression would already be eliminated")
