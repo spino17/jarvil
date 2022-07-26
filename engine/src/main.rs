@@ -9,13 +9,14 @@ mod types;
 mod ast;
 mod utils;
 mod code;
+mod cmd;
 mod server;
 
-use crate::utils::common::build_ast;
+use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use std::env::args;
 
-fn start_compiler() {
+fn start_compiler(args: Vec<String>) {
     let code_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     /*
     let mut core_lexer = CoreLexer::new();
@@ -33,27 +34,14 @@ fn start_compiler() {
     let ast = parser.parse(token_vec);
      */
     // let mut code = Code::new(code_vec);
-    let ast_result = build_ast(code_vec);
-    let ast = match ast_result {
-        Ok(ast) => ast,
-        Err(err) => {
-            print!("{}", err);
-            return;
-        }
-    };
-    // println!("{:?}", ast);
-    match context::first_error() {
-        Some(error) => {
-            print!("{}", error);
-            return;
-        },
-        None => {}
+    let result = build(code_vec);
+    match result {
+        Err(err) => println!("{}", err),
+        _ => {}
     }
 }
 
 fn main() {
     let args: Vec<String> = args().collect();
-     // Use args to check which cmd to run
-    println!("{:?}", args);
-    start_compiler();
+    start_compiler(args);
 }

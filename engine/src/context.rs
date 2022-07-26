@@ -1,5 +1,5 @@
 use rustc_hash::FxHashMap;
-use std::{collections::HashMap, f32::consts::E};
+use std::{collections::HashMap};
 use std::cell::RefCell;
 use crate::{constants::common::{KEYWORDS, TYPES, LETTERS, DIGITS}, errors::ParseError};
 
