@@ -486,10 +486,10 @@ pub struct CoreOkFunctionDeclarationNode {
     rparen: TokenNode,
     right_arrow: Option<TokenNode>,
     colon: TokenNode,
-    name: Option<TokenNode>,
-    args: Option<NameTypeSpecsNode>,
-    return_type: Option<TypeExpressionNode>,
-    block: BlockNode,
+    pub name: Option<TokenNode>,
+    pub args: Option<NameTypeSpecsNode>,
+    pub return_type: Option<TypeExpressionNode>,
+    pub block: BlockNode,
     parent: Option<ASTNode>,
 }
 
@@ -500,7 +500,7 @@ pub enum FuncKeywordKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct OkFunctionDeclarationNode(Rc<RefCell<CoreOkFunctionDeclarationNode>>);
+pub struct OkFunctionDeclarationNode(pub Rc<RefCell<CoreOkFunctionDeclarationNode>>);
 impl OkFunctionDeclarationNode {
     pub fn new(name: &Option<TokenNode>, args: &Option<NameTypeSpecsNode>, 
         return_type: &Option<TypeExpressionNode>, block: &BlockNode, func_keyword: &FuncKeywordKind, 

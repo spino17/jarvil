@@ -14,6 +14,14 @@ impl Resolver {
         }
     }
 
+    pub fn curr_scope(&self) -> Scope {
+        self.scope.clone()
+    }
+
+    pub fn set_scope(&mut self, scope: &Scope) {
+        self.scope = scope.clone();
+    }
+
     pub fn resolve(&mut self, ast: &BlockNode) {
         self.resolve_block(&ast);
     }
@@ -46,10 +54,26 @@ impl Resolver {
     pub fn resolve_func_decl(&mut self, func_decl: &FunctionDeclarationNode) {
         match &func_decl.0.as_ref().borrow().kind {
             FunctionDeclarationKind::OK(func_decl) => {
-                todo!()
+                let core_func_decl = &func_decl.0.as_ref().borrow();
+                let func_name = &core_func_decl.name;
+                let args = &core_func_decl.args;
+                let return_type = &core_func_decl.return_type;
+                let block = &core_func_decl.block;
+                match func_name {
+                    Some(func_name) => {
+                        // TODO - add function name, args and return type to the scope
+                    },
+                    None => {},
+                }
+                let saved_scope = self.curr_scope();
+                let scope = Scope::new_with_parent_scope(&saved_scope);
+                // TODO - add args to this scope
+                self.set_scope(&scope);
+                self.resolve_block(&block);
+                self.set_scope(&saved_scope);
             },
-            _ => {},
-        }
+            _ => return,
+        };
     }
 
     pub fn resolve_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
