@@ -55,7 +55,9 @@ pub enum ASTNode {
     SKIPPED_TOKENS(Weak<RefCell<CoreSkippedTokens>>),
     EXPRESSION(Weak<RefCell<CoreExpressionNode>>),
     ATOMIC_EXPRESSION(Weak<RefCell<CoreAtomicExpressionNode>>),
+    PARENTHESISED_EXPRESSION(Weak<RefCell<CoreParenthesisedExpressionNode>>),
     UNARY_EXPRESSION(Weak<RefCell<CoreUnaryExpressionNode>>),
+    ONLY_UNARY_EXPRESSION(Weak<RefCell<CoreOnlyUnaryExpressionNode>>),
     BINARY_EXPRESSION(Weak<RefCell<CoreBinaryExpressionNode>>),
     PARAMS(Weak<RefCell<CoreParamsNode>>),
     OK_PARAMS(Weak<RefCell<CoreOkParamsNode>>),
@@ -980,12 +982,11 @@ pub struct  CoreAtomicExpressionNode {
 
 #[derive(Debug, Clone)]
 pub enum AtomicExpressionKind {
-    TRUE,
-    FALSE,
+    BOOL_VALUE(TokenNode),
     INTEGER(TokenNode),
     FLOATING_POINT_NUMBER(TokenNode),
     LITERAL(TokenNode),
-    PARENTHESISED_EXPRESSION(ExpressionNode),
+    PARENTHESISED_EXPRESSION(ParenthesisedExpressionNode),
     ATOM(AtomNode),
     MISSING_TOKENS(MissingTokenNode),
 }
@@ -993,16 +994,9 @@ pub enum AtomicExpressionKind {
 #[derive(Debug, Clone)]
 pub struct AtomicExpressionNode(Rc<RefCell<CoreAtomicExpressionNode>>);
 impl AtomicExpressionNode {
-    pub fn new_with_true() -> Self {
+    pub fn new_with_bool(bool_value: &TokenNode) -> Self {
         AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
-            kind: AtomicExpressionKind::TRUE,
-            parent: None,
-        })))
-    }
-
-    pub fn new_with_false() -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
-            kind: AtomicExpressionKind::FALSE,
+            kind: AtomicExpressionKind::BOOL_VALUE(bool_value.clone()),
             parent: None,
         })))
     }
@@ -1034,12 +1028,11 @@ impl AtomicExpressionNode {
         AtomicExpressionNode(node)
     }
 
-    pub fn new_with_parenthesised_expr(expr: &ExpressionNode) -> Self {
+    pub fn new_with_parenthesised_expr(expr: &ExpressionNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
-            kind: AtomicExpressionKind::PARENTHESISED_EXPRESSION(expr.clone()),
+            kind: AtomicExpressionKind::PARENTHESISED_EXPRESSION(ParenthesisedExpressionNode::new(expr, lparen, rparen)),
             parent: None,
         }));
-        expr.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
         AtomicExpressionNode(node)
     }
 
@@ -1054,6 +1047,32 @@ impl AtomicExpressionNode {
 }
 default_node_impl!(AtomicExpressionNode);
 default_errornous_node_impl!(AtomicExpressionNode, CoreAtomicExpressionNode, AtomicExpressionKind);
+
+#[derive(Debug, Clone)]
+pub struct CoreParenthesisedExpressionNode {
+    lparen: TokenNode,
+    rparen: TokenNode,
+    expr: ExpressionNode,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ParenthesisedExpressionNode(Rc<RefCell<CoreParenthesisedExpressionNode>>);
+impl ParenthesisedExpressionNode {
+    pub fn new(expr: &ExpressionNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreParenthesisedExpressionNode{
+            lparen: lparen.clone(),
+            rparen: rparen.clone(),
+            expr: expr.clone(),
+            parent: None,
+        }));
+        lparen.set_parent(ASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
+        rparen.set_parent(ASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
+        expr.set_parent(ASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
+        ParenthesisedExpressionNode(node)
+    }
+}
+default_node_impl!(ParenthesisedExpressionNode);
 
 #[derive(Debug, Clone)]
 pub struct  CoreUnaryExpressionNode {
@@ -1071,7 +1090,7 @@ pub enum UnaryOperatorKind {
 #[derive(Debug, Clone)]
 pub enum UnaryExpressionKind {
     ATOMIC(AtomicExpressionNode),
-    UNARY((UnaryOperatorKind, UnaryExpressionNode)),
+    UNARY(OnlyUnaryExpressionNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -1087,17 +1106,41 @@ impl UnaryExpressionNode {
         UnaryExpressionNode(node)
     }
 
-    pub fn new_with_unary(operator: UnaryOperatorKind, unary_expr: &UnaryExpressionNode) -> Self {
+    pub fn new_with_unary(unary_expr: &UnaryExpressionNode, operator: &TokenNode, operator_kind: UnaryOperatorKind) -> Self {
         let node = Rc::new(RefCell::new(CoreUnaryExpressionNode{
-            kind: UnaryExpressionKind::UNARY((operator, unary_expr.clone())),
+            kind: UnaryExpressionKind::UNARY(OnlyUnaryExpressionNode::new(operator, unary_expr, operator_kind)),
             parent: None,
         }));
-        unary_expr.set_parent(ASTNode::UNARY_EXPRESSION(Rc::downgrade(&node)));
         UnaryExpressionNode(node)
     }
 }
 default_node_impl!(UnaryExpressionNode);
 default_errornous_node_impl!(UnaryExpressionNode, CoreUnaryExpressionNode, UnaryExpressionKind);
+
+#[derive(Debug, Clone)]
+pub struct CoreOnlyUnaryExpressionNode {
+    operator: TokenNode,
+    unary_expr: UnaryExpressionNode,
+    operator_kind: UnaryOperatorKind,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct OnlyUnaryExpressionNode(Rc<RefCell<CoreOnlyUnaryExpressionNode>>);
+impl OnlyUnaryExpressionNode {
+    pub fn new(operator: &TokenNode, unary_expr: &UnaryExpressionNode, operator_kind: UnaryOperatorKind) -> Self {
+        let node = Rc::new(RefCell::new(CoreOnlyUnaryExpressionNode{
+            operator: operator.clone(),
+            unary_expr: unary_expr.clone(),
+            operator_kind,
+            parent: None,
+        }));
+        operator.set_parent(ASTNode::ONLY_UNARY_EXPRESSION(Rc::downgrade(&node)));
+        unary_expr.set_parent(ASTNode::ONLY_UNARY_EXPRESSION(Rc::downgrade(&node)));
+        OnlyUnaryExpressionNode(node)
+    }
+}
+default_node_impl!(OnlyUnaryExpressionNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreBinaryExpressionNode {

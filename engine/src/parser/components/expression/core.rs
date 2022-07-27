@@ -112,17 +112,17 @@ pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
         CoreToken::PLUS => {
             let plus_node = parser.expect("+");
             let unary_expr_node = parser.unary_expr();
-            UnaryExpressionNode::new_with_unary(UnaryOperatorKind::PLUS, &unary_expr_node)
+            UnaryExpressionNode::new_with_unary(&unary_expr_node, &plus_node, UnaryOperatorKind::PLUS)
         },
         CoreToken::DASH => {
             let dash_node = parser.expect("-");
             let unary_expr_node = parser.unary_expr();
-            UnaryExpressionNode::new_with_unary(UnaryOperatorKind::MINUS, &unary_expr_node)
+            UnaryExpressionNode::new_with_unary(&unary_expr_node, &dash_node, UnaryOperatorKind::MINUS)
         },
         CoreToken::NOT  => {
             let not_node = parser.expect("not");
             let unary_expr_node = parser.unary_expr();
-            UnaryExpressionNode::new_with_unary(UnaryOperatorKind::NOT, &unary_expr_node)
+            UnaryExpressionNode::new_with_unary(&unary_expr_node, &not_node, UnaryOperatorKind::NOT)
         },
         _ => {
             let atomic_expr_node = parser.atomic_expr();
@@ -163,11 +163,11 @@ pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
     let atomic_expr_node = match token.core_token {
         CoreToken::TRUE                         => {
             let true_node = parser.expect(TRUE);
-            AtomicExpressionNode::new_with_true()
+            AtomicExpressionNode::new_with_bool(&true_node)
         }
         CoreToken::FALSE                        => {
             let false_node = parser.expect(FALSE);
-            AtomicExpressionNode::new_with_false()
+            AtomicExpressionNode::new_with_bool(&false_node)
         }
         CoreToken::INTEGER                      => {
             let integer_node = parser.expect(INTEGER);
@@ -189,7 +189,7 @@ pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
             let lparen_node = parser.expect("(");
             let expr_node = parser.expr();
             let rparen_node = parser.expect(")");
-            AtomicExpressionNode::new_with_parenthesised_expr(&expr_node)
+            AtomicExpressionNode::new_with_parenthesised_expr(&expr_node, &lparen_node, &rparen_node)
         }
         _ => unreachable!("tokens not matching `starting_with_symbols` for atomic expression would already be eliminated")
     };
