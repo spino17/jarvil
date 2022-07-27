@@ -293,6 +293,10 @@ impl Token {
         self.to_string()
     }
 
+    pub fn token_value(&self, code: &Code) -> String {
+        code.token_value(self.start_index, Some(self.end_index))
+    }
+
     pub fn width(&self) -> usize {
         self.end_index - self.start_index
     }

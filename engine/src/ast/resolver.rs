@@ -1,16 +1,20 @@
-use crate::scope::core::Scope;
+use std::rc::Rc;
+
+use crate::{scope::core::Scope, code::Code};
 use crate::ast::ast::BlockNode;
 
-use super::ast::{StatemenIndentWrapper, StatementNode, StatementNodeKind, FunctionDeclarationNode, VariableDeclarationNode, TypeDeclarationNode, FunctionDeclarationKind};
+use super::ast::{StatemenIndentWrapper, StatementNode, StatementNodeKind, FunctionDeclarationNode, VariableDeclarationNode, TypeDeclarationNode, FunctionDeclarationKind, TokenKind};
 
 pub struct Resolver {
     scope: Scope,
+    code: Code,
 }
 
 impl Resolver {
-    pub fn new() -> Self {
+    pub fn new(code: &Code) -> Self {
         Resolver{
             scope: Scope::new(),
+            code: code.clone(),
         }
     }
 
@@ -34,6 +38,7 @@ impl Resolver {
                 _ => {},
             }
         }
+        block.set_scope(&self.curr_scope());
     }
 
     pub fn resolve_statement(&mut self, stmt: &StatementNode) {
@@ -62,6 +67,17 @@ impl Resolver {
                 match func_name {
                     Some(func_name) => {
                         // TODO - add function name, args and return type to the scope
+                        match &func_name.0.as_ref().borrow().kind {
+                            TokenKind::OK(ok_func_name) => {
+                                // TODO - add func name, args, return_type to scope
+                                let func_name_str = Rc::new(ok_func_name.token_value(&self.code));
+                                let return_type = match return_type {
+                                    Some(return_type) => Some(return_type.get_type_obj()),
+                                    None => None,
+                                };
+                            },
+                            _ => {}
+                        }
                     },
                     None => {},
                 }

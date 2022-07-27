@@ -3,7 +3,7 @@
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::{core::Scope, self}, lexer::token::{Token, CoreToken}};
+use crate::{scope::{core::Scope, self}, lexer::token::{Token, CoreToken}, types::core::Type, code::Code};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
@@ -711,6 +711,10 @@ impl TypeExpressionNode {
             parent: None,
         })))
     }
+
+    pub fn get_type_obj(&self) -> Type {
+        todo!()
+    }
 }
 default_node_impl!(TypeExpressionNode);
 default_errornous_node_impl!(TypeExpressionNode, CoreTypeExpressionNode, TypeExpressionKind);
@@ -790,7 +794,7 @@ default_node_impl!(UserDefinedTypeNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreTokenNode {
-    kind: TokenKind,
+    pub kind: TokenKind,
     parent: Option<ASTNode>,
 }
 
@@ -802,7 +806,7 @@ pub enum TokenKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct TokenNode(Rc<RefCell<CoreTokenNode>>);
+pub struct TokenNode(pub Rc<RefCell<CoreTokenNode>>);
 impl TokenNode {
     pub fn new_with_ok_token(token: &Token, lookahead: usize) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode{
@@ -874,6 +878,10 @@ impl OkTokenNode {
             CoreToken::OR               => Some(BinaryOperatorKind::OR),
             _ => None,
         }
+    }
+
+    pub fn token_value(&self, code: &Code) -> String {
+        self.0.as_ref().borrow().token.token_value(code)
     }
 }
 default_node_impl!(OkTokenNode);
