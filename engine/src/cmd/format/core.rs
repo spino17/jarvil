@@ -7,21 +7,23 @@
 use crate::ast::ast::{StatementNode, BlockNode};
 use crate::errors::ParseError;
 use crate::utils::common::build_ast;
-use crate::context;
+use crate::{context, code::Code};
 use std::mem;
 
 pub struct Formatter {
     formatted_code_str: String,
     indent_level: i64,
     line_number: usize,
+    code: Code,
 }
 
 impl Formatter {
-    pub fn new() -> Self {
+    pub fn new(code: &Code) -> Self {
         Formatter {
             formatted_code_str: String::default(),
             indent_level: 0,
             line_number: 1,
+            code: code.clone(),
         }
     }
 
@@ -34,14 +36,15 @@ impl Formatter {
     }
 
     pub fn format(code_vec: Vec<char>) -> Result<String, ParseError> {
-        let ast = build_ast(code_vec);
+        let mut code = Code::new(code_vec);
+        let ast = build_ast(&mut code);
         match context::first_error() {
             Some(err) => {
                 return Err(err)
             },
             None => {}
         }
-        let mut formatter = Formatter::new();
+        let mut formatter = Formatter::new(&code);
         // TODO - use `ast` to get the formatted version of code
         // 1. walk the ast and get chunks, rules and spans tree
         // 2. use A* algorithm with number of overflowing chars and minimum splits as heuristics function
