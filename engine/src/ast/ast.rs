@@ -171,7 +171,7 @@ default_node_impl!(SkippedTokens);
 
 #[derive(Debug, Clone)]
 pub struct CoreStatementNode {
-    kind: StatementNodeKind,
+    pub kind: StatementNodeKind,
     parent: Option<ASTNode>,
 }
 
@@ -188,7 +188,7 @@ pub enum StatementNodeKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct StatementNode(Rc<RefCell<CoreStatementNode>>);
+pub struct StatementNode(pub Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
     pub fn new_with_expression(expr: &ExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode{
