@@ -14,7 +14,7 @@ impl Resolver {
         }
     }
 
-    pub fn resolve(&mut self, ast: BlockNode) {
+    pub fn resolve(&mut self, ast: &BlockNode) {
         self.resolve_block(&ast);
     }
 
