@@ -349,18 +349,23 @@ impl PackratParser {
                     }
                 },
                 _ => {
+                    /*
                     match &token.trivia {
                         Some(trivia_vec) => {
                             let blank_token = &trivia_vec[0];
                             match blank_token.core_token {
                                 CoreToken::BLANK => {
                                     indent_spaces = (blank_token.end_index - blank_token.start_index) as i64;
+                                    println!("calculated indent space: {}", indent_spaces);
+                                    println!("from line number: {}", token.start_index - self.code.get_line_start_index(token.line_number))
                                 },
                                 _ => indent_spaces = 0,
                             }
                         },
                         None => indent_spaces = 0,
                     }
+                     */
+                    indent_spaces = (token.start_index - self.code.get_line_start_index(token.line_number)) as i64;
                     expected_indent_spaces = expected_indent_spaces + self.correction_indent();
                     if indent_spaces == expected_indent_spaces {
                         return IndentResult{

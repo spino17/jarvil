@@ -28,6 +28,11 @@ impl Code {
         self.code_vec[index]
     }
 
+    pub fn get_line_start_index(&self, line_number: usize) -> usize {
+        let code_lines = self.extract_code_lines();
+        code_lines[line_number - 1]
+    }
+
     pub fn set_code_lines(&mut self, code_lines: Vec<usize>) {
         self.code_lines = Some(Rc::new(code_lines));
     } 

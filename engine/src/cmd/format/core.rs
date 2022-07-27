@@ -4,7 +4,7 @@
 // The algorithm used for picking up optimal line breaks is heavily inspired by the writings of Bob Nystrom in the post:
 // http://journal.stuffwithstuff.com/2015/09/08/the-hardest-program-ive-ever-written/
 
-use crate::ast::ast::{StatementNode, BlockNode, StatementNodeKind, ExpressionNode, VariableDeclarationNode, FunctionDeclarationNode, StructStatementNode, TypeDeclarationNode};
+use crate::ast::ast::{StatementNode, BlockNode};
 use crate::errors::ParseError;
 use crate::utils::common::build_ast;
 use crate::{context, code::Code};
