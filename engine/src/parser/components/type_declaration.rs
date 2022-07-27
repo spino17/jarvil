@@ -21,11 +21,12 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
             }, 
             |parser| {parser.struct_stmt()},
             &[IDENTIFIER]);
-            TypeDeclarationNode::new_with_struct(&type_name_node, &block_node)
+            TypeDeclarationNode::new_with_struct(&type_name_node, &block_node, &type_keyword_node, &colon_node)
         },
         CoreToken::LPAREN   => {
             // lambda type
-            let args_node = parser.name_type_specs_within_parenthesis();
+            let (args_node, lparen_node, rparen_node) 
+            = parser.name_type_specs_within_parenthesis();
             let token = &parser.curr_token();
             let mut return_type_node: Option<TypeExpressionNode> = None;
             let lambda_node = match token.core_token {
@@ -34,19 +35,22 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                     return_type_node = Some(parser.type_expr());
                     let newline_node = parser.expects(&["\n", ENDMARKER]);
                     LambdaDeclarationNode::new(
-                        &type_name_node, &args_node, &return_type_node
+                        &type_name_node, &args_node, &return_type_node, &type_keyword_node, &colon_node, 
+                        &lparen_node, &rparen_node, &Some(r_arrow_node), &newline_node
                     )
                 },
-                CoreToken::NEWLINE      => {
+                CoreToken::NEWLINE     => {
                     let newline_node = parser.expect("\n");
                     LambdaDeclarationNode::new(
-                        &type_name_node, &args_node, &None
+                        &type_name_node, &args_node, &None, &type_keyword_node, &colon_node,
+                        &lparen_node, &rparen_node, &None, &newline_node
                     )
                 },
                 CoreToken::ENDMARKER    => {
                     let endmarker_node = parser.expect(ENDMARKER);
                     LambdaDeclarationNode::new(
-                        &type_name_node, &args_node, &None
+                        &type_name_node, &args_node, &None, &type_keyword_node, &colon_node,
+                        &lparen_node, &rparen_node, &None, &endmarker_node
                     )
                 }
                 _                       => {

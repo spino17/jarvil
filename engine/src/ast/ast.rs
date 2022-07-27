@@ -87,6 +87,7 @@ pub enum StatemenIndentWrapper {
 
 #[derive(Debug, Clone)]
 pub struct CoreBlockNode {
+    newline: TokenNode,
     stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
     scope: Option<Scope>,
     parent: Option<ASTNode>,
@@ -95,12 +96,14 @@ pub struct CoreBlockNode {
 #[derive(Debug, Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>) -> Self {
+    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode{
+            newline: newline.clone(),
             stmts: stmts.clone(),
             scope: None,
             parent: None,
         }));
+        newline.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
         for stmt in &*stmts.as_ref().borrow() {
             match stmt {
                 StatemenIndentWrapper::CORRECTLY_INDENTED(correct_indented_stmt) => {
@@ -240,6 +243,7 @@ default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementNodeKind
 
 #[derive(Debug, Clone)]
 pub struct CoreAssignmentNode {
+    equal: TokenNode,
     l_atom: AtomNode,
     r_assign: RAssignmentNode,
     parent: Option<ASTNode>,
@@ -248,12 +252,14 @@ pub struct CoreAssignmentNode {
 #[derive(Debug, Clone)]
 pub struct AssignmentNode(Rc<RefCell<CoreAssignmentNode>>);
 impl AssignmentNode {
-    pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode) -> Self {
+    pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAssignmentNode{
+            equal: equal.clone(),
             l_atom: l_atom.clone(),
             r_assign: r_assign.clone(),
             parent: None,
         }));
+        equal.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
         l_atom.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
         r_assign.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
         AssignmentNode(node)
@@ -270,9 +276,9 @@ pub struct CoreStructStatementNode {
 #[derive(Debug, Clone)]
 pub struct StructStatementNode(Rc<RefCell<CoreStructStatementNode>>);
 impl StructStatementNode {
-    pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode) -> Self {
+    pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStructStatementNode{
-            name_type_spec: NameTypeSpecNode::new(param_name, param_type),
+            name_type_spec: NameTypeSpecNode::new(param_name, param_type, colon),
             parent: None,
         }));
         StructStatementNode(node)
@@ -296,9 +302,9 @@ pub enum TypeDeclarationKind {
 #[derive(Debug, Clone)]
 pub struct TypeDeclarationNode(Rc<RefCell<CoreTypeDeclarationNode>>);
 impl TypeDeclarationNode {
-    pub fn new_with_struct(name: &TokenNode, block: &BlockNode) -> Self {
+    pub fn new_with_struct(name: &TokenNode, block: &BlockNode, type_keyword: &TokenNode, colon: &TokenNode) -> Self {
         TypeDeclarationNode(Rc::new(RefCell::new(CoreTypeDeclarationNode{
-            kind: TypeDeclarationKind::STRUCT(StructDeclarationNode::new(name, block)),
+            kind: TypeDeclarationKind::STRUCT(StructDeclarationNode::new(name, block, type_keyword, colon)),
             parent: None,
         })))
     }
@@ -317,6 +323,8 @@ default_errornous_node_impl!(TypeDeclarationNode, CoreTypeDeclarationNode, TypeD
 
 #[derive(Debug, Clone)]
 pub struct CoreStructDeclarationNode {
+    type_keyword: TokenNode,
+    colon: TokenNode,
     name: TokenNode,
     block: BlockNode,
     parent: Option<ASTNode>,
@@ -325,12 +333,16 @@ pub struct CoreStructDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct StructDeclarationNode(Rc<RefCell<CoreStructDeclarationNode>>);
 impl StructDeclarationNode {
-    pub fn new(name: &TokenNode, block: &BlockNode) -> Self {
+    pub fn new(name: &TokenNode, block: &BlockNode, type_keyword: &TokenNode, colon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStructDeclarationNode{
+            type_keyword: type_keyword.clone(),
+            colon: colon.clone(),
             name: name.clone(),
             block: block.clone(),
             parent: None,
         }));
+        type_keyword.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
+        colon.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
         name.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
         block.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
         StructDeclarationNode(node)
@@ -353,9 +365,13 @@ pub enum LambdaDeclarationKind {
 #[derive(Debug, Clone)]
 pub struct LambdaDeclarationNode(Rc<RefCell<CoreLambdaDeclarationNode>>);
 impl LambdaDeclarationNode {
-    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, return_type: &Option<TypeExpressionNode>) -> Self {
+    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, 
+        return_type: &Option<TypeExpressionNode>, type_keyword: &TokenNode, colon: &TokenNode,
+    lparen: &TokenNode, rparen: &TokenNode, right_arrow: &Option<TokenNode>, newline: &TokenNode) -> Self {
         LambdaDeclarationNode(Rc::new(RefCell::new(CoreLambdaDeclarationNode{
-            kind: LambdaDeclarationKind::OK(OkLambdaDeclarationNode::new(name, args, return_type)),
+            kind: LambdaDeclarationKind::OK(OkLambdaDeclarationNode::new(
+                name, args, return_type, type_keyword, colon, lparen, rparen, right_arrow, newline
+            )),
             parent: None,
         })))
     }
@@ -365,6 +381,12 @@ default_errornous_node_impl!(LambdaDeclarationNode, CoreLambdaDeclarationNode, L
 
 #[derive(Debug, Clone)]
 pub struct CoreOkLambdaDeclarationNode {
+    type_keyword: TokenNode, 
+    colon: TokenNode,
+    lparen: TokenNode,
+    rparen: TokenNode,
+    right_arrow: Option<TokenNode>,
+    newline: TokenNode,
     name: TokenNode,
     args: Option<NameTypeSpecsNode>,
     return_type: Option<TypeExpressionNode>,
@@ -374,19 +396,39 @@ pub struct CoreOkLambdaDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct OkLambdaDeclarationNode(Rc<RefCell<CoreOkLambdaDeclarationNode>>);
 impl OkLambdaDeclarationNode {
-    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, return_type: &Option<TypeExpressionNode>) -> Self {
+    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, 
+        return_type: &Option<TypeExpressionNode>, type_keyword: &TokenNode, colon: &TokenNode,
+        lparen: &TokenNode, rparen: &TokenNode, right_arrow: &Option<TokenNode>, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreOkLambdaDeclarationNode{
+            lparen: lparen.clone(),
+            rparen: rparen.clone(),
+            right_arrow: right_arrow.clone(),
+            newline: newline.clone(),
+            type_keyword: type_keyword.clone(),
+            colon: colon.clone(),
             name: name.clone(),
             args: args.clone(),
             return_type: return_type.clone(),
             parent: None,
         }));
+        lparen.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+        rparen.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+        newline.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+        type_keyword.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+        colon.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
         name.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
         match args {
             Some(args) => args.set_parent(
                 ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node))
             ),
             None => {},
+        }
+        match right_arrow {
+            Some(right_arrow) => right_arrow.set_parent(
+                ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node))
+            ),
+            None => {},
+
         }
         match return_type {
             Some(return_type) => return_type.set_parent(
@@ -415,9 +457,12 @@ pub enum FunctionDeclarationKind {
 pub struct FunctionDeclarationNode(Rc<RefCell<CoreFunctionDeclarationNode>>);
 impl FunctionDeclarationNode {
     pub fn new(name: &Option<TokenNode>, args: &Option<NameTypeSpecsNode>, 
-        return_type: &Option<TypeExpressionNode>, block: &BlockNode) -> Self {
+        return_type: &Option<TypeExpressionNode>, block: &BlockNode, func_keyword: &FuncKeywordKind, 
+        lparent: &TokenNode, rparen: &TokenNode, right_arrow: &Option<TokenNode>, colon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreFunctionDeclarationNode{
-            kind: FunctionDeclarationKind::OK(OkFunctionDeclarationNode::new(name, args, return_type, block)),
+            kind: FunctionDeclarationKind::OK(OkFunctionDeclarationNode::new(
+                name, args, return_type, block, func_keyword, lparent, rparen, right_arrow, colon
+            )),
             parent: None,
         }));
         FunctionDeclarationNode(node)
@@ -428,6 +473,11 @@ default_errornous_node_impl!(FunctionDeclarationNode, CoreFunctionDeclarationNod
 
 #[derive(Debug, Clone)]
 pub struct CoreOkFunctionDeclarationNode {
+    func_keyword: FuncKeywordKind,
+    lparen: TokenNode,
+    rparen: TokenNode,
+    right_arrow: Option<TokenNode>,
+    colon: TokenNode,
     name: Option<TokenNode>,
     args: Option<NameTypeSpecsNode>,
     return_type: Option<TypeExpressionNode>,
@@ -436,17 +486,40 @@ pub struct CoreOkFunctionDeclarationNode {
 }
 
 #[derive(Debug, Clone)]
+pub enum FuncKeywordKind {
+    DEF(TokenNode),
+    FUNC(TokenNode),
+}
+
+#[derive(Debug, Clone)]
 pub struct OkFunctionDeclarationNode(Rc<RefCell<CoreOkFunctionDeclarationNode>>);
 impl OkFunctionDeclarationNode {
     pub fn new(name: &Option<TokenNode>, args: &Option<NameTypeSpecsNode>, 
-        return_type: &Option<TypeExpressionNode>, block: &BlockNode) -> Self {
+        return_type: &Option<TypeExpressionNode>, block: &BlockNode, func_keyword: &FuncKeywordKind, 
+        lparen: &TokenNode, rparen: &TokenNode, right_arrow: &Option<TokenNode>, colon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreOkFunctionDeclarationNode{
+            func_keyword: func_keyword.clone(),
+            lparen: lparen.clone(),
+            rparen: rparen.clone(),
+            right_arrow: right_arrow.clone(),
+            colon: colon.clone(),
             name: name.clone(),
             args: args.clone(),
             return_type: return_type.clone(),
             block: block.clone(),
             parent: None,
         }));
+        lparen.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+        rparen.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+        colon.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+        match func_keyword {
+            FuncKeywordKind::DEF(def_node) => def_node.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            FuncKeywordKind::FUNC(func_node) => func_node.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
+        }
+        match right_arrow {
+            Some(right_arrow) => right_arrow.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            None => {},
+        }
         match name {
             Some(name) => name.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
             None => {},
@@ -471,6 +544,9 @@ default_node_impl!(OkFunctionDeclarationNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreVariableDeclarationNode {
+    let_keyword: TokenNode,
+    equal: TokenNode,
+    newline: TokenNode,
     name: TokenNode,
     r_assign: RAssignmentNode,
     parent: Option<ASTNode>,
@@ -479,12 +555,19 @@ pub struct CoreVariableDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct VariableDeclarationNode(Rc<RefCell<CoreVariableDeclarationNode>>);
 impl VariableDeclarationNode {
-    pub fn new(name: &TokenNode, r_assign: &RAssignmentNode) -> Self {
+    pub fn new(name: &TokenNode, 
+        r_assign: &RAssignmentNode, let_keyword: &TokenNode, equal: &TokenNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreVariableDeclarationNode{
+            let_keyword: let_keyword.clone(),
+            equal: equal.clone(),
+            newline: newline.clone(),
             name: name.clone(),
             r_assign: r_assign.clone(),
             parent: None,
         }));
+        let_keyword.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
+        equal.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
+        newline.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
         name.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
         r_assign.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
         VariableDeclarationNode(node)
@@ -521,6 +604,7 @@ default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode, NameTypeS
 
 #[derive(Debug, Clone)]
 pub struct CoreOkNameTypeSpecsNode {
+    comma: Option<TokenNode>,
     arg: NameTypeSpecNode,
     remaining_args: Option<NameTypeSpecsNode>,
     parent: Option<ASTNode>,
@@ -529,12 +613,14 @@ pub struct CoreOkNameTypeSpecsNode {
 #[derive(Debug, Clone)]
 pub struct OkNameTypeSpecsNode(Rc<RefCell<CoreOkNameTypeSpecsNode>>);
 impl OkNameTypeSpecsNode {
-    pub fn new_with_args(arg: &NameTypeSpecNode, remaining_args: &NameTypeSpecsNode) -> Self {
+    pub fn new_with_args(arg: &NameTypeSpecNode, remaining_args: &NameTypeSpecsNode, comma: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreOkNameTypeSpecsNode{
+            comma: Some(comma.clone()),
             arg: arg.clone(),
             remaining_args: Some(remaining_args.clone()),
             parent: None,
         }));
+        comma.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
         arg.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
         remaining_args.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
         OkNameTypeSpecsNode(node)
@@ -542,6 +628,7 @@ impl OkNameTypeSpecsNode {
 
     pub fn new_with_single_arg(arg: &NameTypeSpecNode) -> Self {
         let node = Rc::new(RefCell::new(CoreOkNameTypeSpecsNode{
+            comma: None,
             arg: arg.clone(),
             remaining_args: None,
             parent: None,
@@ -554,6 +641,7 @@ default_node_impl!(OkNameTypeSpecsNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecNode {
+    colon: TokenNode,
     param_name: TokenNode,
     param_type: TypeExpressionNode,
     parent: Option<ASTNode>,
@@ -562,12 +650,14 @@ pub struct CoreNameTypeSpecNode {
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(Rc<RefCell<CoreNameTypeSpecNode>>);
 impl NameTypeSpecNode {
-    pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode) -> Self {
+    pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreNameTypeSpecNode{
+            colon: colon.clone(),
             param_name: param_name.clone(),
             param_type: param_type.clone(),
             parent: None,
         }));
+        colon.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
         param_name.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
         param_type.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
         NameTypeSpecNode(node)

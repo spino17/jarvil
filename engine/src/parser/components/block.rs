@@ -41,7 +41,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
             IndentResultKind::BLOCK_OVER => {
                 parser.set_indent_level(parser.curr_indent_level() - 1);
-                return BlockNode::new(&stmts_vec)
+                return BlockNode::new(&stmts_vec, &newline_node)
             }
         };
         while !is_starting_with_fn(&parser.curr_token()) {
@@ -61,7 +61,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
         let token = &parser.curr_token();
         if token.is_eq(ENDMARKER) {
             parser.set_indent_level(parser.curr_indent_level() - 1);
-            return BlockNode::new(&stmts_vec)
+            return BlockNode::new(&stmts_vec, &newline_node)
         }
         if token.is_eq("\n") {
             continue;

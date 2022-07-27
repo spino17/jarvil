@@ -1,4 +1,4 @@
-use crate::ast::ast::{NameTypeSpecNode, OkNameTypeSpecsNode, FunctionDeclarationNode, TokenNode};
+use crate::ast::ast::{NameTypeSpecNode, OkNameTypeSpecsNode, FunctionDeclarationNode, TokenNode, FuncKeywordKind};
 use crate::{parser::parser::PackratParser, constants::common::IDENTIFIER, ast::ast::NameTypeSpecsNode};
 use crate::lexer::token::{CoreToken};
 use std::rc::Rc;
@@ -10,7 +10,7 @@ pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
     let name_node = parser.expect(IDENTIFIER);
     let colon_node = parser.expect(":");
     let type_expr_node = parser.type_expr();
-    NameTypeSpecNode::new(&name_node, &type_expr_node)
+    NameTypeSpecNode::new(&name_node, &type_expr_node, &colon_node)
 }
 
 pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
@@ -23,7 +23,7 @@ pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
             let comma_node = parser.expect(",");
             let remaining_args_node = parser.name_type_specs();
             let ok_name_type_specs_node = OkNameTypeSpecsNode::new_with_args(
-                &first_arg_node, &remaining_args_node
+                &first_arg_node, &remaining_args_node, &comma_node
             );
             return NameTypeSpecsNode::new(&ok_name_type_specs_node)
         },
@@ -44,24 +44,26 @@ pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
     }
 }
 
-pub fn name_type_specs_within_parenthesis(parser: &mut PackratParser) -> Option<NameTypeSpecsNode> {
+pub fn name_type_specs_within_parenthesis(parser: &mut PackratParser) -> (Option<NameTypeSpecsNode>, TokenNode, TokenNode) {
     let lparen_node = parser.expect("(");
     let mut args: Option<NameTypeSpecsNode> = None;
     if !parser.check_curr_token(")") {
         args = Some(parser.name_type_specs());
     }
     let rparen_node = parser.expect(")");
-    args
+    (args, lparen_node, rparen_node)
 }
 
-pub fn function_name(parser: &mut PackratParser) -> TokenNode {
-    let def_node = parser.expect("def");
+pub fn function_name(parser: &mut PackratParser) -> (TokenNode, TokenNode) {
+    let def_keyword_node = parser.expect("def");
     let name_node = parser.expect(IDENTIFIER);
-    name_node
+    (name_node, def_keyword_node)
 }
 
-pub fn function_decl(parser: &mut PackratParser, name_node: Option<&TokenNode>) -> FunctionDeclarationNode {
-    let args_node = parser.name_type_specs_within_parenthesis();
+pub fn function_decl(parser: &mut PackratParser, 
+    name_node: Option<&TokenNode>, func_keyword_node: &FuncKeywordKind) -> FunctionDeclarationNode {
+    let (args_node, lparen_node, rparen_node) 
+    = parser.name_type_specs_within_parenthesis();
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::RIGHT_ARROW  => {
@@ -77,7 +79,10 @@ pub fn function_decl(parser: &mut PackratParser, name_node: Option<&TokenNode>) 
                 Some(name_node) => Some(name_node.clone()),
                 None => None,
             };
-            return FunctionDeclarationNode::new(&name_node, &args_node, &Some(return_type), &func_block_node)
+            return FunctionDeclarationNode::new(
+                &name_node, &args_node, &Some(return_type), &func_block_node, 
+                func_keyword_node, &lparen_node, &rparen_node, &Some(r_arrow_node), &colon_node
+            )
         },
         CoreToken::COLON        => {
             let colon_node = parser.expect(":");
@@ -90,7 +95,10 @@ pub fn function_decl(parser: &mut PackratParser, name_node: Option<&TokenNode>) 
                 Some(name_node) => Some(name_node.clone()),
                 None => None,
             };
-            return FunctionDeclarationNode::new(&name_node, &args_node, &None, &func_block_node)
+            return FunctionDeclarationNode::new(
+                &name_node, &args_node, &None, &func_block_node, 
+                func_keyword_node, &lparen_node, &rparen_node, &None, &colon_node
+            )
         },
         _                       => {
             parser.log_missing_token_error_for_multiple_expected_symbols(

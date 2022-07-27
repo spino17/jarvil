@@ -1,4 +1,4 @@
-use crate::ast::ast::{StatementNode, StructStatementNode};
+use crate::ast::ast::{StatementNode, StructStatementNode, FuncKeywordKind};
 use crate::constants::common::{IDENTIFIER, ENDMARKER};
 use crate::parser::parser::{PackratParser};
 use crate::lexer::token::{Token,CoreToken};
@@ -42,8 +42,10 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
             StatementNode::new_with_variable_declaration(&variable_decl_node)
         },
         CoreToken::DEF                  => {
-            let function_name = parser.function_name();
-            let function_decl_node = parser.function_decl(Some(&function_name));
+            let (function_name, def_keyword) = parser.function_name();
+            let function_decl_node = parser.function_decl(
+                Some(&function_name), &FuncKeywordKind::DEF(def_keyword)
+            );
             StatementNode::new_with_function_declaration(&function_decl_node)
         },
         CoreToken::FOR                  => todo!(),
@@ -81,6 +83,8 @@ pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {
     let colon_node = parser.expect(":");
     let type_expr_node = parser.type_expr();
     let newline_node = parser.expects(&["\n", ENDMARKER]);
-    let struct_stmt = StructStatementNode::new(&struct_name, &type_expr_node);
+    let struct_stmt = StructStatementNode::new(
+        &struct_name, &type_expr_node, &colon_node
+    );
     StatementNode::new_with_struct_stmt(&struct_stmt)
 }

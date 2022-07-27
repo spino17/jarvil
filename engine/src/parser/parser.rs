@@ -5,7 +5,7 @@
 
 use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, NameTypeSpecsNode, SkippedTokenNode, 
     ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, 
-    NameTypeSpecNode, FunctionDeclarationNode, TypeDeclarationNode, RAssignmentNode, AssignmentNode};
+    NameTypeSpecNode, FunctionDeclarationNode, TypeDeclarationNode, RAssignmentNode, AssignmentNode, FuncKeywordKind};
 use crate::code::Code;
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
@@ -517,7 +517,7 @@ impl PackratParser {
         components::function_declaration::name_type_specs(self)
     }
 
-    pub fn name_type_specs_within_parenthesis(&mut self) -> Option<NameTypeSpecsNode> {
+    pub fn name_type_specs_within_parenthesis(&mut self) -> (Option<NameTypeSpecsNode>, TokenNode, TokenNode) {
         components::function_declaration::name_type_specs_within_parenthesis(self)
     }
 
@@ -525,12 +525,12 @@ impl PackratParser {
         components::common::r_assign(self, identifier_name)
     }
 
-    pub fn function_name(&mut self) -> TokenNode {
+    pub fn function_name(&mut self) -> (TokenNode, TokenNode) {
         components::function_declaration::function_name(self)
     }
 
-    pub fn function_decl(&mut self, name: Option<&TokenNode>) -> FunctionDeclarationNode {
-        components::function_declaration::function_decl(self, name)
+    pub fn function_decl(&mut self, name: Option<&TokenNode>, func_keyword: &FuncKeywordKind) -> FunctionDeclarationNode {
+        components::function_declaration::function_decl(self, name, func_keyword)
     }
 
     pub fn struct_stmt(&mut self) -> StatementNode {
