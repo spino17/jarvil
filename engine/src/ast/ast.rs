@@ -3,7 +3,7 @@
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::{core::Scope}, lexer::token::{Token, CoreToken}};
+use crate::{scope::{core::Scope, self}, lexer::token::{Token, CoreToken}};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
@@ -90,13 +90,13 @@ pub enum StatemenIndentWrapper {
 #[derive(Debug, Clone)]
 pub struct CoreBlockNode {
     newline: TokenNode,
-    stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
+    pub stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
     scope: Option<Scope>,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
+pub struct BlockNode(pub Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
     pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode{
@@ -126,6 +126,10 @@ impl BlockNode {
             }
         }
         BlockNode(node)
+    }
+
+    pub fn set_scope(&self, scope: &Scope) {
+        self.0.as_ref().borrow_mut().scope = Some(scope.clone());
     }
 }
 default_node_impl!(BlockNode);
@@ -447,7 +451,7 @@ default_node_impl!(OkLambdaDeclarationNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreFunctionDeclarationNode {
-    kind: FunctionDeclarationKind,
+    pub kind: FunctionDeclarationKind,
     parent: Option<ASTNode>,
 }
 
@@ -458,7 +462,7 @@ pub enum FunctionDeclarationKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct FunctionDeclarationNode(Rc<RefCell<CoreFunctionDeclarationNode>>);
+pub struct FunctionDeclarationNode(pub Rc<RefCell<CoreFunctionDeclarationNode>>);
 impl FunctionDeclarationNode {
     pub fn new(name: &Option<TokenNode>, args: &Option<NameTypeSpecsNode>, 
         return_type: &Option<TypeExpressionNode>, block: &BlockNode, func_keyword: &FuncKeywordKind, 
