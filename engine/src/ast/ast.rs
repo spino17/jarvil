@@ -269,6 +269,7 @@ default_node_impl!(AssignmentNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreStructStatementNode {
+    newline: TokenNode,
     name_type_spec: NameTypeSpecNode,
     parent: Option<ASTNode>,
 }
@@ -276,8 +277,9 @@ pub struct CoreStructStatementNode {
 #[derive(Debug, Clone)]
 pub struct StructStatementNode(Rc<RefCell<CoreStructStatementNode>>);
 impl StructStatementNode {
-    pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
+    pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStructStatementNode{
+            newline: newline.clone(),
             name_type_spec: NameTypeSpecNode::new(param_name, param_type, colon),
             parent: None,
         }));
@@ -696,9 +698,10 @@ impl TypeExpressionNode {
         })))
     }
 
-    pub fn new_with_array_type(array_size: &TokenNode, sub_type: &TypeExpressionNode) -> Self {
+    pub fn new_with_array_type(array_size: &TokenNode, sub_type: &TypeExpressionNode, 
+        lsquare: &TokenNode, rsquare: &TokenNode, semicolon: &TokenNode) -> Self {
         TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
-            kind: TypeExpressionKind::ARRAY(ArrayTypeNode::new(array_size, sub_type)),
+            kind: TypeExpressionKind::ARRAY(ArrayTypeNode::new(array_size, sub_type, lsquare, rsquare, semicolon)),
             parent: None,
         })))
     }
@@ -728,6 +731,9 @@ default_node_impl!(AtomicTypeNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreArrayTypeNode {
+    lsquare: TokenNode,
+    rsquare: TokenNode,
+    semicolon: TokenNode,
     sub_type: TypeExpressionNode,
     size: TokenNode,
     parent: Option<ASTNode>,
@@ -736,12 +742,19 @@ pub struct CoreArrayTypeNode {
 #[derive(Debug, Clone)]
 pub struct ArrayTypeNode(Rc<RefCell<CoreArrayTypeNode>>);
 impl ArrayTypeNode {
-    pub fn new(size: &TokenNode, sub_type: &TypeExpressionNode) -> Self {
+    pub fn new(size: &TokenNode, sub_type: &TypeExpressionNode, 
+        lsquare: &TokenNode, rsquare: &TokenNode, semicolon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreArrayTypeNode{
+            lsquare: lsquare.clone(),
+            rsquare: rsquare.clone(),
+            semicolon: semicolon.clone(),
             sub_type: sub_type.clone(),
             size: size.clone(),
             parent: None,
         }));
+        lsquare.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
+        rsquare.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
+        semicolon.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
         size.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
         sub_type.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
         ArrayTypeNode(node)
@@ -1156,6 +1169,7 @@ default_errornous_node_impl!(ParamsNode, CoreParamsNode, ParamsKind);
 
 #[derive(Debug, Clone)]
 pub struct CoreOkParamsNode {
+    comma: Option<TokenNode>,
     param: ExpressionNode,
     remaining_params: Option<ParamsNode>,
     parent: Option<ASTNode>,
@@ -1166,6 +1180,7 @@ pub struct OkParamsNode(Rc<RefCell<CoreOkParamsNode>>);
 impl OkParamsNode {
     pub fn new_with_single_param(param: &ExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreOkParamsNode{
+            comma: None,
             param: param.clone(),
             remaining_params: None,
             parent: None,
@@ -1174,8 +1189,9 @@ impl OkParamsNode {
         OkParamsNode(node)
     }
 
-    pub fn new_with_params(param: &ExpressionNode, remaining_params: &ParamsNode) -> Self {
+    pub fn new_with_params(param: &ExpressionNode, remaining_params: &ParamsNode, comma: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreOkParamsNode{
+            comma: Some(comma.clone()),
             param: param.clone(),
             remaining_params: Some(remaining_params.clone()),
             parent: None,
@@ -1189,6 +1205,8 @@ default_node_impl!(OkParamsNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreCallExpressionNode {
+    lparen: TokenNode,
+    rparen: TokenNode,
     function_name: TokenNode,
     params: Option<ParamsNode>,
     parent: Option<ASTNode>,
@@ -1197,12 +1215,16 @@ pub struct CoreCallExpressionNode {
 #[derive(Debug, Clone)]
 pub struct CallExpressionNode(Rc<RefCell<CoreCallExpressionNode>>);
 impl CallExpressionNode {
-    pub fn new(function_name: &TokenNode, params: &Option<ParamsNode>) -> Self {
+    pub fn new(function_name: &TokenNode, params: &Option<ParamsNode>, lparen: &TokenNode, rparen: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreCallExpressionNode{
+            lparen: lparen.clone(),
+            rparen: rparen.clone(),
             function_name: function_name.clone(),
             params: params.clone(),
             parent: None,
         }));
+        lparen.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
+        rparen.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
         function_name.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
         match params {
             Some(params) => params.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node))),
@@ -1215,6 +1237,9 @@ default_node_impl!(CallExpressionNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreClassMethodCallNode {
+    lparen: TokenNode,
+    rparen: TokenNode,
+    double_colon: TokenNode,
     class_name: TokenNode,
     class_method_name: TokenNode,
     params: Option<ParamsNode>,
@@ -1224,15 +1249,22 @@ pub struct CoreClassMethodCallNode {
 #[derive(Debug, Clone)]
 pub struct ClassMethodCallNode(Rc<RefCell<CoreClassMethodCallNode>>);
 impl ClassMethodCallNode {
-    pub fn new(class_name: &TokenNode, class_method_name: &TokenNode, params: &Option<ParamsNode>) -> Self {
+    pub fn new(class_name: &TokenNode, class_method_name: &TokenNode, 
+        params: &Option<ParamsNode>, double_colon: &TokenNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreClassMethodCallNode{
+            lparen: lparen.clone(),
+            rparen: rparen.clone(),
+            double_colon: double_colon.clone(),
             class_name: class_name.clone(),
             class_method_name: class_method_name.clone(),
             params: params.clone(),
             parent: None,
         }));
+        lparen.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+        rparen.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
         class_name.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
         class_method_name.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+        double_colon.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
         match params {
             Some(params) => params.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node))),
             None => {},
@@ -1268,25 +1300,27 @@ impl AtomNode {
         AtomNode(node)
     }
 
-    pub fn new_with_propertry_access(atom: &AtomNode, propertry: &TokenNode) -> Self {
+    pub fn new_with_propertry_access(atom: &AtomNode, propertry: &TokenNode, dot: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomNode{
-            kind: AtomKind::PROPERTRY_ACCESS(PropertyAccessNode::new(atom, propertry)),
+            kind: AtomKind::PROPERTRY_ACCESS(PropertyAccessNode::new(atom, propertry, dot)),
             parent: None,
         }));
         AtomNode(node)
     }
 
-    pub fn new_with_method_access(atom: &AtomNode, method_name: &TokenNode, params: &Option<ParamsNode>) -> Self {
+    pub fn new_with_method_access(atom: &AtomNode, method_name: &TokenNode, 
+        params: &Option<ParamsNode>, lparen: &TokenNode, rparen: &TokenNode, dot: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomNode{
-            kind: AtomKind::METHOD_ACCESS(MethodAccessNode::new(atom, method_name, params)),
+            kind: AtomKind::METHOD_ACCESS(MethodAccessNode::new(atom, method_name, params, lparen, rparen, dot)),
             parent: None,
         }));
         AtomNode(node)
     }
 
-    pub fn new_with_index_access(atom: &AtomNode, index: &ExpressionNode) -> Self {
+    pub fn new_with_index_access(atom: &AtomNode, index: &ExpressionNode, 
+        lsquare: &TokenNode, rsquare: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomNode{
-            kind: AtomKind::INDEX_ACCESS(IndexAccessNode::new(atom, index)),
+            kind: AtomKind::INDEX_ACCESS(IndexAccessNode::new(atom, index, lsquare, rsquare)),
             parent: None,
         }));
         AtomNode(node)
@@ -1329,9 +1363,11 @@ impl AtomStartNode {
     }
 
     pub fn new_with_class_method_call(class_name: &TokenNode, class_method_name: &TokenNode, 
-        params: &Option<ParamsNode>) -> Self {
+        params: &Option<ParamsNode>, double_colon: &TokenNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomStartNode{
-            kind: AtomStartKind::CLASS_METHOD_CALL(ClassMethodCallNode::new(class_name, class_method_name, params)),
+            kind: AtomStartKind::CLASS_METHOD_CALL(ClassMethodCallNode::new(
+                class_name, class_method_name, params, double_colon, lparen, rparen,
+            )),
             parent: None,
         }));
         AtomStartNode(node)
@@ -1341,6 +1377,7 @@ default_node_impl!(AtomStartNode);
 
 #[derive(Debug, Clone)]
 pub struct CorePropertyAccessNode {
+    dot: TokenNode,
     atom: AtomNode,
     propertry: TokenNode,
     parent: Option<ASTNode>,
@@ -1349,12 +1386,14 @@ pub struct CorePropertyAccessNode {
 #[derive(Debug, Clone)]
 pub struct PropertyAccessNode(Rc<RefCell<CorePropertyAccessNode>>);
 impl PropertyAccessNode {
-    fn new(atom: &AtomNode, propertry: &TokenNode) -> Self {
+    fn new(atom: &AtomNode, propertry: &TokenNode, dot: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CorePropertyAccessNode{
+            dot: dot.clone(),
             atom: atom.clone(),
             propertry: propertry.clone(),
             parent: None,
         }));
+        dot.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
         atom.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
         propertry.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
         PropertyAccessNode(node)
@@ -1364,6 +1403,9 @@ default_node_impl!(PropertyAccessNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreMethodAccessNode {
+    lparen: TokenNode,
+    rparen: TokenNode,
+    dot: TokenNode,
     atom: AtomNode,
     method_name: TokenNode,
     params: Option<ParamsNode>,
@@ -1373,13 +1415,20 @@ pub struct CoreMethodAccessNode {
 #[derive(Debug, Clone)]
 pub struct MethodAccessNode(Rc<RefCell<CoreMethodAccessNode>>);
 impl MethodAccessNode {
-    pub fn new(atom: &AtomNode, method_name: &TokenNode, params: &Option<ParamsNode>) -> Self {
+    pub fn new(atom: &AtomNode, method_name: &TokenNode, 
+        params: &Option<ParamsNode>, lparen: &TokenNode, rparen: &TokenNode, dot: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreMethodAccessNode{
+            lparen: lparen.clone(),
+            rparen: rparen.clone(),
+            dot: dot.clone(),
             atom: atom.clone(),
             method_name: method_name.clone(),
             params: params.clone(),
             parent: None,
         }));
+        dot.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+        lparen.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+        rparen.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
         atom.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
         method_name.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
         match params {
@@ -1393,6 +1442,8 @@ default_node_impl!(MethodAccessNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreIndexAccessNode {
+    lsquare: TokenNode,
+    rsquare: TokenNode,
     atom: AtomNode,
     index: ExpressionNode,
     parent: Option<ASTNode>,
@@ -1401,12 +1452,16 @@ pub struct CoreIndexAccessNode {
 #[derive(Debug, Clone)]
 pub struct IndexAccessNode(Rc<RefCell<CoreIndexAccessNode>>);
 impl IndexAccessNode {
-    pub fn new(atom: &AtomNode, index: &ExpressionNode) -> Self {
+    pub fn new(atom: &AtomNode, index: &ExpressionNode, lsquare: &TokenNode, rsquare: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreIndexAccessNode{
+            lsquare: lsquare.clone(),
+            rsquare: rsquare.clone(),
             atom: atom.clone(),
             index: index.clone(),
             parent: None,
         }));
+        lsquare.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
+        rsquare.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
         atom.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
         index.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
         IndexAccessNode(node)

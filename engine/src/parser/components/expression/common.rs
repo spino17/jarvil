@@ -1,4 +1,4 @@
-use crate::ast::ast::{ParamsNode, OkParamsNode};
+use crate::ast::ast::{ParamsNode, OkParamsNode, TokenNode};
 use crate::parser::parser::PackratParser;
 use crate::lexer::token::CoreToken;
 use std::rc::Rc;
@@ -13,7 +13,9 @@ pub fn params(parser: &mut PackratParser) -> ParamsNode {
         CoreToken::COMMA    => {
             let comma_node = parser.expect(",");
             let remaining_params_node = parser.params();
-            let ok_params_node = OkParamsNode::new_with_params(&first_param_node, &remaining_params_node);
+            let ok_params_node = OkParamsNode::new_with_params(
+                &first_param_node, &remaining_params_node, &comma_node
+            );
             return ParamsNode::new(&ok_params_node)
         },
         CoreToken::RPAREN   => {
@@ -33,12 +35,12 @@ pub fn params(parser: &mut PackratParser) -> ParamsNode {
     }
 }
 
-pub fn params_within_parenthesis(parser: &mut PackratParser) -> Option<ParamsNode> {
+pub fn params_within_parenthesis(parser: &mut PackratParser) -> (Option<ParamsNode>, TokenNode, TokenNode) {
     let lparen_node = parser.expect("(");
     let mut params: Option<ParamsNode> = None;
     if !parser.check_curr_token(")") {
         params = Some(parser.params());
     }
     let rparen_node = parser.expect(")");
-    params
+    (params, lparen_node, rparen_node)
 }

@@ -500,7 +500,7 @@ impl PackratParser {
         components::expression::common::params(self)
     }
 
-    pub fn params_within_parenthesis(&mut self) -> Option<ParamsNode> {
+    pub fn params_within_parenthesis(&mut self) -> (Option<ParamsNode>, TokenNode, TokenNode) {
         components::expression::common::params_within_parenthesis(self)
     }
 

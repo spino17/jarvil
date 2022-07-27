@@ -84,7 +84,7 @@ pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {
     let type_expr_node = parser.type_expr();
     let newline_node = parser.expects(&["\n", ENDMARKER]);
     let struct_stmt = StructStatementNode::new(
-        &struct_name, &type_expr_node, &colon_node
+        &struct_name, &type_expr_node, &colon_node, &newline_node
     );
     StatementNode::new_with_struct_stmt(&struct_stmt)
 }
