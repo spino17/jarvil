@@ -462,10 +462,10 @@ pub struct FunctionDeclarationNode(Rc<RefCell<CoreFunctionDeclarationNode>>);
 impl FunctionDeclarationNode {
     pub fn new(name: &Option<TokenNode>, args: &Option<NameTypeSpecsNode>, 
         return_type: &Option<TypeExpressionNode>, block: &BlockNode, func_keyword: &FuncKeywordKind, 
-        lparent: &TokenNode, rparen: &TokenNode, right_arrow: &Option<TokenNode>, colon: &TokenNode) -> Self {
+        lparen: &TokenNode, rparen: &TokenNode, right_arrow: &Option<TokenNode>, colon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreFunctionDeclarationNode{
             kind: FunctionDeclarationKind::OK(OkFunctionDeclarationNode::new(
-                name, args, return_type, block, func_keyword, lparent, rparen, right_arrow, colon
+                name, args, return_type, block, func_keyword, lparen, rparen, right_arrow, colon
             )),
             parent: None,
         }));
@@ -995,10 +995,12 @@ pub enum AtomicExpressionKind {
 pub struct AtomicExpressionNode(Rc<RefCell<CoreAtomicExpressionNode>>);
 impl AtomicExpressionNode {
     pub fn new_with_bool(bool_value: &TokenNode) -> Self {
-        AtomicExpressionNode(Rc::new(RefCell::new(CoreAtomicExpressionNode{
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
             kind: AtomicExpressionKind::BOOL_VALUE(bool_value.clone()),
             parent: None,
-        })))
+        }));
+        bool_value.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+        AtomicExpressionNode(node)
     }
 
     pub fn new_with_integer(token: &TokenNode) -> Self {
@@ -1239,6 +1241,7 @@ impl OkParamsNode {
             remaining_params: Some(remaining_params.clone()),
             parent: None,
         }));
+        comma.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
         param.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
         remaining_params.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
         OkParamsNode(node)
