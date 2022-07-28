@@ -11,6 +11,17 @@ pub enum Atomic {
 }
 
 impl Atomic {
+    pub fn new_with_type_str(type_str: &str) -> Option<Type> {
+        let type_obj = match type_str {
+            INT     => Type::new_with_atomic(Atomic::INT),
+            FLOAT   => Type::new_with_atomic(Atomic::FLOAT),
+            STRING  => Type::new_with_atomic(Atomic::STRING),
+            BOOL    => Type::new_with_atomic(Atomic::BOOL),
+            _ => return None
+        };
+        Some(type_obj)
+    }
+
     pub fn get_atomic_type(&self) -> &str {
         match self {
             Atomic::INT     =>  INT,
@@ -66,10 +77,10 @@ impl AbstractType for Atomic {
     
     fn string(&self) -> Rc<String> {
         match self {
-            Atomic::INT     =>  Rc::new(String::from("int")),
-            Atomic::FLOAT   =>  Rc::new(String::from("float")),
-            Atomic::STRING  =>  Rc::new(String::from("string")),
-            Atomic::BOOL    =>  Rc::new(String::from("bool")),
+            Atomic::INT     =>  Rc::new(String::from(INT)),
+            Atomic::FLOAT   =>  Rc::new(String::from(FLOAT)),
+            Atomic::STRING  =>  Rc::new(String::from(STRING)),
+            Atomic::BOOL    =>  Rc::new(String::from(BOOL)),
         }
     }
 }

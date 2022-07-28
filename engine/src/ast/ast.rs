@@ -2,8 +2,9 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks. 
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
-use std::{rc::{Rc, Weak}, cell::RefCell, borrow::Borrow};
-use crate::{scope::{core::Scope, self}, lexer::token::{Token, CoreToken}, types::core::Type, code::Code};
+use std::{rc::{Rc, Weak}, cell::RefCell};
+use crate::{scope::{core::Scope, self}, lexer::token::{Token, CoreToken}, types::{core::Type, array::Array}, code::Code};
+use crate::types::atomic::Atomic;
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
@@ -712,11 +713,11 @@ impl TypeExpressionNode {
         })))
     }
 
-    pub fn get_type_obj(&self) -> Option<Type> {
+    pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
         match &self.0.as_ref().borrow().kind {
-            TypeExpressionKind::ATOMIC(atomic_type)                  => atomic_type.get_type_obj(),
-            TypeExpressionKind::USER_DEFINED(user_defined_type) => user_defined_type.get_type_obj(),
-            TypeExpressionKind::ARRAY(array_type)                     => array_type.get_type_obj(),
+            TypeExpressionKind::ATOMIC(atomic_type)                  => atomic_type.get_type_obj(code),
+            TypeExpressionKind::USER_DEFINED(user_defined_type) => user_defined_type.get_type_obj(code),
+            TypeExpressionKind::ARRAY(array_type)                     => array_type.get_type_obj(code),
             _ => None,
         }
     }
@@ -742,8 +743,14 @@ impl AtomicTypeNode {
         AtomicTypeNode(node)
     }
 
-    pub fn get_type_obj(&self) -> Option<Type> {
-        todo!()
+    pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
+        match self.0.as_ref().borrow().kind.get_ok() {
+            Some(ok_atomic_type) => {
+                let atomic_type_str = ok_atomic_type.token_value(code);
+                return Atomic::new_with_type_str(&atomic_type_str)
+            },
+            None => return None
+        }
     }
 }
 default_node_impl!(AtomicTypeNode);
@@ -779,8 +786,22 @@ impl ArrayTypeNode {
         ArrayTypeNode(node)
     }
 
-    pub fn get_type_obj(&self) -> Option<Type> {
-        todo!()
+    pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
+        match self.0.as_ref().borrow().sub_type.get_type_obj(code) {
+            Some(sub_type_obj) => {
+                match self.0.as_ref().borrow().size.get_ok() {
+                    Some(size) => {
+                        let size = match size.token_value(code).parse::<usize>() {
+                            Ok(size) => size,
+                            Err(_) => return None,
+                        };
+                        return Some(Array::new(size, sub_type_obj))
+                    },
+                    None => return None,
+                }
+            },
+            None => return None
+        }
     }
 }
 default_node_impl!(ArrayTypeNode);
@@ -803,8 +824,13 @@ impl UserDefinedTypeNode {
         UserDefinedTypeNode(node)
     }
 
-    pub fn get_type_obj(&self) -> Option<Type> {
-        todo!()
+    pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
+        match self.0.as_ref().borrow().token.get_ok() {
+            Some(ok_token_node) => {
+                Some(Type::new_with_user_defined(ok_token_node.token_value(code)))
+            },
+            None => None
+        }
     }
 }
 default_node_impl!(UserDefinedTypeNode);

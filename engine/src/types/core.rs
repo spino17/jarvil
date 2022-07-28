@@ -29,6 +29,18 @@ pub enum CoreType {
 pub struct Type(pub Rc<CoreType>);
 
 impl Type {
+    pub fn new_with_atomic(atomic_type: Atomic) -> Type {
+        Type(Rc::new(CoreType::ATOMIC(atomic_type)))
+    }
+
+    pub fn new_with_array(array_type: Array) -> Type {
+        Type(Rc::new(CoreType::ARRAY(array_type)))
+    }
+
+    pub fn new_with_user_defined(user_defined_type_str: String) -> Type {
+        Type(Rc::new(CoreType::USER_DEFINED(Rc::new(user_defined_type_str))))
+    }
+
     pub fn is_atomic(&self, atomic_type_name: &str) -> bool {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic_type) => {
