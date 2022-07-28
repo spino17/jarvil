@@ -1,5 +1,7 @@
+use crate::types::core::Type;
 use crate::{scope::core::Scope, code::Code};
 use crate::ast::ast::BlockNode;
+use std::rc::Rc;
 
 use super::ast::{StatemenIndentWrapper, StatementNode, StatementNodeKind, FunctionDeclarationNode, 
     VariableDeclarationNode, TypeDeclarationNode, FunctionDeclarationKind};
@@ -23,6 +25,29 @@ impl Resolver {
 
     pub fn set_scope(&mut self, scope: &Scope) {
         self.scope = scope.clone();
+    }
+
+    pub fn set_new_nested_scope(&mut self) {
+        let scope = Scope::new_with_parent_scope(&self.scope);
+        self.set_scope(&scope);
+    }
+
+    pub fn set_identifier_to_scope(&mut self, name: &Rc<String>, type_obj: &Type) {
+        todo!()
+    }
+
+    pub fn set_params_to_scope(&mut self, args: Rc<Vec<(Option<Rc<String>>, Option<Type>)>>) {
+        for arg in args.as_ref() {
+            let param_name = match &arg.0 {
+                Some(param_name) => param_name,
+                None => continue,
+            };
+            let param_type = match &arg.1 {
+                Some(param_type) => param_type,
+                None => continue,
+            };
+            self.set_identifier_to_scope(param_name, param_type);
+        }
     }
 
     pub fn resolve(&mut self, ast: &BlockNode) {
@@ -63,7 +88,18 @@ impl Resolver {
                 let args = &core_func_decl.args;
                 let return_type = &core_func_decl.return_type;
                 let block = &core_func_decl.block;
-                let _ = match func_name {
+                let args_objs = match args {
+                    Some(args) => {
+                        let args_objs = args.get_name_type_spec_objs(&self.code);
+                        if args_objs.len() > 0 {
+                            Some(Rc::new(args_objs))
+                        } else {
+                            None
+                        }
+                    },
+                    None => None,
+                };
+                match func_name {
                     Some(func_name) => {
                         let func_name = func_name.get_ok();
                         // TODO - if None then return from match
@@ -71,21 +107,17 @@ impl Resolver {
                             Some(return_type) => return_type.get_type_obj(&self.code),
                             None => None
                         };
-                        let args = match args {
-                            Some(args) => {
-                                Some(args.get_name_type_spec_objs(&self.code))
-                            },
-                            None => None,
-                        };
                         // TODO - add function name, args and return type to the scope
                         // All OK values required
                     },
                     None => {},
                 };
                 let saved_scope = self.curr_scope();
-                let scope = Scope::new_with_parent_scope(&saved_scope);
-                // TODO - add args to this scope
-                self.set_scope(&scope);
+                self.set_new_nested_scope();
+                match args_objs {
+                    Some(args) => self.set_params_to_scope(args),
+                    None => {},
+                }
                 self.resolve_block(&block);
                 self.set_scope(&saved_scope);
             },
