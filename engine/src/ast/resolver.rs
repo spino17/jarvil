@@ -36,7 +36,12 @@ impl Resolver {
         todo!()
     }
 
-    pub fn set_params_to_scope(&mut self, args: Rc<Vec<(Option<Rc<String>>, Option<Type>)>>) {
+    pub fn set_function_to_scope(&mut self, name: &Rc<String>, 
+        args: &Option<Rc<Vec<(Option<Rc<String>>, Option<Type>)>>>, return_type: Option<Type>) {
+        todo!()
+    }
+
+    pub fn set_params_to_scope(&mut self, args: &Rc<Vec<(Option<Rc<String>>, Option<Type>)>>) {
         for arg in args.as_ref() {
             let param_name = match &arg.0 {
                 Some(param_name) => param_name,
@@ -102,19 +107,23 @@ impl Resolver {
                 match func_name {
                     Some(func_name) => {
                         let func_name = func_name.get_ok();
-                        // TODO - if None then return from match
-                        let return_type = match return_type {
-                            Some(return_type) => return_type.get_type_obj(&self.code),
-                            None => None
-                        };
-                        // TODO - add function name, args and return type to the scope
-                        // All OK values required
+                        match func_name {
+                            Some(ok_func_name_node) => {
+                                let return_type = match return_type {
+                                    Some(return_type) => return_type.get_type_obj(&self.code),
+                                    None => None
+                                };
+                                let func_name_str = Rc::new(ok_func_name_node.token_value(&self.code));
+                                self.set_function_to_scope(&func_name_str, &args_objs, return_type)
+                            },
+                            None => {},
+                        }
                     },
                     None => {},
                 };
                 let saved_scope = self.curr_scope();
                 self.set_new_nested_scope();
-                match args_objs {
+                match &args_objs {
                     Some(args) => self.set_params_to_scope(args),
                     None => {},
                 }
