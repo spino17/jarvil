@@ -2,7 +2,7 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks. 
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
-use std::{rc::{Rc, Weak}, cell::RefCell};
+use std::{rc::{Rc, Weak}, cell::RefCell, borrow::Borrow};
 use crate::{scope::{core::Scope, self}, lexer::token::{Token, CoreToken}, types::core::Type, code::Code};
 
 pub trait Node {
@@ -712,8 +712,13 @@ impl TypeExpressionNode {
         })))
     }
 
-    pub fn get_type_obj(&self) -> Type {
-        todo!()
+    pub fn get_type_obj(&self) -> Option<Type> {
+        match &self.0.as_ref().borrow().kind {
+            TypeExpressionKind::ATOMIC(atomic_type)                  => atomic_type.get_type_obj(),
+            TypeExpressionKind::USER_DEFINED(user_defined_type) => user_defined_type.get_type_obj(),
+            TypeExpressionKind::ARRAY(array_type)                     => array_type.get_type_obj(),
+            _ => None,
+        }
     }
 }
 default_node_impl!(TypeExpressionNode);
@@ -735,6 +740,10 @@ impl AtomicTypeNode {
         }));
         token.set_parent(ASTNode::ATOMIC_TYPE(Rc::downgrade(&node)));
         AtomicTypeNode(node)
+    }
+
+    pub fn get_type_obj(&self) -> Option<Type> {
+        todo!()
     }
 }
 default_node_impl!(AtomicTypeNode);
@@ -769,6 +778,10 @@ impl ArrayTypeNode {
         sub_type.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
         ArrayTypeNode(node)
     }
+
+    pub fn get_type_obj(&self) -> Option<Type> {
+        todo!()
+    }
 }
 default_node_impl!(ArrayTypeNode);
 
@@ -788,6 +801,10 @@ impl UserDefinedTypeNode {
         }));
         identifier.set_parent(ASTNode::USER_DEFINED_TYPE(Rc::downgrade(&node)));
         UserDefinedTypeNode(node)
+    }
+
+    pub fn get_type_obj(&self) -> Option<Type> {
+        todo!()
     }
 }
 default_node_impl!(UserDefinedTypeNode);
@@ -826,6 +843,13 @@ impl TokenNode {
         match &self.0.as_ref().borrow().kind {
             TokenKind::OK(_) => Some(self.clone()),
             _                    => None,
+        }
+    }
+
+    pub fn get_ok(&self) -> Option<OkTokenNode> {
+        match &self.0.as_ref().borrow().kind {
+            TokenKind::OK(ok_token_node) => Some(ok_token_node.clone()),
+            _ => None,
         }
     }
 

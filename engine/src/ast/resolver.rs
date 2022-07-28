@@ -1,9 +1,8 @@
-use std::rc::Rc;
-
 use crate::{scope::core::Scope, code::Code};
 use crate::ast::ast::BlockNode;
 
-use super::ast::{StatemenIndentWrapper, StatementNode, StatementNodeKind, FunctionDeclarationNode, VariableDeclarationNode, TypeDeclarationNode, FunctionDeclarationKind, TokenKind};
+use super::ast::{StatemenIndentWrapper, StatementNode, StatementNodeKind, FunctionDeclarationNode, 
+    VariableDeclarationNode, TypeDeclarationNode, FunctionDeclarationKind};
 
 pub struct Resolver {
     scope: Scope,
@@ -66,18 +65,9 @@ impl Resolver {
                 let block = &core_func_decl.block;
                 match func_name {
                     Some(func_name) => {
+                        let func_name = func_name.get_ok();
                         // TODO - add function name, args and return type to the scope
-                        match &func_name.0.as_ref().borrow().kind {
-                            TokenKind::OK(ok_func_name) => {
-                                // TODO - add func name, args, return_type to scope
-                                let func_name_str = Rc::new(ok_func_name.token_value(&self.code));
-                                let return_type = match return_type {
-                                    Some(return_type) => Some(return_type.get_type_obj()),
-                                    None => None,
-                                };
-                            },
-                            _ => {}
-                        }
+                        // All OK values required
                     },
                     None => {},
                 }
