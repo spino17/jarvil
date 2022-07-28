@@ -59,18 +59,12 @@ impl Scope {
 
     pub fn lookup(&self, key: &Rc<String>) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
-
-        // check the identifier name in current scope
         match scope_ref.get(key) {
             Some(value) => {
                 Some(SymbolData(value.0.clone()))
             },
             None => {
-
-                // if not found in current scope, check recursively in parent scopes
                 if let Some(parent_env) = &scope_ref.parent_env {
-
-                    // return from the nearest scope which found the identifier name
                     parent_env.lookup(key)
                 } else {
                     None

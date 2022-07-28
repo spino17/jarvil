@@ -1,8 +1,9 @@
+use crate::scope::core::MetaData;
+use crate::scope::function::FunctionData;
 use crate::types::core::Type;
 use crate::{scope::core::Scope, code::Code};
 use crate::ast::ast::BlockNode;
 use std::rc::Rc;
-
 use super::ast::{StatemenIndentWrapper, StatementNode, StatementNodeKind, FunctionDeclarationNode, 
     VariableDeclarationNode, TypeDeclarationNode, FunctionDeclarationKind};
 
@@ -38,7 +39,14 @@ impl Resolver {
 
     pub fn set_function_to_scope(&mut self, name: &Rc<String>, 
         args: &Option<Rc<Vec<(Option<Rc<String>>, Option<Type>)>>>, return_type: Option<Type>) {
-        todo!()
+        let meta_data = MetaData::FUNCTION(FunctionData{
+            params: match args {
+                Some(args) => args.clone(),
+                None => Rc::new(vec![]),
+            },
+            return_type: Rc::new(return_type),
+        });
+        self.scope.insert(name, meta_data);
     }
 
     pub fn set_params_to_scope(&mut self, args: &Rc<Vec<(Option<Rc<String>>, Option<Type>)>>) {
