@@ -63,14 +63,25 @@ impl Resolver {
                 let args = &core_func_decl.args;
                 let return_type = &core_func_decl.return_type;
                 let block = &core_func_decl.block;
-                match func_name {
+                let _ = match func_name {
                     Some(func_name) => {
                         let func_name = func_name.get_ok();
+                        // TODO - if None then return from match
+                        let return_type = match return_type {
+                            Some(return_type) => return_type.get_type_obj(&self.code),
+                            None => None
+                        };
+                        let args = match args {
+                            Some(args) => {
+                                Some(args.get_name_type_spec_objs(&self.code))
+                            },
+                            None => None,
+                        };
                         // TODO - add function name, args and return type to the scope
                         // All OK values required
                     },
                     None => {},
-                }
+                };
                 let saved_scope = self.curr_scope();
                 let scope = Scope::new_with_parent_scope(&saved_scope);
                 // TODO - add args to this scope

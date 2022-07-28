@@ -607,6 +607,13 @@ impl NameTypeSpecsNode {
         ok_name_type_specs.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
         NameTypeSpecsNode(node)
     }
+
+    pub fn get_name_type_spec_objs(&self, code: &Code) -> Vec<(Option<Rc<String>>, Option<Type>)> {
+        match &self.0.as_ref().borrow().kind {
+            NameTypeSpecsKind::OK(ok_name_type_specs) => ok_name_type_specs.get_name_type_spec_objs(code),
+            _ => vec![],
+        }
+    }
 }
 default_node_impl!(NameTypeSpecsNode);
 default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode, NameTypeSpecsKind);
@@ -645,6 +652,20 @@ impl OkNameTypeSpecsNode {
         arg.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
         OkNameTypeSpecsNode(node)
     }
+
+    pub fn get_name_type_spec_objs(&self, code: &Code) -> Vec<(Option<Rc<String>>, Option<Type>)> {
+        let mut name_type_specs_vec: Vec<(Option<Rc<String>>, Option<Type>)> = vec![];
+        let arg_obj = self.0.as_ref().borrow().arg.get_name_spec_obj(code);
+        name_type_specs_vec.push(arg_obj);
+        match &self.0.as_ref().borrow().remaining_args {
+            Some(remaining_args) => {
+                let mut remaining_args_objs = remaining_args.get_name_type_spec_objs(code);
+                name_type_specs_vec.append(&mut remaining_args_objs);
+            },
+            None => {}
+        }
+        name_type_specs_vec
+    }
 }
 default_node_impl!(OkNameTypeSpecsNode);
 
@@ -670,6 +691,20 @@ impl NameTypeSpecNode {
         param_name.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
         param_type.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
         NameTypeSpecNode(node)
+    }
+
+    pub fn get_name_spec_obj(&self, code: &Code) -> (Option<Rc<String>>, Option<Type>) {
+        let name = match self.0.as_ref().borrow().param_name.get_ok() {
+            Some(ok_name_node) => {
+                Some(Rc::new(ok_name_node.token_value(code)))
+            },
+            None => None,
+        };
+        let type_obj = match self.0.as_ref().borrow().param_type.get_type_obj(code) {
+            Some(type_obj) => Some(type_obj),
+            None => None,
+        };
+        (name, type_obj)
     }
 }
 default_node_impl!(NameTypeSpecNode);
