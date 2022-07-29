@@ -3,7 +3,7 @@
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::{core::Scope, self}, lexer::token::{Token, CoreToken}, types::{core::Type, array::Array}, code::Code};
+use crate::{scope::{core::Scope}, lexer::token::{Token, CoreToken}, types::{core::Type, array::Array}, code::Code};
 use crate::types::atomic::Atomic;
 
 pub trait Node {
@@ -556,13 +556,13 @@ pub struct CoreVariableDeclarationNode {
     let_keyword: TokenNode,
     equal: TokenNode,
     newline: TokenNode,
-    name: TokenNode,
-    r_assign: RAssignmentNode,
+    pub name: TokenNode,
+    pub r_assign: RAssignmentNode,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub struct VariableDeclarationNode(Rc<RefCell<CoreVariableDeclarationNode>>);
+pub struct VariableDeclarationNode(pub Rc<RefCell<CoreVariableDeclarationNode>>);
 impl VariableDeclarationNode {
     pub fn new(name: &TokenNode, 
         r_assign: &RAssignmentNode, let_keyword: &TokenNode, equal: &TokenNode, newline: &TokenNode) -> Self {
