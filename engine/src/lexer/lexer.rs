@@ -1,7 +1,7 @@
 use crate::code::Code;
 use crate::constants::common::IDENTIFIER;
 use crate::errors::LexicalErrorData;
-use crate::errors::ParseError;
+use crate::errors::JarvilError;
 use crate::errors::ParseErrorKind;
 use crate::lexer::token::Token;
 use crate::lexer::token::CoreToken;
@@ -100,20 +100,20 @@ impl CoreLexer {
     }
 
     pub fn log_all_lexical_errors(&mut self, code: &Code) {
-        let mut errors: Vec<ParseError> = vec![];
+        let mut errors: Vec<JarvilError> = vec![];
         for error_data in &self.lexical_errors_data {
-            let error: ParseError;
+            let error: JarvilError;
             match error_data {
                 LexicalErrorData::INVALID_CHAR(invalid_char_lexical_error_data) => {
                     let invalid_token = invalid_char_lexical_error_data.invalid_token.clone();
                     let err_str = invalid_char_lexical_error_data.err_message.clone();
                     let (code_line, line_start_index, line_number, err_index)
                     = code.line_data(invalid_token.line_number, invalid_token.index());
-                    let err_message = ParseError::form_single_line_single_pointer_error(
+                    let err_message = JarvilError::form_single_line_single_pointer_error(
                         err_index, line_number, line_start_index, code_line, err_str.to_string(),
                         ParseErrorKind::LEXICAL_ERROR
                     );
-                    error = ParseError::new(line_number, line_number, err_message);
+                    error = JarvilError::new(line_number, line_number, err_message);
                 },
                 LexicalErrorData::NO_CLOSING_SYMBOLS(
                     no_closing_symbols_lexical_error_data
@@ -122,9 +122,9 @@ impl CoreLexer {
                     let end_line_number = no_closing_symbols_lexical_error_data.end_line_number;
                     let err_str = no_closing_symbols_lexical_error_data.err_message.clone();
                     let code_lines = code.lines(start_line_number, end_line_number);
-                    let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
+                    let err_message = JarvilError::form_multi_line_error(start_line_number, end_line_number, 
                         code_lines, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
-                    error = ParseError::new(start_line_number, end_line_number, err_message);
+                    error = JarvilError::new(start_line_number, end_line_number, err_message);
                 }
             }
             errors.push(error);

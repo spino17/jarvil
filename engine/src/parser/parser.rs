@@ -10,7 +10,7 @@ use crate::code::Code;
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::{Token, CoreToken};
 use std::rc::Rc;
-use crate::errors::{ParseError, ParseErrorKind};
+use crate::errors::{JarvilError, ParseErrorKind};
 use crate::context;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
@@ -28,14 +28,14 @@ pub trait Parser {
 #[derive(Debug)]
 pub enum RoutineCache {
     // currently only two routine (atom, expr) results are cached by the parser
-    ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>>>>),
-    EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>>>>),
+    ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>>>>),
+    EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), JarvilError>>>>),
 }
 
 #[derive(Debug)]
 pub struct ParseSuccess {
     pub lookahead: usize,
-    pub possible_err: Option<ParseError>,
+    pub possible_err: Option<JarvilError>,
 }
 
 pub struct PackratParser {
@@ -51,9 +51,9 @@ pub struct PackratParser {
 
 impl PackratParser {
     pub fn new(code: &Code) -> Self {
-        let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>> 
+        let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>> 
         = FxHashMap::default();
-        let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), ParseError>> = FxHashMap::default();
+        let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), JarvilError>> = FxHashMap::default();
         PackratParser {
             token_vec: Vec::new(),
             lookahead: 0,
@@ -208,10 +208,10 @@ impl PackratParser {
             return;
         } else {
             let err_str = format!("expected `{}`, got `{}`", format_symbol(expected_symbol), recevied_token.name());
-            let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
+            let err_message = JarvilError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
                 code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 
-            = ParseError::new(line_number, line_number, err_message);
+            = JarvilError::new(line_number, line_number, err_message);
             context::push_error(err);
         }
     }
@@ -245,10 +245,10 @@ impl PackratParser {
             err_str.push_str(&format!(
                 " or `{}`, got `{}`", format_symbol(expected_symbols[symbols_len - 1]), recevied_token.name()
             ));
-            let err_message = ParseError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
+            let err_message = JarvilError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
                 code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 
-            = ParseError::new(line_number, line_number, err_message);
+            = JarvilError::new(line_number, line_number, err_message);
             context::push_error(err);
         }
     }
@@ -266,12 +266,12 @@ impl PackratParser {
         } else {
             let err_str = String::from("invalid sequence of tokens found at the trail of the line");
             let end_err_index = skipped_tokens[skipped_tokens_len - 1].index();
-            let err_message = ParseError::form_single_line_underline_pointer_error(
+            let err_message = JarvilError::form_single_line_underline_pointer_error(
                 start_err_index, end_err_index, line_number, line_start_index, 
                 code_line, err_str, ParseErrorKind::SYNTAX_ERROR
             );
             let err 
-            = ParseError::new(line_number, line_number, err_message);
+            = JarvilError::new(line_number, line_number, err_message);
             context::push_error(err);
         }
     }
@@ -288,10 +288,10 @@ impl PackratParser {
             let code_lines: Vec<String> = self.code.lines(start_line_number, end_line_number);
             let err_str = format!("expected an indented block\nexpected indentation with `{}` spaces, got `{}` spaces", 
             expected_indent, received_indent);
-            let err_message = ParseError::form_multi_line_error(start_line_number, end_line_number, 
+            let err_message = JarvilError::form_multi_line_error(start_line_number, end_line_number, 
                 code_lines, err_str, ParseErrorKind::SYNTAX_ERROR);
             let err 
-            = ParseError::new(start_line_number, end_line_number, err_message);
+            = JarvilError::new(start_line_number, end_line_number, err_message);
             context::push_error(err);
         }
     }
@@ -402,17 +402,17 @@ impl PackratParser {
 
     // ------------------- packrat parser caching utilities -------------------
     pub fn get_or_set_cache<T: std::fmt::Debug,
-    F: FnOnce(&mut PackratParser) -> Result<T, ParseError>, 
-    G: FnOnce(&Result<T, ParseError>) -> Result<T, ParseError>,
+    F: FnOnce(&mut PackratParser) -> Result<T, JarvilError>, 
+    G: FnOnce(&Result<T, JarvilError>) -> Result<T, JarvilError>,
     H: FnOnce(&T) -> usize>(
         &mut self,
-        cache_map: &Rc<RefCell<FxHashMap<usize, Result<T, ParseError>>>>,
+        cache_map: &Rc<RefCell<FxHashMap<usize, Result<T, JarvilError>>>>,
         routine_fn: F,
         clone_result_fn: G,
         get_lookahead_fn: H,
         curr_lookahead: usize,
         message: &str,
-    ) -> Result<T, ParseError> {
+    ) -> Result<T, JarvilError> {
         match cache_map.borrow().get(&curr_lookahead) {
             Some(result) => {
                 let result = clone_result_fn(result);

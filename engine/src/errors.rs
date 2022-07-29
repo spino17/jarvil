@@ -80,14 +80,14 @@ impl Display for ParseErrorKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct ParseError {
+pub struct JarvilError {
     pub start_line_number: usize,
     pub end_line_number: usize,
     pub err_message: Rc<String>,
 }
-impl ParseError {
+impl JarvilError {
     pub fn new(start_line_number: usize, end_line_number: usize, err_message: String) -> Self {
-        ParseError {
+        JarvilError {
             start_line_number,
             end_line_number,
             err_message: Rc::new(err_message),
@@ -177,7 +177,7 @@ impl ParseError {
     }
 }
 
-impl Display for ParseError {
+impl Display for JarvilError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.err_message)
     }
@@ -187,7 +187,7 @@ impl Display for ParseError {
 #[derive(Debug)]
 pub enum CompilationError {
     IO_ERROR(IOError),
-    PARSE_ERROR(ParseError),
+    PARSE_ERROR(JarvilError),
 }
 
 impl From<IOError> for CompilationError {
@@ -196,8 +196,8 @@ impl From<IOError> for CompilationError {
     }
 }
 
-impl From<ParseError> for CompilationError {
-    fn from(err: ParseError) -> Self {
+impl From<JarvilError> for CompilationError {
+    fn from(err: JarvilError) -> Self {
         CompilationError::PARSE_ERROR(err)
     }
 }

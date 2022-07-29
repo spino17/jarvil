@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
+use crate::errors::JarvilError;
 use crate::scope::user_defined_types::{UserDefinedTypeData};
 use crate::scope::identifier::IdentifierData;
 use crate::scope::function::FunctionData;
@@ -13,18 +14,17 @@ pub enum MetaData {
 }
 
 #[derive(Debug)]
-pub struct SymbolData(Rc<RefCell<MetaData>>);
+pub struct SymbolData(Rc<RefCell<MetaData>>, usize);  // meta data and line on which it was declared
 
 #[derive(Debug)]
 pub struct CoreScope {
     symbol_table: FxHashMap<Rc<String>, SymbolData>,
     pub parent_env: Option<Scope>,
-    return_type: Option<Rc<String>>,  // for functional scope - match return type in nested sub blocks checking this global field
 }
 
 impl CoreScope {
-    fn set(&mut self, name: Rc<String>, meta_data: MetaData) {
-        self.symbol_table.insert(name, SymbolData(Rc::new(RefCell::new(meta_data))));
+    fn set(&mut self, name: Rc<String>, meta_data: MetaData, line_number: usize) {
+        self.symbol_table.insert(name, SymbolData(Rc::new(RefCell::new(meta_data)), line_number));
     }
 
     fn get(&self, name: &Rc<String>) -> Option<&SymbolData> {
@@ -40,7 +40,6 @@ impl Scope {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_env: None,
-            return_type: None,
         })))
     }
 
@@ -49,19 +48,26 @@ impl Scope {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_env: Some(Scope(env)),
-            return_type: None,
         })))
     }
 
-    pub fn insert(&self, key: &Rc<String>, meta_data: MetaData) {
-        self.0.borrow_mut().set(key.clone(), meta_data)
+    pub fn insert(&self, key: &Rc<String>, meta_data: MetaData, line_number: usize) -> Result<(), JarvilError> {
+        match self.0.borrow().get(key) {
+            Some(value) => {
+                let err_str = format!("`{}` is already declared in the current block", key);
+                return Err(JarvilError::new(value.1, value.1, err_str))
+            },
+            None => {}
+        }
+        self.0.borrow_mut().set(key.clone(), meta_data, line_number);
+        Ok(())
     }
 
     pub fn lookup(&self, key: &Rc<String>) -> Option<SymbolData> {
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
             Some(value) => {
-                Some(SymbolData(value.0.clone()))
+                Some(SymbolData(value.0.clone(), value.1))
             },
             None => {
                 if let Some(parent_env) = &scope_ref.parent_env {

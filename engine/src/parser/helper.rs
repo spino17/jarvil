@@ -1,7 +1,7 @@
 use crate::ast::ast::{SkippedTokenNode};
 use crate::constants::common::NEWLINE;
 use crate::parser::parser::ParseSuccess;
-use crate::errors::{ParseError};
+use crate::errors::{JarvilError};
 use crate::types::core::Type;
 
 pub enum IndentResultKind {
@@ -16,8 +16,8 @@ pub struct IndentResult {
     pub extra_newlines: Vec<SkippedTokenNode>,
 }
 
-pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool), ParseError>) 
--> Result<(ParseSuccess, Option<Type>, bool, bool), ParseError> {
+pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>) 
+-> Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError> {
     match result {
         Ok(response) => {
             let possible_err = match &response.0.possible_err {
@@ -40,8 +40,8 @@ pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool
     }
 }
 
-pub fn clone_expr_result(result: &Result<(ParseSuccess, bool), ParseError>) 
--> Result<(ParseSuccess, bool), ParseError> {
+pub fn clone_expr_result(result: &Result<(ParseSuccess, bool), JarvilError>) 
+-> Result<(ParseSuccess, bool), JarvilError> {
     match result {
         Ok(response) => {
             let possible_err = match &response.0.possible_err {

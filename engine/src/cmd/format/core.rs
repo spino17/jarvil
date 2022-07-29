@@ -5,7 +5,7 @@
 // http://journal.stuffwithstuff.com/2015/09/08/the-hardest-program-ive-ever-written/
 
 use crate::ast::ast::{StatementNode, BlockNode};
-use crate::errors::ParseError;
+use crate::errors::JarvilError;
 use crate::utils::common::build_ast;
 use crate::{context, code::Code};
 use std::mem;
@@ -35,7 +35,7 @@ impl Formatter {
         todo!()
     }
 
-    pub fn format(code_vec: Vec<char>) -> Result<String, ParseError> {
+    pub fn format(code_vec: Vec<char>) -> Result<String, JarvilError> {
         let mut code = Code::new(code_vec);
         let ast = build_ast(&mut code);
         match context::first_error() {

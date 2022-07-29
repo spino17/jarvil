@@ -1,7 +1,7 @@
 use rustc_hash::FxHashMap;
 use std::{collections::HashMap};
 use std::cell::RefCell;
-use crate::{constants::common::{KEYWORDS, TYPES, LETTERS, DIGITS}, errors::ParseError};
+use crate::{constants::common::{KEYWORDS, TYPES, LETTERS, DIGITS}, errors::JarvilError};
 
 thread_local! {
     static CONTEXT: RefCell<Context> = RefCell::new(Context::new())
@@ -15,7 +15,7 @@ struct Context {
     types: FxHashMap<String, ()>,
     letters: FxHashMap<char, ()>,
     digits: FxHashMap<char, ()>,
-    parse_errors: Vec<ParseError>,
+    parse_errors: Vec<JarvilError>,
     indent_spaces: i64,
     max_error_lines: usize,
     max_line_width: usize,
@@ -81,11 +81,11 @@ impl Context {
         }
     }
 
-    fn set_errors(&mut self, err: Vec<ParseError>) {
+    fn set_errors(&mut self, err: Vec<JarvilError>) {
         self.parse_errors = err;
     }
 
-    fn push_error(&mut self, err: ParseError) {
+    fn push_error(&mut self, err: JarvilError) {
         self.parse_errors.push(err);
     }
 
@@ -93,7 +93,7 @@ impl Context {
         self.parse_errors[self.parse_errors.len() - 1].end_line_number
     }
 
-    pub fn first_error(&self) -> Option<ParseError> {
+    pub fn first_error(&self) -> Option<JarvilError> {
         let errors_len = self.parse_errors.len();
         if errors_len == 0 {
             None
@@ -175,7 +175,7 @@ pub fn is_digit(c: &char) -> bool {
     }
 }
 
-pub fn set_errors(err: Vec<ParseError>) {
+pub fn set_errors(err: Vec<JarvilError>) {
     match CONTEXT.try_with(|ctx| {
         ctx.borrow_mut().set_errors(err)
     }) {
@@ -186,7 +186,7 @@ pub fn set_errors(err: Vec<ParseError>) {
     }
 }
 
-pub fn push_error(err: ParseError) {
+pub fn push_error(err: JarvilError) {
     match CONTEXT.try_with(|ctx| {
         ctx.borrow_mut().push_error(err)
     }) {
@@ -208,7 +208,7 @@ pub fn curr_error_line_number() -> usize {
     }
 }
 
-pub fn first_error() -> Option<ParseError> {
+pub fn first_error() -> Option<JarvilError> {
     match CONTEXT.try_with(|ctx| {
         ctx.borrow().first_error()
     }) {
