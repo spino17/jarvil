@@ -72,7 +72,7 @@ impl Scope {
             None => {
                 if let Some(parent_env) = &scope_ref.parent_env {
                     match parent_env.lookup(key) {
-                        Some(symbo_data) => Some((symbo_data.0, symbo_data.1 + 1)),
+                        Some(result) => Some((result.0, result.1 + 1)),
                         None => None,
                     }
                 } else {
@@ -82,11 +82,12 @@ impl Scope {
         }
     }
 
-    pub fn lookup_with_depth(&self, key: &Rc<String>, depth: usize) -> Option<SymbolData> {
-        let mut scope_ref = self.0.borrow();
+    // call this method only after resolving phase is done
+    pub fn lookup_with_depth(&self, key: &Rc<String>, depth: usize) -> SymbolData {
+        let scope_ref = self.0.borrow();
         if depth == 0 {
             match scope_ref.get(key) {
-                Some(value) => return Some(SymbolData(value.0.clone(), value.1)),
+                Some(value) => return SymbolData(value.0.clone(), value.1),
                 None => unreachable!("data for key `{}` should be present if resolving phase is done", key)
             }
         } else {

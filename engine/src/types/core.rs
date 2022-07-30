@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::str;
 use std::fmt::{Formatter, Debug};
-use crate::constants::common::{INT, FLOAT, STRING, BOOL};
+use crate::constants::common::{INT, FLOAT, STRING, BOOL, NON_TYPED};
 use crate::types::{atomic::Atomic, array::Array};
 
 pub trait AbstractType {
@@ -49,7 +49,10 @@ impl Type {
                     FLOAT     =>  atomic_type.is_float(),
                     STRING    =>  atomic_type.is_string(),
                     BOOL      =>  atomic_type.is_bool(),
-                    _               =>  unreachable!("atomic type name can only be 'int', 'float', 'string' or 'bool'"),
+                    _               =>  unreachable!(
+                        "atomic type name can only be `{}`, `{}`, `{}` or `{}`",
+                        INT, FLOAT, STRING, BOOL
+                    ),
                 }
             },
             _ => false
@@ -62,7 +65,10 @@ impl Type {
             FLOAT     =>  Type(Rc::new(CoreType::ATOMIC(Atomic::FLOAT))),
             STRING    =>  Type(Rc::new(CoreType::ATOMIC(Atomic::STRING))),
             BOOL      =>  Type(Rc::new(CoreType::ATOMIC(Atomic::BOOL))),
-            _               =>  unreachable!("atomic type name can only be 'int', 'float', 'string' or 'bool'"),
+            _               =>  unreachable!(
+                "atomic type name can only be `{}`, `{}`, `{}` or `{}`",
+                INT, FLOAT, STRING, BOOL
+            ),
         }
     }
 }
@@ -100,7 +106,7 @@ impl AbstractType for Type {
                 array_data.string()
             },
             CoreType::USER_DEFINED(user_defined_data) => user_defined_data.clone(),
-            CoreType::NON_TYPED                                    => Rc::new(String::from("non-typed"))
+            CoreType::NON_TYPED                                    => Rc::new(String::from(NON_TYPED))
         }
     }
 }
@@ -112,7 +118,7 @@ impl std::fmt::Display for Type {
             CoreType::ATOMIC(atomic_data)                 => write!(f, "{}", atomic_data.string()),
             CoreType::USER_DEFINED(user_defined_data) => write!(f, "{}", user_defined_data),
             CoreType::ARRAY(array_data)                    => write!(f, "{}", array_data.string()),
-            CoreType::NON_TYPED                                    => write!(f, "non-typed"),
+            CoreType::NON_TYPED                                    => write!(f, "{}", NON_TYPED),
         }
     }
 }

@@ -52,7 +52,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                         &type_name_node, &args_node, &None, &type_keyword_node, &colon_node,
                         &lparen_node, &rparen_node, &None, &endmarker_node
                     )
-                }
+                },
                 _                       => {
                     parser.log_missing_token_error_for_multiple_expected_symbols(
                         &["->", "\n"], token
