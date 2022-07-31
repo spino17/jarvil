@@ -761,7 +761,7 @@ impl NameTypeSpecsNode {
     }
 
     pub fn get_name_type_spec_objs(&self, code: &Code) -> Vec<(Option<Rc<String>>, Option<Type>)> {
-        match &self.0.as_ref().borrow().kind {
+        match &self.core_ref().kind {
             NameTypeSpecsKind::OK(ok_name_type_specs) => {
                 ok_name_type_specs.get_name_type_spec_objs(code)
             }
@@ -815,9 +815,9 @@ impl OkNameTypeSpecsNode {
 
     pub fn get_name_type_spec_objs(&self, code: &Code) -> Vec<(Option<Rc<String>>, Option<Type>)> {
         let mut name_type_specs_vec: Vec<(Option<Rc<String>>, Option<Type>)> = vec![];
-        let arg_obj = self.0.as_ref().borrow().arg.get_name_spec_obj(code);
+        let arg_obj = self.core_ref().arg.get_name_spec_obj(code);
         name_type_specs_vec.push(arg_obj);
-        match &self.0.as_ref().borrow().remaining_args {
+        match &self.core_ref().remaining_args {
             Some(remaining_args) => {
                 let mut remaining_args_objs = remaining_args.get_name_type_spec_objs(code);
                 name_type_specs_vec.append(&mut remaining_args_objs);
@@ -856,11 +856,11 @@ impl NameTypeSpecNode {
     }
 
     pub fn get_name_spec_obj(&self, code: &Code) -> (Option<Rc<String>>, Option<Type>) {
-        let name = match self.0.as_ref().borrow().param_name.get_ok() {
+        let name = match self.core_ref().param_name.get_ok() {
             Some(ok_name_node) => Some(Rc::new(ok_name_node.token_value(code))),
             None => None,
         };
-        let type_obj = match self.0.as_ref().borrow().param_type.get_type_obj(code) {
+        let type_obj = match self.core_ref().param_type.get_type_obj(code) {
             Some(type_obj) => Some(type_obj),
             None => None,
         };
@@ -918,7 +918,7 @@ impl TypeExpressionNode {
     }
 
     pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
-        match &self.0.as_ref().borrow().kind {
+        match &self.core_ref().kind {
             TypeExpressionKind::ATOMIC(atomic_type) => atomic_type.get_type_obj(code),
             TypeExpressionKind::USER_DEFINED(user_defined_type) => {
                 user_defined_type.get_type_obj(code)
@@ -956,7 +956,7 @@ impl AtomicTypeNode {
     }
 
     pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
-        match self.0.as_ref().borrow().kind.get_ok() {
+        match self.core_ref().kind.get_ok() {
             Some(ok_atomic_type) => {
                 let atomic_type_str = ok_atomic_type.token_value(code);
                 return Atomic::new_with_type_str(&atomic_type_str);
@@ -1006,8 +1006,8 @@ impl ArrayTypeNode {
     }
 
     pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
-        match self.0.as_ref().borrow().sub_type.get_type_obj(code) {
-            Some(sub_type_obj) => match self.0.as_ref().borrow().size.get_ok() {
+        match self.core_ref().sub_type.get_type_obj(code) {
+            Some(sub_type_obj) => match self.core_ref().size.get_ok() {
                 Some(size) => {
                     let size = match size.token_value(code).parse::<usize>() {
                         Ok(size) => size,
@@ -1044,7 +1044,7 @@ impl UserDefinedTypeNode {
     }
 
     pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
-        match self.0.as_ref().borrow().token.get_ok() {
+        match self.core_ref().token.get_ok() {
             Some(ok_token_node) => {
                 Some(Type::new_with_user_defined(ok_token_node.token_value(code)))
             }
@@ -1087,21 +1087,21 @@ impl TokenNode {
     }
 
     pub fn is_ok(&self) -> Option<TokenNode> {
-        match &self.0.as_ref().borrow().kind {
+        match &self.core_ref().kind {
             TokenKind::OK(_) => Some(self.clone()),
             _ => None,
         }
     }
 
     pub fn get_ok(&self) -> Option<OkTokenNode> {
-        match &self.0.as_ref().borrow().kind {
+        match &self.core_ref().kind {
             TokenKind::OK(ok_token_node) => Some(ok_token_node.clone()),
             _ => None,
         }
     }
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
-        match &self.0.as_ref().borrow().kind {
+        match &self.core_ref().kind {
             TokenKind::OK(ok_token) => match ok_token.is_binary_operator() {
                 Some(operator) => return Some(operator),
                 None => None,
@@ -1141,7 +1141,7 @@ impl OkTokenNode {
     }
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
-        match self.0.as_ref().borrow().token.core_token {
+        match &self.core_ref().token.core_token {
             CoreToken::NOT_EQUAL        => Some(BinaryOperatorKind::NOT_EQUAL),
             CoreToken::DOUBLE_EQUAL     => Some(BinaryOperatorKind::DOUBLE_EQUAL),
             CoreToken::RBRACKET         => Some(BinaryOperatorKind::GREATER),
@@ -1159,11 +1159,11 @@ impl OkTokenNode {
     }
 
     pub fn token_value(&self, code: &Code) -> String {
-        self.0.as_ref().borrow().token.token_value(code)
+        self.core_ref().token.token_value(code)
     }
 
     pub fn is_identifier(&self) -> bool {
-        match self.0.as_ref().borrow().kind {
+        match self.core_ref().kind {
             OkTokenKind::IDENTIFIER(_) => true,
             _ => false,
         }
@@ -1220,11 +1220,11 @@ impl SkippedTokenNode {
     }
 
     pub fn index(&self) -> usize {
-        self.0.as_ref().borrow().skipped_token.index()
+        self.core_ref().skipped_token.index()
     }
 
     pub fn line_number(&self) -> usize {
-        self.0.as_ref().borrow().skipped_token.line_number
+        self.core_ref().skipped_token.line_number
     }
 
     core_node_access!(CoreSkippedTokenNode);
@@ -1303,7 +1303,7 @@ impl ExpressionNode {
     }
 
     pub fn is_valid_l_value(&self) -> Option<AtomNode> {
-        match &self.0.as_ref().borrow().kind {
+        match &self.core_ref().kind {
             ExpressionKind::UNARY(unary_expr_node) => {
                 match &unary_expr_node.0.as_ref().borrow().kind {
                     UnaryExpressionKind::ATOMIC(atomic_expr_node) => {
@@ -1858,7 +1858,7 @@ impl AtomNode {
     }
 
     pub fn is_valid_l_value(&self) -> bool {
-        match &self.0.as_ref().borrow().kind {
+        match &self.core_ref().kind {
             AtomKind::ATOM_START(atom_start_node) => atom_start_node.is_valid_l_value(),
             AtomKind::CALL(_) => false,
             AtomKind::METHOD_ACCESS(_) => false,
@@ -1934,7 +1934,7 @@ impl AtomStartNode {
     }
 
     pub fn is_valid_l_value(&self) -> bool {
-        match &self.0.as_ref().borrow().kind {
+        match &self.core_ref().kind {
             AtomStartKind::IDENTIFIER(_) => true,
             _ => false,
         }
