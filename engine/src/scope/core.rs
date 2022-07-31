@@ -6,15 +6,29 @@ use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MetaData {
     IDENTIFIER(IdentifierData),
     USER_DEFINED_TYPE(UserDefinedTypeData),
     FUNCTION(FunctionData),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SymbolData(Rc<RefCell<MetaData>>, usize); // meta data and line on which it was declared
+impl SymbolData {
+    fn kind_as_str(&self) -> &str {
+        match &*self.0.as_ref().borrow() {
+            MetaData::IDENTIFIER(_) => "identifier",
+            MetaData::USER_DEFINED_TYPE(user_defined_type) => {
+                match user_defined_type {
+                    UserDefinedTypeData::STRUCT(_) => return "struct",
+                    UserDefinedTypeData::LAMBDA(_) => return "lambda",
+                }
+            },
+            MetaData::FUNCTION(_) => "function",
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct CoreScope {
@@ -62,7 +76,7 @@ impl Scope {
     ) -> Result<(), JarvilError> {
         match self.0.borrow().get(key) {
             Some(value) => {
-                let err_str = format!("`{}` is already declared in the current block", key);
+                let err_str = format!("`{}` is already declared in the current block as `{}`", key, value.kind_as_str());
                 return Err(JarvilError::new(value.1, value.1, err_str));
             }
             None => {}

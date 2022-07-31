@@ -2,6 +2,8 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks.
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
+use crate::constants::common::IDENTIFIER;
+use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
 use crate::{
     code::Code,
@@ -1011,9 +1013,9 @@ pub enum TokenKind {
 #[derive(Debug, Clone)]
 pub struct TokenNode(pub Rc<RefCell<CoreTokenNode>>);
 impl TokenNode {
-    pub fn new_with_ok_token(token: &Token, lookahead: usize) -> Self {
+    pub fn new_with_ok_token(token: &Token, lookahead: usize, kind: OkTokenKind) -> Self {
         TokenNode(Rc::new(RefCell::new(CoreTokenNode {
-            kind: TokenKind::OK(OkTokenNode::new(token, lookahead)),
+            kind: TokenKind::OK(OkTokenNode::new(token, lookahead, kind)),
             parent: None,
         })))
     }
@@ -1055,16 +1057,23 @@ default_errornous_node_impl!(TokenNode, CoreTokenNode, TokenKind);
 #[derive(Debug, Clone)]
 pub struct CoreOkTokenNode {
     token: Token,
+    kind: OkTokenKind,
     lookahead: usize,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
+pub enum OkTokenKind {
+    IDENTIFIER(Option<SymbolData>),  // This is set when the identifier is resolved
+    NON_IDENTIFIER,
+}
+#[derive(Debug, Clone)]
 pub struct OkTokenNode(Rc<RefCell<CoreOkTokenNode>>);
 impl OkTokenNode {
-    pub fn new(token: &Token, lookahead: usize) -> Self {
+    pub fn new(token: &Token, lookahead: usize, kind: OkTokenKind) -> Self {
         OkTokenNode(Rc::new(RefCell::new(CoreOkTokenNode {
             token: token.clone(),
+            kind,
             lookahead,
             parent: None,
         })))
@@ -1072,24 +1081,31 @@ impl OkTokenNode {
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match self.0.as_ref().borrow().token.core_token {
-            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NOT_EQUAL),
-            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DOUBLE_EQUAL),
-            CoreToken::RBRACKET => Some(BinaryOperatorKind::GREATER),
-            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GREATER_EQUAL),
-            CoreToken::LBRACKET => Some(BinaryOperatorKind::LESS),
-            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LESS_EQUAL),
-            CoreToken::DASH => Some(BinaryOperatorKind::MINUS),
-            CoreToken::PLUS => Some(BinaryOperatorKind::PLUS),
-            CoreToken::SLASH => Some(BinaryOperatorKind::DIVIDE),
-            CoreToken::STAR => Some(BinaryOperatorKind::MULTIPLY),
-            CoreToken::AND => Some(BinaryOperatorKind::AND),
-            CoreToken::OR => Some(BinaryOperatorKind::OR),
+            CoreToken::NOT_EQUAL        => Some(BinaryOperatorKind::NOT_EQUAL),
+            CoreToken::DOUBLE_EQUAL     => Some(BinaryOperatorKind::DOUBLE_EQUAL),
+            CoreToken::RBRACKET         => Some(BinaryOperatorKind::GREATER),
+            CoreToken::GREATER_EQUAL    => Some(BinaryOperatorKind::GREATER_EQUAL),
+            CoreToken::LBRACKET         => Some(BinaryOperatorKind::LESS),
+            CoreToken::LESS_EQUAL       => Some(BinaryOperatorKind::LESS_EQUAL),
+            CoreToken::DASH             => Some(BinaryOperatorKind::MINUS),
+            CoreToken::PLUS             => Some(BinaryOperatorKind::PLUS),
+            CoreToken::SLASH            => Some(BinaryOperatorKind::DIVIDE),
+            CoreToken::STAR             => Some(BinaryOperatorKind::MULTIPLY),
+            CoreToken::AND              => Some(BinaryOperatorKind::AND),
+            CoreToken::OR               => Some(BinaryOperatorKind::OR),
             _ => None,
         }
     }
 
     pub fn token_value(&self, code: &Code) -> String {
         self.0.as_ref().borrow().token.token_value(code)
+    }
+
+    pub fn is_identifier(&self) -> bool {
+        match self.0.as_ref().borrow().kind {
+            OkTokenKind::IDENTIFIER(_) => true,
+            _ => false,
+        }
     }
 }
 default_node_impl!(OkTokenNode);
@@ -1659,11 +1675,11 @@ pub struct CoreAtomNode {
 
 #[derive(Debug, Clone)]
 pub enum AtomKind {
-    ATOM_START(AtomStartNode),
-    CALL(CallNode),
-    PROPERTRY_ACCESS(PropertyAccessNode),
-    METHOD_ACCESS(MethodAccessNode),
-    INDEX_ACCESS(IndexAccessNode),
+    ATOM_START(AtomStartNode),  // id, id(...), id::id(...)
+    CALL(CallNode),  // A(...)
+    PROPERTRY_ACCESS(PropertyAccessNode),  // A.id
+    METHOD_ACCESS(MethodAccessNode),  // A.id(...)
+    INDEX_ACCESS(IndexAccessNode),  // A[<expr>]
 }
 
 #[derive(Debug, Clone)]

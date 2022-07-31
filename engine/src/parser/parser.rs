@@ -3,7 +3,7 @@
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::ErrornousNode;
+use crate::ast::ast::{ErrornousNode, OkTokenKind};
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
     FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, ParamsNode, RAssignmentNode,
@@ -11,7 +11,7 @@ use crate::ast::ast::{
     UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::code::Code;
-use crate::constants::common::ENDMARKER;
+use crate::constants::common::{ENDMARKER, IDENTIFIER};
 use crate::context;
 use crate::errors::{JarvilError, ParseErrorKind};
 use crate::lexer::token::{CoreToken, Token};
@@ -354,7 +354,12 @@ impl PackratParser {
         let token = self.curr_token();
         if token.is_eq(symbol) {
             self.scan_next_token();
-            TokenNode::new_with_ok_token(&token, self.curr_lookahead())
+            let kind = if symbol == IDENTIFIER {
+                OkTokenKind::IDENTIFIER(None)
+            } else {
+                OkTokenKind::NON_IDENTIFIER
+            };
+            TokenNode::new_with_ok_token(&token, self.curr_lookahead(), kind)
         } else {
             self.log_missing_token_error_for_single_expected_symbol(symbol, &token);
             TokenNode::new_with_missing_tokens(
@@ -370,7 +375,12 @@ impl PackratParser {
         for &symbol in symbols {
             if token.is_eq(symbol) {
                 self.scan_next_token();
-                return TokenNode::new_with_ok_token(&token, self.curr_lookahead());
+                let kind = if symbol == IDENTIFIER {
+                    OkTokenKind::IDENTIFIER(None)
+                } else {
+                    OkTokenKind::NON_IDENTIFIER
+                };
+                return TokenNode::new_with_ok_token(&token, self.curr_lookahead(), kind);
             }
         }
         // self.log_skipped_token_error(symbols, &token);

@@ -99,7 +99,10 @@ impl Clone for Code {
     fn clone(&self) -> Self {
         Code {
             code_vec: self.code_vec.clone(),
-            code_lines: self.code_lines.clone(),
+            code_lines: match &self.code_lines {
+                Some(code_lines) => Some(code_lines.clone()),
+                None => None,
+            },
         }
     }
 }

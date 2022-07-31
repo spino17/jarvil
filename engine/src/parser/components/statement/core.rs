@@ -72,6 +72,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
         CoreToken::CONTINUE => todo!(),
         _ => {
             let expr_node = parser.expr();
+            // TODO - check if next token is '=' => parse for assignment
             StatementNode::new_with_expression(&expr_node)
         }
     };
