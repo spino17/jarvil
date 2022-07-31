@@ -213,7 +213,7 @@ impl PackratParser {
         expected_symbol: &str,
         recevied_token: &Token,
     ) {
-        // This type of error handling is taken from Golang programming language
+        // This type of error handling is inspired from Golang programming language
         // See /src/go/parser/parser.go -> `func (p *parser) error(pos token.Pos, msg string) {...}`
         if self.ignore_all_errors {
             return;
@@ -335,7 +335,7 @@ impl PackratParser {
             return;
         } else {
             let code_lines: Vec<String> = self.code.lines(start_line_number, end_line_number);
-            let err_str = format!("expected an indented block\nexpected indentation with `{}` spaces, got `{}` spaces", 
+            let err_str = format!("expected an indented block with `{}` spaces, got `{}` spaces", 
             expected_indent, received_indent);
             let err_message = JarvilError::form_multi_line_error(
                 start_line_number,
@@ -389,6 +389,10 @@ impl PackratParser {
             &token,
             self.curr_lookahead(),
         )
+    }
+
+    pub fn expect_terminals(&mut self) -> TokenNode {
+        self.expects(&["\n", ENDMARKER])
     }
 
     pub fn expect_indent_spaces(&mut self) -> IndentResult {
@@ -530,8 +534,8 @@ impl PackratParser {
         components::statement::core::stmt(self)
     }
 
-    pub fn assignment(&mut self) -> AssignmentNode {
-        components::assignment::assignment(self)
+    pub fn assignment(&mut self, expr: &ExpressionNode) -> AssignmentNode {
+        components::assignment::assignment(self, expr)
     }
 
     // type expression

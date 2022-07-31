@@ -27,14 +27,6 @@ impl Formatter {
         }
     }
 
-    pub fn format_block(&mut self, block_node: BlockNode) {
-        todo!()
-    }
-
-    pub fn format_statement(&mut self, stmt_node: StatementNode) {
-        todo!()
-    }
-
     pub fn format(code_vec: Vec<char>) -> Result<String, JarvilError> {
         let mut code = Code::new(code_vec);
         let ast = build_ast(&mut code);
@@ -47,7 +39,6 @@ impl Formatter {
         // 1. walk the ast and get chunks, rules and spans tree
         // 2. use A* algorithm with number of overflowing chars and minimum splits as heuristics function
         // 3. For each value of rule, have a print method which will add appropiate line-breaks, indentation and comments
-        formatter.format_block(ast);
         Ok(mem::take(&mut formatter.formatted_code_str))
     }
 }

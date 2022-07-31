@@ -1,8 +1,13 @@
-use crate::{ast::ast::AssignmentNode, parser::parser::PackratParser};
+use crate::{ast::ast::{AssignmentNode, ExpressionNode}, parser::parser::PackratParser};
 
-pub fn assignment(parser: &mut PackratParser) -> AssignmentNode {
-    let atom_node = parser.atom();
+pub fn assignment(parser: &mut PackratParser, expr: &ExpressionNode) -> AssignmentNode {
     let equal_node = parser.expect("=");
     let r_assign_node = parser.r_assign(None);
-    AssignmentNode::new(&atom_node, &r_assign_node, &equal_node)
+    match expr.is_valid_l_value() {
+        Some(atom_node) => AssignmentNode::new(&atom_node, &r_assign_node, &equal_node),
+        None => {
+            // TODO - log the error and return an appropiate node
+            todo!()
+        }
+    }
 }

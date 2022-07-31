@@ -38,7 +38,8 @@ pub fn r_assign(
         }
         _ => {
             let expr_node = parser.expr();
-            RAssignmentNode::new_with_expr(&expr_node)
+            let newline = parser.expect_terminals();
+            RAssignmentNode::new_with_expr(&expr_node, &newline)
         }
     }
 }

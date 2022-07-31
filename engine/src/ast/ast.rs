@@ -2,7 +2,6 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks.
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
-use crate::constants::common::IDENTIFIER;
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
 use crate::{
@@ -18,7 +17,11 @@ use std::{
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
-    // fn width(&self) -> usize;  // TODO - width of the node
+    // TODO - below methods should be implemented for all nodes
+    // fn start_index(&self) -> usize;
+    // fn end_index(&self) -> usize;
+    // fn start_line_number(&self) -> usize,
+    // fn end_line_number(&self) -> usize,
 }
 
 pub trait ErrornousNode {
@@ -202,15 +205,16 @@ default_node_impl!(SkippedTokens);
 
 #[derive(Debug, Clone)]
 pub struct CoreStatementNode {
-    pub kind: StatementNodeKind,
+    pub kind: StatementKind,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub enum StatementNodeKind {
+pub enum StatementKind {
     // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration,
     // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
-    EXPRESSION(ExpressionNode),
+    EXPRESSION((ExpressionNode, TokenNode)),
+    ASSIGNMENT(AssignmentNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
     FUNCTION_DECLARATION(FunctionDeclarationNode),
     TYPE_DECLARATION(TypeDeclarationNode),
@@ -221,18 +225,28 @@ pub enum StatementNodeKind {
 #[derive(Debug, Clone)]
 pub struct StatementNode(pub Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
-    pub fn new_with_expression(expr: &ExpressionNode) -> Self {
+    pub fn new_with_expression(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
-            kind: StatementNodeKind::EXPRESSION(expr.clone()),
+            kind: StatementKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
         expr.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        newline.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        StatementNode(node)
+    }
+
+    pub fn new_with_assignment(assignment: &AssignmentNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreStatementNode{
+            kind: StatementKind::ASSIGNMENT(assignment.clone()),
+            parent: None,
+        }));
+        assignment.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
         StatementNode(node)
     }
 
     pub fn new_with_variable_declaration(variable_decl: &VariableDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
-            kind: StatementNodeKind::VARIABLE_DECLARATION(variable_decl.clone()),
+            kind: StatementKind::VARIABLE_DECLARATION(variable_decl.clone()),
             parent: None,
         }));
         variable_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
@@ -241,7 +255,7 @@ impl StatementNode {
 
     pub fn new_with_function_declaration(function_decl: &FunctionDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
-            kind: StatementNodeKind::FUNCTION_DECLARATION(function_decl.clone()),
+            kind: StatementKind::FUNCTION_DECLARATION(function_decl.clone()),
             parent: None,
         }));
         function_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
@@ -250,7 +264,7 @@ impl StatementNode {
 
     pub fn new_with_type_declaration(type_decl: &TypeDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
-            kind: StatementNodeKind::TYPE_DECLARATION(type_decl.clone()),
+            kind: StatementKind::TYPE_DECLARATION(type_decl.clone()),
             parent: None,
         }));
         type_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
@@ -259,7 +273,7 @@ impl StatementNode {
 
     pub fn new_with_struct_stmt(struct_stmt: &StructStatementNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
-            kind: StatementNodeKind::STRUCT_STATEMENT(struct_stmt.clone()),
+            kind: StatementKind::STRUCT_STATEMENT(struct_stmt.clone()),
             parent: None,
         }));
         struct_stmt.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
@@ -267,7 +281,7 @@ impl StatementNode {
     }
 }
 default_node_impl!(StatementNode);
-default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementNodeKind);
+default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementKind);
 
 #[derive(Debug, Clone)]
 pub struct CoreAssignmentNode {
@@ -657,7 +671,6 @@ default_node_impl!(OkFunctionDeclarationNode);
 pub struct CoreVariableDeclarationNode {
     let_keyword: TokenNode,
     equal: TokenNode,
-    newline: TokenNode,
     pub name: TokenNode,
     pub r_assign: RAssignmentNode,
     parent: Option<ASTNode>,
@@ -671,19 +684,16 @@ impl VariableDeclarationNode {
         r_assign: &RAssignmentNode,
         let_keyword: &TokenNode,
         equal: &TokenNode,
-        newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(RefCell::new(CoreVariableDeclarationNode {
             let_keyword: let_keyword.clone(),
             equal: equal.clone(),
-            newline: newline.clone(),
             name: name.clone(),
             r_assign: r_assign.clone(),
             parent: None,
         }));
         let_keyword.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
         equal.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
-        newline.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
         name.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
         r_assign.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
         VariableDeclarationNode(node)
@@ -1172,7 +1182,7 @@ pub struct CoreExpressionNode {
 
 #[derive(Debug, Clone)]
 pub enum ExpressionKind {
-    ATOMIC(AtomicExpressionNode),
+    // ATOMIC(AtomicExpressionNode),
     UNARY(UnaryExpressionNode),
     BINARY(BinaryExpressionNode),
     LOGICAL(LogicalExpressionNode),
@@ -1182,15 +1192,6 @@ pub enum ExpressionKind {
 #[derive(Debug, Clone)]
 pub struct ExpressionNode(pub Rc<RefCell<CoreExpressionNode>>);
 impl ExpressionNode {
-    pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreExpressionNode {
-            kind: ExpressionKind::ATOMIC(atomic_expr.clone()),
-            parent: None,
-        }));
-        atomic_expr.set_parent(ASTNode::EXPRESSION(Rc::downgrade(&node)));
-        ExpressionNode(node)
-    }
-
     pub fn new_with_unary(unary_expr: &UnaryExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreExpressionNode {
             kind: ExpressionKind::UNARY(unary_expr.clone()),
@@ -1242,6 +1243,30 @@ impl ExpressionNode {
             parent: None,
         }));
         ExpressionNode(node)
+    }
+
+    pub fn is_valid_l_value(&self) -> Option<AtomNode> {
+        match &self.0.as_ref().borrow().kind {
+            ExpressionKind::UNARY(unary_expr_node) => {
+                match &unary_expr_node.0.as_ref().borrow().kind {
+                    UnaryExpressionKind::ATOMIC(atomic_expr_node) => {
+                        match &atomic_expr_node.0.as_ref().borrow().kind {
+                            AtomicExpressionKind::ATOM(atom_node) => {
+                                if atom_node.is_valid_l_value() {
+                                    return Some(atom_node.clone())
+                                } else {
+                                    return None
+                                }
+                            }
+                            _ => return None
+                        }
+                    },
+                    _ => return None
+                }
+                
+            },
+            _ => return None,
+        }
     }
 }
 default_node_impl!(ExpressionNode);
@@ -1752,6 +1777,22 @@ impl AtomNode {
         }));
         AtomNode(node)
     }
+
+    pub fn is_valid_l_value(&self) -> bool {
+        match &self.0.as_ref().borrow().kind {
+            AtomKind::ATOM_START(atom_start_node) => atom_start_node.is_valid_l_value(),
+            AtomKind::CALL(_) => false,
+            AtomKind::METHOD_ACCESS(_) => false,
+            AtomKind::INDEX_ACCESS(atom_index_access_node) => {
+                let atom = &atom_index_access_node.0.as_ref().borrow().atom;
+                return atom.is_valid_l_value()
+            }
+            AtomKind::PROPERTRY_ACCESS(atom_property_access_node) => {
+                let atom = &atom_property_access_node.0.as_ref().borrow().atom;
+                return atom.is_valid_l_value()
+            }
+        }
+    }
 }
 default_node_impl!(AtomNode);
 
@@ -1809,6 +1850,13 @@ impl AtomStartNode {
             parent: None,
         }));
         AtomStartNode(node)
+    }
+
+    pub fn is_valid_l_value(&self) -> bool {
+        match &self.0.as_ref().borrow().kind {
+            AtomStartKind::IDENTIFIER(_) => true,
+            _ => false,
+        }
     }
 }
 default_node_impl!(AtomStartNode);
@@ -1964,7 +2012,7 @@ pub struct CoreRAssignmentNode {
 #[derive(Debug, Clone)]
 pub enum RAssignmentKind {
     LAMBDA(FunctionDeclarationNode),
-    EXPRESSION(ExpressionNode),
+    EXPRESSION((ExpressionNode, TokenNode)),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -1980,12 +2028,13 @@ impl RAssignmentNode {
         RAssignmentNode(node)
     }
 
-    pub fn new_with_expr(expr: &ExpressionNode) -> Self {
+    pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreRAssignmentNode {
-            kind: RAssignmentKind::EXPRESSION(expr.clone()),
+            kind: RAssignmentKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
         expr.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
+        newline.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
         RAssignmentNode(node)
     }
 }
