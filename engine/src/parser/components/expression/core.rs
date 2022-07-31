@@ -6,7 +6,8 @@ use crate::ast::ast::ErrornousNode;
 
 // all the unary operators are right assosiative and all the binary operators are left assosiative. 
 // below is the operator precedence in jarvil (lower to higher). This may be quite resembling with Python programming language.
-// "and", "or"
+// "or"
+// "and"
 // ">", ">=", "<", "<=", "==", "!="
 // "-", "+"
 // "/", "*"
@@ -32,15 +33,41 @@ pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
             parser.curr_lookahead(),
         )
     }
-    parser.logical()
+    parser.logical_or()
 }
 
+/*
 pub fn logical(parser: &mut PackratParser) -> ExpressionNode {
     let mut leading_comparison_expr_node = parser.comparison();
     while let Some(node) = parser.expects(&["and", "or"]).is_ok() {
         let operator_node = node;
         let trailing_comparison_expr_node = parser.comparison();
         leading_comparison_expr_node = ExpressionNode::new_with_binary(
+            &operator_node, &leading_comparison_expr_node, &trailing_comparison_expr_node
+        );
+    }
+    leading_comparison_expr_node
+}
+ */
+
+pub fn logical_or(parser: &mut PackratParser) -> ExpressionNode {
+    let mut leading_logical_and_expr_node = parser.logical_and();
+    while let Some(node) = parser.expects(&["or"]).is_ok() {
+        let operator_node = node;
+        let trailing_logical_and_expr_node = parser.logical_and();
+        leading_logical_and_expr_node = ExpressionNode::new_with_logical(
+            &operator_node, &leading_logical_and_expr_node, &trailing_logical_and_expr_node
+        );
+    }
+    leading_logical_and_expr_node
+}
+
+pub fn logical_and(parser: &mut PackratParser) -> ExpressionNode {
+    let mut leading_comparison_expr_node = parser.comparison();
+    while let Some(node) = parser.expects(&["and"]).is_ok() {
+        let operator_node = node;
+        let trailing_comparison_expr_node = parser.comparison();
+        leading_comparison_expr_node = ExpressionNode::new_with_logical(
             &operator_node, &leading_comparison_expr_node, &trailing_comparison_expr_node
         );
     }
