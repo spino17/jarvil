@@ -1,9 +1,9 @@
-use std::{io::Error as IOError, fmt::Display};
-use std::fmt::{Formatter};
-use std::rc::Rc;
 use crate::context;
 use crate::lexer::token::Token;
 use colored::Colorize;
+use std::fmt::Formatter;
+use std::rc::Rc;
+use std::{fmt::Display, io::Error as IOError};
 
 pub fn int_length(n: usize) -> usize {
     let base = 10;
@@ -48,14 +48,18 @@ pub enum LexicalErrorData {
 
 impl LexicalErrorData {
     pub fn new_with_invalid_char(invalid_token: &Token, err_message: &Rc<String>) -> Self {
-        LexicalErrorData::INVALID_CHAR(InvalidCharLexicalErrorData{
+        LexicalErrorData::INVALID_CHAR(InvalidCharLexicalErrorData {
             invalid_token: invalid_token.clone(),
             err_message: err_message.clone(),
         })
     }
 
-    pub fn new_with_no_closing_symbols(start_line_number: usize, end_line_number: usize, err_message: &Rc<String>) -> Self {
-        LexicalErrorData::NO_CLOSING_SYMBOLS(NoClosingSymbolsLexicalErrorData{
+    pub fn new_with_no_closing_symbols(
+        start_line_number: usize,
+        end_line_number: usize,
+        err_message: &Rc<String>,
+    ) -> Self {
+        LexicalErrorData::NO_CLOSING_SYMBOLS(NoClosingSymbolsLexicalErrorData {
             start_line_number,
             end_line_number,
             err_message: err_message.clone(),
@@ -72,9 +76,15 @@ pub enum ParseErrorKind {
 impl Display for ParseErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            ParseErrorKind::LEXICAL_ERROR    => write!(f, "{}", format!("{}", "---> Lexical Error".bright_red())),
-            ParseErrorKind::SYNTAX_ERROR     => write!(f, "{}", format!("{}", "---> Syntax Error".bright_red())),
-            ParseErrorKind::SEMANTIC_ERROR   => write!(f, "{}", format!("{}", "---> Semantic Error".bright_red())),
+            ParseErrorKind::LEXICAL_ERROR => {
+                write!(f, "{}", format!("{}", "---> Lexical Error".bright_red()))
+            }
+            ParseErrorKind::SYNTAX_ERROR => {
+                write!(f, "{}", format!("{}", "---> Syntax Error".bright_red()))
+            }
+            ParseErrorKind::SEMANTIC_ERROR => {
+                write!(f, "{}", format!("{}", "---> Semantic Error".bright_red()))
+            }
         }
     }
 }
@@ -94,8 +104,14 @@ impl JarvilError {
         }
     }
 
-    pub fn form_single_line_single_pointer_error(err_index: usize, line_number: usize, line_start_index: usize, 
-        code_line: String, err_message: String, err_kind: ParseErrorKind) -> String {
+    pub fn form_single_line_single_pointer_error(
+        err_index: usize,
+        line_number: usize,
+        line_start_index: usize,
+        code_line: String,
+        err_message: String,
+        err_kind: ParseErrorKind,
+    ) -> String {
         if err_index < line_start_index {
             unreachable!("lookahead at which error occured can never be less than the start index of the line")
         }
@@ -110,13 +126,32 @@ impl JarvilError {
         }
         let pointer_line: String = pointer_line.iter().collect();
         let blank_str = " ".repeat(int_length(line_number));
-        let err_code_part = format!("{} |\n{} | {}\n{} | {}", 
-        blank_str, line_number, code_line.clone(), blank_str, pointer_line.yellow()).bright_blue();
-        format!("\n{}\n{}\n{}\n", err_kind, err_code_part, err_message.yellow().bold())
+        let err_code_part = format!(
+            "{} |\n{} | {}\n{} | {}",
+            blank_str,
+            line_number,
+            code_line.clone(),
+            blank_str,
+            pointer_line.yellow()
+        )
+        .bright_blue();
+        format!(
+            "\n{}\n{}\n{}\n",
+            err_kind,
+            err_code_part,
+            err_message.yellow().bold()
+        )
     }
 
-    pub fn form_single_line_underline_pointer_error(start_err_index: usize, end_err_index: usize, line_number: usize, 
-        line_start_index: usize, code_line: String, err_message: String, err_kind: ParseErrorKind) -> String {
+    pub fn form_single_line_underline_pointer_error(
+        start_err_index: usize,
+        end_err_index: usize,
+        line_number: usize,
+        line_start_index: usize,
+        code_line: String,
+        err_message: String,
+        err_kind: ParseErrorKind,
+    ) -> String {
         if start_err_index < line_start_index || end_err_index < line_start_index {
             unreachable!("lookahead at which error occured can never be less than the start index of the line")
         }
@@ -142,13 +177,30 @@ impl JarvilError {
         }
         let pointer_line: String = pointer_line.iter().collect();
         let blank_str = " ".repeat(int_length(line_number));
-        let err_code_part = format!("{} |\n{} | {}\n{} | {}", 
-        blank_str, line_number, code_line.clone(), blank_str, pointer_line.yellow()).bright_blue();
-        format!("\n{}\n{}\n{}\n", err_kind, err_code_part, err_message.yellow().bold())
+        let err_code_part = format!(
+            "{} |\n{} | {}\n{} | {}",
+            blank_str,
+            line_number,
+            code_line.clone(),
+            blank_str,
+            pointer_line.yellow()
+        )
+        .bright_blue();
+        format!(
+            "\n{}\n{}\n{}\n",
+            err_kind,
+            err_code_part,
+            err_message.yellow().bold()
+        )
     }
 
-    pub fn form_multi_line_error(start_line_number: usize, end_line_number: usize, mut code_lines: Vec<String>, 
-        err_message: String, err_kind: ParseErrorKind) -> String {
+    pub fn form_multi_line_error(
+        start_line_number: usize,
+        end_line_number: usize,
+        mut code_lines: Vec<String>,
+        err_message: String,
+        err_kind: ParseErrorKind,
+    ) -> String {
         if end_line_number < start_line_number {
             unreachable!("end line number cannot be less than start line number")
         }
@@ -167,13 +219,22 @@ impl JarvilError {
             if flag {
                 err_code_part.push_str("\n");
             }
-            err_code_part.push_str(&format!("{} | {}", format_line_number(line_number, max_line_number), code_line));
+            err_code_part.push_str(&format!(
+                "{} | {}",
+                format_line_number(line_number, max_line_number),
+                code_line
+            ));
             flag = true;
             line_number = line_number + 1;
         }
         err_code_part.push_str("\n");
         err_code_part.push_str(&format!("{} |\n", blank_str));
-        format!("\n{}\n{}\n{}\n", err_kind, err_code_part.bright_blue(), err_message.yellow().bold())
+        format!(
+            "\n{}\n{}\n{}\n",
+            err_kind,
+            err_code_part.bright_blue(),
+            err_message.yellow().bold()
+        )
     }
 }
 
@@ -182,7 +243,6 @@ impl Display for JarvilError {
         write!(f, "{}", self.err_message)
     }
 }
-
 
 #[derive(Debug)]
 pub enum CompilationError {
@@ -205,8 +265,7 @@ impl From<JarvilError> for CompilationError {
 impl Display for CompilationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            CompilationError::IO_ERROR(err) => write!(
-                f, "---> IO Error\n{}", err.to_string()),
+            CompilationError::IO_ERROR(err) => write!(f, "---> IO Error\n{}", err.to_string()),
             CompilationError::PARSE_ERROR(parse_error) => {
                 write!(f, "{}", parse_error.err_message)
             }

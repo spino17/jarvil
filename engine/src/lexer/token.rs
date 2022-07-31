@@ -1,15 +1,17 @@
+use super::lexer::CoreLexer;
 use crate::ast::ast::ASTNode;
 use crate::code::Code;
-use std::rc::Rc;
-use crate::lexer::helper;
+use crate::constants::common::{
+    AND, ATOMIC_TYPE, BLANK, BLOCK_COMMENT, BREAK, COLON, COMMA, CONTINUE, DASH, DEF, DOT,
+    DOUBLE_COLON, DOUBLE_EQUAL, DOUBLE_STAR, ELIF, ELSE, ENDMARKER, EQUAL, FALSE,
+    FLOATING_POINT_NUMBER, FOR, FUNC, GREATER_EQUAL, IDENTIFIER, IF, IMPL, IN, INTEGER,
+    INTERFACE_KEYWORD, IS, LBRACE, LBRACKET, LESS_EQUAL, LET, LEXICAL_ERROR, LITERAL, LPAREN,
+    LSQUARE, NEW, NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN,
+    RSQUARE, SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, TRUE, TYPE_KEYWORD, WHILE,
+};
 use crate::context;
-use super::lexer::CoreLexer;
-use crate::constants::common::{LEXICAL_ERROR, 
-    NEWLINE, IF, ELSE, ELIF, IDENTIFIER, FOR, CONTINUE, BREAK, TYPE_KEYWORD, ATOMIC_TYPE, IMPL, INTERFACE_KEYWORD, 
-    AND, NOT, TRUE, PLUS, DASH, RIGHT_ARROW, DOUBLE_STAR, SLASH, LBRACE, RBRACE, LSQUARE, RSQUARE, SEMICOLON, COLON, 
-    DOUBLE_COLON, COMMA, BLANK, DOUBLE_EQUAL, LBRACKET, RBRACKET, LESS_EQUAL, GREATER_EQUAL, NOT_EQUAL, INTEGER, 
-    FLOATING_POINT_NUMBER, LITERAL, SINGLE_LINE_COMMENT, BLOCK_COMMENT, ENDMARKER, WHILE, DEF, RETURN, FUNC, NEW, LET, 
-    SELF, OR, IS, IN, FALSE, STAR, LPAREN, RPAREN, DOT, EQUAL};
+use crate::lexer::helper;
+use std::rc::Rc;
 
 macro_rules! impl_symbol_check {
     ($t: ident) => {
@@ -24,77 +26,76 @@ macro_rules! impl_symbol_check {
 
 #[derive(Debug, Clone)]
 pub enum CoreToken {
-
     // conditionals
-    IF,                                 // 'if'
-    ELSE,                               // 'else'
-    ELIF,                               // 'elif'
+    IF,   // 'if'
+    ELSE, // 'else'
+    ELIF, // 'elif'
 
     // loops
-    FOR,                                // 'for'
-    WHILE,                              // 'while'
-    CONTINUE,                           // 'continue'
-    BREAK,                              // 'break'
+    FOR,      // 'for'
+    WHILE,    // 'while'
+    CONTINUE, // 'continue'
+    BREAK,    // 'break'
 
     // functions
-    DEF,                                // 'def'
-    RETURN,                             // 'return'
-    FUNC,                               // 'func'
+    DEF,    // 'def'
+    RETURN, // 'return'
+    FUNC,   // 'func'
 
     // types
-    TYPE_KEYWORD,                       // 'type'
+    TYPE_KEYWORD, // 'type'
     ATOMIC_TYPE,
-    NEW,                                // 'new'
-    LET,                                // 'let'
-    SELF,                               // 'self'
-    IMPL,                               // 'impl'
-    INTERFACE_KEYWORD,                  // 'interface'
+    NEW,               // 'new'
+    LET,               // 'let'
+    SELF,              // 'self'
+    IMPL,              // 'impl'
+    INTERFACE_KEYWORD, // 'interface'
 
     // logical operators
-    AND,                                // 'and'
-    NOT,                                // 'not'
-    OR,                                 // 'or'
-    IS,                                 // 'is'
-    IN,                                 // 'in'
+    AND, // 'and'
+    NOT, // 'not'
+    OR,  // 'or'
+    IS,  // 'is'
+    IN,  // 'in'
 
     // booleans
-    TRUE,                               // 'True'
-    FALSE,                              // 'False'
+    TRUE,  // 'True'
+    FALSE, // 'False'
 
     // operators
-    PLUS,                               // '+'
-    DASH,                               // '-'
-    RIGHT_ARROW,                        // '->'
-    STAR,                               // '*'
-    DOUBLE_STAR,                        // '**'
-    SLASH,                              // '/'
+    PLUS,        // '+'
+    DASH,        // '-'
+    RIGHT_ARROW, // '->'
+    STAR,        // '*'
+    DOUBLE_STAR, // '**'
+    SLASH,       // '/'
 
     // wrappers
-    LPAREN,                             // '('
-    RPAREN,                             // ')'
-    LBRACE,                             // '{'
-    RBRACE,                             // '}'
-    LSQUARE,                            // '['
-    RSQUARE,                            // ']'
+    LPAREN,  // '('
+    RPAREN,  // ')'
+    LBRACE,  // '{'
+    RBRACE,  // '}'
+    LSQUARE, // '['
+    RSQUARE, // ']'
 
     // delimiters
-    SEMICOLON,                          // ';'
-    COLON,                              // ':'
-    DOUBLE_COLON,                       // '::'
-    COMMA,                              // ','
-    DOT,                                // '.'
-    BLANK,                              // ' '
+    SEMICOLON,    // ';'
+    COLON,        // ':'
+    DOUBLE_COLON, // '::'
+    COMMA,        // ','
+    DOT,          // '.'
+    BLANK,        // ' '
     // TAB,                             // '\t'
-    NEWLINE,                            // '\n'
+    NEWLINE, // '\n'
 
     // comparison
-    EQUAL,                              // '='
-    DOUBLE_EQUAL,                       // '=='
-    LBRACKET,                           // '<'
-    RBRACKET,                           // '>'
-    LESS_EQUAL,                         // '<='
-    GREATER_EQUAL,                      // '>='
-    NOT_EQUAL,                          // '!='
+    EQUAL,         // '='
+    DOUBLE_EQUAL,  // '=='
+    LBRACKET,      // '<'
+    RBRACKET,      // '>'
+    LESS_EQUAL,    // '<='
+    GREATER_EQUAL, // '>='
+    NOT_EQUAL,     // '!='
 
     // expression terminals
     INTEGER,
@@ -103,8 +104,8 @@ pub enum CoreToken {
     LITERAL,
 
     // ignored by parser
-    SINGLE_LINE_COMMENT,                // '//...\n' or '#...\n'
-    BLOCK_COMMENT,                      // '/* ... */'
+    SINGLE_LINE_COMMENT, // '//...\n' or '#...\n'
+    BLOCK_COMMENT,       // '/* ... */'
 
     // termination
     ENDMARKER,
@@ -147,96 +148,90 @@ impl Token {
         let start_line_number = *line_number;
         let critical_char = code.get_char(*begin_lexeme);
         let core_token = match critical_char {
-            '('         =>      {
+            '(' => {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::LPAREN
-            },
-            ')'         =>      {
+            }
+            ')' => {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::RPAREN
-            },
-            '{'         =>      {
+            }
+            '{' => {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::LBRACE
-            },
-            '}'         =>      {
+            }
+            '}' => {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::RBRACE
-            },
-            '['         =>      {
+            }
+            '[' => {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::LSQUARE
-            },
-            ']'         =>      {
+            }
+            ']' => {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::RSQUARE
-            },
-            ';'         =>      {
+            }
+            ';' => {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::SEMICOLON
-            },
-            ','         =>      {
+            }
+            ',' => {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::COMMA
-            },
-            '.'         =>      {
+            }
+            '.' => {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::DOT
-            },
+            }
             /*
             '\t'        =>      {
                 *begin_lexeme = *begin_lexeme + 1;
                 (CoreToken::TAB, String::from("\t"))
             },
              */
-            '+'         =>      {
+            '+' => {
                 *begin_lexeme = *begin_lexeme + 1;
                 CoreToken::PLUS
-            },
-            '\n'        =>      {
+            }
+            '\n' => {
                 code_lines.push(*line_start_index);
                 *line_start_index = *begin_lexeme + 1;
                 *begin_lexeme = *begin_lexeme + 1;
                 *line_number = *line_number + 1;
                 CoreToken::NEWLINE
-            },
-            '/'         =>      {
-                helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
-            },
-            '"'         =>      {
-                helper::extract_double_quote_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
-            },
-            '\''         =>     {
-                helper::extract_single_quote_prefix_lexeme(begin_lexeme, line_number, code, code_lines, line_start_index)
-            },
-            '!'         =>      {
-                helper::extract_exclaimation_prefix_lexeme(begin_lexeme, code)
-            },
-            ' '         =>      {
-                helper::extract_blank_prefix_lexeme(begin_lexeme, code)
-            },
-            '-'         =>      {
-                helper::extract_dash_prefix_lexeme(begin_lexeme, code)
             }
-            '*'         =>      {
-                helper::extract_star_prefix_lexeme(begin_lexeme, code)
-            },
-            '#'         =>      {
-                helper::extract_hash_prefix_lexeme(begin_lexeme, code)
-            }
-            '='         =>      {
-                helper::extract_equal_prefix_lexeme(begin_lexeme, code)
-            },
-            '>'         =>      {
-                helper::extract_rbracket_prefix_lexeme(begin_lexeme, code)
-            },
-            '<'         =>      {
-                helper::extract_lbracket_prefix_lexeme(begin_lexeme, code)
-            },
-            ':'         =>      {
-                helper::extract_colon_prefix_lexeme(begin_lexeme, code)
-            },
-            c     =>      {
+            '/' => helper::extract_slash_prefix_lexeme(
+                begin_lexeme,
+                line_number,
+                code,
+                code_lines,
+                line_start_index,
+            ),
+            '"' => helper::extract_double_quote_prefix_lexeme(
+                begin_lexeme,
+                line_number,
+                code,
+                code_lines,
+                line_start_index,
+            ),
+            '\'' => helper::extract_single_quote_prefix_lexeme(
+                begin_lexeme,
+                line_number,
+                code,
+                code_lines,
+                line_start_index,
+            ),
+            '!' => helper::extract_exclaimation_prefix_lexeme(begin_lexeme, code),
+            ' ' => helper::extract_blank_prefix_lexeme(begin_lexeme, code),
+            '-' => helper::extract_dash_prefix_lexeme(begin_lexeme, code),
+            '*' => helper::extract_star_prefix_lexeme(begin_lexeme, code),
+            '#' => helper::extract_hash_prefix_lexeme(begin_lexeme, code),
+            '=' => helper::extract_equal_prefix_lexeme(begin_lexeme, code),
+            '>' => helper::extract_rbracket_prefix_lexeme(begin_lexeme, code),
+            '<' => helper::extract_lbracket_prefix_lexeme(begin_lexeme, code),
+            ':' => helper::extract_colon_prefix_lexeme(begin_lexeme, code),
+            c => {
                 let token: CoreToken;
                 if context::is_letter(&c) {
                     token = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
@@ -244,7 +239,10 @@ impl Token {
                     token = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
                 } else {
                     let error_str = Rc::new(format!("invalid character `{}` found", c));
-                    token = CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone()));
+                    token = CoreToken::LEXICAL_ERROR((
+                        LexicalErrorKind::INVALID_CHAR,
+                        error_str.clone(),
+                    ));
                     *begin_lexeme = *begin_lexeme + 1;
                 }
                 token
@@ -261,18 +259,19 @@ impl Token {
             parent: None,
         };
         match &core_token {
-            CoreToken::LEXICAL_ERROR(lexical_err_value) => {
-                match lexical_err_value.0 {
-                    LexicalErrorKind::INVALID_CHAR => {
-                        if end_line_number != start_line_number {
-                            unreachable!("invalid char should occur on the same line")
-                        }
-                        lexer.log_invalid_char_lexical_error(&token, &lexical_err_value.1);
-                    },
-                    LexicalErrorKind::NO_CLOSING_SYMBOLS => {
-                        lexer.log_no_closing_symbols_lexical_error(start_line_number, end_line_number,
-                            &lexical_err_value.1);
+            CoreToken::LEXICAL_ERROR(lexical_err_value) => match lexical_err_value.0 {
+                LexicalErrorKind::INVALID_CHAR => {
+                    if end_line_number != start_line_number {
+                        unreachable!("invalid char should occur on the same line")
                     }
+                    lexer.log_invalid_char_lexical_error(&token, &lexical_err_value.1);
+                }
+                LexicalErrorKind::NO_CLOSING_SYMBOLS => {
+                    lexer.log_no_closing_symbols_lexical_error(
+                        start_line_number,
+                        end_line_number,
+                        &lexical_err_value.1,
+                    );
                 }
             },
             _ => {}
@@ -288,7 +287,6 @@ impl Token {
         (self.start_index + self.end_index) / 2 as usize
     }
 
-    
     pub fn name(&self) -> String {
         self.to_string()
     }
@@ -361,64 +359,64 @@ impl Token {
 
     pub fn is_eq(&self, symbol: &str) -> bool {
         match symbol {
-            IF                      => self.IF(),
-            ELSE                    => self.ELSE(),
-            ELIF                    => self.ELIF(),
-            FOR                     => self.FOR(),
-            WHILE                   => self.WHILE(),
-            CONTINUE                => self.CONTINUE(),
-            BREAK                   => self.BREAK(),
-            DEF                     => self.DEF(),
-            RETURN                  => self.RETURN(),
-            FUNC                    => self.FUNC(),
-            TYPE_KEYWORD            => self.TYPE_KEYWORD(),
-            ATOMIC_TYPE             => self.ATOMIC_TYPE(),
-            NEW                     => self.NEW(),
-            LET                     => self.LET(),
-            SELF                    => self.SELF(),
-            IMPL                    => self.IMPL(),
-            INTERFACE_KEYWORD       => self.INTERFACE_KEYWORD(),
-            AND                     => self.AND(),
-            NOT                     => self.NOT(),
-            OR                      => self.OR(),
-            IS                      => self.IS(),
-            IN                      => self.IN(),
-            TRUE                    => self.TRUE(),
-            FALSE                   => self.FALSE(),
-            PLUS                    => self.PLUS(),
-            DASH                    => self.DASH(),
-            RIGHT_ARROW             => self.RIGHT_ARROW(),
-            STAR                    => self.STAR(),
-            DOUBLE_STAR             => self.DOUBLE_STAR(),
-            SLASH                   => self.SLASH(),
-            LPAREN                  => self.LPAREN(),
-            RPAREN                  => self.RPAREN(),
-            LBRACE                  => self.LBRACE(),
-            RBRACE                  => self.RBRACE(),
-            LSQUARE                 => self.LSQUARE(),
-            RSQUARE                 => self.RSQUARE(),
-            SEMICOLON               => self.SEMICOLON(),
-            COLON                   => self.COLON(),
-            DOUBLE_COLON            => self.DOUBLE_COLON(),
-            COMMA                   => self.COMMA(),
-            DOT                     => self.DOT(),
-            BLANK                   => self.BLANK(),
-            "\n"                          => self.NEWLINE(),
-            EQUAL                   => self.EQUAL(),
-            DOUBLE_EQUAL            => self.DOUBLE_EQUAL(),
-            LBRACKET                => self.LBRACKET(),
-            RBRACKET                => self.RBRACKET(),
-            LESS_EQUAL              => self.LESS_EQUAL(),
-            GREATER_EQUAL           => self.GREATER_EQUAL(),
-            NOT_EQUAL               => self.NOT_EQUAL(),
-            INTEGER                 => self.INTEGER(),
-            FLOATING_POINT_NUMBER   => self.FLOATING_POINT_NUMBER(),
-            IDENTIFIER              => self.IDENTIFIER(),
-            LITERAL                 => self.LITERAL(),
-            SINGLE_LINE_COMMENT     => self.SINGLE_LINE_COMMENT(),
-            BLOCK_COMMENT           => self.BLOCK_COMMENT(),
-            ENDMARKER               => self.ENDMARKER(),
-            _ => unreachable!("token `{}` missing from matching arm", symbol)
+            IF => self.IF(),
+            ELSE => self.ELSE(),
+            ELIF => self.ELIF(),
+            FOR => self.FOR(),
+            WHILE => self.WHILE(),
+            CONTINUE => self.CONTINUE(),
+            BREAK => self.BREAK(),
+            DEF => self.DEF(),
+            RETURN => self.RETURN(),
+            FUNC => self.FUNC(),
+            TYPE_KEYWORD => self.TYPE_KEYWORD(),
+            ATOMIC_TYPE => self.ATOMIC_TYPE(),
+            NEW => self.NEW(),
+            LET => self.LET(),
+            SELF => self.SELF(),
+            IMPL => self.IMPL(),
+            INTERFACE_KEYWORD => self.INTERFACE_KEYWORD(),
+            AND => self.AND(),
+            NOT => self.NOT(),
+            OR => self.OR(),
+            IS => self.IS(),
+            IN => self.IN(),
+            TRUE => self.TRUE(),
+            FALSE => self.FALSE(),
+            PLUS => self.PLUS(),
+            DASH => self.DASH(),
+            RIGHT_ARROW => self.RIGHT_ARROW(),
+            STAR => self.STAR(),
+            DOUBLE_STAR => self.DOUBLE_STAR(),
+            SLASH => self.SLASH(),
+            LPAREN => self.LPAREN(),
+            RPAREN => self.RPAREN(),
+            LBRACE => self.LBRACE(),
+            RBRACE => self.RBRACE(),
+            LSQUARE => self.LSQUARE(),
+            RSQUARE => self.RSQUARE(),
+            SEMICOLON => self.SEMICOLON(),
+            COLON => self.COLON(),
+            DOUBLE_COLON => self.DOUBLE_COLON(),
+            COMMA => self.COMMA(),
+            DOT => self.DOT(),
+            BLANK => self.BLANK(),
+            "\n" => self.NEWLINE(),
+            EQUAL => self.EQUAL(),
+            DOUBLE_EQUAL => self.DOUBLE_EQUAL(),
+            LBRACKET => self.LBRACKET(),
+            RBRACKET => self.RBRACKET(),
+            LESS_EQUAL => self.LESS_EQUAL(),
+            GREATER_EQUAL => self.GREATER_EQUAL(),
+            NOT_EQUAL => self.NOT_EQUAL(),
+            INTEGER => self.INTEGER(),
+            FLOATING_POINT_NUMBER => self.FLOATING_POINT_NUMBER(),
+            IDENTIFIER => self.IDENTIFIER(),
+            LITERAL => self.LITERAL(),
+            SINGLE_LINE_COMMENT => self.SINGLE_LINE_COMMENT(),
+            BLOCK_COMMENT => self.BLOCK_COMMENT(),
+            ENDMARKER => self.ENDMARKER(),
+            _ => unreachable!("token `{}` missing from matching arm", symbol),
         }
     }
 }
@@ -426,64 +424,64 @@ impl Token {
 impl ToString for Token {
     fn to_string(&self) -> String {
         let symbol_str = match self.core_token {
-            CoreToken::IF                      => IF,
-            CoreToken::ELSE                    => ELSE,
-            CoreToken::ELIF                    => ELIF,
-            CoreToken::FOR                     => FOR,
-            CoreToken::WHILE                   => WHILE,
-            CoreToken::CONTINUE                => CONTINUE,
-            CoreToken::BREAK                   => BREAK,
-            CoreToken::DEF                     => DEF,
-            CoreToken::RETURN                  => RETURN,
-            CoreToken::FUNC                    => FUNC,
-            CoreToken::TYPE_KEYWORD            => TYPE_KEYWORD,
-            CoreToken::ATOMIC_TYPE             => ATOMIC_TYPE,
-            CoreToken::NEW                     => NEW,
-            CoreToken::LET                     => LET,
-            CoreToken::SELF                    => SELF,
-            CoreToken::IMPL                    => IMPL,
-            CoreToken::INTERFACE_KEYWORD       => INTERFACE_KEYWORD,
-            CoreToken::AND                     => AND,
-            CoreToken::NOT                     => NOT,
-            CoreToken::OR                      => OR,
-            CoreToken::IS                      => IS,
-            CoreToken::IN                      => IN,
-            CoreToken::TRUE                    => TRUE,
-            CoreToken::FALSE                   => FALSE,
-            CoreToken::PLUS                    => PLUS,
-            CoreToken::DASH                    => DASH,
-            CoreToken::RIGHT_ARROW             => RIGHT_ARROW,
-            CoreToken::STAR                    => STAR,
-            CoreToken::DOUBLE_STAR             => DOUBLE_STAR,
-            CoreToken::SLASH                   => SLASH,
-            CoreToken::LPAREN                  => LPAREN,
-            CoreToken::RPAREN                  => RPAREN,
-            CoreToken::LBRACE                  => LBRACE,
-            CoreToken::RBRACE                  => RBRACE,
-            CoreToken::LSQUARE                 => LSQUARE,
-            CoreToken::RSQUARE                 => RSQUARE,
-            CoreToken::SEMICOLON               => SEMICOLON,
-            CoreToken::COLON                   => COLON,
-            CoreToken::DOUBLE_COLON            => DOUBLE_COLON,
-            CoreToken::COMMA                   => COMMA,
-            CoreToken::DOT                     => DOT,
-            CoreToken::BLANK                   => BLANK,
-            CoreToken::NEWLINE                 => NEWLINE,
-            CoreToken::EQUAL                   => EQUAL,
-            CoreToken::DOUBLE_EQUAL            => DOUBLE_EQUAL,
-            CoreToken::LBRACKET                => LBRACKET,
-            CoreToken::RBRACKET                => RBRACKET,
-            CoreToken::LESS_EQUAL              => LESS_EQUAL,
-            CoreToken::GREATER_EQUAL           => GREATER_EQUAL,
-            CoreToken::NOT_EQUAL               => NOT_EQUAL,
-            CoreToken::INTEGER                 => INTEGER,
-            CoreToken::FLOATING_POINT_NUMBER   => FLOATING_POINT_NUMBER,
-            CoreToken::IDENTIFIER              => IDENTIFIER,
-            CoreToken::LITERAL                 => LITERAL,
-            CoreToken::SINGLE_LINE_COMMENT     => SINGLE_LINE_COMMENT,
-            CoreToken::BLOCK_COMMENT           => BLOCK_COMMENT,
-            CoreToken::ENDMARKER               => ENDMARKER,
-            CoreToken::LEXICAL_ERROR(_)        => LEXICAL_ERROR,
+            CoreToken::IF => IF,
+            CoreToken::ELSE => ELSE,
+            CoreToken::ELIF => ELIF,
+            CoreToken::FOR => FOR,
+            CoreToken::WHILE => WHILE,
+            CoreToken::CONTINUE => CONTINUE,
+            CoreToken::BREAK => BREAK,
+            CoreToken::DEF => DEF,
+            CoreToken::RETURN => RETURN,
+            CoreToken::FUNC => FUNC,
+            CoreToken::TYPE_KEYWORD => TYPE_KEYWORD,
+            CoreToken::ATOMIC_TYPE => ATOMIC_TYPE,
+            CoreToken::NEW => NEW,
+            CoreToken::LET => LET,
+            CoreToken::SELF => SELF,
+            CoreToken::IMPL => IMPL,
+            CoreToken::INTERFACE_KEYWORD => INTERFACE_KEYWORD,
+            CoreToken::AND => AND,
+            CoreToken::NOT => NOT,
+            CoreToken::OR => OR,
+            CoreToken::IS => IS,
+            CoreToken::IN => IN,
+            CoreToken::TRUE => TRUE,
+            CoreToken::FALSE => FALSE,
+            CoreToken::PLUS => PLUS,
+            CoreToken::DASH => DASH,
+            CoreToken::RIGHT_ARROW => RIGHT_ARROW,
+            CoreToken::STAR => STAR,
+            CoreToken::DOUBLE_STAR => DOUBLE_STAR,
+            CoreToken::SLASH => SLASH,
+            CoreToken::LPAREN => LPAREN,
+            CoreToken::RPAREN => RPAREN,
+            CoreToken::LBRACE => LBRACE,
+            CoreToken::RBRACE => RBRACE,
+            CoreToken::LSQUARE => LSQUARE,
+            CoreToken::RSQUARE => RSQUARE,
+            CoreToken::SEMICOLON => SEMICOLON,
+            CoreToken::COLON => COLON,
+            CoreToken::DOUBLE_COLON => DOUBLE_COLON,
+            CoreToken::COMMA => COMMA,
+            CoreToken::DOT => DOT,
+            CoreToken::BLANK => BLANK,
+            CoreToken::NEWLINE => NEWLINE,
+            CoreToken::EQUAL => EQUAL,
+            CoreToken::DOUBLE_EQUAL => DOUBLE_EQUAL,
+            CoreToken::LBRACKET => LBRACKET,
+            CoreToken::RBRACKET => RBRACKET,
+            CoreToken::LESS_EQUAL => LESS_EQUAL,
+            CoreToken::GREATER_EQUAL => GREATER_EQUAL,
+            CoreToken::NOT_EQUAL => NOT_EQUAL,
+            CoreToken::INTEGER => INTEGER,
+            CoreToken::FLOATING_POINT_NUMBER => FLOATING_POINT_NUMBER,
+            CoreToken::IDENTIFIER => IDENTIFIER,
+            CoreToken::LITERAL => LITERAL,
+            CoreToken::SINGLE_LINE_COMMENT => SINGLE_LINE_COMMENT,
+            CoreToken::BLOCK_COMMENT => BLOCK_COMMENT,
+            CoreToken::ENDMARKER => ENDMARKER,
+            CoreToken::LEXICAL_ERROR(_) => LEXICAL_ERROR,
         };
         String::from(symbol_str)
     }

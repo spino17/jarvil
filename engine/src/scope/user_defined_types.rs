@@ -1,8 +1,8 @@
-use std::cell::RefCell;
-use rustc_hash::FxHashMap;
-use std::rc::Rc;
-use crate::types::core::{Type};
 use crate::scope::function::FunctionData;
+use crate::types::core::Type;
+use rustc_hash::FxHashMap;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum UserDefinedTypeData {

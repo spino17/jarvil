@@ -1,10 +1,13 @@
-use crate::{lexer::token::{Token, CoreToken}, constants::common::{INTEGER, FLOATING_POINT_NUMBER, LITERAL, 
-IDENTIFIER, TRUE, FALSE, NOT}, parser::parser::PackratParser, ast::ast::{ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, 
-    UnaryOperatorKind}};
-use std::rc::Rc;
 use crate::ast::ast::ErrornousNode;
+use crate::{
+    ast::ast::{AtomicExpressionNode, ExpressionNode, UnaryExpressionNode, UnaryOperatorKind},
+    constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, NOT, TRUE},
+    lexer::token::{CoreToken, Token},
+    parser::parser::PackratParser,
+};
+use std::rc::Rc;
 
-// all the unary operators are right assosiative and all the binary operators are left assosiative. 
+// all the unary operators are right assosiative and all the binary operators are left assosiative.
 // below is the operator precedence in jarvil (lower to higher). This may be quite resembling with Python programming language.
 // "or"
 // "and"
@@ -15,23 +18,25 @@ use crate::ast::ast::ErrornousNode;
 
 pub fn is_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
-        _  => is_unary_expression_starting_with(token),
+        _ => is_unary_expression_starting_with(token),
     }
 }
 
-pub const EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 10] = UNARY_EXPRESSION_STARTING_SYMBOLS;
+pub const EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 10] =
+    UNARY_EXPRESSION_STARTING_SYMBOLS;
 
 pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
     let token = &parser.curr_token();
     if !is_expression_starting_with(token) {
         parser.log_missing_token_error_for_multiple_expected_symbols(
-            &EXPRESSION_EXPECTED_STARTING_SYMBOLS, token
+            &EXPRESSION_EXPECTED_STARTING_SYMBOLS,
+            token,
         );
         return ExpressionNode::new_with_missing_tokens(
             &Rc::new(EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
             token,
             parser.curr_lookahead(),
-        )
+        );
     }
     parser.logical_or()
 }
@@ -56,7 +61,9 @@ pub fn logical_or(parser: &mut PackratParser) -> ExpressionNode {
         let operator_node = node;
         let trailing_logical_and_expr_node = parser.logical_and();
         leading_logical_and_expr_node = ExpressionNode::new_with_logical(
-            &operator_node, &leading_logical_and_expr_node, &trailing_logical_and_expr_node
+            &operator_node,
+            &leading_logical_and_expr_node,
+            &trailing_logical_and_expr_node,
         );
     }
     leading_logical_and_expr_node
@@ -68,7 +75,9 @@ pub fn logical_and(parser: &mut PackratParser) -> ExpressionNode {
         let operator_node = node;
         let trailing_comparison_expr_node = parser.comparison();
         leading_comparison_expr_node = ExpressionNode::new_with_logical(
-            &operator_node, &leading_comparison_expr_node, &trailing_comparison_expr_node
+            &operator_node,
+            &leading_comparison_expr_node,
+            &trailing_comparison_expr_node,
         );
     }
     leading_comparison_expr_node
@@ -76,12 +85,13 @@ pub fn logical_and(parser: &mut PackratParser) -> ExpressionNode {
 
 pub fn comparison(parser: &mut PackratParser) -> ExpressionNode {
     let mut leading_term_expr_node = parser.term();
-    while let Some(node) 
-    = parser.expects(&[">", ">=", "<", "<=", "==", "!="]).is_ok() {
+    while let Some(node) = parser.expects(&[">", ">=", "<", "<=", "==", "!="]).is_ok() {
         let operator_node = node;
         let trailing_term_expr_node = parser.term();
         leading_term_expr_node = ExpressionNode::new_with_binary(
-            &operator_node, &leading_term_expr_node, &trailing_term_expr_node
+            &operator_node,
+            &leading_term_expr_node,
+            &trailing_term_expr_node,
         );
     }
     leading_term_expr_node
@@ -93,7 +103,9 @@ pub fn term(parser: &mut PackratParser) -> ExpressionNode {
         let operator_node = node;
         let trailing_factor_expr_node = parser.factor();
         leading_factor_expr_node = ExpressionNode::new_with_binary(
-            &operator_node, &leading_factor_expr_node, &trailing_factor_expr_node
+            &operator_node,
+            &leading_factor_expr_node,
+            &trailing_factor_expr_node,
         );
     }
     leading_factor_expr_node
@@ -115,42 +127,61 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
         CoreToken::PLUS => true,
         CoreToken::DASH => true,
-        CoreToken::NOT  => true,
-        _               => is_atomic_expression_starting_with(token),
+        CoreToken::NOT => true,
+        _ => is_atomic_expression_starting_with(token),
     }
 }
 
-pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10] 
-= ["+", "-", NOT, TRUE, FALSE, INTEGER, FLOATING_POINT_NUMBER, LITERAL, IDENTIFIER, "("];
+pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10] = [
+    "+",
+    "-",
+    NOT,
+    TRUE,
+    FALSE,
+    INTEGER,
+    FLOATING_POINT_NUMBER,
+    LITERAL,
+    IDENTIFIER,
+    "(",
+];
 
 pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
     let token = &parser.curr_token();
     if !is_unary_expression_starting_with(token) {
         parser.log_missing_token_error_for_multiple_expected_symbols(
-            &UNARY_EXPRESSION_STARTING_SYMBOLS, token
+            &UNARY_EXPRESSION_STARTING_SYMBOLS,
+            token,
         );
         return UnaryExpressionNode::new_with_missing_tokens(
             &Rc::new(UNARY_EXPRESSION_STARTING_SYMBOLS.to_vec()),
             token,
             parser.curr_lookahead(),
-        )
+        );
     }
     let unary_expr_node = match token.core_token {
         CoreToken::PLUS => {
             let plus_node = parser.expect("+");
             let unary_expr_node = parser.unary_expr();
-            UnaryExpressionNode::new_with_unary(&unary_expr_node, &plus_node, UnaryOperatorKind::PLUS)
-        },
+            UnaryExpressionNode::new_with_unary(
+                &unary_expr_node,
+                &plus_node,
+                UnaryOperatorKind::PLUS,
+            )
+        }
         CoreToken::DASH => {
             let dash_node = parser.expect("-");
             let unary_expr_node = parser.unary_expr();
-            UnaryExpressionNode::new_with_unary(&unary_expr_node, &dash_node, UnaryOperatorKind::MINUS)
-        },
-        CoreToken::NOT  => {
+            UnaryExpressionNode::new_with_unary(
+                &unary_expr_node,
+                &dash_node,
+                UnaryOperatorKind::MINUS,
+            )
+        }
+        CoreToken::NOT => {
             let not_node = parser.expect("not");
             let unary_expr_node = parser.unary_expr();
             UnaryExpressionNode::new_with_unary(&unary_expr_node, &not_node, UnaryOperatorKind::NOT)
-        },
+        }
         _ => {
             let atomic_expr_node = parser.atomic_expr();
             UnaryExpressionNode::new_with_atomic(&atomic_expr_node)
@@ -161,31 +192,39 @@ pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
 
 pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
-        CoreToken::INTEGER                      => true,
-        CoreToken::FLOATING_POINT_NUMBER        => true,
-        CoreToken::LITERAL                      => true,
-        CoreToken::TRUE                         => true,
-        CoreToken::FALSE                        => true,
-        CoreToken::IDENTIFIER                   => true,
-        CoreToken::LPAREN                       => true,
-        _                                       => false,
+        CoreToken::INTEGER => true,
+        CoreToken::FLOATING_POINT_NUMBER => true,
+        CoreToken::LITERAL => true,
+        CoreToken::TRUE => true,
+        CoreToken::FALSE => true,
+        CoreToken::IDENTIFIER => true,
+        CoreToken::LPAREN => true,
+        _ => false,
     }
 }
 
-pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 7] 
-= [TRUE, FALSE, INTEGER, FLOATING_POINT_NUMBER, LITERAL, IDENTIFIER, "("];
+pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 7] = [
+    TRUE,
+    FALSE,
+    INTEGER,
+    FLOATING_POINT_NUMBER,
+    LITERAL,
+    IDENTIFIER,
+    "(",
+];
 
 pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
     let token = &parser.curr_token();
     if !is_atomic_expression_starting_with(token) {
         parser.log_missing_token_error_for_multiple_expected_symbols(
-            &ATOMIC_EXPRESSION_STARTING_SYMBOLS, token
+            &ATOMIC_EXPRESSION_STARTING_SYMBOLS,
+            token,
         );
         return AtomicExpressionNode::new_with_missing_tokens(
             &Rc::new(ATOMIC_EXPRESSION_STARTING_SYMBOLS.to_vec()),
             token,
             parser.curr_lookahead(),
-        )
+        );
     }
     let atomic_expr_node = match token.core_token {
         CoreToken::TRUE                         => {

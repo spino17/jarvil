@@ -1,23 +1,26 @@
-// Default parser for jarvil uses Packrat approach, first given by Bryan Ford in his master thesis at MIT. It is essentially a 
-// top down recursive descent parsing with lazy memoization in order to avoid exponential parse time and provide reliable 
+// Default parser for jarvil uses Packrat approach, first given by Bryan Ford in his master thesis at MIT. It is essentially a
+// top down recursive descent parsing with lazy memoization in order to avoid exponential parse time and provide reliable
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::{TypeExpressionNode, StatementNode, BlockNode, TokenNode, NameTypeSpecsNode, SkippedTokenNode, 
-    ExpressionNode, AtomicExpressionNode, UnaryExpressionNode, ParamsNode, AtomNode, VariableDeclarationNode, 
-    NameTypeSpecNode, FunctionDeclarationNode, TypeDeclarationNode, RAssignmentNode, AssignmentNode, FuncKeywordKind};
+use crate::ast::ast::ErrornousNode;
+use crate::ast::ast::{
+    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
+    FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, ParamsNode, RAssignmentNode,
+    SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    UnaryExpressionNode, VariableDeclarationNode,
+};
 use crate::code::Code;
 use crate::constants::common::ENDMARKER;
-use crate::lexer::token::{Token, CoreToken};
-use std::rc::Rc;
-use crate::errors::{JarvilError, ParseErrorKind};
 use crate::context;
-use rustc_hash::FxHashMap;
-use std::cell::RefCell;
-use crate::types::core::{Type};
+use crate::errors::{JarvilError, ParseErrorKind};
+use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
-use crate::ast::ast::ErrornousNode;
+use crate::types::core::Type;
+use rustc_hash::FxHashMap;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use super::helper::format_symbol;
 
@@ -28,7 +31,13 @@ pub trait Parser {
 #[derive(Debug)]
 pub enum RoutineCache {
     // currently only two routine (atom, expr) results are cached by the parser
-    ATOM(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>>>>),
+    ATOM(
+        Rc<
+            RefCell<
+                FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>>,
+            >,
+        >,
+    ),
     EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), JarvilError>>>>),
 }
 
@@ -44,16 +53,19 @@ pub struct PackratParser {
     indent_level: i64,
     code: Code,
     cache: Vec<Rc<RoutineCache>>,
-    ignore_all_errors: bool,  // if this is set, no errors during parsing is saved inside error logs
+    ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
     // errors: Vec<ParseError>  // reported errors during the parsing, useful for terminal based compilation
 }
 
 impl PackratParser {
     pub fn new(code: &Code) -> Self {
-        let atom_cache_map: FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>> 
-        = FxHashMap::default();
-        let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), JarvilError>> = FxHashMap::default();
+        let atom_cache_map: FxHashMap<
+            usize,
+            Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>,
+        > = FxHashMap::default();
+        let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), JarvilError>> =
+            FxHashMap::default();
         PackratParser {
             token_vec: Vec::new(),
             lookahead: 0,
@@ -147,7 +159,7 @@ impl PackratParser {
                 end_index: 0,
                 trivia: None,
                 parent: None,
-            }
+            };
         }
         self.token_vec[self.lookahead - 1].clone()
     }
@@ -167,11 +179,12 @@ impl PackratParser {
 
     pub fn is_curr_token_on_newline(&self) -> bool {
         if self.lookahead == 0 {
-            return true
+            return true;
         }
         if self.token_vec[self.lookahead - 1].is_eq("\n")
-        || self.token_vec[self.lookahead].is_eq("\n")
-        || self.token_vec[self.lookahead].is_eq(ENDMARKER) {
+            || self.token_vec[self.lookahead].is_eq("\n")
+            || self.token_vec[self.lookahead].is_eq(ENDMARKER)
+        {
             true
         } else {
             false
@@ -186,7 +199,7 @@ impl PackratParser {
                 self.log_trailing_skipped_tokens_error(&skipped_tokens);
                 skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
                 self.scan_next_token();
-                return skipped_tokens
+                return skipped_tokens;
             } else {
                 skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
                 self.scan_next_token();
@@ -195,40 +208,59 @@ impl PackratParser {
     }
 
     // ------------------- error logging utilities for terminal-based compilation -------------------
-    pub fn log_missing_token_error_for_single_expected_symbol(&mut self, expected_symbol: &str, recevied_token: &Token) {
+    pub fn log_missing_token_error_for_single_expected_symbol(
+        &mut self,
+        expected_symbol: &str,
+        recevied_token: &Token,
+    ) {
         // This type of error handling is taken from Golang programming language
         // See /src/go/parser/parser.go -> `func (p *parser) error(pos token.Pos, msg string) {...}`
         if self.ignore_all_errors {
             return;
         }
-        let (code_line, line_start_index, line_number, err_index) 
-        = self.code.line_data(recevied_token.line_number, recevied_token.index());
+        let (code_line, line_start_index, line_number, err_index) = self
+            .code
+            .line_data(recevied_token.line_number, recevied_token.index());
         let errors_len = context::errors_len();
         if errors_len > 0 && context::curr_error_line_number() == line_number {
             return;
         } else {
-            let err_str = format!("expected `{}`, got `{}`", format_symbol(expected_symbol), recevied_token.name());
-            let err_message = JarvilError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
-                code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
-            let err 
-            = JarvilError::new(line_number, line_number, err_message);
+            let err_str = format!(
+                "expected `{}`, got `{}`",
+                format_symbol(expected_symbol),
+                recevied_token.name()
+            );
+            let err_message = JarvilError::form_single_line_single_pointer_error(
+                err_index,
+                line_number,
+                line_start_index,
+                code_line,
+                err_str,
+                ParseErrorKind::SYNTAX_ERROR,
+            );
+            let err = JarvilError::new(line_number, line_number, err_message);
             context::push_error(err);
         }
     }
 
-    pub fn log_missing_token_error_for_multiple_expected_symbols(&mut self, 
-        expected_symbols: &[&'static str], recevied_token: &Token) {
+    pub fn log_missing_token_error_for_multiple_expected_symbols(
+        &mut self,
+        expected_symbols: &[&'static str],
+        recevied_token: &Token,
+    ) {
         if self.ignore_all_errors {
             return;
         }
         if expected_symbols.len() == 1 {
             return self.log_missing_token_error_for_single_expected_symbol(
-                expected_symbols[0], recevied_token
-            )
+                expected_symbols[0],
+                recevied_token,
+            );
         }
         let errors_len = context::errors_len();
-        let (code_line, line_start_index, line_number, err_index) 
-        = self.code.line_data(recevied_token.line_number, recevied_token.index());
+        let (code_line, line_start_index, line_number, err_index) = self
+            .code
+            .line_data(recevied_token.line_number, recevied_token.index());
         if errors_len > 0 && context::curr_error_line_number() == line_number {
             return;
         } else {
@@ -243,12 +275,19 @@ impl PackratParser {
                 flag = true;
             }
             err_str.push_str(&format!(
-                " or `{}`, got `{}`", format_symbol(expected_symbols[symbols_len - 1]), recevied_token.name()
+                " or `{}`, got `{}`",
+                format_symbol(expected_symbols[symbols_len - 1]),
+                recevied_token.name()
             ));
-            let err_message = JarvilError::form_single_line_single_pointer_error(err_index, line_number, line_start_index, 
-                code_line, err_str, ParseErrorKind::SYNTAX_ERROR);
-            let err 
-            = JarvilError::new(line_number, line_number, err_message);
+            let err_message = JarvilError::form_single_line_single_pointer_error(
+                err_index,
+                line_number,
+                line_start_index,
+                code_line,
+                err_str,
+                ParseErrorKind::SYNTAX_ERROR,
+            );
+            let err = JarvilError::new(line_number, line_number, err_message);
             context::push_error(err);
         }
     }
@@ -259,25 +298,35 @@ impl PackratParser {
         }
         let errors_len = context::errors_len();
         let skipped_tokens_len = skipped_tokens.len();
-        let (code_line, line_start_index, line_number, start_err_index) 
-        = self.code.line_data(skipped_tokens[0].line_number(), skipped_tokens[0].index());
+        let (code_line, line_start_index, line_number, start_err_index) = self
+            .code
+            .line_data(skipped_tokens[0].line_number(), skipped_tokens[0].index());
         if errors_len > 0 && context::curr_error_line_number() == line_number {
             return;
         } else {
             let err_str = String::from("invalid sequence of tokens found at the trail of the line");
             let end_err_index = skipped_tokens[skipped_tokens_len - 1].index();
             let err_message = JarvilError::form_single_line_underline_pointer_error(
-                start_err_index, end_err_index, line_number, line_start_index, 
-                code_line, err_str, ParseErrorKind::SYNTAX_ERROR
+                start_err_index,
+                end_err_index,
+                line_number,
+                line_start_index,
+                code_line,
+                err_str,
+                ParseErrorKind::SYNTAX_ERROR,
             );
-            let err 
-            = JarvilError::new(line_number, line_number, err_message);
+            let err = JarvilError::new(line_number, line_number, err_message);
             context::push_error(err);
         }
     }
 
-    pub fn log_incorrectly_indented_block_error(&mut self, start_line_number: usize, end_line_number: usize, 
-        expected_indent: i64, received_indent: i64) {
+    pub fn log_incorrectly_indented_block_error(
+        &mut self,
+        start_line_number: usize,
+        end_line_number: usize,
+        expected_indent: i64,
+        received_indent: i64,
+    ) {
         if self.ignore_all_errors {
             return;
         }
@@ -288,10 +337,14 @@ impl PackratParser {
             let code_lines: Vec<String> = self.code.lines(start_line_number, end_line_number);
             let err_str = format!("expected an indented block\nexpected indentation with `{}` spaces, got `{}` spaces", 
             expected_indent, received_indent);
-            let err_message = JarvilError::form_multi_line_error(start_line_number, end_line_number, 
-                code_lines, err_str, ParseErrorKind::SYNTAX_ERROR);
-            let err 
-            = JarvilError::new(start_line_number, end_line_number, err_message);
+            let err_message = JarvilError::form_multi_line_error(
+                start_line_number,
+                end_line_number,
+                code_lines,
+                err_str,
+                ParseErrorKind::SYNTAX_ERROR,
+            );
+            let err = JarvilError::new(start_line_number, end_line_number, err_message);
             context::push_error(err);
         }
     }
@@ -307,7 +360,7 @@ impl PackratParser {
             TokenNode::new_with_missing_tokens(
                 &Rc::new(vec![symbol]),
                 &token,
-                self.curr_lookahead()
+                self.curr_lookahead(),
             )
         }
     }
@@ -317,12 +370,14 @@ impl PackratParser {
         for &symbol in symbols {
             if token.is_eq(symbol) {
                 self.scan_next_token();
-                return TokenNode::new_with_ok_token(&token, self.curr_lookahead())
+                return TokenNode::new_with_ok_token(&token, self.curr_lookahead());
             }
         }
         // self.log_skipped_token_error(symbols, &token);
         TokenNode::new_with_missing_tokens(
-            &Rc::new(symbols.to_vec()), &token, self.curr_lookahead()
+            &Rc::new(symbols.to_vec()),
+            &token,
+            self.curr_lookahead(),
         )
     }
 
@@ -342,12 +397,12 @@ impl PackratParser {
                     indent_spaces = 0;
                 }
                 CoreToken::ENDMARKER => {
-                    return IndentResult{
+                    return IndentResult {
                         kind: IndentResultKind::BLOCK_OVER,
                         skipped_tokens,
                         extra_newlines,
                     }
-                },
+                }
                 _ => {
                     /*
                     match &token.trivia {
@@ -365,26 +420,31 @@ impl PackratParser {
                         None => indent_spaces = 0,
                     }
                      */
-                    indent_spaces = (token.start_index - self.code.get_line_start_index(token.line_number)) as i64;
+                    indent_spaces = (token.start_index
+                        - self.code.get_line_start_index(token.line_number))
+                        as i64;
                     expected_indent_spaces = expected_indent_spaces + self.correction_indent();
                     if indent_spaces == expected_indent_spaces {
-                        return IndentResult{
+                        return IndentResult {
                             kind: IndentResultKind::CORRECT_INDENTATION,
                             skipped_tokens,
                             extra_newlines,
-                        }
+                        };
                     } else if indent_spaces > expected_indent_spaces {
-                        return IndentResult{
-                            kind: IndentResultKind::INCORRECT_INDENTATION((expected_indent_spaces, indent_spaces)),
+                        return IndentResult {
+                            kind: IndentResultKind::INCORRECT_INDENTATION((
+                                expected_indent_spaces,
+                                indent_spaces,
+                            )),
                             skipped_tokens,
                             extra_newlines,
-                        }
+                        };
                     } else {
-                        return IndentResult{
+                        return IndentResult {
                             kind: IndentResultKind::BLOCK_OVER,
                             skipped_tokens,
                             extra_newlines,
-                        }
+                        };
                     }
                 }
             }
@@ -401,10 +461,12 @@ impl PackratParser {
     }
 
     // ------------------- packrat parser caching utilities -------------------
-    pub fn get_or_set_cache<T: std::fmt::Debug,
-    F: FnOnce(&mut PackratParser) -> Result<T, JarvilError>, 
-    G: FnOnce(&Result<T, JarvilError>) -> Result<T, JarvilError>,
-    H: FnOnce(&T) -> usize>(
+    pub fn get_or_set_cache<
+        T: std::fmt::Debug,
+        F: FnOnce(&mut PackratParser) -> Result<T, JarvilError>,
+        G: FnOnce(&Result<T, JarvilError>) -> Result<T, JarvilError>,
+        H: FnOnce(&T) -> usize,
+    >(
         &mut self,
         cache_map: &Rc<RefCell<FxHashMap<usize, Result<T, JarvilError>>>>,
         routine_fn: F,
@@ -419,11 +481,11 @@ impl PackratParser {
                 match result {
                     Ok(response) => {
                         self.set_lookahead(get_lookahead_fn(&response));
-                        return Ok(response)
-                    },
-                    Err(err) => return Err(err)
+                        return Ok(response);
+                    }
+                    Err(err) => return Err(err),
                 }
-            },
+            }
             _ => {}
         }
         let result = routine_fn(self);
@@ -439,9 +501,18 @@ impl PackratParser {
         components::code::code(self, token_vec)
     }
 
-    pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(&mut self, 
-        is_starting_with_fn: F, statement_parsing_fn: G, expected_symbols: &[&'static str]) -> BlockNode {
-        components::block::block(self, is_starting_with_fn, statement_parsing_fn, expected_symbols)
+    pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
+        &mut self,
+        is_starting_with_fn: F,
+        statement_parsing_fn: G,
+        expected_symbols: &[&'static str],
+    ) -> BlockNode {
+        components::block::block(
+            self,
+            is_starting_with_fn,
+            statement_parsing_fn,
+            expected_symbols,
+        )
     }
 
     // statements
@@ -517,11 +588,13 @@ impl PackratParser {
         components::function_declaration::name_type_spec(self)
     }
 
-    pub fn name_type_specs(&mut self) ->NameTypeSpecsNode {
+    pub fn name_type_specs(&mut self) -> NameTypeSpecsNode {
         components::function_declaration::name_type_specs(self)
     }
 
-    pub fn name_type_specs_within_parenthesis(&mut self) -> (Option<NameTypeSpecsNode>, TokenNode, TokenNode) {
+    pub fn name_type_specs_within_parenthesis(
+        &mut self,
+    ) -> (Option<NameTypeSpecsNode>, TokenNode, TokenNode) {
         components::function_declaration::name_type_specs_within_parenthesis(self)
     }
 
@@ -533,7 +606,11 @@ impl PackratParser {
         components::function_declaration::function_name(self)
     }
 
-    pub fn function_decl(&mut self, name: Option<&TokenNode>, func_keyword: &FuncKeywordKind) -> FunctionDeclarationNode {
+    pub fn function_decl(
+        &mut self,
+        name: Option<&TokenNode>,
+        func_keyword: &FuncKeywordKind,
+    ) -> FunctionDeclarationNode {
         components::function_declaration::function_decl(self, name, func_keyword)
     }
 

@@ -1,7 +1,10 @@
+use crate::{
+    constants::common::{DIGITS, KEYWORDS, LETTERS, TYPES},
+    errors::JarvilError,
+};
 use rustc_hash::FxHashMap;
-use std::{collections::HashMap};
 use std::cell::RefCell;
-use crate::{constants::common::{KEYWORDS, TYPES, LETTERS, DIGITS}, errors::JarvilError};
+use std::collections::HashMap;
 
 thread_local! {
     static CONTEXT: RefCell<Context> = RefCell::new(Context::new())
@@ -47,37 +50,37 @@ impl Context {
             letters,
             digits,
             parse_errors: vec![],
-            indent_spaces: 4,       // default indentation is 4 spaces
-            max_error_lines: 10,    // default max lines shown in error messages
-            max_line_width: 88,     // default max line width used while formatting (same as black)
+            indent_spaces: 4,    // default indentation is 4 spaces
+            max_error_lines: 10, // default max lines shown in error messages
+            max_line_width: 88,  // default max line width used while formatting (same as black)
         }
     }
 
     fn is_keyword(&self, name: &str) -> bool {
         match self.keywords.get(name) {
             Some(_) => true,
-            None => false
+            None => false,
         }
     }
 
     fn is_type(&self, name: &str) -> bool {
         match self.types.get(name) {
             Some(_) => true,
-            None => false
+            None => false,
         }
     }
 
     fn is_letter(&self, c: &char) -> bool {
         match self.letters.get(c) {
             Some(_) => true,
-            None => false
+            None => false,
         }
     }
 
     fn is_digit(&self, c: &char) -> bool {
         match self.digits.get(c) {
             Some(_) => true,
-            None => false
+            None => false,
         }
     }
 
@@ -132,9 +135,7 @@ impl Context {
 }
 
 pub fn is_keyword(name: &str) -> bool {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow().is_keyword(name)
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow().is_keyword(name)) {
         Ok(value) => value,
         Err(err) => {
             panic!("{}", err)
@@ -143,9 +144,7 @@ pub fn is_keyword(name: &str) -> bool {
 }
 
 pub fn is_type(name: &str) -> bool {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow().is_type(name)
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow().is_type(name)) {
         Ok(value) => value,
         Err(err) => {
             panic!("{}", err)
@@ -154,9 +153,7 @@ pub fn is_type(name: &str) -> bool {
 }
 
 pub fn is_letter(c: &char) -> bool {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow().is_letter(c)
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow().is_letter(c)) {
         Ok(value) => value,
         Err(err) => {
             panic!("{}", err)
@@ -165,9 +162,7 @@ pub fn is_letter(c: &char) -> bool {
 }
 
 pub fn is_digit(c: &char) -> bool {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow().is_digit(c)
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow().is_digit(c)) {
         Ok(value) => value,
         Err(err) => {
             panic!("{}", err)
@@ -176,9 +171,7 @@ pub fn is_digit(c: &char) -> bool {
 }
 
 pub fn set_errors(err: Vec<JarvilError>) {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow_mut().set_errors(err)
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow_mut().set_errors(err)) {
         Err(err) => {
             panic!("{}", err)
         }
@@ -187,9 +180,7 @@ pub fn set_errors(err: Vec<JarvilError>) {
 }
 
 pub fn push_error(err: JarvilError) {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow_mut().push_error(err)
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow_mut().push_error(err)) {
         Err(err) => {
             panic!("{}", err)
         }
@@ -198,9 +189,7 @@ pub fn push_error(err: JarvilError) {
 }
 
 pub fn curr_error_line_number() -> usize {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow().curr_error_line_number()
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow().curr_error_line_number()) {
         Ok(val) => val,
         Err(err) => {
             panic!("{}", err)
@@ -209,9 +198,7 @@ pub fn curr_error_line_number() -> usize {
 }
 
 pub fn first_error() -> Option<JarvilError> {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow().first_error()
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow().first_error()) {
         Ok(val) => val,
         Err(err) => {
             panic!("{}", err)
@@ -220,9 +207,7 @@ pub fn first_error() -> Option<JarvilError> {
 }
 
 pub fn errors_len() -> usize {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow_mut().errors_len()
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow_mut().errors_len()) {
         Ok(val) => val,
         Err(err) => {
             panic!("{}", err)
@@ -231,9 +216,7 @@ pub fn errors_len() -> usize {
 }
 
 pub fn set_indent(indent_spaces: i64) {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow_mut().set_indent(indent_spaces)
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow_mut().set_indent(indent_spaces)) {
         Err(err) => {
             panic!("{}", err)
         }
@@ -242,9 +225,7 @@ pub fn set_indent(indent_spaces: i64) {
 }
 
 pub fn indent_spaces() -> i64 {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow().indent_spaces()
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow().indent_spaces()) {
         Ok(val) => val,
         Err(err) => {
             panic!("{}", err)
@@ -253,9 +234,7 @@ pub fn indent_spaces() -> i64 {
 }
 
 pub fn set_max_error_lines(max_error_lines: usize) {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow_mut().set_max_error_lines(max_error_lines)
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow_mut().set_max_error_lines(max_error_lines)) {
         Err(err) => {
             panic!("{}", err)
         }
@@ -264,9 +243,7 @@ pub fn set_max_error_lines(max_error_lines: usize) {
 }
 
 pub fn max_error_lines() -> usize {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow().max_error_lines()
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow().max_error_lines()) {
         Ok(val) => val,
         Err(err) => {
             panic!("{}", err)
@@ -275,9 +252,7 @@ pub fn max_error_lines() -> usize {
 }
 
 pub fn set_max_line_width(max_line_width: usize) {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow_mut().set_max_line_width(max_line_width)
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow_mut().set_max_line_width(max_line_width)) {
         Err(err) => {
             panic!("{}", err)
         }
@@ -286,9 +261,7 @@ pub fn set_max_line_width(max_line_width: usize) {
 }
 
 pub fn max_line_width() -> usize {
-    match CONTEXT.try_with(|ctx| {
-        ctx.borrow().max_line_width()
-    }) {
+    match CONTEXT.try_with(|ctx| ctx.borrow().max_line_width()) {
         Ok(val) => val,
         Err(err) => {
             panic!("{}", err)

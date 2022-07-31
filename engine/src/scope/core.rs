@@ -1,10 +1,10 @@
-use std::cell::RefCell;
-use rustc_hash::FxHashMap;
-use std::rc::Rc;
 use crate::errors::JarvilError;
-use crate::scope::user_defined_types::{UserDefinedTypeData};
-use crate::scope::identifier::IdentifierData;
 use crate::scope::function::FunctionData;
+use crate::scope::identifier::IdentifierData;
+use crate::scope::user_defined_types::UserDefinedTypeData;
+use rustc_hash::FxHashMap;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub enum MetaData {
@@ -14,7 +14,7 @@ pub enum MetaData {
 }
 
 #[derive(Debug)]
-pub struct SymbolData(Rc<RefCell<MetaData>>, usize);  // meta data and line on which it was declared
+pub struct SymbolData(Rc<RefCell<MetaData>>, usize); // meta data and line on which it was declared
 
 #[derive(Debug)]
 pub struct CoreScope {
@@ -24,7 +24,10 @@ pub struct CoreScope {
 
 impl CoreScope {
     fn set(&mut self, name: Rc<String>, meta_data: MetaData, line_number: usize) {
-        self.symbol_table.insert(name, SymbolData(Rc::new(RefCell::new(meta_data)), line_number));
+        self.symbol_table.insert(
+            name,
+            SymbolData(Rc::new(RefCell::new(meta_data)), line_number),
+        );
     }
 
     fn get(&self, name: &Rc<String>) -> Option<&SymbolData> {
@@ -51,24 +54,28 @@ impl Scope {
         })))
     }
 
-    pub fn insert(&self, key: &Rc<String>, meta_data: MetaData, line_number: usize) -> Result<(), JarvilError> {
+    pub fn insert(
+        &self,
+        key: &Rc<String>,
+        meta_data: MetaData,
+        line_number: usize,
+    ) -> Result<(), JarvilError> {
         match self.0.borrow().get(key) {
             Some(value) => {
                 let err_str = format!("`{}` is already declared in the current block", key);
-                return Err(JarvilError::new(value.1, value.1, err_str))
-            },
+                return Err(JarvilError::new(value.1, value.1, err_str));
+            }
             None => {}
         }
         self.0.borrow_mut().set(key.clone(), meta_data, line_number);
         Ok(())
     }
 
-    pub fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData, usize)> {  // resolved data and depth
+    pub fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData, usize)> {
+        // resolved data and depth
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
-            Some(value) => {
-                Some((SymbolData(value.0.clone(), value.1), 0))
-            },
+            Some(value) => Some((SymbolData(value.0.clone(), value.1), 0)),
             None => {
                 if let Some(parent_env) = &scope_ref.parent_env {
                     match parent_env.lookup(key) {
@@ -88,12 +95,17 @@ impl Scope {
         if depth == 0 {
             match scope_ref.get(key) {
                 Some(value) => return SymbolData(value.0.clone(), value.1),
-                None => unreachable!("data for key `{}` should be present if resolving phase is done", key)
+                None => unreachable!(
+                    "data for key `{}` should be present if resolving phase is done",
+                    key
+                ),
             }
         } else {
             match &scope_ref.parent_env {
                 Some(parent_env) => return parent_env.lookup_with_depth(key, depth - 1),
-                None => unreachable!("depth should be less than or equal to the depth of the scope chain")
+                None => unreachable!(
+                    "depth should be less than or equal to the depth of the scope chain"
+                ),
             }
         }
     }

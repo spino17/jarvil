@@ -1,33 +1,34 @@
-use crate::ast::ast::TypeExpressionNode;
-use crate::constants::common::{INTEGER, IDENTIFIER, ATOMIC_TYPE};
-use crate::parser::parser::{PackratParser};
-use crate::lexer::token::{CoreToken, Token};
-use std::rc::Rc;
 use crate::ast::ast::ErrornousNode;
+use crate::ast::ast::TypeExpressionNode;
+use crate::constants::common::{ATOMIC_TYPE, IDENTIFIER, INTEGER};
+use crate::lexer::token::{CoreToken, Token};
+use crate::parser::parser::PackratParser;
+use std::rc::Rc;
 
 pub fn is_type_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
-        CoreToken::ATOMIC_TYPE      => true,
-        CoreToken::IDENTIFIER       => true,
-        CoreToken::LSQUARE          => true,
-        _                           => false,
+        CoreToken::ATOMIC_TYPE => true,
+        CoreToken::IDENTIFIER => true,
+        CoreToken::LSQUARE => true,
+        _ => false,
     }
 }
 
-pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 3] 
-= [ATOMIC_TYPE, IDENTIFIER, "["];
+pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 3] =
+    [ATOMIC_TYPE, IDENTIFIER, "["];
 
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
     let token = &parser.curr_token();
     if !is_type_expression_starting_with(token) {
         parser.log_missing_token_error_for_multiple_expected_symbols(
-            &TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS, &token
+            &TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS,
+            &token,
         );
         return TypeExpressionNode::new_with_missing_tokens(
             &Rc::new(TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
             &token,
             parser.curr_lookahead(),
-        )
+        );
     }
     match token.core_token {
         CoreToken::ATOMIC_TYPE  => {

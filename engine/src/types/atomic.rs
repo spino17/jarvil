@@ -1,6 +1,6 @@
+use crate::constants::common::{BOOL, FLOAT, INT, STRING};
+use crate::types::core::{AbstractType, CoreType, Type};
 use std::rc::Rc;
-use crate::constants::common::{INT, FLOAT, STRING, BOOL};
-use crate::types::core::{AbstractType, Type, CoreType};
 
 #[derive(Debug)]
 pub enum Atomic {
@@ -13,21 +13,21 @@ pub enum Atomic {
 impl Atomic {
     pub fn new_with_type_str(type_str: &str) -> Option<Type> {
         let type_obj = match type_str {
-            INT     => Type::new_with_atomic(Atomic::INT),
-            FLOAT   => Type::new_with_atomic(Atomic::FLOAT),
-            STRING  => Type::new_with_atomic(Atomic::STRING),
-            BOOL    => Type::new_with_atomic(Atomic::BOOL),
-            _ => return None
+            INT => Type::new_with_atomic(Atomic::INT),
+            FLOAT => Type::new_with_atomic(Atomic::FLOAT),
+            STRING => Type::new_with_atomic(Atomic::STRING),
+            BOOL => Type::new_with_atomic(Atomic::BOOL),
+            _ => return None,
         };
         Some(type_obj)
     }
 
     pub fn get_atomic_type(&self) -> &str {
         match self {
-            Atomic::INT     =>  INT,
-            Atomic::FLOAT   =>  FLOAT,
-            Atomic::STRING  =>  STRING,
-            Atomic::BOOL    =>  BOOL,
+            Atomic::INT => INT,
+            Atomic::FLOAT => FLOAT,
+            Atomic::STRING => STRING,
+            Atomic::BOOL => BOOL,
         }
     }
 
@@ -63,24 +63,22 @@ impl Atomic {
 impl AbstractType for Atomic {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
-            CoreType::ATOMIC(atomic_data) => {
-                match atomic_data {
-                    Atomic::INT     =>  self.is_int(),
-                    Atomic::FLOAT   =>  self.is_float(),
-                    Atomic::STRING  =>  self.is_string(),
-                    Atomic::BOOL    =>  self.is_bool(),
-                }
+            CoreType::ATOMIC(atomic_data) => match atomic_data {
+                Atomic::INT => self.is_int(),
+                Atomic::FLOAT => self.is_float(),
+                Atomic::STRING => self.is_string(),
+                Atomic::BOOL => self.is_bool(),
             },
-            _ => false
+            _ => false,
         }
     }
-    
+
     fn string(&self) -> Rc<String> {
         match self {
-            Atomic::INT     =>  Rc::new(String::from(INT)),
-            Atomic::FLOAT   =>  Rc::new(String::from(FLOAT)),
-            Atomic::STRING  =>  Rc::new(String::from(STRING)),
-            Atomic::BOOL    =>  Rc::new(String::from(BOOL)),
+            Atomic::INT => Rc::new(String::from(INT)),
+            Atomic::FLOAT => Rc::new(String::from(FLOAT)),
+            Atomic::STRING => Rc::new(String::from(STRING)),
+            Atomic::BOOL => Rc::new(String::from(BOOL)),
         }
     }
 }

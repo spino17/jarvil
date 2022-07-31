@@ -1,14 +1,14 @@
 use crate::code::Code;
 use crate::constants::common::IDENTIFIER;
-use crate::errors::LexicalErrorData;
+use crate::context;
 use crate::errors::JarvilError;
+use crate::errors::LexicalErrorData;
 use crate::errors::ParseErrorKind;
-use crate::lexer::token::Token;
 use crate::lexer::token::CoreToken;
+use crate::lexer::token::Token;
+use std::mem;
 use std::rc::Rc;
 use std::vec;
-use std::mem;
-use crate::context;
 
 pub trait Lexer {
     fn tokenize(&mut self, code: &mut Code) -> Vec<Token>;
@@ -19,8 +19,8 @@ pub struct CoreLexer {
     pub line_number: usize,
     pub code_lines: Vec<usize>,
     pub line_start_index: usize,
-    pub lexical_errors_data: Vec<LexicalErrorData>,  // temp storage for lexical error data uptill code_lines are built
-    // pub lexical_errors: Vec<ParseError>,
+    pub lexical_errors_data: Vec<LexicalErrorData>, // temp storage for lexical error data uptill code_lines are built
+                                                    // pub lexical_errors: Vec<ParseError>,
 }
 
 impl Lexer for CoreLexer {
@@ -90,13 +90,30 @@ impl CoreLexer {
     }
      */
 
-    pub fn log_invalid_char_lexical_error(&mut self, invalid_token: &Token, err_message: &Rc<String>) {
-        self.lexical_errors_data.push(LexicalErrorData::new_with_invalid_char(invalid_token, err_message))
+    pub fn log_invalid_char_lexical_error(
+        &mut self,
+        invalid_token: &Token,
+        err_message: &Rc<String>,
+    ) {
+        self.lexical_errors_data
+            .push(LexicalErrorData::new_with_invalid_char(
+                invalid_token,
+                err_message,
+            ))
     }
 
-    pub fn log_no_closing_symbols_lexical_error(&mut self, start_line_number: usize, end_line_number: usize, 
-        err_message: &Rc<String>) {
-        self.lexical_errors_data.push(LexicalErrorData::new_with_no_closing_symbols(start_line_number, end_line_number, err_message))
+    pub fn log_no_closing_symbols_lexical_error(
+        &mut self,
+        start_line_number: usize,
+        end_line_number: usize,
+        err_message: &Rc<String>,
+    ) {
+        self.lexical_errors_data
+            .push(LexicalErrorData::new_with_no_closing_symbols(
+                start_line_number,
+                end_line_number,
+                err_message,
+            ))
     }
 
     pub fn log_all_lexical_errors(&mut self, code: &Code) {
@@ -107,23 +124,30 @@ impl CoreLexer {
                 LexicalErrorData::INVALID_CHAR(invalid_char_lexical_error_data) => {
                     let invalid_token = invalid_char_lexical_error_data.invalid_token.clone();
                     let err_str = invalid_char_lexical_error_data.err_message.clone();
-                    let (code_line, line_start_index, line_number, err_index)
-                    = code.line_data(invalid_token.line_number, invalid_token.index());
+                    let (code_line, line_start_index, line_number, err_index) =
+                        code.line_data(invalid_token.line_number, invalid_token.index());
                     let err_message = JarvilError::form_single_line_single_pointer_error(
-                        err_index, line_number, line_start_index, code_line, err_str.to_string(),
-                        ParseErrorKind::LEXICAL_ERROR
+                        err_index,
+                        line_number,
+                        line_start_index,
+                        code_line,
+                        err_str.to_string(),
+                        ParseErrorKind::LEXICAL_ERROR,
                     );
                     error = JarvilError::new(line_number, line_number, err_message);
-                },
-                LexicalErrorData::NO_CLOSING_SYMBOLS(
-                    no_closing_symbols_lexical_error_data
-                ) => {
+                }
+                LexicalErrorData::NO_CLOSING_SYMBOLS(no_closing_symbols_lexical_error_data) => {
                     let start_line_number = no_closing_symbols_lexical_error_data.start_line_number;
                     let end_line_number = no_closing_symbols_lexical_error_data.end_line_number;
                     let err_str = no_closing_symbols_lexical_error_data.err_message.clone();
                     let code_lines = code.lines(start_line_number, end_line_number);
-                    let err_message = JarvilError::form_multi_line_error(start_line_number, end_line_number, 
-                        code_lines, err_str.to_string(), ParseErrorKind::LEXICAL_ERROR);
+                    let err_message = JarvilError::form_multi_line_error(
+                        start_line_number,
+                        end_line_number,
+                        code_lines,
+                        err_str.to_string(),
+                        ParseErrorKind::LEXICAL_ERROR,
+                    );
                     error = JarvilError::new(start_line_number, end_line_number, err_message);
                 }
             }

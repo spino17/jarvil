@@ -1,16 +1,16 @@
+mod ast;
+mod cmd;
+mod code;
+mod constants;
+mod context;
 mod errors;
 mod lexer;
 mod parser;
-mod scope;
-mod context;
-mod constants;
 mod reader;
-mod types;
-mod ast;
-mod utils;
-mod code;
-mod cmd;
+mod scope;
 mod server;
+mod types;
+mod utils;
 
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;

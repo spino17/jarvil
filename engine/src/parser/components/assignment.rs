@@ -1,4 +1,4 @@
-use crate::{parser::parser::PackratParser, ast::ast::AssignmentNode};
+use crate::{ast::ast::AssignmentNode, parser::parser::PackratParser};
 
 pub fn assignment(parser: &mut PackratParser) -> AssignmentNode {
     let atom_node = parser.atom();

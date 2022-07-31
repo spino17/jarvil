@@ -1,10 +1,18 @@
 // AST Nodes have inner mutability to enable dynamic changes to AST like monomorphism of generics or macro expansion.
-// ASTNode has weak reference to core nodes to avoid memory leaks. 
+// ASTNode has weak reference to core nodes to avoid memory leaks.
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
-use std::{rc::{Rc, Weak}, cell::RefCell};
-use crate::{scope::{core::Scope}, lexer::token::{Token, CoreToken}, types::{core::Type, array::Array}, code::Code};
 use crate::types::atomic::Atomic;
+use crate::{
+    code::Code,
+    lexer::token::{CoreToken, Token},
+    scope::core::Scope,
+    types::{array::Array, core::Type},
+};
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+};
 
 pub trait Node {
     fn set_parent(&self, parent_node: ASTNode);
@@ -12,7 +20,11 @@ pub trait Node {
 }
 
 pub trait ErrornousNode {
-    fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self;
+    fn new_with_missing_tokens(
+        expected_symbols: &Rc<Vec<&'static str>>,
+        received_token: &Token,
+        lookahead: usize,
+    ) -> Self;
 }
 
 macro_rules! default_node_impl {
@@ -28,11 +40,16 @@ macro_rules! default_node_impl {
 macro_rules! default_errornous_node_impl {
     ($t: ident, $u: ident, $v: ident) => {
         impl ErrornousNode for $t {
-            fn new_with_missing_tokens(expected_symbols: &Rc<Vec<&'static str>>, 
-            received_token: &Token, lookahead: usize) -> Self {
-                $t(Rc::new(RefCell::new($u{
+            fn new_with_missing_tokens(
+                expected_symbols: &Rc<Vec<&'static str>>,
+                received_token: &Token,
+                lookahead: usize,
+            ) -> Self {
+                $t(Rc::new(RefCell::new($u {
                     kind: $v::MISSING_TOKENS(MissingTokenNode::new(
-                        expected_symbols, received_token, lookahead
+                        expected_symbols,
+                        received_token,
+                        lookahead,
                     )),
                     parent: None,
                 })))
@@ -85,8 +102,8 @@ pub enum ASTNode {
 pub enum StatemenIndentWrapper {
     CORRECTLY_INDENTED(StatementNode),
     INCORRECTLY_INDENTED((StatementNode, (i64, i64))),
-    LEADING_SKIPPED_TOKENS(SkippedTokens),      // skipped tokens leading to the next stmt in block
-    TRAILING_SKIPPED_TOKENS(SkippedTokens),     // skipped tokens trailing to the previous stmt in block
+    LEADING_SKIPPED_TOKENS(SkippedTokens), // skipped tokens leading to the next stmt in block
+    TRAILING_SKIPPED_TOKENS(SkippedTokens), // skipped tokens trailing to the previous stmt in block
     EXTRA_NEWLINES(SkippedTokens),
 }
 
@@ -102,7 +119,7 @@ pub struct CoreBlockNode {
 pub struct BlockNode(pub Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
     pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, newline: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreBlockNode{
+        let node = Rc::new(RefCell::new(CoreBlockNode {
             newline: newline.clone(),
             stmts: stmts.clone(),
             scope: None,
@@ -125,7 +142,7 @@ impl BlockNode {
                 }
                 StatemenIndentWrapper::EXTRA_NEWLINES(extra_newlines) => {
                     extra_newlines.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
-                },
+                }
             }
         }
         BlockNode(node)
@@ -147,7 +164,7 @@ pub struct CoreSkippedTokens {
 pub struct SkippedTokens(pub Rc<RefCell<CoreSkippedTokens>>);
 impl SkippedTokens {
     pub fn new_with_leading_skipped_tokens(skipped_tokens: &Rc<Vec<SkippedTokenNode>>) -> Self {
-        let node = Rc::new(RefCell::new(CoreSkippedTokens{
+        let node = Rc::new(RefCell::new(CoreSkippedTokens {
             skipped_tokens: skipped_tokens.clone(),
             parent: None,
         }));
@@ -158,7 +175,7 @@ impl SkippedTokens {
     }
 
     pub fn new_with_trailing_skipped_tokens(skipped_tokens: &Rc<Vec<SkippedTokenNode>>) -> Self {
-        let node = Rc::new(RefCell::new(CoreSkippedTokens{
+        let node = Rc::new(RefCell::new(CoreSkippedTokens {
             skipped_tokens: skipped_tokens.clone(),
             parent: None,
         }));
@@ -169,7 +186,7 @@ impl SkippedTokens {
     }
 
     pub fn new_with_extra_newlines(extra_newlines: &Rc<Vec<SkippedTokenNode>>) -> Self {
-        let node = Rc::new(RefCell::new(CoreSkippedTokens{
+        let node = Rc::new(RefCell::new(CoreSkippedTokens {
             skipped_tokens: extra_newlines.clone(),
             parent: None,
         }));
@@ -189,7 +206,7 @@ pub struct CoreStatementNode {
 
 #[derive(Debug, Clone)]
 pub enum StatementNodeKind {
-    // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration, 
+    // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration,
     // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
     EXPRESSION(ExpressionNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
@@ -203,7 +220,7 @@ pub enum StatementNodeKind {
 pub struct StatementNode(pub Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
     pub fn new_with_expression(expr: &ExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreStatementNode{
+        let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementNodeKind::EXPRESSION(expr.clone()),
             parent: None,
         }));
@@ -212,7 +229,7 @@ impl StatementNode {
     }
 
     pub fn new_with_variable_declaration(variable_decl: &VariableDeclarationNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreStatementNode{
+        let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementNodeKind::VARIABLE_DECLARATION(variable_decl.clone()),
             parent: None,
         }));
@@ -221,7 +238,7 @@ impl StatementNode {
     }
 
     pub fn new_with_function_declaration(function_decl: &FunctionDeclarationNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreStatementNode{
+        let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementNodeKind::FUNCTION_DECLARATION(function_decl.clone()),
             parent: None,
         }));
@@ -230,7 +247,7 @@ impl StatementNode {
     }
 
     pub fn new_with_type_declaration(type_decl: &TypeDeclarationNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreStatementNode{
+        let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementNodeKind::TYPE_DECLARATION(type_decl.clone()),
             parent: None,
         }));
@@ -239,7 +256,7 @@ impl StatementNode {
     }
 
     pub fn new_with_struct_stmt(struct_stmt: &StructStatementNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreStatementNode{
+        let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementNodeKind::STRUCT_STATEMENT(struct_stmt.clone()),
             parent: None,
         }));
@@ -262,7 +279,7 @@ pub struct CoreAssignmentNode {
 pub struct AssignmentNode(Rc<RefCell<CoreAssignmentNode>>);
 impl AssignmentNode {
     pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAssignmentNode{
+        let node = Rc::new(RefCell::new(CoreAssignmentNode {
             equal: equal.clone(),
             l_atom: l_atom.clone(),
             r_assign: r_assign.clone(),
@@ -286,8 +303,13 @@ pub struct CoreStructStatementNode {
 #[derive(Debug, Clone)]
 pub struct StructStatementNode(Rc<RefCell<CoreStructStatementNode>>);
 impl StructStatementNode {
-    pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode, newline: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreStructStatementNode{
+    pub fn new(
+        param_name: &TokenNode,
+        param_type: &TypeExpressionNode,
+        colon: &TokenNode,
+        newline: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreStructStatementNode {
             newline: newline.clone(),
             name_type_spec: NameTypeSpecNode::new(param_name, param_type, colon),
             parent: None,
@@ -313,15 +335,25 @@ pub enum TypeDeclarationKind {
 #[derive(Debug, Clone)]
 pub struct TypeDeclarationNode(Rc<RefCell<CoreTypeDeclarationNode>>);
 impl TypeDeclarationNode {
-    pub fn new_with_struct(name: &TokenNode, block: &BlockNode, type_keyword: &TokenNode, colon: &TokenNode) -> Self {
-        TypeDeclarationNode(Rc::new(RefCell::new(CoreTypeDeclarationNode{
-            kind: TypeDeclarationKind::STRUCT(StructDeclarationNode::new(name, block, type_keyword, colon)),
+    pub fn new_with_struct(
+        name: &TokenNode,
+        block: &BlockNode,
+        type_keyword: &TokenNode,
+        colon: &TokenNode,
+    ) -> Self {
+        TypeDeclarationNode(Rc::new(RefCell::new(CoreTypeDeclarationNode {
+            kind: TypeDeclarationKind::STRUCT(StructDeclarationNode::new(
+                name,
+                block,
+                type_keyword,
+                colon,
+            )),
             parent: None,
         })))
     }
 
     pub fn new_with_lambda(lambda: &LambdaDeclarationNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreTypeDeclarationNode{
+        let node = Rc::new(RefCell::new(CoreTypeDeclarationNode {
             kind: TypeDeclarationKind::LAMBDA(lambda.clone()),
             parent: None,
         }));
@@ -330,7 +362,11 @@ impl TypeDeclarationNode {
     }
 }
 default_node_impl!(TypeDeclarationNode);
-default_errornous_node_impl!(TypeDeclarationNode, CoreTypeDeclarationNode, TypeDeclarationKind);
+default_errornous_node_impl!(
+    TypeDeclarationNode,
+    CoreTypeDeclarationNode,
+    TypeDeclarationKind
+);
 
 #[derive(Debug, Clone)]
 pub struct CoreStructDeclarationNode {
@@ -344,8 +380,13 @@ pub struct CoreStructDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct StructDeclarationNode(Rc<RefCell<CoreStructDeclarationNode>>);
 impl StructDeclarationNode {
-    pub fn new(name: &TokenNode, block: &BlockNode, type_keyword: &TokenNode, colon: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreStructDeclarationNode{
+    pub fn new(
+        name: &TokenNode,
+        block: &BlockNode,
+        type_keyword: &TokenNode,
+        colon: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreStructDeclarationNode {
             type_keyword: type_keyword.clone(),
             colon: colon.clone(),
             name: name.clone(),
@@ -376,23 +417,43 @@ pub enum LambdaDeclarationKind {
 #[derive(Debug, Clone)]
 pub struct LambdaDeclarationNode(Rc<RefCell<CoreLambdaDeclarationNode>>);
 impl LambdaDeclarationNode {
-    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, 
-        return_type: &Option<TypeExpressionNode>, type_keyword: &TokenNode, colon: &TokenNode,
-    lparen: &TokenNode, rparen: &TokenNode, right_arrow: &Option<TokenNode>, newline: &TokenNode) -> Self {
-        LambdaDeclarationNode(Rc::new(RefCell::new(CoreLambdaDeclarationNode{
+    pub fn new(
+        name: &TokenNode,
+        args: &Option<NameTypeSpecsNode>,
+        return_type: &Option<TypeExpressionNode>,
+        type_keyword: &TokenNode,
+        colon: &TokenNode,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        right_arrow: &Option<TokenNode>,
+        newline: &TokenNode,
+    ) -> Self {
+        LambdaDeclarationNode(Rc::new(RefCell::new(CoreLambdaDeclarationNode {
             kind: LambdaDeclarationKind::OK(OkLambdaDeclarationNode::new(
-                name, args, return_type, type_keyword, colon, lparen, rparen, right_arrow, newline
+                name,
+                args,
+                return_type,
+                type_keyword,
+                colon,
+                lparen,
+                rparen,
+                right_arrow,
+                newline,
             )),
             parent: None,
         })))
     }
 }
 default_node_impl!(LambdaDeclarationNode);
-default_errornous_node_impl!(LambdaDeclarationNode, CoreLambdaDeclarationNode, LambdaDeclarationKind);
+default_errornous_node_impl!(
+    LambdaDeclarationNode,
+    CoreLambdaDeclarationNode,
+    LambdaDeclarationKind
+);
 
 #[derive(Debug, Clone)]
 pub struct CoreOkLambdaDeclarationNode {
-    type_keyword: TokenNode, 
+    type_keyword: TokenNode,
     colon: TokenNode,
     lparen: TokenNode,
     rparen: TokenNode,
@@ -407,10 +468,18 @@ pub struct CoreOkLambdaDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct OkLambdaDeclarationNode(Rc<RefCell<CoreOkLambdaDeclarationNode>>);
 impl OkLambdaDeclarationNode {
-    pub fn new(name: &TokenNode, args: &Option<NameTypeSpecsNode>, 
-        return_type: &Option<TypeExpressionNode>, type_keyword: &TokenNode, colon: &TokenNode,
-        lparen: &TokenNode, rparen: &TokenNode, right_arrow: &Option<TokenNode>, newline: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreOkLambdaDeclarationNode{
+    pub fn new(
+        name: &TokenNode,
+        args: &Option<NameTypeSpecsNode>,
+        return_type: &Option<TypeExpressionNode>,
+        type_keyword: &TokenNode,
+        colon: &TokenNode,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        right_arrow: &Option<TokenNode>,
+        newline: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreOkLambdaDeclarationNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
             right_arrow: right_arrow.clone(),
@@ -429,23 +498,20 @@ impl OkLambdaDeclarationNode {
         colon.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
         name.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
         match args {
-            Some(args) => args.set_parent(
-                ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node))
-            ),
-            None => {},
+            Some(args) => args.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node))),
+            None => {}
         }
         match right_arrow {
-            Some(right_arrow) => right_arrow.set_parent(
-                ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node))
-            ),
-            None => {},
-
+            Some(right_arrow) => {
+                right_arrow.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)))
+            }
+            None => {}
         }
         match return_type {
-            Some(return_type) => return_type.set_parent(
-                ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node))
-            ),
-            None => {},
+            Some(return_type) => {
+                return_type.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)))
+            }
+            None => {}
         }
         OkLambdaDeclarationNode(node)
     }
@@ -467,12 +533,28 @@ pub enum FunctionDeclarationKind {
 #[derive(Debug, Clone)]
 pub struct FunctionDeclarationNode(pub Rc<RefCell<CoreFunctionDeclarationNode>>);
 impl FunctionDeclarationNode {
-    pub fn new(name: &Option<TokenNode>, args: &Option<NameTypeSpecsNode>, 
-        return_type: &Option<TypeExpressionNode>, block: &BlockNode, func_keyword: &FuncKeywordKind, 
-        lparen: &TokenNode, rparen: &TokenNode, right_arrow: &Option<TokenNode>, colon: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreFunctionDeclarationNode{
+    pub fn new(
+        name: &Option<TokenNode>,
+        args: &Option<NameTypeSpecsNode>,
+        return_type: &Option<TypeExpressionNode>,
+        block: &BlockNode,
+        func_keyword: &FuncKeywordKind,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        right_arrow: &Option<TokenNode>,
+        colon: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreFunctionDeclarationNode {
             kind: FunctionDeclarationKind::OK(OkFunctionDeclarationNode::new(
-                name, args, return_type, block, func_keyword, lparen, rparen, right_arrow, colon
+                name,
+                args,
+                return_type,
+                block,
+                func_keyword,
+                lparen,
+                rparen,
+                right_arrow,
+                colon,
             )),
             parent: None,
         }));
@@ -480,7 +562,11 @@ impl FunctionDeclarationNode {
     }
 }
 default_node_impl!(FunctionDeclarationNode);
-default_errornous_node_impl!(FunctionDeclarationNode, CoreFunctionDeclarationNode, FunctionDeclarationKind);
+default_errornous_node_impl!(
+    FunctionDeclarationNode,
+    CoreFunctionDeclarationNode,
+    FunctionDeclarationKind
+);
 
 #[derive(Debug, Clone)]
 pub struct CoreOkFunctionDeclarationNode {
@@ -505,10 +591,18 @@ pub enum FuncKeywordKind {
 #[derive(Debug, Clone)]
 pub struct OkFunctionDeclarationNode(pub Rc<RefCell<CoreOkFunctionDeclarationNode>>);
 impl OkFunctionDeclarationNode {
-    pub fn new(name: &Option<TokenNode>, args: &Option<NameTypeSpecsNode>, 
-        return_type: &Option<TypeExpressionNode>, block: &BlockNode, func_keyword: &FuncKeywordKind, 
-        lparen: &TokenNode, rparen: &TokenNode, right_arrow: &Option<TokenNode>, colon: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreOkFunctionDeclarationNode{
+    pub fn new(
+        name: &Option<TokenNode>,
+        args: &Option<NameTypeSpecsNode>,
+        return_type: &Option<TypeExpressionNode>,
+        block: &BlockNode,
+        func_keyword: &FuncKeywordKind,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        right_arrow: &Option<TokenNode>,
+        colon: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreOkFunctionDeclarationNode {
             func_keyword: func_keyword.clone(),
             lparen: lparen.clone(),
             rparen: rparen.clone(),
@@ -524,28 +618,32 @@ impl OkFunctionDeclarationNode {
         rparen.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
         colon.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
         match func_keyword {
-            FuncKeywordKind::DEF(def_node) => def_node.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
-            FuncKeywordKind::FUNC(func_node) => func_node.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            FuncKeywordKind::DEF(def_node) => {
+                def_node.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)))
+            }
+            FuncKeywordKind::FUNC(func_node) => {
+                func_node.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)))
+            }
         }
         match right_arrow {
-            Some(right_arrow) => right_arrow.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
-            None => {},
+            Some(right_arrow) => {
+                right_arrow.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)))
+            }
+            None => {}
         }
         match name {
             Some(name) => name.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
-            None => {},
+            None => {}
         }
         match args {
-            Some(args) => args.set_parent(
-                ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))
-            ),
-            None => {},
+            Some(args) => args.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            None => {}
         }
         match return_type {
-            Some(return_type) => return_type.set_parent(
-                ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))
-            ),
-            None => {},
+            Some(return_type) => {
+                return_type.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)))
+            }
+            None => {}
         }
         block.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
         OkFunctionDeclarationNode(node)
@@ -566,9 +664,14 @@ pub struct CoreVariableDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct VariableDeclarationNode(pub Rc<RefCell<CoreVariableDeclarationNode>>);
 impl VariableDeclarationNode {
-    pub fn new(name: &TokenNode, 
-        r_assign: &RAssignmentNode, let_keyword: &TokenNode, equal: &TokenNode, newline: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreVariableDeclarationNode{
+    pub fn new(
+        name: &TokenNode,
+        r_assign: &RAssignmentNode,
+        let_keyword: &TokenNode,
+        equal: &TokenNode,
+        newline: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreVariableDeclarationNode {
             let_keyword: let_keyword.clone(),
             equal: equal.clone(),
             newline: newline.clone(),
@@ -602,7 +705,7 @@ pub enum NameTypeSpecsKind {
 pub struct NameTypeSpecsNode(Rc<RefCell<CoreNameTypeSpecsNode>>);
 impl NameTypeSpecsNode {
     pub fn new(ok_name_type_specs: &OkNameTypeSpecsNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode{
+        let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode {
             kind: NameTypeSpecsKind::OK(ok_name_type_specs.clone()),
             parent: None,
         }));
@@ -612,7 +715,9 @@ impl NameTypeSpecsNode {
 
     pub fn get_name_type_spec_objs(&self, code: &Code) -> Vec<(Option<Rc<String>>, Option<Type>)> {
         match &self.0.as_ref().borrow().kind {
-            NameTypeSpecsKind::OK(ok_name_type_specs) => ok_name_type_specs.get_name_type_spec_objs(code),
+            NameTypeSpecsKind::OK(ok_name_type_specs) => {
+                ok_name_type_specs.get_name_type_spec_objs(code)
+            }
             _ => vec![],
         }
     }
@@ -631,8 +736,12 @@ pub struct CoreOkNameTypeSpecsNode {
 #[derive(Debug, Clone)]
 pub struct OkNameTypeSpecsNode(Rc<RefCell<CoreOkNameTypeSpecsNode>>);
 impl OkNameTypeSpecsNode {
-    pub fn new_with_args(arg: &NameTypeSpecNode, remaining_args: &NameTypeSpecsNode, comma: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreOkNameTypeSpecsNode{
+    pub fn new_with_args(
+        arg: &NameTypeSpecNode,
+        remaining_args: &NameTypeSpecsNode,
+        comma: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreOkNameTypeSpecsNode {
             comma: Some(comma.clone()),
             arg: arg.clone(),
             remaining_args: Some(remaining_args.clone()),
@@ -645,7 +754,7 @@ impl OkNameTypeSpecsNode {
     }
 
     pub fn new_with_single_arg(arg: &NameTypeSpecNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreOkNameTypeSpecsNode{
+        let node = Rc::new(RefCell::new(CoreOkNameTypeSpecsNode {
             comma: None,
             arg: arg.clone(),
             remaining_args: None,
@@ -663,7 +772,7 @@ impl OkNameTypeSpecsNode {
             Some(remaining_args) => {
                 let mut remaining_args_objs = remaining_args.get_name_type_spec_objs(code);
                 name_type_specs_vec.append(&mut remaining_args_objs);
-            },
+            }
             None => {}
         }
         name_type_specs_vec
@@ -683,7 +792,7 @@ pub struct CoreNameTypeSpecNode {
 pub struct NameTypeSpecNode(Rc<RefCell<CoreNameTypeSpecNode>>);
 impl NameTypeSpecNode {
     pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreNameTypeSpecNode{
+        let node = Rc::new(RefCell::new(CoreNameTypeSpecNode {
             colon: colon.clone(),
             param_name: param_name.clone(),
             param_type: param_type.clone(),
@@ -697,9 +806,7 @@ impl NameTypeSpecNode {
 
     pub fn get_name_spec_obj(&self, code: &Code) -> (Option<Rc<String>>, Option<Type>) {
         let name = match self.0.as_ref().borrow().param_name.get_ok() {
-            Some(ok_name_node) => {
-                Some(Rc::new(ok_name_node.token_value(code)))
-            },
+            Some(ok_name_node) => Some(Rc::new(ok_name_node.token_value(code))),
             None => None,
         };
         let type_obj = match self.0.as_ref().borrow().param_type.get_type_obj(code) {
@@ -729,38 +836,51 @@ pub enum TypeExpressionKind {
 pub struct TypeExpressionNode(Rc<RefCell<CoreTypeExpressionNode>>);
 impl TypeExpressionNode {
     pub fn new_with_atomic_type(atomic_type: &TokenNode) -> Self {
-        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
+        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode {
             kind: TypeExpressionKind::ATOMIC(AtomicTypeNode::new(atomic_type)),
             parent: None,
         })))
     }
 
     pub fn new_with_user_defined_type(identifier: &TokenNode) -> Self {
-        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
+        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode {
             kind: TypeExpressionKind::USER_DEFINED(UserDefinedTypeNode::new(identifier)),
             parent: None,
         })))
     }
 
-    pub fn new_with_array_type(array_size: &TokenNode, sub_type: &TypeExpressionNode, 
-        lsquare: &TokenNode, rsquare: &TokenNode, semicolon: &TokenNode) -> Self {
-        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode{
-            kind: TypeExpressionKind::ARRAY(ArrayTypeNode::new(array_size, sub_type, lsquare, rsquare, semicolon)),
+    pub fn new_with_array_type(
+        array_size: &TokenNode,
+        sub_type: &TypeExpressionNode,
+        lsquare: &TokenNode,
+        rsquare: &TokenNode,
+        semicolon: &TokenNode,
+    ) -> Self {
+        TypeExpressionNode(Rc::new(RefCell::new(CoreTypeExpressionNode {
+            kind: TypeExpressionKind::ARRAY(ArrayTypeNode::new(
+                array_size, sub_type, lsquare, rsquare, semicolon,
+            )),
             parent: None,
         })))
     }
 
     pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
         match &self.0.as_ref().borrow().kind {
-            TypeExpressionKind::ATOMIC(atomic_type)                  => atomic_type.get_type_obj(code),
-            TypeExpressionKind::USER_DEFINED(user_defined_type) => user_defined_type.get_type_obj(code),
-            TypeExpressionKind::ARRAY(array_type)                     => array_type.get_type_obj(code),
+            TypeExpressionKind::ATOMIC(atomic_type) => atomic_type.get_type_obj(code),
+            TypeExpressionKind::USER_DEFINED(user_defined_type) => {
+                user_defined_type.get_type_obj(code)
+            }
+            TypeExpressionKind::ARRAY(array_type) => array_type.get_type_obj(code),
             _ => None,
         }
     }
 }
 default_node_impl!(TypeExpressionNode);
-default_errornous_node_impl!(TypeExpressionNode, CoreTypeExpressionNode, TypeExpressionKind);
+default_errornous_node_impl!(
+    TypeExpressionNode,
+    CoreTypeExpressionNode,
+    TypeExpressionKind
+);
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomicTypeNode {
@@ -772,7 +892,7 @@ pub struct CoreAtomicTypeNode {
 pub struct AtomicTypeNode(Rc<RefCell<CoreAtomicTypeNode>>);
 impl AtomicTypeNode {
     pub fn new(token: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomicTypeNode{
+        let node = Rc::new(RefCell::new(CoreAtomicTypeNode {
             kind: token.clone(),
             parent: None,
         }));
@@ -784,9 +904,9 @@ impl AtomicTypeNode {
         match self.0.as_ref().borrow().kind.get_ok() {
             Some(ok_atomic_type) => {
                 let atomic_type_str = ok_atomic_type.token_value(code);
-                return Atomic::new_with_type_str(&atomic_type_str)
-            },
-            None => return None
+                return Atomic::new_with_type_str(&atomic_type_str);
+            }
+            None => return None,
         }
     }
 }
@@ -805,9 +925,14 @@ pub struct CoreArrayTypeNode {
 #[derive(Debug, Clone)]
 pub struct ArrayTypeNode(Rc<RefCell<CoreArrayTypeNode>>);
 impl ArrayTypeNode {
-    pub fn new(size: &TokenNode, sub_type: &TypeExpressionNode, 
-        lsquare: &TokenNode, rsquare: &TokenNode, semicolon: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreArrayTypeNode{
+    pub fn new(
+        size: &TokenNode,
+        sub_type: &TypeExpressionNode,
+        lsquare: &TokenNode,
+        rsquare: &TokenNode,
+        semicolon: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreArrayTypeNode {
             lsquare: lsquare.clone(),
             rsquare: rsquare.clone(),
             semicolon: semicolon.clone(),
@@ -825,19 +950,17 @@ impl ArrayTypeNode {
 
     pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
         match self.0.as_ref().borrow().sub_type.get_type_obj(code) {
-            Some(sub_type_obj) => {
-                match self.0.as_ref().borrow().size.get_ok() {
-                    Some(size) => {
-                        let size = match size.token_value(code).parse::<usize>() {
-                            Ok(size) => size,
-                            Err(_) => return None,
-                        };
-                        return Some(Array::new(size, sub_type_obj))
-                    },
-                    None => return None,
+            Some(sub_type_obj) => match self.0.as_ref().borrow().size.get_ok() {
+                Some(size) => {
+                    let size = match size.token_value(code).parse::<usize>() {
+                        Ok(size) => size,
+                        Err(_) => return None,
+                    };
+                    return Some(Array::new(size, sub_type_obj));
                 }
+                None => return None,
             },
-            None => return None
+            None => return None,
         }
     }
 }
@@ -853,7 +976,7 @@ pub struct CoreUserDefinedTypeNode {
 pub struct UserDefinedTypeNode(Rc<RefCell<CoreUserDefinedTypeNode>>);
 impl UserDefinedTypeNode {
     pub fn new(identifier: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreUserDefinedTypeNode{
+        let node = Rc::new(RefCell::new(CoreUserDefinedTypeNode {
             token: identifier.clone(),
             parent: None,
         }));
@@ -865,8 +988,8 @@ impl UserDefinedTypeNode {
         match self.0.as_ref().borrow().token.get_ok() {
             Some(ok_token_node) => {
                 Some(Type::new_with_user_defined(ok_token_node.token_value(code)))
-            },
-            None => None
+            }
+            None => None,
         }
     }
 }
@@ -889,14 +1012,14 @@ pub enum TokenKind {
 pub struct TokenNode(pub Rc<RefCell<CoreTokenNode>>);
 impl TokenNode {
     pub fn new_with_ok_token(token: &Token, lookahead: usize) -> Self {
-        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
+        TokenNode(Rc::new(RefCell::new(CoreTokenNode {
             kind: TokenKind::OK(OkTokenNode::new(token, lookahead)),
             parent: None,
         })))
     }
 
     pub fn new_with_skipped_token(skipped_token: &Token, lookahead: usize) -> Self {
-        TokenNode(Rc::new(RefCell::new(CoreTokenNode{
+        TokenNode(Rc::new(RefCell::new(CoreTokenNode {
             kind: TokenKind::SKIPPED(SkippedTokenNode::new(skipped_token, lookahead)),
             parent: None,
         })))
@@ -905,7 +1028,7 @@ impl TokenNode {
     pub fn is_ok(&self) -> Option<TokenNode> {
         match &self.0.as_ref().borrow().kind {
             TokenKind::OK(_) => Some(self.clone()),
-            _                    => None,
+            _ => None,
         }
     }
 
@@ -918,11 +1041,9 @@ impl TokenNode {
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match &self.0.as_ref().borrow().kind {
-            TokenKind::OK(ok_token) => {
-                match ok_token.is_binary_operator() {
-                    Some(operator) => return Some(operator),
-                    None => None,
-                }
+            TokenKind::OK(ok_token) => match ok_token.is_binary_operator() {
+                Some(operator) => return Some(operator),
+                None => None,
             },
             _ => None,
         }
@@ -942,7 +1063,7 @@ pub struct CoreOkTokenNode {
 pub struct OkTokenNode(Rc<RefCell<CoreOkTokenNode>>);
 impl OkTokenNode {
     pub fn new(token: &Token, lookahead: usize) -> Self {
-        OkTokenNode(Rc::new(RefCell::new(CoreOkTokenNode{
+        OkTokenNode(Rc::new(RefCell::new(CoreOkTokenNode {
             token: token.clone(),
             lookahead,
             parent: None,
@@ -951,18 +1072,18 @@ impl OkTokenNode {
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match self.0.as_ref().borrow().token.core_token {
-            CoreToken::NOT_EQUAL        => Some(BinaryOperatorKind::NOT_EQUAL),
-            CoreToken::DOUBLE_EQUAL     => Some(BinaryOperatorKind::DOUBLE_EQUAL),
-            CoreToken::RBRACKET         => Some(BinaryOperatorKind::GREATER),
-            CoreToken::GREATER_EQUAL    => Some(BinaryOperatorKind::GREATER_EQUAL),
-            CoreToken::LBRACKET         => Some(BinaryOperatorKind::LESS),
-            CoreToken::LESS_EQUAL       => Some(BinaryOperatorKind::LESS_EQUAL),
-            CoreToken::DASH             => Some(BinaryOperatorKind::MINUS),
-            CoreToken::PLUS             => Some(BinaryOperatorKind::PLUS),
-            CoreToken::SLASH            => Some(BinaryOperatorKind::DIVIDE),
-            CoreToken::STAR             => Some(BinaryOperatorKind::MULTIPLY),
-            CoreToken::AND              => Some(BinaryOperatorKind::AND),
-            CoreToken::OR               => Some(BinaryOperatorKind::OR),
+            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NOT_EQUAL),
+            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DOUBLE_EQUAL),
+            CoreToken::RBRACKET => Some(BinaryOperatorKind::GREATER),
+            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GREATER_EQUAL),
+            CoreToken::LBRACKET => Some(BinaryOperatorKind::LESS),
+            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LESS_EQUAL),
+            CoreToken::DASH => Some(BinaryOperatorKind::MINUS),
+            CoreToken::PLUS => Some(BinaryOperatorKind::PLUS),
+            CoreToken::SLASH => Some(BinaryOperatorKind::DIVIDE),
+            CoreToken::STAR => Some(BinaryOperatorKind::MULTIPLY),
+            CoreToken::AND => Some(BinaryOperatorKind::AND),
+            CoreToken::OR => Some(BinaryOperatorKind::OR),
             _ => None,
         }
     }
@@ -977,15 +1098,19 @@ default_node_impl!(OkTokenNode);
 pub struct CoreMissingTokenNode {
     expected_symbols: Rc<Vec<&'static str>>,
     received_token: Token,
-    lookahead: usize, 
+    lookahead: usize,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
 pub struct MissingTokenNode(Rc<RefCell<CoreMissingTokenNode>>);
 impl MissingTokenNode {
-    pub fn new(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token, lookahead: usize) -> Self {
-        MissingTokenNode(Rc::new(RefCell::new(CoreMissingTokenNode{
+    pub fn new(
+        expected_symbols: &Rc<Vec<&'static str>>,
+        received_token: &Token,
+        lookahead: usize,
+    ) -> Self {
+        MissingTokenNode(Rc::new(RefCell::new(CoreMissingTokenNode {
             expected_symbols: expected_symbols.clone(),
             received_token: received_token.clone(),
             lookahead,
@@ -1006,7 +1131,7 @@ pub struct CoreSkippedTokenNode {
 pub struct SkippedTokenNode(Rc<RefCell<CoreSkippedTokenNode>>);
 impl SkippedTokenNode {
     pub fn new(skipped_token: &Token, lookahead: usize) -> Self {
-        SkippedTokenNode(Rc::new(RefCell::new(CoreSkippedTokenNode{
+        SkippedTokenNode(Rc::new(RefCell::new(CoreSkippedTokenNode {
             skipped_token: skipped_token.clone(),
             lookahead,
             parent: None,
@@ -1042,7 +1167,7 @@ pub enum ExpressionKind {
 pub struct ExpressionNode(pub Rc<RefCell<CoreExpressionNode>>);
 impl ExpressionNode {
     pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreExpressionNode{
+        let node = Rc::new(RefCell::new(CoreExpressionNode {
             kind: ExpressionKind::ATOMIC(atomic_expr.clone()),
             parent: None,
         }));
@@ -1051,7 +1176,7 @@ impl ExpressionNode {
     }
 
     pub fn new_with_unary(unary_expr: &UnaryExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreExpressionNode{
+        let node = Rc::new(RefCell::new(CoreExpressionNode {
             kind: ExpressionKind::UNARY(unary_expr.clone()),
             parent: None,
         }));
@@ -1059,25 +1184,45 @@ impl ExpressionNode {
         ExpressionNode(node)
     }
 
-    pub fn new_with_binary(operator: &TokenNode, left_expr: &ExpressionNode, right_expr: &ExpressionNode) -> Self {
+    pub fn new_with_binary(
+        operator: &TokenNode,
+        left_expr: &ExpressionNode,
+        right_expr: &ExpressionNode,
+    ) -> Self {
         let operator_kind = match operator.is_binary_operator() {
             Some(operator_kind) => operator_kind,
-            None => unreachable!("any node passed in this method as operator should be a valid operator"),
+            None => unreachable!(
+                "any node passed in this method as operator should be a valid operator"
+            ),
         };
-        let node = Rc::new(RefCell::new(CoreExpressionNode{
-            kind: ExpressionKind::BINARY(BinaryExpressionNode::new(operator_kind, left_expr, right_expr)),
+        let node = Rc::new(RefCell::new(CoreExpressionNode {
+            kind: ExpressionKind::BINARY(BinaryExpressionNode::new(
+                operator_kind,
+                left_expr,
+                right_expr,
+            )),
             parent: None,
         }));
         ExpressionNode(node)
     }
 
-    pub fn new_with_logical(operator: &TokenNode, left_expr: &ExpressionNode, right_expr: &ExpressionNode) -> Self {
+    pub fn new_with_logical(
+        operator: &TokenNode,
+        left_expr: &ExpressionNode,
+        right_expr: &ExpressionNode,
+    ) -> Self {
         let operator_kind = match operator.is_binary_operator() {
             Some(operator_kind) => operator_kind,
-            None => unreachable!("any node passed in this method as operator should be a valid operator"),
+            None => unreachable!(
+                "any node passed in this method as operator should be a valid operator"
+            ),
         };
-        let node = Rc::new(RefCell::new(CoreExpressionNode{
-            kind: ExpressionKind::LOGICAL(LogicalExpressionNode::new(operator_kind, left_expr, right_expr)),
+        let node = Rc::new(RefCell::new(CoreExpressionNode {
+            kind: ExpressionKind::LOGICAL(LogicalExpressionNode::new(
+                operator_kind,
+                left_expr,
+                right_expr,
+            )),
             parent: None,
         }));
         ExpressionNode(node)
@@ -1087,7 +1232,7 @@ default_node_impl!(ExpressionNode);
 default_errornous_node_impl!(ExpressionNode, CoreExpressionNode, ExpressionKind);
 
 #[derive(Debug, Clone)]
-pub struct  CoreAtomicExpressionNode {
+pub struct CoreAtomicExpressionNode {
     kind: AtomicExpressionKind,
     parent: Option<ASTNode>,
 }
@@ -1107,7 +1252,7 @@ pub enum AtomicExpressionKind {
 pub struct AtomicExpressionNode(Rc<RefCell<CoreAtomicExpressionNode>>);
 impl AtomicExpressionNode {
     pub fn new_with_bool(bool_value: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
             kind: AtomicExpressionKind::BOOL_VALUE(bool_value.clone()),
             parent: None,
         }));
@@ -1116,7 +1261,7 @@ impl AtomicExpressionNode {
     }
 
     pub fn new_with_integer(token: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
             kind: AtomicExpressionKind::INTEGER(token.clone()),
             parent: None,
         }));
@@ -1125,7 +1270,7 @@ impl AtomicExpressionNode {
     }
 
     pub fn new_with_floating_point_number(token: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
             kind: AtomicExpressionKind::FLOATING_POINT_NUMBER(token.clone()),
             parent: None,
         }));
@@ -1134,7 +1279,7 @@ impl AtomicExpressionNode {
     }
 
     pub fn new_with_literal(token: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
             kind: AtomicExpressionKind::LITERAL(token.clone()),
             parent: None,
         }));
@@ -1142,16 +1287,22 @@ impl AtomicExpressionNode {
         AtomicExpressionNode(node)
     }
 
-    pub fn new_with_parenthesised_expr(expr: &ExpressionNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
-            kind: AtomicExpressionKind::PARENTHESISED_EXPRESSION(ParenthesisedExpressionNode::new(expr, lparen, rparen)),
+    pub fn new_with_parenthesised_expr(
+        expr: &ExpressionNode,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
+            kind: AtomicExpressionKind::PARENTHESISED_EXPRESSION(ParenthesisedExpressionNode::new(
+                expr, lparen, rparen,
+            )),
             parent: None,
         }));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_atom(atom: &AtomNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode{
+        let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
             kind: AtomicExpressionKind::ATOM(atom.clone()),
             parent: None,
         }));
@@ -1160,7 +1311,11 @@ impl AtomicExpressionNode {
     }
 }
 default_node_impl!(AtomicExpressionNode);
-default_errornous_node_impl!(AtomicExpressionNode, CoreAtomicExpressionNode, AtomicExpressionKind);
+default_errornous_node_impl!(
+    AtomicExpressionNode,
+    CoreAtomicExpressionNode,
+    AtomicExpressionKind
+);
 
 #[derive(Debug, Clone)]
 pub struct CoreParenthesisedExpressionNode {
@@ -1174,7 +1329,7 @@ pub struct CoreParenthesisedExpressionNode {
 pub struct ParenthesisedExpressionNode(Rc<RefCell<CoreParenthesisedExpressionNode>>);
 impl ParenthesisedExpressionNode {
     pub fn new(expr: &ExpressionNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreParenthesisedExpressionNode{
+        let node = Rc::new(RefCell::new(CoreParenthesisedExpressionNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
             expr: expr.clone(),
@@ -1189,7 +1344,7 @@ impl ParenthesisedExpressionNode {
 default_node_impl!(ParenthesisedExpressionNode);
 
 #[derive(Debug, Clone)]
-pub struct  CoreUnaryExpressionNode {
+pub struct CoreUnaryExpressionNode {
     kind: UnaryExpressionKind,
     parent: Option<ASTNode>,
 }
@@ -1212,7 +1367,7 @@ pub enum UnaryExpressionKind {
 pub struct UnaryExpressionNode(Rc<RefCell<CoreUnaryExpressionNode>>);
 impl UnaryExpressionNode {
     pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreUnaryExpressionNode{
+        let node = Rc::new(RefCell::new(CoreUnaryExpressionNode {
             kind: UnaryExpressionKind::ATOMIC(atomic_expr.clone()),
             parent: None,
         }));
@@ -1220,16 +1375,28 @@ impl UnaryExpressionNode {
         UnaryExpressionNode(node)
     }
 
-    pub fn new_with_unary(unary_expr: &UnaryExpressionNode, operator: &TokenNode, operator_kind: UnaryOperatorKind) -> Self {
-        let node = Rc::new(RefCell::new(CoreUnaryExpressionNode{
-            kind: UnaryExpressionKind::UNARY(OnlyUnaryExpressionNode::new(operator, unary_expr, operator_kind)),
+    pub fn new_with_unary(
+        unary_expr: &UnaryExpressionNode,
+        operator: &TokenNode,
+        operator_kind: UnaryOperatorKind,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreUnaryExpressionNode {
+            kind: UnaryExpressionKind::UNARY(OnlyUnaryExpressionNode::new(
+                operator,
+                unary_expr,
+                operator_kind,
+            )),
             parent: None,
         }));
         UnaryExpressionNode(node)
     }
 }
 default_node_impl!(UnaryExpressionNode);
-default_errornous_node_impl!(UnaryExpressionNode, CoreUnaryExpressionNode, UnaryExpressionKind);
+default_errornous_node_impl!(
+    UnaryExpressionNode,
+    CoreUnaryExpressionNode,
+    UnaryExpressionKind
+);
 
 #[derive(Debug, Clone)]
 pub struct CoreOnlyUnaryExpressionNode {
@@ -1242,8 +1409,12 @@ pub struct CoreOnlyUnaryExpressionNode {
 #[derive(Debug, Clone)]
 pub struct OnlyUnaryExpressionNode(Rc<RefCell<CoreOnlyUnaryExpressionNode>>);
 impl OnlyUnaryExpressionNode {
-    pub fn new(operator: &TokenNode, unary_expr: &UnaryExpressionNode, operator_kind: UnaryOperatorKind) -> Self {
-        let node = Rc::new(RefCell::new(CoreOnlyUnaryExpressionNode{
+    pub fn new(
+        operator: &TokenNode,
+        unary_expr: &UnaryExpressionNode,
+        operator_kind: UnaryOperatorKind,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreOnlyUnaryExpressionNode {
             operator: operator.clone(),
             unary_expr: unary_expr.clone(),
             operator_kind,
@@ -1283,8 +1454,12 @@ pub enum BinaryOperatorKind {
 #[derive(Debug, Clone)]
 pub struct BinaryExpressionNode(Rc<RefCell<CoreBinaryExpressionNode>>);
 impl BinaryExpressionNode {
-    pub fn new(operator: BinaryOperatorKind, left_expr: &ExpressionNode, right_expr: &ExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreBinaryExpressionNode{
+    pub fn new(
+        operator: BinaryOperatorKind,
+        left_expr: &ExpressionNode,
+        right_expr: &ExpressionNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreBinaryExpressionNode {
             operator_kind: operator,
             left_expr: left_expr.clone(),
             right_expr: right_expr.clone(),
@@ -1308,8 +1483,12 @@ pub struct CoreLogicalExpressionNode {
 #[derive(Debug, Clone)]
 pub struct LogicalExpressionNode(Rc<RefCell<CoreLogicalExpressionNode>>);
 impl LogicalExpressionNode {
-    pub fn new(operator: BinaryOperatorKind, left_expr: &ExpressionNode, right_expr: &ExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreLogicalExpressionNode{
+    pub fn new(
+        operator: BinaryOperatorKind,
+        left_expr: &ExpressionNode,
+        right_expr: &ExpressionNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreLogicalExpressionNode {
             operator_kind: operator,
             left_expr: left_expr.clone(),
             right_expr: right_expr.clone(),
@@ -1338,7 +1517,7 @@ pub enum ParamsKind {
 pub struct ParamsNode(Rc<RefCell<CoreParamsNode>>);
 impl ParamsNode {
     pub fn new(ok_params_node: &OkParamsNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreParamsNode{
+        let node = Rc::new(RefCell::new(CoreParamsNode {
             kind: ParamsKind::OK(ok_params_node.clone()),
             parent: None,
         }));
@@ -1361,7 +1540,7 @@ pub struct CoreOkParamsNode {
 pub struct OkParamsNode(Rc<RefCell<CoreOkParamsNode>>);
 impl OkParamsNode {
     pub fn new_with_single_param(param: &ExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreOkParamsNode{
+        let node = Rc::new(RefCell::new(CoreOkParamsNode {
             comma: None,
             param: param.clone(),
             remaining_params: None,
@@ -1371,8 +1550,12 @@ impl OkParamsNode {
         OkParamsNode(node)
     }
 
-    pub fn new_with_params(param: &ExpressionNode, remaining_params: &ParamsNode, comma: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreOkParamsNode{
+    pub fn new_with_params(
+        param: &ExpressionNode,
+        remaining_params: &ParamsNode,
+        comma: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreOkParamsNode {
             comma: Some(comma.clone()),
             param: param.clone(),
             remaining_params: Some(remaining_params.clone()),
@@ -1398,8 +1581,13 @@ pub struct CoreCallExpressionNode {
 #[derive(Debug, Clone)]
 pub struct CallExpressionNode(Rc<RefCell<CoreCallExpressionNode>>);
 impl CallExpressionNode {
-    pub fn new(function_name: &TokenNode, params: &Option<ParamsNode>, lparen: &TokenNode, rparen: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreCallExpressionNode{
+    pub fn new(
+        function_name: &TokenNode,
+        params: &Option<ParamsNode>,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreCallExpressionNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
             function_name: function_name.clone(),
@@ -1411,7 +1599,7 @@ impl CallExpressionNode {
         function_name.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
         match params {
             Some(params) => params.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node))),
-            None => {},
+            None => {}
         }
         CallExpressionNode(node)
     }
@@ -1432,9 +1620,15 @@ pub struct CoreClassMethodCallNode {
 #[derive(Debug, Clone)]
 pub struct ClassMethodCallNode(Rc<RefCell<CoreClassMethodCallNode>>);
 impl ClassMethodCallNode {
-    pub fn new(class_name: &TokenNode, class_method_name: &TokenNode, 
-        params: &Option<ParamsNode>, double_colon: &TokenNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreClassMethodCallNode{
+    pub fn new(
+        class_name: &TokenNode,
+        class_method_name: &TokenNode,
+        params: &Option<ParamsNode>,
+        double_colon: &TokenNode,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreClassMethodCallNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
             double_colon: double_colon.clone(),
@@ -1450,7 +1644,7 @@ impl ClassMethodCallNode {
         double_colon.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
         match params {
             Some(params) => params.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node))),
-            None => {},
+            None => {}
         }
         ClassMethodCallNode(node)
     }
@@ -1476,7 +1670,7 @@ pub enum AtomKind {
 pub struct AtomNode(Rc<RefCell<CoreAtomNode>>);
 impl AtomNode {
     pub fn new_with_atom_start(atom_start: &AtomStartNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomNode{
+        let node = Rc::new(RefCell::new(CoreAtomNode {
             kind: AtomKind::ATOM_START(atom_start.clone()),
             parent: None,
         }));
@@ -1484,33 +1678,59 @@ impl AtomNode {
         AtomNode(node)
     }
 
-    pub fn new_with_call(atom: &AtomNode, params: &Option<ParamsNode>, lparen: &TokenNode, rparen: &TokenNode) -> Self {
-        AtomNode(Rc::new(RefCell::new(CoreAtomNode{
+    pub fn new_with_call(
+        atom: &AtomNode,
+        params: &Option<ParamsNode>,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+    ) -> Self {
+        AtomNode(Rc::new(RefCell::new(CoreAtomNode {
             kind: AtomKind::CALL(CallNode::new(atom, params, lparen, rparen)),
             parent: None,
         })))
     }
 
-    pub fn new_with_propertry_access(atom: &AtomNode, propertry: &TokenNode, dot: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomNode{
+    pub fn new_with_propertry_access(
+        atom: &AtomNode,
+        propertry: &TokenNode,
+        dot: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomNode {
             kind: AtomKind::PROPERTRY_ACCESS(PropertyAccessNode::new(atom, propertry, dot)),
             parent: None,
         }));
         AtomNode(node)
     }
 
-    pub fn new_with_method_access(atom: &AtomNode, method_name: &TokenNode, 
-        params: &Option<ParamsNode>, lparen: &TokenNode, rparen: &TokenNode, dot: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomNode{
-            kind: AtomKind::METHOD_ACCESS(MethodAccessNode::new(atom, method_name, params, lparen, rparen, dot)),
+    pub fn new_with_method_access(
+        atom: &AtomNode,
+        method_name: &TokenNode,
+        params: &Option<ParamsNode>,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        dot: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomNode {
+            kind: AtomKind::METHOD_ACCESS(MethodAccessNode::new(
+                atom,
+                method_name,
+                params,
+                lparen,
+                rparen,
+                dot,
+            )),
             parent: None,
         }));
         AtomNode(node)
     }
 
-    pub fn new_with_index_access(atom: &AtomNode, index: &ExpressionNode, 
-        lsquare: &TokenNode, rsquare: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomNode{
+    pub fn new_with_index_access(
+        atom: &AtomNode,
+        index: &ExpressionNode,
+        lsquare: &TokenNode,
+        rsquare: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomNode {
             kind: AtomKind::INDEX_ACCESS(IndexAccessNode::new(atom, index, lsquare, rsquare)),
             parent: None,
         }));
@@ -1527,16 +1747,16 @@ pub struct CoreAtomStartNode {
 
 #[derive(Debug, Clone)]
 pub enum AtomStartKind {
-    IDENTIFIER(TokenNode),                   // id
-    FUNCTION_CALL(CallExpressionNode),       // id(...)
-    CLASS_METHOD_CALL(ClassMethodCallNode)   // id::id(...)
+    IDENTIFIER(TokenNode),                  // id
+    FUNCTION_CALL(CallExpressionNode),      // id(...)
+    CLASS_METHOD_CALL(ClassMethodCallNode), // id::id(...)
 }
 
 #[derive(Debug, Clone)]
 pub struct AtomStartNode(Rc<RefCell<CoreAtomStartNode>>);
 impl AtomStartNode {
     pub fn new_with_identifier(token: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomStartNode{
+        let node = Rc::new(RefCell::new(CoreAtomStartNode {
             kind: AtomStartKind::IDENTIFIER(token.clone()),
             parent: None,
         }));
@@ -1545,7 +1765,7 @@ impl AtomStartNode {
     }
 
     pub fn new_with_function_call(call_expr: &CallExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomStartNode{
+        let node = Rc::new(RefCell::new(CoreAtomStartNode {
             kind: AtomStartKind::FUNCTION_CALL(call_expr.clone()),
             parent: None,
         }));
@@ -1553,11 +1773,22 @@ impl AtomStartNode {
         AtomStartNode(node)
     }
 
-    pub fn new_with_class_method_call(class_name: &TokenNode, class_method_name: &TokenNode, 
-        params: &Option<ParamsNode>, double_colon: &TokenNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreAtomStartNode{
+    pub fn new_with_class_method_call(
+        class_name: &TokenNode,
+        class_method_name: &TokenNode,
+        params: &Option<ParamsNode>,
+        double_colon: &TokenNode,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreAtomStartNode {
             kind: AtomStartKind::CLASS_METHOD_CALL(ClassMethodCallNode::new(
-                class_name, class_method_name, params, double_colon, lparen, rparen,
+                class_name,
+                class_method_name,
+                params,
+                double_colon,
+                lparen,
+                rparen,
             )),
             parent: None,
         }));
@@ -1578,8 +1809,13 @@ pub struct CoreCallNode {
 #[derive(Debug, Clone)]
 pub struct CallNode(Rc<RefCell<CoreCallNode>>);
 impl CallNode {
-    fn new(atom: &AtomNode, params: &Option<ParamsNode>, lparen: &TokenNode, rparen: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreCallNode{
+    fn new(
+        atom: &AtomNode,
+        params: &Option<ParamsNode>,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreCallNode {
             atom: atom.clone(),
             lparen: lparen.clone(),
             rparen: rparen.clone(),
@@ -1610,7 +1846,7 @@ pub struct CorePropertyAccessNode {
 pub struct PropertyAccessNode(Rc<RefCell<CorePropertyAccessNode>>);
 impl PropertyAccessNode {
     fn new(atom: &AtomNode, propertry: &TokenNode, dot: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CorePropertyAccessNode{
+        let node = Rc::new(RefCell::new(CorePropertyAccessNode {
             dot: dot.clone(),
             atom: atom.clone(),
             propertry: propertry.clone(),
@@ -1638,9 +1874,15 @@ pub struct CoreMethodAccessNode {
 #[derive(Debug, Clone)]
 pub struct MethodAccessNode(Rc<RefCell<CoreMethodAccessNode>>);
 impl MethodAccessNode {
-    pub fn new(atom: &AtomNode, method_name: &TokenNode, 
-        params: &Option<ParamsNode>, lparen: &TokenNode, rparen: &TokenNode, dot: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreMethodAccessNode{
+    pub fn new(
+        atom: &AtomNode,
+        method_name: &TokenNode,
+        params: &Option<ParamsNode>,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        dot: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreMethodAccessNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
             dot: dot.clone(),
@@ -1675,8 +1917,13 @@ pub struct CoreIndexAccessNode {
 #[derive(Debug, Clone)]
 pub struct IndexAccessNode(Rc<RefCell<CoreIndexAccessNode>>);
 impl IndexAccessNode {
-    pub fn new(atom: &AtomNode, index: &ExpressionNode, lsquare: &TokenNode, rsquare: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreIndexAccessNode{
+    pub fn new(
+        atom: &AtomNode,
+        index: &ExpressionNode,
+        lsquare: &TokenNode,
+        rsquare: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(RefCell::new(CoreIndexAccessNode {
             lsquare: lsquare.clone(),
             rsquare: rsquare.clone(),
             atom: atom.clone(),
@@ -1709,7 +1956,7 @@ pub enum RAssignmentKind {
 pub struct RAssignmentNode(Rc<RefCell<CoreRAssignmentNode>>);
 impl RAssignmentNode {
     pub fn new_with_lambda(lambda_decl: &FunctionDeclarationNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreRAssignmentNode{
+        let node = Rc::new(RefCell::new(CoreRAssignmentNode {
             kind: RAssignmentKind::LAMBDA(lambda_decl.clone()),
             parent: None,
         }));
@@ -1718,7 +1965,7 @@ impl RAssignmentNode {
     }
 
     pub fn new_with_expr(expr: &ExpressionNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreRAssignmentNode{
+        let node = Rc::new(RefCell::new(CoreRAssignmentNode {
             kind: RAssignmentKind::EXPRESSION(expr.clone()),
             parent: None,
         }));
@@ -1728,4 +1975,3 @@ impl RAssignmentNode {
 }
 default_node_impl!(RAssignmentNode);
 default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode, RAssignmentKind);
-

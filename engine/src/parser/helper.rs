@@ -1,7 +1,7 @@
-use crate::ast::ast::{SkippedTokenNode};
+use crate::ast::ast::SkippedTokenNode;
 use crate::constants::common::NEWLINE;
+use crate::errors::JarvilError;
 use crate::parser::parser::ParseSuccess;
-use crate::errors::{JarvilError};
 use crate::types::core::Type;
 
 pub enum IndentResultKind {
@@ -16,15 +16,16 @@ pub struct IndentResult {
     pub extra_newlines: Vec<SkippedTokenNode>,
 }
 
-pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>) 
--> Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError> {
+pub fn clone_atom_result(
+    result: &Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>,
+) -> Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError> {
     match result {
         Ok(response) => {
             let possible_err = match &response.0.possible_err {
                 Some(err) => Some(err.clone()),
                 None => None,
             };
-            let parse_success = ParseSuccess{
+            let parse_success = ParseSuccess {
                 lookahead: response.0.lookahead,
                 possible_err,
             };
@@ -33,36 +34,33 @@ pub fn clone_atom_result(result: &Result<(ParseSuccess, Option<Type>, bool, bool
                 None => None,
             };
             Ok((parse_success, data_type, response.2, response.3))
-        },
-        Err(err) => {
-            Err(err.clone())
         }
+        Err(err) => Err(err.clone()),
     }
 }
 
-pub fn clone_expr_result(result: &Result<(ParseSuccess, bool), JarvilError>) 
--> Result<(ParseSuccess, bool), JarvilError> {
+pub fn clone_expr_result(
+    result: &Result<(ParseSuccess, bool), JarvilError>,
+) -> Result<(ParseSuccess, bool), JarvilError> {
     match result {
         Ok(response) => {
             let possible_err = match &response.0.possible_err {
                 Some(err) => Some(err.clone()),
                 None => None,
             };
-            let parse_success = ParseSuccess{
+            let parse_success = ParseSuccess {
                 lookahead: response.0.lookahead,
                 possible_err,
             };
             Ok((parse_success, response.1))
-        },
-        Err(err) => {
-            Err(err.clone())
         }
+        Err(err) => Err(err.clone()),
     }
 }
 
 pub fn format_symbol(symbol: &str) -> &str {
     if symbol == "\n" {
-        return NEWLINE
+        return NEWLINE;
     }
-    return symbol
+    return symbol;
 }

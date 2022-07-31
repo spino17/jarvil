@@ -1,4 +1,4 @@
-use crate::types::core::{Type, AbstractType, CoreType};
+use crate::types::core::{AbstractType, CoreType, Type};
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -9,10 +9,7 @@ pub struct Array {
 
 impl Array {
     pub fn new(size: usize, element_type: Type) -> Type {
-        Type::new_with_array(Array{
-            size,
-            element_type,
-        })
+        Type::new_with_array(Array { size, element_type })
     }
 }
 
@@ -25,12 +22,16 @@ impl AbstractType for Array {
                 } else {
                     self.element_type.is_eq(&array_data.element_type)
                 }
-            },
-            _ => false
+            }
+            _ => false,
         }
     }
 
     fn string(&self) -> std::rc::Rc<String> {
-        Rc::new(format!("[{}, {}]", AbstractType::string(&self.element_type), self.size))
+        Rc::new(format!(
+            "[{}, {}]",
+            AbstractType::string(&self.element_type),
+            self.size
+        ))
     }
 }
