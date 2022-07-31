@@ -66,6 +66,7 @@ pub enum ASTNode {
     CLASS_METHOD_CALL(Weak<RefCell<CoreClassMethodCallNode>>),
     CALL_EXPRESSION(Weak<RefCell<CoreCallExpressionNode>>),
     ATOM(Weak<RefCell<CoreAtomNode>>),
+    CALL_NODE(Weak<RefCell<CoreCallNode>>),
     PROPERTY_ACCESS(Weak<RefCell<CorePropertyAccessNode>>),
     METHOD_ACCESS(Weak<RefCell<CoreMethodAccessNode>>),
     INDEX_ACCESS(Weak<RefCell<CoreIndexAccessNode>>),
@@ -138,12 +139,12 @@ default_node_impl!(BlockNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokens {
-    skipped_tokens: Rc<Vec<SkippedTokenNode>>,
+    pub skipped_tokens: Rc<Vec<SkippedTokenNode>>,
     parent: Option<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub struct SkippedTokens(Rc<RefCell<CoreSkippedTokens>>);
+pub struct SkippedTokens(pub Rc<RefCell<CoreSkippedTokens>>);
 impl SkippedTokens {
     pub fn new_with_leading_skipped_tokens(skipped_tokens: &Rc<Vec<SkippedTokenNode>>) -> Self {
         let node = Rc::new(RefCell::new(CoreSkippedTokens{
@@ -1024,7 +1025,7 @@ default_node_impl!(SkippedTokenNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreExpressionNode {
-    kind: ExpressionKind,
+    pub kind: ExpressionKind,
     parent: Option<ASTNode>,
 }
 
@@ -1038,7 +1039,7 @@ pub enum ExpressionKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct ExpressionNode(Rc<RefCell<CoreExpressionNode>>);
+pub struct ExpressionNode(pub Rc<RefCell<CoreExpressionNode>>);
 impl ExpressionNode {
     pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreExpressionNode{
@@ -1465,6 +1466,7 @@ pub struct CoreAtomNode {
 #[derive(Debug, Clone)]
 pub enum AtomKind {
     ATOM_START(AtomStartNode),
+    CALL(CallNode),
     PROPERTRY_ACCESS(PropertyAccessNode),
     METHOD_ACCESS(MethodAccessNode),
     INDEX_ACCESS(IndexAccessNode),
@@ -1480,6 +1482,13 @@ impl AtomNode {
         }));
         atom_start.set_parent(ASTNode::ATOM(Rc::downgrade(&node)));
         AtomNode(node)
+    }
+
+    pub fn new_with_call(atom: &AtomNode, params: &Option<ParamsNode>, lparen: &TokenNode, rparen: &TokenNode) -> Self {
+        AtomNode(Rc::new(RefCell::new(CoreAtomNode{
+            kind: AtomKind::CALL(CallNode::new(atom, params, lparen, rparen)),
+            parent: None,
+        })))
     }
 
     pub fn new_with_propertry_access(atom: &AtomNode, propertry: &TokenNode, dot: &TokenNode) -> Self {
@@ -1556,6 +1565,38 @@ impl AtomStartNode {
     }
 }
 default_node_impl!(AtomStartNode);
+
+#[derive(Debug, Clone)]
+pub struct CoreCallNode {
+    atom: AtomNode,
+    lparen: TokenNode,
+    rparen: TokenNode,
+    params: Option<ParamsNode>,
+    parent: Option<ASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CallNode(Rc<RefCell<CoreCallNode>>);
+impl CallNode {
+    fn new(atom: &AtomNode, params: &Option<ParamsNode>, lparen: &TokenNode, rparen: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreCallNode{
+            atom: atom.clone(),
+            lparen: lparen.clone(),
+            rparen: rparen.clone(),
+            params: params.clone(),
+            parent: None,
+        }));
+        atom.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
+        match params {
+            Some(params) => params.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node))),
+            None => {}
+        }
+        lparen.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
+        rparen.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
+        CallNode(node)
+    }
+}
+default_node_impl!(CallNode);
 
 #[derive(Debug, Clone)]
 pub struct CorePropertyAccessNode {

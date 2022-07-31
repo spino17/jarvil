@@ -30,9 +30,8 @@ pub fn trailing_atom(parser: &mut PackratParser, atom_start: AtomNode) -> AtomNo
             // TODO - add a function call node
             let (params_node, lparen_node, rparen_node) 
             = parser.params_within_parenthesis();
-            // let atom_node = AtomNode::new_with_call(&atom_start, &params_node, &lparen_node, &rparen_node);
-            // return parser.trailing_atom(atom_node)
-            todo!()
+            let atom_node = AtomNode::new_with_call(&atom_start, &params_node, &lparen_node, &rparen_node);
+            return parser.trailing_atom(atom_node)
         },
         CoreToken::LSQUARE  => {
             let lsquare_node = parser.expect("[");
