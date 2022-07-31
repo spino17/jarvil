@@ -1305,9 +1305,9 @@ impl ExpressionNode {
     pub fn is_valid_l_value(&self) -> Option<AtomNode> {
         match &self.core_ref().kind {
             ExpressionKind::UNARY(unary_expr_node) => {
-                match &unary_expr_node.0.as_ref().borrow().kind {
+                match &unary_expr_node.core_ref().kind {
                     UnaryExpressionKind::ATOMIC(atomic_expr_node) => {
-                        match &atomic_expr_node.0.as_ref().borrow().kind {
+                        match &atomic_expr_node.core_ref().kind {
                             AtomicExpressionKind::ATOM(atom_node) => {
                                 if atom_node.is_valid_l_value() {
                                     return Some(atom_node.clone())
@@ -1863,11 +1863,11 @@ impl AtomNode {
             AtomKind::CALL(_) => false,
             AtomKind::METHOD_ACCESS(_) => false,
             AtomKind::INDEX_ACCESS(atom_index_access_node) => {
-                let atom = &atom_index_access_node.0.as_ref().borrow().atom;
+                let atom = &atom_index_access_node.core_ref().atom;
                 return atom.is_valid_l_value()
             }
             AtomKind::PROPERTRY_ACCESS(atom_property_access_node) => {
-                let atom = &atom_property_access_node.0.as_ref().borrow().atom;
+                let atom = &atom_property_access_node.core_ref().atom;
                 return atom.is_valid_l_value()
             }
         }
