@@ -11,7 +11,7 @@ use crate::{
     types::{array::Array, core::Type},
 };
 use std::{
-    cell::RefCell,
+    cell::{RefCell, Ref, RefMut},
     rc::{Rc, Weak},
 };
 
@@ -21,7 +21,6 @@ pub trait Node {
     // fn start_index(&self) -> usize;
     // fn end_index(&self) -> usize;
     // fn start_line_number(&self) -> usize,
-    // fn end_line_number(&self) -> usize,
 }
 
 pub trait ErrornousNode {
@@ -40,6 +39,18 @@ macro_rules! default_node_impl {
             }
         }
     };
+}
+
+macro_rules! core_node_access {
+    ($t: ident) => {
+        pub fn core_ref(&self) -> Ref<$t> {
+            self.0.as_ref().borrow()
+        }
+
+        pub fn core_ref_mut(&self) -> RefMut<$t> {
+            self.0.as_ref().borrow_mut()
+        }
+    }
 }
 
 macro_rules! default_errornous_node_impl {
@@ -154,8 +165,10 @@ impl BlockNode {
     }
 
     pub fn set_scope(&self, scope: &Scope) {
-        self.0.as_ref().borrow_mut().scope = Some(scope.clone());
+        self.core_ref_mut().scope = Some(scope.clone());
     }
+
+    core_node_access!(CoreBlockNode);
 }
 default_node_impl!(BlockNode);
 
