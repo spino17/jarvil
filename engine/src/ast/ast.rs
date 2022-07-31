@@ -35,7 +35,7 @@ macro_rules! default_node_impl {
     ($t: ident) => {
         impl Node for $t {
             fn set_parent(&self, parent_node: ASTNode) {
-                self.0.as_ref().borrow_mut().parent = Some(parent_node);
+                self.core_ref_mut().parent = Some(parent_node);
             }
         }
     };
@@ -213,6 +213,8 @@ impl SkippedTokens {
         }
         SkippedTokens(node)
     }
+
+    core_node_access!(CoreSkippedTokens);
 }
 default_node_impl!(SkippedTokens);
 
@@ -292,6 +294,8 @@ impl StatementNode {
         struct_stmt.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
         StatementNode(node)
     }
+
+    core_node_access!(CoreStatementNode);
 }
 default_node_impl!(StatementNode);
 default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementKind);
@@ -319,6 +323,8 @@ impl AssignmentNode {
         r_assign.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
         AssignmentNode(node)
     }
+
+    core_node_access!(CoreAssignmentNode);
 }
 default_node_impl!(AssignmentNode);
 
@@ -345,6 +351,8 @@ impl StructStatementNode {
         }));
         StructStatementNode(node)
     }
+
+    core_node_access!(CoreStructStatementNode);
 }
 default_node_impl!(StructStatementNode);
 
@@ -389,6 +397,8 @@ impl TypeDeclarationNode {
         lambda.set_parent(ASTNode::TYPE_DECLARATION(Rc::downgrade(&node)));
         TypeDeclarationNode(node)
     }
+
+    core_node_access!(CoreTypeDeclarationNode);
 }
 default_node_impl!(TypeDeclarationNode);
 default_errornous_node_impl!(
@@ -428,6 +438,8 @@ impl StructDeclarationNode {
         block.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
         StructDeclarationNode(node)
     }
+
+    core_node_access!(CoreStructDeclarationNode);
 }
 default_node_impl!(StructDeclarationNode);
 
@@ -472,6 +484,8 @@ impl LambdaDeclarationNode {
             parent: None,
         })))
     }
+
+    core_node_access!(CoreLambdaDeclarationNode);
 }
 default_node_impl!(LambdaDeclarationNode);
 default_errornous_node_impl!(
@@ -544,6 +558,8 @@ impl OkLambdaDeclarationNode {
         }
         OkLambdaDeclarationNode(node)
     }
+
+    core_node_access!(CoreOkLambdaDeclarationNode);
 }
 default_node_impl!(OkLambdaDeclarationNode);
 
@@ -589,6 +605,8 @@ impl FunctionDeclarationNode {
         }));
         FunctionDeclarationNode(node)
     }
+
+    core_node_access!(CoreFunctionDeclarationNode);
 }
 default_node_impl!(FunctionDeclarationNode);
 default_errornous_node_impl!(
@@ -677,6 +695,8 @@ impl OkFunctionDeclarationNode {
         block.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
         OkFunctionDeclarationNode(node)
     }
+
+    core_node_access!(CoreOkFunctionDeclarationNode);
 }
 default_node_impl!(OkFunctionDeclarationNode);
 
@@ -711,6 +731,8 @@ impl VariableDeclarationNode {
         r_assign.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
         VariableDeclarationNode(node)
     }
+
+    core_node_access!(CoreVariableDeclarationNode);
 }
 default_node_impl!(VariableDeclarationNode);
 
@@ -746,6 +768,8 @@ impl NameTypeSpecsNode {
             _ => vec![],
         }
     }
+
+    core_node_access!(CoreNameTypeSpecsNode);
 }
 default_node_impl!(NameTypeSpecsNode);
 default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode, NameTypeSpecsKind);
@@ -802,6 +826,8 @@ impl OkNameTypeSpecsNode {
         }
         name_type_specs_vec
     }
+
+    core_node_access!(CoreOkNameTypeSpecsNode);
 }
 default_node_impl!(OkNameTypeSpecsNode);
 
@@ -840,6 +866,8 @@ impl NameTypeSpecNode {
         };
         (name, type_obj)
     }
+
+    core_node_access!(CoreNameTypeSpecNode);
 }
 default_node_impl!(NameTypeSpecNode);
 
@@ -899,6 +927,8 @@ impl TypeExpressionNode {
             _ => None,
         }
     }
+
+    core_node_access!(CoreTypeExpressionNode);
 }
 default_node_impl!(TypeExpressionNode);
 default_errornous_node_impl!(
@@ -934,6 +964,8 @@ impl AtomicTypeNode {
             None => return None,
         }
     }
+
+    core_node_access!(CoreAtomicTypeNode);
 }
 default_node_impl!(AtomicTypeNode);
 
@@ -988,6 +1020,8 @@ impl ArrayTypeNode {
             None => return None,
         }
     }
+
+    core_node_access!(CoreArrayTypeNode);
 }
 default_node_impl!(ArrayTypeNode);
 
@@ -1017,6 +1051,8 @@ impl UserDefinedTypeNode {
             None => None,
         }
     }
+
+    core_node_access!(CoreUserDefinedTypeNode);
 }
 default_node_impl!(UserDefinedTypeNode);
 
@@ -1073,6 +1109,8 @@ impl TokenNode {
             _ => None,
         }
     }
+
+    core_node_access!(CoreTokenNode);
 }
 default_node_impl!(TokenNode);
 default_errornous_node_impl!(TokenNode, CoreTokenNode, TokenKind);
@@ -1130,6 +1168,8 @@ impl OkTokenNode {
             _ => false,
         }
     }
+
+    core_node_access!(CoreOkTokenNode);
 }
 default_node_impl!(OkTokenNode);
 
@@ -1156,6 +1196,8 @@ impl MissingTokenNode {
             parent: None,
         })))
     }
+
+    core_node_access!(CoreMissingTokenNode);
 }
 default_node_impl!(MissingTokenNode);
 
@@ -1184,6 +1226,8 @@ impl SkippedTokenNode {
     pub fn line_number(&self) -> usize {
         self.0.as_ref().borrow().skipped_token.line_number
     }
+
+    core_node_access!(CoreSkippedTokenNode);
 }
 default_node_impl!(SkippedTokenNode);
 
@@ -1281,6 +1325,8 @@ impl ExpressionNode {
             _ => return None,
         }
     }
+
+    core_node_access!(CoreExpressionNode);
 }
 default_node_impl!(ExpressionNode);
 default_errornous_node_impl!(ExpressionNode, CoreExpressionNode, ExpressionKind);
@@ -1363,6 +1409,8 @@ impl AtomicExpressionNode {
         atom.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
         AtomicExpressionNode(node)
     }
+
+    core_node_access!(CoreAtomicExpressionNode);
 }
 default_node_impl!(AtomicExpressionNode);
 default_errornous_node_impl!(
@@ -1394,6 +1442,8 @@ impl ParenthesisedExpressionNode {
         expr.set_parent(ASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
         ParenthesisedExpressionNode(node)
     }
+
+    core_node_access!(CoreParenthesisedExpressionNode);
 }
 default_node_impl!(ParenthesisedExpressionNode);
 
@@ -1444,6 +1494,8 @@ impl UnaryExpressionNode {
         }));
         UnaryExpressionNode(node)
     }
+
+    core_node_access!(CoreUnaryExpressionNode);
 }
 default_node_impl!(UnaryExpressionNode);
 default_errornous_node_impl!(
@@ -1478,6 +1530,8 @@ impl OnlyUnaryExpressionNode {
         unary_expr.set_parent(ASTNode::ONLY_UNARY_EXPRESSION(Rc::downgrade(&node)));
         OnlyUnaryExpressionNode(node)
     }
+
+    core_node_access!(CoreOnlyUnaryExpressionNode);
 }
 default_node_impl!(OnlyUnaryExpressionNode);
 
@@ -1523,6 +1577,8 @@ impl BinaryExpressionNode {
         right_expr.set_parent(ASTNode::BINARY_EXPRESSION(Rc::downgrade(&node)));
         BinaryExpressionNode(node)
     }
+
+    core_node_access!(CoreBinaryExpressionNode);
 }
 default_node_impl!(BinaryExpressionNode);
 
@@ -1552,6 +1608,8 @@ impl LogicalExpressionNode {
         right_expr.set_parent(ASTNode::LOGICAL_EXPRESSION(Rc::downgrade(&node)));
         LogicalExpressionNode(node)
     }
+
+    core_node_access!(CoreLogicalExpressionNode);
 }
 default_node_impl!(LogicalExpressionNode);
 
@@ -1578,6 +1636,8 @@ impl ParamsNode {
         ok_params_node.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
         ParamsNode(node)
     }
+
+    core_node_access!(CoreParamsNode);
 }
 default_node_impl!(ParamsNode);
 default_errornous_node_impl!(ParamsNode, CoreParamsNode, ParamsKind);
@@ -1620,6 +1680,8 @@ impl OkParamsNode {
         remaining_params.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
         OkParamsNode(node)
     }
+
+    core_node_access!(CoreOkParamsNode);
 }
 default_node_impl!(OkParamsNode);
 
@@ -1657,6 +1719,8 @@ impl CallExpressionNode {
         }
         CallExpressionNode(node)
     }
+
+    core_node_access!(CoreCallExpressionNode);
 }
 default_node_impl!(CallExpressionNode);
 
@@ -1702,6 +1766,8 @@ impl ClassMethodCallNode {
         }
         ClassMethodCallNode(node)
     }
+
+    core_node_access!(CoreClassMethodCallNode);
 }
 default_node_impl!(ClassMethodCallNode);
 
@@ -1806,6 +1872,8 @@ impl AtomNode {
             }
         }
     }
+
+    core_node_access!(CoreAtomNode);
 }
 default_node_impl!(AtomNode);
 
@@ -1871,6 +1939,8 @@ impl AtomStartNode {
             _ => false,
         }
     }
+
+    core_node_access!(CoreAtomStartNode);
 }
 default_node_impl!(AtomStartNode);
 
@@ -1908,6 +1978,8 @@ impl CallNode {
         rparen.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
         CallNode(node)
     }
+
+    core_node_access!(CoreCallNode);
 }
 default_node_impl!(CallNode);
 
@@ -1934,6 +2006,8 @@ impl PropertyAccessNode {
         propertry.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
         PropertyAccessNode(node)
     }
+
+    core_node_access!(CorePropertyAccessNode);
 }
 default_node_impl!(PropertyAccessNode);
 
@@ -1979,6 +2053,8 @@ impl MethodAccessNode {
         }
         MethodAccessNode(node)
     }
+
+    core_node_access!(CoreMethodAccessNode);
 }
 default_node_impl!(MethodAccessNode);
 
@@ -2013,6 +2089,8 @@ impl IndexAccessNode {
         index.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
         IndexAccessNode(node)
     }
+
+    core_node_access!(CoreIndexAccessNode);
 }
 default_node_impl!(IndexAccessNode);
 
@@ -2050,6 +2128,8 @@ impl RAssignmentNode {
         newline.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
         RAssignmentNode(node)
     }
+
+    core_node_access!(CoreRAssignmentNode);
 }
 default_node_impl!(RAssignmentNode);
 default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode, RAssignmentKind);
