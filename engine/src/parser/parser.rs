@@ -450,14 +450,6 @@ impl PackratParser {
         }
     }
 
-    pub fn parse_for_err_message(message: String) -> String {
-        let mut parsed_message = message;
-        if parsed_message.eq("\n") {
-            parsed_message = String::from("newline")
-        }
-        parsed_message
-    }
-
     // ------------------- packrat parser caching utilities -------------------
     pub fn get_or_set_cache<
         T: std::fmt::Debug,

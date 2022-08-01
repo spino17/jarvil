@@ -314,7 +314,7 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Co
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
-        if context::is_letter(&next_char) || context::is_digit(&next_char) {
+        if next_char.is_ascii_alphabetic() || next_char.is_digit(10) || (next_char == '_') {
             // do nothing
         } else {
             let value: String = code.token_value(*begin_lexeme, Some(forward_lexeme));
@@ -336,7 +336,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Cor
         let next_char = code.get_char(forward_lexeme);
         match state {
             0 => {
-                if context::is_digit(&next_char) {
+                if next_char.is_digit(10) {
                     // do nothing
                 } else if next_char == '.' {
                     state = 1;
@@ -346,7 +346,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Cor
                 }
             }
             1 => {
-                if context::is_digit(&next_char) {
+                if next_char.is_digit(10) {
                     state = 2;
                 } else {
                     *begin_lexeme = forward_lexeme - 1;
@@ -354,7 +354,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Cor
                 }
             }
             2 => {
-                if context::is_digit(&next_char) {
+                if next_char.is_digit(10) {
                     // do nothing
                 } else {
                     *begin_lexeme = forward_lexeme;

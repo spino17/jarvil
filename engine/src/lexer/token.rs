@@ -233,9 +233,9 @@ impl Token {
             ':' => helper::extract_colon_prefix_lexeme(begin_lexeme, code),
             c => {
                 let token: CoreToken;
-                if context::is_letter(&c) {
+                if c.is_ascii_alphabetic() {
                     token = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
-                } else if context::is_digit(&c) {
+                } else if c.is_digit(10) {
                     token = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
                 } else {
                     let error_str = Rc::new(format!("invalid character `{}` found", c));
