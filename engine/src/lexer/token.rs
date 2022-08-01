@@ -24,7 +24,7 @@ macro_rules! impl_symbol_check {
     };
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CoreToken {
     // conditionals
     IF,   // 'if'
@@ -112,7 +112,7 @@ pub enum CoreToken {
     LEXICAL_ERROR((LexicalErrorKind, Rc<String>)),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LexicalErrorKind {
     INVALID_CHAR,
     NO_CLOSING_SYMBOLS,
