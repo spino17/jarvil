@@ -74,3 +74,155 @@ fn test_else() {
     ];
     assert_token_for_identifier(alt_vec, "else", CoreToken::ELSE)
 }
+
+#[test]
+fn test_elif() {
+    let alt_vec = vec![
+        "e", "el", "elif", "elas", "elifx", "elite"
+    ];
+    assert_token_for_identifier(alt_vec, "elif", CoreToken::ELIF)
+}
+
+#[test]
+fn test_type() {
+    let alt_vec = vec![
+        "t", "typo", "type", "tod", "types", "typical"
+    ];
+    assert_token_for_identifier(alt_vec, "type", CoreToken::TYPE_KEYWORD)
+}
+
+#[test]
+fn test_interface() {
+    let alt_vec = vec![
+        "i", "inter", "interface", "interfold", "intercity", "iota"
+    ];
+    assert_token_for_identifier(alt_vec, "interface", CoreToken::INTERFACE_KEYWORD)
+}
+
+#[test]
+fn test_def() {
+    let alt_vec = vec![
+        "d", "do", "def", "dog", "define", "deaf", "delta"
+    ];
+    assert_token_for_identifier(alt_vec, "def", CoreToken::DEF)
+}
+
+#[test]
+fn test_let() {
+    let alt_vec = vec![
+        "l", "leg", "let", "less", "lego", "letin"
+    ];
+    assert_token_for_identifier(alt_vec, "let", CoreToken::LET)
+}
+
+#[test]
+fn test_self() {
+    let alt_vec = vec![
+        "s", "sage", "self", "selfish", "sell"
+    ];
+    assert_token_for_identifier(alt_vec, "self", CoreToken::SELF)
+}
+
+#[test]
+fn test_impl() {
+    let alt_vec = vec![
+        "i", "im", "impl", "iota", "imply", "implementation"
+    ];
+    assert_token_for_identifier(alt_vec, "impl", CoreToken::IMPL)
+}
+
+#[test]
+fn test_and() {
+    let alt_vec = vec![
+        "a", "ant", "and", "alpha", "androgyne"
+    ];
+    assert_token_for_identifier(alt_vec, "and", CoreToken::AND)
+}
+
+#[test]
+fn test_not() {
+    let alt_vec = vec![
+        "n", "no", "not", "nose", "now"
+    ];
+    assert_token_for_identifier(alt_vec, "not", CoreToken::NOT)
+}
+
+#[test]
+fn test_or() {
+    let alt_vec = vec![
+        "o", "or", "on", "orange"
+    ];
+    assert_token_for_identifier(alt_vec, "or", CoreToken::OR)
+}
+
+#[test]
+fn test_in() {
+    let alt_vec = vec![
+        "i", "in", "is", "inter"
+    ];
+    assert_token_for_identifier(alt_vec, "in", CoreToken::IN)
+}
+
+#[test]
+fn test_true() {
+    let alt_vec = vec![
+        "T", "Trap", "True", "Trash", "Try"
+    ];
+    assert_token_for_identifier(alt_vec, "True", CoreToken::TRUE)
+}
+
+#[test]
+fn test_false() {
+    let alt_vec = vec![
+        "F", "Face", "False", "Falsify", "Factor", "Falsy"
+    ];
+    assert_token_for_identifier(alt_vec, "False", CoreToken::FALSE)
+}
+
+#[test]
+fn test_func() {
+    let alt_vec = vec![
+        "f", "fun", "func", "function", "fact"
+    ];
+    assert_token_for_identifier(alt_vec, "func", CoreToken::FUNC)
+}
+
+#[test]
+fn test_return() {
+    let alt_vec = vec![
+        "r", "read", "retard", "return", "retrack", "returning"
+    ];
+    assert_token_for_identifier(alt_vec, "return", CoreToken::RETURN)
+}
+
+#[test]
+fn test_int() {
+    let alt_vec = vec![
+        "i", "is", "ice", "int", "inter", "international"
+    ];
+    assert_token_for_identifier(alt_vec, "int", CoreToken::ATOMIC_TYPE)
+}
+
+#[test]
+fn test_float() {
+    let alt_vec = vec![
+        "f", "flat", "float", "floating", "flask"
+    ];
+    assert_token_for_identifier(alt_vec, "float", CoreToken::ATOMIC_TYPE)
+}
+
+#[test]
+fn test_string() {
+    let alt_vec = vec![
+        "s", "stage", "strike", "string", "stringy", "stringfy"
+    ];
+    assert_token_for_identifier(alt_vec, "string", CoreToken::ATOMIC_TYPE)
+}
+
+#[test]
+fn test_bool() {
+    let alt_vec = vec![
+        "b", "bob", "bolt", "bool", "booling", "boost"
+    ];
+    assert_token_for_identifier(alt_vec, "bool", CoreToken::ATOMIC_TYPE)
+}
