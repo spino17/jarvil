@@ -99,7 +99,7 @@ fn check_keyword(start_index: usize, remaining_str: &str, value: std::slice::Ite
     }
 }
 
-// Trie for efficient reserved words matching
+// Trie implementation for efficient reserved words matching
 pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken {
     match value_iter.next() {
         Some(c) => {
