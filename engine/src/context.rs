@@ -1,10 +1,7 @@
 use crate::{
-    constants::common::{KEYWORDS, TYPES},
     errors::JarvilError,
 };
-use rustc_hash::FxHashMap;
 use std::cell::RefCell;
-use std::collections::HashMap;
 
 thread_local! {
     static CONTEXT: RefCell<Context> = RefCell::new(Context::new())
@@ -14,8 +11,6 @@ thread_local! {
 // overriding mechanism to set custom values through command line or IDE settings.
 
 struct Context {
-    keywords: FxHashMap<String, ()>,
-    types: FxHashMap<String, ()>,
     parse_errors: Vec<JarvilError>,
     indent_spaces: i64,
     max_error_lines: usize,
@@ -24,37 +19,11 @@ struct Context {
 
 impl Context {
     fn new() -> Self {
-        let mut keywords: FxHashMap<String, ()> = HashMap::default();
-        let mut types: FxHashMap<String, ()> = HashMap::default();
-
-        for &keyword in KEYWORDS.iter() {
-            keywords.insert(String::from(keyword), ());
-        }
-        for &data_type in TYPES.iter() {
-            types.insert(String::from(data_type), ());
-        }
-
         Context {
-            keywords,
-            types,
             parse_errors: vec![],
             indent_spaces: 4,    // default indentation is 4 spaces
             max_error_lines: 10, // default max lines shown in error messages
             max_line_width: 88,  // default max line width used while formatting (same as black)
-        }
-    }
-
-    fn is_keyword(&self, name: &str) -> bool {
-        match self.keywords.get(name) {
-            Some(_) => true,
-            None => false,
-        }
-    }
-
-    fn is_type(&self, name: &str) -> bool {
-        match self.types.get(name) {
-            Some(_) => true,
-            None => false,
         }
     }
 
@@ -105,24 +74,6 @@ impl Context {
 
     fn max_line_width(&self) -> usize {
         self.max_line_width
-    }
-}
-
-pub fn is_keyword(name: &str) -> bool {
-    match CONTEXT.try_with(|ctx| ctx.borrow().is_keyword(name)) {
-        Ok(value) => value,
-        Err(err) => {
-            panic!("{}", err)
-        }
-    }
-}
-
-pub fn is_type(name: &str) -> bool {
-    match CONTEXT.try_with(|ctx| ctx.borrow().is_type(name)) {
-        Ok(value) => value,
-        Err(err) => {
-            panic!("{}", err)
-        }
     }
 }
 
