@@ -12,6 +12,8 @@ mod server;
 mod types;
 mod utils;
 
+use jarvil::constants::common::token_for_identifier;
+
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use std::env::args;
@@ -27,5 +29,8 @@ fn start_compiler(args: Vec<String>) {
 
 fn main() {
     let args: Vec<String> = args().collect();
-    start_compiler(args);
+    // start_compiler(args);
+    let ve = vec!['i', 'f'];
+    let s_iter: std::slice::Iter<char> = ve.iter();
+    println!("{:?}", token_for_identifier(s_iter));
 }

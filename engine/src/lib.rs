@@ -11,3 +11,5 @@ pub mod scope;
 pub mod server;
 pub mod types;
 pub mod utils;
+#[cfg(test)]
+pub mod tests;

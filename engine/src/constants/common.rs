@@ -92,7 +92,7 @@ pub const TYPES: [&'static str; 4] = [INT, FLOAT, STRING, BOOL];
 // This method is taken from the amazing book `Crafting Interpreters` by `Bob Nystrom`
 fn check_keyword(start_index: usize, remaining_str: &str, value: std::slice::Iter<char>, token_type: CoreToken) -> CoreToken {
     let value: String = value.collect();
-    if value.len() - start_index == remaining_str.len() && value[start_index..].eq(remaining_str) {
+    if value.len() == remaining_str.len() && value.eq(remaining_str) {
         token_type
     } else {
         CoreToken::IDENTIFIER
