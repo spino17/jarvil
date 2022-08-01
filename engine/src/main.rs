@@ -12,8 +12,6 @@ mod server;
 mod types;
 mod utils;
 
-use jarvil::constants::common::token_for_identifier;
-
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use std::env::args;

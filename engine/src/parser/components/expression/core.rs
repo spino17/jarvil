@@ -41,20 +41,6 @@ pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
     parser.logical_or()
 }
 
-/*
-pub fn logical(parser: &mut PackratParser) -> ExpressionNode {
-    let mut leading_comparison_expr_node = parser.comparison();
-    while let Some(node) = parser.expects(&["and", "or"]).is_ok() {
-        let operator_node = node;
-        let trailing_comparison_expr_node = parser.comparison();
-        leading_comparison_expr_node = ExpressionNode::new_with_binary(
-            &operator_node, &leading_comparison_expr_node, &trailing_comparison_expr_node
-        );
-    }
-    leading_comparison_expr_node
-}
- */
-
 pub fn logical_or(parser: &mut PackratParser) -> ExpressionNode {
     let mut leading_logical_and_expr_node = parser.logical_and();
     while let Some(node) = parser.expects(&["or"]).is_ok() {

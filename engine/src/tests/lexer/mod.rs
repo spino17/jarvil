@@ -1,6 +1,5 @@
 use std::vec;
-
-use crate::{constants::common::token_for_identifier, lexer::token::CoreToken};
+use crate::{lexer::helper::token_for_identifier, lexer::token::CoreToken};
 
 fn str_to_vec(word: &str) -> Vec<char> {
     word.chars().collect()
