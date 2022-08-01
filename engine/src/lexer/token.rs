@@ -10,7 +10,6 @@ use crate::constants::common::{
     LSQUARE, NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN,
     RSQUARE, SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, TRUE, TYPE_KEYWORD, WHILE,
 };
-use crate::context;
 use crate::lexer::helper;
 use std::rc::Rc;
 
