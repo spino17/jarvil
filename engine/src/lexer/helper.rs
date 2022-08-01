@@ -1,5 +1,5 @@
-use super::token::LexicalErrorKind;
-use crate::constants::common::get_token_for_identifier;
+use super::token::{LexicalErrorKind};
+use crate::constants::common::token_for_identifier;
 use crate::{code::Code, lexer::token::CoreToken};
 use std::rc::Rc;
 
@@ -325,15 +325,15 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Co
         if is_letter(&next_char) || next_char.is_digit(10) {
             // do nothing
         } else {
-            let value: String = code.token_value(*begin_lexeme, Some(forward_lexeme));
+            let value_iter = code.token_value_as_iter(*begin_lexeme, Some(forward_lexeme));
             *begin_lexeme = forward_lexeme;
-            return get_token_for_identifier(value);
+            return token_for_identifier(value_iter);
         }
         forward_lexeme = forward_lexeme + 1;
     }
-    let value: String = code.token_value(*begin_lexeme, Some(forward_lexeme));
+    let value_iter = code.token_value_as_iter(*begin_lexeme, Some(forward_lexeme));
     *begin_lexeme = forward_lexeme;
-    return get_token_for_identifier(value);
+    return token_for_identifier(value_iter);
 }
 
 // digit -> digit((digit)*(.digit(digit*)|empty))

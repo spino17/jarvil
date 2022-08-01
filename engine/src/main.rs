@@ -29,8 +29,5 @@ fn start_compiler(args: Vec<String>) {
 
 fn main() {
     let args: Vec<String> = args().collect();
-    // start_compiler(args);
-    let ve = vec!['i', 'f'];
-    let s_iter: std::slice::Iter<char> = ve.iter();
-    println!("{:?}", token_for_identifier(s_iter));
+    start_compiler(args);
 }

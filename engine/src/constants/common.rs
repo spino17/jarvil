@@ -238,6 +238,7 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
 }
 
 // everytime there is an addition in keyword, add here also!
+/*
 pub fn get_token_for_identifier(value: String) -> CoreToken {
     // TODO - try to keep in the same map
     if context::is_keyword(&value) {
@@ -292,3 +293,5 @@ pub fn get_token_for_identifier(value: String) -> CoreToken {
         CoreToken::IDENTIFIER
     }
 }
+
+ */
