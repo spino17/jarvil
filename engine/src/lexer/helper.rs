@@ -1,7 +1,15 @@
 use super::token::LexicalErrorKind;
 use crate::constants::common::get_token_for_identifier;
-use crate::{code::Code, context, lexer::token::CoreToken};
+use crate::{code::Code, lexer::token::CoreToken};
 use std::rc::Rc;
+
+pub fn is_letter(c: &char) -> bool {
+    if c.is_ascii_alphabetic() || (*c == '_') {
+        true
+    } else {
+        false
+    }
+}
 
 // ' ' -> '...'
 pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
@@ -314,7 +322,7 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Co
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
-        if next_char.is_ascii_alphabetic() || next_char.is_digit(10) || (next_char == '_') {
+        if is_letter(&next_char) || next_char.is_digit(10) {
             // do nothing
         } else {
             let value: String = code.token_value(*begin_lexeme, Some(forward_lexeme));

@@ -42,9 +42,7 @@ pub const IMPL:                     &'static str = "impl";
 pub const AND:                      &'static str = "and";
 pub const NOT:                      &'static str = "not";
 pub const OR:                       &'static str = "or";
-pub const IS:                       &'static str = "is";
 pub const IN:                       &'static str = "in";
-pub const NEW:                      &'static str = "new";
 pub const TRUE:                     &'static str = "True";
 pub const FALSE:                    &'static str = "False";
 pub const FUNC:                     &'static str = "func";
@@ -65,7 +63,7 @@ pub const BLOCK_COMMENT:            &'static str = "<block comment>";
 pub const BLANK:                    &'static str = "<blank>";
 pub const NON_TYPED:                &'static str = "<non-typed>";
 
-pub const KEYWORDS: [&'static str; 23] = [
+pub const KEYWORDS: [&'static str; 21] = [
     FOR,
     WHILE,
     CONTINUE,
@@ -82,9 +80,7 @@ pub const KEYWORDS: [&'static str; 23] = [
     AND,
     NOT,
     OR,
-    IS,
     IN,
-    NEW,
     TRUE,
     FALSE,
     FUNC,
@@ -93,13 +89,41 @@ pub const KEYWORDS: [&'static str; 23] = [
 
 pub const TYPES: [&'static str; 4] = [INT, FLOAT, STRING, BOOL];
 
-pub const LETTERS: [char; 53] = [
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
-    't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-    'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '_',
-];
+// This method is taken from the amazing book `Crafting Interpreters` by `Bob Nystrom`
+fn check_keyword(start_index: usize, remaining_str: &str, value: &str, token_type: CoreToken) -> CoreToken {
+    if value.len() - start_index == remaining_str.len() && value[1..].eq(remaining_str) {
+        token_type
+    } else {
+        CoreToken::IDENTIFIER
+    }
+}
 
-pub const DIGITS: [char; 10] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken {
+    match value_iter.next() {
+        Some(c) => {
+            match c {
+                'f' => todo!(), // for, func, float
+                'w' => todo!(), // while
+                'c' => todo!(), // continue
+                'b' => todo!(), // break, bool
+                'i' => todo!(), // if, interface, in, impl, int
+                'e' => todo!(), // else, elif
+                't' => todo!(), // type
+                'd' => todo!(), // def
+                'l' => todo!(), // let
+                's' => todo!(), // self, string
+                'a' => todo!(), // and
+                'n' => todo!(), // not
+                'o' => todo!(), // or
+                'T' => todo!(), // True
+                'F' => todo!(), // False
+                'r' => todo!(), // return
+                _ => CoreToken::IDENTIFIER
+            }
+        },
+        None => unreachable!("identifer value should have alteast one character")
+    }
+}
 
 // everytime there is an addition in keyword, add here also!
 pub fn get_token_for_identifier(value: String) -> CoreToken {
@@ -137,12 +161,8 @@ pub fn get_token_for_identifier(value: String) -> CoreToken {
             CoreToken::NOT
         } else if value.eq(OR) {
             CoreToken::OR
-        } else if value.eq(IS) {
-            CoreToken::IS
         } else if value.eq(IN) {
             CoreToken::IN
-        } else if value.eq(NEW) {
-            CoreToken::NEW
         } else if value.eq(TRUE) {
             CoreToken::TRUE
         } else if value.eq(FALSE) {

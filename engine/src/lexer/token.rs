@@ -1,3 +1,4 @@
+use super::helper::is_letter;
 use super::lexer::CoreLexer;
 use crate::ast::ast::ASTNode;
 use crate::code::Code;
@@ -5,8 +6,8 @@ use crate::constants::common::{
     AND, ATOMIC_TYPE, BLANK, BLOCK_COMMENT, BREAK, COLON, COMMA, CONTINUE, DASH, DEF, DOT,
     DOUBLE_COLON, DOUBLE_EQUAL, DOUBLE_STAR, ELIF, ELSE, ENDMARKER, EQUAL, FALSE,
     FLOATING_POINT_NUMBER, FOR, FUNC, GREATER_EQUAL, IDENTIFIER, IF, IMPL, IN, INTEGER,
-    INTERFACE_KEYWORD, IS, LBRACE, LBRACKET, LESS_EQUAL, LET, LEXICAL_ERROR, LITERAL, LPAREN,
-    LSQUARE, NEW, NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN,
+    INTERFACE_KEYWORD, LBRACE, LBRACKET, LESS_EQUAL, LET, LEXICAL_ERROR, LITERAL, LPAREN,
+    LSQUARE, NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN,
     RSQUARE, SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, TRUE, TYPE_KEYWORD, WHILE,
 };
 use crate::context;
@@ -45,7 +46,6 @@ pub enum CoreToken {
     // types
     TYPE_KEYWORD, // 'type'
     ATOMIC_TYPE,
-    NEW,               // 'new'
     LET,               // 'let'
     SELF,              // 'self'
     IMPL,              // 'impl'
@@ -55,7 +55,6 @@ pub enum CoreToken {
     AND, // 'and'
     NOT, // 'not'
     OR,  // 'or'
-    IS,  // 'is'
     IN,  // 'in'
 
     // booleans
@@ -233,7 +232,7 @@ impl Token {
             ':' => helper::extract_colon_prefix_lexeme(begin_lexeme, code),
             c => {
                 let token: CoreToken;
-                if c.is_ascii_alphabetic() {
+                if is_letter(&c) {
                     token = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
                 } else if c.is_digit(10) {
                     token = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
@@ -311,7 +310,6 @@ impl Token {
     impl_symbol_check!(FUNC);
     impl_symbol_check!(TYPE_KEYWORD);
     impl_symbol_check!(ATOMIC_TYPE);
-    impl_symbol_check!(NEW);
     impl_symbol_check!(LET);
     impl_symbol_check!(SELF);
     impl_symbol_check!(IMPL);
@@ -319,7 +317,6 @@ impl Token {
     impl_symbol_check!(AND);
     impl_symbol_check!(NOT);
     impl_symbol_check!(OR);
-    impl_symbol_check!(IS);
     impl_symbol_check!(IN);
     impl_symbol_check!(TRUE);
     impl_symbol_check!(FALSE);
@@ -371,7 +368,6 @@ impl Token {
             FUNC                    => self.FUNC(),
             TYPE_KEYWORD            => self.TYPE_KEYWORD(),
             ATOMIC_TYPE             => self.ATOMIC_TYPE(),
-            NEW                     => self.NEW(),
             LET                     => self.LET(),
             SELF                    => self.SELF(),
             IMPL                    => self.IMPL(),
@@ -379,7 +375,6 @@ impl Token {
             AND                     => self.AND(),
             NOT                     => self.NOT(),
             OR                      => self.OR(),
-            IS                      => self.IS(),
             IN                      => self.IN(),
             TRUE                    => self.TRUE(),
             FALSE                   => self.FALSE(),
@@ -436,7 +431,6 @@ impl ToString for Token {
             CoreToken::FUNC                     => FUNC,
             CoreToken::TYPE_KEYWORD             => TYPE_KEYWORD,
             CoreToken::ATOMIC_TYPE              => ATOMIC_TYPE,
-            CoreToken::NEW                      => NEW,
             CoreToken::LET                      => LET,
             CoreToken::SELF                     => SELF,
             CoreToken::IMPL                     => IMPL,
@@ -444,7 +438,6 @@ impl ToString for Token {
             CoreToken::AND                      => AND,
             CoreToken::NOT                      => NOT,
             CoreToken::OR                       => OR,
-            CoreToken::IS                       => IS,
             CoreToken::IN                       => IN,
             CoreToken::TRUE                     => TRUE,
             CoreToken::FALSE                    => FALSE,
