@@ -84,15 +84,15 @@ impl Scope {
         Ok(())
     }
 
-    fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData, usize)> {
+    fn lookup(&self, key: &str) -> Option<SymbolData> {
         // resolved data and depth
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
-            Some(value) => Some((SymbolData(value.0.clone(), value.1), 0)),
+            Some(value) => Some(value.clone()),
             None => {
                 if let Some(parent_env) = &scope_ref.parent_scope {
-                    match parent_env.lookup(key) {
-                        Some(result) => Some((result.0, result.1 + 1)),
+                    match &parent_env.lookup(key) {
+                        Some(result) => Some(result.clone()),
                         None => None,
                     }
                 } else {
@@ -126,6 +126,12 @@ impl Scope {
      */
 }
 
+pub enum NameSpaceKind {
+    VARIABLES,
+    TYPES,
+    FUNCTIONS,
+}
+
 #[derive(Debug)]
 pub struct Namespace {
     variables: Scope,
@@ -143,15 +149,23 @@ impl Namespace {
     }
 
     pub fn open_scope(&mut self) {
-        self.variables = Scope::new_with_parent_scope(&self.variables);
-        self.types = Scope::new_with_parent_scope(&self.types);
-        self.functions = Scope::new_with_parent_scope(&self.functions);
+        self.variables  = Scope::new_with_parent_scope(&self.variables);
+        self.types      = Scope::new_with_parent_scope(&self.types);
+        self.functions  = Scope::new_with_parent_scope(&self.functions);
     }
 
     pub fn close_scope(&mut self) {
         set_to_parent_scope!(variables, self);
         set_to_parent_scope!(types, self);
         set_to_parent_scope!(functions, self);
+    }
+
+    pub fn lookup_in_namespace(&self, key: &str, namespace_kind: NameSpaceKind) -> Option<SymbolData> {
+        match namespace_kind {
+            NameSpaceKind::VARIABLES    => self.variables.lookup(key),
+            NameSpaceKind::TYPES        => self.types.lookup(key),
+            NameSpaceKind::FUNCTIONS    => self.functions.lookup(key),
+        }
     }
 
     pub fn declare_variable(&self, name: String, data_type: Type, line_number: usize) -> Result<(), JarvilError> {
