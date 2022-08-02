@@ -31,19 +31,19 @@ pub struct SymbolData(Rc<RefCell<MetaData>>, usize); // meta data and line on wh
 
 #[derive(Debug)]
 pub struct CoreScope {
-    symbol_table: FxHashMap<Rc<String>, SymbolData>,
+    symbol_table: FxHashMap<String, SymbolData>,
     parent_scope: Option<Scope>,
 }
 
 impl CoreScope {
-    fn set(&mut self, name: Rc<String>, meta_data: MetaData, line_number: usize) {
+    fn set(&mut self, name: String, meta_data: MetaData, line_number: usize) {
         self.symbol_table.insert(
             name,
             SymbolData(Rc::new(RefCell::new(meta_data)), line_number),
         );
     }
 
-    fn get(&self, name: &Rc<String>) -> Option<&SymbolData> {
+    fn get(&self, name: &str) -> Option<&SymbolData> {
         self.symbol_table.get(name)
     }
 }
@@ -69,11 +69,11 @@ impl Scope {
 
     fn insert(
         &self,
-        key: &Rc<String>,
+        key: String,
         meta_data: MetaData,
         line_number: usize,
     ) -> Result<(), JarvilError> {
-        match self.0.borrow().get(key) {
+        match self.0.borrow().get(&key) {
             Some(value) => {
                 let err_str = format!("`{}` is already declared in the current block", key);
                 return Err(JarvilError::new(value.1, value.1, err_str));
@@ -159,7 +159,7 @@ impl Namespace {
             data_type,
             is_init: false,
         });
-        self.variables.insert(&Rc::new(name), meta_data, line_number)
+        self.variables.insert(name, meta_data, line_number)
     }
 
     pub fn define_variable(&self, name: String) -> Result<(), JarvilError> {
