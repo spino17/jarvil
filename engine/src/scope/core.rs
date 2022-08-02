@@ -1,39 +1,38 @@
 use crate::errors::JarvilError;
 use crate::scope::function::FunctionData;
-use crate::scope::identifier::IdentifierData;
+use crate::scope::identifier::VariableData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
+use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+macro_rules! set_to_parent_scope {
+    ($t: ident, $u: ident) => {
+        let parent_scope = match &$u.$t.0.as_ref().borrow().parent_scope {
+            Some(parent_scope) => {
+                parent_scope.clone()
+            }
+            None => unreachable!("attempt to close namespace should not be done at global level")
+        };
+        $u.$t = parent_scope;
+    };
+}
+
 #[derive(Debug, Clone)]
 pub enum MetaData {
-    IDENTIFIER(IdentifierData),
+    VARIABLE(VariableData),
     USER_DEFINED_TYPE(UserDefinedTypeData),
     FUNCTION(FunctionData),
 }
 
 #[derive(Debug, Clone)]
 pub struct SymbolData(Rc<RefCell<MetaData>>, usize); // meta data and line on which it was declared
-impl SymbolData {
-    fn kind_as_str(&self) -> &str {
-        match &*self.0.as_ref().borrow() {
-            MetaData::IDENTIFIER(_) => "identifier",
-            MetaData::USER_DEFINED_TYPE(user_defined_type) => {
-                match user_defined_type {
-                    UserDefinedTypeData::STRUCT(_) => return "struct",
-                    UserDefinedTypeData::LAMBDA(_) => return "lambda",
-                }
-            },
-            MetaData::FUNCTION(_) => "function",
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct CoreScope {
     symbol_table: FxHashMap<Rc<String>, SymbolData>,
-    pub parent_env: Option<Scope>,
+    parent_scope: Option<Scope>,
 }
 
 impl CoreScope {
@@ -50,25 +49,25 @@ impl CoreScope {
 }
 
 #[derive(Debug, Clone)]
-pub struct Scope(pub Rc<RefCell<CoreScope>>);
+struct Scope(Rc<RefCell<CoreScope>>);
 
 impl Scope {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
-            parent_env: None,
+            parent_scope: None,
         })))
     }
 
-    pub fn new_with_parent_scope(parent_env: &Scope) -> Self {
-        let env = parent_env.0.clone();
+    fn new_with_parent_scope(parent_scope: &Scope) -> Self {
+        let scope = parent_scope.0.clone();
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
-            parent_env: Some(Scope(env)),
+            parent_scope: Some(Scope(scope)),
         })))
     }
 
-    pub fn insert(
+    fn insert(
         &self,
         key: &Rc<String>,
         meta_data: MetaData,
@@ -76,7 +75,7 @@ impl Scope {
     ) -> Result<(), JarvilError> {
         match self.0.borrow().get(key) {
             Some(value) => {
-                let err_str = format!("`{}` is already declared in the current block as `{}`", key, value.kind_as_str());
+                let err_str = format!("`{}` is already declared in the current block", key);
                 return Err(JarvilError::new(value.1, value.1, err_str));
             }
             None => {}
@@ -85,13 +84,13 @@ impl Scope {
         Ok(())
     }
 
-    pub fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData, usize)> {
+    fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData, usize)> {
         // resolved data and depth
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
             Some(value) => Some((SymbolData(value.0.clone(), value.1), 0)),
             None => {
-                if let Some(parent_env) = &scope_ref.parent_env {
+                if let Some(parent_env) = &scope_ref.parent_scope {
                     match parent_env.lookup(key) {
                         Some(result) => Some((result.0, result.1 + 1)),
                         None => None,
@@ -104,7 +103,8 @@ impl Scope {
     }
 
     // call this method only after resolving phase is done
-    pub fn lookup_with_depth(&self, key: &Rc<String>, depth: usize) -> SymbolData {
+    /*
+    fn lookup_with_depth(&self, key: &Rc<String>, depth: usize) -> SymbolData {
         let scope_ref = self.0.borrow();
         if depth == 0 {
             match scope_ref.get(key) {
@@ -115,12 +115,66 @@ impl Scope {
                 ),
             }
         } else {
-            match &scope_ref.parent_env {
+            match &scope_ref.parent_scope {
                 Some(parent_env) => return parent_env.lookup_with_depth(key, depth - 1),
                 None => unreachable!(
                     "depth should be less than or equal to the depth of the scope chain"
                 ),
             }
+        }
+    }
+     */
+}
+
+#[derive(Debug)]
+pub struct Namespace {
+    variables: Scope,
+    types: Scope,
+    functions: Scope,
+}
+
+impl Namespace {
+    pub fn new() -> Self {
+        Namespace{
+            variables: Scope::new(),
+            types: Scope::new(),
+            functions: Scope::new(),
+        }
+    }
+
+    pub fn open_scope(&mut self) {
+        self.variables = Scope::new_with_parent_scope(&self.variables);
+        self.types = Scope::new_with_parent_scope(&self.types);
+        self.functions = Scope::new_with_parent_scope(&self.functions);
+    }
+
+    pub fn close_scope(&mut self) {
+        set_to_parent_scope!(variables, self);
+        set_to_parent_scope!(types, self);
+        set_to_parent_scope!(functions, self);
+    }
+
+    pub fn declare_variable(&self, name: String, data_type: Type, line_number: usize) -> Result<(), JarvilError> {
+        let meta_data = MetaData::VARIABLE(VariableData{
+            data_type,
+            is_init: false,
+        });
+        self.variables.insert(&Rc::new(name), meta_data, line_number)
+    }
+
+    pub fn define_variable(&self, name: String) -> Result<(), JarvilError> {
+        // SET is_init => true
+        // possible errors => no entry with key `name` exists in the scope
+        todo!()
+    }
+}
+
+impl Clone for Namespace {
+    fn clone(&self) -> Self {
+        Namespace{
+            variables: self.variables.clone(),
+            types: self.types.clone(),
+            functions: self.functions.clone(),
         }
     }
 }

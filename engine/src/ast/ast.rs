@@ -7,7 +7,7 @@ use crate::types::atomic::Atomic;
 use crate::{
     code::Code,
     lexer::token::{CoreToken, Token},
-    scope::core::Scope,
+    scope::core::Namespace,
     types::{array::Array, core::Type},
 };
 use std::{
@@ -127,7 +127,7 @@ pub enum StatemenIndentWrapper {
 pub struct CoreBlockNode {
     newline: TokenNode,
     pub stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
-    scope: Option<Scope>,
+    scope: Option<Namespace>,
     parent: Option<ASTNode>,
 }
 
@@ -164,7 +164,7 @@ impl BlockNode {
         BlockNode(node)
     }
 
-    pub fn set_scope(&self, scope: &Scope) {
+    pub fn set_scope(&self, scope: &Namespace) {
         self.core_ref_mut().scope = Some(scope.clone());
     }
 
