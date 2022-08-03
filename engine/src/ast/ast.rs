@@ -88,6 +88,19 @@ macro_rules! set_parents {
     };
 }
 
+macro_rules! set_parents_optional {
+    (($($t: ident),*), $u: ident, $v: ident) => {
+        $(
+            match $t {
+                Some($t) => {
+                    set_parent!($t, $u, $v);
+                }
+                None => {}
+            }
+        )*
+    };
+}
+
 #[derive(Debug, Clone)]
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),

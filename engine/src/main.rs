@@ -28,6 +28,14 @@ fn start_compiler(args: Vec<String>) {
     }
 }
 
+macro_rules! print_args {
+    (($($t: ident),*)) => {
+        $(
+            println!("{}", stringify!($t));
+        )*
+    };
+}
+
 #[set_parent(STATEMENT)]
 fn this_will_be_destroyed(name: usize, dude: String) -> i32 {
     42
@@ -37,5 +45,5 @@ fn this_will_be_destroyed(name: usize, dude: String) -> i32 {
 fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
-    dummy();
+    this_will_be_destroyed(10, "Hello World".to_string());
 }

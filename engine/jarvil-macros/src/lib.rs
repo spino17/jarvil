@@ -1,6 +1,6 @@
 extern crate proc_macro;
 use proc_macro::*;
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{FnArg};
 
 // This method is taken from Tokio-macros
@@ -16,7 +16,7 @@ fn impl_set_parent_macro(ast: &syn::ItemFn) -> TokenStream {
     let mut args_vec = vec![];
     while let Some(arg) = args_iter.next() {
         let pat_type = match arg {
-            FnArg::Receiver(_) => panic!("macro should be used for only classmethods"),
+            FnArg::Receiver(_) => panic!("macro should only be used for classmethods"),
             FnArg::Typed(pat_type) => {
                 args_vec.push(pat_type.pat.clone());
             }
@@ -25,15 +25,7 @@ fn impl_set_parent_macro(ast: &syn::ItemFn) -> TokenStream {
     let arg_1 = &args_vec[0];
     let arg_2 = &args_vec[1];
     let gen = quote! {
-        macro_rules! print_args {
-            (($($t: ident),*)) => {
-                $(
-                    println!("{}", stringify!($t));
-                )*
-            };
-        }
-
-        fn dummy() {
+        fn #arg1(#args) {
             // print_args!(#arg_1, #arg_2);
             print_args!((#arg_1, #arg_2));
             println!("args of the function `{}`: {}", stringify!(#arg1), stringify!(#args));
