@@ -3,8 +3,7 @@
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use crate::scope::core::SymbolData;
-use crate::scope::function;
-use crate::types::atomic::{Atomic, self};
+use crate::types::atomic::{Atomic};
 use crate::{
     code::Code,
     lexer::token::{CoreToken, Token},

@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate jarvil_macros;
+
 mod ast;
 mod cmd;
 mod code;
@@ -25,7 +28,14 @@ fn start_compiler(args: Vec<String>) {
     }
 }
 
+#[log_entry_and_exit(hello, "world")]
+fn this_will_be_destroyed() -> i32 {
+    42
+}
+
+
 fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
+    dummy();
 }
