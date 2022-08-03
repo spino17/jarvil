@@ -36,8 +36,18 @@ macro_rules! print_args {
     };
 }
 
+macro_rules! print_optional {
+    ($t: ident) => {
+        match $t {
+            Some(val) => println!("Hello duniya: {}", val),
+            None => println!("I am None bloody"),
+        }
+    };
+}
+
 #[set_parent(STATEMENT)]
-fn this_will_be_destroyed(name: usize, dude: String) -> i32 {
+fn this_will_be_destroyed(name: usize, dude: Option<String>) -> i32 {
+    println!("I am already existing");
     42
 }
 
@@ -45,5 +55,5 @@ fn this_will_be_destroyed(name: usize, dude: String) -> i32 {
 fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
-    this_will_be_destroyed(10, "Hello World".to_string());
+    this_will_be_destroyed(10, None);
 }
