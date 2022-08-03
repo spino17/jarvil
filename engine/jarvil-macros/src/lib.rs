@@ -55,35 +55,23 @@ fn impl_set_parent_macro(ast: &syn::ItemFn) -> TokenStream {
     let arg_1_type = &args_vec[0].1;
     let arg_2_type = &args_vec[1].1;
     let s = match &*arg_2_type.as_ref() {
-        Type::Array(_) => "array",
-        Type::BareFn(_) => "bare_fn",
-        Type::Group(_) => "group",
-        Type::ImplTrait(_) => "impl trait",
-        Type::Infer(_) => "infer",
-        Type::Macro(_) => "macro",
-        Type::Never(_) => "never",
-        Type::Paren(_) => "paren",
         Type::Path(path_type) => {
             let mut path = path_type.path.segments.iter();
             match path.next() {
-                Some(path) => path.ident,
-                None => "none in path",
+                Some(path) => {
+                    Some(path.arguments.clone())
+                }
+                None => None,
             }
         },
-        Type::Ptr(_) => "ptr",
-        Type::Reference(_) => "reference",
-        Type::Slice(_) => "slice",
-        Type::TraitObject(_) => "trait object",
-        Type::Tuple(_) => "tuple",
-        Type::Verbatim(_) => "verbatim",
-        _ => "others",
+        _ => None
     };
 
     let gen = quote! {
         #(#attrs)* #vis #sig {
-            println!("{}", #s);
+            println!("{}", stringify!(#s));
             print_args!((#arg_1_name, #arg_2_name));
-            print_optional!(#arg_2_name);
+            // print_optional!(#arg_2_name);
             #(#stmts)*
         }
     };
