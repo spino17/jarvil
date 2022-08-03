@@ -1,9 +1,7 @@
 Jarvil 0.1.0
 ============
 
-JARVIL (Just A Rather Very Idiotic Language) is a metaset of Python. Jarvil add types to a subset of Python programming constructs. 
-Jarvil compiles to readable, standards-based Python. Jarvil with it's type-check system in place can eliminate a lot of bugs at 
-compile time which typically show up at runtime in a dynamically typed language like Python.
+JARVIL (Just A Rather Very Idiotic Language) is a statically-typed programming language.
 
 .. contents::
 
@@ -20,12 +18,12 @@ This will install the latest version of ``jarvil``.
 
 Motivation
 ----------
-Jarvil is a programming language made purely out of fun! I just wanted to learn the answer of "How a prgramming language is made ?".
+Jarvil is a programming language made purely out of fun!
 This repo contains all my learnings on language design and writing a compiler. The patterns used in the implementation is heavily 
 inspired by the famous dragon book on compilers (``Compilers: Principles, Techniques, and Tools, Second Edition. Alfred V. Aho, 
 Monica S. Lam, Ravi Sethi, Jeffrey D. Ullman``). Because of the descriptive nature of this repo, it can be used by anyone who wishes
 to learn how to write a compiler for a simple language. All the stages for building the front-end of the compiler is implemented 
-from scratch like lexical analyzer, parser, scope, type-checker, code-generator etc. For the backend, I have used llvm using the 
+from scratch like lexical analyzer, parser, AST, scopes, type-checker, code-generator etc. For the backend, I have used llvm using the 
 crate inkwell (safe wrapper on llvm-sys crate).
 
 Formal Description

@@ -21,7 +21,6 @@ use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
-
 use super::helper::format_symbol;
 
 pub trait Parser {

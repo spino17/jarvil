@@ -3,7 +3,8 @@
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
 use crate::scope::core::SymbolData;
-use crate::types::atomic::Atomic;
+use crate::scope::function;
+use crate::types::atomic::{Atomic, self};
 use crate::{
     code::Code,
     lexer::token::{CoreToken, Token},
@@ -74,6 +75,12 @@ macro_rules! default_errornous_node_impl {
     };
 }
 
+macro_rules! set_parent {
+    ($t: ident, $u: ident, $v: ident) => {
+        $t.set_parent(ASTNode::$u(Rc::downgrade(&$v)));
+    };
+}
+
 #[derive(Debug, Clone)]
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
@@ -141,23 +148,23 @@ impl BlockNode {
             scope: None,
             parent: None,
         }));
-        newline.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+        set_parent!(newline, BLOCK, node);
         for stmt in &*stmts.as_ref().borrow() {
             match stmt {
                 StatemenIndentWrapper::CORRECTLY_INDENTED(correct_indented_stmt) => {
-                    correct_indented_stmt.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                    set_parent!(correct_indented_stmt, BLOCK, node);
                 }
                 StatemenIndentWrapper::INCORRECTLY_INDENTED((incorrect_indented_stmt, _)) => {
-                    incorrect_indented_stmt.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                    set_parent!(incorrect_indented_stmt, BLOCK, node);
                 }
                 StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(leading_skipped_tokens) => {
-                    leading_skipped_tokens.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                    set_parent!(leading_skipped_tokens, BLOCK, node);
                 }
                 StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(trailing_skipped_tokens) => {
-                    trailing_skipped_tokens.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                    set_parent!(trailing_skipped_tokens, BLOCK, node);
                 }
                 StatemenIndentWrapper::EXTRA_NEWLINES(extra_newlines) => {
-                    extra_newlines.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                    set_parent!(extra_newlines, BLOCK, node);
                 }
             }
         }
@@ -187,7 +194,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
-            skipped_token.set_parent(ASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
+            set_parent!(skipped_token, SKIPPED_TOKENS, node);
         }
         SkippedTokens(node)
     }
@@ -198,7 +205,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
-            skipped_token.set_parent(ASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
+            set_parent!(skipped_token, SKIPPED_TOKENS, node);
         }
         SkippedTokens(node)
     }
@@ -209,7 +216,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in extra_newlines.as_ref() {
-            skipped_token.set_parent(ASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
+            set_parent!(skipped_token, SKIPPED_TOKENS, node);
         }
         SkippedTokens(node)
     }
@@ -245,8 +252,9 @@ impl StatementNode {
             kind: StatementKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
-        expr.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
-        newline.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        // expr.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        set_parent!(expr, STATEMENT, node);
+        set_parent!(newline, STATEMENT, node);
         StatementNode(node)
     }
 
@@ -255,7 +263,7 @@ impl StatementNode {
             kind: StatementKind::ASSIGNMENT(assignment.clone()),
             parent: None,
         }));
-        assignment.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        set_parent!(assignment, STATEMENT, node);
         StatementNode(node)
     }
 
@@ -264,7 +272,7 @@ impl StatementNode {
             kind: StatementKind::VARIABLE_DECLARATION(variable_decl.clone()),
             parent: None,
         }));
-        variable_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        set_parent!(variable_decl, STATEMENT, node);
         StatementNode(node)
     }
 
@@ -273,7 +281,7 @@ impl StatementNode {
             kind: StatementKind::FUNCTION_DECLARATION(function_decl.clone()),
             parent: None,
         }));
-        function_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        set_parent!(function_decl, STATEMENT, node);
         StatementNode(node)
     }
 
@@ -282,7 +290,7 @@ impl StatementNode {
             kind: StatementKind::TYPE_DECLARATION(type_decl.clone()),
             parent: None,
         }));
-        type_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        set_parent!(type_decl, STATEMENT, node);
         StatementNode(node)
     }
 
@@ -291,7 +299,7 @@ impl StatementNode {
             kind: StatementKind::STRUCT_STATEMENT(struct_stmt.clone()),
             parent: None,
         }));
-        struct_stmt.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+        set_parent!(struct_stmt, STATEMENT, node);
         StatementNode(node)
     }
 
@@ -318,9 +326,9 @@ impl AssignmentNode {
             r_assign: r_assign.clone(),
             parent: None,
         }));
-        equal.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
-        l_atom.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
-        r_assign.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
+        set_parent!(equal, ASSIGNMENT, node);
+        set_parent!(l_atom, ASSIGNMENT, node);
+        set_parent!(r_assign, ASSIGNMENT, node);
         AssignmentNode(node)
     }
 
@@ -394,7 +402,7 @@ impl TypeDeclarationNode {
             kind: TypeDeclarationKind::LAMBDA(lambda.clone()),
             parent: None,
         }));
-        lambda.set_parent(ASTNode::TYPE_DECLARATION(Rc::downgrade(&node)));
+        set_parent!(lambda, TYPE_DECLARATION, node);
         TypeDeclarationNode(node)
     }
 
@@ -432,10 +440,10 @@ impl StructDeclarationNode {
             block: block.clone(),
             parent: None,
         }));
-        type_keyword.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
-        colon.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
-        name.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
-        block.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
+        set_parent!(type_keyword, STRUCT_DECLARATION, node);
+        set_parent!(colon, STRUCT_DECLARATION, node);
+        set_parent!(name, STRUCT_DECLARATION, node);
+        set_parent!(block, STRUCT_DECLARATION, node);
         StructDeclarationNode(node)
     }
 
@@ -534,25 +542,27 @@ impl OkLambdaDeclarationNode {
             return_type: return_type.clone(),
             parent: None,
         }));
-        lparen.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
-        rparen.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
-        newline.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
-        type_keyword.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
-        colon.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
-        name.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+        set_parent!(lparen, OK_LAMDA_DECLARATION, node);
+        set_parent!(rparen, OK_LAMDA_DECLARATION, node);
+        set_parent!(newline, OK_LAMDA_DECLARATION, node);
+        set_parent!(type_keyword, OK_LAMDA_DECLARATION, node);
+        set_parent!(colon, OK_LAMDA_DECLARATION, node);
+        set_parent!(name, OK_LAMDA_DECLARATION, node);
         match args {
-            Some(args) => args.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node))),
+            Some(args) => {
+                set_parent!(args, OK_LAMDA_DECLARATION, node);
+            }
             None => {}
         }
         match right_arrow {
             Some(right_arrow) => {
-                right_arrow.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)))
+                set_parent!(right_arrow, OK_LAMDA_DECLARATION, node);
             }
             None => {}
         }
         match return_type {
             Some(return_type) => {
-                return_type.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)))
+                set_parent!(return_type, OK_LAMDA_DECLARATION, node);
             }
             None => {}
         }
@@ -661,38 +671,42 @@ impl OkFunctionDeclarationNode {
             block: block.clone(),
             parent: None,
         }));
-        lparen.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
-        rparen.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
-        colon.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+        set_parent!(lparen, OK_FUNCTION_DECLARATION, node);
+        set_parent!(rparen, OK_FUNCTION_DECLARATION, node);
+        set_parent!(colon, OK_FUNCTION_DECLARATION, node);
         match func_keyword {
             FuncKeywordKind::DEF(def_node) => {
-                def_node.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)))
+                set_parent!(def_node, OK_FUNCTION_DECLARATION, node);
             }
             FuncKeywordKind::FUNC(func_node) => {
-                func_node.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)))
+                set_parent!(func_node, OK_FUNCTION_DECLARATION, node);
             }
         }
         match right_arrow {
             Some(right_arrow) => {
-                right_arrow.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)))
+                set_parent!(right_arrow, OK_FUNCTION_DECLARATION, node);
             }
             None => {}
         }
         match name {
-            Some(name) => name.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            Some(name) => {
+                set_parent!(name, OK_FUNCTION_DECLARATION, node);
+            },
             None => {}
         }
         match args {
-            Some(args) => args.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node))),
+            Some(args) => {
+                set_parent!(args, OK_FUNCTION_DECLARATION, node);
+            },
             None => {}
         }
         match return_type {
             Some(return_type) => {
-                return_type.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)))
+                set_parent!(return_type, OK_FUNCTION_DECLARATION, node);
             }
             None => {}
         }
-        block.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+        set_parent!(block, OK_FUNCTION_DECLARATION, node);
         OkFunctionDeclarationNode(node)
     }
 
@@ -725,10 +739,10 @@ impl VariableDeclarationNode {
             r_assign: r_assign.clone(),
             parent: None,
         }));
-        let_keyword.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
-        equal.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
-        name.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
-        r_assign.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
+        set_parent!(let_keyword, VARIABLE_DECLARATION, node);
+        set_parent!(equal, VARIABLE_DECLARATION, node);
+        set_parent!(name, VARIABLE_DECLARATION, node);
+        set_parent!(r_assign, VARIABLE_DECLARATION, node);
         VariableDeclarationNode(node)
     }
 
@@ -756,7 +770,7 @@ impl NameTypeSpecsNode {
             kind: NameTypeSpecsKind::OK(ok_name_type_specs.clone()),
             parent: None,
         }));
-        ok_name_type_specs.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
+        set_parent!(ok_name_type_specs, NAME_TYPE_SPECS, node);
         NameTypeSpecsNode(node)
     }
 
@@ -796,9 +810,9 @@ impl OkNameTypeSpecsNode {
             remaining_args: Some(remaining_args.clone()),
             parent: None,
         }));
-        comma.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
-        arg.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
-        remaining_args.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
+        set_parent!(comma, OK_NAME_TYPE_SPECS, node);
+        set_parent!(arg, OK_NAME_TYPE_SPECS, node);
+        set_parent!(remaining_args, OK_NAME_TYPE_SPECS, node);
         OkNameTypeSpecsNode(node)
     }
 
@@ -809,7 +823,7 @@ impl OkNameTypeSpecsNode {
             remaining_args: None,
             parent: None,
         }));
-        arg.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
+        set_parent!(arg, OK_NAME_TYPE_SPECS, node);
         OkNameTypeSpecsNode(node)
     }
 
@@ -849,9 +863,9 @@ impl NameTypeSpecNode {
             param_type: param_type.clone(),
             parent: None,
         }));
-        colon.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
-        param_name.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
-        param_type.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
+        set_parent!(colon, NAME_TYPE_SPEC, node);
+        set_parent!(param_name, NAME_TYPE_SPEC, node);
+        set_parent!(param_type, NAME_TYPE_SPEC, node);
         NameTypeSpecNode(node)
     }
 
@@ -951,7 +965,7 @@ impl AtomicTypeNode {
             kind: token.clone(),
             parent: None,
         }));
-        token.set_parent(ASTNode::ATOMIC_TYPE(Rc::downgrade(&node)));
+        set_parent!(token, ATOMIC_TYPE, node);
         AtomicTypeNode(node)
     }
 
@@ -997,11 +1011,11 @@ impl ArrayTypeNode {
             size: size.clone(),
             parent: None,
         }));
-        lsquare.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
-        rsquare.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
-        semicolon.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
-        size.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
-        sub_type.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
+        set_parent!(lsquare, ARRAY_TYPE, node);
+        set_parent!(rsquare, ARRAY_TYPE, node);
+        set_parent!(semicolon, ARRAY_TYPE, node);
+        set_parent!(size, ARRAY_TYPE, node);
+        set_parent!(sub_type, ARRAY_TYPE, node);
         ArrayTypeNode(node)
     }
 
@@ -1039,7 +1053,7 @@ impl UserDefinedTypeNode {
             token: identifier.clone(),
             parent: None,
         }));
-        identifier.set_parent(ASTNode::USER_DEFINED_TYPE(Rc::downgrade(&node)));
+        set_parent!(identifier, USER_DEFINED_TYPE, node);
         UserDefinedTypeNode(node)
     }
 
@@ -1254,7 +1268,7 @@ impl ExpressionNode {
             kind: ExpressionKind::UNARY(unary_expr.clone()),
             parent: None,
         }));
-        unary_expr.set_parent(ASTNode::EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(unary_expr, EXPRESSION, node);
         ExpressionNode(node)
     }
 
@@ -1356,7 +1370,7 @@ impl AtomicExpressionNode {
             kind: AtomicExpressionKind::BOOL_VALUE(bool_value.clone()),
             parent: None,
         }));
-        bool_value.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(bool_value, ATOMIC_EXPRESSION, node);
         AtomicExpressionNode(node)
     }
 
@@ -1365,7 +1379,7 @@ impl AtomicExpressionNode {
             kind: AtomicExpressionKind::INTEGER(token.clone()),
             parent: None,
         }));
-        token.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(token, ATOMIC_EXPRESSION, node);
         AtomicExpressionNode(node)
     }
 
@@ -1374,7 +1388,7 @@ impl AtomicExpressionNode {
             kind: AtomicExpressionKind::FLOATING_POINT_NUMBER(token.clone()),
             parent: None,
         }));
-        token.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(token, ATOMIC_EXPRESSION, node);
         AtomicExpressionNode(node)
     }
 
@@ -1383,7 +1397,7 @@ impl AtomicExpressionNode {
             kind: AtomicExpressionKind::LITERAL(token.clone()),
             parent: None,
         }));
-        token.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(token, ATOMIC_EXPRESSION, node);
         AtomicExpressionNode(node)
     }
 
@@ -1406,7 +1420,7 @@ impl AtomicExpressionNode {
             kind: AtomicExpressionKind::ATOM(atom.clone()),
             parent: None,
         }));
-        atom.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(atom, ATOMIC_EXPRESSION, node);
         AtomicExpressionNode(node)
     }
 
@@ -1437,9 +1451,9 @@ impl ParenthesisedExpressionNode {
             expr: expr.clone(),
             parent: None,
         }));
-        lparen.set_parent(ASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
-        rparen.set_parent(ASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
-        expr.set_parent(ASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(lparen, PARENTHESISED_EXPRESSION, node);
+        set_parent!(rparen, PARENTHESISED_EXPRESSION, node);
+        set_parent!(expr, PARENTHESISED_EXPRESSION, node);
         ParenthesisedExpressionNode(node)
     }
 
@@ -1475,7 +1489,7 @@ impl UnaryExpressionNode {
             kind: UnaryExpressionKind::ATOMIC(atomic_expr.clone()),
             parent: None,
         }));
-        atomic_expr.set_parent(ASTNode::UNARY_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(atomic_expr, UNARY_EXPRESSION, node);
         UnaryExpressionNode(node)
     }
 
@@ -1526,8 +1540,8 @@ impl OnlyUnaryExpressionNode {
             operator_kind,
             parent: None,
         }));
-        operator.set_parent(ASTNode::ONLY_UNARY_EXPRESSION(Rc::downgrade(&node)));
-        unary_expr.set_parent(ASTNode::ONLY_UNARY_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(operator, ONLY_UNARY_EXPRESSION, node);
+        set_parent!(unary_expr, ONLY_UNARY_EXPRESSION, node);
         OnlyUnaryExpressionNode(node)
     }
 
@@ -1573,8 +1587,8 @@ impl BinaryExpressionNode {
             right_expr: right_expr.clone(),
             parent: None,
         }));
-        left_expr.set_parent(ASTNode::BINARY_EXPRESSION(Rc::downgrade(&node)));
-        right_expr.set_parent(ASTNode::BINARY_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(left_expr, BINARY_EXPRESSION, node);
+        set_parent!(right_expr, BINARY_EXPRESSION, node);
         BinaryExpressionNode(node)
     }
 
@@ -1604,8 +1618,8 @@ impl LogicalExpressionNode {
             right_expr: right_expr.clone(),
             parent: None,
         }));
-        left_expr.set_parent(ASTNode::LOGICAL_EXPRESSION(Rc::downgrade(&node)));
-        right_expr.set_parent(ASTNode::LOGICAL_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(left_expr, LOGICAL_EXPRESSION, node);
+        set_parent!(right_expr, LOGICAL_EXPRESSION, node);
         LogicalExpressionNode(node)
     }
 
@@ -1633,7 +1647,7 @@ impl ParamsNode {
             kind: ParamsKind::OK(ok_params_node.clone()),
             parent: None,
         }));
-        ok_params_node.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
+        set_parent!(ok_params_node, PARAMS, node);
         ParamsNode(node)
     }
 
@@ -1660,7 +1674,7 @@ impl OkParamsNode {
             remaining_params: None,
             parent: None,
         }));
-        param.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
+        set_parent!(param, OK_PARAMS, node);
         OkParamsNode(node)
     }
 
@@ -1675,9 +1689,9 @@ impl OkParamsNode {
             remaining_params: Some(remaining_params.clone()),
             parent: None,
         }));
-        comma.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
-        param.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
-        remaining_params.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
+        set_parent!(comma, OK_PARAMS, node);
+        set_parent!(param, OK_PARAMS, node);
+        set_parent!(remaining_params, OK_PARAMS, node);
         OkParamsNode(node)
     }
 
@@ -1710,11 +1724,13 @@ impl CallExpressionNode {
             params: params.clone(),
             parent: None,
         }));
-        lparen.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
-        rparen.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
-        function_name.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
+        set_parent!(lparen, CALL_EXPRESSION, node);
+        set_parent!(rparen, CALL_EXPRESSION, node);
+        set_parent!(function_name, CALL_EXPRESSION, node);
         match params {
-            Some(params) => params.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node))),
+            Some(params) => {
+                set_parent!(params, CALL_EXPRESSION, node);
+            },
             None => {}
         }
         CallExpressionNode(node)
@@ -1755,13 +1771,15 @@ impl ClassMethodCallNode {
             params: params.clone(),
             parent: None,
         }));
-        lparen.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
-        rparen.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
-        class_name.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
-        class_method_name.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
-        double_colon.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+        set_parent!(lparen, CLASS_METHOD_CALL, node);
+        set_parent!(rparen, CLASS_METHOD_CALL, node);
+        set_parent!(class_name, CLASS_METHOD_CALL, node);
+        set_parent!(class_method_name, CLASS_METHOD_CALL, node);
+        set_parent!(double_colon, CLASS_METHOD_CALL, node);
         match params {
-            Some(params) => params.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node))),
+            Some(params) => {
+                set_parent!(params, CLASS_METHOD_CALL, node);
+            },
             None => {}
         }
         ClassMethodCallNode(node)
@@ -1794,7 +1812,7 @@ impl AtomNode {
             kind: AtomKind::ATOM_START(atom_start.clone()),
             parent: None,
         }));
-        atom_start.set_parent(ASTNode::ATOM(Rc::downgrade(&node)));
+        set_parent!(atom_start, ATOM, node);
         AtomNode(node)
     }
 
@@ -1898,7 +1916,7 @@ impl AtomStartNode {
             kind: AtomStartKind::IDENTIFIER(token.clone()),
             parent: None,
         }));
-        token.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+        set_parent!(token, ATOM_START, node);
         AtomStartNode(node)
     }
 
@@ -1907,7 +1925,7 @@ impl AtomStartNode {
             kind: AtomStartKind::FUNCTION_CALL(call_expr.clone()),
             parent: None,
         }));
-        call_expr.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+        set_parent!(call_expr, ATOM_START, node);
         AtomStartNode(node)
     }
 
@@ -1969,13 +1987,15 @@ impl CallNode {
             params: params.clone(),
             parent: None,
         }));
-        atom.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
+        set_parent!(atom, CALL_NODE, node);
+        set_parent!(lparen, CALL_NODE, node);
+        set_parent!(rparen, CALL_NODE, node);
         match params {
-            Some(params) => params.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node))),
+            Some(params) => {
+                set_parent!(params, CALL_NODE, node);
+            },
             None => {}
         }
-        lparen.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
-        rparen.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
         CallNode(node)
     }
 
@@ -2001,9 +2021,9 @@ impl PropertyAccessNode {
             propertry: propertry.clone(),
             parent: None,
         }));
-        dot.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
-        atom.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
-        propertry.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
+        set_parent!(dot, PROPERTY_ACCESS, node);
+        set_parent!(atom, PROPERTY_ACCESS, node);
+        set_parent!(propertry, PROPERTY_ACCESS, node);
         PropertyAccessNode(node)
     }
 
@@ -2042,13 +2062,15 @@ impl MethodAccessNode {
             params: params.clone(),
             parent: None,
         }));
-        dot.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
-        lparen.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
-        rparen.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
-        atom.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
-        method_name.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+        set_parent!(dot, METHOD_ACCESS, node);
+        set_parent!(lparen, METHOD_ACCESS, node);
+        set_parent!(rparen, METHOD_ACCESS, node);
+        set_parent!(atom, METHOD_ACCESS, node);
+        set_parent!(method_name, METHOD_ACCESS, node);
         match params {
-            Some(params) => params.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node))),
+            Some(params) => {
+                set_parent!(params, METHOD_ACCESS, node);
+            },
             None => {}
         }
         MethodAccessNode(node)
@@ -2083,10 +2105,10 @@ impl IndexAccessNode {
             index: index.clone(),
             parent: None,
         }));
-        lsquare.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
-        rsquare.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
-        atom.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
-        index.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
+        set_parent!(lsquare, INDEX_ACCESS, node);
+        set_parent!(rsquare, INDEX_ACCESS, node);
+        set_parent!(atom, INDEX_ACCESS, node);
+        set_parent!(index, INDEX_ACCESS, node);
         IndexAccessNode(node)
     }
 
@@ -2115,7 +2137,7 @@ impl RAssignmentNode {
             kind: RAssignmentKind::LAMBDA(lambda_decl.clone()),
             parent: None,
         }));
-        lambda_decl.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
+        set_parent!(lambda_decl, R_ASSIGNMENT, node);
         RAssignmentNode(node)
     }
 
@@ -2124,8 +2146,8 @@ impl RAssignmentNode {
             kind: RAssignmentKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
-        expr.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
-        newline.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
+        set_parent!(expr, R_ASSIGNMENT, node);
+        set_parent!(newline, R_ASSIGNMENT, node);
         RAssignmentNode(node)
     }
 
