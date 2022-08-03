@@ -28,8 +28,8 @@ fn start_compiler(args: Vec<String>) {
     }
 }
 
-#[log_entry_and_exit(hello, "world")]
-fn this_will_be_destroyed() -> i32 {
+#[set_parent(STATEMENT)]
+fn this_will_be_destroyed(name: usize, dude: String) -> i32 {
     42
 }
 
