@@ -59,7 +59,8 @@ fn impl_set_parent_macro(ast: &syn::ItemFn) -> TokenStream {
             let mut path = path_type.path.segments.iter();
             match path.next() {
                 Some(path) => {
-                    Some(path.arguments.clone())
+                    // Some(path.arguments.clone())
+                    Some(path.ident.clone())
                 }
                 None => None,
             }
@@ -70,9 +71,13 @@ fn impl_set_parent_macro(ast: &syn::ItemFn) -> TokenStream {
     let gen = quote! {
         #(#attrs)* #vis #sig {
             println!("{}", stringify!(#s));
-            print_args!((#arg_1_name, #arg_2_name));
+            if stringify!(#s).to_string().eq("Option") {
+                print_optional!(#arg_2_name);
+            }
+            // print_args!((#arg_1_name, #arg_2_name));
             // print_optional!(#arg_2_name);
             #(#stmts)*
+            println!("{}", node);
         }
     };
     gen.into()
