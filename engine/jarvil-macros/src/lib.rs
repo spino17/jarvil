@@ -54,28 +54,31 @@ fn impl_set_parent_macro(ast: &syn::ItemFn) -> TokenStream {
     let arg_2_name = &args_vec[1].0;
     let arg_1_type = &args_vec[0].1;
     let arg_2_type = &args_vec[1].1;
-    let s = match &*arg_2_type.as_ref() {
+    let s = match &*arg_1_type.as_ref() {
         Type::Path(path_type) => {
             let mut path = path_type.path.segments.iter();
             match path.next() {
                 Some(path) => {
                     // Some(path.arguments.clone())
-                    Some(path.ident.clone())
+                    let ident = &path.ident;
+                    if ident.to_string().eq("Option") {
+                        println!("yayasydfhgasdkhsdhsdahsaksa");
+                        path.ident.clone()
+                    } else {
+                        syn::Ident::new("NotOption", quote::__private::Span::call_site())
+                    }
                 }
-                None => None,
+                None => syn::Ident::new("NotOption", quote::__private::Span::call_site()),
             }
         },
-        _ => None
+        _ => syn::Ident::new("NotOption", quote::__private::Span::call_site())
     };
 
     let gen = quote! {
         #(#attrs)* #vis #sig {
-            println!("{}", stringify!(#s));
-            if stringify!(#s).to_string().eq("Option") {
-                print_optional!(#arg_2_name);
-            }
             // print_args!((#arg_1_name, #arg_2_name));
             // print_optional!(#arg_2_name);
+            println!("{}", stringify!(#s));
             #(#stmts)*
             println!("{}", node);
         }
