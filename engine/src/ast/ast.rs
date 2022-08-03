@@ -81,6 +81,14 @@ macro_rules! set_parent {
     };
 }
 
+macro_rules! set_parents {
+    (($($t: ident),*), $u: ident, $v: ident) => {
+        $(
+            $t.set_parent(ASTNode::$u(Rc::downgrade(&$v)));
+        )*
+    };
+}
+
 #[derive(Debug, Clone)]
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
@@ -252,9 +260,7 @@ impl StatementNode {
             kind: StatementKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
-        // expr.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
-        set_parent!(expr, STATEMENT, node);
-        set_parent!(newline, STATEMENT, node);
+        set_parents!((expr, newline), STATEMENT, node);
         StatementNode(node)
     }
 
@@ -326,9 +332,7 @@ impl AssignmentNode {
             r_assign: r_assign.clone(),
             parent: None,
         }));
-        set_parent!(equal, ASSIGNMENT, node);
-        set_parent!(l_atom, ASSIGNMENT, node);
-        set_parent!(r_assign, ASSIGNMENT, node);
+        set_parents!((equal, l_atom, r_assign), ASSIGNMENT, node);
         AssignmentNode(node)
     }
 
@@ -440,10 +444,7 @@ impl StructDeclarationNode {
             block: block.clone(),
             parent: None,
         }));
-        set_parent!(type_keyword, STRUCT_DECLARATION, node);
-        set_parent!(colon, STRUCT_DECLARATION, node);
-        set_parent!(name, STRUCT_DECLARATION, node);
-        set_parent!(block, STRUCT_DECLARATION, node);
+        set_parents!((type_keyword, colon, name, block), STRUCT_DECLARATION, node);
         StructDeclarationNode(node)
     }
 
@@ -542,12 +543,7 @@ impl OkLambdaDeclarationNode {
             return_type: return_type.clone(),
             parent: None,
         }));
-        set_parent!(lparen, OK_LAMDA_DECLARATION, node);
-        set_parent!(rparen, OK_LAMDA_DECLARATION, node);
-        set_parent!(newline, OK_LAMDA_DECLARATION, node);
-        set_parent!(type_keyword, OK_LAMDA_DECLARATION, node);
-        set_parent!(colon, OK_LAMDA_DECLARATION, node);
-        set_parent!(name, OK_LAMDA_DECLARATION, node);
+        set_parents!((lparen, rparen, newline, type_keyword, colon, name), OK_LAMDA_DECLARATION, node);
         match args {
             Some(args) => {
                 set_parent!(args, OK_LAMDA_DECLARATION, node);
@@ -671,9 +667,7 @@ impl OkFunctionDeclarationNode {
             block: block.clone(),
             parent: None,
         }));
-        set_parent!(lparen, OK_FUNCTION_DECLARATION, node);
-        set_parent!(rparen, OK_FUNCTION_DECLARATION, node);
-        set_parent!(colon, OK_FUNCTION_DECLARATION, node);
+        set_parents!((lparen, rparen, colon, block), OK_FUNCTION_DECLARATION, node);
         match func_keyword {
             FuncKeywordKind::DEF(def_node) => {
                 set_parent!(def_node, OK_FUNCTION_DECLARATION, node);
@@ -706,7 +700,6 @@ impl OkFunctionDeclarationNode {
             }
             None => {}
         }
-        set_parent!(block, OK_FUNCTION_DECLARATION, node);
         OkFunctionDeclarationNode(node)
     }
 
@@ -739,10 +732,7 @@ impl VariableDeclarationNode {
             r_assign: r_assign.clone(),
             parent: None,
         }));
-        set_parent!(let_keyword, VARIABLE_DECLARATION, node);
-        set_parent!(equal, VARIABLE_DECLARATION, node);
-        set_parent!(name, VARIABLE_DECLARATION, node);
-        set_parent!(r_assign, VARIABLE_DECLARATION, node);
+        set_parents!((let_keyword, equal, name, r_assign), VARIABLE_DECLARATION, node);
         VariableDeclarationNode(node)
     }
 
@@ -810,9 +800,7 @@ impl OkNameTypeSpecsNode {
             remaining_args: Some(remaining_args.clone()),
             parent: None,
         }));
-        set_parent!(comma, OK_NAME_TYPE_SPECS, node);
-        set_parent!(arg, OK_NAME_TYPE_SPECS, node);
-        set_parent!(remaining_args, OK_NAME_TYPE_SPECS, node);
+        set_parents!((comma, arg, remaining_args), OK_NAME_TYPE_SPECS, node);
         OkNameTypeSpecsNode(node)
     }
 
@@ -863,9 +851,7 @@ impl NameTypeSpecNode {
             param_type: param_type.clone(),
             parent: None,
         }));
-        set_parent!(colon, NAME_TYPE_SPEC, node);
-        set_parent!(param_name, NAME_TYPE_SPEC, node);
-        set_parent!(param_type, NAME_TYPE_SPEC, node);
+        set_parents!((colon, param_name, param_type), NAME_TYPE_SPEC, node);
         NameTypeSpecNode(node)
     }
 
@@ -1011,11 +997,7 @@ impl ArrayTypeNode {
             size: size.clone(),
             parent: None,
         }));
-        set_parent!(lsquare, ARRAY_TYPE, node);
-        set_parent!(rsquare, ARRAY_TYPE, node);
-        set_parent!(semicolon, ARRAY_TYPE, node);
-        set_parent!(size, ARRAY_TYPE, node);
-        set_parent!(sub_type, ARRAY_TYPE, node);
+        set_parents!((lsquare, rsquare, semicolon, size, sub_type), ARRAY_TYPE, node);
         ArrayTypeNode(node)
     }
 
@@ -1451,9 +1433,7 @@ impl ParenthesisedExpressionNode {
             expr: expr.clone(),
             parent: None,
         }));
-        set_parent!(lparen, PARENTHESISED_EXPRESSION, node);
-        set_parent!(rparen, PARENTHESISED_EXPRESSION, node);
-        set_parent!(expr, PARENTHESISED_EXPRESSION, node);
+        set_parents!((lparen, rparen, expr), PARENTHESISED_EXPRESSION, node);
         ParenthesisedExpressionNode(node)
     }
 
@@ -1540,8 +1520,7 @@ impl OnlyUnaryExpressionNode {
             operator_kind,
             parent: None,
         }));
-        set_parent!(operator, ONLY_UNARY_EXPRESSION, node);
-        set_parent!(unary_expr, ONLY_UNARY_EXPRESSION, node);
+        set_parents!((operator, unary_expr), ONLY_UNARY_EXPRESSION, node);
         OnlyUnaryExpressionNode(node)
     }
 
@@ -1587,8 +1566,7 @@ impl BinaryExpressionNode {
             right_expr: right_expr.clone(),
             parent: None,
         }));
-        set_parent!(left_expr, BINARY_EXPRESSION, node);
-        set_parent!(right_expr, BINARY_EXPRESSION, node);
+        set_parents!((left_expr, right_expr), BINARY_EXPRESSION, node);
         BinaryExpressionNode(node)
     }
 
@@ -1618,8 +1596,7 @@ impl LogicalExpressionNode {
             right_expr: right_expr.clone(),
             parent: None,
         }));
-        set_parent!(left_expr, LOGICAL_EXPRESSION, node);
-        set_parent!(right_expr, LOGICAL_EXPRESSION, node);
+        set_parents!((left_expr, right_expr), LOGICAL_EXPRESSION, node);
         LogicalExpressionNode(node)
     }
 
@@ -1689,9 +1666,7 @@ impl OkParamsNode {
             remaining_params: Some(remaining_params.clone()),
             parent: None,
         }));
-        set_parent!(comma, OK_PARAMS, node);
-        set_parent!(param, OK_PARAMS, node);
-        set_parent!(remaining_params, OK_PARAMS, node);
+        set_parents!((comma, param, remaining_params), OK_PARAMS, node);
         OkParamsNode(node)
     }
 
@@ -1724,9 +1699,7 @@ impl CallExpressionNode {
             params: params.clone(),
             parent: None,
         }));
-        set_parent!(lparen, CALL_EXPRESSION, node);
-        set_parent!(rparen, CALL_EXPRESSION, node);
-        set_parent!(function_name, CALL_EXPRESSION, node);
+        set_parents!((lparen, rparen, function_name), CALL_EXPRESSION, node);
         match params {
             Some(params) => {
                 set_parent!(params, CALL_EXPRESSION, node);
@@ -1771,11 +1744,7 @@ impl ClassMethodCallNode {
             params: params.clone(),
             parent: None,
         }));
-        set_parent!(lparen, CLASS_METHOD_CALL, node);
-        set_parent!(rparen, CLASS_METHOD_CALL, node);
-        set_parent!(class_name, CLASS_METHOD_CALL, node);
-        set_parent!(class_method_name, CLASS_METHOD_CALL, node);
-        set_parent!(double_colon, CLASS_METHOD_CALL, node);
+        set_parents!((lparen, rparen, class_name, class_method_name, double_colon), CLASS_METHOD_CALL, node);
         match params {
             Some(params) => {
                 set_parent!(params, CLASS_METHOD_CALL, node);
@@ -1987,9 +1956,7 @@ impl CallNode {
             params: params.clone(),
             parent: None,
         }));
-        set_parent!(atom, CALL_NODE, node);
-        set_parent!(lparen, CALL_NODE, node);
-        set_parent!(rparen, CALL_NODE, node);
+        set_parents!((atom, lparen, rparen), CALL_NODE, node);
         match params {
             Some(params) => {
                 set_parent!(params, CALL_NODE, node);
@@ -2021,9 +1988,7 @@ impl PropertyAccessNode {
             propertry: propertry.clone(),
             parent: None,
         }));
-        set_parent!(dot, PROPERTY_ACCESS, node);
-        set_parent!(atom, PROPERTY_ACCESS, node);
-        set_parent!(propertry, PROPERTY_ACCESS, node);
+        set_parents!((dot, atom, propertry), PROPERTY_ACCESS, node);
         PropertyAccessNode(node)
     }
 
@@ -2062,11 +2027,7 @@ impl MethodAccessNode {
             params: params.clone(),
             parent: None,
         }));
-        set_parent!(dot, METHOD_ACCESS, node);
-        set_parent!(lparen, METHOD_ACCESS, node);
-        set_parent!(rparen, METHOD_ACCESS, node);
-        set_parent!(atom, METHOD_ACCESS, node);
-        set_parent!(method_name, METHOD_ACCESS, node);
+        set_parents!((dot, lparen, rparen, atom, method_name), METHOD_ACCESS, node);
         match params {
             Some(params) => {
                 set_parent!(params, METHOD_ACCESS, node);
@@ -2105,10 +2066,7 @@ impl IndexAccessNode {
             index: index.clone(),
             parent: None,
         }));
-        set_parent!(lsquare, INDEX_ACCESS, node);
-        set_parent!(rsquare, INDEX_ACCESS, node);
-        set_parent!(atom, INDEX_ACCESS, node);
-        set_parent!(index, INDEX_ACCESS, node);
+        set_parents!((lsquare, rsquare, atom, index), INDEX_ACCESS, node);
         IndexAccessNode(node)
     }
 
@@ -2146,8 +2104,7 @@ impl RAssignmentNode {
             kind: RAssignmentKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
-        set_parent!(expr, R_ASSIGNMENT, node);
-        set_parent!(newline, R_ASSIGNMENT, node);
+        set_parents!((expr, newline), R_ASSIGNMENT, node);
         RAssignmentNode(node)
     }
 
