@@ -18,6 +18,7 @@ mod utils;
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use std::env::args;
+use crate::ast::ast::ASTNode::STATEMENT;
 
 fn start_compiler(args: Vec<String>) {
     let code_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
@@ -47,8 +48,8 @@ macro_rules! print_optional {
 
 #[set_parent(STATEMENT)]
 fn this_will_be_destroyed(name: usize, dude: Option<String>) {
+    let node = 11;
     println!("I am already existing");
-    let node = 10;
 }
 
 
