@@ -45,16 +45,22 @@ fn path_segment_from_type(type_arg: &Type) -> Option<&PathSegment> {
 }
 
 fn is_node_type(type_arg: &Type) -> bool {
-    match path_segment_from_type(type_arg) {
-        Some(path) => {
-            let ident = &path.ident;
-            if has_node_suffix(&ident.to_string()) {
-                true
-            } else {
-                false
+    match type_arg {
+        Type::Reference(ref_type) => {
+            let ref_type = &ref_type.elem;
+            match path_segment_from_type(ref_type) {
+                Some(path) => {
+                    let ident = &path.ident;
+                    if has_node_suffix(&ident.to_string()) {
+                        true
+                    } else {
+                        false
+                    }
+                },
+                None => false
             }
         },
-        None => false
+        _ => false
     }
 }
 

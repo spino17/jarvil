@@ -54,7 +54,7 @@ struct Node {
 }
 
 #[set_parent(STATEMENT)]
-fn this_will_be_destroyed(n: Node, dude: Option<Node>, boss: usize) {
+fn this_will_be_destroyed(n: &Node, dude: Option<&Node>, boss: usize) {
     let node = 11;
     println!("I am already existing");
 }
@@ -69,5 +69,5 @@ fn main() {
     let m = Node{
         name: "varima is best".to_string(),
     };
-    this_will_be_destroyed(m, Some(n), 10);
+    this_will_be_destroyed(&m, Some(&n), 10);
 }
