@@ -2,7 +2,7 @@ extern crate proc_macro;
 use std::{str::FromStr};
 use proc_macro::*;
 use quote::{quote};
-use syn::{FnArg, Type, PathArguments, PathSegment, Stmt, Expr, ExprMacro, punctuated::Punctuated, token::{Colon2, Comma}, Token};
+use syn::{FnArg, Type, PathArguments, PathSegment, Stmt, Expr, ExprMacro, punctuated::Punctuated, token::{Colon2, Comma}, Token, GenericArgument};
 
 fn has_node_suffix(word: &str) -> bool {
     let str_len = word.len();
@@ -28,8 +28,8 @@ enum NodeTypeKind {
     NONE    // BinaryOperatorKind
 }
 
-fn path_segment_from_type(type_arg: &Box<Type>) -> Option<&PathSegment> {
-    let s = match &*type_arg.as_ref() {
+fn path_segment_from_type(type_arg: &Type) -> Option<&PathSegment> {
+    let s = match type_arg {
         Type::Path(path_type) => {
             let mut path = path_type.path.segments.iter();
             match path.next() {
@@ -44,7 +44,7 @@ fn path_segment_from_type(type_arg: &Box<Type>) -> Option<&PathSegment> {
     s
 }
 
-fn is_node_type(type_arg: &Box<Type>) -> bool {
+fn is_node_type(type_arg: &Type) -> bool {
     match path_segment_from_type(type_arg) {
         Some(path) => {
             let ident = &path.ident;
@@ -58,13 +58,29 @@ fn is_node_type(type_arg: &Box<Type>) -> bool {
     }
 }
 
-fn is_option_node_type(type_arg: &Box<Type>) -> bool {
+fn is_option_node_type(type_arg: &Type) -> bool {
     match path_segment_from_type(type_arg) {
         Some(path) => {
             let ident = &path.ident;
+            let arguments = &path.arguments;
             if ident.to_string().eq("Option") {
                 // TODO - check path.arguments for the subtype inside Option<...> and check whether it's a node (use is_node_type)
-                true
+                match arguments {
+                    PathArguments::AngleBracketed(args) => {
+                        let arg = match args.args.iter().next() {
+                            Some(arg) => {
+                                match arg {
+                                    GenericArgument::Type(sub_type) => {
+                                        return is_node_type(sub_type)
+                                    },
+                                    _ => return false
+                                }
+                            },
+                            None => unreachable!("option always have a subtype")
+                        };
+                    },
+                    _ => false
+                }
             } else {
                 false
             }
@@ -177,7 +193,7 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
     let (node_args, optional_node_args) = get_node_args(&sig.inputs);
     let set_parents_macro_stmt = get_set_parents_macro_expr(&node_args);
     let set_parents_optiona_macro_stmt = get_set_parents_optional_macro_expr(&optional_node_args);
-    let first_stmt = &stmts[0];
+    let first_stmt = &stmts[0];  // TODO - check this first statement is let node = ...
     let remaining_stmt = &stmts[1..];
     let gen = quote! {
         #(#attrs)* #vis #sig {
