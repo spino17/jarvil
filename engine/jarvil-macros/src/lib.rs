@@ -85,6 +85,42 @@ fn is_node_or_optional_type(type_arg: &Box<Type>) -> NodeTypeKind {
     }
 }
 
+fn get_macro_expr(macro_name: &str, macro_expr_str: &str) -> Stmt {
+    let mut punc: Punctuated<PathSegment, Colon2> = Punctuated::new();
+    punc.push(syn::PathSegment{
+        ident: syn::Ident::new(macro_name, quote::__private::Span::call_site()),
+        arguments: PathArguments::None,
+    });
+    let token_stream =  match proc_macro2::TokenStream::from_str(macro_expr_str) {
+        Ok(token_stream) => token_stream,
+        Err(e) => unreachable!("string should be lexically correct: {:?}", e),
+    };
+    let expr_macro = ExprMacro{
+        attrs: vec![],
+        mac: syn::Macro{
+            path: syn::Path{
+                leading_colon: None,
+                segments: punc,
+            },
+            bang_token: Token![!](quote::__private::Span::call_site()),
+            delimiter: syn::MacroDelimiter::Paren(syn::token::Paren{
+                span: quote::__private::Span::call_site(),
+            }),
+            tokens: token_stream,
+        },
+    };
+    let set_parents_macro_call_stmt = Stmt::Expr(Expr::Macro(expr_macro));
+    set_parents_macro_call_stmt
+}
+
+fn get_set_parents_macro_expr(macro_name: &str, idents: &Vec<Ident>) -> Stmt {
+    todo!()
+}
+
+fn get_set_parents_optional(macro_name: &str, idents: &Vec<Ident>) -> Stmt {
+    todo!()
+}
+
 fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStream {
     // ast nodes for the original function
     let attrs = &ast.attrs;
@@ -121,7 +157,7 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
         arguments: PathArguments::None,
     });
     let ide = &node_args[0];
-    let macro_expr_str: &str = &format!("({})", ide.to_string());
+    let macro_expr_str: &str = &format!("({}, {})", node_args[0].to_string(), args_ast.to_string());
     let token_stream =  match proc_macro2::TokenStream::from_str(macro_expr_str) {
         Ok(token_stream) => token_stream,
         Err(e) => unreachable!("string should be correct: {:?}", e),
