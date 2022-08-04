@@ -54,7 +54,7 @@ struct Node {
 }
 
 #[set_parent(STATEMENT)]
-fn this_will_be_destroyed(name: Node, dude: Option<String>, dost: Option<Node>) {
+fn this_will_be_destroyed(name: Node, dude: Option<String>, dost: Node, boss: usize) {
     let node = 11;
     println!("I am already existing");
 }
@@ -69,5 +69,5 @@ fn main() {
     let m = Node{
         name: "varima is best".to_string(),
     };
-    this_will_be_destroyed(n, Some(String::from("Bhavya is best")), Some(m));
+    this_will_be_destroyed(n, Some(String::from("Bhavya is best")), m, 10);
 }

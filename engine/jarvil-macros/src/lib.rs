@@ -2,7 +2,7 @@ extern crate proc_macro;
 use std::{str::FromStr};
 use proc_macro::*;
 use quote::{quote};
-use syn::{FnArg, Type, PathArguments, PathSegment, Stmt, Expr, ExprMacro, punctuated::Punctuated, token::Colon2, Token};
+use syn::{FnArg, Type, PathArguments, PathSegment, Stmt, Expr, ExprMacro, punctuated::Punctuated, token::{Colon2, Comma}, Token};
 
 fn has_node_suffix(word: &str) -> bool {
     let str_len = word.len();
@@ -83,6 +83,31 @@ fn is_node_or_optional_type(type_arg: &Box<Type>) -> NodeTypeKind {
     }
 }
 
+fn get_node_args(args: &syn::punctuated::Punctuated<FnArg, Comma>) -> (Vec<proc_macro2::Ident>, Vec<proc_macro2::Ident>) {
+    let mut args_iter = args.iter();
+    let mut node_args = vec![];
+    let mut optional_node_args = vec![];
+    while let Some(arg) = args_iter.next() {
+        match arg {
+            FnArg::Receiver(_) => continue,
+            FnArg::Typed(pat_type) => {
+                match &*pat_type.pat {
+                    syn::Pat::Ident(pat_ident) => {
+                        match is_node_or_optional_type(&pat_type.ty) {
+                            // directly make the stmt here with just the ref of pat without cloning it
+                            NodeTypeKind::PURE => node_args.push(pat_ident.ident.clone()),
+                            NodeTypeKind::OPTION => optional_node_args.push(pat_ident.ident.clone()),
+                            _ => continue
+                        }
+                    },
+                    _ => continue
+                }
+            }
+        }
+    }
+    (node_args, optional_node_args)
+}
+
 fn get_macro_expr(macro_name: &str, macro_expr_str: &str) -> Stmt {
     let mut punc: Punctuated<PathSegment, Colon2> = Punctuated::new();
     punc.push(syn::PathSegment{
@@ -149,45 +174,18 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
     let block = &ast.block;
     let stmts = &block.stmts;
 
-    let mut args_iter = sig.inputs.iter();
-    let mut node_args = vec![];
-    let mut optional_node_args = vec![];
-    while let Some(arg) = args_iter.next() {
-        match arg {
-            FnArg::Receiver(_) => panic!("macro should only be used for classmethods"),
-            FnArg::Typed(pat_type) => {
-                match &*pat_type.pat {
-                    syn::Pat::Ident(pat_ident) => {
-                        match is_node_or_optional_type(&pat_type.ty) {
-                            // directly make the stmt here with just the ref of pat without cloning it
-                            NodeTypeKind::PURE => node_args.push(pat_ident.ident.clone()),
-                            NodeTypeKind::OPTION => optional_node_args.push(pat_ident.ident.clone()),
-                            _ => continue
-                        }
-                    },
-                    _ => continue
-                }
-            }
-        }
-    }
+    let (node_args, optional_node_args) = get_node_args(&sig.inputs);
     let set_parents_macro_stmt = get_set_parents_macro_expr(&node_args);
     let set_parents_optiona_macro_stmt = get_set_parents_optional_macro_expr(&optional_node_args);
     let first_stmt = &stmts[0];
     let remaining_stmt = &stmts[1..];
     let gen = quote! {
         #(#attrs)* #vis #sig {
-            // print_args!((#arg_1_name, #arg_2_name));
-            // print_optional_args!((#arg_2));
-            // println!("bool is: {}-{}", #n, #m);
-            // println!("yo baby: {}", stringify!(#arg_1));
-            // println!("yo baby: {}", stringify!(#arg_2));
-            // print_args!((#args_ast));
-            // #(#stmts)*
             #first_stmt
-            // println!("{}", node);
-            // #set_parents_macro_call_stmt;
+
             #set_parents_macro_stmt;
             #set_parents_optiona_macro_stmt;
+
             #(#remaining_stmt)*
         }
     };
