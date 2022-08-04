@@ -3,12 +3,6 @@ use proc_macro::*;
 use quote::{quote};
 use syn::{FnArg, Type, PathArguments, PathSegment};
 
-// This method is taken from Tokio-macros
-fn token_stream_with_error(mut tokens: TokenStream, error: syn::Error) -> TokenStream {
-    tokens.extend(TokenStream::from(error.into_compile_error()));
-    tokens
-}
-
 fn has_node_suffix(word: &str) -> bool {
     let str_len = word.len();
     if str_len < 4 {
@@ -19,6 +13,12 @@ fn has_node_suffix(word: &str) -> bool {
     } else {
         return false
     }
+}
+
+// This method is taken from Tokio-macros
+fn token_stream_with_error(mut tokens: TokenStream, error: syn::Error) -> TokenStream {
+    tokens.extend(TokenStream::from(error.into_compile_error()));
+    tokens
 }
 
 enum NodeTypeKind {
@@ -63,7 +63,7 @@ fn is_option_node_type(type_arg: &Box<Type>) -> bool {
         Some(path) => {
             let ident = &path.ident;
             if ident.to_string().eq("Option") {
-                // TODO - check path.arguments for the subtype inside Option<...> and check whether it's a node (use has_node_suffix)
+                // TODO - check path.arguments for the subtype inside Option<...> and check whether it's a node (use is_node_type)
                 true
             } else {
                 false
@@ -107,7 +107,9 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
             }
         };
     }
-    
+    // TODO - use node_args, optional_node_args to call set_parents! and set_parents_optional!
+    let arg_1 = &node_args[0];
+    let arg_2 = &optional_node_args[0];
     let first_stmt = &stmts[0];
     let remaining_stmt = &stmts[1..];
     let gen = quote! {
@@ -115,6 +117,8 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
             // print_args!((#arg_1_name, #arg_2_name));
             // print_optional!(#arg_2_name);
             // println!("bool is: {}-{}", #n, #m);
+            println!("yo baby: {}", stringify!(#arg_1));
+            println!("yo baby: {}", stringify!(#arg_2));
             print_args!((#args_ast));
             // #(#stmts)*
             #first_stmt
