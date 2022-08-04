@@ -159,7 +159,7 @@ fn get_macro_expr(macro_name: &str, macro_expr_str: &str) -> Stmt {
     set_parents_macro_call_stmt
 }
 
-fn get_set_parents_macro_expr(idents: &Vec<proc_macro2::Ident>) -> Stmt {
+fn get_set_parents_macro_expr(macro_name: &str, idents: &Vec<proc_macro2::Ident>) -> Stmt {
     let mut arg_str = "(".to_string();
     let mut flag = false;
     for ident in idents {
@@ -171,22 +171,7 @@ fn get_set_parents_macro_expr(idents: &Vec<proc_macro2::Ident>) -> Stmt {
     }
     arg_str.push(')');
     // TODO - add for ASTNode and node arguments
-    get_macro_expr("print_args", &arg_str)
-}
-
-fn get_set_parents_optional_macro_expr(idents: &Vec<proc_macro2::Ident>) -> Stmt {
-    let mut arg_str = "(".to_string();
-    let mut flag = false;
-    for ident in idents {
-        if flag {
-            arg_str.push_str(", ");
-        }
-        arg_str.push_str(&ident.to_string());
-        flag = true;
-    }
-    arg_str.push(')');
-    // TODO - add for ASTNode and node arguments
-    get_macro_expr("print_args_optional", &arg_str)
+    get_macro_expr(macro_name, &arg_str)
 }
 
 fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStream {
@@ -198,8 +183,8 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
     let stmts = &block.stmts;
 
     let (node_args, optional_node_args) = get_node_args(&sig.inputs);
-    let set_parents_macro_stmt = get_set_parents_macro_expr(&node_args);
-    let set_parents_optiona_macro_stmt = get_set_parents_optional_macro_expr(&optional_node_args);
+    let set_parents_macro_stmt = get_set_parents_macro_expr("print_args", &node_args);
+    let set_parents_optiona_macro_stmt = get_set_parents_macro_expr("print_args_optional", &optional_node_args);
     let first_stmt = &stmts[0]; // TODO - check this first statement is let node = ...
     let remaining_stmt = &stmts[1..];
     let gen = quote! {
