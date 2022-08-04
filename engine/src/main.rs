@@ -46,8 +46,12 @@ macro_rules! print_optional {
     };
 }
 
+struct Node {
+    name: String,
+}
+
 #[set_parent(STATEMENT)]
-fn this_will_be_destroyed(name: usize, dude: Option<String>) {
+fn this_will_be_destroyed(name: Node, dude: Option<String>) {
     let node = 11;
     println!("I am already existing");
 }
@@ -56,5 +60,8 @@ fn this_will_be_destroyed(name: usize, dude: Option<String>) {
 fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
-    this_will_be_destroyed(10, Some(String::from("Bhavya is best")));
+    let n = Node{
+        name: "bhavya is best".to_string(),
+    };
+    this_will_be_destroyed(n, Some(String::from("Bhavya is best")));
 }
