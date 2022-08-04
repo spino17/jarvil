@@ -32,17 +32,19 @@ fn start_compiler(args: Vec<String>) {
 macro_rules! print_args {
     (($($t: ident),*)) => {
         $(
-            println!("inside print_args! : {}", stringify!($t));
+            println!("inside print_args! : `{}`", stringify!($t));
         )*
     };
 }
 
-macro_rules! print_optional {
-    ($t: ident) => {
-        match $t {
-            Some(val) => println!("{}", val),
-            None => println!("I am None bloody"),
-        }
+macro_rules! print_optional_args {
+    (($($t: ident),*)) => {
+        $(
+            match $t {
+                Some(val) => println!("inside optional print_args! : `{}`", val),
+                None => println!("inside optional print_args! : `None`"),
+            }
+        )*
     };
 }
 
