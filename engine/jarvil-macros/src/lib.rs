@@ -1,6 +1,5 @@
 extern crate proc_macro;
 use std::{str::FromStr};
-
 use proc_macro::*;
 use quote::{quote};
 use syn::{FnArg, Type, PathArguments, PathSegment, Stmt, Expr, ExprMacro, punctuated::Punctuated, token::Colon2, Token};
@@ -50,7 +49,6 @@ fn is_node_type(type_arg: &Box<Type>) -> bool {
         Some(path) => {
             let ident = &path.ident;
             if has_node_suffix(&ident.to_string()) {
-                // TODO - check path.arguments for the subtype inside Option<...> and check whether it's a node (use has_node_suffix)
                 true
             } else {
                 false
@@ -113,12 +111,34 @@ fn get_macro_expr(macro_name: &str, macro_expr_str: &str) -> Stmt {
     set_parents_macro_call_stmt
 }
 
-fn get_set_parents_macro_expr(macro_name: &str, idents: &Vec<Ident>) -> Stmt {
-    todo!()
+fn get_set_parents_macro_expr(idents: &Vec<proc_macro2::Ident>) -> Stmt {
+    let mut arg_str = "(".to_string();
+    let mut flag = false;
+    for ident in idents {
+        if flag {
+            arg_str.push_str(", ");
+        }
+        arg_str.push_str(&ident.to_string());
+        flag = true;
+    }
+    arg_str.push(')');
+    // TODO - add for ASTNode and node arguments
+    get_macro_expr("print_args", &arg_str)
 }
 
-fn get_set_parents_optional(macro_name: &str, idents: &Vec<Ident>) -> Stmt {
-    todo!()
+fn get_set_parents_optional_macro_expr(idents: &Vec<proc_macro2::Ident>) -> Stmt {
+    let mut arg_str = "(".to_string();
+    let mut flag = false;
+    for ident in idents {
+        if flag {
+            arg_str.push_str(", ");
+        }
+        arg_str.push_str(&ident.to_string());
+        flag = true;
+    }
+    arg_str.push(')');
+    // TODO - add for ASTNode and node arguments
+    get_macro_expr("print_args_optional", &arg_str)
 }
 
 fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStream {
@@ -150,36 +170,8 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
             }
         }
     }
-    // TODO - use node_args, optional_node_args to call set_parents! and set_parents_optional!
-    let mut punc: Punctuated<PathSegment, Colon2> = Punctuated::new();
-    punc.push(syn::PathSegment{
-        ident: syn::Ident::new("print_args", quote::__private::Span::call_site()),
-        arguments: PathArguments::None,
-    });
-    let ide = &node_args[0];
-    let macro_expr_str: &str = &format!("({}, {})", node_args[0].to_string(), args_ast.to_string());
-    let token_stream =  match proc_macro2::TokenStream::from_str(macro_expr_str) {
-        Ok(token_stream) => token_stream,
-        Err(e) => unreachable!("string should be correct: {:?}", e),
-    };
-    let expr_macro = ExprMacro{
-        attrs: vec![],
-        mac: syn::Macro{
-            path: syn::Path{
-                leading_colon: None,
-                segments: punc,
-            },
-            bang_token: Token![!](quote::__private::Span::call_site()),
-            delimiter: syn::MacroDelimiter::Paren(syn::token::Paren{
-                span: quote::__private::Span::call_site(),
-            }),
-            tokens: token_stream,
-        },
-    };
-    let set_parents_macro_call_stmt = Stmt::Expr(Expr::Macro(expr_macro));
-
-    let arg_1 = &node_args[0];
-    let arg_2 = &optional_node_args[0];
+    let set_parents_macro_stmt = get_set_parents_macro_expr(&node_args);
+    let set_parents_optiona_macro_stmt = get_set_parents_optional_macro_expr(&optional_node_args);
     let first_stmt = &stmts[0];
     let remaining_stmt = &stmts[1..];
     let gen = quote! {
@@ -193,7 +185,9 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
             // #(#stmts)*
             #first_stmt
             // println!("{}", node);
-            #set_parents_macro_call_stmt;
+            // #set_parents_macro_call_stmt;
+            #set_parents_macro_stmt;
+            #set_parents_optiona_macro_stmt;
             #(#remaining_stmt)*
         }
     };

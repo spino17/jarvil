@@ -37,23 +37,24 @@ macro_rules! print_args {
     };
 }
 
-macro_rules! print_optional_args {
+macro_rules! print_args_optional {
     (($($t: ident),*)) => {
         $(
             match $t {
-                Some(val) => println!("inside optional print_args! : `{}`", val),
+                Some(val) => println!("inside optional print_args! : `{:?}`", val),
                 None => println!("inside optional print_args! : `None`"),
             }
         )*
     };
 }
 
+#[derive(Debug)]
 struct Node {
     name: String,
 }
 
 #[set_parent(STATEMENT)]
-fn this_will_be_destroyed(name: Node, dude: Option<String>) {
+fn this_will_be_destroyed(name: Node, dude: Option<String>, dost: Option<Node>) {
     let node = 11;
     println!("I am already existing");
 }
@@ -65,5 +66,8 @@ fn main() {
     let n = Node{
         name: "bhavya is best".to_string(),
     };
-    this_will_be_destroyed(n, Some(String::from("Bhavya is best")));
+    let m = Node{
+        name: "varima is best".to_string(),
+    };
+    this_will_be_destroyed(n, Some(String::from("Bhavya is best")), Some(m));
 }
