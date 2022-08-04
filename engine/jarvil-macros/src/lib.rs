@@ -89,7 +89,7 @@ fn is_option_node_type(type_arg: &Type) -> bool {
     }
 }
 
-fn is_node_or_optional_type(type_arg: &Box<Type>) -> NodeTypeKind {
+fn is_node_or_optional_type(type_arg: &Type) -> NodeTypeKind {
     if is_node_type(type_arg) {
         return NodeTypeKind::PURE
     } else if is_option_node_type(type_arg) {

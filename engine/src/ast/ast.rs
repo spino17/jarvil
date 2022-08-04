@@ -101,6 +101,15 @@ macro_rules! set_parents_optional {
     };
 }
 
+macro_rules! extract_from_option {
+    ($t: ident) => {
+        match $t {
+            Some(val) => val.clone(),
+            None => None
+        }
+    };
+}
+
 #[derive(Debug, Clone)]
 pub enum ASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
