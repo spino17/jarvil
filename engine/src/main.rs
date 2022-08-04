@@ -32,7 +32,7 @@ fn start_compiler(args: Vec<String>) {
 macro_rules! print_args {
     (($($t: ident),*)) => {
         $(
-            println!("{}", stringify!($t));
+            println!("inside print_args! : {}", stringify!($t));
         )*
     };
 }

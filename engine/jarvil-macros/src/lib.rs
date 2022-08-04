@@ -23,7 +23,8 @@ fn has_node_suffix(word: &str) -> bool {
 
 enum NodeTypeKind {
     PURE,   // BlockNode
-    OPTION  // Option<BlockNode>
+    OPTION, // Option<BlockNode>
+    NONE    // BinaryOperatorKind
 }
 
 fn path_segment_from_type(type_arg: &Box<Type>) -> Option<&PathSegment> {
@@ -63,7 +64,6 @@ fn is_option_node_type(type_arg: &Box<Type>) -> bool {
             let ident = &path.ident;
             if ident.to_string().eq("Option") {
                 // TODO - check path.arguments for the subtype inside Option<...> and check whether it's a node (use has_node_suffix)
-                println!("yayasydfhgasdkhsdhsdahsaksa");
                 true
             } else {
                 false
@@ -73,8 +73,14 @@ fn is_option_node_type(type_arg: &Box<Type>) -> bool {
     }
 }
 
-fn is_node_or_optional_type(type_arg: &Box<Type>) -> bool {
-    todo!()
+fn is_node_or_optional_type(type_arg: &Box<Type>) -> NodeTypeKind {
+    if is_node_type(type_arg) {
+        return NodeTypeKind::PURE
+    } else if is_option_node_type(type_arg) {
+        return NodeTypeKind::OPTION
+    } else {
+        return NodeTypeKind::NONE
+    }
 }
 
 fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStream {
@@ -86,30 +92,30 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
 
     let args = &sig.inputs;
     let mut args_iter = args.iter();
-    let mut args_vec = vec![];
+    let mut node_args = vec![];
+    let mut optional_node_args = vec![];
     while let Some(arg) = args_iter.next() {
         let pat_type = match arg {
             FnArg::Receiver(_) => panic!("macro should only be used for classmethods"),
             FnArg::Typed(pat_type) => {
-                args_vec.push((pat_type.pat.clone(), pat_type.ty.clone()));
+                // args_vec.push((pat_type.pat.clone(), pat_type.ty.clone()));
+                match is_node_or_optional_type(&pat_type.ty) {
+                    NodeTypeKind::PURE => node_args.push(pat_type.pat.clone()),
+                    NodeTypeKind::OPTION => optional_node_args.push(pat_type.pat.clone()),
+                    _ => continue
+                }
             }
         };
     }
-    let arg_1_name = &args_vec[0].0;
-    let arg_2_name = &args_vec[1].0;
-    let arg_1_type = &args_vec[0].1;
-    let arg_2_type = &args_vec[1].1;
-    let m = is_option_node_type(arg_2_type);
-    let n = is_node_type(arg_1_type);
-    // syn::Ident::new("NotOption", quote::__private::Span::call_site())
+    
     let first_stmt = &stmts[0];
     let remaining_stmt = &stmts[1..];
     let gen = quote! {
         #(#attrs)* #vis #sig {
             // print_args!((#arg_1_name, #arg_2_name));
             // print_optional!(#arg_2_name);
-            println!("bool is: {}-{}", #n, #m);
-            println!("{}", stringify!(#args_ast));
+            // println!("bool is: {}-{}", #n, #m);
+            print_args!((#args_ast));
             // #(#stmts)*
             #first_stmt
             println!("{}", node);
