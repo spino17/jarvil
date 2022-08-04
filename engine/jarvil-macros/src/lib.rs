@@ -1,18 +1,22 @@
 extern crate proc_macro;
-use std::{str::FromStr};
 use proc_macro::*;
-use quote::{quote};
-use syn::{FnArg, Type, PathArguments, PathSegment, Stmt, Expr, ExprMacro, punctuated::Punctuated, token::{Colon2, Comma}, Token, GenericArgument};
+use quote::quote;
+use std::str::FromStr;
+use syn::{
+    punctuated::Punctuated,
+    token::{Colon2, Comma},
+    Expr, ExprMacro, FnArg, GenericArgument, PathArguments, PathSegment, Stmt, Token, Type,
+};
 
 fn has_node_suffix(word: &str) -> bool {
     let str_len = word.len();
     if str_len < 4 {
-        return false
+        return false;
     }
     if word[(str_len - 4)..str_len].eq("Node") {
-        return true
+        return true;
     } else {
-        return false
+        return false;
     }
 }
 
@@ -25,7 +29,7 @@ fn token_stream_with_error(mut tokens: TokenStream, error: syn::Error) -> TokenS
 enum NodeTypeKind {
     PURE,   // BlockNode
     OPTION, // Option<BlockNode>
-    NONE    // BinaryOperatorKind
+    NONE,   // BinaryOperatorKind
 }
 
 fn path_segment_from_type(type_arg: &Type) -> Option<&PathSegment> {
@@ -33,13 +37,11 @@ fn path_segment_from_type(type_arg: &Type) -> Option<&PathSegment> {
         Type::Path(path_type) => {
             let mut path = path_type.path.segments.iter();
             match path.next() {
-                Some(path) => {
-                    Some(path)
-                }
+                Some(path) => Some(path),
                 None => None,
             }
-        },
-        _ => None
+        }
+        _ => None,
     };
     s
 }
@@ -56,11 +58,11 @@ fn is_node_type(type_arg: &Type) -> bool {
                     } else {
                         false
                     }
-                },
-                None => false
+                }
+                None => false,
             }
-        },
-        _ => false
+        }
+        _ => false,
     }
 }
 
@@ -70,42 +72,39 @@ fn is_option_node_type(type_arg: &Type) -> bool {
             let ident = &path.ident;
             let arguments = &path.arguments;
             if ident.to_string().eq("Option") {
-                // TODO - check path.arguments for the subtype inside Option<...> and check whether it's a node (use is_node_type)
                 match arguments {
                     PathArguments::AngleBracketed(args) => {
                         let arg = match args.args.iter().next() {
-                            Some(arg) => {
-                                match arg {
-                                    GenericArgument::Type(sub_type) => {
-                                        return is_node_type(sub_type)
-                                    },
-                                    _ => return false
-                                }
+                            Some(arg) => match arg {
+                                GenericArgument::Type(sub_type) => return is_node_type(sub_type),
+                                _ => return false,
                             },
-                            None => unreachable!("option always have a subtype")
+                            None => unreachable!("option always have a subtype"),
                         };
-                    },
-                    _ => false
+                    }
+                    _ => false,
                 }
             } else {
                 false
             }
-        },
-        None => false
+        }
+        None => false,
     }
 }
 
 fn is_node_or_optional_type(type_arg: &Type) -> NodeTypeKind {
     if is_node_type(type_arg) {
-        return NodeTypeKind::PURE
+        return NodeTypeKind::PURE;
     } else if is_option_node_type(type_arg) {
-        return NodeTypeKind::OPTION
+        return NodeTypeKind::OPTION;
     } else {
-        return NodeTypeKind::NONE
+        return NodeTypeKind::NONE;
     }
 }
 
-fn get_node_args(args: &syn::punctuated::Punctuated<FnArg, Comma>) -> (Vec<proc_macro2::Ident>, Vec<proc_macro2::Ident>) {
+fn get_node_args(
+    args: &syn::punctuated::Punctuated<FnArg, Comma>,
+) -> (Vec<proc_macro2::Ident>, Vec<proc_macro2::Ident>) {
     let mut args_iter = args.iter();
     let mut node_args = vec![];
     let mut optional_node_args = vec![];
@@ -118,11 +117,13 @@ fn get_node_args(args: &syn::punctuated::Punctuated<FnArg, Comma>) -> (Vec<proc_
                         match is_node_or_optional_type(&pat_type.ty) {
                             // directly make the stmt here with just the ref of pat without cloning it
                             NodeTypeKind::PURE => node_args.push(pat_ident.ident.clone()),
-                            NodeTypeKind::OPTION => optional_node_args.push(pat_ident.ident.clone()),
-                            _ => continue
+                            NodeTypeKind::OPTION => {
+                                optional_node_args.push(pat_ident.ident.clone())
+                            }
+                            _ => continue,
                         }
-                    },
-                    _ => continue
+                    }
+                    _ => continue,
                 }
             }
         }
@@ -132,23 +133,23 @@ fn get_node_args(args: &syn::punctuated::Punctuated<FnArg, Comma>) -> (Vec<proc_
 
 fn get_macro_expr(macro_name: &str, macro_expr_str: &str) -> Stmt {
     let mut punc: Punctuated<PathSegment, Colon2> = Punctuated::new();
-    punc.push(syn::PathSegment{
+    punc.push(syn::PathSegment {
         ident: syn::Ident::new(macro_name, quote::__private::Span::call_site()),
         arguments: PathArguments::None,
     });
-    let token_stream =  match proc_macro2::TokenStream::from_str(macro_expr_str) {
+    let token_stream = match proc_macro2::TokenStream::from_str(macro_expr_str) {
         Ok(token_stream) => token_stream,
         Err(e) => unreachable!("string should be lexically correct: {:?}", e),
     };
-    let expr_macro = ExprMacro{
+    let expr_macro = ExprMacro {
         attrs: vec![],
-        mac: syn::Macro{
-            path: syn::Path{
+        mac: syn::Macro {
+            path: syn::Path {
                 leading_colon: None,
                 segments: punc,
             },
             bang_token: Token![!](quote::__private::Span::call_site()),
-            delimiter: syn::MacroDelimiter::Paren(syn::token::Paren{
+            delimiter: syn::MacroDelimiter::Paren(syn::token::Paren {
                 span: quote::__private::Span::call_site(),
             }),
             tokens: token_stream,
@@ -199,7 +200,7 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
     let (node_args, optional_node_args) = get_node_args(&sig.inputs);
     let set_parents_macro_stmt = get_set_parents_macro_expr(&node_args);
     let set_parents_optiona_macro_stmt = get_set_parents_optional_macro_expr(&optional_node_args);
-    let first_stmt = &stmts[0];  // TODO - check this first statement is let node = ...
+    let first_stmt = &stmts[0]; // TODO - check this first statement is let node = ...
     let remaining_stmt = &stmts[1..];
     let gen = quote! {
         #(#attrs)* #vis #sig {
