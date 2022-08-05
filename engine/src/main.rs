@@ -58,7 +58,6 @@ struct BlockNode {
 
 }
 
-#[set_parent(STATEMENT)]
 fn this_will_be_destroyed(n: &Node, arg: &BlockNode, dude: Option<&Node>, boss: usize) {
     let node = 11;
     println!("I am already existing");

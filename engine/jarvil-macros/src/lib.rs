@@ -184,8 +184,8 @@ fn impl_set_parent_macro(parent_node: &syn::Ident, ast: &syn::ItemFn) -> TokenSt
     let stmts = &block.stmts;
 
     let (node_args, optional_node_args) = get_node_args(&sig.inputs);
-    let set_parents_macro_stmt = get_set_parents_macro_expr("print_args", &node_args, parent_node);
-    let set_parents_optiona_macro_stmt = get_set_parents_macro_expr("print_args_optional", &optional_node_args, parent_node);
+    let set_parents_macro_stmt = get_set_parents_macro_expr("set_parents", &node_args, parent_node);
+    let set_parents_optiona_macro_stmt = get_set_parents_macro_expr("set_parents_optional", &optional_node_args, parent_node);
     let first_stmt = &stmts[0]; // TODO - check this first statement is let node = ...
     let remaining_stmt = &stmts[1..];
     let gen = quote! {

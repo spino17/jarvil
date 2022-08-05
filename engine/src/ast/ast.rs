@@ -2,6 +2,9 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks.
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
+#[macro_use]
+use jarvil_macros::set_parent;
+
 use crate::scope::core::SymbolData;
 use crate::types::atomic::{Atomic};
 use crate::{
@@ -276,12 +279,13 @@ pub enum StatementKind {
 #[derive(Debug, Clone)]
 pub struct StatementNode(pub Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
+    #[set_parent(STATEMENT)]
     pub fn new_with_expression(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
-        set_parents!((expr, newline), STATEMENT, node);
+        // set_parents!((expr, newline), STATEMENT, node);
         StatementNode(node)
     }
 

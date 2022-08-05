@@ -8,3 +8,4 @@ authors = ["Bhavya Bhatt bhavyabhatt17@gmail.com"]
 rustc-hash = { version = "1.1" }
 colored = "2.0.0"
 jarvil-macros = { path = "jarvil-macros" }
+cargo-expand = "1.0.28"
