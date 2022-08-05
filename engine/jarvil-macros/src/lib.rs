@@ -74,12 +74,12 @@ fn is_option_node_type(type_arg: &Type) -> bool {
             if ident.to_string().eq("Option") {
                 match arguments {
                     PathArguments::AngleBracketed(args) => {
-                        let arg = match args.args.iter().next() {
+                        match args.args.iter().next() {
                             Some(arg) => match arg {
                                 GenericArgument::Type(sub_type) => return is_node_type(sub_type),
                                 _ => return false,
                             },
-                            None => unreachable!("option always have a subtype"),
+                            None => unreachable!("Option<...> always have a subtype"),
                         };
                     }
                     _ => false,
@@ -159,7 +159,7 @@ fn get_macro_expr(macro_name: &str, macro_expr_str: &str) -> Stmt {
     set_parents_macro_call_stmt
 }
 
-fn get_set_parents_macro_expr(macro_name: &str, idents: &Vec<proc_macro2::Ident>) -> Stmt {
+fn get_set_parents_macro_expr(macro_name: &str, idents: &Vec<proc_macro2::Ident>, parent_node: &syn::Ident) -> Stmt {
     let mut arg_str = "(".to_string();
     let mut flag = false;
     for ident in idents {
@@ -170,11 +170,12 @@ fn get_set_parents_macro_expr(macro_name: &str, idents: &Vec<proc_macro2::Ident>
         flag = true;
     }
     arg_str.push(')');
+    arg_str.push_str(&format!(", {}, node", parent_node.to_string()));
     // TODO - add for ASTNode and node arguments
     get_macro_expr(macro_name, &arg_str)
 }
 
-fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStream {
+fn impl_set_parent_macro(parent_node: &syn::Ident, ast: &syn::ItemFn) -> TokenStream {
     // ast nodes for the original function
     let attrs = &ast.attrs;
     let vis = &ast.vis;
@@ -183,8 +184,8 @@ fn impl_set_parent_macro(args_ast: &syn::Ident, ast: &syn::ItemFn) -> TokenStrea
     let stmts = &block.stmts;
 
     let (node_args, optional_node_args) = get_node_args(&sig.inputs);
-    let set_parents_macro_stmt = get_set_parents_macro_expr("print_args", &node_args);
-    let set_parents_optiona_macro_stmt = get_set_parents_macro_expr("print_args_optional", &optional_node_args);
+    let set_parents_macro_stmt = get_set_parents_macro_expr("print_args", &node_args, parent_node);
+    let set_parents_optiona_macro_stmt = get_set_parents_macro_expr("print_args_optional", &optional_node_args, parent_node);
     let first_stmt = &stmts[0]; // TODO - check this first statement is let node = ...
     let remaining_stmt = &stmts[1..];
     let gen = quote! {

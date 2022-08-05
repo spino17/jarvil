@@ -30,18 +30,18 @@ fn start_compiler(args: Vec<String>) {
 }
 
 macro_rules! print_args {
-    (($($t: ident),*)) => {
+    (($($t: ident),*), $u: ident, $v: ident) => {
         $(
-            println!("inside print_args! : `{}`", stringify!($t));
+            println!("inside print_args! : `{:?}` -> {:?}.{:?}", $t, stringify!($u), $v);
         )*
     };
 }
 
 macro_rules! print_args_optional {
-    (($($t: ident),*)) => {
+    (($($t: ident),*), $u: ident, $v: ident) => {
         $(
             match $t {
-                Some(val) => println!("inside optional print_args! : `{:?}`", val),
+                Some(val) => println!("inside print_args optional ! : `{:?}` -> {:?}.{:?}", val, stringify!($u), $v),
                 None => println!("inside optional print_args! : `None`"),
             }
         )*
@@ -53,12 +53,13 @@ struct Node {
     name: String,
 }
 
+#[derive(Debug)]
 struct BlockNode {
 
 }
 
 #[set_parent(STATEMENT)]
-fn this_will_be_destroyed(n: &Node, arg: &BlockNode, dude: Option<Node>, boss: usize) {
+fn this_will_be_destroyed(n: &Node, arg: &BlockNode, dude: Option<&Node>, boss: usize) {
     let node = 11;
     println!("I am already existing");
 }
@@ -76,5 +77,5 @@ fn main() {
     let c = BlockNode{
 
     };
-    this_will_be_destroyed(&m, &c, Some(n), 10);
+    this_will_be_destroyed(&m, &c, Some(&n), 10);
 }
