@@ -1,6 +1,6 @@
 use crate::{
     ast::ast::VariableDeclarationNode,
-    constants::common::{ENDMARKER, IDENTIFIER},
+    constants::common::{IDENTIFIER},
     parser::parser::PackratParser,
 };
 

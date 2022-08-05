@@ -614,7 +614,7 @@ impl FunctionDeclarationNode {
         args: &Option<NameTypeSpecsNode>,
         return_type: &Option<TypeExpressionNode>,
         block: &BlockNode,
-        func_keyword: &FuncKeywordKind,
+        func_keyword: &FuncKeywordKindNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
         right_arrow: &Option<TokenNode>,
@@ -648,7 +648,7 @@ default_errornous_node_impl!(
 
 #[derive(Debug, Clone)]
 pub struct CoreOkFunctionDeclarationNode {
-    func_keyword: FuncKeywordKind,
+    func_keyword: FuncKeywordKindNode,
     lparen: TokenNode,
     rparen: TokenNode,
     right_arrow: Option<TokenNode>,
@@ -661,7 +661,7 @@ pub struct CoreOkFunctionDeclarationNode {
 }
 
 #[derive(Debug, Clone)]
-pub enum FuncKeywordKind {
+pub enum FuncKeywordKindNode {
     DEF(TokenNode),
     FUNC(TokenNode),
 }
@@ -674,7 +674,7 @@ impl OkFunctionDeclarationNode {
         args: &Option<NameTypeSpecsNode>,
         return_type: &Option<TypeExpressionNode>,
         block: &BlockNode,
-        func_keyword: &FuncKeywordKind,
+        func_keyword: &FuncKeywordKindNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
         right_arrow: &Option<TokenNode>,
@@ -694,10 +694,10 @@ impl OkFunctionDeclarationNode {
         }));
         set_parents!((lparen, rparen, colon, block), OK_FUNCTION_DECLARATION, node);
         match func_keyword {
-            FuncKeywordKind::DEF(def_node) => {
+            FuncKeywordKindNode::DEF(def_node) => {
                 set_parent!(def_node, OK_FUNCTION_DECLARATION, node);
             }
-            FuncKeywordKind::FUNC(func_node) => {
+            FuncKeywordKindNode::FUNC(func_node) => {
                 set_parent!(func_node, OK_FUNCTION_DECLARATION, node);
             }
         }
@@ -869,6 +869,7 @@ pub struct CoreNameTypeSpecNode {
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(Rc<RefCell<CoreNameTypeSpecNode>>);
 impl NameTypeSpecNode {
+    #[set_parent(NAME_TYPE_SPEC)]
     pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreNameTypeSpecNode {
             colon: colon.clone(),
@@ -876,7 +877,7 @@ impl NameTypeSpecNode {
             param_type: param_type.clone(),
             parent: None,
         }));
-        set_parents!((colon, param_name, param_type), NAME_TYPE_SPEC, node);
+        // set_parents!((colon, param_name, param_type), NAME_TYPE_SPEC, node);
         NameTypeSpecNode(node)
     }
 

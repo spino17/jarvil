@@ -1,10 +1,8 @@
-use crate::ast::ast::ErrornousNode;
-use crate::ast::ast::{FuncKeywordKind, StatementNode, StructStatementNode};
-use crate::constants::common::{ENDMARKER, IDENTIFIER};
+use crate::ast::ast::{FuncKeywordKindNode, StatementNode, StructStatementNode};
+use crate::constants::common::{IDENTIFIER};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::PackratParser;
-use std::rc::Rc;
 
 pub fn is_statement_starting_with(token: &Token) -> bool {
     match token.core_token {
@@ -36,6 +34,7 @@ pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 10] = [
 
 pub fn stmt(parser: &mut PackratParser) -> StatementNode {
     let token = &parser.curr_token();
+    /*
     if !is_statement_starting_with(token) {
         parser.log_missing_token_error_for_multiple_expected_symbols(
             &STATEMENT_EXPECTED_STARTING_SYMBOLS,
@@ -47,6 +46,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
             parser.curr_lookahead(),
         );
     }
+     */
     let statement_node = match token.core_token {
         CoreToken::LET                  => {
             let variable_decl_node = parser.variable_decl();
@@ -55,7 +55,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
         CoreToken::DEF                  => {
             let (function_name, def_keyword) = parser.function_name();
             let function_decl_node =
-                parser.function_decl(Some(&function_name), &FuncKeywordKind::DEF(def_keyword));
+                parser.function_decl(Some(&function_name), &FuncKeywordKindNode::DEF(def_keyword));
             StatementNode::new_with_function_declaration(&function_decl_node)
         }
         CoreToken::FOR                  => todo!(),
@@ -83,7 +83,6 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
                     StatementNode::new_with_expression(&expr_node, &newline_node)
                 }
             }
-            // TODO - check if next token is '=' => parse for assignment
         }
     };
     statement_node

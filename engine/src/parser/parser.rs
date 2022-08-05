@@ -5,7 +5,7 @@
 
 use crate::ast::ast::{ErrornousNode, OkTokenKind};
 use crate::ast::ast::{
-    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
+    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKindNode,
     FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, ParamsNode, RAssignmentNode,
     SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
     UnaryExpressionNode, VariableDeclarationNode,
@@ -598,7 +598,7 @@ impl PackratParser {
     pub fn function_decl(
         &mut self,
         name: Option<&TokenNode>,
-        func_keyword: &FuncKeywordKind,
+        func_keyword: &FuncKeywordKindNode,
     ) -> FunctionDeclarationNode {
         components::function_declaration::function_decl(self, name, func_keyword)
     }

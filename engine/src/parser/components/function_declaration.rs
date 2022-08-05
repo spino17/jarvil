@@ -1,6 +1,6 @@
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::{
-    FuncKeywordKind, FunctionDeclarationNode, NameTypeSpecNode, OkNameTypeSpecsNode, TokenNode,
+    FuncKeywordKindNode, FunctionDeclarationNode, NameTypeSpecNode, OkNameTypeSpecsNode, TokenNode,
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::components::statement::core::{
@@ -70,7 +70,7 @@ pub fn function_name(parser: &mut PackratParser) -> (TokenNode, TokenNode) {
 pub fn function_decl(
     parser: &mut PackratParser,
     name_node: Option<&TokenNode>,
-    func_keyword_node: &FuncKeywordKind,
+    func_keyword_node: &FuncKeywordKindNode,
 ) -> FunctionDeclarationNode {
     let (args_node, lparen_node, rparen_node) = parser.name_type_specs_within_parenthesis();
     let token = &parser.curr_token();
