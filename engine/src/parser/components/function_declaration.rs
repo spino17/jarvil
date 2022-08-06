@@ -1,6 +1,6 @@
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::{
-    FuncKeywordKindNode, FunctionDeclarationNode, NameTypeSpecNode, OkNameTypeSpecsNode, TokenNode,
+    FuncKeywordKind, FunctionDeclarationNode, NameTypeSpecNode, OkNameTypeSpecsNode, TokenNode,
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::components::statement::core::{
@@ -70,33 +70,37 @@ pub fn function_name(parser: &mut PackratParser) -> (TokenNode, TokenNode) {
 pub fn function_decl(
     parser: &mut PackratParser,
     name_node: Option<&TokenNode>,
-    func_keyword_node: &FuncKeywordKindNode,
+    func_keyword_node: &FuncKeywordKind,
 ) -> FunctionDeclarationNode {
-    let (args_node, lparen_node, rparen_node) = parser.name_type_specs_within_parenthesis();
+    // let (args_node, lparen_node, rparen_node) = parser.name_type_specs_within_parenthesis();
+    let lparen_node = parser.expect("(");
+    let mut args_node: Option<&NameTypeSpecsNode> = None;
+    let name_type_specs_node: NameTypeSpecsNode;
+    if !parser.check_curr_token(")") {
+        name_type_specs_node = parser.name_type_specs();
+        args_node = Some(&name_type_specs_node);
+    }
+    let rparen_node = parser.expect(")");
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::RIGHT_ARROW => {
             let r_arrow_node = parser.expect("->");
-            let return_type = parser.type_expr();
+            let return_type_node = parser.type_expr();
             let colon_node = parser.expect(":");
             let func_block_node = parser.block(
                 |token| is_statement_within_function_starting_with(token),
                 |parser| parser.stmt(),
                 &STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS,
             );
-            let name_node = match name_node {
-                Some(name_node) => Some(name_node.clone()),
-                None => None,
-            };
             return FunctionDeclarationNode::new(
-                &name_node,
-                &args_node,
-                &Some(return_type),
+                name_node,
+                args_node,
+                Some(&return_type_node),
                 &func_block_node,
                 func_keyword_node,
                 &lparen_node,
                 &rparen_node,
-                &Some(r_arrow_node),
+                Some(&r_arrow_node),
                 &colon_node,
             );
         }
@@ -107,19 +111,15 @@ pub fn function_decl(
                 |parser| parser.stmt(),
                 &STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS,
             );
-            let name_node = match name_node {
-                Some(name_node) => Some(name_node.clone()),
-                None => None,
-            };
             return FunctionDeclarationNode::new(
-                &name_node,
-                &args_node,
-                &None,
+                name_node,
+                args_node,
+                None,
                 &func_block_node,
                 func_keyword_node,
                 &lparen_node,
                 &rparen_node,
-                &None,
+                None,
                 &colon_node,
             );
         }

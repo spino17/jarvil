@@ -2398,13 +2398,13 @@ pub mod ast {
     impl LambdaDeclarationNode {
         pub fn new(
             name: &TokenNode,
-            args: &Option<NameTypeSpecsNode>,
-            return_type: &Option<TypeExpressionNode>,
+            args: Option<&NameTypeSpecsNode>,
+            return_type: Option<&TypeExpressionNode>,
             type_keyword: &TokenNode,
             colon: &TokenNode,
             lparen: &TokenNode,
             rparen: &TokenNode,
-            right_arrow: &Option<TokenNode>,
+            right_arrow: Option<&TokenNode>,
             newline: &TokenNode,
         ) -> Self {
             LambdaDeclarationNode(Rc::new(RefCell::new(CoreLambdaDeclarationNode {
@@ -2536,27 +2536,45 @@ pub mod ast {
     impl OkLambdaDeclarationNode {
         pub fn new(
             name: &TokenNode,
-            args: &Option<NameTypeSpecsNode>,
-            return_type: &Option<TypeExpressionNode>,
+            args: Option<&NameTypeSpecsNode>,
+            return_type: Option<&TypeExpressionNode>,
             type_keyword: &TokenNode,
             colon: &TokenNode,
             lparen: &TokenNode,
             rparen: &TokenNode,
-            right_arrow: &Option<TokenNode>,
+            right_arrow: Option<&TokenNode>,
             newline: &TokenNode,
         ) -> Self {
             let node = Rc::new(RefCell::new(CoreOkLambdaDeclarationNode {
                 lparen: lparen.clone(),
                 rparen: rparen.clone(),
-                right_arrow: right_arrow.clone(),
+                right_arrow: match right_arrow {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
                 newline: newline.clone(),
                 type_keyword: type_keyword.clone(),
                 colon: colon.clone(),
                 name: name.clone(),
-                args: args.clone(),
-                return_type: return_type.clone(),
+                args: match args {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
+                return_type: match return_type {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
                 parent: None,
             }));
+            name.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
+                WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
+            ));
+            type_keyword.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
+                WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
+            ));
+            colon.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
+                WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
+            ));
             lparen.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
                 WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
             ));
@@ -2566,26 +2584,9 @@ pub mod ast {
             newline.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
                 WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
             ));
-            type_keyword.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
-                WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
-            ));
-            colon.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
-                WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
-            ));
-            name.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
-                WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
-            ));
             match args {
                 Some(args) => {
                     args.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
-                        WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
-                    ));
-                }
-                None => {}
-            }
-            match right_arrow {
-                Some(right_arrow) => {
-                    right_arrow.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
                         WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
                     ));
                 }
@@ -2599,6 +2600,14 @@ pub mod ast {
                 }
                 None => {}
             }
+            match right_arrow {
+                Some(right_arrow) => {
+                    right_arrow.set_parent(WeakASTNode::OK_LAMBDA_DECLARATION(
+                        WeakOkLambdaDeclarationNode(Rc::downgrade(&node)),
+                    ));
+                }
+                None => {}
+            };
             OkLambdaDeclarationNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreOkLambdaDeclarationNode> {
@@ -2695,14 +2704,14 @@ pub mod ast {
     }
     impl FunctionDeclarationNode {
         pub fn new(
-            name: &Option<TokenNode>,
-            args: &Option<NameTypeSpecsNode>,
-            return_type: &Option<TypeExpressionNode>,
+            name: Option<&TokenNode>,
+            args: Option<&NameTypeSpecsNode>,
+            return_type: Option<&TypeExpressionNode>,
             block: &BlockNode,
-            func_keyword: &FuncKeywordKindNode,
+            func_keyword: &FuncKeywordKind,
             lparen: &TokenNode,
             rparen: &TokenNode,
-            right_arrow: &Option<TokenNode>,
+            right_arrow: Option<&TokenNode>,
             colon: &TokenNode,
         ) -> Self {
             let node = Rc::new(RefCell::new(CoreFunctionDeclarationNode {
@@ -2750,7 +2759,7 @@ pub mod ast {
         }
     }
     pub struct CoreOkFunctionDeclarationNode {
-        func_keyword: FuncKeywordKindNode,
+        func_keyword: FuncKeywordKind,
         lparen: TokenNode,
         rparen: TokenNode,
         right_arrow: Option<TokenNode>,
@@ -2814,33 +2823,33 @@ pub mod ast {
             }
         }
     }
-    pub enum FuncKeywordKindNode {
+    pub enum FuncKeywordKind {
         DEF(TokenNode),
         FUNC(TokenNode),
     }
     #[automatically_derived]
-    impl ::core::fmt::Debug for FuncKeywordKindNode {
+    impl ::core::fmt::Debug for FuncKeywordKind {
         fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
             match self {
-                FuncKeywordKindNode::DEF(__self_0) => {
+                FuncKeywordKind::DEF(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "DEF", &__self_0)
                 }
-                FuncKeywordKindNode::FUNC(__self_0) => {
+                FuncKeywordKind::FUNC(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "FUNC", &__self_0)
                 }
             }
         }
     }
     #[automatically_derived]
-    impl ::core::clone::Clone for FuncKeywordKindNode {
+    impl ::core::clone::Clone for FuncKeywordKind {
         #[inline]
-        fn clone(&self) -> FuncKeywordKindNode {
+        fn clone(&self) -> FuncKeywordKind {
             match self {
-                FuncKeywordKindNode::DEF(__self_0) => {
-                    FuncKeywordKindNode::DEF(::core::clone::Clone::clone(__self_0))
+                FuncKeywordKind::DEF(__self_0) => {
+                    FuncKeywordKind::DEF(::core::clone::Clone::clone(__self_0))
                 }
-                FuncKeywordKindNode::FUNC(__self_0) => {
-                    FuncKeywordKindNode::FUNC(::core::clone::Clone::clone(__self_0))
+                FuncKeywordKind::FUNC(__self_0) => {
+                    FuncKeywordKind::FUNC(::core::clone::Clone::clone(__self_0))
                 }
             }
         }
@@ -2865,28 +2874,43 @@ pub mod ast {
     }
     impl OkFunctionDeclarationNode {
         pub fn new(
-            name: &Option<TokenNode>,
-            args: &Option<NameTypeSpecsNode>,
-            return_type: &Option<TypeExpressionNode>,
+            name: Option<&TokenNode>,
+            args: Option<&NameTypeSpecsNode>,
+            return_type: Option<&TypeExpressionNode>,
             block: &BlockNode,
-            func_keyword: &FuncKeywordKindNode,
+            func_keyword: &FuncKeywordKind,
             lparen: &TokenNode,
             rparen: &TokenNode,
-            right_arrow: &Option<TokenNode>,
+            right_arrow: Option<&TokenNode>,
             colon: &TokenNode,
         ) -> Self {
             let node = Rc::new(RefCell::new(CoreOkFunctionDeclarationNode {
                 func_keyword: func_keyword.clone(),
                 lparen: lparen.clone(),
                 rparen: rparen.clone(),
-                right_arrow: right_arrow.clone(),
+                right_arrow: match right_arrow {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
                 colon: colon.clone(),
-                name: name.clone(),
-                args: args.clone(),
-                return_type: return_type.clone(),
+                name: match name {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
+                args: match args {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
+                return_type: match return_type {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
                 block: block.clone(),
                 parent: None,
             }));
+            block.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
+                WeakOkFunctionDeclarationNode(Rc::downgrade(&node)),
+            ));
             lparen.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
                 WeakOkFunctionDeclarationNode(Rc::downgrade(&node)),
             ));
@@ -2896,29 +2920,6 @@ pub mod ast {
             colon.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
                 WeakOkFunctionDeclarationNode(Rc::downgrade(&node)),
             ));
-            block.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
-                WeakOkFunctionDeclarationNode(Rc::downgrade(&node)),
-            ));
-            match func_keyword {
-                FuncKeywordKindNode::DEF(def_node) => {
-                    def_node.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
-                        WeakOkFunctionDeclarationNode(Rc::downgrade(&node)),
-                    ));
-                }
-                FuncKeywordKindNode::FUNC(func_node) => {
-                    func_node.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
-                        WeakOkFunctionDeclarationNode(Rc::downgrade(&node)),
-                    ));
-                }
-            }
-            match right_arrow {
-                Some(right_arrow) => {
-                    right_arrow.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
-                        WeakOkFunctionDeclarationNode(Rc::downgrade(&node)),
-                    ));
-                }
-                None => {}
-            }
             match name {
                 Some(name) => {
                     name.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
@@ -2942,6 +2943,26 @@ pub mod ast {
                     ));
                 }
                 None => {}
+            }
+            match right_arrow {
+                Some(right_arrow) => {
+                    right_arrow.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
+                        WeakOkFunctionDeclarationNode(Rc::downgrade(&node)),
+                    ));
+                }
+                None => {}
+            };
+            match func_keyword {
+                FuncKeywordKind::DEF(def_node) => {
+                    def_node.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
+                        WeakOkFunctionDeclarationNode(Rc::downgrade(&node)),
+                    ));
+                }
+                FuncKeywordKind::FUNC(func_node) => {
+                    func_node.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(
+                        WeakOkFunctionDeclarationNode(Rc::downgrade(&node)),
+                    ));
+                }
             }
             OkFunctionDeclarationNode(node)
         }
@@ -5446,7 +5467,7 @@ pub mod ast {
     impl CallExpressionNode {
         pub fn new(
             function_name: &TokenNode,
-            params: &Option<ParamsNode>,
+            params: Option<&ParamsNode>,
             lparen: &TokenNode,
             rparen: &TokenNode,
         ) -> Self {
@@ -5454,16 +5475,19 @@ pub mod ast {
                 lparen: lparen.clone(),
                 rparen: rparen.clone(),
                 function_name: function_name.clone(),
-                params: params.clone(),
+                params: match params {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
                 parent: None,
             }));
+            function_name.set_parent(WeakASTNode::CALL_EXPRESSION(WeakCallExpressionNode(
+                Rc::downgrade(&node),
+            )));
             lparen.set_parent(WeakASTNode::CALL_EXPRESSION(WeakCallExpressionNode(
                 Rc::downgrade(&node),
             )));
             rparen.set_parent(WeakASTNode::CALL_EXPRESSION(WeakCallExpressionNode(
-                Rc::downgrade(&node),
-            )));
-            function_name.set_parent(WeakASTNode::CALL_EXPRESSION(WeakCallExpressionNode(
                 Rc::downgrade(&node),
             )));
             match params {
@@ -5473,7 +5497,7 @@ pub mod ast {
                     )));
                 }
                 None => {}
-            }
+            };
             CallExpressionNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreCallExpressionNode> {
@@ -5559,7 +5583,7 @@ pub mod ast {
         pub fn new(
             class_name: &TokenNode,
             class_method_name: &TokenNode,
-            params: &Option<ParamsNode>,
+            params: Option<&ParamsNode>,
             double_colon: &TokenNode,
             lparen: &TokenNode,
             rparen: &TokenNode,
@@ -5570,15 +5594,12 @@ pub mod ast {
                 double_colon: double_colon.clone(),
                 class_name: class_name.clone(),
                 class_method_name: class_method_name.clone(),
-                params: params.clone(),
+                params: match params {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
                 parent: None,
             }));
-            lparen.set_parent(WeakASTNode::CLASS_METHOD_CALL(WeakClassMethodCallNode(
-                Rc::downgrade(&node),
-            )));
-            rparen.set_parent(WeakASTNode::CLASS_METHOD_CALL(WeakClassMethodCallNode(
-                Rc::downgrade(&node),
-            )));
             class_name.set_parent(WeakASTNode::CLASS_METHOD_CALL(WeakClassMethodCallNode(
                 Rc::downgrade(&node),
             )));
@@ -5588,6 +5609,12 @@ pub mod ast {
             double_colon.set_parent(WeakASTNode::CLASS_METHOD_CALL(WeakClassMethodCallNode(
                 Rc::downgrade(&node),
             )));
+            lparen.set_parent(WeakASTNode::CLASS_METHOD_CALL(WeakClassMethodCallNode(
+                Rc::downgrade(&node),
+            )));
+            rparen.set_parent(WeakASTNode::CLASS_METHOD_CALL(WeakClassMethodCallNode(
+                Rc::downgrade(&node),
+            )));
             match params {
                 Some(params) => {
                     params.set_parent(WeakASTNode::CLASS_METHOD_CALL(WeakClassMethodCallNode(
@@ -5595,7 +5622,7 @@ pub mod ast {
                     )));
                 }
                 None => {}
-            }
+            };
             ClassMethodCallNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreClassMethodCallNode> {
@@ -5716,7 +5743,7 @@ pub mod ast {
         }
         pub fn new_with_call(
             atom: &AtomNode,
-            params: &Option<ParamsNode>,
+            params: Option<&ParamsNode>,
             lparen: &TokenNode,
             rparen: &TokenNode,
         ) -> Self {
@@ -5739,7 +5766,7 @@ pub mod ast {
         pub fn new_with_method_access(
             atom: &AtomNode,
             method_name: &TokenNode,
-            params: &Option<ParamsNode>,
+            params: Option<&ParamsNode>,
             lparen: &TokenNode,
             rparen: &TokenNode,
             dot: &TokenNode,
@@ -5903,7 +5930,7 @@ pub mod ast {
         pub fn new_with_class_method_call(
             class_name: &TokenNode,
             class_method_name: &TokenNode,
-            params: &Option<ParamsNode>,
+            params: Option<&ParamsNode>,
             double_colon: &TokenNode,
             lparen: &TokenNode,
             rparen: &TokenNode,
@@ -5995,7 +6022,7 @@ pub mod ast {
     impl CallNode {
         fn new(
             atom: &AtomNode,
-            params: &Option<ParamsNode>,
+            params: Option<&ParamsNode>,
             lparen: &TokenNode,
             rparen: &TokenNode,
         ) -> Self {
@@ -6003,7 +6030,10 @@ pub mod ast {
                 atom: atom.clone(),
                 lparen: lparen.clone(),
                 rparen: rparen.clone(),
-                params: params.clone(),
+                params: match params {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
                 parent: None,
             }));
             atom.set_parent(WeakASTNode::CALL(WeakCallNode(Rc::downgrade(&node))));
@@ -6014,7 +6044,7 @@ pub mod ast {
                     params.set_parent(WeakASTNode::CALL(WeakCallNode(Rc::downgrade(&node))));
                 }
                 None => {}
-            }
+            };
             CallNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreCallNode> {
@@ -6180,7 +6210,7 @@ pub mod ast {
         pub fn new(
             atom: &AtomNode,
             method_name: &TokenNode,
-            params: &Option<ParamsNode>,
+            params: Option<&ParamsNode>,
             lparen: &TokenNode,
             rparen: &TokenNode,
             dot: &TokenNode,
@@ -6191,10 +6221,16 @@ pub mod ast {
                 dot: dot.clone(),
                 atom: atom.clone(),
                 method_name: method_name.clone(),
-                params: params.clone(),
+                params: match params {
+                    Some(val) => Some(val.clone()),
+                    None => None,
+                },
                 parent: None,
             }));
-            dot.set_parent(WeakASTNode::METHOD_ACCESS(WeakMethodAccessNode(
+            atom.set_parent(WeakASTNode::METHOD_ACCESS(WeakMethodAccessNode(
+                Rc::downgrade(&node),
+            )));
+            method_name.set_parent(WeakASTNode::METHOD_ACCESS(WeakMethodAccessNode(
                 Rc::downgrade(&node),
             )));
             lparen.set_parent(WeakASTNode::METHOD_ACCESS(WeakMethodAccessNode(
@@ -6203,10 +6239,7 @@ pub mod ast {
             rparen.set_parent(WeakASTNode::METHOD_ACCESS(WeakMethodAccessNode(
                 Rc::downgrade(&node),
             )));
-            atom.set_parent(WeakASTNode::METHOD_ACCESS(WeakMethodAccessNode(
-                Rc::downgrade(&node),
-            )));
-            method_name.set_parent(WeakASTNode::METHOD_ACCESS(WeakMethodAccessNode(
+            dot.set_parent(WeakASTNode::METHOD_ACCESS(WeakMethodAccessNode(
                 Rc::downgrade(&node),
             )));
             match params {
@@ -6216,7 +6249,7 @@ pub mod ast {
                     )));
                 }
                 None => {}
-            }
+            };
             MethodAccessNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreMethodAccessNode> {

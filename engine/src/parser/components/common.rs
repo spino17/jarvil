@@ -1,5 +1,5 @@
 use super::expression::core::is_expression_starting_with;
-use crate::ast::ast::{ErrornousNode, FuncKeywordKindNode, RAssignmentNode, TokenNode};
+use crate::ast::ast::{ErrornousNode, FuncKeywordKind, RAssignmentNode, TokenNode};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::parser::PackratParser;
 use std::rc::Rc;
@@ -34,7 +34,7 @@ pub fn r_assign(
             let func_keyword_node = parser.expect("func");
             let func_decl_node = parser.function_decl(
                 identifier_name,
-                &FuncKeywordKindNode::FUNC(func_keyword_node),
+                &FuncKeywordKind::FUNC(func_keyword_node),
             );
             RAssignmentNode::new_with_lambda(&func_decl_node)
         }

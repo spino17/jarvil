@@ -433,13 +433,13 @@ pub struct LambdaDeclarationNode(Rc<RefCell<CoreLambdaDeclarationNode>>);
 impl LambdaDeclarationNode {
     pub fn new(
         name: &TokenNode,
-        args: &Option<NameTypeSpecsNode>,
-        return_type: &Option<TypeExpressionNode>,
+        args: Option<&NameTypeSpecsNode>,
+        return_type: Option<&TypeExpressionNode>,
         type_keyword: &TokenNode,
         colon: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
-        right_arrow: &Option<TokenNode>,
+        right_arrow: Option<&TokenNode>,
         newline: &TokenNode,
     ) -> Self {
         LambdaDeclarationNode(Rc::new(RefCell::new(CoreLambdaDeclarationNode {
@@ -484,29 +484,31 @@ pub struct CoreOkLambdaDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct OkLambdaDeclarationNode(Rc<RefCell<CoreOkLambdaDeclarationNode>>);
 impl OkLambdaDeclarationNode {
+    #[set_parent(OK_LAMBDA_DECLARATION, WeakOkLambdaDeclarationNode)]
     pub fn new(
         name: &TokenNode,
-        args: &Option<NameTypeSpecsNode>,
-        return_type: &Option<TypeExpressionNode>,
+        args: Option<&NameTypeSpecsNode>,
+        return_type: Option<&TypeExpressionNode>,
         type_keyword: &TokenNode,
         colon: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
-        right_arrow: &Option<TokenNode>,
+        right_arrow: Option<&TokenNode>,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(RefCell::new(CoreOkLambdaDeclarationNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
-            right_arrow: right_arrow.clone(),
+            right_arrow: extract_from_option!(right_arrow),
             newline: newline.clone(),
             type_keyword: type_keyword.clone(),
             colon: colon.clone(),
             name: name.clone(),
-            args: args.clone(),
-            return_type: return_type.clone(),
+            args: extract_from_option!(args),
+            return_type: extract_from_option!(return_type),
             parent: None,
         }));
+        /*
         set_parents!(
             (lparen, rparen, newline, type_keyword, colon, name),
             OK_LAMBDA_DECLARATION,
@@ -531,6 +533,7 @@ impl OkLambdaDeclarationNode {
             }
             None => {}
         }
+         */
         OkLambdaDeclarationNode(node)
     }
 
@@ -554,14 +557,14 @@ pub enum FunctionDeclarationKind {
 pub struct FunctionDeclarationNode(pub Rc<RefCell<CoreFunctionDeclarationNode>>);
 impl FunctionDeclarationNode {
     pub fn new(
-        name: &Option<TokenNode>,
-        args: &Option<NameTypeSpecsNode>,
-        return_type: &Option<TypeExpressionNode>,
+        name: Option<&TokenNode>,
+        args: Option<&NameTypeSpecsNode>,
+        return_type: Option<&TypeExpressionNode>,
         block: &BlockNode,
-        func_keyword: &FuncKeywordKindNode,
+        func_keyword: &FuncKeywordKind,
         lparen: &TokenNode,
         rparen: &TokenNode,
-        right_arrow: &Option<TokenNode>,
+        right_arrow: Option<&TokenNode>,
         colon: &TokenNode,
     ) -> Self {
         let node = Rc::new(RefCell::new(CoreFunctionDeclarationNode {
@@ -592,7 +595,7 @@ default_errornous_node_impl!(
 
 #[derive(Debug, Clone)]
 pub struct CoreOkFunctionDeclarationNode {
-    func_keyword: FuncKeywordKindNode,
+    func_keyword: FuncKeywordKind,
     lparen: TokenNode,
     rparen: TokenNode,
     right_arrow: Option<TokenNode>,
@@ -605,7 +608,7 @@ pub struct CoreOkFunctionDeclarationNode {
 }
 
 #[derive(Debug, Clone)]
-pub enum FuncKeywordKindNode {
+pub enum FuncKeywordKind {
     DEF(TokenNode),
     FUNC(TokenNode),
 }
@@ -613,43 +616,37 @@ pub enum FuncKeywordKindNode {
 #[derive(Debug, Clone)]
 pub struct OkFunctionDeclarationNode(pub Rc<RefCell<CoreOkFunctionDeclarationNode>>);
 impl OkFunctionDeclarationNode {
+    #[set_parent(OK_FUNCTION_DECLARATION, WeakOkFunctionDeclarationNode)]
     pub fn new(
-        name: &Option<TokenNode>,
-        args: &Option<NameTypeSpecsNode>,
-        return_type: &Option<TypeExpressionNode>,
+        name: Option<&TokenNode>,
+        args: Option<&NameTypeSpecsNode>,
+        return_type: Option<&TypeExpressionNode>,
         block: &BlockNode,
-        func_keyword: &FuncKeywordKindNode,
+        func_keyword: &FuncKeywordKind,
         lparen: &TokenNode,
         rparen: &TokenNode,
-        right_arrow: &Option<TokenNode>,
+        right_arrow: Option<&TokenNode>,
         colon: &TokenNode,
     ) -> Self {
         let node = Rc::new(RefCell::new(CoreOkFunctionDeclarationNode {
             func_keyword: func_keyword.clone(),
             lparen: lparen.clone(),
             rparen: rparen.clone(),
-            right_arrow: right_arrow.clone(),
+            right_arrow: extract_from_option!(right_arrow),
             colon: colon.clone(),
-            name: name.clone(),
-            args: args.clone(),
-            return_type: return_type.clone(),
+            name: extract_from_option!(name),
+            args: extract_from_option!(args),
+            return_type: extract_from_option!(return_type),
             block: block.clone(),
             parent: None,
         }));
+        /*
         set_parents!(
             (lparen, rparen, colon, block),
             OK_FUNCTION_DECLARATION,
             node,
             WeakOkFunctionDeclarationNode
         );
-        match func_keyword {
-            FuncKeywordKindNode::DEF(def_node) => {
-                set_parent!(def_node, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
-            }
-            FuncKeywordKindNode::FUNC(func_node) => {
-                set_parent!(func_node, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
-            }
-        }
         match right_arrow {
             Some(right_arrow) => {
                 set_parent!(right_arrow, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
@@ -673,6 +670,15 @@ impl OkFunctionDeclarationNode {
                 set_parent!(return_type, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
             }
             None => {}
+        }
+         */
+        match func_keyword {
+            FuncKeywordKind::DEF(def_node) => {
+                set_parent!(def_node, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
+            }
+            FuncKeywordKind::FUNC(func_node) => {
+                set_parent!(func_node, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
+            }
         }
         OkFunctionDeclarationNode(node)
     }
@@ -1693,9 +1699,10 @@ pub struct CoreCallExpressionNode {
 #[derive(Debug, Clone)]
 pub struct CallExpressionNode(Rc<RefCell<CoreCallExpressionNode>>);
 impl CallExpressionNode {
+    #[set_parent(CALL_EXPRESSION, WeakCallExpressionNode)]
     pub fn new(
         function_name: &TokenNode,
-        params: &Option<ParamsNode>,
+        params: Option<&ParamsNode>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1703,9 +1710,10 @@ impl CallExpressionNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
             function_name: function_name.clone(),
-            params: params.clone(),
+            params: extract_from_option!(params),
             parent: None,
         }));
+        /*
         set_parents!((lparen, rparen, function_name), CALL_EXPRESSION, node, WeakCallExpressionNode);
         match params {
             Some(params) => {
@@ -1713,6 +1721,7 @@ impl CallExpressionNode {
             }
             None => {}
         }
+         */
         CallExpressionNode(node)
     }
 
@@ -1734,10 +1743,11 @@ pub struct CoreClassMethodCallNode {
 #[derive(Debug, Clone)]
 pub struct ClassMethodCallNode(Rc<RefCell<CoreClassMethodCallNode>>);
 impl ClassMethodCallNode {
+    #[set_parent(CLASS_METHOD_CALL, WeakClassMethodCallNode)]
     pub fn new(
         class_name: &TokenNode,
         class_method_name: &TokenNode,
-        params: &Option<ParamsNode>,
+        params: Option<&ParamsNode>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1748,9 +1758,10 @@ impl ClassMethodCallNode {
             double_colon: double_colon.clone(),
             class_name: class_name.clone(),
             class_method_name: class_method_name.clone(),
-            params: params.clone(),
+            params: extract_from_option!(params),
             parent: None,
         }));
+        /*
         set_parents!(
             (lparen, rparen, class_name, class_method_name, double_colon),
             CLASS_METHOD_CALL,
@@ -1763,6 +1774,7 @@ impl ClassMethodCallNode {
             }
             None => {}
         }
+         */
         ClassMethodCallNode(node)
     }
 
@@ -1800,7 +1812,7 @@ impl AtomNode {
 
     pub fn new_with_call(
         atom: &AtomNode,
-        params: &Option<ParamsNode>,
+        params: Option<&ParamsNode>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1825,7 +1837,7 @@ impl AtomNode {
     pub fn new_with_method_access(
         atom: &AtomNode,
         method_name: &TokenNode,
-        params: &Option<ParamsNode>,
+        params: Option<&ParamsNode>,
         lparen: &TokenNode,
         rparen: &TokenNode,
         dot: &TokenNode,
@@ -1916,7 +1928,7 @@ impl AtomStartNode {
     pub fn new_with_class_method_call(
         class_name: &TokenNode,
         class_method_name: &TokenNode,
-        params: &Option<ParamsNode>,
+        params: Option<&ParamsNode>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1958,9 +1970,10 @@ pub struct CoreCallNode {
 #[derive(Debug, Clone)]
 pub struct CallNode(Rc<RefCell<CoreCallNode>>);
 impl CallNode {
+    #[set_parent(CALL, WeakCallNode)]
     fn new(
         atom: &AtomNode,
-        params: &Option<ParamsNode>,
+        params: Option<&ParamsNode>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1968,9 +1981,10 @@ impl CallNode {
             atom: atom.clone(),
             lparen: lparen.clone(),
             rparen: rparen.clone(),
-            params: params.clone(),
+            params: extract_from_option!(params),
             parent: None,
         }));
+        /*
         set_parents!((atom, lparen, rparen), CALL, node, WeakCallNode);
         match params {
             Some(params) => {
@@ -1978,6 +1992,7 @@ impl CallNode {
             }
             None => {}
         }
+         */
         CallNode(node)
     }
 
@@ -2026,10 +2041,11 @@ pub struct CoreMethodAccessNode {
 #[derive(Debug, Clone)]
 pub struct MethodAccessNode(Rc<RefCell<CoreMethodAccessNode>>);
 impl MethodAccessNode {
+    #[set_parent(METHOD_ACCESS, WeakMethodAccessNode)]
     pub fn new(
         atom: &AtomNode,
         method_name: &TokenNode,
-        params: &Option<ParamsNode>,
+        params: Option<&ParamsNode>,
         lparen: &TokenNode,
         rparen: &TokenNode,
         dot: &TokenNode,
@@ -2040,9 +2056,10 @@ impl MethodAccessNode {
             dot: dot.clone(),
             atom: atom.clone(),
             method_name: method_name.clone(),
-            params: params.clone(),
+            params: extract_from_option!(params),
             parent: None,
         }));
+        /*
         set_parents!(
             (dot, lparen, rparen, atom, method_name),
             METHOD_ACCESS,
@@ -2055,6 +2072,7 @@ impl MethodAccessNode {
             }
             None => {}
         }
+         */
         MethodAccessNode(node)
     }
 

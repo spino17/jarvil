@@ -1,4 +1,4 @@
-use crate::ast::ast::ErrornousNode;
+use crate::ast::ast::{ErrornousNode, NameTypeSpecsNode};
 use crate::ast::ast::{LambdaDeclarationNode, TypeDeclarationNode, TypeExpressionNode};
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::CoreToken;
@@ -30,23 +30,30 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
         }
         CoreToken::LPAREN => {
             // lambda type
-            let (args_node, lparen_node, rparen_node) = parser.name_type_specs_within_parenthesis();
+            // let (args_node, lparen_node, rparen_node) = parser.name_type_specs_within_parenthesis();
+            let lparen_node = parser.expect("(");
+            let mut args_node: Option<&NameTypeSpecsNode> = None;
+            let name_type_specs_node: NameTypeSpecsNode;
+            if !parser.check_curr_token(")") {
+                name_type_specs_node = parser.name_type_specs();
+                args_node = Some(&name_type_specs_node);
+            }
+            let rparen_node = parser.expect(")");
             let token = &parser.curr_token();
-            let mut return_type_node: Option<TypeExpressionNode> = None;
             let lambda_node = match token.core_token {
                 CoreToken::RIGHT_ARROW => {
                     let r_arrow_node = parser.expect("->");
-                    return_type_node = Some(parser.type_expr());
+                    let return_type_node = parser.type_expr();
                     let newline_node = parser.expect_terminals();
                     LambdaDeclarationNode::new(
                         &type_name_node,
-                        &args_node,
-                        &return_type_node,
+                        args_node,
+                        Some(&return_type_node),
                         &type_keyword_node,
                         &colon_node,
                         &lparen_node,
                         &rparen_node,
-                        &Some(r_arrow_node),
+                        Some(&r_arrow_node),
                         &newline_node,
                     )
                 }
@@ -54,13 +61,13 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                     let newline_node = parser.expect("\n");
                     LambdaDeclarationNode::new(
                         &type_name_node,
-                        &args_node,
-                        &None,
+                        args_node,
+                        None,
                         &type_keyword_node,
                         &colon_node,
                         &lparen_node,
                         &rparen_node,
-                        &None,
+                        None,
                         &newline_node,
                     )
                 }
@@ -68,13 +75,13 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                     let endmarker_node = parser.expect(ENDMARKER);
                     LambdaDeclarationNode::new(
                         &type_name_node,
-                        &args_node,
-                        &None,
+                        args_node,
+                        None,
                         &type_keyword_node,
                         &colon_node,
                         &lparen_node,
                         &rparen_node,
-                        &None,
+                        None,
                         &endmarker_node,
                     )
                 }

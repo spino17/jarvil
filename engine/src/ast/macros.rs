@@ -91,7 +91,7 @@ macro_rules! set_parents_optional {
 macro_rules! extract_from_option {
     ($t: ident) => {
         match $t {
-            Some(val) => val.clone(),
+            Some(val) => Some(val.clone()),
             None => None,
         }
     };

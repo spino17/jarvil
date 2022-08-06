@@ -183,6 +183,8 @@ impl Namespace {
         self.variables.insert(name, meta_data, line_number)
     }
 
+    // pub fn declare_lambda(...)
+
     pub fn define_variable(&self, name: String) -> Result<(), JarvilError> {
         // SET is_init => true
         // possible errors => no entry with key `name` exists in the scope
@@ -193,7 +195,7 @@ impl Namespace {
 impl Clone for Namespace {
     fn clone(&self) -> Self {
         Namespace {
-            variables: self.variables.clone(),
+            variables: self.variables.clone(),  // TODO - variables and lambdas
             types: self.types.clone(),
             functions: self.functions.clone(),
         }

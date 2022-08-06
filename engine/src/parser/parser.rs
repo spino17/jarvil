@@ -5,7 +5,7 @@
 
 use super::helper::format_symbol;
 use crate::ast::ast::{
-    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKindNode,
+    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
     FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, ParamsNode, RAssignmentNode,
     SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
     UnaryExpressionNode, VariableDeclarationNode,
@@ -600,7 +600,7 @@ impl PackratParser {
     pub fn function_decl(
         &mut self,
         name: Option<&TokenNode>,
-        func_keyword: &FuncKeywordKindNode,
+        func_keyword: &FuncKeywordKind,
     ) -> FunctionDeclarationNode {
         components::function_declaration::function_decl(self, name, func_keyword)
     }
