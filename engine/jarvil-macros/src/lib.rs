@@ -64,6 +64,5 @@ pub fn hello_macro_derive(input: TokenStream) -> TokenStream {
         Ok(it) => it,
         Err(e) => return token_stream_with_error(input, e),
     };
-    impl_tokenify_macro(&input_ast);
-    todo!()
+    impl_tokenify_macro(&input_ast)
 }
