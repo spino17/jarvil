@@ -220,48 +220,53 @@ impl StatementNode {
         StatementNode(node)
     }
 
+    #[set_parent(STATEMENT, WeakStatementNode)]
     pub fn new_with_assignment(assignment: &AssignmentNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementKind::ASSIGNMENT(assignment.clone()),
             parent: None,
         }));
-        set_parent!(assignment, STATEMENT, node, WeakStatementNode);
+        // set_parent!(assignment, STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
+    #[set_parent(STATEMENT, WeakStatementNode)]
     pub fn new_with_variable_declaration(variable_decl: &VariableDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementKind::VARIABLE_DECLARATION(variable_decl.clone()),
             parent: None,
         }));
-        set_parent!(variable_decl, STATEMENT, node, WeakStatementNode);
+        // set_parent!(variable_decl, STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
+    #[set_parent(STATEMENT, WeakStatementNode)]
     pub fn new_with_function_declaration(function_decl: &FunctionDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementKind::FUNCTION_DECLARATION(function_decl.clone()),
             parent: None,
         }));
-        set_parent!(function_decl, STATEMENT, node, WeakStatementNode);
+        // set_parent!(function_decl, STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
+    #[set_parent(STATEMENT, WeakStatementNode)]
     pub fn new_with_type_declaration(type_decl: &TypeDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementKind::TYPE_DECLARATION(type_decl.clone()),
             parent: None,
         }));
-        set_parent!(type_decl, STATEMENT, node, WeakStatementNode);
+        // set_parent!(type_decl, STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
+    #[set_parent(STATEMENT, WeakStatementNode)]
     pub fn new_with_struct_stmt(struct_stmt: &StructStatementNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementKind::STRUCT_STATEMENT(struct_stmt.clone()),
             parent: None,
         }));
-        set_parent!(struct_stmt, STATEMENT, node, WeakStatementNode);
+        // set_parent!(struct_stmt, STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
@@ -281,6 +286,7 @@ pub struct CoreAssignmentNode {
 #[derive(Debug, Clone)]
 pub struct AssignmentNode(Rc<RefCell<CoreAssignmentNode>>);
 impl AssignmentNode {
+    #[set_parent(ASSIGNMENT, WeakAssignmentNode)]
     pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAssignmentNode {
             equal: equal.clone(),
@@ -288,7 +294,7 @@ impl AssignmentNode {
             r_assign: r_assign.clone(),
             parent: None,
         }));
-        set_parents!((equal, l_atom, r_assign), ASSIGNMENT, node, WeakAssignmentNode);
+        // set_parents!((equal, l_atom, r_assign), ASSIGNMENT, node, WeakAssignmentNode);
         AssignmentNode(node)
     }
 
@@ -357,12 +363,13 @@ impl TypeDeclarationNode {
         })))
     }
 
+    #[set_parent(TYPE_DECLARATION, WeakTypeDeclarationNode)]
     pub fn new_with_lambda(lambda: &LambdaDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreTypeDeclarationNode {
             kind: TypeDeclarationKind::LAMBDA(lambda.clone()),
             parent: None,
         }));
-        set_parent!(lambda, TYPE_DECLARATION, node, WeakTypeDeclarationNode);
+        // set_parent!(lambda, TYPE_DECLARATION, node, WeakTypeDeclarationNode);
         TypeDeclarationNode(node)
     }
 
@@ -387,6 +394,7 @@ pub struct CoreStructDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct StructDeclarationNode(Rc<RefCell<CoreStructDeclarationNode>>);
 impl StructDeclarationNode {
+    #[set_parent(STRUCT_DECLARATION, WeakStructDeclarationNode)]
     pub fn new(
         name: &TokenNode,
         block: &BlockNode,
@@ -400,7 +408,7 @@ impl StructDeclarationNode {
             block: block.clone(),
             parent: None,
         }));
-        set_parents!((type_keyword, colon, name, block), STRUCT_DECLARATION, node, WeakStructDeclarationNode);
+        // set_parents!((type_keyword, colon, name, block), STRUCT_DECLARATION, node, WeakStructDeclarationNode);
         StructDeclarationNode(node)
     }
 
@@ -685,6 +693,7 @@ pub struct CoreVariableDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct VariableDeclarationNode(pub Rc<RefCell<CoreVariableDeclarationNode>>);
 impl VariableDeclarationNode {
+    #[set_parent(VARIABLE_DECLARATION, WeakVariableDeclarationNode)]
     pub fn new(
         name: &TokenNode,
         r_assign: &RAssignmentNode,
@@ -698,12 +707,14 @@ impl VariableDeclarationNode {
             r_assign: r_assign.clone(),
             parent: None,
         }));
+        /*
         set_parents!(
             (let_keyword, equal, name, r_assign),
             VARIABLE_DECLARATION,
             node,
             WeakVariableDeclarationNode
         );
+         */
         VariableDeclarationNode(node)
     }
 
@@ -726,12 +737,13 @@ pub enum NameTypeSpecsKind {
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecsNode(Rc<RefCell<CoreNameTypeSpecsNode>>);
 impl NameTypeSpecsNode {
+    #[set_parent(NAME_TYPE_SPECS, WeakNameTypeSpecsNode)]
     pub fn new(ok_name_type_specs: &OkNameTypeSpecsNode) -> Self {
         let node = Rc::new(RefCell::new(CoreNameTypeSpecsNode {
             kind: NameTypeSpecsKind::OK(ok_name_type_specs.clone()),
             parent: None,
         }));
-        set_parent!(ok_name_type_specs, NAME_TYPE_SPECS, node, WeakNameTypeSpecsNode);
+        // set_parent!(ok_name_type_specs, NAME_TYPE_SPECS, node, WeakNameTypeSpecsNode);
         NameTypeSpecsNode(node)
     }
 
@@ -760,6 +772,7 @@ pub struct CoreOkNameTypeSpecsNode {
 #[derive(Debug, Clone)]
 pub struct OkNameTypeSpecsNode(Rc<RefCell<CoreOkNameTypeSpecsNode>>);
 impl OkNameTypeSpecsNode {
+    #[set_parent(OK_NAME_TYPE_SPECS, WeakOkNameTypeSpecsNode)]
     pub fn new_with_args(
         arg: &NameTypeSpecNode,
         remaining_args: &NameTypeSpecsNode,
@@ -771,10 +784,11 @@ impl OkNameTypeSpecsNode {
             remaining_args: Some(remaining_args.clone()),
             parent: None,
         }));
-        set_parents!((comma, arg, remaining_args), OK_NAME_TYPE_SPECS, node, WeakOkNameTypeSpecsNode);
+        // set_parents!((comma, arg, remaining_args), OK_NAME_TYPE_SPECS, node, WeakOkNameTypeSpecsNode);
         OkNameTypeSpecsNode(node)
     }
 
+    #[set_parent(OK_NAME_TYPE_SPECS, WeakOkNameTypeSpecsNode)]
     pub fn new_with_single_arg(arg: &NameTypeSpecNode) -> Self {
         let node = Rc::new(RefCell::new(CoreOkNameTypeSpecsNode {
             comma: None,
@@ -782,7 +796,7 @@ impl OkNameTypeSpecsNode {
             remaining_args: None,
             parent: None,
         }));
-        set_parent!(arg, OK_NAME_TYPE_SPECS, node, WeakOkNameTypeSpecsNode);
+        // set_parent!(arg, OK_NAME_TYPE_SPECS, node, WeakOkNameTypeSpecsNode);
         OkNameTypeSpecsNode(node)
     }
 
@@ -815,6 +829,7 @@ pub struct CoreNameTypeSpecNode {
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(Rc<RefCell<CoreNameTypeSpecNode>>);
 impl NameTypeSpecNode {
+    #[set_parent(NAME_TYPE_SPEC, WeakNameTypeSpecNode)]
     pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreNameTypeSpecNode {
             colon: colon.clone(),
@@ -822,7 +837,7 @@ impl NameTypeSpecNode {
             param_type: param_type.clone(),
             parent: None,
         }));
-        set_parents!((colon, param_name, param_type), NAME_TYPE_SPEC, node, WeakNameTypeSpecNode);
+        // set_parents!((colon, param_name, param_type), NAME_TYPE_SPEC, node, WeakNameTypeSpecNode);
         NameTypeSpecNode(node)
     }
 
@@ -917,12 +932,13 @@ pub struct CoreAtomicTypeNode {
 #[derive(Debug, Clone)]
 pub struct AtomicTypeNode(Rc<RefCell<CoreAtomicTypeNode>>);
 impl AtomicTypeNode {
+    #[set_parent(ATOMIC_TYPE, WeakAtomicTypeNode)]
     pub fn new(token: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomicTypeNode {
             kind: token.clone(),
             parent: None,
         }));
-        set_parent!(token, ATOMIC_TYPE, node, WeakAtomicTypeNode);
+        // set_parent!(token, ATOMIC_TYPE, node, WeakAtomicTypeNode);
         AtomicTypeNode(node)
     }
 
@@ -953,6 +969,7 @@ pub struct CoreArrayTypeNode {
 #[derive(Debug, Clone)]
 pub struct ArrayTypeNode(Rc<RefCell<CoreArrayTypeNode>>);
 impl ArrayTypeNode {
+    #[set_parent(ARRAY_TYPE, WeakArrayTypeNode)]
     pub fn new(
         size: &TokenNode,
         sub_type: &TypeExpressionNode,
@@ -968,12 +985,14 @@ impl ArrayTypeNode {
             size: size.clone(),
             parent: None,
         }));
+        /*
         set_parents!(
             (lsquare, rsquare, semicolon, size, sub_type),
             ARRAY_TYPE,
             node,
             WeakArrayTypeNode
         );
+        */
         ArrayTypeNode(node)
     }
 
@@ -1006,12 +1025,13 @@ pub struct CoreUserDefinedTypeNode {
 #[derive(Debug, Clone)]
 pub struct UserDefinedTypeNode(Rc<RefCell<CoreUserDefinedTypeNode>>);
 impl UserDefinedTypeNode {
+    #[set_parent(USER_DEFINED_TYPE, WeakUserDefinedTypeNode)]
     pub fn new(identifier: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreUserDefinedTypeNode {
             token: identifier.clone(),
             parent: None,
         }));
-        set_parent!(identifier, USER_DEFINED_TYPE, node, WeakUserDefinedTypeNode);
+        // set_parent!(identifier, USER_DEFINED_TYPE, node, WeakUserDefinedTypeNode);
         UserDefinedTypeNode(node)
     }
 
@@ -1221,12 +1241,13 @@ pub enum ExpressionKind {
 #[derive(Debug, Clone)]
 pub struct ExpressionNode(pub Rc<RefCell<CoreExpressionNode>>);
 impl ExpressionNode {
+    #[set_parent(EXPRESSION, WeakExpressionNode)]
     pub fn new_with_unary(unary_expr: &UnaryExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreExpressionNode {
             kind: ExpressionKind::UNARY(unary_expr.clone()),
             parent: None,
         }));
-        set_parent!(unary_expr, EXPRESSION, node, WeakExpressionNode);
+        // set_parent!(unary_expr, EXPRESSION, node, WeakExpressionNode);
         ExpressionNode(node)
     }
 
@@ -1320,39 +1341,43 @@ pub enum AtomicExpressionKind {
 #[derive(Debug, Clone)]
 pub struct AtomicExpressionNode(Rc<RefCell<CoreAtomicExpressionNode>>);
 impl AtomicExpressionNode {
+    #[set_parent(ATOMIC_EXPRESSION, WeakAtomicExpressionNode)]
     pub fn new_with_bool(bool_value: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
             kind: AtomicExpressionKind::BOOL_VALUE(bool_value.clone()),
             parent: None,
         }));
-        set_parent!(bool_value, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
+        // set_parent!(bool_value, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
         AtomicExpressionNode(node)
     }
 
+    #[set_parent(ATOMIC_EXPRESSION, WeakAtomicExpressionNode)]
     pub fn new_with_integer(token: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
             kind: AtomicExpressionKind::INTEGER(token.clone()),
             parent: None,
         }));
-        set_parent!(token, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
+        // set_parent!(token, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
         AtomicExpressionNode(node)
     }
 
+    #[set_parent(ATOMIC_EXPRESSION, WeakAtomicExpressionNode)]
     pub fn new_with_floating_point_number(token: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
             kind: AtomicExpressionKind::FLOATING_POINT_NUMBER(token.clone()),
             parent: None,
         }));
-        set_parent!(token, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
+        // set_parent!(token, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
         AtomicExpressionNode(node)
     }
 
+    #[set_parent(ATOMIC_EXPRESSION, WeakAtomicExpressionNode)]
     pub fn new_with_literal(token: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
             kind: AtomicExpressionKind::LITERAL(token.clone()),
             parent: None,
         }));
-        set_parent!(token, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
+        // set_parent!(token, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
         AtomicExpressionNode(node)
     }
 
@@ -1370,12 +1395,13 @@ impl AtomicExpressionNode {
         AtomicExpressionNode(node)
     }
 
+    #[set_parent(ATOMIC_EXPRESSION, WeakAtomicExpressionNode)]
     pub fn new_with_atom(atom: &AtomNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomicExpressionNode {
             kind: AtomicExpressionKind::ATOM(atom.clone()),
             parent: None,
         }));
-        set_parent!(atom, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
+        // set_parent!(atom, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
         AtomicExpressionNode(node)
     }
 
@@ -1399,6 +1425,7 @@ pub struct CoreParenthesisedExpressionNode {
 #[derive(Debug, Clone)]
 pub struct ParenthesisedExpressionNode(Rc<RefCell<CoreParenthesisedExpressionNode>>);
 impl ParenthesisedExpressionNode {
+    #[set_parent(PARENTHESISED_EXPRESSION, WeakParenthesisedExpressionNode)]
     pub fn new(expr: &ExpressionNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreParenthesisedExpressionNode {
             lparen: lparen.clone(),
@@ -1406,7 +1433,7 @@ impl ParenthesisedExpressionNode {
             expr: expr.clone(),
             parent: None,
         }));
-        set_parents!((lparen, rparen, expr), PARENTHESISED_EXPRESSION, node, WeakParenthesisedExpressionNode);
+        // set_parents!((lparen, rparen, expr), PARENTHESISED_EXPRESSION, node, WeakParenthesisedExpressionNode);
         ParenthesisedExpressionNode(node)
     }
 
@@ -1437,12 +1464,13 @@ pub enum UnaryExpressionKind {
 #[derive(Debug, Clone)]
 pub struct UnaryExpressionNode(Rc<RefCell<CoreUnaryExpressionNode>>);
 impl UnaryExpressionNode {
+    #[set_parent(UNARY_EXPRESSION, WeakUnaryExpressionNode)]
     pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreUnaryExpressionNode {
             kind: UnaryExpressionKind::ATOMIC(atomic_expr.clone()),
             parent: None,
         }));
-        set_parent!(atomic_expr, UNARY_EXPRESSION, node, WeakUnaryExpressionNode);
+        // set_parent!(atomic_expr, UNARY_EXPRESSION, node, WeakUnaryExpressionNode);
         UnaryExpressionNode(node)
     }
 
@@ -1482,6 +1510,7 @@ pub struct CoreOnlyUnaryExpressionNode {
 #[derive(Debug, Clone)]
 pub struct OnlyUnaryExpressionNode(Rc<RefCell<CoreOnlyUnaryExpressionNode>>);
 impl OnlyUnaryExpressionNode {
+    #[set_parent(ONLY_UNARY_EXPRESSION, WeakOnlyUnaryExpressionNode)]
     pub fn new(
         operator: &TokenNode,
         unary_expr: &UnaryExpressionNode,
@@ -1493,7 +1522,7 @@ impl OnlyUnaryExpressionNode {
             operator_kind,
             parent: None,
         }));
-        set_parents!((operator, unary_expr), ONLY_UNARY_EXPRESSION, node, WeakOnlyUnaryExpressionNode);
+        // set_parents!((operator, unary_expr), ONLY_UNARY_EXPRESSION, node, WeakOnlyUnaryExpressionNode);
         OnlyUnaryExpressionNode(node)
     }
 
@@ -1528,6 +1557,7 @@ pub enum BinaryOperatorKind {
 #[derive(Debug, Clone)]
 pub struct BinaryExpressionNode(Rc<RefCell<CoreBinaryExpressionNode>>);
 impl BinaryExpressionNode {
+    #[set_parent(BINARY_EXPRESSION, WeakBinaryExpressionNode)]
     pub fn new(
         operator: BinaryOperatorKind,
         left_expr: &ExpressionNode,
@@ -1539,7 +1569,7 @@ impl BinaryExpressionNode {
             right_expr: right_expr.clone(),
             parent: None,
         }));
-        set_parents!((left_expr, right_expr), BINARY_EXPRESSION, node, WeakBinaryExpressionNode);
+        // set_parents!((left_expr, right_expr), BINARY_EXPRESSION, node, WeakBinaryExpressionNode);
         BinaryExpressionNode(node)
     }
 
@@ -1558,6 +1588,7 @@ pub struct CoreLogicalExpressionNode {
 #[derive(Debug, Clone)]
 pub struct LogicalExpressionNode(Rc<RefCell<CoreLogicalExpressionNode>>);
 impl LogicalExpressionNode {
+    #[set_parent(LOGICAL_EXPRESSION, WeakLogicalExpressionNode)]
     pub fn new(
         operator: BinaryOperatorKind,
         left_expr: &ExpressionNode,
@@ -1569,7 +1600,7 @@ impl LogicalExpressionNode {
             right_expr: right_expr.clone(),
             parent: None,
         }));
-        set_parents!((left_expr, right_expr), LOGICAL_EXPRESSION, node, WeakLogicalExpressionNode);
+        // set_parents!((left_expr, right_expr), LOGICAL_EXPRESSION, node, WeakLogicalExpressionNode);
         LogicalExpressionNode(node)
     }
 
@@ -1592,12 +1623,13 @@ pub enum ParamsKind {
 #[derive(Debug, Clone)]
 pub struct ParamsNode(Rc<RefCell<CoreParamsNode>>);
 impl ParamsNode {
+    #[set_parent(PARAMS, WeakParamsNode)]
     pub fn new(ok_params_node: &OkParamsNode) -> Self {
         let node = Rc::new(RefCell::new(CoreParamsNode {
             kind: ParamsKind::OK(ok_params_node.clone()),
             parent: None,
         }));
-        set_parent!(ok_params_node, PARAMS, node, WeakParamsNode);
+        // set_parent!(ok_params_node, PARAMS, node, WeakParamsNode);
         ParamsNode(node)
     }
 
@@ -1617,6 +1649,7 @@ pub struct CoreOkParamsNode {
 #[derive(Debug, Clone)]
 pub struct OkParamsNode(Rc<RefCell<CoreOkParamsNode>>);
 impl OkParamsNode {
+    #[set_parent(OK_PARAMS, WeakOkParamsNode)]
     pub fn new_with_single_param(param: &ExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreOkParamsNode {
             comma: None,
@@ -1624,10 +1657,11 @@ impl OkParamsNode {
             remaining_params: None,
             parent: None,
         }));
-        set_parent!(param, OK_PARAMS, node, WeakOkParamsNode);
+        // set_parent!(param, OK_PARAMS, node, WeakOkParamsNode);
         OkParamsNode(node)
     }
 
+    #[set_parent(OK_PARAMS, WeakOkParamsNode)]
     pub fn new_with_params(
         param: &ExpressionNode,
         remaining_params: &ParamsNode,
@@ -1639,7 +1673,7 @@ impl OkParamsNode {
             remaining_params: Some(remaining_params.clone()),
             parent: None,
         }));
-        set_parents!((comma, param, remaining_params), OK_PARAMS, node, WeakOkParamsNode);
+        // set_parents!((comma, param, remaining_params), OK_PARAMS, node, WeakOkParamsNode);
         OkParamsNode(node)
     }
 
@@ -1754,12 +1788,13 @@ pub enum AtomKind {
 #[derive(Debug, Clone)]
 pub struct AtomNode(Rc<RefCell<CoreAtomNode>>);
 impl AtomNode {
+    #[set_parent(ATOM, WeakAtomNode)]
     pub fn new_with_atom_start(atom_start: &AtomStartNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomNode {
             kind: AtomKind::ATOM_START(atom_start.clone()),
             parent: None,
         }));
-        set_parent!(atom_start, ATOM, node, WeakAtomNode);
+        // set_parent!(atom_start, ATOM, node, WeakAtomNode);
         AtomNode(node)
     }
 
@@ -1858,21 +1893,23 @@ pub enum AtomStartKind {
 #[derive(Debug, Clone)]
 pub struct AtomStartNode(Rc<RefCell<CoreAtomStartNode>>);
 impl AtomStartNode {
+    #[set_parent(ATOM_START, WeakAtomStartNode)]
     pub fn new_with_identifier(token: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomStartNode {
             kind: AtomStartKind::IDENTIFIER(token.clone()),
             parent: None,
         }));
-        set_parent!(token, ATOM_START, node, WeakAtomStartNode);
+        // set_parent!(token, ATOM_START, node, WeakAtomStartNode);
         AtomStartNode(node)
     }
 
+    #[set_parent(ATOM_START, WeakAtomStartNode)]
     pub fn new_with_function_call(call_expr: &CallExpressionNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAtomStartNode {
             kind: AtomStartKind::FUNCTION_CALL(call_expr.clone()),
             parent: None,
         }));
-        set_parent!(call_expr, ATOM_START, node, WeakAtomStartNode);
+        // set_parent!(call_expr, ATOM_START, node, WeakAtomStartNode);
         AtomStartNode(node)
     }
 
@@ -1959,6 +1996,7 @@ pub struct CorePropertyAccessNode {
 #[derive(Debug, Clone)]
 pub struct PropertyAccessNode(Rc<RefCell<CorePropertyAccessNode>>);
 impl PropertyAccessNode {
+    #[set_parent(PROPERTRY_ACCESS, WeakPropertyAccessNode)]
     fn new(atom: &AtomNode, propertry: &TokenNode, dot: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CorePropertyAccessNode {
             dot: dot.clone(),
@@ -1966,7 +2004,7 @@ impl PropertyAccessNode {
             propertry: propertry.clone(),
             parent: None,
         }));
-        set_parents!((dot, atom, propertry), PROPERTRY_ACCESS, node, WeakPropertyAccessNode);
+        // set_parents!((dot, atom, propertry), PROPERTRY_ACCESS, node, WeakPropertyAccessNode);
         PropertyAccessNode(node)
     }
 
@@ -2036,6 +2074,7 @@ pub struct CoreIndexAccessNode {
 #[derive(Debug, Clone)]
 pub struct IndexAccessNode(Rc<RefCell<CoreIndexAccessNode>>);
 impl IndexAccessNode {
+    #[set_parent(INDEX_ACCESS, WeakIndexAccessNode)]
     pub fn new(
         atom: &AtomNode,
         index: &ExpressionNode,
@@ -2049,7 +2088,7 @@ impl IndexAccessNode {
             index: index.clone(),
             parent: None,
         }));
-        set_parents!((lsquare, rsquare, atom, index), INDEX_ACCESS, node, WeakIndexAccessNode);
+        // set_parents!((lsquare, rsquare, atom, index), INDEX_ACCESS, node, WeakIndexAccessNode);
         IndexAccessNode(node)
     }
 
@@ -2073,21 +2112,23 @@ pub enum RAssignmentKind {
 #[derive(Debug, Clone)]
 pub struct RAssignmentNode(Rc<RefCell<CoreRAssignmentNode>>);
 impl RAssignmentNode {
+    #[set_parent(R_ASSIGNMENT, WeakRAssignmentNode)]
     pub fn new_with_lambda(lambda_decl: &FunctionDeclarationNode) -> Self {
         let node = Rc::new(RefCell::new(CoreRAssignmentNode {
             kind: RAssignmentKind::LAMBDA(lambda_decl.clone()),
             parent: None,
         }));
-        set_parent!(lambda_decl, R_ASSIGNMENT, node, WeakRAssignmentNode);
+        // set_parent!(lambda_decl, R_ASSIGNMENT, node, WeakRAssignmentNode);
         RAssignmentNode(node)
     }
 
+    #[set_parent(R_ASSIGNMENT, WeakRAssignmentNode)]
     pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreRAssignmentNode {
             kind: RAssignmentKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
-        set_parents!((expr, newline), R_ASSIGNMENT, node, WeakRAssignmentNode);
+        // set_parents!((expr, newline), R_ASSIGNMENT, node, WeakRAssignmentNode);
         RAssignmentNode(node)
     }
 
