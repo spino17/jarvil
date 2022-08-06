@@ -109,7 +109,7 @@ fn get_node_args(
                 match &*pat_type.pat {
                     syn::Pat::Ident(pat_ident) => {
                         match is_node_or_optional_type(&pat_type.ty) {
-                            // directly make the stmt here with just the ref of pat without cloning it
+                            // TODO - directly make the stmt here with just the ref of pat without cloning it
                             NodeTypeKind::PURE => node_args.push(pat_ident.ident.clone()),
                             NodeTypeKind::OPTION => {
                                 optional_node_args.push(pat_ident.ident.clone())
@@ -169,7 +169,6 @@ fn get_set_parents_macro_expr(
     }
     arg_str.push(')');
     arg_str.push_str(&format!(", {}, node", parent_node.to_string()));
-    // TODO - add for ASTNode and node arguments
     get_macro_expr(macro_name, &arg_str)
 }
 

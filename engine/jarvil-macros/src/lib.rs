@@ -1,5 +1,6 @@
 extern crate proc_macro;
 mod ast;
+mod token;
 use crate::ast::impl_set_parent_macro;
 use proc_macro::*;
 

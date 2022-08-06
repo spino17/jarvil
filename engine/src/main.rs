@@ -18,7 +18,6 @@ mod utils;
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use std::env::args;
-use crate::ast::ast::ASTNode::STATEMENT;
 
 fn start_compiler(args: Vec<String>) {
     let code_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
@@ -29,52 +28,32 @@ fn start_compiler(args: Vec<String>) {
     }
 }
 
-macro_rules! print_args {
-    (($($t: ident),*), $u: ident, $v: ident) => {
-        $(
-            println!("inside print_args! : `{:?}` -> {:?}.{:?}", $t, stringify!($u), $v);
-        )*
-    };
-}
-
-macro_rules! print_args_optional {
-    (($($t: ident),*), $u: ident, $v: ident) => {
-        $(
-            match $t {
-                Some(val) => println!("inside print_args optional ! : `{:?}` -> {:?}.{:?}", val, stringify!($u), $v),
-                None => println!("inside optional print_args! : `None`"),
+macro_rules! impl_enum {
+    ($t: tt, $v: tt) => {
+        pub fn is_eq(symbol: &str) -> bool {
+            match symbol {
+                $t => {
+                    println!("I am bro");
+                    true
+                }
+                $v => {
+                    println!("I am sis");
+                    true
+                },
+                _ => {
+                    println!("I am something else");
+                    false
+                }
             }
-        )*
+        }
     };
 }
 
-#[derive(Debug)]
-struct Node {
-    name: String,
-}
-
-#[derive(Debug)]
-struct BlockNode {
-
-}
-
-fn this_will_be_destroyed(n: &Node, arg: &BlockNode, dude: Option<&Node>, boss: usize) {
-    let node = 11;
-    println!("I am already existing");
-}
+impl_enum!("name", "class");
 
 
 fn main() {
     let args: Vec<String> = args().collect();
+    println!("{}", is_eq("dsdsds"));
     start_compiler(args);
-    let n = Node{
-        name: "bhavya is best".to_string(),
-    };
-    let m = Node{
-        name: "varima is best".to_string(),
-    };
-    let c = BlockNode{
-
-    };
-    this_will_be_destroyed(&m, &c, Some(&n), 10);
 }
