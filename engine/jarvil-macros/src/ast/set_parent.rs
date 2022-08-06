@@ -127,6 +127,7 @@ fn get_set_parents_macro_expr(
     macro_name: &str,
     idents: &Vec<proc_macro2::Ident>,
     parent_node: &syn::Ident,
+    weak_node: &syn::Ident,
 ) -> Stmt {
     let mut arg_str = "(".to_string();
     let mut flag = false;
@@ -138,11 +139,11 @@ fn get_set_parents_macro_expr(
         flag = true;
     }
     arg_str.push(')');
-    arg_str.push_str(&format!(", {}, node", parent_node.to_string()));
+    arg_str.push_str(&format!(", {}, node, {}", parent_node.to_string(), weak_node.to_string()));
     get_macro_expr_stmt(macro_name, &arg_str)
 }
 
-pub fn impl_set_parent_macro(parent_node: &syn::Ident, ast: &syn::ItemFn) -> TokenStream {
+pub fn impl_set_parent_macro(parent_node: &syn::Ident, weak_node: &syn::Ident, ast: &syn::ItemFn) -> TokenStream {
     // ast nodes for the original function
     let attrs = &ast.attrs;
     let vis = &ast.vis;
@@ -151,9 +152,9 @@ pub fn impl_set_parent_macro(parent_node: &syn::Ident, ast: &syn::ItemFn) -> Tok
     let stmts = &block.stmts;
 
     let (node_args, optional_node_args) = get_node_args(&sig.inputs);
-    let set_parents_macro_stmt = get_set_parents_macro_expr("set_parents", &node_args, parent_node);
+    let set_parents_macro_stmt = get_set_parents_macro_expr("set_parents", &node_args, parent_node, weak_node);
     let set_parents_optional_macro_stmt =
-        get_set_parents_macro_expr("set_parents_optional", &optional_node_args, parent_node);
+        get_set_parents_macro_expr("set_parents_optional", &optional_node_args, parent_node, weak_node);
     let first_stmt = &stmts[0]; // TODO - check this first statement is let node = ...
     let remaining_stmt = &stmts[1..];
     let gen = quote! {

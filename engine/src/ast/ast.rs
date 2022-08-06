@@ -84,48 +84,13 @@ pub enum ASTNode {
     SKIPPED_TOKEN(SkippedTokenNode)
 }
 
-// impl_weak_node!((WeakBlockNode, CoreBlockNode), (WeakStatementNode, CoreStatementNode));
-/*
 #[derive(Debug, Clone)]
-pub enum WeakASTNode {
-    BLOCK(Weak<RefCell<CoreBlockNode>>),
-    STATEMENT(Weak<RefCell<CoreStatementNode>>),
-    ASSIGNMENT(Weak<RefCell<CoreAssignmentNode>>),
-    STRUCT_STATEMENT(Weak<RefCell<CoreStructStatementNode>>),
-    NAME_TYPE_SPECS(Weak<RefCell<CoreNameTypeSpecsNode>>),
-    NAME_TYPE_SPEC(Weak<RefCell<CoreNameTypeSpecNode>>),
-    TYPE_EXPRESSION(Weak<RefCell<CoreTypeExpressionNode>>),
-    ATOMIC_TYPE(Weak<RefCell<CoreAtomicTypeNode>>),
-    ARRAY_TYPE(Weak<RefCell<CoreArrayTypeNode>>),
-    USER_DEFINED_TYPE(Weak<RefCell<CoreUserDefinedTypeNode>>),
-    SKIPPED_TOKENS(Weak<RefCell<CoreSkippedTokens>>),
-    EXPRESSION(Weak<RefCell<CoreExpressionNode>>),
-    ATOMIC_EXPRESSION(Weak<RefCell<CoreAtomicExpressionNode>>),
-    PARENTHESISED_EXPRESSION(Weak<RefCell<CoreParenthesisedExpressionNode>>),
-    UNARY_EXPRESSION(Weak<RefCell<CoreUnaryExpressionNode>>),
-    ONLY_UNARY_EXPRESSION(Weak<RefCell<CoreOnlyUnaryExpressionNode>>),
-    BINARY_EXPRESSION(Weak<RefCell<CoreBinaryExpressionNode>>),
-    LOGICAL_EXPRESSION(Weak<RefCell<CoreLogicalExpressionNode>>),
-    PARAMS(Weak<RefCell<CoreParamsNode>>),
-    OK_PARAMS(Weak<RefCell<CoreOkParamsNode>>),
-    CLASS_METHOD_CALL(Weak<RefCell<CoreClassMethodCallNode>>),
-    CALL_EXPRESSION(Weak<RefCell<CoreCallExpressionNode>>),
-    ATOM(Weak<RefCell<CoreAtomNode>>),
-    CALL_NODE(Weak<RefCell<CoreCallNode>>),
-    PROPERTY_ACCESS(Weak<RefCell<CorePropertyAccessNode>>),
-    METHOD_ACCESS(Weak<RefCell<CoreMethodAccessNode>>),
-    INDEX_ACCESS(Weak<RefCell<CoreIndexAccessNode>>),
-    ATOM_START(Weak<RefCell<CoreAtomStartNode>>),
-    VARIABLE_DECLARATION(Weak<RefCell<CoreVariableDeclarationNode>>),
-    FUNCTION_DECLARATION(Weak<RefCell<CoreFunctionDeclarationNode>>),
-    STRUCT_DECLARATION(Weak<RefCell<CoreStructDeclarationNode>>),
-    TYPE_DECLARATION(Weak<RefCell<CoreTypeDeclarationNode>>),
-    OK_FUNCTION_DECLARATION(Weak<RefCell<CoreOkFunctionDeclarationNode>>),
-    OK_LAMDA_DECLARATION(Weak<RefCell<CoreOkLambdaDeclarationNode>>),
-    OK_NAME_TYPE_SPECS(Weak<RefCell<CoreOkNameTypeSpecsNode>>),
-    R_ASSIGNMENT(Weak<RefCell<CoreRAssignmentNode>>),
+pub struct CoreBlockNode {
+    newline: TokenNode,
+    pub stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
+    scope: Option<Namespace>,
+    parent: Option<WeakASTNode>,
 }
- */
 
 #[derive(Debug, Clone)]
 pub enum StatemenIndentWrapper {
@@ -134,14 +99,6 @@ pub enum StatemenIndentWrapper {
     LEADING_SKIPPED_TOKENS(SkippedTokens), // skipped tokens leading to the next stmt in block
     TRAILING_SKIPPED_TOKENS(SkippedTokens), // skipped tokens trailing to the previous stmt in block
     EXTRA_NEWLINES(SkippedTokens),
-}
-
-#[derive(Debug, Clone)]
-pub struct CoreBlockNode {
-    newline: TokenNode,
-    pub stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
-    scope: Option<Namespace>,
-    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -253,12 +210,13 @@ pub enum StatementKind {
 #[derive(Debug, Clone)]
 pub struct StatementNode(pub Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
+    #[set_parent(STATEMENT, WeakStatementNode)]
     pub fn new_with_expression(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
-        set_parents!((expr, newline), STATEMENT, node, WeakStatementNode);
+        // set_parents!((expr, newline), STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 

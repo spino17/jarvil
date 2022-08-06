@@ -4,6 +4,8 @@ mod token;
 use crate::ast::{set_parent::impl_set_parent_macro, ast_node::impl_weak_nodes_macro};
 use crate::token::impl_tokenify_macro;
 use proc_macro::*;
+use syn::parse::Parser;
+use syn::token::Comma;
 use std::str::FromStr;
 use syn::{
     punctuated::Punctuated,
@@ -51,11 +53,23 @@ pub fn set_parent(args: TokenStream, input: TokenStream) -> TokenStream {
         Ok(it) => it,
         Err(e) => return token_stream_with_error(input, e),
     };
-    let args_ast: syn::Ident = match syn::parse(args.clone()) {
+    let parser = Punctuated::<PathSegment, Token![,]>::parse_terminated;
+    let args_ast: syn::punctuated::Punctuated<PathSegment, Comma> = match parser.parse(args.clone()) {
         Ok(it) => it,
         Err(e) => return token_stream_with_error(args, e),
     };
-    impl_set_parent_macro(&args_ast, &input_ast)
+    let mut args_iter = args_ast.iter();
+    let enum_variant_arg = match args_iter.next() {
+        Some(arg) => arg,
+        None => panic!("macro `set_parent` should have two args"),
+    };
+    let weak_node_arg = match args_iter.next() {
+        Some(arg) => arg,
+        None => panic!("macro `set_parent` should have two args"),
+    };
+    let enum_variant_arg_ident = &enum_variant_arg.ident;
+    let weak_node_arg_ident = &weak_node_arg.ident;
+    impl_set_parent_macro(enum_variant_arg_ident, weak_node_arg_ident, &input_ast)
 }
 
 #[proc_macro_derive(WeakNode)]

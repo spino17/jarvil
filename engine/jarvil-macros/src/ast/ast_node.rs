@@ -1,9 +1,6 @@
 extern crate proc_macro;
 use proc_macro::*;
 use quote::quote;
-use syn::{
-    token::Comma, FnArg, GenericArgument, PathArguments, PathSegment, Stmt, Type,
-};
 use crate::get_macro_expr_stmt;
 
 pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {

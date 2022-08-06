@@ -76,7 +76,7 @@ macro_rules! set_parents {
 }
 
 macro_rules! set_parents_optional {
-    (($($t: ident),*), $u: ident, $v: ident) => {
+    (($($t: ident),*), $u: ident, $v: ident, $s: ident) => {
         $(
             match $t {
                 Some($t) => {
