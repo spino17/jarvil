@@ -1,7 +1,7 @@
 macro_rules! default_node_impl {
     ($t: ident) => {
         impl Node for $t {
-            fn set_parent(&self, parent_node: ASTNode) {
+            fn set_parent(&self, parent_node: WeakASTNode) {
                 self.core_ref_mut().parent = Some(parent_node);
             }
         }
@@ -43,14 +43,14 @@ macro_rules! default_errornous_node_impl {
 
 macro_rules! set_parent {
     ($t: ident, $u: ident, $v: ident) => {
-        $t.set_parent(ASTNode::$u(Rc::downgrade(&$v)));
+        $t.set_parent(WeakASTNode::$u(Rc::downgrade(&$v)));
     };
 }
 
 macro_rules! set_parents {
     (($($t: ident),*), $u: ident, $v: ident) => {
         $(
-            $t.set_parent(ASTNode::$u(Rc::downgrade(&$v)));
+            $t.set_parent(WeakASTNode::$u(Rc::downgrade(&$v)));
         )*
     };
 }

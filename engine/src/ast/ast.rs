@@ -19,7 +19,7 @@ use std::{
 };
 
 pub trait Node {
-    fn set_parent(&self, parent_node: ASTNode);
+    fn set_parent(&self, parent_node: WeakASTNode);
     // TODO - below methods should be implemented for all nodes
     // fn start_index(&self) -> usize;
     // fn end_index(&self) -> usize;
@@ -34,11 +34,56 @@ pub trait ErrornousNode {
     ) -> Self;
 }
 
-impl_weak_node!(WeakBlockNode, CoreBlockNode);
-weak_ast_nodes!((BLOCK, WeakBlockNode));
+// impl_weak_node!(WeakBlockNode, CoreBlockNode);
+// weak_ast_nodes!((BLOCK, WeakBlockNode));
 
 #[derive(Debug, Clone)]
 pub enum ASTNode {
+    BLOCK(BlockNode),
+    SKIPPED_TOKENS(SkippedTokens),
+    STATEMENT(StatementNode),
+    ASSIGNMENT(AssignmentNode),
+    STRUCT_STATEMENT(StructStatementNode),
+    TYPE_DECLARATION(TypeDeclarationNode),
+    STRUCT_DECLARATION(StructDeclarationNode),
+    LAMBDA_DECLARATION(LambdaDeclarationNode),
+    OK_LAMBDA_DECLARATION(OkLambdaDeclarationNode),
+    FUNCTION_DECLARATION(FunctionDeclarationNode),
+    OK_FUNCTION_DECLARATION(OkFunctionDeclarationNode),
+    VARIABLE_DECLARATION(VariableDeclarationNode),
+    R_ASSIGNMENT(RAssignmentNode),
+    NAME_TYPE_SPECS(NameTypeSpecsNode),
+    OK_NAME_TYPE_SPECS(OkNameTypeSpecsNode),
+    NAME_TYPE_SPEC(NameTypeSpecNode),
+    TYPE_EXPRESSION(TypeExpressionNode),
+    ATOMIC_TYPE(AtomicTypeNode),
+    ARRAY_TYPE(ArrayTypeNode),
+    USER_DEFINED_TYPE(UserDefinedTypeNode),
+    EXPRESSION(ExpressionNode),
+    ATOMIC_EXPRESSION(AtomicExpressionNode),
+    PARENTHESISED_EXPRESSION(ParenthesisedExpressionNode),
+    UNARY_EXPRESSION(UnaryExpressionNode),
+    ONLY_UNARY_EXPRESSION(OnlyUnaryExpressionNode),
+    BINARY_EXPRESSION(BinaryExpressionNode),
+    LOGICAL_EXPRESSION(LogicalExpressionNode),
+    PARAMS(ParamsNode),
+    OK_PARAMS(OkParamsNode),
+    CALL_EXPRESSION(CallExpressionNode),
+    CLASS_METHOD_CALL(ClassMethodCallNode),
+    ATOM(AtomNode),
+    ATOM_START(AtomStartNode),
+    CALL(CallNode),
+    PROPERTRY_ACCESS(PropertyAccessNode),
+    METHOD_ACCESS(MethodAccessNode),
+    INDEX_ACCESS(IndexAccessNode),
+    TOKEN(TokenNode),
+    OK_TOKEN(OkTokenNode),
+    MISSING_TOKEN(MissingTokenNode),
+    SKIPPED_TOKEN(SkippedTokenNode)
+}
+
+#[derive(Debug, Clone)]
+pub enum WeakASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
     STATEMENT(Weak<RefCell<CoreStatementNode>>),
     ASSIGNMENT(Weak<RefCell<CoreAssignmentNode>>),
@@ -91,7 +136,7 @@ pub struct CoreBlockNode {
     newline: TokenNode,
     pub stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
     scope: Option<Namespace>,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -138,7 +183,7 @@ default_node_impl!(BlockNode);
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokens {
     pub skipped_tokens: Rc<Vec<SkippedTokenNode>>,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -184,7 +229,7 @@ default_node_impl!(SkippedTokens);
 #[derive(Debug, Clone)]
 pub struct CoreStatementNode {
     pub kind: StatementKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -268,7 +313,7 @@ pub struct CoreAssignmentNode {
     equal: TokenNode,
     l_atom: AtomNode,
     r_assign: RAssignmentNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -293,7 +338,7 @@ default_node_impl!(AssignmentNode);
 pub struct CoreStructStatementNode {
     newline: TokenNode,
     name_type_spec: NameTypeSpecNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -320,7 +365,7 @@ default_node_impl!(StructStatementNode);
 #[derive(Debug, Clone)]
 pub struct CoreTypeDeclarationNode {
     kind: TypeDeclarationKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -374,7 +419,7 @@ pub struct CoreStructDeclarationNode {
     colon: TokenNode,
     name: TokenNode,
     block: BlockNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -404,7 +449,7 @@ default_node_impl!(StructDeclarationNode);
 #[derive(Debug, Clone)]
 pub struct CoreLambdaDeclarationNode {
     kind: LambdaDeclarationKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -463,7 +508,7 @@ pub struct CoreOkLambdaDeclarationNode {
     name: TokenNode,
     args: Option<NameTypeSpecsNode>,
     return_type: Option<TypeExpressionNode>,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -525,7 +570,7 @@ default_node_impl!(OkLambdaDeclarationNode);
 #[derive(Debug, Clone)]
 pub struct CoreFunctionDeclarationNode {
     pub kind: FunctionDeclarationKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -585,7 +630,7 @@ pub struct CoreOkFunctionDeclarationNode {
     pub args: Option<NameTypeSpecsNode>,
     pub return_type: Option<TypeExpressionNode>,
     pub block: BlockNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -670,7 +715,7 @@ pub struct CoreVariableDeclarationNode {
     equal: TokenNode,
     pub name: TokenNode,
     pub r_assign: RAssignmentNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -704,7 +749,7 @@ default_node_impl!(VariableDeclarationNode);
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecsNode {
     kind: NameTypeSpecsKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -744,7 +789,7 @@ pub struct CoreOkNameTypeSpecsNode {
     comma: Option<TokenNode>,
     arg: NameTypeSpecNode,
     remaining_args: Option<NameTypeSpecsNode>,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -799,7 +844,7 @@ pub struct CoreNameTypeSpecNode {
     colon: TokenNode,
     param_name: TokenNode,
     param_type: TypeExpressionNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -836,7 +881,7 @@ default_node_impl!(NameTypeSpecNode);
 #[derive(Debug, Clone)]
 pub struct CoreTypeExpressionNode {
     kind: TypeExpressionKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -902,7 +947,7 @@ default_errornous_node_impl!(
 #[derive(Debug, Clone)]
 pub struct CoreAtomicTypeNode {
     kind: TokenNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -938,7 +983,7 @@ pub struct CoreArrayTypeNode {
     semicolon: TokenNode,
     sub_type: TypeExpressionNode,
     size: TokenNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -990,7 +1035,7 @@ default_node_impl!(ArrayTypeNode);
 #[derive(Debug, Clone)]
 pub struct CoreUserDefinedTypeNode {
     token: TokenNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1021,7 +1066,7 @@ default_node_impl!(UserDefinedTypeNode);
 #[derive(Debug, Clone)]
 pub struct CoreTokenNode {
     pub kind: TokenKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1082,7 +1127,7 @@ pub struct CoreOkTokenNode {
     token: Token,
     kind: OkTokenKind,
     lookahead: usize,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1140,7 +1185,7 @@ pub struct CoreMissingTokenNode {
     expected_symbols: Rc<Vec<&'static str>>,
     received_token: Token,
     lookahead: usize,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1167,7 +1212,7 @@ default_node_impl!(MissingTokenNode);
 pub struct CoreSkippedTokenNode {
     skipped_token: Token,
     lookahead: usize,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1196,7 +1241,7 @@ default_node_impl!(SkippedTokenNode);
 #[derive(Debug, Clone)]
 pub struct CoreExpressionNode {
     pub kind: ExpressionKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1293,7 +1338,7 @@ default_errornous_node_impl!(ExpressionNode, CoreExpressionNode, ExpressionKind)
 #[derive(Debug, Clone)]
 pub struct CoreAtomicExpressionNode {
     kind: AtomicExpressionKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1383,7 +1428,7 @@ pub struct CoreParenthesisedExpressionNode {
     lparen: TokenNode,
     rparen: TokenNode,
     expr: ExpressionNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1407,7 +1452,7 @@ default_node_impl!(ParenthesisedExpressionNode);
 #[derive(Debug, Clone)]
 pub struct CoreUnaryExpressionNode {
     kind: UnaryExpressionKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1466,7 +1511,7 @@ pub struct CoreOnlyUnaryExpressionNode {
     operator: TokenNode,
     unary_expr: UnaryExpressionNode,
     operator_kind: UnaryOperatorKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1496,7 +1541,7 @@ pub struct CoreBinaryExpressionNode {
     operator_kind: BinaryOperatorKind,
     left_expr: ExpressionNode,
     right_expr: ExpressionNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1542,7 +1587,7 @@ pub struct CoreLogicalExpressionNode {
     operator_kind: BinaryOperatorKind,
     left_expr: ExpressionNode,
     right_expr: ExpressionNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1570,7 +1615,7 @@ default_node_impl!(LogicalExpressionNode);
 #[derive(Debug, Clone)]
 pub struct CoreParamsNode {
     kind: ParamsKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1601,7 +1646,7 @@ pub struct CoreOkParamsNode {
     comma: Option<TokenNode>,
     param: ExpressionNode,
     remaining_params: Option<ParamsNode>,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1643,7 +1688,7 @@ pub struct CoreCallExpressionNode {
     rparen: TokenNode,
     function_name: TokenNode,
     params: Option<ParamsNode>,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1684,7 +1729,7 @@ pub struct CoreClassMethodCallNode {
     class_name: TokenNode,
     class_method_name: TokenNode,
     params: Option<ParamsNode>,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1728,7 +1773,7 @@ default_node_impl!(ClassMethodCallNode);
 #[derive(Debug, Clone)]
 pub struct CoreAtomNode {
     kind: AtomKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1834,7 +1879,7 @@ default_node_impl!(AtomNode);
 #[derive(Debug, Clone)]
 pub struct CoreAtomStartNode {
     kind: AtomStartKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1904,7 +1949,7 @@ pub struct CoreCallNode {
     lparen: TokenNode,
     rparen: TokenNode,
     params: Option<ParamsNode>,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1942,7 +1987,7 @@ pub struct CorePropertyAccessNode {
     dot: TokenNode,
     atom: AtomNode,
     propertry: TokenNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1971,7 +2016,7 @@ pub struct CoreMethodAccessNode {
     atom: AtomNode,
     method_name: TokenNode,
     params: Option<ParamsNode>,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -2018,7 +2063,7 @@ pub struct CoreIndexAccessNode {
     rsquare: TokenNode,
     atom: AtomNode,
     index: ExpressionNode,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -2048,7 +2093,7 @@ default_node_impl!(IndexAccessNode);
 #[derive(Debug, Clone)]
 pub struct CoreRAssignmentNode {
     kind: RAssignmentKind,
-    parent: Option<ASTNode>,
+    parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
