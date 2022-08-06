@@ -9,7 +9,7 @@ pub mod parser;
 pub mod reader;
 pub mod scope;
 pub mod server;
-pub mod types;
-pub mod utils;
 #[cfg(test)]
 pub mod tests;
+pub mod types;
+pub mod utils;

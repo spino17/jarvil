@@ -1,4 +1,7 @@
-use crate::{ast::ast::{AssignmentNode, ExpressionNode}, parser::parser::PackratParser};
+use crate::{
+    ast::ast::{AssignmentNode, ExpressionNode},
+    parser::parser::PackratParser,
+};
 
 pub fn assignment(parser: &mut PackratParser, expr: &ExpressionNode) -> AssignmentNode {
     let equal_node = parser.expect("=");

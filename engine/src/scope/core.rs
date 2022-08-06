@@ -10,10 +10,8 @@ use std::rc::Rc;
 macro_rules! set_to_parent_scope {
     ($t: ident, $u: ident) => {
         let parent_scope = match &$u.$t.0.as_ref().borrow().parent_scope {
-            Some(parent_scope) => {
-                parent_scope.clone()
-            }
-            None => unreachable!("attempt to close namespace should not be done at global level")
+            Some(parent_scope) => parent_scope.clone(),
+            None => unreachable!("attempt to close namespace should not be done at global level"),
         };
         $u.$t = parent_scope;
     };
@@ -141,7 +139,7 @@ pub struct Namespace {
 
 impl Namespace {
     pub fn new() -> Self {
-        Namespace{
+        Namespace {
             variables: Scope::new(),
             types: Scope::new(),
             functions: Scope::new(),
@@ -149,9 +147,9 @@ impl Namespace {
     }
 
     pub fn open_scope(&mut self) {
-        self.variables  = Scope::new_with_parent_scope(&self.variables);
-        self.types      = Scope::new_with_parent_scope(&self.types);
-        self.functions  = Scope::new_with_parent_scope(&self.functions);
+        self.variables = Scope::new_with_parent_scope(&self.variables);
+        self.types = Scope::new_with_parent_scope(&self.types);
+        self.functions = Scope::new_with_parent_scope(&self.functions);
     }
 
     pub fn close_scope(&mut self) {
@@ -160,16 +158,25 @@ impl Namespace {
         set_to_parent_scope!(functions, self);
     }
 
-    pub fn lookup_in_namespace(&self, key: &str, namespace_kind: NameSpaceKind) -> Option<SymbolData> {
+    pub fn lookup_in_namespace(
+        &self,
+        key: &str,
+        namespace_kind: NameSpaceKind,
+    ) -> Option<SymbolData> {
         match namespace_kind {
-            NameSpaceKind::VARIABLES    => self.variables.lookup(key),
-            NameSpaceKind::TYPES        => self.types.lookup(key),
-            NameSpaceKind::FUNCTIONS    => self.functions.lookup(key),
+            NameSpaceKind::VARIABLES => self.variables.lookup(key),
+            NameSpaceKind::TYPES => self.types.lookup(key),
+            NameSpaceKind::FUNCTIONS => self.functions.lookup(key),
         }
     }
 
-    pub fn declare_variable(&self, name: String, data_type: Type, line_number: usize) -> Result<(), JarvilError> {
-        let meta_data = MetaData::VARIABLE(VariableData{
+    pub fn declare_variable(
+        &self,
+        name: String,
+        data_type: Type,
+        line_number: usize,
+    ) -> Result<(), JarvilError> {
+        let meta_data = MetaData::VARIABLE(VariableData {
             data_type,
             is_init: false,
         });
@@ -185,7 +192,7 @@ impl Namespace {
 
 impl Clone for Namespace {
     fn clone(&self) -> Self {
-        Namespace{
+        Namespace {
             variables: self.variables.clone(),
             types: self.types.clone(),
             functions: self.functions.clone(),

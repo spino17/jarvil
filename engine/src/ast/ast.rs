@@ -6,7 +6,7 @@
 use jarvil_macros::set_parent;
 
 use crate::scope::core::SymbolData;
-use crate::types::atomic::{Atomic};
+use crate::types::atomic::Atomic;
 use crate::{
     code::Code,
     lexer::token::{CoreToken, Token},
@@ -14,7 +14,7 @@ use crate::{
     types::{array::Array, core::Type},
 };
 use std::{
-    cell::{RefCell, Ref, RefMut},
+    cell::{Ref, RefCell, RefMut},
     rc::{Rc, Weak},
 };
 
@@ -53,7 +53,7 @@ macro_rules! core_node_access {
         pub fn core_ref_mut(&self) -> RefMut<$t> {
             self.0.as_ref().borrow_mut()
         }
-    }
+    };
 }
 
 macro_rules! default_errornous_node_impl {
@@ -108,7 +108,7 @@ macro_rules! extract_from_option {
     ($t: ident) => {
         match $t {
             Some(val) => val.clone(),
-            None => None
+            None => None,
         }
     };
 }
@@ -290,7 +290,7 @@ impl StatementNode {
     }
 
     pub fn new_with_assignment(assignment: &AssignmentNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreStatementNode{
+        let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementKind::ASSIGNMENT(assignment.clone()),
             parent: None,
         }));
@@ -568,7 +568,11 @@ impl OkLambdaDeclarationNode {
             return_type: return_type.clone(),
             parent: None,
         }));
-        set_parents!((lparen, rparen, newline, type_keyword, colon, name), OK_LAMDA_DECLARATION, node);
+        set_parents!(
+            (lparen, rparen, newline, type_keyword, colon, name),
+            OK_LAMDA_DECLARATION,
+            node
+        );
         match args {
             Some(args) => {
                 set_parent!(args, OK_LAMDA_DECLARATION, node);
@@ -692,7 +696,11 @@ impl OkFunctionDeclarationNode {
             block: block.clone(),
             parent: None,
         }));
-        set_parents!((lparen, rparen, colon, block), OK_FUNCTION_DECLARATION, node);
+        set_parents!(
+            (lparen, rparen, colon, block),
+            OK_FUNCTION_DECLARATION,
+            node
+        );
         match func_keyword {
             FuncKeywordKindNode::DEF(def_node) => {
                 set_parent!(def_node, OK_FUNCTION_DECLARATION, node);
@@ -710,13 +718,13 @@ impl OkFunctionDeclarationNode {
         match name {
             Some(name) => {
                 set_parent!(name, OK_FUNCTION_DECLARATION, node);
-            },
+            }
             None => {}
         }
         match args {
             Some(args) => {
                 set_parent!(args, OK_FUNCTION_DECLARATION, node);
-            },
+            }
             None => {}
         }
         match return_type {
@@ -757,7 +765,11 @@ impl VariableDeclarationNode {
             r_assign: r_assign.clone(),
             parent: None,
         }));
-        set_parents!((let_keyword, equal, name, r_assign), VARIABLE_DECLARATION, node);
+        set_parents!(
+            (let_keyword, equal, name, r_assign),
+            VARIABLE_DECLARATION,
+            node
+        );
         VariableDeclarationNode(node)
     }
 
@@ -1023,7 +1035,11 @@ impl ArrayTypeNode {
             size: size.clone(),
             parent: None,
         }));
-        set_parents!((lsquare, rsquare, semicolon, size, sub_type), ARRAY_TYPE, node);
+        set_parents!(
+            (lsquare, rsquare, semicolon, size, sub_type),
+            ARRAY_TYPE,
+            node
+        );
         ArrayTypeNode(node)
     }
 
@@ -1147,7 +1163,7 @@ pub struct CoreOkTokenNode {
 
 #[derive(Debug, Clone)]
 pub enum OkTokenKind {
-    IDENTIFIER(Option<SymbolData>),  // This is set when the identifier is resolved
+    IDENTIFIER(Option<SymbolData>), // This is set when the identifier is resolved
     NON_IDENTIFIER,
 }
 #[derive(Debug, Clone)]
@@ -1164,18 +1180,18 @@ impl OkTokenNode {
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match &self.core_ref().token.core_token {
-            CoreToken::NOT_EQUAL        => Some(BinaryOperatorKind::NOT_EQUAL),
-            CoreToken::DOUBLE_EQUAL     => Some(BinaryOperatorKind::DOUBLE_EQUAL),
-            CoreToken::RBRACKET         => Some(BinaryOperatorKind::GREATER),
-            CoreToken::GREATER_EQUAL    => Some(BinaryOperatorKind::GREATER_EQUAL),
-            CoreToken::LBRACKET         => Some(BinaryOperatorKind::LESS),
-            CoreToken::LESS_EQUAL       => Some(BinaryOperatorKind::LESS_EQUAL),
-            CoreToken::DASH             => Some(BinaryOperatorKind::MINUS),
-            CoreToken::PLUS             => Some(BinaryOperatorKind::PLUS),
-            CoreToken::SLASH            => Some(BinaryOperatorKind::DIVIDE),
-            CoreToken::STAR             => Some(BinaryOperatorKind::MULTIPLY),
-            CoreToken::AND              => Some(BinaryOperatorKind::AND),
-            CoreToken::OR               => Some(BinaryOperatorKind::OR),
+            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NOT_EQUAL),
+            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DOUBLE_EQUAL),
+            CoreToken::RBRACKET => Some(BinaryOperatorKind::GREATER),
+            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GREATER_EQUAL),
+            CoreToken::LBRACKET => Some(BinaryOperatorKind::LESS),
+            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LESS_EQUAL),
+            CoreToken::DASH => Some(BinaryOperatorKind::MINUS),
+            CoreToken::PLUS => Some(BinaryOperatorKind::PLUS),
+            CoreToken::SLASH => Some(BinaryOperatorKind::DIVIDE),
+            CoreToken::STAR => Some(BinaryOperatorKind::MULTIPLY),
+            CoreToken::AND => Some(BinaryOperatorKind::AND),
+            CoreToken::OR => Some(BinaryOperatorKind::OR),
             _ => None,
         }
     }
@@ -1326,23 +1342,20 @@ impl ExpressionNode {
 
     pub fn is_valid_l_value(&self) -> Option<AtomNode> {
         match &self.core_ref().kind {
-            ExpressionKind::UNARY(unary_expr_node) => {
-                match &unary_expr_node.core_ref().kind {
-                    UnaryExpressionKind::ATOMIC(atomic_expr_node) => {
-                        match &atomic_expr_node.core_ref().kind {
-                            AtomicExpressionKind::ATOM(atom_node) => {
-                                if atom_node.is_valid_l_value() {
-                                    return Some(atom_node.clone())
-                                } else {
-                                    return None
-                                }
+            ExpressionKind::UNARY(unary_expr_node) => match &unary_expr_node.core_ref().kind {
+                UnaryExpressionKind::ATOMIC(atomic_expr_node) => {
+                    match &atomic_expr_node.core_ref().kind {
+                        AtomicExpressionKind::ATOM(atom_node) => {
+                            if atom_node.is_valid_l_value() {
+                                return Some(atom_node.clone());
+                            } else {
+                                return None;
                             }
-                            _ => return None
                         }
-                    },
-                    _ => return None
+                        _ => return None,
+                    }
                 }
-                
+                _ => return None,
             },
             _ => return None,
         }
@@ -1729,7 +1742,7 @@ impl CallExpressionNode {
         match params {
             Some(params) => {
                 set_parent!(params, CALL_EXPRESSION, node);
-            },
+            }
             None => {}
         }
         CallExpressionNode(node)
@@ -1770,11 +1783,15 @@ impl ClassMethodCallNode {
             params: params.clone(),
             parent: None,
         }));
-        set_parents!((lparen, rparen, class_name, class_method_name, double_colon), CLASS_METHOD_CALL, node);
+        set_parents!(
+            (lparen, rparen, class_name, class_method_name, double_colon),
+            CLASS_METHOD_CALL,
+            node
+        );
         match params {
             Some(params) => {
                 set_parent!(params, CLASS_METHOD_CALL, node);
-            },
+            }
             None => {}
         }
         ClassMethodCallNode(node)
@@ -1792,11 +1809,11 @@ pub struct CoreAtomNode {
 
 #[derive(Debug, Clone)]
 pub enum AtomKind {
-    ATOM_START(AtomStartNode),  // id, id(...), id::id(...)
-    CALL(CallNode),  // A(...)
-    PROPERTRY_ACCESS(PropertyAccessNode),  // A.id
-    METHOD_ACCESS(MethodAccessNode),  // A.id(...)
-    INDEX_ACCESS(IndexAccessNode),  // A[<expr>]
+    ATOM_START(AtomStartNode),            // id, id(...), id::id(...)
+    CALL(CallNode),                       // A(...)
+    PROPERTRY_ACCESS(PropertyAccessNode), // A.id
+    METHOD_ACCESS(MethodAccessNode),      // A.id(...)
+    INDEX_ACCESS(IndexAccessNode),        // A[<expr>]
 }
 
 #[derive(Debug, Clone)]
@@ -1877,11 +1894,11 @@ impl AtomNode {
             AtomKind::METHOD_ACCESS(_) => false,
             AtomKind::INDEX_ACCESS(atom_index_access_node) => {
                 let atom = &atom_index_access_node.core_ref().atom;
-                return atom.is_valid_l_value()
+                return atom.is_valid_l_value();
             }
             AtomKind::PROPERTRY_ACCESS(atom_property_access_node) => {
                 let atom = &atom_property_access_node.core_ref().atom;
-                return atom.is_valid_l_value()
+                return atom.is_valid_l_value();
             }
         }
     }
@@ -1986,7 +2003,7 @@ impl CallNode {
         match params {
             Some(params) => {
                 set_parent!(params, CALL_NODE, node);
-            },
+            }
             None => {}
         }
         CallNode(node)
@@ -2053,11 +2070,15 @@ impl MethodAccessNode {
             params: params.clone(),
             parent: None,
         }));
-        set_parents!((dot, lparen, rparen, atom, method_name), METHOD_ACCESS, node);
+        set_parents!(
+            (dot, lparen, rparen, atom, method_name),
+            METHOD_ACCESS,
+            node
+        );
         match params {
             Some(params) => {
                 set_parent!(params, METHOD_ACCESS, node);
-            },
+            }
             None => {}
         }
         MethodAccessNode(node)

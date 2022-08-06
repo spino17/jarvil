@@ -3,13 +3,14 @@
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use crate::ast::ast::{ErrornousNode, OkTokenKind};
+use super::helper::format_symbol;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKindNode,
     FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, ParamsNode, RAssignmentNode,
     SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
     UnaryExpressionNode, VariableDeclarationNode,
 };
+use crate::ast::ast::{ErrornousNode, OkTokenKind};
 use crate::code::Code;
 use crate::constants::common::{ENDMARKER, IDENTIFIER};
 use crate::context;
@@ -21,7 +22,6 @@ use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
-use super::helper::format_symbol;
 
 pub trait Parser {
     fn parse(self, token_vec: Vec<Token>) -> BlockNode;
@@ -334,8 +334,10 @@ impl PackratParser {
             return;
         } else {
             let code_lines: Vec<String> = self.code.lines(start_line_number, end_line_number);
-            let err_str = format!("expected an indented block with `{}` spaces, got `{}` spaces", 
-            expected_indent, received_indent);
+            let err_str = format!(
+                "expected an indented block with `{}` spaces, got `{}` spaces",
+                expected_indent, received_indent
+            );
             let err_message = JarvilError::form_multi_line_error(
                 start_line_number,
                 end_line_number,

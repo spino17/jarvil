@@ -1,4 +1,4 @@
-use std::{rc::Rc, collections::binary_heap::Iter};
+use std::{collections::binary_heap::Iter, rc::Rc};
 
 pub struct Code {
     code_vec: Rc<Vec<char>>,
@@ -46,7 +46,11 @@ impl Code {
         }
     }
 
-    pub fn token_value_as_iter(&self, start_index: usize, end_index: Option<usize>) -> std::slice::Iter<char> {
+    pub fn token_value_as_iter(
+        &self,
+        start_index: usize,
+        end_index: Option<usize>,
+    ) -> std::slice::Iter<char> {
         match end_index {
             Some(end_index) => self.code_vec[start_index..end_index].iter(),
             None => self.code_vec[start_index..].iter(),

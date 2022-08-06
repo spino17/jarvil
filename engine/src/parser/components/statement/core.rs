@@ -1,20 +1,20 @@
 use crate::ast::ast::{FuncKeywordKindNode, StatementNode, StructStatementNode};
-use crate::constants::common::{IDENTIFIER};
+use crate::constants::common::IDENTIFIER;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::PackratParser;
 
 pub fn is_statement_starting_with(token: &Token) -> bool {
     match token.core_token {
-        CoreToken::LET                  => true,
-        CoreToken::DEF                  => true,
-        CoreToken::FOR                  => true,
-        CoreToken::WHILE                => true,
-        CoreToken::IF                   => true,
-        CoreToken::TYPE_KEYWORD         => true,
-        CoreToken::INTERFACE_KEYWORD    => true,
-        CoreToken::IMPL                 => true,
-        CoreToken::IDENTIFIER           => true,
+        CoreToken::LET => true,
+        CoreToken::DEF => true,
+        CoreToken::FOR => true,
+        CoreToken::WHILE => true,
+        CoreToken::IF => true,
+        CoreToken::TYPE_KEYWORD => true,
+        CoreToken::INTERFACE_KEYWORD => true,
+        CoreToken::IMPL => true,
+        CoreToken::IDENTIFIER => true,
         _ => is_expression_starting_with(token),
     }
 }
@@ -48,28 +48,28 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
     }
      */
     let statement_node = match token.core_token {
-        CoreToken::LET                  => {
+        CoreToken::LET => {
             let variable_decl_node = parser.variable_decl();
             StatementNode::new_with_variable_declaration(&variable_decl_node)
         }
-        CoreToken::DEF                  => {
+        CoreToken::DEF => {
             let (function_name, def_keyword) = parser.function_name();
             let function_decl_node =
                 parser.function_decl(Some(&function_name), &FuncKeywordKindNode::DEF(def_keyword));
             StatementNode::new_with_function_declaration(&function_decl_node)
         }
-        CoreToken::FOR                  => todo!(),
-        CoreToken::WHILE                => todo!(),
-        CoreToken::IF                   => todo!(),
-        CoreToken::TYPE_KEYWORD         => {
+        CoreToken::FOR => todo!(),
+        CoreToken::WHILE => todo!(),
+        CoreToken::IF => todo!(),
+        CoreToken::TYPE_KEYWORD => {
             let type_decl_node = parser.type_decl();
             StatementNode::new_with_type_declaration(&type_decl_node)
         }
-        CoreToken::INTERFACE_KEYWORD    => todo!(),
-        CoreToken::IMPL                 => todo!(),
-        CoreToken::RETURN               => todo!(),
-        CoreToken::BREAK                => todo!(),
-        CoreToken::CONTINUE             => todo!(),
+        CoreToken::INTERFACE_KEYWORD => todo!(),
+        CoreToken::IMPL => todo!(),
+        CoreToken::RETURN => todo!(),
+        CoreToken::BREAK => todo!(),
+        CoreToken::CONTINUE => todo!(),
         _ => {
             let expr_node = parser.expr();
             let token = &parser.curr_token();
@@ -77,7 +77,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
                 CoreToken::EQUAL => {
                     let assignment_node = parser.assignment(&expr_node);
                     StatementNode::new_with_assignment(&assignment_node)
-                },
+                }
                 _ => {
                     let newline_node = parser.expect_terminals();
                     StatementNode::new_with_expression(&expr_node, &newline_node)

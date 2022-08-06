@@ -1,12 +1,10 @@
 extern crate proc_macro;
 use proc_macro::*;
 use quote::quote;
-use std::str::FromStr;
 use syn::{
-    punctuated::Punctuated,
-    token::{Colon2, Comma},
-    Expr, ExprMacro, FnArg, GenericArgument, PathArguments, PathSegment, Stmt, Token, Type,
+    token::Comma, FnArg, GenericArgument, PathArguments, PathSegment, Stmt, Type,
 };
+use crate::get_macro_expr_stmt;
 
 fn has_node_suffix(word: &str) -> bool {
     let str_len = word.len();
@@ -125,34 +123,6 @@ fn get_node_args(
     (node_args, optional_node_args)
 }
 
-fn get_macro_expr(macro_name: &str, macro_expr_str: &str) -> Stmt {
-    let mut punc: Punctuated<PathSegment, Colon2> = Punctuated::new();
-    punc.push(syn::PathSegment {
-        ident: syn::Ident::new(macro_name, quote::__private::Span::call_site()),
-        arguments: PathArguments::None,
-    });
-    let token_stream = match proc_macro2::TokenStream::from_str(macro_expr_str) {
-        Ok(token_stream) => token_stream,
-        Err(e) => unreachable!("string should be lexically correct: {:?}", e),
-    };
-    let expr_macro = ExprMacro {
-        attrs: vec![],
-        mac: syn::Macro {
-            path: syn::Path {
-                leading_colon: None,
-                segments: punc,
-            },
-            bang_token: Token![!](quote::__private::Span::call_site()),
-            delimiter: syn::MacroDelimiter::Paren(syn::token::Paren {
-                span: quote::__private::Span::call_site(),
-            }),
-            tokens: token_stream,
-        },
-    };
-    let set_parents_macro_call_stmt = Stmt::Expr(Expr::Macro(expr_macro));
-    set_parents_macro_call_stmt
-}
-
 fn get_set_parents_macro_expr(
     macro_name: &str,
     idents: &Vec<proc_macro2::Ident>,
@@ -169,7 +139,7 @@ fn get_set_parents_macro_expr(
     }
     arg_str.push(')');
     arg_str.push_str(&format!(", {}, node", parent_node.to_string()));
-    get_macro_expr(macro_name, &arg_str)
+    get_macro_expr_stmt(macro_name, &arg_str)
 }
 
 pub fn impl_set_parent_macro(parent_node: &syn::Ident, ast: &syn::ItemFn) -> TokenStream {

@@ -39,7 +39,7 @@ macro_rules! impl_enum {
                 $v => {
                     println!("I am sis");
                     true
-                },
+                }
                 _ => {
                     println!("I am something else");
                     false
@@ -50,7 +50,6 @@ macro_rules! impl_enum {
 }
 
 impl_enum!("name", "class");
-
 
 fn main() {
     let args: Vec<String> = args().collect();
