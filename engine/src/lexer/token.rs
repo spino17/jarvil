@@ -1,3 +1,5 @@
+#[macro_use]
+use jarvil_macros::Tokenify;
 use super::helper::is_letter;
 use super::lexer::CoreLexer;
 use crate::ast::ast::ASTNode;
@@ -60,7 +62,7 @@ macro_rules! impl_token_to_string {
     };
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Tokenify)]
 pub enum CoreToken {
     // conditionals
     IF,   // 'if'
@@ -146,192 +148,6 @@ pub enum CoreToken {
 
     // error
     LEXICAL_ERROR((LexicalErrorKind, Rc<String>)),
-}
-
-impl CoreToken {
-    impl_symbols_check!(
-        IF,
-        ELSE,
-        ELIF,
-        FOR,
-        WHILE,
-        CONTINUE,
-        BREAK,
-        DEF,
-        RETURN,
-        FUNC,
-        TYPE_KEYWORD,
-        ATOMIC_TYPE,
-        LET,
-        SELF,
-        IMPL,
-        INTERFACE_KEYWORD,
-        AND,
-        NOT,
-        OR,
-        IN,
-        TRUE,
-        FALSE,
-        PLUS,
-        DASH,
-        RIGHT_ARROW,
-        STAR,
-        DOUBLE_STAR,
-        SLASH,
-        LPAREN,
-        RPAREN,
-        LBRACE,
-        RBRACE,
-        LSQUARE,
-        RSQUARE,
-        SEMICOLON,
-        COLON,
-        DOUBLE_COLON,
-        COMMA,
-        DOT,
-        BLANK,
-        NEWLINE,
-        EQUAL,
-        DOUBLE_EQUAL,
-        LBRACKET,
-        RBRACKET,
-        LESS_EQUAL,
-        GREATER_EQUAL,
-        NOT_EQUAL,
-        INTEGER,
-        FLOATING_POINT_NUMBER,
-        IDENTIFIER,
-        LITERAL,
-        SINGLE_LINE_COMMENT,
-        BLOCK_COMMENT,
-        ENDMARKER
-    );
-
-    fn LEXICAL_ERROR(&self) -> bool {
-        match self {
-            CoreToken::LEXICAL_ERROR(_) => true,
-            _ => false,
-        }
-    }
-
-    impl_symbols_is_eq!(
-        IF,
-        ELSE,
-        ELIF,
-        FOR,
-        WHILE,
-        CONTINUE,
-        BREAK,
-        DEF,
-        RETURN,
-        FUNC,
-        TYPE_KEYWORD,
-        ATOMIC_TYPE,
-        LET,
-        SELF,
-        IMPL,
-        INTERFACE_KEYWORD,
-        AND,
-        NOT,
-        OR,
-        IN,
-        TRUE,
-        FALSE,
-        PLUS,
-        DASH,
-        RIGHT_ARROW,
-        STAR,
-        DOUBLE_STAR,
-        SLASH,
-        LPAREN,
-        RPAREN,
-        LBRACE,
-        RBRACE,
-        LSQUARE,
-        RSQUARE,
-        SEMICOLON,
-        COLON,
-        DOUBLE_COLON,
-        COMMA,
-        DOT,
-        BLANK,
-        NEWLINE,
-        EQUAL,
-        DOUBLE_EQUAL,
-        LBRACKET,
-        RBRACKET,
-        LESS_EQUAL,
-        GREATER_EQUAL,
-        NOT_EQUAL,
-        INTEGER,
-        FLOATING_POINT_NUMBER,
-        IDENTIFIER,
-        LITERAL,
-        SINGLE_LINE_COMMENT,
-        BLOCK_COMMENT,
-        ENDMARKER,
-        LEXICAL_ERROR
-    );
-}
-
-impl ToString for CoreToken {
-    impl_token_to_string!(
-        IF,
-        ELSE,
-        ELIF,
-        FOR,
-        WHILE,
-        CONTINUE,
-        BREAK,
-        DEF,
-        RETURN,
-        FUNC,
-        TYPE_KEYWORD,
-        ATOMIC_TYPE,
-        LET,
-        SELF,
-        IMPL,
-        INTERFACE_KEYWORD,
-        AND,
-        NOT,
-        OR,
-        IN,
-        TRUE,
-        FALSE,
-        PLUS,
-        DASH,
-        RIGHT_ARROW,
-        STAR,
-        DOUBLE_STAR,
-        SLASH,
-        LPAREN,
-        RPAREN,
-        LBRACE,
-        RBRACE,
-        LSQUARE,
-        RSQUARE,
-        SEMICOLON,
-        COLON,
-        DOUBLE_COLON,
-        COMMA,
-        DOT,
-        BLANK,
-        NEWLINE,
-        EQUAL,
-        DOUBLE_EQUAL,
-        LBRACKET,
-        RBRACKET,
-        LESS_EQUAL,
-        GREATER_EQUAL,
-        NOT_EQUAL,
-        INTEGER,
-        FLOATING_POINT_NUMBER,
-        IDENTIFIER,
-        LITERAL,
-        SINGLE_LINE_COMMENT,
-        BLOCK_COMMENT,
-        ENDMARKER
-    );
 }
 
 #[derive(Debug, Clone, PartialEq)]

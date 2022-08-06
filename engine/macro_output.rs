@@ -1,4 +1,6 @@
 pub mod token {
+    #[macro_use]
+    use jarvil_macros::Tokenify;
     use super::helper::is_letter;
     use super::lexer::CoreLexer;
     use crate::ast::ast::ASTNode;
@@ -234,6 +236,475 @@ pub mod token {
                     }
                     _ => false,
                 }
+        }
+    }
+    impl CoreToken {
+        fn IF(&self) -> bool {
+            match self {
+                CoreToken::IF => true,
+                _ => false,
+            }
+        }
+        fn ELSE(&self) -> bool {
+            match self {
+                CoreToken::ELSE => true,
+                _ => false,
+            }
+        }
+        fn ELIF(&self) -> bool {
+            match self {
+                CoreToken::ELIF => true,
+                _ => false,
+            }
+        }
+        fn FOR(&self) -> bool {
+            match self {
+                CoreToken::FOR => true,
+                _ => false,
+            }
+        }
+        fn WHILE(&self) -> bool {
+            match self {
+                CoreToken::WHILE => true,
+                _ => false,
+            }
+        }
+        fn CONTINUE(&self) -> bool {
+            match self {
+                CoreToken::CONTINUE => true,
+                _ => false,
+            }
+        }
+        fn BREAK(&self) -> bool {
+            match self {
+                CoreToken::BREAK => true,
+                _ => false,
+            }
+        }
+        fn DEF(&self) -> bool {
+            match self {
+                CoreToken::DEF => true,
+                _ => false,
+            }
+        }
+        fn RETURN(&self) -> bool {
+            match self {
+                CoreToken::RETURN => true,
+                _ => false,
+            }
+        }
+        fn FUNC(&self) -> bool {
+            match self {
+                CoreToken::FUNC => true,
+                _ => false,
+            }
+        }
+        fn TYPE_KEYWORD(&self) -> bool {
+            match self {
+                CoreToken::TYPE_KEYWORD => true,
+                _ => false,
+            }
+        }
+        fn ATOMIC_TYPE(&self) -> bool {
+            match self {
+                CoreToken::ATOMIC_TYPE => true,
+                _ => false,
+            }
+        }
+        fn LET(&self) -> bool {
+            match self {
+                CoreToken::LET => true,
+                _ => false,
+            }
+        }
+        fn SELF(&self) -> bool {
+            match self {
+                CoreToken::SELF => true,
+                _ => false,
+            }
+        }
+        fn IMPL(&self) -> bool {
+            match self {
+                CoreToken::IMPL => true,
+                _ => false,
+            }
+        }
+        fn INTERFACE_KEYWORD(&self) -> bool {
+            match self {
+                CoreToken::INTERFACE_KEYWORD => true,
+                _ => false,
+            }
+        }
+        fn AND(&self) -> bool {
+            match self {
+                CoreToken::AND => true,
+                _ => false,
+            }
+        }
+        fn NOT(&self) -> bool {
+            match self {
+                CoreToken::NOT => true,
+                _ => false,
+            }
+        }
+        fn OR(&self) -> bool {
+            match self {
+                CoreToken::OR => true,
+                _ => false,
+            }
+        }
+        fn IN(&self) -> bool {
+            match self {
+                CoreToken::IN => true,
+                _ => false,
+            }
+        }
+        fn TRUE(&self) -> bool {
+            match self {
+                CoreToken::TRUE => true,
+                _ => false,
+            }
+        }
+        fn FALSE(&self) -> bool {
+            match self {
+                CoreToken::FALSE => true,
+                _ => false,
+            }
+        }
+        fn PLUS(&self) -> bool {
+            match self {
+                CoreToken::PLUS => true,
+                _ => false,
+            }
+        }
+        fn DASH(&self) -> bool {
+            match self {
+                CoreToken::DASH => true,
+                _ => false,
+            }
+        }
+        fn RIGHT_ARROW(&self) -> bool {
+            match self {
+                CoreToken::RIGHT_ARROW => true,
+                _ => false,
+            }
+        }
+        fn STAR(&self) -> bool {
+            match self {
+                CoreToken::STAR => true,
+                _ => false,
+            }
+        }
+        fn DOUBLE_STAR(&self) -> bool {
+            match self {
+                CoreToken::DOUBLE_STAR => true,
+                _ => false,
+            }
+        }
+        fn SLASH(&self) -> bool {
+            match self {
+                CoreToken::SLASH => true,
+                _ => false,
+            }
+        }
+        fn LPAREN(&self) -> bool {
+            match self {
+                CoreToken::LPAREN => true,
+                _ => false,
+            }
+        }
+        fn RPAREN(&self) -> bool {
+            match self {
+                CoreToken::RPAREN => true,
+                _ => false,
+            }
+        }
+        fn LBRACE(&self) -> bool {
+            match self {
+                CoreToken::LBRACE => true,
+                _ => false,
+            }
+        }
+        fn RBRACE(&self) -> bool {
+            match self {
+                CoreToken::RBRACE => true,
+                _ => false,
+            }
+        }
+        fn LSQUARE(&self) -> bool {
+            match self {
+                CoreToken::LSQUARE => true,
+                _ => false,
+            }
+        }
+        fn RSQUARE(&self) -> bool {
+            match self {
+                CoreToken::RSQUARE => true,
+                _ => false,
+            }
+        }
+        fn SEMICOLON(&self) -> bool {
+            match self {
+                CoreToken::SEMICOLON => true,
+                _ => false,
+            }
+        }
+        fn COLON(&self) -> bool {
+            match self {
+                CoreToken::COLON => true,
+                _ => false,
+            }
+        }
+        fn DOUBLE_COLON(&self) -> bool {
+            match self {
+                CoreToken::DOUBLE_COLON => true,
+                _ => false,
+            }
+        }
+        fn COMMA(&self) -> bool {
+            match self {
+                CoreToken::COMMA => true,
+                _ => false,
+            }
+        }
+        fn DOT(&self) -> bool {
+            match self {
+                CoreToken::DOT => true,
+                _ => false,
+            }
+        }
+        fn BLANK(&self) -> bool {
+            match self {
+                CoreToken::BLANK => true,
+                _ => false,
+            }
+        }
+        fn NEWLINE(&self) -> bool {
+            match self {
+                CoreToken::NEWLINE => true,
+                _ => false,
+            }
+        }
+        fn EQUAL(&self) -> bool {
+            match self {
+                CoreToken::EQUAL => true,
+                _ => false,
+            }
+        }
+        fn DOUBLE_EQUAL(&self) -> bool {
+            match self {
+                CoreToken::DOUBLE_EQUAL => true,
+                _ => false,
+            }
+        }
+        fn LBRACKET(&self) -> bool {
+            match self {
+                CoreToken::LBRACKET => true,
+                _ => false,
+            }
+        }
+        fn RBRACKET(&self) -> bool {
+            match self {
+                CoreToken::RBRACKET => true,
+                _ => false,
+            }
+        }
+        fn LESS_EQUAL(&self) -> bool {
+            match self {
+                CoreToken::LESS_EQUAL => true,
+                _ => false,
+            }
+        }
+        fn GREATER_EQUAL(&self) -> bool {
+            match self {
+                CoreToken::GREATER_EQUAL => true,
+                _ => false,
+            }
+        }
+        fn NOT_EQUAL(&self) -> bool {
+            match self {
+                CoreToken::NOT_EQUAL => true,
+                _ => false,
+            }
+        }
+        fn INTEGER(&self) -> bool {
+            match self {
+                CoreToken::INTEGER => true,
+                _ => false,
+            }
+        }
+        fn FLOATING_POINT_NUMBER(&self) -> bool {
+            match self {
+                CoreToken::FLOATING_POINT_NUMBER => true,
+                _ => false,
+            }
+        }
+        fn IDENTIFIER(&self) -> bool {
+            match self {
+                CoreToken::IDENTIFIER => true,
+                _ => false,
+            }
+        }
+        fn LITERAL(&self) -> bool {
+            match self {
+                CoreToken::LITERAL => true,
+                _ => false,
+            }
+        }
+        fn SINGLE_LINE_COMMENT(&self) -> bool {
+            match self {
+                CoreToken::SINGLE_LINE_COMMENT => true,
+                _ => false,
+            }
+        }
+        fn BLOCK_COMMENT(&self) -> bool {
+            match self {
+                CoreToken::BLOCK_COMMENT => true,
+                _ => false,
+            }
+        }
+        fn ENDMARKER(&self) -> bool {
+            match self {
+                CoreToken::ENDMARKER => true,
+                _ => false,
+            }
+        }
+        fn LEXICAL_ERROR(&self) -> bool {
+            match self {
+                CoreToken::LEXICAL_ERROR(_) => true,
+                _ => false,
+            }
+        }
+        pub fn is_eq(&self, symbol: &str) -> bool {
+            match symbol {
+                IF => self.IF(),
+                ELSE => self.ELSE(),
+                ELIF => self.ELIF(),
+                FOR => self.FOR(),
+                WHILE => self.WHILE(),
+                CONTINUE => self.CONTINUE(),
+                BREAK => self.BREAK(),
+                DEF => self.DEF(),
+                RETURN => self.RETURN(),
+                FUNC => self.FUNC(),
+                TYPE_KEYWORD => self.TYPE_KEYWORD(),
+                ATOMIC_TYPE => self.ATOMIC_TYPE(),
+                LET => self.LET(),
+                SELF => self.SELF(),
+                IMPL => self.IMPL(),
+                INTERFACE_KEYWORD => self.INTERFACE_KEYWORD(),
+                AND => self.AND(),
+                NOT => self.NOT(),
+                OR => self.OR(),
+                IN => self.IN(),
+                TRUE => self.TRUE(),
+                FALSE => self.FALSE(),
+                PLUS => self.PLUS(),
+                DASH => self.DASH(),
+                RIGHT_ARROW => self.RIGHT_ARROW(),
+                STAR => self.STAR(),
+                DOUBLE_STAR => self.DOUBLE_STAR(),
+                SLASH => self.SLASH(),
+                LPAREN => self.LPAREN(),
+                RPAREN => self.RPAREN(),
+                LBRACE => self.LBRACE(),
+                RBRACE => self.RBRACE(),
+                LSQUARE => self.LSQUARE(),
+                RSQUARE => self.RSQUARE(),
+                SEMICOLON => self.SEMICOLON(),
+                COLON => self.COLON(),
+                DOUBLE_COLON => self.DOUBLE_COLON(),
+                COMMA => self.COMMA(),
+                DOT => self.DOT(),
+                BLANK => self.BLANK(),
+                NEWLINE => self.NEWLINE(),
+                EQUAL => self.EQUAL(),
+                DOUBLE_EQUAL => self.DOUBLE_EQUAL(),
+                LBRACKET => self.LBRACKET(),
+                RBRACKET => self.RBRACKET(),
+                LESS_EQUAL => self.LESS_EQUAL(),
+                GREATER_EQUAL => self.GREATER_EQUAL(),
+                NOT_EQUAL => self.NOT_EQUAL(),
+                INTEGER => self.INTEGER(),
+                FLOATING_POINT_NUMBER => self.FLOATING_POINT_NUMBER(),
+                IDENTIFIER => self.IDENTIFIER(),
+                LITERAL => self.LITERAL(),
+                SINGLE_LINE_COMMENT => self.SINGLE_LINE_COMMENT(),
+                BLOCK_COMMENT => self.BLOCK_COMMENT(),
+                ENDMARKER => self.ENDMARKER(),
+                LEXICAL_ERROR => self.LEXICAL_ERROR(),
+                "\n" => self.NEWLINE(),
+                _ => ::core::panicking::panic_fmt(::core::fmt::Arguments::new_v1(
+                    &[
+                        "internal error: entered unreachable code: token `",
+                        "` missing from matching arm",
+                    ],
+                    &[::core::fmt::ArgumentV1::new_display(&symbol)],
+                )),
+            }
+        }
+    }
+    impl ToString for CoreToken {
+        fn to_string(&self) -> String {
+            let symbol_str = match self {
+                CoreToken::IF => IF,
+                CoreToken::ELSE => ELSE,
+                CoreToken::ELIF => ELIF,
+                CoreToken::FOR => FOR,
+                CoreToken::WHILE => WHILE,
+                CoreToken::CONTINUE => CONTINUE,
+                CoreToken::BREAK => BREAK,
+                CoreToken::DEF => DEF,
+                CoreToken::RETURN => RETURN,
+                CoreToken::FUNC => FUNC,
+                CoreToken::TYPE_KEYWORD => TYPE_KEYWORD,
+                CoreToken::ATOMIC_TYPE => ATOMIC_TYPE,
+                CoreToken::LET => LET,
+                CoreToken::SELF => SELF,
+                CoreToken::IMPL => IMPL,
+                CoreToken::INTERFACE_KEYWORD => INTERFACE_KEYWORD,
+                CoreToken::AND => AND,
+                CoreToken::NOT => NOT,
+                CoreToken::OR => OR,
+                CoreToken::IN => IN,
+                CoreToken::TRUE => TRUE,
+                CoreToken::FALSE => FALSE,
+                CoreToken::PLUS => PLUS,
+                CoreToken::DASH => DASH,
+                CoreToken::RIGHT_ARROW => RIGHT_ARROW,
+                CoreToken::STAR => STAR,
+                CoreToken::DOUBLE_STAR => DOUBLE_STAR,
+                CoreToken::SLASH => SLASH,
+                CoreToken::LPAREN => LPAREN,
+                CoreToken::RPAREN => RPAREN,
+                CoreToken::LBRACE => LBRACE,
+                CoreToken::RBRACE => RBRACE,
+                CoreToken::LSQUARE => LSQUARE,
+                CoreToken::RSQUARE => RSQUARE,
+                CoreToken::SEMICOLON => SEMICOLON,
+                CoreToken::COLON => COLON,
+                CoreToken::DOUBLE_COLON => DOUBLE_COLON,
+                CoreToken::COMMA => COMMA,
+                CoreToken::DOT => DOT,
+                CoreToken::BLANK => BLANK,
+                CoreToken::NEWLINE => NEWLINE,
+                CoreToken::EQUAL => EQUAL,
+                CoreToken::DOUBLE_EQUAL => DOUBLE_EQUAL,
+                CoreToken::LBRACKET => LBRACKET,
+                CoreToken::RBRACKET => RBRACKET,
+                CoreToken::LESS_EQUAL => LESS_EQUAL,
+                CoreToken::GREATER_EQUAL => GREATER_EQUAL,
+                CoreToken::NOT_EQUAL => NOT_EQUAL,
+                CoreToken::INTEGER => INTEGER,
+                CoreToken::FLOATING_POINT_NUMBER => FLOATING_POINT_NUMBER,
+                CoreToken::IDENTIFIER => IDENTIFIER,
+                CoreToken::LITERAL => LITERAL,
+                CoreToken::SINGLE_LINE_COMMENT => SINGLE_LINE_COMMENT,
+                CoreToken::BLOCK_COMMENT => BLOCK_COMMENT,
+                CoreToken::ENDMARKER => ENDMARKER,
+                CoreToken::LEXICAL_ERROR(_) => LEXICAL_ERROR,
+            };
+            String::from(symbol_str)
         }
     }
     pub enum LexicalErrorKind {
@@ -493,7 +964,7 @@ pub mod token {
             (self.start_index + self.end_index) / 2 as usize
         }
         pub fn name(&self) -> String {
-            self.to_string()
+            self.core_token.to_string()
         }
         pub fn token_value(&self, code: &Code) -> String {
             code.token_value(self.start_index, Some(self.end_index))
@@ -501,474 +972,8 @@ pub mod token {
         pub fn width(&self) -> usize {
             self.end_index - self.start_index
         }
-    }
-    impl Token {
-        fn IF(&self) -> bool {
-            match self.core_token {
-                CoreToken::IF => true,
-                _ => false,
-            }
-        }
-        fn ELSE(&self) -> bool {
-            match self.core_token {
-                CoreToken::ELSE => true,
-                _ => false,
-            }
-        }
-        fn ELIF(&self) -> bool {
-            match self.core_token {
-                CoreToken::ELIF => true,
-                _ => false,
-            }
-        }
-        fn FOR(&self) -> bool {
-            match self.core_token {
-                CoreToken::FOR => true,
-                _ => false,
-            }
-        }
-        fn WHILE(&self) -> bool {
-            match self.core_token {
-                CoreToken::WHILE => true,
-                _ => false,
-            }
-        }
-        fn CONTINUE(&self) -> bool {
-            match self.core_token {
-                CoreToken::CONTINUE => true,
-                _ => false,
-            }
-        }
-        fn BREAK(&self) -> bool {
-            match self.core_token {
-                CoreToken::BREAK => true,
-                _ => false,
-            }
-        }
-        fn DEF(&self) -> bool {
-            match self.core_token {
-                CoreToken::DEF => true,
-                _ => false,
-            }
-        }
-        fn RETURN(&self) -> bool {
-            match self.core_token {
-                CoreToken::RETURN => true,
-                _ => false,
-            }
-        }
-        fn FUNC(&self) -> bool {
-            match self.core_token {
-                CoreToken::FUNC => true,
-                _ => false,
-            }
-        }
-        fn TYPE_KEYWORD(&self) -> bool {
-            match self.core_token {
-                CoreToken::TYPE_KEYWORD => true,
-                _ => false,
-            }
-        }
-        fn ATOMIC_TYPE(&self) -> bool {
-            match self.core_token {
-                CoreToken::ATOMIC_TYPE => true,
-                _ => false,
-            }
-        }
-        fn LET(&self) -> bool {
-            match self.core_token {
-                CoreToken::LET => true,
-                _ => false,
-            }
-        }
-        fn SELF(&self) -> bool {
-            match self.core_token {
-                CoreToken::SELF => true,
-                _ => false,
-            }
-        }
-        fn IMPL(&self) -> bool {
-            match self.core_token {
-                CoreToken::IMPL => true,
-                _ => false,
-            }
-        }
-        fn INTERFACE_KEYWORD(&self) -> bool {
-            match self.core_token {
-                CoreToken::INTERFACE_KEYWORD => true,
-                _ => false,
-            }
-        }
-        fn AND(&self) -> bool {
-            match self.core_token {
-                CoreToken::AND => true,
-                _ => false,
-            }
-        }
-        fn NOT(&self) -> bool {
-            match self.core_token {
-                CoreToken::NOT => true,
-                _ => false,
-            }
-        }
-        fn OR(&self) -> bool {
-            match self.core_token {
-                CoreToken::OR => true,
-                _ => false,
-            }
-        }
-        fn IN(&self) -> bool {
-            match self.core_token {
-                CoreToken::IN => true,
-                _ => false,
-            }
-        }
-        fn TRUE(&self) -> bool {
-            match self.core_token {
-                CoreToken::TRUE => true,
-                _ => false,
-            }
-        }
-        fn FALSE(&self) -> bool {
-            match self.core_token {
-                CoreToken::FALSE => true,
-                _ => false,
-            }
-        }
-        fn PLUS(&self) -> bool {
-            match self.core_token {
-                CoreToken::PLUS => true,
-                _ => false,
-            }
-        }
-        fn DASH(&self) -> bool {
-            match self.core_token {
-                CoreToken::DASH => true,
-                _ => false,
-            }
-        }
-        fn RIGHT_ARROW(&self) -> bool {
-            match self.core_token {
-                CoreToken::RIGHT_ARROW => true,
-                _ => false,
-            }
-        }
-        fn STAR(&self) -> bool {
-            match self.core_token {
-                CoreToken::STAR => true,
-                _ => false,
-            }
-        }
-        fn DOUBLE_STAR(&self) -> bool {
-            match self.core_token {
-                CoreToken::DOUBLE_STAR => true,
-                _ => false,
-            }
-        }
-        fn SLASH(&self) -> bool {
-            match self.core_token {
-                CoreToken::SLASH => true,
-                _ => false,
-            }
-        }
-        fn LPAREN(&self) -> bool {
-            match self.core_token {
-                CoreToken::LPAREN => true,
-                _ => false,
-            }
-        }
-        fn RPAREN(&self) -> bool {
-            match self.core_token {
-                CoreToken::RPAREN => true,
-                _ => false,
-            }
-        }
-        fn LBRACE(&self) -> bool {
-            match self.core_token {
-                CoreToken::LBRACE => true,
-                _ => false,
-            }
-        }
-        fn RBRACE(&self) -> bool {
-            match self.core_token {
-                CoreToken::RBRACE => true,
-                _ => false,
-            }
-        }
-        fn LSQUARE(&self) -> bool {
-            match self.core_token {
-                CoreToken::LSQUARE => true,
-                _ => false,
-            }
-        }
-        fn RSQUARE(&self) -> bool {
-            match self.core_token {
-                CoreToken::RSQUARE => true,
-                _ => false,
-            }
-        }
-        fn SEMICOLON(&self) -> bool {
-            match self.core_token {
-                CoreToken::SEMICOLON => true,
-                _ => false,
-            }
-        }
-        fn COLON(&self) -> bool {
-            match self.core_token {
-                CoreToken::COLON => true,
-                _ => false,
-            }
-        }
-        fn DOUBLE_COLON(&self) -> bool {
-            match self.core_token {
-                CoreToken::DOUBLE_COLON => true,
-                _ => false,
-            }
-        }
-        fn COMMA(&self) -> bool {
-            match self.core_token {
-                CoreToken::COMMA => true,
-                _ => false,
-            }
-        }
-        fn DOT(&self) -> bool {
-            match self.core_token {
-                CoreToken::DOT => true,
-                _ => false,
-            }
-        }
-        fn BLANK(&self) -> bool {
-            match self.core_token {
-                CoreToken::BLANK => true,
-                _ => false,
-            }
-        }
-        fn NEWLINE(&self) -> bool {
-            match self.core_token {
-                CoreToken::NEWLINE => true,
-                _ => false,
-            }
-        }
-        fn EQUAL(&self) -> bool {
-            match self.core_token {
-                CoreToken::EQUAL => true,
-                _ => false,
-            }
-        }
-        fn DOUBLE_EQUAL(&self) -> bool {
-            match self.core_token {
-                CoreToken::DOUBLE_EQUAL => true,
-                _ => false,
-            }
-        }
-        fn LBRACKET(&self) -> bool {
-            match self.core_token {
-                CoreToken::LBRACKET => true,
-                _ => false,
-            }
-        }
-        fn RBRACKET(&self) -> bool {
-            match self.core_token {
-                CoreToken::RBRACKET => true,
-                _ => false,
-            }
-        }
-        fn LESS_EQUAL(&self) -> bool {
-            match self.core_token {
-                CoreToken::LESS_EQUAL => true,
-                _ => false,
-            }
-        }
-        fn GREATER_EQUAL(&self) -> bool {
-            match self.core_token {
-                CoreToken::GREATER_EQUAL => true,
-                _ => false,
-            }
-        }
-        fn NOT_EQUAL(&self) -> bool {
-            match self.core_token {
-                CoreToken::NOT_EQUAL => true,
-                _ => false,
-            }
-        }
-        fn INTEGER(&self) -> bool {
-            match self.core_token {
-                CoreToken::INTEGER => true,
-                _ => false,
-            }
-        }
-        fn FLOATING_POINT_NUMBER(&self) -> bool {
-            match self.core_token {
-                CoreToken::FLOATING_POINT_NUMBER => true,
-                _ => false,
-            }
-        }
-        fn IDENTIFIER(&self) -> bool {
-            match self.core_token {
-                CoreToken::IDENTIFIER => true,
-                _ => false,
-            }
-        }
-        fn LITERAL(&self) -> bool {
-            match self.core_token {
-                CoreToken::LITERAL => true,
-                _ => false,
-            }
-        }
-        fn SINGLE_LINE_COMMENT(&self) -> bool {
-            match self.core_token {
-                CoreToken::SINGLE_LINE_COMMENT => true,
-                _ => false,
-            }
-        }
-        fn BLOCK_COMMENT(&self) -> bool {
-            match self.core_token {
-                CoreToken::BLOCK_COMMENT => true,
-                _ => false,
-            }
-        }
-        fn ENDMARKER(&self) -> bool {
-            match self.core_token {
-                CoreToken::ENDMARKER => true,
-                _ => false,
-            }
-        }
-        fn LEXICAL_ERROR(&self) -> bool {
-            match self.core_token {
-                CoreToken::LEXICAL_ERROR(_) => true,
-                _ => false,
-            }
-        }
         pub fn is_eq(&self, symbol: &str) -> bool {
-            match symbol {
-                IF => self.IF(),
-                ELSE => self.ELSE(),
-                ELIF => self.ELIF(),
-                FOR => self.FOR(),
-                WHILE => self.WHILE(),
-                CONTINUE => self.CONTINUE(),
-                BREAK => self.BREAK(),
-                DEF => self.DEF(),
-                RETURN => self.RETURN(),
-                FUNC => self.FUNC(),
-                TYPE_KEYWORD => self.TYPE_KEYWORD(),
-                ATOMIC_TYPE => self.ATOMIC_TYPE(),
-                LET => self.LET(),
-                SELF => self.SELF(),
-                IMPL => self.IMPL(),
-                INTERFACE_KEYWORD => self.INTERFACE_KEYWORD(),
-                AND => self.AND(),
-                NOT => self.NOT(),
-                OR => self.OR(),
-                IN => self.IN(),
-                TRUE => self.TRUE(),
-                FALSE => self.FALSE(),
-                PLUS => self.PLUS(),
-                DASH => self.DASH(),
-                RIGHT_ARROW => self.RIGHT_ARROW(),
-                STAR => self.STAR(),
-                DOUBLE_STAR => self.DOUBLE_STAR(),
-                SLASH => self.SLASH(),
-                LPAREN => self.LPAREN(),
-                RPAREN => self.RPAREN(),
-                LBRACE => self.LBRACE(),
-                RBRACE => self.RBRACE(),
-                LSQUARE => self.LSQUARE(),
-                RSQUARE => self.RSQUARE(),
-                SEMICOLON => self.SEMICOLON(),
-                COLON => self.COLON(),
-                DOUBLE_COLON => self.DOUBLE_COLON(),
-                COMMA => self.COMMA(),
-                DOT => self.DOT(),
-                BLANK => self.BLANK(),
-                NEWLINE => self.NEWLINE(),
-                EQUAL => self.EQUAL(),
-                DOUBLE_EQUAL => self.DOUBLE_EQUAL(),
-                LBRACKET => self.LBRACKET(),
-                RBRACKET => self.RBRACKET(),
-                LESS_EQUAL => self.LESS_EQUAL(),
-                GREATER_EQUAL => self.GREATER_EQUAL(),
-                NOT_EQUAL => self.NOT_EQUAL(),
-                INTEGER => self.INTEGER(),
-                FLOATING_POINT_NUMBER => self.FLOATING_POINT_NUMBER(),
-                IDENTIFIER => self.IDENTIFIER(),
-                LITERAL => self.LITERAL(),
-                SINGLE_LINE_COMMENT => self.SINGLE_LINE_COMMENT(),
-                BLOCK_COMMENT => self.BLOCK_COMMENT(),
-                ENDMARKER => self.ENDMARKER(),
-                LEXICAL_ERROR => self.LEXICAL_ERROR(),
-                "\n" => self.NEWLINE(),
-                _ => ::core::panicking::panic_fmt(::core::fmt::Arguments::new_v1(
-                    &[
-                        "internal error: entered unreachable code: token `",
-                        "` missing from matching arm",
-                    ],
-                    &[::core::fmt::ArgumentV1::new_display(&symbol)],
-                )),
-            }
-        }
-    }
-    impl ToString for Token {
-        fn to_string(&self) -> String {
-            let symbol_str = match self.core_token {
-                CoreToken::IF => IF,
-                CoreToken::ELSE => ELSE,
-                CoreToken::ELIF => ELIF,
-                CoreToken::FOR => FOR,
-                CoreToken::WHILE => WHILE,
-                CoreToken::CONTINUE => CONTINUE,
-                CoreToken::BREAK => BREAK,
-                CoreToken::DEF => DEF,
-                CoreToken::RETURN => RETURN,
-                CoreToken::FUNC => FUNC,
-                CoreToken::TYPE_KEYWORD => TYPE_KEYWORD,
-                CoreToken::ATOMIC_TYPE => ATOMIC_TYPE,
-                CoreToken::LET => LET,
-                CoreToken::SELF => SELF,
-                CoreToken::IMPL => IMPL,
-                CoreToken::INTERFACE_KEYWORD => INTERFACE_KEYWORD,
-                CoreToken::AND => AND,
-                CoreToken::NOT => NOT,
-                CoreToken::OR => OR,
-                CoreToken::IN => IN,
-                CoreToken::TRUE => TRUE,
-                CoreToken::FALSE => FALSE,
-                CoreToken::PLUS => PLUS,
-                CoreToken::DASH => DASH,
-                CoreToken::RIGHT_ARROW => RIGHT_ARROW,
-                CoreToken::STAR => STAR,
-                CoreToken::DOUBLE_STAR => DOUBLE_STAR,
-                CoreToken::SLASH => SLASH,
-                CoreToken::LPAREN => LPAREN,
-                CoreToken::RPAREN => RPAREN,
-                CoreToken::LBRACE => LBRACE,
-                CoreToken::RBRACE => RBRACE,
-                CoreToken::LSQUARE => LSQUARE,
-                CoreToken::RSQUARE => RSQUARE,
-                CoreToken::SEMICOLON => SEMICOLON,
-                CoreToken::COLON => COLON,
-                CoreToken::DOUBLE_COLON => DOUBLE_COLON,
-                CoreToken::COMMA => COMMA,
-                CoreToken::DOT => DOT,
-                CoreToken::BLANK => BLANK,
-                CoreToken::NEWLINE => NEWLINE,
-                CoreToken::EQUAL => EQUAL,
-                CoreToken::DOUBLE_EQUAL => DOUBLE_EQUAL,
-                CoreToken::LBRACKET => LBRACKET,
-                CoreToken::RBRACKET => RBRACKET,
-                CoreToken::LESS_EQUAL => LESS_EQUAL,
-                CoreToken::GREATER_EQUAL => GREATER_EQUAL,
-                CoreToken::NOT_EQUAL => NOT_EQUAL,
-                CoreToken::INTEGER => INTEGER,
-                CoreToken::FLOATING_POINT_NUMBER => FLOATING_POINT_NUMBER,
-                CoreToken::IDENTIFIER => IDENTIFIER,
-                CoreToken::LITERAL => LITERAL,
-                CoreToken::SINGLE_LINE_COMMENT => SINGLE_LINE_COMMENT,
-                CoreToken::BLOCK_COMMENT => BLOCK_COMMENT,
-                CoreToken::ENDMARKER => ENDMARKER,
-                CoreToken::LEXICAL_ERROR(_) => LEXICAL_ERROR,
-            };
-            String::from(symbol_str)
+            self.core_token.is_eq(symbol)
         }
     }
 }

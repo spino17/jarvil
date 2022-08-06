@@ -1,16 +1,51 @@
 extern crate proc_macro;
 use proc_macro::*;
 use quote::quote;
-use syn::{
-    punctuated::Punctuated,
-    token::{Colon2, Comma},
-    Expr, ExprMacro, FnArg, GenericArgument, PathArguments, PathSegment, Stmt, Token, Type,
-};
+
+use crate::get_macro_expr_stmt;
 
 pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
+    let enum_name = &ast.ident;
+    if !enum_name.to_string().eq("CoreToken") {
+        panic!("tokenify macro should only be used for `crate::lexer::token::CoreToken` enum")
+    }
     let enum_data = match &ast.data {
         syn::Data::Enum(enum_data) => enum_data,
-        _ => panic!("tokenify macro should only be used for `CoreToken` enum")
+        _ => panic!("tokenify macro should only be used for `crate::lexer::token::CoreToken` enum")
     };
-    todo!()
+    let variant_iter = &mut enum_data.variants.iter();
+    let mut args_str = "".to_string();
+    let mut flag = false;
+    while let Some(variant) = variant_iter.next() {
+        let variant_name = &variant.ident.to_string();
+        if variant_name.eq("LEXICAL_ERROR") {
+            continue;
+        }
+        if flag {
+            args_str.push_str(", ");
+        }
+        args_str.push_str(variant_name);
+        flag = true;
+    }
+    let symbols_check_macro_stmt = get_macro_expr_stmt("impl_symbols_check", &args_str);
+    let token_to_string_macro = get_macro_expr_stmt("impl_token_to_string", &args_str);
+    args_str.push_str(", LEXICAL_ERROR");
+    let symbols_is_eq = get_macro_expr_stmt("impl_symbols_is_eq", &args_str);
+    let gen = quote! {
+        impl #enum_name {
+            #symbols_check_macro_stmt;
+            fn LEXICAL_ERROR(&self) -> bool {
+                match self {
+                    CoreToken::LEXICAL_ERROR(_) => true,
+                    _ => false,
+                }
+            }
+           #symbols_is_eq;
+        }
+
+        impl ToString for #enum_name {
+            #token_to_string_macro;
+        }
+    };
+    gen.into()
 }
