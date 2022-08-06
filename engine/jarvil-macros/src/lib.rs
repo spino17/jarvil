@@ -59,7 +59,7 @@ pub fn set_parent(args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(Tokenify)]
-pub fn hello_macro_derive(input: TokenStream) -> TokenStream {
+pub fn tokenify_macro_derive(input: TokenStream) -> TokenStream {
     let input_ast: syn::DeriveInput = match syn::parse(input.clone()) {
         Ok(it) => it,
         Err(e) => return token_stream_with_error(input, e),

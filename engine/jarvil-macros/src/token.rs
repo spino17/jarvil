@@ -1,7 +1,6 @@
 extern crate proc_macro;
 use proc_macro::*;
 use quote::quote;
-
 use crate::get_macro_expr_stmt;
 
 pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
