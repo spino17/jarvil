@@ -1,6 +1,8 @@
 pub mod ast {
     #[macro_use]
     use jarvil_macros::set_parent;
+    #[macro_use]
+    use jarvil_macros::WeakNode;
     use crate::scope::core::SymbolData;
     use crate::types::atomic::Atomic;
     use crate::{
@@ -14,7 +16,7 @@ pub mod ast {
         rc::{Rc, Weak},
     };
     pub trait Node {
-        fn set_parent(&self, parent_node: ASTNode);
+        fn set_parent(&self, parent_node: WeakASTNode);
     }
     pub trait ErrornousNode {
         fn new_with_missing_tokens(
@@ -23,81 +25,48 @@ pub mod ast {
             lookahead: usize,
         ) -> Self;
     }
-    pub struct WeakBlockNode(Weak<RefCell<CoreBlockNode>>);
-    #[automatically_derived]
-    impl ::core::fmt::Debug for WeakBlockNode {
-        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakBlockNode", &&self.0)
-        }
-    }
-    #[automatically_derived]
-    impl ::core::clone::Clone for WeakBlockNode {
-        #[inline]
-        fn clone(&self) -> WeakBlockNode {
-            WeakBlockNode(::core::clone::Clone::clone(&self.0))
-        }
-    }
-    pub enum WeakASTNode {
-        BLOCK(WeakBlockNode),
-    }
-    #[automatically_derived]
-    impl ::core::fmt::Debug for WeakASTNode {
-        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-            match self {
-                WeakASTNode::BLOCK(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "BLOCK", &__self_0)
-                }
-            }
-        }
-    }
-    #[automatically_derived]
-    impl ::core::clone::Clone for WeakASTNode {
-        #[inline]
-        fn clone(&self) -> WeakASTNode {
-            match self {
-                WeakASTNode::BLOCK(__self_0) => {
-                    WeakASTNode::BLOCK(::core::clone::Clone::clone(__self_0))
-                }
-            }
-        }
-    }
     pub enum ASTNode {
-        BLOCK(Weak<RefCell<CoreBlockNode>>),
-        STATEMENT(Weak<RefCell<CoreStatementNode>>),
-        ASSIGNMENT(Weak<RefCell<CoreAssignmentNode>>),
-        STRUCT_STATEMENT(Weak<RefCell<CoreStructStatementNode>>),
-        NAME_TYPE_SPECS(Weak<RefCell<CoreNameTypeSpecsNode>>),
-        NAME_TYPE_SPEC(Weak<RefCell<CoreNameTypeSpecNode>>),
-        TYPE_EXPRESSION(Weak<RefCell<CoreTypeExpressionNode>>),
-        ATOMIC_TYPE(Weak<RefCell<CoreAtomicTypeNode>>),
-        ARRAY_TYPE(Weak<RefCell<CoreArrayTypeNode>>),
-        USER_DEFINED_TYPE(Weak<RefCell<CoreUserDefinedTypeNode>>),
-        SKIPPED_TOKENS(Weak<RefCell<CoreSkippedTokens>>),
-        EXPRESSION(Weak<RefCell<CoreExpressionNode>>),
-        ATOMIC_EXPRESSION(Weak<RefCell<CoreAtomicExpressionNode>>),
-        PARENTHESISED_EXPRESSION(Weak<RefCell<CoreParenthesisedExpressionNode>>),
-        UNARY_EXPRESSION(Weak<RefCell<CoreUnaryExpressionNode>>),
-        ONLY_UNARY_EXPRESSION(Weak<RefCell<CoreOnlyUnaryExpressionNode>>),
-        BINARY_EXPRESSION(Weak<RefCell<CoreBinaryExpressionNode>>),
-        LOGICAL_EXPRESSION(Weak<RefCell<CoreLogicalExpressionNode>>),
-        PARAMS(Weak<RefCell<CoreParamsNode>>),
-        OK_PARAMS(Weak<RefCell<CoreOkParamsNode>>),
-        CLASS_METHOD_CALL(Weak<RefCell<CoreClassMethodCallNode>>),
-        CALL_EXPRESSION(Weak<RefCell<CoreCallExpressionNode>>),
-        ATOM(Weak<RefCell<CoreAtomNode>>),
-        CALL_NODE(Weak<RefCell<CoreCallNode>>),
-        PROPERTY_ACCESS(Weak<RefCell<CorePropertyAccessNode>>),
-        METHOD_ACCESS(Weak<RefCell<CoreMethodAccessNode>>),
-        INDEX_ACCESS(Weak<RefCell<CoreIndexAccessNode>>),
-        ATOM_START(Weak<RefCell<CoreAtomStartNode>>),
-        VARIABLE_DECLARATION(Weak<RefCell<CoreVariableDeclarationNode>>),
-        FUNCTION_DECLARATION(Weak<RefCell<CoreFunctionDeclarationNode>>),
-        STRUCT_DECLARATION(Weak<RefCell<CoreStructDeclarationNode>>),
-        TYPE_DECLARATION(Weak<RefCell<CoreTypeDeclarationNode>>),
-        OK_FUNCTION_DECLARATION(Weak<RefCell<CoreOkFunctionDeclarationNode>>),
-        OK_LAMDA_DECLARATION(Weak<RefCell<CoreOkLambdaDeclarationNode>>),
-        OK_NAME_TYPE_SPECS(Weak<RefCell<CoreOkNameTypeSpecsNode>>),
-        R_ASSIGNMENT(Weak<RefCell<CoreRAssignmentNode>>),
+        BLOCK(BlockNode),
+        SKIPPED_TOKENS(SkippedTokens),
+        STATEMENT(StatementNode),
+        ASSIGNMENT(AssignmentNode),
+        STRUCT_STATEMENT(StructStatementNode),
+        TYPE_DECLARATION(TypeDeclarationNode),
+        STRUCT_DECLARATION(StructDeclarationNode),
+        LAMBDA_DECLARATION(LambdaDeclarationNode),
+        OK_LAMBDA_DECLARATION(OkLambdaDeclarationNode),
+        FUNCTION_DECLARATION(FunctionDeclarationNode),
+        OK_FUNCTION_DECLARATION(OkFunctionDeclarationNode),
+        VARIABLE_DECLARATION(VariableDeclarationNode),
+        R_ASSIGNMENT(RAssignmentNode),
+        NAME_TYPE_SPECS(NameTypeSpecsNode),
+        OK_NAME_TYPE_SPECS(OkNameTypeSpecsNode),
+        NAME_TYPE_SPEC(NameTypeSpecNode),
+        TYPE_EXPRESSION(TypeExpressionNode),
+        ATOMIC_TYPE(AtomicTypeNode),
+        ARRAY_TYPE(ArrayTypeNode),
+        USER_DEFINED_TYPE(UserDefinedTypeNode),
+        EXPRESSION(ExpressionNode),
+        ATOMIC_EXPRESSION(AtomicExpressionNode),
+        PARENTHESISED_EXPRESSION(ParenthesisedExpressionNode),
+        UNARY_EXPRESSION(UnaryExpressionNode),
+        ONLY_UNARY_EXPRESSION(OnlyUnaryExpressionNode),
+        BINARY_EXPRESSION(BinaryExpressionNode),
+        LOGICAL_EXPRESSION(LogicalExpressionNode),
+        PARAMS(ParamsNode),
+        OK_PARAMS(OkParamsNode),
+        CALL_EXPRESSION(CallExpressionNode),
+        CLASS_METHOD_CALL(ClassMethodCallNode),
+        ATOM(AtomNode),
+        ATOM_START(AtomStartNode),
+        CALL(CallNode),
+        PROPERTRY_ACCESS(PropertyAccessNode),
+        METHOD_ACCESS(MethodAccessNode),
+        INDEX_ACCESS(IndexAccessNode),
+        TOKEN(TokenNode),
+        OK_TOKEN(OkTokenNode),
+        MISSING_TOKEN(MissingTokenNode),
+        SKIPPED_TOKEN(SkippedTokenNode),
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for ASTNode {
@@ -105,6 +74,13 @@ pub mod ast {
             match self {
                 ASTNode::BLOCK(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "BLOCK", &__self_0)
+                }
+                ASTNode::SKIPPED_TOKENS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "SKIPPED_TOKENS",
+                        &__self_0,
+                    )
                 }
                 ASTNode::STATEMENT(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "STATEMENT", &__self_0)
@@ -119,10 +95,69 @@ pub mod ast {
                         &__self_0,
                     )
                 }
+                ASTNode::TYPE_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "TYPE_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                ASTNode::STRUCT_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "STRUCT_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                ASTNode::LAMBDA_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "LAMBDA_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                ASTNode::OK_LAMBDA_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "OK_LAMBDA_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                ASTNode::FUNCTION_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "FUNCTION_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                ASTNode::OK_FUNCTION_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "OK_FUNCTION_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                ASTNode::VARIABLE_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "VARIABLE_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                ASTNode::R_ASSIGNMENT(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "R_ASSIGNMENT", &__self_0)
+                }
                 ASTNode::NAME_TYPE_SPECS(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(
                         f,
                         "NAME_TYPE_SPECS",
+                        &__self_0,
+                    )
+                }
+                ASTNode::OK_NAME_TYPE_SPECS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "OK_NAME_TYPE_SPECS",
                         &__self_0,
                     )
                 }
@@ -150,13 +185,6 @@ pub mod ast {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(
                         f,
                         "USER_DEFINED_TYPE",
-                        &__self_0,
-                    )
-                }
-                ASTNode::SKIPPED_TOKENS(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "SKIPPED_TOKENS",
                         &__self_0,
                     )
                 }
@@ -211,13 +239,6 @@ pub mod ast {
                 ASTNode::OK_PARAMS(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "OK_PARAMS", &__self_0)
                 }
-                ASTNode::CLASS_METHOD_CALL(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "CLASS_METHOD_CALL",
-                        &__self_0,
-                    )
-                }
                 ASTNode::CALL_EXPRESSION(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(
                         f,
@@ -225,16 +246,26 @@ pub mod ast {
                         &__self_0,
                     )
                 }
+                ASTNode::CLASS_METHOD_CALL(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "CLASS_METHOD_CALL",
+                        &__self_0,
+                    )
+                }
                 ASTNode::ATOM(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ATOM", &__self_0)
                 }
-                ASTNode::CALL_NODE(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "CALL_NODE", &__self_0)
+                ASTNode::ATOM_START(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ATOM_START", &__self_0)
                 }
-                ASTNode::PROPERTY_ACCESS(__self_0) => {
+                ASTNode::CALL(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "CALL", &__self_0)
+                }
+                ASTNode::PROPERTRY_ACCESS(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(
                         f,
-                        "PROPERTY_ACCESS",
+                        "PROPERTRY_ACCESS",
                         &__self_0,
                     )
                 }
@@ -244,60 +275,17 @@ pub mod ast {
                 ASTNode::INDEX_ACCESS(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "INDEX_ACCESS", &__self_0)
                 }
-                ASTNode::ATOM_START(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ATOM_START", &__self_0)
+                ASTNode::TOKEN(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "TOKEN", &__self_0)
                 }
-                ASTNode::VARIABLE_DECLARATION(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "VARIABLE_DECLARATION",
-                        &__self_0,
-                    )
+                ASTNode::OK_TOKEN(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "OK_TOKEN", &__self_0)
                 }
-                ASTNode::FUNCTION_DECLARATION(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "FUNCTION_DECLARATION",
-                        &__self_0,
-                    )
+                ASTNode::MISSING_TOKEN(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "MISSING_TOKEN", &__self_0)
                 }
-                ASTNode::STRUCT_DECLARATION(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "STRUCT_DECLARATION",
-                        &__self_0,
-                    )
-                }
-                ASTNode::TYPE_DECLARATION(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "TYPE_DECLARATION",
-                        &__self_0,
-                    )
-                }
-                ASTNode::OK_FUNCTION_DECLARATION(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "OK_FUNCTION_DECLARATION",
-                        &__self_0,
-                    )
-                }
-                ASTNode::OK_LAMDA_DECLARATION(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "OK_LAMDA_DECLARATION",
-                        &__self_0,
-                    )
-                }
-                ASTNode::OK_NAME_TYPE_SPECS(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "OK_NAME_TYPE_SPECS",
-                        &__self_0,
-                    )
-                }
-                ASTNode::R_ASSIGNMENT(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "R_ASSIGNMENT", &__self_0)
+                ASTNode::SKIPPED_TOKEN(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "SKIPPED_TOKEN", &__self_0)
                 }
             }
         }
@@ -308,6 +296,9 @@ pub mod ast {
         fn clone(&self) -> ASTNode {
             match self {
                 ASTNode::BLOCK(__self_0) => ASTNode::BLOCK(::core::clone::Clone::clone(__self_0)),
+                ASTNode::SKIPPED_TOKENS(__self_0) => {
+                    ASTNode::SKIPPED_TOKENS(::core::clone::Clone::clone(__self_0))
+                }
                 ASTNode::STATEMENT(__self_0) => {
                     ASTNode::STATEMENT(::core::clone::Clone::clone(__self_0))
                 }
@@ -317,8 +308,35 @@ pub mod ast {
                 ASTNode::STRUCT_STATEMENT(__self_0) => {
                     ASTNode::STRUCT_STATEMENT(::core::clone::Clone::clone(__self_0))
                 }
+                ASTNode::TYPE_DECLARATION(__self_0) => {
+                    ASTNode::TYPE_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                ASTNode::STRUCT_DECLARATION(__self_0) => {
+                    ASTNode::STRUCT_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                ASTNode::LAMBDA_DECLARATION(__self_0) => {
+                    ASTNode::LAMBDA_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                ASTNode::OK_LAMBDA_DECLARATION(__self_0) => {
+                    ASTNode::OK_LAMBDA_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                ASTNode::FUNCTION_DECLARATION(__self_0) => {
+                    ASTNode::FUNCTION_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                ASTNode::OK_FUNCTION_DECLARATION(__self_0) => {
+                    ASTNode::OK_FUNCTION_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                ASTNode::VARIABLE_DECLARATION(__self_0) => {
+                    ASTNode::VARIABLE_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                ASTNode::R_ASSIGNMENT(__self_0) => {
+                    ASTNode::R_ASSIGNMENT(::core::clone::Clone::clone(__self_0))
+                }
                 ASTNode::NAME_TYPE_SPECS(__self_0) => {
                     ASTNode::NAME_TYPE_SPECS(::core::clone::Clone::clone(__self_0))
+                }
+                ASTNode::OK_NAME_TYPE_SPECS(__self_0) => {
+                    ASTNode::OK_NAME_TYPE_SPECS(::core::clone::Clone::clone(__self_0))
                 }
                 ASTNode::NAME_TYPE_SPEC(__self_0) => {
                     ASTNode::NAME_TYPE_SPEC(::core::clone::Clone::clone(__self_0))
@@ -334,9 +352,6 @@ pub mod ast {
                 }
                 ASTNode::USER_DEFINED_TYPE(__self_0) => {
                     ASTNode::USER_DEFINED_TYPE(::core::clone::Clone::clone(__self_0))
-                }
-                ASTNode::SKIPPED_TOKENS(__self_0) => {
-                    ASTNode::SKIPPED_TOKENS(::core::clone::Clone::clone(__self_0))
                 }
                 ASTNode::EXPRESSION(__self_0) => {
                     ASTNode::EXPRESSION(::core::clone::Clone::clone(__self_0))
@@ -363,18 +378,19 @@ pub mod ast {
                 ASTNode::OK_PARAMS(__self_0) => {
                     ASTNode::OK_PARAMS(::core::clone::Clone::clone(__self_0))
                 }
-                ASTNode::CLASS_METHOD_CALL(__self_0) => {
-                    ASTNode::CLASS_METHOD_CALL(::core::clone::Clone::clone(__self_0))
-                }
                 ASTNode::CALL_EXPRESSION(__self_0) => {
                     ASTNode::CALL_EXPRESSION(::core::clone::Clone::clone(__self_0))
                 }
-                ASTNode::ATOM(__self_0) => ASTNode::ATOM(::core::clone::Clone::clone(__self_0)),
-                ASTNode::CALL_NODE(__self_0) => {
-                    ASTNode::CALL_NODE(::core::clone::Clone::clone(__self_0))
+                ASTNode::CLASS_METHOD_CALL(__self_0) => {
+                    ASTNode::CLASS_METHOD_CALL(::core::clone::Clone::clone(__self_0))
                 }
-                ASTNode::PROPERTY_ACCESS(__self_0) => {
-                    ASTNode::PROPERTY_ACCESS(::core::clone::Clone::clone(__self_0))
+                ASTNode::ATOM(__self_0) => ASTNode::ATOM(::core::clone::Clone::clone(__self_0)),
+                ASTNode::ATOM_START(__self_0) => {
+                    ASTNode::ATOM_START(::core::clone::Clone::clone(__self_0))
+                }
+                ASTNode::CALL(__self_0) => ASTNode::CALL(::core::clone::Clone::clone(__self_0)),
+                ASTNode::PROPERTRY_ACCESS(__self_0) => {
+                    ASTNode::PROPERTRY_ACCESS(::core::clone::Clone::clone(__self_0))
                 }
                 ASTNode::METHOD_ACCESS(__self_0) => {
                     ASTNode::METHOD_ACCESS(::core::clone::Clone::clone(__self_0))
@@ -382,32 +398,1410 @@ pub mod ast {
                 ASTNode::INDEX_ACCESS(__self_0) => {
                     ASTNode::INDEX_ACCESS(::core::clone::Clone::clone(__self_0))
                 }
-                ASTNode::ATOM_START(__self_0) => {
-                    ASTNode::ATOM_START(::core::clone::Clone::clone(__self_0))
+                ASTNode::TOKEN(__self_0) => ASTNode::TOKEN(::core::clone::Clone::clone(__self_0)),
+                ASTNode::OK_TOKEN(__self_0) => {
+                    ASTNode::OK_TOKEN(::core::clone::Clone::clone(__self_0))
                 }
-                ASTNode::VARIABLE_DECLARATION(__self_0) => {
-                    ASTNode::VARIABLE_DECLARATION(::core::clone::Clone::clone(__self_0))
+                ASTNode::MISSING_TOKEN(__self_0) => {
+                    ASTNode::MISSING_TOKEN(::core::clone::Clone::clone(__self_0))
                 }
-                ASTNode::FUNCTION_DECLARATION(__self_0) => {
-                    ASTNode::FUNCTION_DECLARATION(::core::clone::Clone::clone(__self_0))
+                ASTNode::SKIPPED_TOKEN(__self_0) => {
+                    ASTNode::SKIPPED_TOKEN(::core::clone::Clone::clone(__self_0))
                 }
-                ASTNode::STRUCT_DECLARATION(__self_0) => {
-                    ASTNode::STRUCT_DECLARATION(::core::clone::Clone::clone(__self_0))
+            }
+        }
+    }
+    pub struct WeakBlockNode(pub Weak<RefCell<CoreBlockNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakBlockNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakBlockNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakBlockNode {
+        #[inline]
+        fn clone(&self) -> WeakBlockNode {
+            WeakBlockNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakSkippedTokens(pub Weak<RefCell<CoreSkippedTokens>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakSkippedTokens {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakSkippedTokens", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakSkippedTokens {
+        #[inline]
+        fn clone(&self) -> WeakSkippedTokens {
+            WeakSkippedTokens(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakStatementNode(pub Weak<RefCell<CoreStatementNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakStatementNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakStatementNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakStatementNode {
+        #[inline]
+        fn clone(&self) -> WeakStatementNode {
+            WeakStatementNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakAssignmentNode(pub Weak<RefCell<CoreAssignmentNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakAssignmentNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakAssignmentNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakAssignmentNode {
+        #[inline]
+        fn clone(&self) -> WeakAssignmentNode {
+            WeakAssignmentNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakStructStatementNode(pub Weak<RefCell<CoreStructStatementNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakStructStatementNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakStructStatementNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakStructStatementNode {
+        #[inline]
+        fn clone(&self) -> WeakStructStatementNode {
+            WeakStructStatementNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakTypeDeclarationNode(pub Weak<RefCell<CoreTypeDeclarationNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakTypeDeclarationNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakTypeDeclarationNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakTypeDeclarationNode {
+        #[inline]
+        fn clone(&self) -> WeakTypeDeclarationNode {
+            WeakTypeDeclarationNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakStructDeclarationNode(pub Weak<RefCell<CoreStructDeclarationNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakStructDeclarationNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakStructDeclarationNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakStructDeclarationNode {
+        #[inline]
+        fn clone(&self) -> WeakStructDeclarationNode {
+            WeakStructDeclarationNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakLambdaDeclarationNode(pub Weak<RefCell<CoreLambdaDeclarationNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakLambdaDeclarationNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakLambdaDeclarationNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakLambdaDeclarationNode {
+        #[inline]
+        fn clone(&self) -> WeakLambdaDeclarationNode {
+            WeakLambdaDeclarationNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakOkLambdaDeclarationNode(pub Weak<RefCell<CoreOkLambdaDeclarationNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakOkLambdaDeclarationNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakOkLambdaDeclarationNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakOkLambdaDeclarationNode {
+        #[inline]
+        fn clone(&self) -> WeakOkLambdaDeclarationNode {
+            WeakOkLambdaDeclarationNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakFunctionDeclarationNode(pub Weak<RefCell<CoreFunctionDeclarationNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakFunctionDeclarationNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakFunctionDeclarationNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakFunctionDeclarationNode {
+        #[inline]
+        fn clone(&self) -> WeakFunctionDeclarationNode {
+            WeakFunctionDeclarationNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakOkFunctionDeclarationNode(pub Weak<RefCell<CoreOkFunctionDeclarationNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakOkFunctionDeclarationNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakOkFunctionDeclarationNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakOkFunctionDeclarationNode {
+        #[inline]
+        fn clone(&self) -> WeakOkFunctionDeclarationNode {
+            WeakOkFunctionDeclarationNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakVariableDeclarationNode(pub Weak<RefCell<CoreVariableDeclarationNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakVariableDeclarationNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakVariableDeclarationNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakVariableDeclarationNode {
+        #[inline]
+        fn clone(&self) -> WeakVariableDeclarationNode {
+            WeakVariableDeclarationNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakRAssignmentNode(pub Weak<RefCell<CoreRAssignmentNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakRAssignmentNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakRAssignmentNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakRAssignmentNode {
+        #[inline]
+        fn clone(&self) -> WeakRAssignmentNode {
+            WeakRAssignmentNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakNameTypeSpecsNode(pub Weak<RefCell<CoreNameTypeSpecsNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakNameTypeSpecsNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakNameTypeSpecsNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakNameTypeSpecsNode {
+        #[inline]
+        fn clone(&self) -> WeakNameTypeSpecsNode {
+            WeakNameTypeSpecsNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakOkNameTypeSpecsNode(pub Weak<RefCell<CoreOkNameTypeSpecsNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakOkNameTypeSpecsNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakOkNameTypeSpecsNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakOkNameTypeSpecsNode {
+        #[inline]
+        fn clone(&self) -> WeakOkNameTypeSpecsNode {
+            WeakOkNameTypeSpecsNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakNameTypeSpecNode(pub Weak<RefCell<CoreNameTypeSpecNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakNameTypeSpecNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakNameTypeSpecNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakNameTypeSpecNode {
+        #[inline]
+        fn clone(&self) -> WeakNameTypeSpecNode {
+            WeakNameTypeSpecNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakTypeExpressionNode(pub Weak<RefCell<CoreTypeExpressionNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakTypeExpressionNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakTypeExpressionNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakTypeExpressionNode {
+        #[inline]
+        fn clone(&self) -> WeakTypeExpressionNode {
+            WeakTypeExpressionNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakAtomicTypeNode(pub Weak<RefCell<CoreAtomicTypeNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakAtomicTypeNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakAtomicTypeNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakAtomicTypeNode {
+        #[inline]
+        fn clone(&self) -> WeakAtomicTypeNode {
+            WeakAtomicTypeNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakArrayTypeNode(pub Weak<RefCell<CoreArrayTypeNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakArrayTypeNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakArrayTypeNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakArrayTypeNode {
+        #[inline]
+        fn clone(&self) -> WeakArrayTypeNode {
+            WeakArrayTypeNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakUserDefinedTypeNode(pub Weak<RefCell<CoreUserDefinedTypeNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakUserDefinedTypeNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakUserDefinedTypeNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakUserDefinedTypeNode {
+        #[inline]
+        fn clone(&self) -> WeakUserDefinedTypeNode {
+            WeakUserDefinedTypeNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakExpressionNode(pub Weak<RefCell<CoreExpressionNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakExpressionNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakExpressionNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakExpressionNode {
+        #[inline]
+        fn clone(&self) -> WeakExpressionNode {
+            WeakExpressionNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakAtomicExpressionNode(pub Weak<RefCell<CoreAtomicExpressionNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakAtomicExpressionNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakAtomicExpressionNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakAtomicExpressionNode {
+        #[inline]
+        fn clone(&self) -> WeakAtomicExpressionNode {
+            WeakAtomicExpressionNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakParenthesisedExpressionNode(pub Weak<RefCell<CoreParenthesisedExpressionNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakParenthesisedExpressionNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakParenthesisedExpressionNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakParenthesisedExpressionNode {
+        #[inline]
+        fn clone(&self) -> WeakParenthesisedExpressionNode {
+            WeakParenthesisedExpressionNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakUnaryExpressionNode(pub Weak<RefCell<CoreUnaryExpressionNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakUnaryExpressionNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakUnaryExpressionNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakUnaryExpressionNode {
+        #[inline]
+        fn clone(&self) -> WeakUnaryExpressionNode {
+            WeakUnaryExpressionNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakOnlyUnaryExpressionNode(pub Weak<RefCell<CoreOnlyUnaryExpressionNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakOnlyUnaryExpressionNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakOnlyUnaryExpressionNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakOnlyUnaryExpressionNode {
+        #[inline]
+        fn clone(&self) -> WeakOnlyUnaryExpressionNode {
+            WeakOnlyUnaryExpressionNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakBinaryExpressionNode(pub Weak<RefCell<CoreBinaryExpressionNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakBinaryExpressionNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakBinaryExpressionNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakBinaryExpressionNode {
+        #[inline]
+        fn clone(&self) -> WeakBinaryExpressionNode {
+            WeakBinaryExpressionNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakLogicalExpressionNode(pub Weak<RefCell<CoreLogicalExpressionNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakLogicalExpressionNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakLogicalExpressionNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakLogicalExpressionNode {
+        #[inline]
+        fn clone(&self) -> WeakLogicalExpressionNode {
+            WeakLogicalExpressionNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakParamsNode(pub Weak<RefCell<CoreParamsNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakParamsNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakParamsNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakParamsNode {
+        #[inline]
+        fn clone(&self) -> WeakParamsNode {
+            WeakParamsNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakOkParamsNode(pub Weak<RefCell<CoreOkParamsNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakOkParamsNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakOkParamsNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakOkParamsNode {
+        #[inline]
+        fn clone(&self) -> WeakOkParamsNode {
+            WeakOkParamsNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakCallExpressionNode(pub Weak<RefCell<CoreCallExpressionNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakCallExpressionNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakCallExpressionNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakCallExpressionNode {
+        #[inline]
+        fn clone(&self) -> WeakCallExpressionNode {
+            WeakCallExpressionNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakClassMethodCallNode(pub Weak<RefCell<CoreClassMethodCallNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakClassMethodCallNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakClassMethodCallNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakClassMethodCallNode {
+        #[inline]
+        fn clone(&self) -> WeakClassMethodCallNode {
+            WeakClassMethodCallNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakAtomNode(pub Weak<RefCell<CoreAtomNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakAtomNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakAtomNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakAtomNode {
+        #[inline]
+        fn clone(&self) -> WeakAtomNode {
+            WeakAtomNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakAtomStartNode(pub Weak<RefCell<CoreAtomStartNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakAtomStartNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakAtomStartNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakAtomStartNode {
+        #[inline]
+        fn clone(&self) -> WeakAtomStartNode {
+            WeakAtomStartNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakCallNode(pub Weak<RefCell<CoreCallNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakCallNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakCallNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakCallNode {
+        #[inline]
+        fn clone(&self) -> WeakCallNode {
+            WeakCallNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakPropertyAccessNode(pub Weak<RefCell<CorePropertyAccessNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakPropertyAccessNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakPropertyAccessNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakPropertyAccessNode {
+        #[inline]
+        fn clone(&self) -> WeakPropertyAccessNode {
+            WeakPropertyAccessNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakMethodAccessNode(pub Weak<RefCell<CoreMethodAccessNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakMethodAccessNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakMethodAccessNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakMethodAccessNode {
+        #[inline]
+        fn clone(&self) -> WeakMethodAccessNode {
+            WeakMethodAccessNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakIndexAccessNode(pub Weak<RefCell<CoreIndexAccessNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakIndexAccessNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakIndexAccessNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakIndexAccessNode {
+        #[inline]
+        fn clone(&self) -> WeakIndexAccessNode {
+            WeakIndexAccessNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakTokenNode(pub Weak<RefCell<CoreTokenNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakTokenNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakTokenNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakTokenNode {
+        #[inline]
+        fn clone(&self) -> WeakTokenNode {
+            WeakTokenNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakOkTokenNode(pub Weak<RefCell<CoreOkTokenNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakOkTokenNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakOkTokenNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakOkTokenNode {
+        #[inline]
+        fn clone(&self) -> WeakOkTokenNode {
+            WeakOkTokenNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakMissingTokenNode(pub Weak<RefCell<CoreMissingTokenNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakMissingTokenNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakMissingTokenNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakMissingTokenNode {
+        #[inline]
+        fn clone(&self) -> WeakMissingTokenNode {
+            WeakMissingTokenNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakSkippedTokenNode(pub Weak<RefCell<CoreSkippedTokenNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakSkippedTokenNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "WeakSkippedTokenNode", &&self.0)
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakSkippedTokenNode {
+        #[inline]
+        fn clone(&self) -> WeakSkippedTokenNode {
+            WeakSkippedTokenNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub enum WeaksASTNode {
+        BLOCK(WeakBlockNode),
+        SKIPPED_TOKENS(WeakSkippedTokens),
+        STATEMENT(WeakStatementNode),
+        ASSIGNMENT(WeakAssignmentNode),
+        STRUCT_STATEMENT(WeakStructStatementNode),
+        TYPE_DECLARATION(WeakTypeDeclarationNode),
+        STRUCT_DECLARATION(WeakStructDeclarationNode),
+        LAMBDA_DECLARATION(WeakLambdaDeclarationNode),
+        OK_LAMBDA_DECLARATION(WeakOkLambdaDeclarationNode),
+        FUNCTION_DECLARATION(WeakFunctionDeclarationNode),
+        OK_FUNCTION_DECLARATION(WeakOkFunctionDeclarationNode),
+        VARIABLE_DECLARATION(WeakVariableDeclarationNode),
+        R_ASSIGNMENT(WeakRAssignmentNode),
+        NAME_TYPE_SPECS(WeakNameTypeSpecsNode),
+        OK_NAME_TYPE_SPECS(WeakOkNameTypeSpecsNode),
+        NAME_TYPE_SPEC(WeakNameTypeSpecNode),
+        TYPE_EXPRESSION(WeakTypeExpressionNode),
+        ATOMIC_TYPE(WeakAtomicTypeNode),
+        ARRAY_TYPE(WeakArrayTypeNode),
+        USER_DEFINED_TYPE(WeakUserDefinedTypeNode),
+        EXPRESSION(WeakExpressionNode),
+        ATOMIC_EXPRESSION(WeakAtomicExpressionNode),
+        PARENTHESISED_EXPRESSION(WeakParenthesisedExpressionNode),
+        UNARY_EXPRESSION(WeakUnaryExpressionNode),
+        ONLY_UNARY_EXPRESSION(WeakOnlyUnaryExpressionNode),
+        BINARY_EXPRESSION(WeakBinaryExpressionNode),
+        LOGICAL_EXPRESSION(WeakLogicalExpressionNode),
+        PARAMS(WeakParamsNode),
+        OK_PARAMS(WeakOkParamsNode),
+        CALL_EXPRESSION(WeakCallExpressionNode),
+        CLASS_METHOD_CALL(WeakClassMethodCallNode),
+        ATOM(WeakAtomNode),
+        ATOM_START(WeakAtomStartNode),
+        CALL(WeakCallNode),
+        PROPERTRY_ACCESS(WeakPropertyAccessNode),
+        METHOD_ACCESS(WeakMethodAccessNode),
+        INDEX_ACCESS(WeakIndexAccessNode),
+        TOKEN(WeakTokenNode),
+        OK_TOKEN(WeakOkTokenNode),
+        MISSING_TOKEN(WeakMissingTokenNode),
+        SKIPPED_TOKEN(WeakSkippedTokenNode),
+    }
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeaksASTNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            match self {
+                WeaksASTNode::BLOCK(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "BLOCK", &__self_0)
                 }
-                ASTNode::TYPE_DECLARATION(__self_0) => {
-                    ASTNode::TYPE_DECLARATION(::core::clone::Clone::clone(__self_0))
+                WeaksASTNode::SKIPPED_TOKENS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "SKIPPED_TOKENS",
+                        &__self_0,
+                    )
                 }
-                ASTNode::OK_FUNCTION_DECLARATION(__self_0) => {
-                    ASTNode::OK_FUNCTION_DECLARATION(::core::clone::Clone::clone(__self_0))
+                WeaksASTNode::STATEMENT(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "STATEMENT", &__self_0)
                 }
-                ASTNode::OK_LAMDA_DECLARATION(__self_0) => {
-                    ASTNode::OK_LAMDA_DECLARATION(::core::clone::Clone::clone(__self_0))
+                WeaksASTNode::ASSIGNMENT(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ASSIGNMENT", &__self_0)
                 }
-                ASTNode::OK_NAME_TYPE_SPECS(__self_0) => {
-                    ASTNode::OK_NAME_TYPE_SPECS(::core::clone::Clone::clone(__self_0))
+                WeaksASTNode::STRUCT_STATEMENT(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "STRUCT_STATEMENT",
+                        &__self_0,
+                    )
                 }
-                ASTNode::R_ASSIGNMENT(__self_0) => {
-                    ASTNode::R_ASSIGNMENT(::core::clone::Clone::clone(__self_0))
+                WeaksASTNode::TYPE_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "TYPE_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::STRUCT_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "STRUCT_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::LAMBDA_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "LAMBDA_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::OK_LAMBDA_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "OK_LAMBDA_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::FUNCTION_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "FUNCTION_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::OK_FUNCTION_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "OK_FUNCTION_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::VARIABLE_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "VARIABLE_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::R_ASSIGNMENT(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "R_ASSIGNMENT", &__self_0)
+                }
+                WeaksASTNode::NAME_TYPE_SPECS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "NAME_TYPE_SPECS",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::OK_NAME_TYPE_SPECS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "OK_NAME_TYPE_SPECS",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::NAME_TYPE_SPEC(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "NAME_TYPE_SPEC",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::TYPE_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "TYPE_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::ATOMIC_TYPE(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ATOMIC_TYPE", &__self_0)
+                }
+                WeaksASTNode::ARRAY_TYPE(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ARRAY_TYPE", &__self_0)
+                }
+                WeaksASTNode::USER_DEFINED_TYPE(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "USER_DEFINED_TYPE",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "EXPRESSION", &__self_0)
+                }
+                WeaksASTNode::ATOMIC_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "ATOMIC_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::PARENTHESISED_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "PARENTHESISED_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::UNARY_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "UNARY_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::ONLY_UNARY_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "ONLY_UNARY_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::BINARY_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "BINARY_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::LOGICAL_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "LOGICAL_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::PARAMS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "PARAMS", &__self_0)
+                }
+                WeaksASTNode::OK_PARAMS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "OK_PARAMS", &__self_0)
+                }
+                WeaksASTNode::CALL_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "CALL_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::CLASS_METHOD_CALL(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "CLASS_METHOD_CALL",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::ATOM(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ATOM", &__self_0)
+                }
+                WeaksASTNode::ATOM_START(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ATOM_START", &__self_0)
+                }
+                WeaksASTNode::CALL(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "CALL", &__self_0)
+                }
+                WeaksASTNode::PROPERTRY_ACCESS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "PROPERTRY_ACCESS",
+                        &__self_0,
+                    )
+                }
+                WeaksASTNode::METHOD_ACCESS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "METHOD_ACCESS", &__self_0)
+                }
+                WeaksASTNode::INDEX_ACCESS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "INDEX_ACCESS", &__self_0)
+                }
+                WeaksASTNode::TOKEN(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "TOKEN", &__self_0)
+                }
+                WeaksASTNode::OK_TOKEN(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "OK_TOKEN", &__self_0)
+                }
+                WeaksASTNode::MISSING_TOKEN(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "MISSING_TOKEN", &__self_0)
+                }
+                WeaksASTNode::SKIPPED_TOKEN(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "SKIPPED_TOKEN", &__self_0)
+                }
+            }
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeaksASTNode {
+        #[inline]
+        fn clone(&self) -> WeaksASTNode {
+            match self {
+                WeaksASTNode::BLOCK(__self_0) => {
+                    WeaksASTNode::BLOCK(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::SKIPPED_TOKENS(__self_0) => {
+                    WeaksASTNode::SKIPPED_TOKENS(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::STATEMENT(__self_0) => {
+                    WeaksASTNode::STATEMENT(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::ASSIGNMENT(__self_0) => {
+                    WeaksASTNode::ASSIGNMENT(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::STRUCT_STATEMENT(__self_0) => {
+                    WeaksASTNode::STRUCT_STATEMENT(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::TYPE_DECLARATION(__self_0) => {
+                    WeaksASTNode::TYPE_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::STRUCT_DECLARATION(__self_0) => {
+                    WeaksASTNode::STRUCT_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::LAMBDA_DECLARATION(__self_0) => {
+                    WeaksASTNode::LAMBDA_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::OK_LAMBDA_DECLARATION(__self_0) => {
+                    WeaksASTNode::OK_LAMBDA_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::FUNCTION_DECLARATION(__self_0) => {
+                    WeaksASTNode::FUNCTION_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::OK_FUNCTION_DECLARATION(__self_0) => {
+                    WeaksASTNode::OK_FUNCTION_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::VARIABLE_DECLARATION(__self_0) => {
+                    WeaksASTNode::VARIABLE_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::R_ASSIGNMENT(__self_0) => {
+                    WeaksASTNode::R_ASSIGNMENT(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::NAME_TYPE_SPECS(__self_0) => {
+                    WeaksASTNode::NAME_TYPE_SPECS(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::OK_NAME_TYPE_SPECS(__self_0) => {
+                    WeaksASTNode::OK_NAME_TYPE_SPECS(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::NAME_TYPE_SPEC(__self_0) => {
+                    WeaksASTNode::NAME_TYPE_SPEC(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::TYPE_EXPRESSION(__self_0) => {
+                    WeaksASTNode::TYPE_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::ATOMIC_TYPE(__self_0) => {
+                    WeaksASTNode::ATOMIC_TYPE(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::ARRAY_TYPE(__self_0) => {
+                    WeaksASTNode::ARRAY_TYPE(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::USER_DEFINED_TYPE(__self_0) => {
+                    WeaksASTNode::USER_DEFINED_TYPE(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::EXPRESSION(__self_0) => {
+                    WeaksASTNode::EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::ATOMIC_EXPRESSION(__self_0) => {
+                    WeaksASTNode::ATOMIC_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::PARENTHESISED_EXPRESSION(__self_0) => {
+                    WeaksASTNode::PARENTHESISED_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::UNARY_EXPRESSION(__self_0) => {
+                    WeaksASTNode::UNARY_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::ONLY_UNARY_EXPRESSION(__self_0) => {
+                    WeaksASTNode::ONLY_UNARY_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::BINARY_EXPRESSION(__self_0) => {
+                    WeaksASTNode::BINARY_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::LOGICAL_EXPRESSION(__self_0) => {
+                    WeaksASTNode::LOGICAL_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::PARAMS(__self_0) => {
+                    WeaksASTNode::PARAMS(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::OK_PARAMS(__self_0) => {
+                    WeaksASTNode::OK_PARAMS(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::CALL_EXPRESSION(__self_0) => {
+                    WeaksASTNode::CALL_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::CLASS_METHOD_CALL(__self_0) => {
+                    WeaksASTNode::CLASS_METHOD_CALL(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::ATOM(__self_0) => {
+                    WeaksASTNode::ATOM(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::ATOM_START(__self_0) => {
+                    WeaksASTNode::ATOM_START(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::CALL(__self_0) => {
+                    WeaksASTNode::CALL(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::PROPERTRY_ACCESS(__self_0) => {
+                    WeaksASTNode::PROPERTRY_ACCESS(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::METHOD_ACCESS(__self_0) => {
+                    WeaksASTNode::METHOD_ACCESS(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::INDEX_ACCESS(__self_0) => {
+                    WeaksASTNode::INDEX_ACCESS(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::TOKEN(__self_0) => {
+                    WeaksASTNode::TOKEN(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::OK_TOKEN(__self_0) => {
+                    WeaksASTNode::OK_TOKEN(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::MISSING_TOKEN(__self_0) => {
+                    WeaksASTNode::MISSING_TOKEN(::core::clone::Clone::clone(__self_0))
+                }
+                WeaksASTNode::SKIPPED_TOKEN(__self_0) => {
+                    WeaksASTNode::SKIPPED_TOKEN(::core::clone::Clone::clone(__self_0))
+                }
+            }
+        }
+    }
+    pub enum WeakASTNode {
+        BLOCK(Weak<RefCell<CoreBlockNode>>),
+        STATEMENT(Weak<RefCell<CoreStatementNode>>),
+        ASSIGNMENT(Weak<RefCell<CoreAssignmentNode>>),
+        STRUCT_STATEMENT(Weak<RefCell<CoreStructStatementNode>>),
+        NAME_TYPE_SPECS(Weak<RefCell<CoreNameTypeSpecsNode>>),
+        NAME_TYPE_SPEC(Weak<RefCell<CoreNameTypeSpecNode>>),
+        TYPE_EXPRESSION(Weak<RefCell<CoreTypeExpressionNode>>),
+        ATOMIC_TYPE(Weak<RefCell<CoreAtomicTypeNode>>),
+        ARRAY_TYPE(Weak<RefCell<CoreArrayTypeNode>>),
+        USER_DEFINED_TYPE(Weak<RefCell<CoreUserDefinedTypeNode>>),
+        SKIPPED_TOKENS(Weak<RefCell<CoreSkippedTokens>>),
+        EXPRESSION(Weak<RefCell<CoreExpressionNode>>),
+        ATOMIC_EXPRESSION(Weak<RefCell<CoreAtomicExpressionNode>>),
+        PARENTHESISED_EXPRESSION(Weak<RefCell<CoreParenthesisedExpressionNode>>),
+        UNARY_EXPRESSION(Weak<RefCell<CoreUnaryExpressionNode>>),
+        ONLY_UNARY_EXPRESSION(Weak<RefCell<CoreOnlyUnaryExpressionNode>>),
+        BINARY_EXPRESSION(Weak<RefCell<CoreBinaryExpressionNode>>),
+        LOGICAL_EXPRESSION(Weak<RefCell<CoreLogicalExpressionNode>>),
+        PARAMS(Weak<RefCell<CoreParamsNode>>),
+        OK_PARAMS(Weak<RefCell<CoreOkParamsNode>>),
+        CLASS_METHOD_CALL(Weak<RefCell<CoreClassMethodCallNode>>),
+        CALL_EXPRESSION(Weak<RefCell<CoreCallExpressionNode>>),
+        ATOM(Weak<RefCell<CoreAtomNode>>),
+        CALL_NODE(Weak<RefCell<CoreCallNode>>),
+        PROPERTY_ACCESS(Weak<RefCell<CorePropertyAccessNode>>),
+        METHOD_ACCESS(Weak<RefCell<CoreMethodAccessNode>>),
+        INDEX_ACCESS(Weak<RefCell<CoreIndexAccessNode>>),
+        ATOM_START(Weak<RefCell<CoreAtomStartNode>>),
+        VARIABLE_DECLARATION(Weak<RefCell<CoreVariableDeclarationNode>>),
+        FUNCTION_DECLARATION(Weak<RefCell<CoreFunctionDeclarationNode>>),
+        STRUCT_DECLARATION(Weak<RefCell<CoreStructDeclarationNode>>),
+        TYPE_DECLARATION(Weak<RefCell<CoreTypeDeclarationNode>>),
+        OK_FUNCTION_DECLARATION(Weak<RefCell<CoreOkFunctionDeclarationNode>>),
+        OK_LAMDA_DECLARATION(Weak<RefCell<CoreOkLambdaDeclarationNode>>),
+        OK_NAME_TYPE_SPECS(Weak<RefCell<CoreOkNameTypeSpecsNode>>),
+        R_ASSIGNMENT(Weak<RefCell<CoreRAssignmentNode>>),
+    }
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakASTNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            match self {
+                WeakASTNode::BLOCK(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "BLOCK", &__self_0)
+                }
+                WeakASTNode::STATEMENT(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "STATEMENT", &__self_0)
+                }
+                WeakASTNode::ASSIGNMENT(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ASSIGNMENT", &__self_0)
+                }
+                WeakASTNode::STRUCT_STATEMENT(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "STRUCT_STATEMENT",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::NAME_TYPE_SPECS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "NAME_TYPE_SPECS",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::NAME_TYPE_SPEC(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "NAME_TYPE_SPEC",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::TYPE_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "TYPE_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::ATOMIC_TYPE(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ATOMIC_TYPE", &__self_0)
+                }
+                WeakASTNode::ARRAY_TYPE(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ARRAY_TYPE", &__self_0)
+                }
+                WeakASTNode::USER_DEFINED_TYPE(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "USER_DEFINED_TYPE",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::SKIPPED_TOKENS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "SKIPPED_TOKENS",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "EXPRESSION", &__self_0)
+                }
+                WeakASTNode::ATOMIC_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "ATOMIC_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::PARENTHESISED_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "PARENTHESISED_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::UNARY_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "UNARY_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::ONLY_UNARY_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "ONLY_UNARY_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::BINARY_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "BINARY_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::LOGICAL_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "LOGICAL_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::PARAMS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "PARAMS", &__self_0)
+                }
+                WeakASTNode::OK_PARAMS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "OK_PARAMS", &__self_0)
+                }
+                WeakASTNode::CLASS_METHOD_CALL(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "CLASS_METHOD_CALL",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::CALL_EXPRESSION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "CALL_EXPRESSION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::ATOM(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ATOM", &__self_0)
+                }
+                WeakASTNode::CALL_NODE(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "CALL_NODE", &__self_0)
+                }
+                WeakASTNode::PROPERTY_ACCESS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "PROPERTY_ACCESS",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::METHOD_ACCESS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "METHOD_ACCESS", &__self_0)
+                }
+                WeakASTNode::INDEX_ACCESS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "INDEX_ACCESS", &__self_0)
+                }
+                WeakASTNode::ATOM_START(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ATOM_START", &__self_0)
+                }
+                WeakASTNode::VARIABLE_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "VARIABLE_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::FUNCTION_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "FUNCTION_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::STRUCT_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "STRUCT_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::TYPE_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "TYPE_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::OK_FUNCTION_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "OK_FUNCTION_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::OK_LAMDA_DECLARATION(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "OK_LAMDA_DECLARATION",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::OK_NAME_TYPE_SPECS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "OK_NAME_TYPE_SPECS",
+                        &__self_0,
+                    )
+                }
+                WeakASTNode::R_ASSIGNMENT(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "R_ASSIGNMENT", &__self_0)
+                }
+            }
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakASTNode {
+        #[inline]
+        fn clone(&self) -> WeakASTNode {
+            match self {
+                WeakASTNode::BLOCK(__self_0) => {
+                    WeakASTNode::BLOCK(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::STATEMENT(__self_0) => {
+                    WeakASTNode::STATEMENT(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::ASSIGNMENT(__self_0) => {
+                    WeakASTNode::ASSIGNMENT(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::STRUCT_STATEMENT(__self_0) => {
+                    WeakASTNode::STRUCT_STATEMENT(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::NAME_TYPE_SPECS(__self_0) => {
+                    WeakASTNode::NAME_TYPE_SPECS(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::NAME_TYPE_SPEC(__self_0) => {
+                    WeakASTNode::NAME_TYPE_SPEC(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::TYPE_EXPRESSION(__self_0) => {
+                    WeakASTNode::TYPE_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::ATOMIC_TYPE(__self_0) => {
+                    WeakASTNode::ATOMIC_TYPE(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::ARRAY_TYPE(__self_0) => {
+                    WeakASTNode::ARRAY_TYPE(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::USER_DEFINED_TYPE(__self_0) => {
+                    WeakASTNode::USER_DEFINED_TYPE(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::SKIPPED_TOKENS(__self_0) => {
+                    WeakASTNode::SKIPPED_TOKENS(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::EXPRESSION(__self_0) => {
+                    WeakASTNode::EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::ATOMIC_EXPRESSION(__self_0) => {
+                    WeakASTNode::ATOMIC_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::PARENTHESISED_EXPRESSION(__self_0) => {
+                    WeakASTNode::PARENTHESISED_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::UNARY_EXPRESSION(__self_0) => {
+                    WeakASTNode::UNARY_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::ONLY_UNARY_EXPRESSION(__self_0) => {
+                    WeakASTNode::ONLY_UNARY_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::BINARY_EXPRESSION(__self_0) => {
+                    WeakASTNode::BINARY_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::LOGICAL_EXPRESSION(__self_0) => {
+                    WeakASTNode::LOGICAL_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::PARAMS(__self_0) => {
+                    WeakASTNode::PARAMS(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::OK_PARAMS(__self_0) => {
+                    WeakASTNode::OK_PARAMS(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::CLASS_METHOD_CALL(__self_0) => {
+                    WeakASTNode::CLASS_METHOD_CALL(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::CALL_EXPRESSION(__self_0) => {
+                    WeakASTNode::CALL_EXPRESSION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::ATOM(__self_0) => {
+                    WeakASTNode::ATOM(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::CALL_NODE(__self_0) => {
+                    WeakASTNode::CALL_NODE(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::PROPERTY_ACCESS(__self_0) => {
+                    WeakASTNode::PROPERTY_ACCESS(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::METHOD_ACCESS(__self_0) => {
+                    WeakASTNode::METHOD_ACCESS(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::INDEX_ACCESS(__self_0) => {
+                    WeakASTNode::INDEX_ACCESS(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::ATOM_START(__self_0) => {
+                    WeakASTNode::ATOM_START(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::VARIABLE_DECLARATION(__self_0) => {
+                    WeakASTNode::VARIABLE_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::FUNCTION_DECLARATION(__self_0) => {
+                    WeakASTNode::FUNCTION_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::STRUCT_DECLARATION(__self_0) => {
+                    WeakASTNode::STRUCT_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::TYPE_DECLARATION(__self_0) => {
+                    WeakASTNode::TYPE_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::OK_FUNCTION_DECLARATION(__self_0) => {
+                    WeakASTNode::OK_FUNCTION_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::OK_LAMDA_DECLARATION(__self_0) => {
+                    WeakASTNode::OK_LAMDA_DECLARATION(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::OK_NAME_TYPE_SPECS(__self_0) => {
+                    WeakASTNode::OK_NAME_TYPE_SPECS(::core::clone::Clone::clone(__self_0))
+                }
+                WeakASTNode::R_ASSIGNMENT(__self_0) => {
+                    WeakASTNode::R_ASSIGNMENT(::core::clone::Clone::clone(__self_0))
                 }
             }
         }
@@ -494,7 +1888,7 @@ pub mod ast {
         newline: TokenNode,
         pub stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
         scope: Option<Namespace>,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreBlockNode {
@@ -547,23 +1941,25 @@ pub mod ast {
                 scope: None,
                 parent: None,
             }));
-            newline.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+            newline.set_parent(WeakASTNode::BLOCK(Rc::downgrade(&node)));
             for stmt in &*stmts.as_ref().borrow() {
                 match stmt {
                     StatemenIndentWrapper::CORRECTLY_INDENTED(correct_indented_stmt) => {
-                        correct_indented_stmt.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                        correct_indented_stmt.set_parent(WeakASTNode::BLOCK(Rc::downgrade(&node)));
                     }
                     StatemenIndentWrapper::INCORRECTLY_INDENTED((incorrect_indented_stmt, _)) => {
-                        incorrect_indented_stmt.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                        incorrect_indented_stmt
+                            .set_parent(WeakASTNode::BLOCK(Rc::downgrade(&node)));
                     }
                     StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(leading_skipped_tokens) => {
-                        leading_skipped_tokens.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                        leading_skipped_tokens.set_parent(WeakASTNode::BLOCK(Rc::downgrade(&node)));
                     }
                     StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(trailing_skipped_tokens) => {
-                        trailing_skipped_tokens.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                        trailing_skipped_tokens
+                            .set_parent(WeakASTNode::BLOCK(Rc::downgrade(&node)));
                     }
                     StatemenIndentWrapper::EXTRA_NEWLINES(extra_newlines) => {
-                        extra_newlines.set_parent(ASTNode::BLOCK(Rc::downgrade(&node)));
+                        extra_newlines.set_parent(WeakASTNode::BLOCK(Rc::downgrade(&node)));
                     }
                 }
             }
@@ -580,13 +1976,13 @@ pub mod ast {
         }
     }
     impl Node for BlockNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreSkippedTokens {
         pub skipped_tokens: Rc<Vec<SkippedTokenNode>>,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreSkippedTokens {
@@ -632,7 +2028,7 @@ pub mod ast {
                 parent: None,
             }));
             for skipped_token in skipped_tokens.as_ref() {
-                skipped_token.set_parent(ASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
+                skipped_token.set_parent(WeakASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
             }
             SkippedTokens(node)
         }
@@ -644,7 +2040,7 @@ pub mod ast {
                 parent: None,
             }));
             for skipped_token in skipped_tokens.as_ref() {
-                skipped_token.set_parent(ASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
+                skipped_token.set_parent(WeakASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
             }
             SkippedTokens(node)
         }
@@ -654,7 +2050,7 @@ pub mod ast {
                 parent: None,
             }));
             for skipped_token in extra_newlines.as_ref() {
-                skipped_token.set_parent(ASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
+                skipped_token.set_parent(WeakASTNode::SKIPPED_TOKENS(Rc::downgrade(&node)));
             }
             SkippedTokens(node)
         }
@@ -666,13 +2062,13 @@ pub mod ast {
         }
     }
     impl Node for SkippedTokens {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreStatementNode {
         pub kind: StatementKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreStatementNode {
@@ -803,8 +2199,8 @@ pub mod ast {
                 kind: StatementKind::EXPRESSION((expr.clone(), newline.clone())),
                 parent: None,
             }));
-            expr.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
-            newline.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+            expr.set_parent(WeakASTNode::STATEMENT(Rc::downgrade(&node)));
+            newline.set_parent(WeakASTNode::STATEMENT(Rc::downgrade(&node)));
             StatementNode(node)
         }
         pub fn new_with_assignment(assignment: &AssignmentNode) -> Self {
@@ -812,7 +2208,7 @@ pub mod ast {
                 kind: StatementKind::ASSIGNMENT(assignment.clone()),
                 parent: None,
             }));
-            assignment.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+            assignment.set_parent(WeakASTNode::STATEMENT(Rc::downgrade(&node)));
             StatementNode(node)
         }
         pub fn new_with_variable_declaration(variable_decl: &VariableDeclarationNode) -> Self {
@@ -820,7 +2216,7 @@ pub mod ast {
                 kind: StatementKind::VARIABLE_DECLARATION(variable_decl.clone()),
                 parent: None,
             }));
-            variable_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+            variable_decl.set_parent(WeakASTNode::STATEMENT(Rc::downgrade(&node)));
             StatementNode(node)
         }
         pub fn new_with_function_declaration(function_decl: &FunctionDeclarationNode) -> Self {
@@ -828,7 +2224,7 @@ pub mod ast {
                 kind: StatementKind::FUNCTION_DECLARATION(function_decl.clone()),
                 parent: None,
             }));
-            function_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+            function_decl.set_parent(WeakASTNode::STATEMENT(Rc::downgrade(&node)));
             StatementNode(node)
         }
         pub fn new_with_type_declaration(type_decl: &TypeDeclarationNode) -> Self {
@@ -836,7 +2232,7 @@ pub mod ast {
                 kind: StatementKind::TYPE_DECLARATION(type_decl.clone()),
                 parent: None,
             }));
-            type_decl.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+            type_decl.set_parent(WeakASTNode::STATEMENT(Rc::downgrade(&node)));
             StatementNode(node)
         }
         pub fn new_with_struct_stmt(struct_stmt: &StructStatementNode) -> Self {
@@ -844,7 +2240,7 @@ pub mod ast {
                 kind: StatementKind::STRUCT_STATEMENT(struct_stmt.clone()),
                 parent: None,
             }));
-            struct_stmt.set_parent(ASTNode::STATEMENT(Rc::downgrade(&node)));
+            struct_stmt.set_parent(WeakASTNode::STATEMENT(Rc::downgrade(&node)));
             StatementNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreStatementNode> {
@@ -855,7 +2251,7 @@ pub mod ast {
         }
     }
     impl Node for StatementNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -879,7 +2275,7 @@ pub mod ast {
         equal: TokenNode,
         l_atom: AtomNode,
         r_assign: RAssignmentNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreAssignmentNode {
@@ -932,9 +2328,9 @@ pub mod ast {
                 r_assign: r_assign.clone(),
                 parent: None,
             }));
-            equal.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
-            l_atom.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
-            r_assign.set_parent(ASTNode::ASSIGNMENT(Rc::downgrade(&node)));
+            equal.set_parent(WeakASTNode::ASSIGNMENT(Rc::downgrade(&node)));
+            l_atom.set_parent(WeakASTNode::ASSIGNMENT(Rc::downgrade(&node)));
+            r_assign.set_parent(WeakASTNode::ASSIGNMENT(Rc::downgrade(&node)));
             AssignmentNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreAssignmentNode> {
@@ -945,14 +2341,14 @@ pub mod ast {
         }
     }
     impl Node for AssignmentNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreStructStatementNode {
         newline: TokenNode,
         name_type_spec: NameTypeSpecNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreStructStatementNode {
@@ -1016,13 +2412,13 @@ pub mod ast {
         }
     }
     impl Node for StructStatementNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreTypeDeclarationNode {
         kind: TypeDeclarationKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreTypeDeclarationNode {
@@ -1125,7 +2521,7 @@ pub mod ast {
                 kind: TypeDeclarationKind::LAMBDA(lambda.clone()),
                 parent: None,
             }));
-            lambda.set_parent(ASTNode::TYPE_DECLARATION(Rc::downgrade(&node)));
+            lambda.set_parent(WeakASTNode::TYPE_DECLARATION(Rc::downgrade(&node)));
             TypeDeclarationNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreTypeDeclarationNode> {
@@ -1136,7 +2532,7 @@ pub mod ast {
         }
     }
     impl Node for TypeDeclarationNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -1161,7 +2557,7 @@ pub mod ast {
         colon: TokenNode,
         name: TokenNode,
         block: BlockNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreStructDeclarationNode {
@@ -1223,10 +2619,10 @@ pub mod ast {
                 block: block.clone(),
                 parent: None,
             }));
-            type_keyword.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
-            colon.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
-            name.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
-            block.set_parent(ASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
+            type_keyword.set_parent(WeakASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
+            colon.set_parent(WeakASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
+            name.set_parent(WeakASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
+            block.set_parent(WeakASTNode::STRUCT_DECLARATION(Rc::downgrade(&node)));
             StructDeclarationNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreStructDeclarationNode> {
@@ -1237,13 +2633,13 @@ pub mod ast {
         }
     }
     impl Node for StructDeclarationNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreLambdaDeclarationNode {
         kind: LambdaDeclarationKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreLambdaDeclarationNode {
@@ -1352,7 +2748,7 @@ pub mod ast {
         }
     }
     impl Node for LambdaDeclarationNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -1382,7 +2778,7 @@ pub mod ast {
         name: TokenNode,
         args: Option<NameTypeSpecsNode>,
         return_type: Option<TypeExpressionNode>,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreOkLambdaDeclarationNode {
@@ -1479,27 +2875,27 @@ pub mod ast {
                 return_type: return_type.clone(),
                 parent: None,
             }));
-            lparen.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
-            rparen.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
-            newline.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
-            type_keyword.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
-            colon.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
-            name.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+            lparen.set_parent(WeakASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+            rparen.set_parent(WeakASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+            newline.set_parent(WeakASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+            type_keyword.set_parent(WeakASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+            colon.set_parent(WeakASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+            name.set_parent(WeakASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
             match args {
                 Some(args) => {
-                    args.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+                    args.set_parent(WeakASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
                 }
                 None => {}
             }
             match right_arrow {
                 Some(right_arrow) => {
-                    right_arrow.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+                    right_arrow.set_parent(WeakASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
                 }
                 None => {}
             }
             match return_type {
                 Some(return_type) => {
-                    return_type.set_parent(ASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
+                    return_type.set_parent(WeakASTNode::OK_LAMDA_DECLARATION(Rc::downgrade(&node)));
                 }
                 None => {}
             }
@@ -1513,13 +2909,13 @@ pub mod ast {
         }
     }
     impl Node for OkLambdaDeclarationNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreFunctionDeclarationNode {
         pub kind: FunctionDeclarationKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreFunctionDeclarationNode {
@@ -1633,7 +3029,7 @@ pub mod ast {
         }
     }
     impl Node for FunctionDeclarationNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -1663,7 +3059,7 @@ pub mod ast {
         pub args: Option<NameTypeSpecsNode>,
         pub return_type: Option<TypeExpressionNode>,
         pub block: BlockNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreOkFunctionDeclarationNode {
@@ -1791,39 +3187,42 @@ pub mod ast {
                 block: block.clone(),
                 parent: None,
             }));
-            lparen.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
-            rparen.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
-            colon.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
-            block.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+            lparen.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+            rparen.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+            colon.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+            block.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
             match func_keyword {
                 FuncKeywordKindNode::DEF(def_node) => {
-                    def_node.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+                    def_node.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
                 }
                 FuncKeywordKindNode::FUNC(func_node) => {
-                    func_node.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+                    func_node
+                        .set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
                 }
             }
             match right_arrow {
                 Some(right_arrow) => {
-                    right_arrow.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+                    right_arrow
+                        .set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
                 }
                 None => {}
             }
             match name {
                 Some(name) => {
-                    name.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+                    name.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
                 }
                 None => {}
             }
             match args {
                 Some(args) => {
-                    args.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+                    args.set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
                 }
                 None => {}
             }
             match return_type {
                 Some(return_type) => {
-                    return_type.set_parent(ASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
+                    return_type
+                        .set_parent(WeakASTNode::OK_FUNCTION_DECLARATION(Rc::downgrade(&node)));
                 }
                 None => {}
             }
@@ -1837,7 +3236,7 @@ pub mod ast {
         }
     }
     impl Node for OkFunctionDeclarationNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -1846,7 +3245,7 @@ pub mod ast {
         equal: TokenNode,
         pub name: TokenNode,
         pub r_assign: RAssignmentNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreVariableDeclarationNode {
@@ -1912,10 +3311,10 @@ pub mod ast {
                 r_assign: r_assign.clone(),
                 parent: None,
             }));
-            let_keyword.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
-            equal.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
-            name.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
-            r_assign.set_parent(ASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
+            let_keyword.set_parent(WeakASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
+            equal.set_parent(WeakASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
+            name.set_parent(WeakASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
+            r_assign.set_parent(WeakASTNode::VARIABLE_DECLARATION(Rc::downgrade(&node)));
             VariableDeclarationNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreVariableDeclarationNode> {
@@ -1926,13 +3325,13 @@ pub mod ast {
         }
     }
     impl Node for VariableDeclarationNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreNameTypeSpecsNode {
         kind: NameTypeSpecsKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreNameTypeSpecsNode {
@@ -2012,7 +3411,7 @@ pub mod ast {
                 kind: NameTypeSpecsKind::OK(ok_name_type_specs.clone()),
                 parent: None,
             }));
-            ok_name_type_specs.set_parent(ASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
+            ok_name_type_specs.set_parent(WeakASTNode::NAME_TYPE_SPECS(Rc::downgrade(&node)));
             NameTypeSpecsNode(node)
         }
         pub fn get_name_type_spec_objs(
@@ -2034,7 +3433,7 @@ pub mod ast {
         }
     }
     impl Node for NameTypeSpecsNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -2058,7 +3457,7 @@ pub mod ast {
         comma: Option<TokenNode>,
         arg: NameTypeSpecNode,
         remaining_args: Option<NameTypeSpecsNode>,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreOkNameTypeSpecsNode {
@@ -2115,9 +3514,9 @@ pub mod ast {
                 remaining_args: Some(remaining_args.clone()),
                 parent: None,
             }));
-            comma.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
-            arg.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
-            remaining_args.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
+            comma.set_parent(WeakASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
+            arg.set_parent(WeakASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
+            remaining_args.set_parent(WeakASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
             OkNameTypeSpecsNode(node)
         }
         pub fn new_with_single_arg(arg: &NameTypeSpecNode) -> Self {
@@ -2127,7 +3526,7 @@ pub mod ast {
                 remaining_args: None,
                 parent: None,
             }));
-            arg.set_parent(ASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
+            arg.set_parent(WeakASTNode::OK_NAME_TYPE_SPECS(Rc::downgrade(&node)));
             OkNameTypeSpecsNode(node)
         }
         pub fn get_name_type_spec_objs(
@@ -2155,7 +3554,7 @@ pub mod ast {
         }
     }
     impl Node for OkNameTypeSpecsNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -2163,7 +3562,7 @@ pub mod ast {
         colon: TokenNode,
         param_name: TokenNode,
         param_type: TypeExpressionNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreNameTypeSpecNode {
@@ -2220,9 +3619,9 @@ pub mod ast {
                 param_type: param_type.clone(),
                 parent: None,
             }));
-            param_name.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
-            param_type.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
-            colon.set_parent(ASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
+            param_name.set_parent(WeakASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
+            param_type.set_parent(WeakASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
+            colon.set_parent(WeakASTNode::NAME_TYPE_SPEC(Rc::downgrade(&node)));
             NameTypeSpecNode(node)
         }
         pub fn get_name_spec_obj(&self, code: &Code) -> (Option<Rc<String>>, Option<Type>) {
@@ -2244,13 +3643,13 @@ pub mod ast {
         }
     }
     impl Node for NameTypeSpecNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreTypeExpressionNode {
         kind: TypeExpressionKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreTypeExpressionNode {
@@ -2383,7 +3782,7 @@ pub mod ast {
         }
     }
     impl Node for TypeExpressionNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -2405,7 +3804,7 @@ pub mod ast {
     }
     pub struct CoreAtomicTypeNode {
         kind: TokenNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreAtomicTypeNode {
@@ -2450,7 +3849,7 @@ pub mod ast {
                 kind: token.clone(),
                 parent: None,
             }));
-            token.set_parent(ASTNode::ATOMIC_TYPE(Rc::downgrade(&node)));
+            token.set_parent(WeakASTNode::ATOMIC_TYPE(Rc::downgrade(&node)));
             AtomicTypeNode(node)
         }
         pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
@@ -2470,7 +3869,7 @@ pub mod ast {
         }
     }
     impl Node for AtomicTypeNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -2480,7 +3879,7 @@ pub mod ast {
         semicolon: TokenNode,
         sub_type: TypeExpressionNode,
         size: TokenNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreArrayTypeNode {
@@ -2553,11 +3952,11 @@ pub mod ast {
                 size: size.clone(),
                 parent: None,
             }));
-            lsquare.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
-            rsquare.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
-            semicolon.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
-            size.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
-            sub_type.set_parent(ASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
+            lsquare.set_parent(WeakASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
+            rsquare.set_parent(WeakASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
+            semicolon.set_parent(WeakASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
+            size.set_parent(WeakASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
+            sub_type.set_parent(WeakASTNode::ARRAY_TYPE(Rc::downgrade(&node)));
             ArrayTypeNode(node)
         }
         pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
@@ -2583,13 +3982,13 @@ pub mod ast {
         }
     }
     impl Node for ArrayTypeNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreUserDefinedTypeNode {
         token: TokenNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreUserDefinedTypeNode {
@@ -2634,7 +4033,7 @@ pub mod ast {
                 token: identifier.clone(),
                 parent: None,
             }));
-            identifier.set_parent(ASTNode::USER_DEFINED_TYPE(Rc::downgrade(&node)));
+            identifier.set_parent(WeakASTNode::USER_DEFINED_TYPE(Rc::downgrade(&node)));
             UserDefinedTypeNode(node)
         }
         pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
@@ -2653,13 +4052,13 @@ pub mod ast {
         }
     }
     impl Node for UserDefinedTypeNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreTokenNode {
         pub kind: TokenKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreTokenNode {
@@ -2780,7 +4179,7 @@ pub mod ast {
         }
     }
     impl Node for TokenNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -2804,7 +4203,7 @@ pub mod ast {
         token: Token,
         kind: OkTokenKind,
         lookahead: usize,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreOkTokenNode {
@@ -2921,7 +4320,7 @@ pub mod ast {
         }
     }
     impl Node for OkTokenNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -2929,7 +4328,7 @@ pub mod ast {
         expected_symbols: Rc<Vec<&'static str>>,
         received_token: Token,
         lookahead: usize,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreMissingTokenNode {
@@ -2995,14 +4394,14 @@ pub mod ast {
         }
     }
     impl Node for MissingTokenNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreSkippedTokenNode {
         skipped_token: Token,
         lookahead: usize,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreSkippedTokenNode {
@@ -3066,13 +4465,13 @@ pub mod ast {
         }
     }
     impl Node for SkippedTokenNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreExpressionNode {
         pub kind: ExpressionKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreExpressionNode {
@@ -3166,7 +4565,7 @@ pub mod ast {
                 kind: ExpressionKind::UNARY(unary_expr.clone()),
                 parent: None,
             }));
-            unary_expr.set_parent(ASTNode::EXPRESSION(Rc::downgrade(&node)));
+            unary_expr.set_parent(WeakASTNode::EXPRESSION(Rc::downgrade(&node)));
             ExpressionNode(node)
         }
         pub fn new_with_binary(
@@ -3239,7 +4638,7 @@ pub mod ast {
         }
     }
     impl Node for ExpressionNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -3261,7 +4660,7 @@ pub mod ast {
     }
     pub struct CoreAtomicExpressionNode {
         kind: AtomicExpressionKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreAtomicExpressionNode {
@@ -3388,7 +4787,7 @@ pub mod ast {
                 kind: AtomicExpressionKind::BOOL_VALUE(bool_value.clone()),
                 parent: None,
             }));
-            bool_value.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+            bool_value.set_parent(WeakASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
             AtomicExpressionNode(node)
         }
         pub fn new_with_integer(token: &TokenNode) -> Self {
@@ -3396,7 +4795,7 @@ pub mod ast {
                 kind: AtomicExpressionKind::INTEGER(token.clone()),
                 parent: None,
             }));
-            token.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+            token.set_parent(WeakASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
             AtomicExpressionNode(node)
         }
         pub fn new_with_floating_point_number(token: &TokenNode) -> Self {
@@ -3404,7 +4803,7 @@ pub mod ast {
                 kind: AtomicExpressionKind::FLOATING_POINT_NUMBER(token.clone()),
                 parent: None,
             }));
-            token.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+            token.set_parent(WeakASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
             AtomicExpressionNode(node)
         }
         pub fn new_with_literal(token: &TokenNode) -> Self {
@@ -3412,7 +4811,7 @@ pub mod ast {
                 kind: AtomicExpressionKind::LITERAL(token.clone()),
                 parent: None,
             }));
-            token.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+            token.set_parent(WeakASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
             AtomicExpressionNode(node)
         }
         pub fn new_with_parenthesised_expr(
@@ -3433,7 +4832,7 @@ pub mod ast {
                 kind: AtomicExpressionKind::ATOM(atom.clone()),
                 parent: None,
             }));
-            atom.set_parent(ASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
+            atom.set_parent(WeakASTNode::ATOMIC_EXPRESSION(Rc::downgrade(&node)));
             AtomicExpressionNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreAtomicExpressionNode> {
@@ -3444,7 +4843,7 @@ pub mod ast {
         }
     }
     impl Node for AtomicExpressionNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -3468,7 +4867,7 @@ pub mod ast {
         lparen: TokenNode,
         rparen: TokenNode,
         expr: ExpressionNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreParenthesisedExpressionNode {
@@ -3525,9 +4924,9 @@ pub mod ast {
                 expr: expr.clone(),
                 parent: None,
             }));
-            lparen.set_parent(ASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
-            rparen.set_parent(ASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
-            expr.set_parent(ASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
+            lparen.set_parent(WeakASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
+            rparen.set_parent(WeakASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
+            expr.set_parent(WeakASTNode::PARENTHESISED_EXPRESSION(Rc::downgrade(&node)));
             ParenthesisedExpressionNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreParenthesisedExpressionNode> {
@@ -3538,13 +4937,13 @@ pub mod ast {
         }
     }
     impl Node for ParenthesisedExpressionNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreUnaryExpressionNode {
         kind: UnaryExpressionKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreUnaryExpressionNode {
@@ -3657,7 +5056,7 @@ pub mod ast {
                 kind: UnaryExpressionKind::ATOMIC(atomic_expr.clone()),
                 parent: None,
             }));
-            atomic_expr.set_parent(ASTNode::UNARY_EXPRESSION(Rc::downgrade(&node)));
+            atomic_expr.set_parent(WeakASTNode::UNARY_EXPRESSION(Rc::downgrade(&node)));
             UnaryExpressionNode(node)
         }
         pub fn new_with_unary(
@@ -3683,7 +5082,7 @@ pub mod ast {
         }
     }
     impl Node for UnaryExpressionNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -3707,7 +5106,7 @@ pub mod ast {
         operator: TokenNode,
         unary_expr: UnaryExpressionNode,
         operator_kind: UnaryOperatorKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreOnlyUnaryExpressionNode {
@@ -3768,8 +5167,8 @@ pub mod ast {
                 operator_kind,
                 parent: None,
             }));
-            operator.set_parent(ASTNode::ONLY_UNARY_EXPRESSION(Rc::downgrade(&node)));
-            unary_expr.set_parent(ASTNode::ONLY_UNARY_EXPRESSION(Rc::downgrade(&node)));
+            operator.set_parent(WeakASTNode::ONLY_UNARY_EXPRESSION(Rc::downgrade(&node)));
+            unary_expr.set_parent(WeakASTNode::ONLY_UNARY_EXPRESSION(Rc::downgrade(&node)));
             OnlyUnaryExpressionNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreOnlyUnaryExpressionNode> {
@@ -3780,7 +5179,7 @@ pub mod ast {
         }
     }
     impl Node for OnlyUnaryExpressionNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -3788,7 +5187,7 @@ pub mod ast {
         operator_kind: BinaryOperatorKind,
         left_expr: ExpressionNode,
         right_expr: ExpressionNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreBinaryExpressionNode {
@@ -3904,8 +5303,8 @@ pub mod ast {
                 right_expr: right_expr.clone(),
                 parent: None,
             }));
-            left_expr.set_parent(ASTNode::BINARY_EXPRESSION(Rc::downgrade(&node)));
-            right_expr.set_parent(ASTNode::BINARY_EXPRESSION(Rc::downgrade(&node)));
+            left_expr.set_parent(WeakASTNode::BINARY_EXPRESSION(Rc::downgrade(&node)));
+            right_expr.set_parent(WeakASTNode::BINARY_EXPRESSION(Rc::downgrade(&node)));
             BinaryExpressionNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreBinaryExpressionNode> {
@@ -3916,7 +5315,7 @@ pub mod ast {
         }
     }
     impl Node for BinaryExpressionNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -3924,7 +5323,7 @@ pub mod ast {
         operator_kind: BinaryOperatorKind,
         left_expr: ExpressionNode,
         right_expr: ExpressionNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreLogicalExpressionNode {
@@ -3981,8 +5380,8 @@ pub mod ast {
                 right_expr: right_expr.clone(),
                 parent: None,
             }));
-            left_expr.set_parent(ASTNode::LOGICAL_EXPRESSION(Rc::downgrade(&node)));
-            right_expr.set_parent(ASTNode::LOGICAL_EXPRESSION(Rc::downgrade(&node)));
+            left_expr.set_parent(WeakASTNode::LOGICAL_EXPRESSION(Rc::downgrade(&node)));
+            right_expr.set_parent(WeakASTNode::LOGICAL_EXPRESSION(Rc::downgrade(&node)));
             LogicalExpressionNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreLogicalExpressionNode> {
@@ -3993,13 +5392,13 @@ pub mod ast {
         }
     }
     impl Node for LogicalExpressionNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreParamsNode {
         kind: ParamsKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreParamsNode {
@@ -4077,7 +5476,7 @@ pub mod ast {
                 kind: ParamsKind::OK(ok_params_node.clone()),
                 parent: None,
             }));
-            ok_params_node.set_parent(ASTNode::PARAMS(Rc::downgrade(&node)));
+            ok_params_node.set_parent(WeakASTNode::PARAMS(Rc::downgrade(&node)));
             ParamsNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreParamsNode> {
@@ -4088,7 +5487,7 @@ pub mod ast {
         }
     }
     impl Node for ParamsNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -4112,7 +5511,7 @@ pub mod ast {
         comma: Option<TokenNode>,
         param: ExpressionNode,
         remaining_params: Option<ParamsNode>,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreOkParamsNode {
@@ -4165,7 +5564,7 @@ pub mod ast {
                 remaining_params: None,
                 parent: None,
             }));
-            param.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
+            param.set_parent(WeakASTNode::OK_PARAMS(Rc::downgrade(&node)));
             OkParamsNode(node)
         }
         pub fn new_with_params(
@@ -4179,9 +5578,9 @@ pub mod ast {
                 remaining_params: Some(remaining_params.clone()),
                 parent: None,
             }));
-            comma.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
-            param.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
-            remaining_params.set_parent(ASTNode::OK_PARAMS(Rc::downgrade(&node)));
+            comma.set_parent(WeakASTNode::OK_PARAMS(Rc::downgrade(&node)));
+            param.set_parent(WeakASTNode::OK_PARAMS(Rc::downgrade(&node)));
+            remaining_params.set_parent(WeakASTNode::OK_PARAMS(Rc::downgrade(&node)));
             OkParamsNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreOkParamsNode> {
@@ -4192,7 +5591,7 @@ pub mod ast {
         }
     }
     impl Node for OkParamsNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -4201,7 +5600,7 @@ pub mod ast {
         rparen: TokenNode,
         function_name: TokenNode,
         params: Option<ParamsNode>,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreCallExpressionNode {
@@ -4263,12 +5662,12 @@ pub mod ast {
                 params: params.clone(),
                 parent: None,
             }));
-            lparen.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
-            rparen.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
-            function_name.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
+            lparen.set_parent(WeakASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
+            rparen.set_parent(WeakASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
+            function_name.set_parent(WeakASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
             match params {
                 Some(params) => {
-                    params.set_parent(ASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
+                    params.set_parent(WeakASTNode::CALL_EXPRESSION(Rc::downgrade(&node)));
                 }
                 None => {}
             }
@@ -4282,7 +5681,7 @@ pub mod ast {
         }
     }
     impl Node for CallExpressionNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -4293,7 +5692,7 @@ pub mod ast {
         class_name: TokenNode,
         class_method_name: TokenNode,
         params: Option<ParamsNode>,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreClassMethodCallNode {
@@ -4371,14 +5770,14 @@ pub mod ast {
                 params: params.clone(),
                 parent: None,
             }));
-            lparen.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
-            rparen.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
-            class_name.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
-            class_method_name.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
-            double_colon.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+            lparen.set_parent(WeakASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+            rparen.set_parent(WeakASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+            class_name.set_parent(WeakASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+            class_method_name.set_parent(WeakASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+            double_colon.set_parent(WeakASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
             match params {
                 Some(params) => {
-                    params.set_parent(ASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
+                    params.set_parent(WeakASTNode::CLASS_METHOD_CALL(Rc::downgrade(&node)));
                 }
                 None => {}
             }
@@ -4392,13 +5791,13 @@ pub mod ast {
         }
     }
     impl Node for ClassMethodCallNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreAtomNode {
         kind: AtomKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreAtomNode {
@@ -4497,7 +5896,7 @@ pub mod ast {
                 kind: AtomKind::ATOM_START(atom_start.clone()),
                 parent: None,
             }));
-            atom_start.set_parent(ASTNode::ATOM(Rc::downgrade(&node)));
+            atom_start.set_parent(WeakASTNode::ATOM(Rc::downgrade(&node)));
             AtomNode(node)
         }
         pub fn new_with_call(
@@ -4578,13 +5977,13 @@ pub mod ast {
         }
     }
     impl Node for AtomNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreAtomStartNode {
         kind: AtomStartKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreAtomStartNode {
@@ -4671,7 +6070,7 @@ pub mod ast {
                 kind: AtomStartKind::IDENTIFIER(token.clone()),
                 parent: None,
             }));
-            token.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+            token.set_parent(WeakASTNode::ATOM_START(Rc::downgrade(&node)));
             AtomStartNode(node)
         }
         pub fn new_with_function_call(call_expr: &CallExpressionNode) -> Self {
@@ -4679,7 +6078,7 @@ pub mod ast {
                 kind: AtomStartKind::FUNCTION_CALL(call_expr.clone()),
                 parent: None,
             }));
-            call_expr.set_parent(ASTNode::ATOM_START(Rc::downgrade(&node)));
+            call_expr.set_parent(WeakASTNode::ATOM_START(Rc::downgrade(&node)));
             AtomStartNode(node)
         }
         pub fn new_with_class_method_call(
@@ -4717,7 +6116,7 @@ pub mod ast {
         }
     }
     impl Node for AtomStartNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -4726,7 +6125,7 @@ pub mod ast {
         lparen: TokenNode,
         rparen: TokenNode,
         params: Option<ParamsNode>,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreCallNode {
@@ -4788,12 +6187,12 @@ pub mod ast {
                 params: params.clone(),
                 parent: None,
             }));
-            atom.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
-            lparen.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
-            rparen.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
+            atom.set_parent(WeakASTNode::CALL_NODE(Rc::downgrade(&node)));
+            lparen.set_parent(WeakASTNode::CALL_NODE(Rc::downgrade(&node)));
+            rparen.set_parent(WeakASTNode::CALL_NODE(Rc::downgrade(&node)));
             match params {
                 Some(params) => {
-                    params.set_parent(ASTNode::CALL_NODE(Rc::downgrade(&node)));
+                    params.set_parent(WeakASTNode::CALL_NODE(Rc::downgrade(&node)));
                 }
                 None => {}
             }
@@ -4807,7 +6206,7 @@ pub mod ast {
         }
     }
     impl Node for CallNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -4815,7 +6214,7 @@ pub mod ast {
         dot: TokenNode,
         atom: AtomNode,
         propertry: TokenNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CorePropertyAccessNode {
@@ -4868,9 +6267,9 @@ pub mod ast {
                 propertry: propertry.clone(),
                 parent: None,
             }));
-            dot.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
-            atom.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
-            propertry.set_parent(ASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
+            dot.set_parent(WeakASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
+            atom.set_parent(WeakASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
+            propertry.set_parent(WeakASTNode::PROPERTY_ACCESS(Rc::downgrade(&node)));
             PropertyAccessNode(node)
         }
         pub fn core_ref(&self) -> Ref<CorePropertyAccessNode> {
@@ -4881,7 +6280,7 @@ pub mod ast {
         }
     }
     impl Node for PropertyAccessNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -4892,7 +6291,7 @@ pub mod ast {
         atom: AtomNode,
         method_name: TokenNode,
         params: Option<ParamsNode>,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreMethodAccessNode {
@@ -4970,14 +6369,14 @@ pub mod ast {
                 params: params.clone(),
                 parent: None,
             }));
-            dot.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
-            lparen.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
-            rparen.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
-            atom.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
-            method_name.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+            dot.set_parent(WeakASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+            lparen.set_parent(WeakASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+            rparen.set_parent(WeakASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+            atom.set_parent(WeakASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+            method_name.set_parent(WeakASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
             match params {
                 Some(params) => {
-                    params.set_parent(ASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
+                    params.set_parent(WeakASTNode::METHOD_ACCESS(Rc::downgrade(&node)));
                 }
                 None => {}
             }
@@ -4991,7 +6390,7 @@ pub mod ast {
         }
     }
     impl Node for MethodAccessNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
@@ -5000,7 +6399,7 @@ pub mod ast {
         rsquare: TokenNode,
         atom: AtomNode,
         index: ExpressionNode,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreIndexAccessNode {
@@ -5062,10 +6461,10 @@ pub mod ast {
                 index: index.clone(),
                 parent: None,
             }));
-            lsquare.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
-            rsquare.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
-            atom.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
-            index.set_parent(ASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
+            lsquare.set_parent(WeakASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
+            rsquare.set_parent(WeakASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
+            atom.set_parent(WeakASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
+            index.set_parent(WeakASTNode::INDEX_ACCESS(Rc::downgrade(&node)));
             IndexAccessNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreIndexAccessNode> {
@@ -5076,13 +6475,13 @@ pub mod ast {
         }
     }
     impl Node for IndexAccessNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }
     pub struct CoreRAssignmentNode {
         kind: RAssignmentKind,
-        parent: Option<ASTNode>,
+        parent: Option<WeakASTNode>,
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for CoreRAssignmentNode {
@@ -5169,7 +6568,7 @@ pub mod ast {
                 kind: RAssignmentKind::LAMBDA(lambda_decl.clone()),
                 parent: None,
             }));
-            lambda_decl.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
+            lambda_decl.set_parent(WeakASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
             RAssignmentNode(node)
         }
         pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
@@ -5177,8 +6576,8 @@ pub mod ast {
                 kind: RAssignmentKind::EXPRESSION((expr.clone(), newline.clone())),
                 parent: None,
             }));
-            expr.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
-            newline.set_parent(ASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
+            expr.set_parent(WeakASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
+            newline.set_parent(WeakASTNode::R_ASSIGNMENT(Rc::downgrade(&node)));
             RAssignmentNode(node)
         }
         pub fn core_ref(&self) -> Ref<CoreRAssignmentNode> {
@@ -5189,7 +6588,7 @@ pub mod ast {
         }
     }
     impl Node for RAssignmentNode {
-        fn set_parent(&self, parent_node: ASTNode) {
+        fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
     }

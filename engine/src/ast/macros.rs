@@ -41,16 +41,36 @@ macro_rules! default_errornous_node_impl {
     };
 }
 
+macro_rules! impl_weak_node {
+    ($(($t: ident, $v: ident)),*) => {
+        $(
+            #[derive(Debug, Clone)]
+            pub struct $t(pub Weak<RefCell<$v>>);
+        )*
+    };
+}
+
+macro_rules! weak_ast_nodes {
+    ($(($t: ident, $v: ident)),*) => {
+        #[derive(Debug, Clone)]
+        pub enum WeakASTNode {
+            $(
+                $t($v),
+            )*
+        }
+    };
+}
+
 macro_rules! set_parent {
-    ($t: ident, $u: ident, $v: ident) => {
-        $t.set_parent(WeakASTNode::$u(Rc::downgrade(&$v)));
+    ($t: ident, $u: ident, $v: ident, $s: ident) => {
+        $t.set_parent(WeakASTNode::$u($s(Rc::downgrade(&$v))));
     };
 }
 
 macro_rules! set_parents {
-    (($($t: ident),*), $u: ident, $v: ident) => {
+    (($($t: ident),*), $u: ident, $v: ident, $s: ident) => {
         $(
-            $t.set_parent(WeakASTNode::$u(Rc::downgrade(&$v)));
+            set_parent!($t, $u, $v, $s);
         )*
     };
 }
@@ -60,7 +80,7 @@ macro_rules! set_parents_optional {
         $(
             match $t {
                 Some($t) => {
-                    set_parent!($t, $u, $v);
+                    set_parent!($t, $u, $v, $s);
                 }
                 None => {}
             }
@@ -73,24 +93,6 @@ macro_rules! extract_from_option {
         match $t {
             Some(val) => val.clone(),
             None => None,
-        }
-    };
-}
-
-macro_rules! impl_weak_node {
-    ($t: ident, $v: ident) => {
-        #[derive(Debug, Clone)]
-        pub struct $t(Weak<RefCell<$v>>);
-    };
-}
-
-macro_rules! weak_ast_nodes {
-    ($(($t: ident, $v: ident)),*) => {
-        #[derive(Debug, Clone)]
-        pub enum WeakASTNode {
-            $(
-                $t($v),
-            )*
         }
     };
 }

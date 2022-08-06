@@ -4,6 +4,8 @@
 
 #[macro_use]
 use jarvil_macros::set_parent;
+#[macro_use]
+use jarvil_macros::WeakNode;
 
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
@@ -37,7 +39,7 @@ pub trait ErrornousNode {
 // impl_weak_node!(WeakBlockNode, CoreBlockNode);
 // weak_ast_nodes!((BLOCK, WeakBlockNode));
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, WeakNode)]
 pub enum ASTNode {
     BLOCK(BlockNode),
     SKIPPED_TOKENS(SkippedTokens),
@@ -82,6 +84,8 @@ pub enum ASTNode {
     SKIPPED_TOKEN(SkippedTokenNode)
 }
 
+// impl_weak_node!((WeakBlockNode, CoreBlockNode), (WeakStatementNode, CoreStatementNode));
+/*
 #[derive(Debug, Clone)]
 pub enum WeakASTNode {
     BLOCK(Weak<RefCell<CoreBlockNode>>),
@@ -121,6 +125,7 @@ pub enum WeakASTNode {
     OK_NAME_TYPE_SPECS(Weak<RefCell<CoreOkNameTypeSpecsNode>>),
     R_ASSIGNMENT(Weak<RefCell<CoreRAssignmentNode>>),
 }
+ */
 
 #[derive(Debug, Clone)]
 pub enum StatemenIndentWrapper {
@@ -149,23 +154,23 @@ impl BlockNode {
             scope: None,
             parent: None,
         }));
-        set_parent!(newline, BLOCK, node);
+        set_parent!(newline, BLOCK, node, WeakBlockNode);
         for stmt in &*stmts.as_ref().borrow() {
             match stmt {
                 StatemenIndentWrapper::CORRECTLY_INDENTED(correct_indented_stmt) => {
-                    set_parent!(correct_indented_stmt, BLOCK, node);
+                    set_parent!(correct_indented_stmt, BLOCK, node, WeakBlockNode);
                 }
                 StatemenIndentWrapper::INCORRECTLY_INDENTED((incorrect_indented_stmt, _)) => {
-                    set_parent!(incorrect_indented_stmt, BLOCK, node);
+                    set_parent!(incorrect_indented_stmt, BLOCK, node, WeakBlockNode);
                 }
                 StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(leading_skipped_tokens) => {
-                    set_parent!(leading_skipped_tokens, BLOCK, node);
+                    set_parent!(leading_skipped_tokens, BLOCK, node, WeakBlockNode);
                 }
                 StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(trailing_skipped_tokens) => {
-                    set_parent!(trailing_skipped_tokens, BLOCK, node);
+                    set_parent!(trailing_skipped_tokens, BLOCK, node, WeakBlockNode);
                 }
                 StatemenIndentWrapper::EXTRA_NEWLINES(extra_newlines) => {
-                    set_parent!(extra_newlines, BLOCK, node);
+                    set_parent!(extra_newlines, BLOCK, node, WeakBlockNode);
                 }
             }
         }
@@ -195,7 +200,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
-            set_parent!(skipped_token, SKIPPED_TOKENS, node);
+            set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
         }
         SkippedTokens(node)
     }
@@ -206,7 +211,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
-            set_parent!(skipped_token, SKIPPED_TOKENS, node);
+            set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
         }
         SkippedTokens(node)
     }
@@ -217,7 +222,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in extra_newlines.as_ref() {
-            set_parent!(skipped_token, SKIPPED_TOKENS, node);
+            set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
         }
         SkippedTokens(node)
     }
@@ -248,13 +253,12 @@ pub enum StatementKind {
 #[derive(Debug, Clone)]
 pub struct StatementNode(pub Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
-    #[set_parent(STATEMENT)]
     pub fn new_with_expression(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
-        // set_parents!((expr, newline), STATEMENT, node);
+        set_parents!((expr, newline), STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
@@ -263,7 +267,7 @@ impl StatementNode {
             kind: StatementKind::ASSIGNMENT(assignment.clone()),
             parent: None,
         }));
-        set_parent!(assignment, STATEMENT, node);
+        set_parent!(assignment, STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
@@ -272,7 +276,7 @@ impl StatementNode {
             kind: StatementKind::VARIABLE_DECLARATION(variable_decl.clone()),
             parent: None,
         }));
-        set_parent!(variable_decl, STATEMENT, node);
+        set_parent!(variable_decl, STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
@@ -281,7 +285,7 @@ impl StatementNode {
             kind: StatementKind::FUNCTION_DECLARATION(function_decl.clone()),
             parent: None,
         }));
-        set_parent!(function_decl, STATEMENT, node);
+        set_parent!(function_decl, STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
@@ -290,7 +294,7 @@ impl StatementNode {
             kind: StatementKind::TYPE_DECLARATION(type_decl.clone()),
             parent: None,
         }));
-        set_parent!(type_decl, STATEMENT, node);
+        set_parent!(type_decl, STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
@@ -299,7 +303,7 @@ impl StatementNode {
             kind: StatementKind::STRUCT_STATEMENT(struct_stmt.clone()),
             parent: None,
         }));
-        set_parent!(struct_stmt, STATEMENT, node);
+        set_parent!(struct_stmt, STATEMENT, node, WeakStatementNode);
         StatementNode(node)
     }
 
@@ -326,7 +330,7 @@ impl AssignmentNode {
             r_assign: r_assign.clone(),
             parent: None,
         }));
-        set_parents!((equal, l_atom, r_assign), ASSIGNMENT, node);
+        set_parents!((equal, l_atom, r_assign), ASSIGNMENT, node, WeakAssignmentNode);
         AssignmentNode(node)
     }
 
@@ -400,7 +404,7 @@ impl TypeDeclarationNode {
             kind: TypeDeclarationKind::LAMBDA(lambda.clone()),
             parent: None,
         }));
-        set_parent!(lambda, TYPE_DECLARATION, node);
+        set_parent!(lambda, TYPE_DECLARATION, node, WeakTypeDeclarationNode);
         TypeDeclarationNode(node)
     }
 
@@ -438,7 +442,7 @@ impl StructDeclarationNode {
             block: block.clone(),
             parent: None,
         }));
-        set_parents!((type_keyword, colon, name, block), STRUCT_DECLARATION, node);
+        set_parents!((type_keyword, colon, name, block), STRUCT_DECLARATION, node, WeakStructDeclarationNode);
         StructDeclarationNode(node)
     }
 
@@ -539,24 +543,25 @@ impl OkLambdaDeclarationNode {
         }));
         set_parents!(
             (lparen, rparen, newline, type_keyword, colon, name),
-            OK_LAMDA_DECLARATION,
-            node
+            OK_LAMBDA_DECLARATION,
+            node,
+            WeakOkLambdaDeclarationNode
         );
         match args {
             Some(args) => {
-                set_parent!(args, OK_LAMDA_DECLARATION, node);
+                set_parent!(args, OK_LAMBDA_DECLARATION, node, WeakOkLambdaDeclarationNode);
             }
             None => {}
         }
         match right_arrow {
             Some(right_arrow) => {
-                set_parent!(right_arrow, OK_LAMDA_DECLARATION, node);
+                set_parent!(right_arrow, OK_LAMBDA_DECLARATION, node, WeakOkLambdaDeclarationNode);
             }
             None => {}
         }
         match return_type {
             Some(return_type) => {
-                set_parent!(return_type, OK_LAMDA_DECLARATION, node);
+                set_parent!(return_type, OK_LAMBDA_DECLARATION, node, WeakOkLambdaDeclarationNode);
             }
             None => {}
         }
@@ -668,37 +673,38 @@ impl OkFunctionDeclarationNode {
         set_parents!(
             (lparen, rparen, colon, block),
             OK_FUNCTION_DECLARATION,
-            node
+            node,
+            WeakOkFunctionDeclarationNode
         );
         match func_keyword {
             FuncKeywordKindNode::DEF(def_node) => {
-                set_parent!(def_node, OK_FUNCTION_DECLARATION, node);
+                set_parent!(def_node, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
             }
             FuncKeywordKindNode::FUNC(func_node) => {
-                set_parent!(func_node, OK_FUNCTION_DECLARATION, node);
+                set_parent!(func_node, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
             }
         }
         match right_arrow {
             Some(right_arrow) => {
-                set_parent!(right_arrow, OK_FUNCTION_DECLARATION, node);
+                set_parent!(right_arrow, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
             }
             None => {}
         }
         match name {
             Some(name) => {
-                set_parent!(name, OK_FUNCTION_DECLARATION, node);
+                set_parent!(name, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
             }
             None => {}
         }
         match args {
             Some(args) => {
-                set_parent!(args, OK_FUNCTION_DECLARATION, node);
+                set_parent!(args, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
             }
             None => {}
         }
         match return_type {
             Some(return_type) => {
-                set_parent!(return_type, OK_FUNCTION_DECLARATION, node);
+                set_parent!(return_type, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
             }
             None => {}
         }
@@ -737,7 +743,8 @@ impl VariableDeclarationNode {
         set_parents!(
             (let_keyword, equal, name, r_assign),
             VARIABLE_DECLARATION,
-            node
+            node,
+            WeakVariableDeclarationNode
         );
         VariableDeclarationNode(node)
     }
@@ -766,7 +773,7 @@ impl NameTypeSpecsNode {
             kind: NameTypeSpecsKind::OK(ok_name_type_specs.clone()),
             parent: None,
         }));
-        set_parent!(ok_name_type_specs, NAME_TYPE_SPECS, node);
+        set_parent!(ok_name_type_specs, NAME_TYPE_SPECS, node, WeakNameTypeSpecsNode);
         NameTypeSpecsNode(node)
     }
 
@@ -806,7 +813,7 @@ impl OkNameTypeSpecsNode {
             remaining_args: Some(remaining_args.clone()),
             parent: None,
         }));
-        set_parents!((comma, arg, remaining_args), OK_NAME_TYPE_SPECS, node);
+        set_parents!((comma, arg, remaining_args), OK_NAME_TYPE_SPECS, node, WeakOkNameTypeSpecsNode);
         OkNameTypeSpecsNode(node)
     }
 
@@ -817,7 +824,7 @@ impl OkNameTypeSpecsNode {
             remaining_args: None,
             parent: None,
         }));
-        set_parent!(arg, OK_NAME_TYPE_SPECS, node);
+        set_parent!(arg, OK_NAME_TYPE_SPECS, node, WeakOkNameTypeSpecsNode);
         OkNameTypeSpecsNode(node)
     }
 
@@ -850,7 +857,6 @@ pub struct CoreNameTypeSpecNode {
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(Rc<RefCell<CoreNameTypeSpecNode>>);
 impl NameTypeSpecNode {
-    #[set_parent(NAME_TYPE_SPEC)]
     pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreNameTypeSpecNode {
             colon: colon.clone(),
@@ -858,7 +864,7 @@ impl NameTypeSpecNode {
             param_type: param_type.clone(),
             parent: None,
         }));
-        // set_parents!((colon, param_name, param_type), NAME_TYPE_SPEC, node);
+        set_parents!((colon, param_name, param_type), NAME_TYPE_SPEC, node, WeakNameTypeSpecNode);
         NameTypeSpecNode(node)
     }
 
@@ -958,7 +964,7 @@ impl AtomicTypeNode {
             kind: token.clone(),
             parent: None,
         }));
-        set_parent!(token, ATOMIC_TYPE, node);
+        set_parent!(token, ATOMIC_TYPE, node, WeakAtomicTypeNode);
         AtomicTypeNode(node)
     }
 
@@ -1007,7 +1013,8 @@ impl ArrayTypeNode {
         set_parents!(
             (lsquare, rsquare, semicolon, size, sub_type),
             ARRAY_TYPE,
-            node
+            node,
+            WeakArrayTypeNode
         );
         ArrayTypeNode(node)
     }
@@ -1046,7 +1053,7 @@ impl UserDefinedTypeNode {
             token: identifier.clone(),
             parent: None,
         }));
-        set_parent!(identifier, USER_DEFINED_TYPE, node);
+        set_parent!(identifier, USER_DEFINED_TYPE, node, WeakUserDefinedTypeNode);
         UserDefinedTypeNode(node)
     }
 
@@ -1261,7 +1268,7 @@ impl ExpressionNode {
             kind: ExpressionKind::UNARY(unary_expr.clone()),
             parent: None,
         }));
-        set_parent!(unary_expr, EXPRESSION, node);
+        set_parent!(unary_expr, EXPRESSION, node, WeakExpressionNode);
         ExpressionNode(node)
     }
 
@@ -1360,7 +1367,7 @@ impl AtomicExpressionNode {
             kind: AtomicExpressionKind::BOOL_VALUE(bool_value.clone()),
             parent: None,
         }));
-        set_parent!(bool_value, ATOMIC_EXPRESSION, node);
+        set_parent!(bool_value, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
         AtomicExpressionNode(node)
     }
 
@@ -1369,7 +1376,7 @@ impl AtomicExpressionNode {
             kind: AtomicExpressionKind::INTEGER(token.clone()),
             parent: None,
         }));
-        set_parent!(token, ATOMIC_EXPRESSION, node);
+        set_parent!(token, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
         AtomicExpressionNode(node)
     }
 
@@ -1378,7 +1385,7 @@ impl AtomicExpressionNode {
             kind: AtomicExpressionKind::FLOATING_POINT_NUMBER(token.clone()),
             parent: None,
         }));
-        set_parent!(token, ATOMIC_EXPRESSION, node);
+        set_parent!(token, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
         AtomicExpressionNode(node)
     }
 
@@ -1387,7 +1394,7 @@ impl AtomicExpressionNode {
             kind: AtomicExpressionKind::LITERAL(token.clone()),
             parent: None,
         }));
-        set_parent!(token, ATOMIC_EXPRESSION, node);
+        set_parent!(token, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
         AtomicExpressionNode(node)
     }
 
@@ -1410,7 +1417,7 @@ impl AtomicExpressionNode {
             kind: AtomicExpressionKind::ATOM(atom.clone()),
             parent: None,
         }));
-        set_parent!(atom, ATOMIC_EXPRESSION, node);
+        set_parent!(atom, ATOMIC_EXPRESSION, node, WeakAtomicExpressionNode);
         AtomicExpressionNode(node)
     }
 
@@ -1441,7 +1448,7 @@ impl ParenthesisedExpressionNode {
             expr: expr.clone(),
             parent: None,
         }));
-        set_parents!((lparen, rparen, expr), PARENTHESISED_EXPRESSION, node);
+        set_parents!((lparen, rparen, expr), PARENTHESISED_EXPRESSION, node, WeakParenthesisedExpressionNode);
         ParenthesisedExpressionNode(node)
     }
 
@@ -1477,7 +1484,7 @@ impl UnaryExpressionNode {
             kind: UnaryExpressionKind::ATOMIC(atomic_expr.clone()),
             parent: None,
         }));
-        set_parent!(atomic_expr, UNARY_EXPRESSION, node);
+        set_parent!(atomic_expr, UNARY_EXPRESSION, node, WeakUnaryExpressionNode);
         UnaryExpressionNode(node)
     }
 
@@ -1528,7 +1535,7 @@ impl OnlyUnaryExpressionNode {
             operator_kind,
             parent: None,
         }));
-        set_parents!((operator, unary_expr), ONLY_UNARY_EXPRESSION, node);
+        set_parents!((operator, unary_expr), ONLY_UNARY_EXPRESSION, node, WeakOnlyUnaryExpressionNode);
         OnlyUnaryExpressionNode(node)
     }
 
@@ -1574,7 +1581,7 @@ impl BinaryExpressionNode {
             right_expr: right_expr.clone(),
             parent: None,
         }));
-        set_parents!((left_expr, right_expr), BINARY_EXPRESSION, node);
+        set_parents!((left_expr, right_expr), BINARY_EXPRESSION, node, WeakBinaryExpressionNode);
         BinaryExpressionNode(node)
     }
 
@@ -1604,7 +1611,7 @@ impl LogicalExpressionNode {
             right_expr: right_expr.clone(),
             parent: None,
         }));
-        set_parents!((left_expr, right_expr), LOGICAL_EXPRESSION, node);
+        set_parents!((left_expr, right_expr), LOGICAL_EXPRESSION, node, WeakLogicalExpressionNode);
         LogicalExpressionNode(node)
     }
 
@@ -1632,7 +1639,7 @@ impl ParamsNode {
             kind: ParamsKind::OK(ok_params_node.clone()),
             parent: None,
         }));
-        set_parent!(ok_params_node, PARAMS, node);
+        set_parent!(ok_params_node, PARAMS, node, WeakParamsNode);
         ParamsNode(node)
     }
 
@@ -1659,7 +1666,7 @@ impl OkParamsNode {
             remaining_params: None,
             parent: None,
         }));
-        set_parent!(param, OK_PARAMS, node);
+        set_parent!(param, OK_PARAMS, node, WeakOkParamsNode);
         OkParamsNode(node)
     }
 
@@ -1674,7 +1681,7 @@ impl OkParamsNode {
             remaining_params: Some(remaining_params.clone()),
             parent: None,
         }));
-        set_parents!((comma, param, remaining_params), OK_PARAMS, node);
+        set_parents!((comma, param, remaining_params), OK_PARAMS, node, WeakOkParamsNode);
         OkParamsNode(node)
     }
 
@@ -1707,10 +1714,10 @@ impl CallExpressionNode {
             params: params.clone(),
             parent: None,
         }));
-        set_parents!((lparen, rparen, function_name), CALL_EXPRESSION, node);
+        set_parents!((lparen, rparen, function_name), CALL_EXPRESSION, node, WeakCallExpressionNode);
         match params {
             Some(params) => {
-                set_parent!(params, CALL_EXPRESSION, node);
+                set_parent!(params, CALL_EXPRESSION, node, WeakCallExpressionNode);
             }
             None => {}
         }
@@ -1755,11 +1762,12 @@ impl ClassMethodCallNode {
         set_parents!(
             (lparen, rparen, class_name, class_method_name, double_colon),
             CLASS_METHOD_CALL,
-            node
+            node,
+            WeakClassMethodCallNode
         );
         match params {
             Some(params) => {
-                set_parent!(params, CLASS_METHOD_CALL, node);
+                set_parent!(params, CLASS_METHOD_CALL, node, WeakClassMethodCallNode);
             }
             None => {}
         }
@@ -1793,7 +1801,7 @@ impl AtomNode {
             kind: AtomKind::ATOM_START(atom_start.clone()),
             parent: None,
         }));
-        set_parent!(atom_start, ATOM, node);
+        set_parent!(atom_start, ATOM, node, WeakAtomNode);
         AtomNode(node)
     }
 
@@ -1897,7 +1905,7 @@ impl AtomStartNode {
             kind: AtomStartKind::IDENTIFIER(token.clone()),
             parent: None,
         }));
-        set_parent!(token, ATOM_START, node);
+        set_parent!(token, ATOM_START, node, WeakAtomStartNode);
         AtomStartNode(node)
     }
 
@@ -1906,7 +1914,7 @@ impl AtomStartNode {
             kind: AtomStartKind::FUNCTION_CALL(call_expr.clone()),
             parent: None,
         }));
-        set_parent!(call_expr, ATOM_START, node);
+        set_parent!(call_expr, ATOM_START, node, WeakAtomStartNode);
         AtomStartNode(node)
     }
 
@@ -1968,10 +1976,10 @@ impl CallNode {
             params: params.clone(),
             parent: None,
         }));
-        set_parents!((atom, lparen, rparen), CALL_NODE, node);
+        set_parents!((atom, lparen, rparen), CALL, node, WeakCallNode);
         match params {
             Some(params) => {
-                set_parent!(params, CALL_NODE, node);
+                set_parent!(params, CALL, node, WeakCallNode);
             }
             None => {}
         }
@@ -2000,7 +2008,7 @@ impl PropertyAccessNode {
             propertry: propertry.clone(),
             parent: None,
         }));
-        set_parents!((dot, atom, propertry), PROPERTY_ACCESS, node);
+        set_parents!((dot, atom, propertry), PROPERTRY_ACCESS, node, WeakPropertyAccessNode);
         PropertyAccessNode(node)
     }
 
@@ -2042,11 +2050,12 @@ impl MethodAccessNode {
         set_parents!(
             (dot, lparen, rparen, atom, method_name),
             METHOD_ACCESS,
-            node
+            node,
+            WeakMethodAccessNode
         );
         match params {
             Some(params) => {
-                set_parent!(params, METHOD_ACCESS, node);
+                set_parent!(params, METHOD_ACCESS, node, WeakMethodAccessNode);
             }
             None => {}
         }
@@ -2082,7 +2091,7 @@ impl IndexAccessNode {
             index: index.clone(),
             parent: None,
         }));
-        set_parents!((lsquare, rsquare, atom, index), INDEX_ACCESS, node);
+        set_parents!((lsquare, rsquare, atom, index), INDEX_ACCESS, node, WeakIndexAccessNode);
         IndexAccessNode(node)
     }
 
@@ -2111,7 +2120,7 @@ impl RAssignmentNode {
             kind: RAssignmentKind::LAMBDA(lambda_decl.clone()),
             parent: None,
         }));
-        set_parent!(lambda_decl, R_ASSIGNMENT, node);
+        set_parent!(lambda_decl, R_ASSIGNMENT, node, WeakRAssignmentNode);
         RAssignmentNode(node)
     }
 
@@ -2120,7 +2129,7 @@ impl RAssignmentNode {
             kind: RAssignmentKind::EXPRESSION((expr.clone(), newline.clone())),
             parent: None,
         }));
-        set_parents!((expr, newline), R_ASSIGNMENT, node);
+        set_parents!((expr, newline), R_ASSIGNMENT, node, WeakRAssignmentNode);
         RAssignmentNode(node)
     }
 

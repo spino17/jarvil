@@ -1,7 +1,7 @@
 extern crate proc_macro;
 mod ast;
 mod token;
-use crate::ast::impl_set_parent_macro;
+use crate::ast::{set_parent::impl_set_parent_macro, ast_node::impl_weak_nodes_macro};
 use crate::token::impl_tokenify_macro;
 use proc_macro::*;
 use std::str::FromStr;
@@ -56,6 +56,15 @@ pub fn set_parent(args: TokenStream, input: TokenStream) -> TokenStream {
         Err(e) => return token_stream_with_error(args, e),
     };
     impl_set_parent_macro(&args_ast, &input_ast)
+}
+
+#[proc_macro_derive(WeakNode)]
+pub fn weak_nodes_macro_derive(input: TokenStream) -> TokenStream {
+    let input_ast: syn::DeriveInput = match syn::parse(input.clone()) {
+        Ok(it) => it,
+        Err(e) => return token_stream_with_error(input, e),
+    };
+    impl_weak_nodes_macro(&input_ast)
 }
 
 #[proc_macro_derive(Tokenify)]
