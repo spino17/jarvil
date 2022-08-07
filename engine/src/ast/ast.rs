@@ -315,8 +315,8 @@ default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementKind);
 #[derive(Debug, Clone)]
 pub struct CoreAssignmentNode {
     equal: TokenNode,
-    l_atom: AtomNode,
-    r_assign: RAssignmentNode,
+    pub l_atom: AtomNode,
+    pub r_assign: RAssignmentNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -341,7 +341,7 @@ default_node_impl!(AssignmentNode);
 #[derive(Debug, Clone)]
 pub struct CoreStructStatementNode {
     newline: TokenNode,
-    name_type_spec: NameTypeSpecNode,
+    pub name_type_spec: NameTypeSpecNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -368,7 +368,7 @@ default_node_impl!(StructStatementNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreTypeDeclarationNode {
-    kind: TypeDeclarationKind,
+    pub kind: TypeDeclarationKind,
     parent: Option<WeakASTNode>,
 }
 
@@ -421,8 +421,8 @@ default_errornous_node_impl!(
 pub struct CoreStructDeclarationNode {
     type_keyword: TokenNode,
     colon: TokenNode,
-    name: TokenNode,
-    block: BlockNode,
+    pub name: TokenNode,
+    pub block: BlockNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -452,7 +452,7 @@ default_node_impl!(StructDeclarationNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreLambdaDeclarationNode {
-    kind: LambdaDeclarationKind,
+    pub kind: LambdaDeclarationKind,
     parent: Option<WeakASTNode>,
 }
 
@@ -509,9 +509,9 @@ pub struct CoreOkLambdaDeclarationNode {
     rparen: TokenNode,
     right_arrow: Option<TokenNode>,
     newline: TokenNode,
-    name: TokenNode,
-    args: Option<NameTypeSpecsNode>,
-    return_type: Option<TypeExpressionNode>,
+    pub name: TokenNode,
+    pub args: Option<NameTypeSpecsNode>,
+    pub return_type: Option<TypeExpressionNode>,
     parent: Option<WeakASTNode>,
 }
 
@@ -698,7 +698,7 @@ default_node_impl!(VariableDeclarationNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecsNode {
-    kind: NameTypeSpecsKind,
+    pub kind: NameTypeSpecsKind,
     parent: Option<WeakASTNode>,
 }
 
@@ -737,8 +737,8 @@ default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode, NameTypeS
 #[derive(Debug, Clone)]
 pub struct CoreOkNameTypeSpecsNode {
     comma: Option<TokenNode>,
-    arg: NameTypeSpecNode,
-    remaining_args: Option<NameTypeSpecsNode>,
+    pub arg: NameTypeSpecNode,
+    pub remaining_args: Option<NameTypeSpecsNode>,
     parent: Option<WeakASTNode>,
 }
 
@@ -792,8 +792,8 @@ default_node_impl!(OkNameTypeSpecsNode);
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecNode {
     colon: TokenNode,
-    param_name: TokenNode,
-    param_type: TypeExpressionNode,
+    pub name: TokenNode,
+    pub data_type: TypeExpressionNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -804,19 +804,19 @@ impl NameTypeSpecNode {
     pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreNameTypeSpecNode {
             colon: colon.clone(),
-            param_name: param_name.clone(),
-            param_type: param_type.clone(),
+            name: param_name.clone(),
+            data_type: param_type.clone(),
             parent: None,
         }));
         NameTypeSpecNode(node)
     }
 
     pub fn get_name_spec_obj(&self, code: &Code) -> (Option<Rc<String>>, Option<Type>) {
-        let name = match self.core_ref().param_name.get_ok() {
+        let name = match self.core_ref().name.get_ok() {
             Some(ok_name_node) => Some(Rc::new(ok_name_node.token_value(code))),
             None => None,
         };
-        let type_obj = match self.core_ref().param_type.get_type_obj(code) {
+        let type_obj = match self.core_ref().data_type.get_type_obj(code) {
             Some(type_obj) => Some(type_obj),
             None => None,
         };
@@ -829,7 +829,7 @@ default_node_impl!(NameTypeSpecNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreTypeExpressionNode {
-    kind: TypeExpressionKind,
+    pub kind: TypeExpressionKind,
     parent: Option<WeakASTNode>,
 }
 
@@ -895,7 +895,7 @@ default_errornous_node_impl!(
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomicTypeNode {
-    kind: TokenNode,
+    pub kind: TokenNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -930,8 +930,8 @@ pub struct CoreArrayTypeNode {
     lsquare: TokenNode,
     rsquare: TokenNode,
     semicolon: TokenNode,
-    sub_type: TypeExpressionNode,
-    size: TokenNode,
+    pub sub_type: TypeExpressionNode,
+    pub size: TokenNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -979,7 +979,7 @@ default_node_impl!(ArrayTypeNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreUserDefinedTypeNode {
-    token: TokenNode,
+    pub name: TokenNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -989,14 +989,14 @@ impl UserDefinedTypeNode {
     #[set_parent(USER_DEFINED_TYPE, WeakUserDefinedTypeNode)]
     pub fn new(identifier: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreUserDefinedTypeNode {
-            token: identifier.clone(),
+            name: identifier.clone(),
             parent: None,
         }));
         UserDefinedTypeNode(node)
     }
 
     pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
-        match self.core_ref().token.get_ok() {
+        match self.core_ref().name.get_ok() {
             Some(ok_token_node) => {
                 Some(Type::new_with_user_defined(ok_token_node.token_value(code)))
             }
@@ -2005,7 +2005,7 @@ default_node_impl!(IndexAccessNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreRAssignmentNode {
-    kind: RAssignmentKind,
+    pub kind: RAssignmentKind,
     parent: Option<WeakASTNode>,
 }
 
