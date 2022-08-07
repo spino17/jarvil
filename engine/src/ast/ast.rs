@@ -92,6 +92,38 @@ impl ASTNode {
     pub fn new_with_skipped_tokens(skipped_tokens: &SkippedTokens) -> Self {
         ASTNode::SKIPPED_TOKENS(skipped_tokens.clone())
     }
+
+    pub fn new_with_skipped_token(skipped_token: &SkippedTokenNode) -> Self {
+        ASTNode::SKIPPED_TOKEN(skipped_token.clone())
+    }
+
+    pub fn new_with_expr(expr: &ExpressionNode) -> Self {
+        ASTNode::EXPRESSION(expr.clone())
+    }
+
+    pub fn new_with_assignment(assignment: &AssignmentNode) -> Self {
+        ASTNode::ASSIGNMENT(assignment.clone())
+    }
+
+    pub fn new_with_variable_declaration(variable_decl: &VariableDeclarationNode) -> Self {
+        ASTNode::VARIABLE_DECLARATION(variable_decl.clone())
+    }
+
+    pub fn new_with_function_declaration(func_decl: &FunctionDeclarationNode) -> Self {
+        ASTNode::FUNCTION_DECLARATION(func_decl.clone())
+    }
+
+    pub fn new_with_type_declaration(type_decl: &TypeDeclarationNode) -> Self {
+        ASTNode::TYPE_DECLARATION(type_decl.clone())
+    }
+
+    pub fn new_with_struct_stmt(struct_stmt: &StructStatementNode) -> Self {
+        ASTNode::STRUCT_STATEMENT(struct_stmt.clone())
+    }
+
+    pub fn new_with_missing_token(missing_token: &MissingTokenNode) -> Self {
+        ASTNode::MISSING_TOKEN(missing_token.clone())
+    }
 }
 
 #[derive(Debug, Clone)]

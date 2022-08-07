@@ -1,6 +1,6 @@
 use crate::ast::ast::ASTNode;
 
-use super::ast::StatemenIndentWrapper;
+use super::ast::{StatemenIndentWrapper, StatementKind};
 
 pub trait Visitor {
     fn visit(&mut self, node: &ASTNode) -> Option<()>;  // if `None` then return else traverse the children
@@ -17,25 +17,51 @@ pub trait Visitor {
                     match stmt {
                         StatemenIndentWrapper::CORRECTLY_INDENTED(stmt_node) => self.walk(ASTNode::new_with_stmt(stmt_node)),
                         StatemenIndentWrapper::INCORRECTLY_INDENTED((stmt_node, _)) => {
-                            self.walk(ASTNode::new_with_stmt(stmt_node))
+                            self.walk(ASTNode::new_with_stmt(stmt_node));
                         },
                         StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(skipped_tokens) => {
-                            self.walk(ASTNode::new_with_skipped_tokens(skipped_tokens))
+                            self.walk(ASTNode::new_with_skipped_tokens(skipped_tokens));
                         },
                         StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(skipped_tokens) => {
-                            self.walk(ASTNode::new_with_skipped_tokens(skipped_tokens))
+                            self.walk(ASTNode::new_with_skipped_tokens(skipped_tokens));
                         },
                         StatemenIndentWrapper::EXTRA_NEWLINES(skipped_tokens) => {
-                            self.walk(ASTNode::new_with_skipped_tokens(skipped_tokens))
+                            self.walk(ASTNode::new_with_skipped_tokens(skipped_tokens));
                         },
                     }
                 }
             },
             ASTNode::SKIPPED_TOKENS(skipped_tokens) => {
-                todo!()
+                let core_skipped_tokens = skipped_tokens.core_ref();
+                for skipped_token in core_skipped_tokens.skipped_tokens.as_ref() {
+                    self.walk(ASTNode::new_with_skipped_token(skipped_token));
+                }
             },
             ASTNode::STATEMENT(statement_node) => {
-                todo!()
+                let core_stmt = statement_node.core_ref();
+                match &core_stmt.kind {
+                    StatementKind::EXPRESSION((expr_node, _)) => {
+                        self.walk(ASTNode::new_with_expr(expr_node));
+                    },
+                    StatementKind::ASSIGNMENT(assignment_node) => {
+                        self.walk(ASTNode::new_with_assignment(assignment_node));
+                    },
+                    StatementKind::VARIABLE_DECLARATION(variable_decl_node) => {
+                        self.walk(ASTNode::new_with_variable_declaration(variable_decl_node));
+                    },
+                    StatementKind::FUNCTION_DECLARATION(func_decl_node) => {
+                        self.walk(ASTNode::new_with_function_declaration(func_decl_node));
+                    },
+                    StatementKind::TYPE_DECLARATION(type_decl_node) => {
+                        self.walk(ASTNode::new_with_type_declaration(type_decl_node));
+                    },
+                    StatementKind::STRUCT_STATEMENT(struct_stmt_node) => {
+                        self.walk(ASTNode::new_with_struct_stmt(struct_stmt_node));
+                    },
+                    StatementKind::MISSING_TOKENS(missing_token_node) => {
+                        self.walk(ASTNode::new_with_missing_token(missing_token_node));
+                    },
+                }
             },
             ASTNode::ASSIGNMENT(assignment_node) => {
                 todo!()
