@@ -1224,6 +1224,7 @@ impl ExpressionNode {
         let node = Rc::new(RefCell::new(CoreExpressionNode {
             kind: ExpressionKind::BINARY(BinaryExpressionNode::new(
                 operator_kind,
+                operator,
                 left_expr,
                 right_expr,
             )),
@@ -1246,6 +1247,7 @@ impl ExpressionNode {
         let node = Rc::new(RefCell::new(CoreExpressionNode {
             kind: ExpressionKind::LOGICAL(LogicalExpressionNode::new(
                 operator_kind,
+                operator,
                 left_expr,
                 right_expr,
             )),
@@ -1282,7 +1284,7 @@ default_errornous_node_impl!(ExpressionNode, CoreExpressionNode, ExpressionKind)
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomicExpressionNode {
-    kind: AtomicExpressionKind,
+    pub kind: AtomicExpressionKind,
     parent: Option<WeakASTNode>,
 }
 
@@ -1372,7 +1374,7 @@ default_errornous_node_impl!(
 pub struct CoreParenthesisedExpressionNode {
     lparen: TokenNode,
     rparen: TokenNode,
-    expr: ExpressionNode,
+    pub expr: ExpressionNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -1396,7 +1398,7 @@ default_node_impl!(ParenthesisedExpressionNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreUnaryExpressionNode {
-    kind: UnaryExpressionKind,
+    pub kind: UnaryExpressionKind,
     parent: Option<WeakASTNode>,
 }
 
@@ -1453,8 +1455,8 @@ default_errornous_node_impl!(
 
 #[derive(Debug, Clone)]
 pub struct CoreOnlyUnaryExpressionNode {
-    operator: TokenNode,
-    unary_expr: UnaryExpressionNode,
+    pub operator: TokenNode,
+    pub unary_expr: UnaryExpressionNode,
     operator_kind: UnaryOperatorKind,
     parent: Option<WeakASTNode>,
 }
@@ -1484,8 +1486,9 @@ default_node_impl!(OnlyUnaryExpressionNode);
 #[derive(Debug, Clone)]
 pub struct CoreBinaryExpressionNode {
     operator_kind: BinaryOperatorKind,
-    left_expr: ExpressionNode,
-    right_expr: ExpressionNode,
+    pub operator: TokenNode,
+    pub left_expr: ExpressionNode,
+    pub right_expr: ExpressionNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -1510,12 +1513,14 @@ pub struct BinaryExpressionNode(Rc<RefCell<CoreBinaryExpressionNode>>);
 impl BinaryExpressionNode {
     #[set_parent(BINARY_EXPRESSION, WeakBinaryExpressionNode)]
     pub fn new(
-        operator: BinaryOperatorKind,
+        operator_kind: BinaryOperatorKind,
+        operator: &TokenNode,
         left_expr: &ExpressionNode,
         right_expr: &ExpressionNode,
     ) -> Self {
         let node = Rc::new(RefCell::new(CoreBinaryExpressionNode {
-            operator_kind: operator,
+            operator_kind,
+            operator: operator.clone(),
             left_expr: left_expr.clone(),
             right_expr: right_expr.clone(),
             parent: None,
@@ -1530,8 +1535,9 @@ default_node_impl!(BinaryExpressionNode);
 #[derive(Debug, Clone)]
 pub struct CoreLogicalExpressionNode {
     operator_kind: BinaryOperatorKind,
-    left_expr: ExpressionNode,
-    right_expr: ExpressionNode,
+    pub operator: TokenNode,
+    pub left_expr: ExpressionNode,
+    pub right_expr: ExpressionNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -1540,12 +1546,14 @@ pub struct LogicalExpressionNode(Rc<RefCell<CoreLogicalExpressionNode>>);
 impl LogicalExpressionNode {
     #[set_parent(LOGICAL_EXPRESSION, WeakLogicalExpressionNode)]
     pub fn new(
-        operator: BinaryOperatorKind,
+        operator_kind: BinaryOperatorKind,
+        operator: &TokenNode,
         left_expr: &ExpressionNode,
         right_expr: &ExpressionNode,
     ) -> Self {
         let node = Rc::new(RefCell::new(CoreLogicalExpressionNode {
-            operator_kind: operator,
+            operator_kind,
+            operator: operator.clone(),
             left_expr: left_expr.clone(),
             right_expr: right_expr.clone(),
             parent: None,
@@ -1559,7 +1567,7 @@ default_node_impl!(LogicalExpressionNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreParamsNode {
-    kind: ParamsKind,
+    pub kind: ParamsKind,
     parent: Option<WeakASTNode>,
 }
 
@@ -1589,8 +1597,8 @@ default_errornous_node_impl!(ParamsNode, CoreParamsNode, ParamsKind);
 #[derive(Debug, Clone)]
 pub struct CoreOkParamsNode {
     comma: Option<TokenNode>,
-    param: ExpressionNode,
-    remaining_params: Option<ParamsNode>,
+    pub param: ExpressionNode,
+    pub remaining_params: Option<ParamsNode>,
     parent: Option<WeakASTNode>,
 }
 
@@ -1631,8 +1639,8 @@ default_node_impl!(OkParamsNode);
 pub struct CoreCallExpressionNode {
     lparen: TokenNode,
     rparen: TokenNode,
-    function_name: TokenNode,
-    params: Option<ParamsNode>,
+    pub function_name: TokenNode,
+    pub params: Option<ParamsNode>,
     parent: Option<WeakASTNode>,
 }
 
@@ -1665,9 +1673,9 @@ pub struct CoreClassMethodCallNode {
     lparen: TokenNode,
     rparen: TokenNode,
     double_colon: TokenNode,
-    class_name: TokenNode,
-    class_method_name: TokenNode,
-    params: Option<ParamsNode>,
+    pub class_name: TokenNode,
+    pub class_method_name: TokenNode,
+    pub params: Option<ParamsNode>,
     parent: Option<WeakASTNode>,
 }
 
@@ -1701,7 +1709,7 @@ default_node_impl!(ClassMethodCallNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomNode {
-    kind: AtomKind,
+    pub kind: AtomKind,
     parent: Option<WeakASTNode>,
 }
 
@@ -1807,7 +1815,7 @@ default_node_impl!(AtomNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomStartNode {
-    kind: AtomStartKind,
+    pub kind: AtomStartKind,
     parent: Option<WeakASTNode>,
 }
 
@@ -1874,10 +1882,10 @@ default_node_impl!(AtomStartNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreCallNode {
-    atom: AtomNode,
+    pub atom: AtomNode,
     lparen: TokenNode,
     rparen: TokenNode,
-    params: Option<ParamsNode>,
+    pub params: Option<ParamsNode>,
     parent: Option<WeakASTNode>,
 }
 
@@ -1908,8 +1916,8 @@ default_node_impl!(CallNode);
 #[derive(Debug, Clone)]
 pub struct CorePropertyAccessNode {
     dot: TokenNode,
-    atom: AtomNode,
-    propertry: TokenNode,
+    pub atom: AtomNode,
+    pub propertry: TokenNode,
     parent: Option<WeakASTNode>,
 }
 
@@ -1936,9 +1944,9 @@ pub struct CoreMethodAccessNode {
     lparen: TokenNode,
     rparen: TokenNode,
     dot: TokenNode,
-    atom: AtomNode,
-    method_name: TokenNode,
-    params: Option<ParamsNode>,
+    pub atom: AtomNode,
+    pub method_name: TokenNode,
+    pub params: Option<ParamsNode>,
     parent: Option<WeakASTNode>,
 }
 
@@ -1974,8 +1982,8 @@ default_node_impl!(MethodAccessNode);
 pub struct CoreIndexAccessNode {
     lsquare: TokenNode,
     rsquare: TokenNode,
-    atom: AtomNode,
-    index: ExpressionNode,
+    pub atom: AtomNode,
+    pub index: ExpressionNode,
     parent: Option<WeakASTNode>,
 }
 

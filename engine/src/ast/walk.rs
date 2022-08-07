@@ -1,5 +1,5 @@
-use crate::{ast::ast::ASTNode, scope::function};
-use super::ast::{StatementKind, StatementIndentWrapperKind, TypeDeclarationKind, LambdaDeclarationKind, FunctionDeclarationKind, RAssignmentKind, ExpressionKind, NameTypeSpecsKind, TypeExpressionKind};
+use crate::{ast::ast::ASTNode, scope::function, parser::components::expression::common::params};
+use super::ast::{StatementKind, StatementIndentWrapperKind, TypeDeclarationKind, LambdaDeclarationKind, FunctionDeclarationKind, RAssignmentKind, ExpressionKind, NameTypeSpecsKind, TypeExpressionKind, AtomicExpressionKind, UnaryExpressionKind, ParamsKind, AtomKind, AtomStartKind};
 
 // This kind of visitor pattern implementation is taken from Golang Programming Language
 // See /src/go/ast/walk.go
@@ -252,64 +252,184 @@ pub trait Visitor {
                 }
             },
             ASTNode::ATOMIC_EXPRESSION(atomic_expression_node) => {
-                todo!()
+                let core_atomic_expr = atomic_expression_node.core_ref();
+                match &core_atomic_expr.kind {
+                    AtomicExpressionKind::BOOL_VALUE(token_node) => {
+                        self.walk(ASTNode::new_with_TokenNode(token_node));
+                    },
+                    AtomicExpressionKind::INTEGER(token_node) => {
+                        self.walk(ASTNode::new_with_TokenNode(token_node));
+                    },
+                    AtomicExpressionKind::FLOATING_POINT_NUMBER(token_node) => {
+                        self.walk(ASTNode::new_with_TokenNode(token_node));
+                    },
+                    AtomicExpressionKind::LITERAL(token_node) => {
+                        self.walk(ASTNode::new_with_TokenNode(token_node));
+                    },
+                    AtomicExpressionKind::PARENTHESISED_EXPRESSION(parenthesised_expr) => {
+                        self.walk(ASTNode::new_with_ParenthesisedExpressionNode(parenthesised_expr));
+                    },
+                    AtomicExpressionKind::ATOM(atom_node) => {
+                        self.walk(ASTNode::new_with_AtomNode(atom_node));
+                    },
+                    AtomicExpressionKind::MISSING_TOKENS(missing_tokens) => {
+                        self.walk(ASTNode::new_with_MissingTokenNode(missing_tokens));
+                    },
+                }
             },
             ASTNode::PARENTHESISED_EXPRESSION(parenthesised_expression_node) => {
-                todo!()
+                let parenthesised_expr = parenthesised_expression_node.core_ref();
+                self.walk(ASTNode::new_with_ExpressionNode(&parenthesised_expr.expr));
             },
             ASTNode::UNARY_EXPRESSION(unary_expression_node) => {
-                todo!()
+                let core_unary_expr = unary_expression_node.core_ref();
+                match &core_unary_expr.kind {
+                    UnaryExpressionKind::ATOMIC(atomic) => {
+                        self.walk(ASTNode::new_with_AtomicExpressionNode(atomic));
+                    },
+                    UnaryExpressionKind::UNARY(unary) => {
+                        self.walk(ASTNode::new_with_OnlyUnaryExpressionNode(unary));
+                    },
+                    UnaryExpressionKind::MISSING_TOKENS(missing_tokens) => {
+                        self.walk(ASTNode::new_with_MissingTokenNode(missing_tokens));
+                    }
+                }
             },
             ASTNode::ONLY_UNARY_EXPRESSION(only_unary_expression_node) => {
-                todo!()
+                let core_only_unary_expr = only_unary_expression_node.core_ref();
+                self.walk(ASTNode::new_with_TokenNode(&core_only_unary_expr.operator));
+                self.walk(ASTNode::new_with_UnaryExpressionNode(&core_only_unary_expr.unary_expr));
             },
             ASTNode::BINARY_EXPRESSION(binary_expression_node) => {
-                todo!()
+                let core_binary_expr = binary_expression_node.core_ref();
+                self.walk(ASTNode::new_with_ExpressionNode(&core_binary_expr.left_expr));
+                self.walk(ASTNode::new_with_TokenNode(&core_binary_expr.operator));
+                self.walk(ASTNode::new_with_ExpressionNode(&core_binary_expr.right_expr));
             },
             ASTNode::LOGICAL_EXPRESSION(logical_expression_node) => {
-                todo!()
+                let core_logical_expr = logical_expression_node.core_ref();
+                self.walk(ASTNode::new_with_ExpressionNode(&core_logical_expr.left_expr));
+                self.walk(ASTNode::new_with_TokenNode(&core_logical_expr.operator));
+                self.walk(ASTNode::new_with_ExpressionNode(&core_logical_expr.right_expr));
             },
             ASTNode::PARAMS(params_node) => {
-                todo!()
+                let core_params = params_node.core_ref();
+                match &core_params.kind {
+                    ParamsKind::OK(ok_params) => {
+                        self.walk(ASTNode::new_with_OkParamsNode(ok_params));
+                    },
+                    ParamsKind::MISSING_TOKENS(missing_tokens) => {
+                        self.walk(ASTNode::new_with_MissingTokenNode(missing_tokens));
+                    }
+                }
             },
             ASTNode::OK_PARAMS(ok_params_node) => {
-                todo!()
+                let core_ok_params = ok_params_node.core_ref();
+                self.walk(ASTNode::new_with_ExpressionNode(&core_ok_params.param));
+                match &core_ok_params.remaining_params {
+                    Some(remaining_params) => {
+                        self.walk(ASTNode::new_with_ParamsNode(remaining_params));
+                    },
+                    None => {}
+                }
             },
             ASTNode::CALL_EXPRESSION(call_expression_node) => {
-                todo!()
+                let core_call_expr = call_expression_node.core_ref();
+                self.walk(ASTNode::new_with_TokenNode(&core_call_expr.function_name));
+                match &core_call_expr.params {
+                    Some(params) => {
+                        self.walk(ASTNode::new_with_ParamsNode(params));
+                    },
+                    None => {}
+                }
             },
             ASTNode::CLASS_METHOD_CALL(class_method_call_node) => {
-                todo!()
+                let core_class_method_call = class_method_call_node.core_ref();
+                self.walk(ASTNode::new_with_TokenNode(&core_class_method_call.class_name));
+                self.walk(ASTNode::new_with_TokenNode(&core_class_method_call.class_method_name));
+                match &core_class_method_call.params {
+                    Some(params) => {
+                        self.walk(ASTNode::new_with_ParamsNode(params));
+                    },
+                    None => {}
+                }
             },
             ASTNode::ATOM(atom_node) => {
-                todo!()
+                let core_atom = atom_node.core_ref();
+                match &core_atom.kind {
+                    AtomKind::ATOM_START(atom_start) => {
+                        self.walk(ASTNode::new_with_AtomStartNode(atom_start));
+                    },
+                    AtomKind::CALL(call_node) => {
+                        self.walk(ASTNode::new_with_CallNode(call_node));
+                    },
+                    AtomKind::PROPERTRY_ACCESS(property_access) => {
+                        self.walk(ASTNode::new_with_PropertyAccessNode(property_access));
+                    },
+                    AtomKind::METHOD_ACCESS(method_access) => {
+                        self.walk(ASTNode::new_with_MethodAccessNode(method_access));
+                    },
+                    AtomKind::INDEX_ACCESS(index_access) => {
+                        self.walk(ASTNode::new_with_IndexAccessNode(index_access));
+                    },
+                }
             },
             ASTNode::ATOM_START(atom_start_node) => {
-                todo!()
+                let core_atom_start = atom_start_node.core_ref();
+                match &core_atom_start.kind {
+                    AtomStartKind::IDENTIFIER(token_node) => {
+                        self.walk(ASTNode::new_with_TokenNode(token_node));
+                    },
+                    AtomStartKind::FUNCTION_CALL(call_expr) => {
+                        self.walk(ASTNode::new_with_CallExpressionNode(call_expr));
+                    },
+                    AtomStartKind::CLASS_METHOD_CALL(class_method) => {
+                        self.walk(ASTNode::new_with_ClassMethodCallNode(class_method));
+                    },
+                }
             },
             ASTNode::CALL(call_node) => {
-                todo!()
+                let core_call = call_node.core_ref();
+                self.walk(ASTNode::new_with_AtomNode(&core_call.atom));
+                match &core_call.params {
+                    Some(params) => {
+                        self.walk(ASTNode::new_with_ParamsNode(params));
+                    },
+                    None => {}
+                }
             },
             ASTNode::PROPERTY_ACCESS(property_access_node) => {
-                todo!()
+                let core_property_access = property_access_node.core_ref();
+                self.walk(ASTNode::new_with_AtomNode(&core_property_access.atom));
+                self.walk(ASTNode::new_with_TokenNode(&core_property_access.propertry));
             },
             ASTNode::METHOD_ACCESS(method_access_node) => {
-                todo!()
+                let core_method_access = method_access_node.core_ref();
+                self.walk(ASTNode::new_with_AtomNode(&core_method_access.atom));
+                self.walk(ASTNode::new_with_TokenNode(&core_method_access.method_name));
+                match &core_method_access.params {
+                    Some(params) => {
+                        self.walk(ASTNode::new_with_ParamsNode(params));
+                    },
+                    None => {}
+                }
             },
             ASTNode::INDEX_ACCESS(index_access_node) => {
-                todo!()
+                let core_index_access = index_access_node.core_ref();
+                self.walk(ASTNode::new_with_AtomNode(&core_index_access.atom));
+                self.walk(ASTNode::new_with_ExpressionNode(&core_index_access.index));
             },
-            ASTNode::TOKEN(token_node) => {
-                todo!()  // TODO - do nothing as they don't have children
+            ASTNode::TOKEN(_) => {
+                // do nothing
             },
-            ASTNode::OK_TOKEN(ok_token_node) => {
-                todo!()  // TODO - do nothing as they don't have children
+            ASTNode::OK_TOKEN(_) => {
+                // do nothing
             },
-            ASTNode::MISSING_TOKEN(missing_token_node) => {
-                todo!()  // TODO - do nothing as they don't have children
+            ASTNode::MISSING_TOKEN(_) => {
+                // do nothing
             },
-            ASTNode::SKIPPED_TOKEN(skipped_token_node) => {
-                todo!()  // TODO - do nothing as they don't have children
+            ASTNode::SKIPPED_TOKEN(_) => {
+                // do nothing
             }
         }
     }
