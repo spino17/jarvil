@@ -7,7 +7,7 @@
 // Swift - `https://github.com/apple/swift/tree/5e2c815edfd758f9b1309ce07bfc01c4bc20ec23/lib/Syntax`
 
 use crate::ast::ast::{
-    BlockNode, SkippedTokenNode, SkippedTokens, StatemenIndentWrapper, StatementNode,
+    BlockNode, SkippedTokenNode, SkippedTokens, StatemenIndentWrapperNode, StatementNode,
 };
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
@@ -25,7 +25,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
 ) -> BlockNode {
     let newline_node = parser.expect("\n");
     parser.set_indent_level(parser.curr_indent_level() + 1);
-    let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapper>>> = Rc::new(RefCell::new(vec![]));
+    let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapperNode>>> = Rc::new(RefCell::new(vec![]));
     let mut leading_skipped_tokens: Vec<SkippedTokenNode> = vec![];
     loop {
         let indent_result = parser.expect_indent_spaces();
@@ -34,8 +34,8 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             stmts_vec
                 .as_ref()
                 .borrow_mut()
-                .push(StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(
-                    SkippedTokens::new_with_trailing_skipped_tokens(&Rc::new(skipped_tokens)),
+                .push(StatemenIndentWrapperNode::new_with_trailing_skipped_tokens(
+                    &SkippedTokens::new_with_trailing_skipped_tokens(&Rc::new(skipped_tokens)),
                 ));
         }
         let extra_newlines = indent_result.extra_newlines;
@@ -43,8 +43,8 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             stmts_vec
                 .as_ref()
                 .borrow_mut()
-                .push(StatemenIndentWrapper::EXTRA_NEWLINES(
-                    SkippedTokens::new_with_extra_newlines(&Rc::new(extra_newlines)),
+                .push(StatemenIndentWrapperNode::new_with_extra_newlines(
+                    &SkippedTokens::new_with_extra_newlines(&Rc::new(extra_newlines)),
                 ));
         }
         let incorrect_indent_data = match indent_result.kind {
@@ -68,8 +68,8 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             stmts_vec
                 .as_ref()
                 .borrow_mut()
-                .push(StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(
-                    SkippedTokens::new_with_leading_skipped_tokens(&Rc::new(mem::take(
+                .push(StatemenIndentWrapperNode::new_with_leading_skipped_tokens(
+                    &SkippedTokens::new_with_leading_skipped_tokens(&Rc::new(mem::take(
                         &mut leading_skipped_tokens,
                     ))),
                 ));
@@ -114,17 +114,18 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                 stmts_vec
                     .as_ref()
                     .borrow_mut()
-                    .push(StatemenIndentWrapper::INCORRECTLY_INDENTED((
-                        stmt_node,
-                        indent_data,
-                    )));
+                    .push(
+                        StatemenIndentWrapperNode::new_with_incorrectly_indented(
+                            &stmt_node, indent_data.0, indent_data.1
+                        )
+                    );
             }
             None => {
                 let stmt_node = statement_parsing_fn(parser);
                 stmts_vec
                     .as_ref()
                     .borrow_mut()
-                    .push(StatemenIndentWrapper::CORRECTLY_INDENTED(stmt_node));
+                    .push(StatemenIndentWrapperNode::new_with_correctly_indented(&stmt_node));
             }
         }
     }

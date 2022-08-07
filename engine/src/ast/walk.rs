@@ -1,6 +1,6 @@
 use crate::ast::ast::ASTNode;
 
-use super::ast::{StatemenIndentWrapper, StatementKind};
+use super::ast::{StatemenIndentWrapperNode, StatementKind, StatementIndentWrapperKind};
 
 pub trait Visitor {
     fn visit(&mut self, node: &ASTNode) -> Option<()>;  // if `None` then return else traverse the children
@@ -14,23 +14,26 @@ pub trait Visitor {
             ASTNode::BLOCK(block_node) => {
                 let core_block = block_node.core_ref();
                 for stmt in &*core_block.stmts.as_ref().borrow() {
-                    match stmt {
-                        StatemenIndentWrapper::CORRECTLY_INDENTED(stmt_node) => {
-                            self.walk(ASTNode::new_with_StatementNode(stmt_node));
-                        }
-                        StatemenIndentWrapper::INCORRECTLY_INDENTED((stmt_node, _)) => {
-                            self.walk(ASTNode::new_with_StatementNode(stmt_node));
-                        },
-                        StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(skipped_tokens) => {
-                            self.walk(ASTNode::new_with_SkippedTokens(skipped_tokens));
-                        },
-                        StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(skipped_tokens) => {
-                            self.walk(ASTNode::new_with_SkippedTokens(skipped_tokens));
-                        },
-                        StatemenIndentWrapper::EXTRA_NEWLINES(skipped_tokens) => {
-                            self.walk(ASTNode::new_with_SkippedTokens(skipped_tokens));
-                        },
+                    self.walk(ASTNode::new_with_StatemenIndentWrapperNode(stmt));
+                }
+            },
+            ASTNode::STATEMENT_INDENT_WRAPPER(stmt_indent_wrapper_node) => {
+                match &stmt_indent_wrapper_node.core_ref().kind {
+                    StatementIndentWrapperKind::CORRECTLY_INDENTED(stmt_node) => {
+                        self.walk(ASTNode::new_with_StatementNode(stmt_node));
                     }
+                    StatementIndentWrapperKind::INCORRECTLY_INDENTED((stmt_node, _)) => {
+                        self.walk(ASTNode::new_with_StatementNode(stmt_node));
+                    },
+                    StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens) => {
+                        self.walk(ASTNode::new_with_SkippedTokens(skipped_tokens));
+                    },
+                    StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens) => {
+                        self.walk(ASTNode::new_with_SkippedTokens(skipped_tokens));
+                    },
+                    StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens) => {
+                        self.walk(ASTNode::new_with_SkippedTokens(skipped_tokens));
+                    },
                 }
             },
             ASTNode::SKIPPED_TOKENS(skipped_tokens) => {

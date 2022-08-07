@@ -2,7 +2,7 @@ pub mod ast {
     #[macro_use]
     use jarvil_macros::set_parent;
     #[macro_use]
-    use jarvil_macros::WeakNode;
+    use jarvil_macros::NodeUtils;
     use crate::scope::core::SymbolData;
     use crate::types::atomic::Atomic;
     use crate::{
@@ -27,6 +27,7 @@ pub mod ast {
     }
     pub enum ASTNode {
         BLOCK(BlockNode),
+        STATEMENT_INDENT_WRAPPER(StatemenIndentWrapperNode),
         SKIPPED_TOKENS(SkippedTokens),
         STATEMENT(StatementNode),
         ASSIGNMENT(AssignmentNode),
@@ -74,6 +75,13 @@ pub mod ast {
             match self {
                 ASTNode::BLOCK(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "BLOCK", &__self_0)
+                }
+                ASTNode::STATEMENT_INDENT_WRAPPER(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "STATEMENT_INDENT_WRAPPER",
+                        &__self_0,
+                    )
                 }
                 ASTNode::SKIPPED_TOKENS(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(
@@ -296,6 +304,9 @@ pub mod ast {
         fn clone(&self) -> ASTNode {
             match self {
                 ASTNode::BLOCK(__self_0) => ASTNode::BLOCK(::core::clone::Clone::clone(__self_0)),
+                ASTNode::STATEMENT_INDENT_WRAPPER(__self_0) => {
+                    ASTNode::STATEMENT_INDENT_WRAPPER(::core::clone::Clone::clone(__self_0))
+                }
                 ASTNode::SKIPPED_TOKENS(__self_0) => {
                     ASTNode::SKIPPED_TOKENS(::core::clone::Clone::clone(__self_0))
                 }
@@ -423,6 +434,24 @@ pub mod ast {
         #[inline]
         fn clone(&self) -> WeakBlockNode {
             WeakBlockNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    pub struct WeakStatemenIndentWrapperNode(pub Weak<RefCell<CoreStatemenIndentWrapperNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for WeakStatemenIndentWrapperNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "WeakStatemenIndentWrapperNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for WeakStatemenIndentWrapperNode {
+        #[inline]
+        fn clone(&self) -> WeakStatemenIndentWrapperNode {
+            WeakStatemenIndentWrapperNode(::core::clone::Clone::clone(&self.0))
         }
     }
     pub struct WeakSkippedTokens(pub Weak<RefCell<CoreSkippedTokens>>);
@@ -1055,6 +1084,7 @@ pub mod ast {
     }
     pub enum WeakASTNode {
         BLOCK(WeakBlockNode),
+        STATEMENT_INDENT_WRAPPER(WeakStatemenIndentWrapperNode),
         SKIPPED_TOKENS(WeakSkippedTokens),
         STATEMENT(WeakStatementNode),
         ASSIGNMENT(WeakAssignmentNode),
@@ -1102,6 +1132,13 @@ pub mod ast {
             match self {
                 WeakASTNode::BLOCK(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "BLOCK", &__self_0)
+                }
+                WeakASTNode::STATEMENT_INDENT_WRAPPER(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "STATEMENT_INDENT_WRAPPER",
+                        &__self_0,
+                    )
                 }
                 WeakASTNode::SKIPPED_TOKENS(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(
@@ -1326,6 +1363,9 @@ pub mod ast {
                 WeakASTNode::BLOCK(__self_0) => {
                     WeakASTNode::BLOCK(::core::clone::Clone::clone(__self_0))
                 }
+                WeakASTNode::STATEMENT_INDENT_WRAPPER(__self_0) => {
+                    WeakASTNode::STATEMENT_INDENT_WRAPPER(::core::clone::Clone::clone(__self_0))
+                }
                 WeakASTNode::SKIPPED_TOKENS(__self_0) => {
                     WeakASTNode::SKIPPED_TOKENS(::core::clone::Clone::clone(__self_0))
                 }
@@ -1453,6 +1493,9 @@ pub mod ast {
         pub fn new_with_BlockNode(x: &BlockNode) -> Self {
             ASTNode::BLOCK(x.clone())
         }
+        pub fn new_with_StatemenIndentWrapperNode(x: &StatemenIndentWrapperNode) -> Self {
+            ASTNode::STATEMENT_INDENT_WRAPPER(x.clone())
+        }
         pub fn new_with_SkippedTokens(x: &SkippedTokens) -> Self {
             ASTNode::SKIPPED_TOKENS(x.clone())
         }
@@ -1576,7 +1619,7 @@ pub mod ast {
     }
     pub struct CoreBlockNode {
         newline: TokenNode,
-        pub stmts: Rc<RefCell<Vec<StatemenIndentWrapper>>>,
+        pub stmts: Rc<RefCell<Vec<StatemenIndentWrapperNode>>>,
         scope: Option<Namespace>,
         parent: Option<WeakASTNode>,
     }
@@ -1609,84 +1652,6 @@ pub mod ast {
             }
         }
     }
-    pub enum StatemenIndentWrapper {
-        CORRECTLY_INDENTED(StatementNode),
-        INCORRECTLY_INDENTED((StatementNode, (i64, i64))),
-        LEADING_SKIPPED_TOKENS(SkippedTokens),
-        TRAILING_SKIPPED_TOKENS(SkippedTokens),
-        EXTRA_NEWLINES(SkippedTokens),
-    }
-    #[automatically_derived]
-    impl ::core::fmt::Debug for StatemenIndentWrapper {
-        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-            match self {
-                StatemenIndentWrapper::CORRECTLY_INDENTED(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "CORRECTLY_INDENTED",
-                        &__self_0,
-                    )
-                }
-                StatemenIndentWrapper::INCORRECTLY_INDENTED(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "INCORRECTLY_INDENTED",
-                        &__self_0,
-                    )
-                }
-                StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "LEADING_SKIPPED_TOKENS",
-                        &__self_0,
-                    )
-                }
-                StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "TRAILING_SKIPPED_TOKENS",
-                        &__self_0,
-                    )
-                }
-                StatemenIndentWrapper::EXTRA_NEWLINES(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(
-                        f,
-                        "EXTRA_NEWLINES",
-                        &__self_0,
-                    )
-                }
-            }
-        }
-    }
-    #[automatically_derived]
-    impl ::core::clone::Clone for StatemenIndentWrapper {
-        #[inline]
-        fn clone(&self) -> StatemenIndentWrapper {
-            match self {
-                StatemenIndentWrapper::CORRECTLY_INDENTED(__self_0) => {
-                    StatemenIndentWrapper::CORRECTLY_INDENTED(::core::clone::Clone::clone(__self_0))
-                }
-                StatemenIndentWrapper::INCORRECTLY_INDENTED(__self_0) => {
-                    StatemenIndentWrapper::INCORRECTLY_INDENTED(::core::clone::Clone::clone(
-                        __self_0,
-                    ))
-                }
-                StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(__self_0) => {
-                    StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(::core::clone::Clone::clone(
-                        __self_0,
-                    ))
-                }
-                StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(__self_0) => {
-                    StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(::core::clone::Clone::clone(
-                        __self_0,
-                    ))
-                }
-                StatemenIndentWrapper::EXTRA_NEWLINES(__self_0) => {
-                    StatemenIndentWrapper::EXTRA_NEWLINES(::core::clone::Clone::clone(__self_0))
-                }
-            }
-        }
-    }
     pub struct BlockNode(pub Rc<RefCell<CoreBlockNode>>);
     #[automatically_derived]
     impl ::core::fmt::Debug for BlockNode {
@@ -1702,7 +1667,10 @@ pub mod ast {
         }
     }
     impl BlockNode {
-        pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapper>>>, newline: &TokenNode) -> Self {
+        pub fn new(
+            stmts: &Rc<RefCell<Vec<StatemenIndentWrapperNode>>>,
+            newline: &TokenNode,
+        ) -> Self {
             let node = Rc::new(RefCell::new(CoreBlockNode {
                 newline: newline.clone(),
                 stmts: stmts.clone(),
@@ -1711,28 +1679,7 @@ pub mod ast {
             }));
             newline.set_parent(WeakASTNode::BLOCK(WeakBlockNode(Rc::downgrade(&node))));
             for stmt in &*stmts.as_ref().borrow() {
-                match stmt {
-                    StatemenIndentWrapper::CORRECTLY_INDENTED(correct_indented_stmt) => {
-                        correct_indented_stmt
-                            .set_parent(WeakASTNode::BLOCK(WeakBlockNode(Rc::downgrade(&node))));
-                    }
-                    StatemenIndentWrapper::INCORRECTLY_INDENTED((incorrect_indented_stmt, _)) => {
-                        incorrect_indented_stmt
-                            .set_parent(WeakASTNode::BLOCK(WeakBlockNode(Rc::downgrade(&node))));
-                    }
-                    StatemenIndentWrapper::LEADING_SKIPPED_TOKENS(leading_skipped_tokens) => {
-                        leading_skipped_tokens
-                            .set_parent(WeakASTNode::BLOCK(WeakBlockNode(Rc::downgrade(&node))));
-                    }
-                    StatemenIndentWrapper::TRAILING_SKIPPED_TOKENS(trailing_skipped_tokens) => {
-                        trailing_skipped_tokens
-                            .set_parent(WeakASTNode::BLOCK(WeakBlockNode(Rc::downgrade(&node))));
-                    }
-                    StatemenIndentWrapper::EXTRA_NEWLINES(extra_newlines) => {
-                        extra_newlines
-                            .set_parent(WeakASTNode::BLOCK(WeakBlockNode(Rc::downgrade(&node))));
-                    }
-                }
+                stmt.set_parent(WeakASTNode::BLOCK(WeakBlockNode(Rc::downgrade(&node))));
             }
             BlockNode(node)
         }
@@ -1747,6 +1694,203 @@ pub mod ast {
         }
     }
     impl Node for BlockNode {
+        fn set_parent(&self, parent_node: WeakASTNode) {
+            self.core_ref_mut().parent = Some(parent_node);
+        }
+    }
+    pub struct CoreStatemenIndentWrapperNode {
+        pub kind: StatementIndentWrapperKind,
+        parent: Option<WeakASTNode>,
+    }
+    #[automatically_derived]
+    impl ::core::fmt::Debug for CoreStatemenIndentWrapperNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_struct_field2_finish(
+                f,
+                "CoreStatemenIndentWrapperNode",
+                "kind",
+                &&self.kind,
+                "parent",
+                &&self.parent,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for CoreStatemenIndentWrapperNode {
+        #[inline]
+        fn clone(&self) -> CoreStatemenIndentWrapperNode {
+            CoreStatemenIndentWrapperNode {
+                kind: ::core::clone::Clone::clone(&self.kind),
+                parent: ::core::clone::Clone::clone(&self.parent),
+            }
+        }
+    }
+    pub enum StatementIndentWrapperKind {
+        CORRECTLY_INDENTED(StatementNode),
+        INCORRECTLY_INDENTED((StatementNode, (i64, i64))),
+        LEADING_SKIPPED_TOKENS(SkippedTokens),
+        TRAILING_SKIPPED_TOKENS(SkippedTokens),
+        EXTRA_NEWLINES(SkippedTokens),
+    }
+    #[automatically_derived]
+    impl ::core::fmt::Debug for StatementIndentWrapperKind {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            match self {
+                StatementIndentWrapperKind::CORRECTLY_INDENTED(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "CORRECTLY_INDENTED",
+                        &__self_0,
+                    )
+                }
+                StatementIndentWrapperKind::INCORRECTLY_INDENTED(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "INCORRECTLY_INDENTED",
+                        &__self_0,
+                    )
+                }
+                StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "LEADING_SKIPPED_TOKENS",
+                        &__self_0,
+                    )
+                }
+                StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "TRAILING_SKIPPED_TOKENS",
+                        &__self_0,
+                    )
+                }
+                StatementIndentWrapperKind::EXTRA_NEWLINES(__self_0) => {
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(
+                        f,
+                        "EXTRA_NEWLINES",
+                        &__self_0,
+                    )
+                }
+            }
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for StatementIndentWrapperKind {
+        #[inline]
+        fn clone(&self) -> StatementIndentWrapperKind {
+            match self {
+                StatementIndentWrapperKind::CORRECTLY_INDENTED(__self_0) => {
+                    StatementIndentWrapperKind::CORRECTLY_INDENTED(::core::clone::Clone::clone(
+                        __self_0,
+                    ))
+                }
+                StatementIndentWrapperKind::INCORRECTLY_INDENTED(__self_0) => {
+                    StatementIndentWrapperKind::INCORRECTLY_INDENTED(::core::clone::Clone::clone(
+                        __self_0,
+                    ))
+                }
+                StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(__self_0) => {
+                    StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(::core::clone::Clone::clone(
+                        __self_0,
+                    ))
+                }
+                StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(__self_0) => {
+                    StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(
+                        ::core::clone::Clone::clone(__self_0),
+                    )
+                }
+                StatementIndentWrapperKind::EXTRA_NEWLINES(__self_0) => {
+                    StatementIndentWrapperKind::EXTRA_NEWLINES(::core::clone::Clone::clone(
+                        __self_0,
+                    ))
+                }
+            }
+        }
+    }
+    pub struct StatemenIndentWrapperNode(pub Rc<RefCell<CoreStatemenIndentWrapperNode>>);
+    #[automatically_derived]
+    impl ::core::fmt::Debug for StatemenIndentWrapperNode {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(
+                f,
+                "StatemenIndentWrapperNode",
+                &&self.0,
+            )
+        }
+    }
+    #[automatically_derived]
+    impl ::core::clone::Clone for StatemenIndentWrapperNode {
+        #[inline]
+        fn clone(&self) -> StatemenIndentWrapperNode {
+            StatemenIndentWrapperNode(::core::clone::Clone::clone(&self.0))
+        }
+    }
+    impl StatemenIndentWrapperNode {
+        pub fn new_with_correctly_indented(stmt: &StatementNode) -> Self {
+            let node = Rc::new(RefCell::new(CoreStatemenIndentWrapperNode {
+                kind: StatementIndentWrapperKind::CORRECTLY_INDENTED(stmt.clone()),
+                parent: None,
+            }));
+            stmt.set_parent(WeakASTNode::STATEMENT_INDENT_WRAPPER(
+                WeakStatemenIndentWrapperNode(Rc::downgrade(&node)),
+            ));
+            StatemenIndentWrapperNode(node)
+        }
+        pub fn new_with_incorrectly_indented(
+            stmt: &StatementNode,
+            expected_indent: i64,
+            received_indent: i64,
+        ) -> Self {
+            let node = Rc::new(RefCell::new(CoreStatemenIndentWrapperNode {
+                kind: StatementIndentWrapperKind::INCORRECTLY_INDENTED((
+                    stmt.clone(),
+                    (expected_indent, received_indent),
+                )),
+                parent: None,
+            }));
+            stmt.set_parent(WeakASTNode::STATEMENT_INDENT_WRAPPER(
+                WeakStatemenIndentWrapperNode(Rc::downgrade(&node)),
+            ));
+            StatemenIndentWrapperNode(node)
+        }
+        pub fn new_with_leading_skipped_tokens(skipped_tokens: &SkippedTokens) -> Self {
+            let node = Rc::new(RefCell::new(CoreStatemenIndentWrapperNode {
+                kind: StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens.clone()),
+                parent: None,
+            }));
+            skipped_tokens.set_parent(WeakASTNode::STATEMENT_INDENT_WRAPPER(
+                WeakStatemenIndentWrapperNode(Rc::downgrade(&node)),
+            ));
+            StatemenIndentWrapperNode(node)
+        }
+        pub fn new_with_trailing_skipped_tokens(skipped_tokens: &SkippedTokens) -> Self {
+            let node = Rc::new(RefCell::new(CoreStatemenIndentWrapperNode {
+                kind: StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens.clone()),
+                parent: None,
+            }));
+            skipped_tokens.set_parent(WeakASTNode::STATEMENT_INDENT_WRAPPER(
+                WeakStatemenIndentWrapperNode(Rc::downgrade(&node)),
+            ));
+            StatemenIndentWrapperNode(node)
+        }
+        pub fn new_with_extra_newlines(skipped_tokens: &SkippedTokens) -> Self {
+            let node = Rc::new(RefCell::new(CoreStatemenIndentWrapperNode {
+                kind: StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens.clone()),
+                parent: None,
+            }));
+            skipped_tokens.set_parent(WeakASTNode::STATEMENT_INDENT_WRAPPER(
+                WeakStatemenIndentWrapperNode(Rc::downgrade(&node)),
+            ));
+            StatemenIndentWrapperNode(node)
+        }
+        pub fn core_ref(&self) -> Ref<CoreStatemenIndentWrapperNode> {
+            self.0.as_ref().borrow()
+        }
+        pub fn core_ref_mut(&self) -> RefMut<CoreStatemenIndentWrapperNode> {
+            self.0.as_ref().borrow_mut()
+        }
+    }
+    impl Node for StatemenIndentWrapperNode {
         fn set_parent(&self, parent_node: WeakASTNode) {
             self.core_ref_mut().parent = Some(parent_node);
         }
