@@ -75,13 +75,23 @@ pub enum ASTNode {
     ATOM(AtomNode),
     ATOM_START(AtomStartNode),
     CALL(CallNode),
-    PROPERTRY_ACCESS(PropertyAccessNode),
+    PROPERTY_ACCESS(PropertyAccessNode),
     METHOD_ACCESS(MethodAccessNode),
     INDEX_ACCESS(IndexAccessNode),
     TOKEN(TokenNode),
     OK_TOKEN(OkTokenNode),
     MISSING_TOKEN(MissingTokenNode),
     SKIPPED_TOKEN(SkippedTokenNode)
+}
+
+impl ASTNode {
+    pub fn new_with_stmt(stmt: &StatementNode) -> Self {
+        ASTNode::STATEMENT(stmt.clone())
+    }
+
+    pub fn new_with_skipped_tokens(skipped_tokens: &SkippedTokens) -> Self {
+        ASTNode::SKIPPED_TOKENS(skipped_tokens.clone())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1873,7 +1883,7 @@ pub struct CorePropertyAccessNode {
 #[derive(Debug, Clone)]
 pub struct PropertyAccessNode(Rc<RefCell<CorePropertyAccessNode>>);
 impl PropertyAccessNode {
-    #[set_parent(PROPERTRY_ACCESS, WeakPropertyAccessNode)]
+    #[set_parent(PROPERTY_ACCESS, WeakPropertyAccessNode)]
     fn new(atom: &AtomNode, propertry: &TokenNode, dot: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CorePropertyAccessNode {
             dot: dot.clone(),

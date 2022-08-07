@@ -1,6 +1,6 @@
 use crate::errors::JarvilError;
 use crate::scope::function::FunctionData;
-use crate::scope::identifier::VariableData;
+use crate::scope::variables::VariableData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
