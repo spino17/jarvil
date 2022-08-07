@@ -60,7 +60,7 @@ pub mod ast {
         ATOM(AtomNode),
         ATOM_START(AtomStartNode),
         CALL(CallNode),
-        PROPERTRY_ACCESS(PropertyAccessNode),
+        PROPERTY_ACCESS(PropertyAccessNode),
         METHOD_ACCESS(MethodAccessNode),
         INDEX_ACCESS(IndexAccessNode),
         TOKEN(TokenNode),
@@ -262,10 +262,10 @@ pub mod ast {
                 ASTNode::CALL(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "CALL", &__self_0)
                 }
-                ASTNode::PROPERTRY_ACCESS(__self_0) => {
+                ASTNode::PROPERTY_ACCESS(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(
                         f,
-                        "PROPERTRY_ACCESS",
+                        "PROPERTY_ACCESS",
                         &__self_0,
                     )
                 }
@@ -389,8 +389,8 @@ pub mod ast {
                     ASTNode::ATOM_START(::core::clone::Clone::clone(__self_0))
                 }
                 ASTNode::CALL(__self_0) => ASTNode::CALL(::core::clone::Clone::clone(__self_0)),
-                ASTNode::PROPERTRY_ACCESS(__self_0) => {
-                    ASTNode::PROPERTRY_ACCESS(::core::clone::Clone::clone(__self_0))
+                ASTNode::PROPERTY_ACCESS(__self_0) => {
+                    ASTNode::PROPERTY_ACCESS(::core::clone::Clone::clone(__self_0))
                 }
                 ASTNode::METHOD_ACCESS(__self_0) => {
                     ASTNode::METHOD_ACCESS(::core::clone::Clone::clone(__self_0))
@@ -1088,7 +1088,7 @@ pub mod ast {
         ATOM(WeakAtomNode),
         ATOM_START(WeakAtomStartNode),
         CALL(WeakCallNode),
-        PROPERTRY_ACCESS(WeakPropertyAccessNode),
+        PROPERTY_ACCESS(WeakPropertyAccessNode),
         METHOD_ACCESS(WeakMethodAccessNode),
         INDEX_ACCESS(WeakIndexAccessNode),
         TOKEN(WeakTokenNode),
@@ -1290,10 +1290,10 @@ pub mod ast {
                 WeakASTNode::CALL(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f, "CALL", &__self_0)
                 }
-                WeakASTNode::PROPERTRY_ACCESS(__self_0) => {
+                WeakASTNode::PROPERTY_ACCESS(__self_0) => {
                     ::core::fmt::Formatter::debug_tuple_field1_finish(
                         f,
-                        "PROPERTRY_ACCESS",
+                        "PROPERTY_ACCESS",
                         &__self_0,
                     )
                 }
@@ -1425,8 +1425,8 @@ pub mod ast {
                 WeakASTNode::CALL(__self_0) => {
                     WeakASTNode::CALL(::core::clone::Clone::clone(__self_0))
                 }
-                WeakASTNode::PROPERTRY_ACCESS(__self_0) => {
-                    WeakASTNode::PROPERTRY_ACCESS(::core::clone::Clone::clone(__self_0))
+                WeakASTNode::PROPERTY_ACCESS(__self_0) => {
+                    WeakASTNode::PROPERTY_ACCESS(::core::clone::Clone::clone(__self_0))
                 }
                 WeakASTNode::METHOD_ACCESS(__self_0) => {
                     WeakASTNode::METHOD_ACCESS(::core::clone::Clone::clone(__self_0))
@@ -1447,6 +1447,131 @@ pub mod ast {
                     WeakASTNode::SKIPPED_TOKEN(::core::clone::Clone::clone(__self_0))
                 }
             }
+        }
+    }
+    impl ASTNode {
+        pub fn new_with_BlockNode(x: &BlockNode) -> Self {
+            ASTNode::BLOCK(x.clone())
+        }
+        pub fn new_with_SkippedTokens(x: &SkippedTokens) -> Self {
+            ASTNode::SKIPPED_TOKENS(x.clone())
+        }
+        pub fn new_with_StatementNode(x: &StatementNode) -> Self {
+            ASTNode::STATEMENT(x.clone())
+        }
+        pub fn new_with_AssignmentNode(x: &AssignmentNode) -> Self {
+            ASTNode::ASSIGNMENT(x.clone())
+        }
+        pub fn new_with_StructStatementNode(x: &StructStatementNode) -> Self {
+            ASTNode::STRUCT_STATEMENT(x.clone())
+        }
+        pub fn new_with_TypeDeclarationNode(x: &TypeDeclarationNode) -> Self {
+            ASTNode::TYPE_DECLARATION(x.clone())
+        }
+        pub fn new_with_StructDeclarationNode(x: &StructDeclarationNode) -> Self {
+            ASTNode::STRUCT_DECLARATION(x.clone())
+        }
+        pub fn new_with_LambdaDeclarationNode(x: &LambdaDeclarationNode) -> Self {
+            ASTNode::LAMBDA_DECLARATION(x.clone())
+        }
+        pub fn new_with_OkLambdaDeclarationNode(x: &OkLambdaDeclarationNode) -> Self {
+            ASTNode::OK_LAMBDA_DECLARATION(x.clone())
+        }
+        pub fn new_with_FunctionDeclarationNode(x: &FunctionDeclarationNode) -> Self {
+            ASTNode::FUNCTION_DECLARATION(x.clone())
+        }
+        pub fn new_with_OkFunctionDeclarationNode(x: &OkFunctionDeclarationNode) -> Self {
+            ASTNode::OK_FUNCTION_DECLARATION(x.clone())
+        }
+        pub fn new_with_VariableDeclarationNode(x: &VariableDeclarationNode) -> Self {
+            ASTNode::VARIABLE_DECLARATION(x.clone())
+        }
+        pub fn new_with_RAssignmentNode(x: &RAssignmentNode) -> Self {
+            ASTNode::R_ASSIGNMENT(x.clone())
+        }
+        pub fn new_with_NameTypeSpecsNode(x: &NameTypeSpecsNode) -> Self {
+            ASTNode::NAME_TYPE_SPECS(x.clone())
+        }
+        pub fn new_with_OkNameTypeSpecsNode(x: &OkNameTypeSpecsNode) -> Self {
+            ASTNode::OK_NAME_TYPE_SPECS(x.clone())
+        }
+        pub fn new_with_NameTypeSpecNode(x: &NameTypeSpecNode) -> Self {
+            ASTNode::NAME_TYPE_SPEC(x.clone())
+        }
+        pub fn new_with_TypeExpressionNode(x: &TypeExpressionNode) -> Self {
+            ASTNode::TYPE_EXPRESSION(x.clone())
+        }
+        pub fn new_with_AtomicTypeNode(x: &AtomicTypeNode) -> Self {
+            ASTNode::ATOMIC_TYPE(x.clone())
+        }
+        pub fn new_with_ArrayTypeNode(x: &ArrayTypeNode) -> Self {
+            ASTNode::ARRAY_TYPE(x.clone())
+        }
+        pub fn new_with_UserDefinedTypeNode(x: &UserDefinedTypeNode) -> Self {
+            ASTNode::USER_DEFINED_TYPE(x.clone())
+        }
+        pub fn new_with_ExpressionNode(x: &ExpressionNode) -> Self {
+            ASTNode::EXPRESSION(x.clone())
+        }
+        pub fn new_with_AtomicExpressionNode(x: &AtomicExpressionNode) -> Self {
+            ASTNode::ATOMIC_EXPRESSION(x.clone())
+        }
+        pub fn new_with_ParenthesisedExpressionNode(x: &ParenthesisedExpressionNode) -> Self {
+            ASTNode::PARENTHESISED_EXPRESSION(x.clone())
+        }
+        pub fn new_with_UnaryExpressionNode(x: &UnaryExpressionNode) -> Self {
+            ASTNode::UNARY_EXPRESSION(x.clone())
+        }
+        pub fn new_with_OnlyUnaryExpressionNode(x: &OnlyUnaryExpressionNode) -> Self {
+            ASTNode::ONLY_UNARY_EXPRESSION(x.clone())
+        }
+        pub fn new_with_BinaryExpressionNode(x: &BinaryExpressionNode) -> Self {
+            ASTNode::BINARY_EXPRESSION(x.clone())
+        }
+        pub fn new_with_LogicalExpressionNode(x: &LogicalExpressionNode) -> Self {
+            ASTNode::LOGICAL_EXPRESSION(x.clone())
+        }
+        pub fn new_with_ParamsNode(x: &ParamsNode) -> Self {
+            ASTNode::PARAMS(x.clone())
+        }
+        pub fn new_with_OkParamsNode(x: &OkParamsNode) -> Self {
+            ASTNode::OK_PARAMS(x.clone())
+        }
+        pub fn new_with_CallExpressionNode(x: &CallExpressionNode) -> Self {
+            ASTNode::CALL_EXPRESSION(x.clone())
+        }
+        pub fn new_with_ClassMethodCallNode(x: &ClassMethodCallNode) -> Self {
+            ASTNode::CLASS_METHOD_CALL(x.clone())
+        }
+        pub fn new_with_AtomNode(x: &AtomNode) -> Self {
+            ASTNode::ATOM(x.clone())
+        }
+        pub fn new_with_AtomStartNode(x: &AtomStartNode) -> Self {
+            ASTNode::ATOM_START(x.clone())
+        }
+        pub fn new_with_CallNode(x: &CallNode) -> Self {
+            ASTNode::CALL(x.clone())
+        }
+        pub fn new_with_PropertyAccessNode(x: &PropertyAccessNode) -> Self {
+            ASTNode::PROPERTY_ACCESS(x.clone())
+        }
+        pub fn new_with_MethodAccessNode(x: &MethodAccessNode) -> Self {
+            ASTNode::METHOD_ACCESS(x.clone())
+        }
+        pub fn new_with_IndexAccessNode(x: &IndexAccessNode) -> Self {
+            ASTNode::INDEX_ACCESS(x.clone())
+        }
+        pub fn new_with_TokenNode(x: &TokenNode) -> Self {
+            ASTNode::TOKEN(x.clone())
+        }
+        pub fn new_with_OkTokenNode(x: &OkTokenNode) -> Self {
+            ASTNode::OK_TOKEN(x.clone())
+        }
+        pub fn new_with_MissingTokenNode(x: &MissingTokenNode) -> Self {
+            ASTNode::MISSING_TOKEN(x.clone())
+        }
+        pub fn new_with_SkippedTokenNode(x: &SkippedTokenNode) -> Self {
+            ASTNode::SKIPPED_TOKEN(x.clone())
         }
     }
     pub struct CoreBlockNode {
@@ -6116,13 +6241,13 @@ pub mod ast {
                 propertry: propertry.clone(),
                 parent: None,
             }));
-            atom.set_parent(WeakASTNode::PROPERTRY_ACCESS(WeakPropertyAccessNode(
+            atom.set_parent(WeakASTNode::PROPERTY_ACCESS(WeakPropertyAccessNode(
                 Rc::downgrade(&node),
             )));
-            propertry.set_parent(WeakASTNode::PROPERTRY_ACCESS(WeakPropertyAccessNode(
+            propertry.set_parent(WeakASTNode::PROPERTY_ACCESS(WeakPropertyAccessNode(
                 Rc::downgrade(&node),
             )));
-            dot.set_parent(WeakASTNode::PROPERTRY_ACCESS(WeakPropertyAccessNode(
+            dot.set_parent(WeakASTNode::PROPERTY_ACCESS(WeakPropertyAccessNode(
                 Rc::downgrade(&node),
             )));
             PropertyAccessNode(node)

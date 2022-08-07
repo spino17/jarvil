@@ -5,7 +5,7 @@
 #[macro_use]
 use jarvil_macros::set_parent;
 #[macro_use]
-use jarvil_macros::WeakNode;
+use jarvil_macros::NodeUtils;
 
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
@@ -39,7 +39,7 @@ pub trait ErrornousNode {
 // impl_weak_node!(WeakBlockNode, CoreBlockNode);
 // weak_ast_nodes!((BLOCK, WeakBlockNode));
 
-#[derive(Debug, Clone, WeakNode)]
+#[derive(Debug, Clone, NodeUtils)]
 pub enum ASTNode {
     BLOCK(BlockNode),
     SKIPPED_TOKENS(SkippedTokens),
@@ -82,48 +82,6 @@ pub enum ASTNode {
     OK_TOKEN(OkTokenNode),
     MISSING_TOKEN(MissingTokenNode),
     SKIPPED_TOKEN(SkippedTokenNode)
-}
-
-impl ASTNode {
-    pub fn new_with_stmt(stmt: &StatementNode) -> Self {
-        ASTNode::STATEMENT(stmt.clone())
-    }
-
-    pub fn new_with_skipped_tokens(skipped_tokens: &SkippedTokens) -> Self {
-        ASTNode::SKIPPED_TOKENS(skipped_tokens.clone())
-    }
-
-    pub fn new_with_skipped_token(skipped_token: &SkippedTokenNode) -> Self {
-        ASTNode::SKIPPED_TOKEN(skipped_token.clone())
-    }
-
-    pub fn new_with_expr(expr: &ExpressionNode) -> Self {
-        ASTNode::EXPRESSION(expr.clone())
-    }
-
-    pub fn new_with_assignment(assignment: &AssignmentNode) -> Self {
-        ASTNode::ASSIGNMENT(assignment.clone())
-    }
-
-    pub fn new_with_variable_declaration(variable_decl: &VariableDeclarationNode) -> Self {
-        ASTNode::VARIABLE_DECLARATION(variable_decl.clone())
-    }
-
-    pub fn new_with_function_declaration(func_decl: &FunctionDeclarationNode) -> Self {
-        ASTNode::FUNCTION_DECLARATION(func_decl.clone())
-    }
-
-    pub fn new_with_type_declaration(type_decl: &TypeDeclarationNode) -> Self {
-        ASTNode::TYPE_DECLARATION(type_decl.clone())
-    }
-
-    pub fn new_with_struct_stmt(struct_stmt: &StructStatementNode) -> Self {
-        ASTNode::STRUCT_STATEMENT(struct_stmt.clone())
-    }
-
-    pub fn new_with_missing_token(missing_token: &MissingTokenNode) -> Self {
-        ASTNode::MISSING_TOKEN(missing_token.clone())
-    }
 }
 
 #[derive(Debug, Clone)]

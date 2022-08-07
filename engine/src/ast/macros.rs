@@ -61,6 +61,16 @@ macro_rules! weak_ast_nodes {
     };
 }
 
+macro_rules! impl_ast_node {
+    ($(($t: ident, $u: ident, $v: ident)),*) => {
+        $(
+            pub fn $v(x: &$u) -> Self {
+                ASTNode::$t(x.clone())
+            }
+        )*
+    };
+}
+
 macro_rules! set_parent {
     ($t: ident, $u: ident, $v: ident, $s: ident) => {
         $t.set_parent(WeakASTNode::$u($s(Rc::downgrade(&$v))));

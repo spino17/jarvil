@@ -72,7 +72,7 @@ pub fn set_parent(args: TokenStream, input: TokenStream) -> TokenStream {
     impl_set_parent_macro(enum_variant_arg_ident, weak_node_arg_ident, &input_ast)
 }
 
-#[proc_macro_derive(WeakNode)]
+#[proc_macro_derive(NodeUtils)]
 pub fn weak_nodes_macro_derive(input: TokenStream) -> TokenStream {
     let input_ast: syn::DeriveInput = match syn::parse(input.clone()) {
         Ok(it) => it,
