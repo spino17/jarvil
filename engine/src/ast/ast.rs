@@ -1062,6 +1062,10 @@ impl TokenNode {
         }
     }
 
+    pub fn precedence(&self) -> u8 {
+        todo!()
+    }
+
     core_node_access!(CoreTokenNode);
 }
 default_node_impl!(TokenNode);
