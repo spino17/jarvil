@@ -113,7 +113,7 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
         CoreToken::PLUS => true,
         CoreToken::DASH => true,
-        CoreToken::NOT => true,
+        CoreToken::NOT  => true,
         _ => is_atomic_expression_starting_with(token),
     }
 }
@@ -178,13 +178,13 @@ pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
 
 pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
-        CoreToken::INTEGER => true,
-        CoreToken::FLOATING_POINT_NUMBER => true,
-        CoreToken::LITERAL => true,
-        CoreToken::TRUE => true,
-        CoreToken::FALSE => true,
-        CoreToken::IDENTIFIER => true,
-        CoreToken::LPAREN => true,
+        CoreToken::INTEGER                  => true,
+        CoreToken::FLOATING_POINT_NUMBER    => true,
+        CoreToken::LITERAL                  => true,
+        CoreToken::TRUE                     => true,
+        CoreToken::FALSE                    => true,
+        CoreToken::IDENTIFIER               => true,
+        CoreToken::LPAREN                   => true,
         _ => false,
     }
 }
