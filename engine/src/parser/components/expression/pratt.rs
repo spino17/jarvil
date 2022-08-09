@@ -43,6 +43,8 @@ pub fn pratt_expr(parser: &mut PackratParser, precedence: u8) -> ExpressionNode 
         let operator_node = parser.expect_operator();
         let curr_precedence = operator_node.precedence();
         let right_expr = parser.pratt_expr(curr_precedence);
+        // TODO - depending on the operator choose between binary or logical
+        // TODO - also if operator is comparison, collect nodes in array to make sense of a < b >= c as a < b and b >= c
         left_expr = ExpressionNode::new_with_binary(&operator_node, &left_expr, &right_expr)
     }
     left_expr
