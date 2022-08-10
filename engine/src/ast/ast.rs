@@ -68,6 +68,7 @@ pub enum ASTNode {
     UNARY_EXPRESSION(UnaryExpressionNode),
     ONLY_UNARY_EXPRESSION(OnlyUnaryExpressionNode),
     BINARY_EXPRESSION(BinaryExpressionNode),
+    COMPARISON(ComparisonNode),
     // LOGICAL_EXPRESSION(LogicalExpressionNode),
     PARAMS(ParamsNode),
     OK_PARAMS(OkParamsNode),
@@ -1194,6 +1195,7 @@ pub enum ExpressionKind {
     // ATOMIC(AtomicExpressionNode),
     UNARY(UnaryExpressionNode),
     BINARY(BinaryExpressionNode),
+    COMPARISON(ComparisonNode),
     // LOGICAL(LogicalExpressionNode),
     MISSING_TOKENS(MissingTokenNode),
 }
@@ -1233,9 +1235,15 @@ impl ExpressionNode {
         ExpressionNode(node)
     }
 
-    pub fn new_with_comparison(operands: Vec<ExpressionNode>, operators: Vec<TokenNode>) -> Self {
-        // TODO - insert `and` operators between each of `operant` `operator` `operant` tuple
-        todo!()
+    pub fn new_with_comparison(operands: &Rc<Vec<ExpressionNode>>, operators: &Rc<Vec<TokenNode>>) -> Self {
+        let node = Rc::new(RefCell::new(CoreExpressionNode {
+            kind: ExpressionKind::COMPARISON(ComparisonNode::new(
+                operands,
+                operators
+            )),
+            parent: None,
+        }));
+        ExpressionNode(node)
     }
 
     pub fn is_valid_l_value(&self) -> Option<AtomNode> {
@@ -1263,6 +1271,35 @@ impl ExpressionNode {
 }
 default_node_impl!(ExpressionNode);
 default_errornous_node_impl!(ExpressionNode, CoreExpressionNode, ExpressionKind);
+
+#[derive(Debug, Clone)]
+pub struct CoreComparisonNode {
+    pub operands: Rc<Vec<ExpressionNode>>,
+    pub operators: Rc<Vec<TokenNode>>,
+    parent: Option<WeakASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ComparisonNode(pub Rc<RefCell<CoreComparisonNode>>);
+impl ComparisonNode {
+    pub fn new(operands: &Rc<Vec<ExpressionNode>>, operators: &Rc<Vec<TokenNode>>) -> Self {
+        let node = Rc::new(RefCell::new(CoreComparisonNode{
+            operands: operands.clone(),
+            operators: operators.clone(),
+            parent: None,
+        }));
+        for operand in operands.as_ref() {
+            set_parent!(operand, COMPARISON, node, WeakComparisonNode);
+        }
+        for operator in operators.as_ref() {
+            set_parent!(operator, COMPARISON, node, WeakComparisonNode);
+        }
+        ComparisonNode(node)
+    }
+
+    core_node_access!(CoreComparisonNode);
+}
+default_node_impl!(ComparisonNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomicExpressionNode {

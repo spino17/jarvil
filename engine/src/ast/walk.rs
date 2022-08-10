@@ -243,6 +243,9 @@ pub trait Visitor {
                     ExpressionKind::BINARY(binary_expr) => {
                         self.walk(ASTNode::new_with_BinaryExpressionNode(binary_expr));
                     },
+                    ExpressionKind::COMPARISON(comparison_expr) => {
+                        self.walk(ASTNode::new_with_ComparisonNode(comparison_expr));
+                    }
                     ExpressionKind::MISSING_TOKENS(missing_tokens) => {
                         self.walk(ASTNode::new_with_MissingTokenNode(missing_tokens));
                     }
@@ -302,6 +305,15 @@ pub trait Visitor {
                 self.walk(ASTNode::new_with_ExpressionNode(&core_binary_expr.left_expr));
                 self.walk(ASTNode::new_with_TokenNode(&core_binary_expr.operator));
                 self.walk(ASTNode::new_with_ExpressionNode(&core_binary_expr.right_expr));
+            },
+            ASTNode::COMPARISON(comparison_expression_node) => {
+                let core_comp_expr = comparison_expression_node.core_ref();
+                let operator_len = core_comp_expr.operators.len();
+                self.walk(ASTNode::new_with_ExpressionNode(&core_comp_expr.operands[0]));
+                for i in 0..operator_len {
+                    self.walk(ASTNode::new_with_TokenNode(&core_comp_expr.operators[i]));
+                    self.walk(ASTNode::new_with_ExpressionNode(&core_comp_expr.operands[i]));
+                }
             },
             ASTNode::PARAMS(params_node) => {
                 let core_params = params_node.core_ref();

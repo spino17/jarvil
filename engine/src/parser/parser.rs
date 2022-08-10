@@ -149,9 +149,9 @@ impl PackratParser {
         self.token_vec[self.lookahead].is_eq(symbol)
     }
 
-    pub fn curr_token_precedence(&self) -> (u8, &str) {
-        let token = self.token_vec[self.lookahead];
-        (token.get_precedence(), &token.token_value(&self.code))
+    pub fn curr_token_precedence(&self) -> (u8, &'static str) {
+        let token = &self.token_vec[self.lookahead];
+        (token.get_precedence(), token.core_token.to_string())
     }
 
     pub fn previous_token(&mut self) -> Token {

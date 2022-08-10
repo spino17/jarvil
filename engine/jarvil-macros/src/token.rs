@@ -40,10 +40,7 @@ pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
                 }
             }
            #symbols_is_eq;
-        }
-
-        impl ToString for #enum_name {
-            #token_to_string_macro;
+           #token_to_string_macro;
         }
     };
     gen.into()

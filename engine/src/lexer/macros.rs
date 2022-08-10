@@ -33,14 +33,14 @@ macro_rules! impl_symbols_is_eq {
 
 macro_rules! impl_token_to_string {
     ($($t: ident),*) => {
-        fn to_string(&self) -> String {
+        pub fn to_string(&self) -> &'static str {
             let symbol_str = match self {
                 $(
                     CoreToken::$t => $t,
                 )*
                 CoreToken::LEXICAL_ERROR(_) => LEXICAL_ERROR,
             };
-            String::from(symbol_str)
+            symbol_str
         }
     };
 }

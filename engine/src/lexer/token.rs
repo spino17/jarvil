@@ -277,7 +277,7 @@ impl Token {
     }
 
     pub fn name(&self) -> String {
-        self.core_token.to_string()
+        String::from(self.core_token.to_string())
     }
 
     pub fn token_value(&self, code: &Code) -> String {

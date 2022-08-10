@@ -73,21 +73,17 @@ pub fn comparison(parser: &mut PackratParser) -> ExpressionNode {
     let leading_term_expr_node = parser.term();
     let mut operands: Vec<ExpressionNode> = vec![leading_term_expr_node];
     let mut operators: Vec<TokenNode> = vec![];
-    while let Some(node) = parser.expects(&[">", ">=", "<", "<=", "==", "!="]).is_ok() {
-        let operator_node = node;
+    while let Some(operator_node) = parser.expects(&[">", ">=", "<", "<=", "==", "!="]).is_ok() {
         let trailing_term_expr_node = parser.term();
         operands.push(trailing_term_expr_node);
         operators.push(operator_node);
-        /*
-        leading_term_expr_node = ExpressionNode::new_with_binary(
-            &operator_node,
-            &leading_term_expr_node,
-            &trailing_term_expr_node,
-        );
-         */
     }
-    ExpressionNode::new_with_comparison(operands, operators)
-    // leading_term_expr_node
+    if operators.len() == 0 {
+        return operands[0].clone()
+    } else if operators.len() == 1 {
+        return ExpressionNode::new_with_binary(&operators[0], &operands[0], &operands[1])
+    }
+    ExpressionNode::new_with_comparison(&Rc::new(operands), &Rc::new(operators))
 }
 
 pub fn term(parser: &mut PackratParser) -> ExpressionNode {
