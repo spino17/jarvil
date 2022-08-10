@@ -149,7 +149,7 @@ impl PackratParser {
         self.token_vec[self.lookahead].is_eq(symbol)
     }
 
-    pub fn curr_token_precedence(&self) -> (u8, &'static str) {
+    pub fn curr_token_precedence_and_name(&self) -> (u8, &'static str) {
         let token = &self.token_vec[self.lookahead];
         (token.get_precedence(), token.core_token.to_string())
     }
@@ -560,6 +560,22 @@ impl PackratParser {
 
     pub fn pratt_expr(&mut self, precedence: u8) -> ExpressionNode {
         components::expression::pratt::pratt_expr(self, precedence)
+    }
+
+    pub fn infix(&mut self, left_expr: &ExpressionNode, operator_node: &TokenNode, operator_precedence: u8) -> ExpressionNode {
+        components::expression::pratt::infix(self, left_expr, operator_node, operator_precedence)
+    }
+
+    pub fn infix_comparison_expr(
+        &mut self, left_expr: &ExpressionNode, operator_node: &TokenNode, operator_precedence: u8
+    ) -> ExpressionNode {
+        components::expression::pratt::infix_comparison_expr(self, left_expr, operator_node, operator_precedence)
+    }
+    
+    pub fn infix_binary_expr(
+        &mut self, left_expr: &ExpressionNode, operator_node: &TokenNode, operator_precedence: u8
+    ) -> ExpressionNode {
+        components::expression::pratt::infix_binary_expr(self, left_expr, operator_node, operator_precedence)
     }
 
     pub fn trailing_atom(&mut self, atom_start: AtomNode) -> AtomNode {
