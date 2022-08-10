@@ -12,7 +12,7 @@ pub fn pratt_expr(parser: &mut PackratParser, precedence: u8) -> ExpressionNode 
     let mut left_expr: ExpressionNode = ExpressionNode::new_with_unary(&prefix);
     loop {
         let (operator_precedence, operator_str) = parser.curr_token_precedence_and_name();
-        if precedence < operator_precedence {
+        if precedence >= operator_precedence {
             break;
         }
         let operator_node = parser.expect(operator_str);

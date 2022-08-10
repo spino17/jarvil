@@ -38,7 +38,8 @@ pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
             parser.curr_lookahead(),
         );
     }
-    parser.logical_or()
+    // parser.logical_or()
+    parser.pratt_expr(0)
 }
 
 pub fn logical_or(parser: &mut PackratParser) -> ExpressionNode {
