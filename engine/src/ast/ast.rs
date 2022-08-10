@@ -68,7 +68,7 @@ pub enum ASTNode {
     UNARY_EXPRESSION(UnaryExpressionNode),
     ONLY_UNARY_EXPRESSION(OnlyUnaryExpressionNode),
     BINARY_EXPRESSION(BinaryExpressionNode),
-    LOGICAL_EXPRESSION(LogicalExpressionNode),
+    // LOGICAL_EXPRESSION(LogicalExpressionNode),
     PARAMS(ParamsNode),
     OK_PARAMS(OkParamsNode),
     CALL_EXPRESSION(CallExpressionNode),
@@ -1194,7 +1194,7 @@ pub enum ExpressionKind {
     // ATOMIC(AtomicExpressionNode),
     UNARY(UnaryExpressionNode),
     BINARY(BinaryExpressionNode),
-    LOGICAL(LogicalExpressionNode),
+    // LOGICAL(LogicalExpressionNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -1233,27 +1233,9 @@ impl ExpressionNode {
         ExpressionNode(node)
     }
 
-    pub fn new_with_logical(
-        operator: &TokenNode,
-        left_expr: &ExpressionNode,
-        right_expr: &ExpressionNode,
-    ) -> Self {
-        let operator_kind = match operator.is_binary_operator() {
-            Some(operator_kind) => operator_kind,
-            None => unreachable!(
-                "any node passed in this method as operator should be a valid operator"
-            ),
-        };
-        let node = Rc::new(RefCell::new(CoreExpressionNode {
-            kind: ExpressionKind::LOGICAL(LogicalExpressionNode::new(
-                operator_kind,
-                operator,
-                left_expr,
-                right_expr,
-            )),
-            parent: None,
-        }));
-        ExpressionNode(node)
+    pub fn new_with_comparison(operands: Vec<ExpressionNode>, operators: Vec<TokenNode>) -> Self {
+        // TODO - insert `and` operators between each of `operant` `operator` `operant` tuple
+        todo!()
     }
 
     pub fn is_valid_l_value(&self) -> Option<AtomNode> {
@@ -1540,30 +1522,6 @@ pub struct CoreLogicalExpressionNode {
     pub right_expr: ExpressionNode,
     parent: Option<WeakASTNode>,
 }
-
-#[derive(Debug, Clone)]
-pub struct LogicalExpressionNode(Rc<RefCell<CoreLogicalExpressionNode>>);
-impl LogicalExpressionNode {
-    #[set_parent(LOGICAL_EXPRESSION, WeakLogicalExpressionNode)]
-    pub fn new(
-        operator_kind: BinaryOperatorKind,
-        operator: &TokenNode,
-        left_expr: &ExpressionNode,
-        right_expr: &ExpressionNode,
-    ) -> Self {
-        let node = Rc::new(RefCell::new(CoreLogicalExpressionNode {
-            operator_kind,
-            operator: operator.clone(),
-            left_expr: left_expr.clone(),
-            right_expr: right_expr.clone(),
-            parent: None,
-        }));
-        LogicalExpressionNode(node)
-    }
-
-    core_node_access!(CoreLogicalExpressionNode);
-}
-default_node_impl!(LogicalExpressionNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreParamsNode {

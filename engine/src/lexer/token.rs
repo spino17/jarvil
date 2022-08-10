@@ -294,16 +294,13 @@ impl Token {
 
     pub fn get_precedence(&self) -> u8 {
         let precedence = match self.core_token {
-            CoreToken::OR                       => 1,
-            CoreToken::AND                      => 2,
-            CoreToken::LBRACKET 
-            | CoreToken::LESS_EQUAL 
-            | CoreToken::RBRACKET 
-            | CoreToken::GREATER_EQUAL 
-            | CoreToken::DOUBLE_EQUAL 
-            | CoreToken::NOT_EQUAL              => 3,
-            CoreToken::PLUS | CoreToken::DASH   => 4,
-            CoreToken::STAR | CoreToken::SLASH  => 5,
+            CoreToken::OR                                    => 1,
+            CoreToken::AND                                   => 2,
+            CoreToken::LBRACKET | CoreToken::LESS_EQUAL 
+            | CoreToken::RBRACKET | CoreToken::GREATER_EQUAL 
+            | CoreToken::DOUBLE_EQUAL | CoreToken::NOT_EQUAL => 3,
+            CoreToken::PLUS | CoreToken::DASH                => 4,
+            CoreToken::STAR | CoreToken::SLASH               => 5,
             _ => 0,
         };
         precedence

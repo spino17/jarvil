@@ -46,7 +46,7 @@ pub fn logical_or(parser: &mut PackratParser) -> ExpressionNode {
     while let Some(node) = parser.expects(&["or"]).is_ok() {
         let operator_node = node;
         let trailing_logical_and_expr_node = parser.logical_and();
-        leading_logical_and_expr_node = ExpressionNode::new_with_logical(
+        leading_logical_and_expr_node = ExpressionNode::new_with_binary(
             &operator_node,
             &leading_logical_and_expr_node,
             &trailing_logical_and_expr_node,
@@ -60,7 +60,7 @@ pub fn logical_and(parser: &mut PackratParser) -> ExpressionNode {
     while let Some(node) = parser.expects(&["and"]).is_ok() {
         let operator_node = node;
         let trailing_comparison_expr_node = parser.comparison();
-        leading_comparison_expr_node = ExpressionNode::new_with_logical(
+        leading_comparison_expr_node = ExpressionNode::new_with_binary(
             &operator_node,
             &leading_comparison_expr_node,
             &trailing_comparison_expr_node,
@@ -70,17 +70,24 @@ pub fn logical_and(parser: &mut PackratParser) -> ExpressionNode {
 }
 
 pub fn comparison(parser: &mut PackratParser) -> ExpressionNode {
-    let mut leading_term_expr_node = parser.term();
+    let leading_term_expr_node = parser.term();
+    let mut operands: Vec<ExpressionNode> = vec![leading_term_expr_node];
+    let mut operators: Vec<TokenNode> = vec![];
     while let Some(node) = parser.expects(&[">", ">=", "<", "<=", "==", "!="]).is_ok() {
         let operator_node = node;
         let trailing_term_expr_node = parser.term();
+        operands.push(trailing_term_expr_node);
+        operators.push(operator_node);
+        /*
         leading_term_expr_node = ExpressionNode::new_with_binary(
             &operator_node,
             &leading_term_expr_node,
             &trailing_term_expr_node,
         );
+         */
     }
-    leading_term_expr_node
+    ExpressionNode::new_with_comparison(operands, operators)
+    // leading_term_expr_node
 }
 
 pub fn term(parser: &mut PackratParser) -> ExpressionNode {

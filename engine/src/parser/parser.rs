@@ -149,8 +149,9 @@ impl PackratParser {
         self.token_vec[self.lookahead].is_eq(symbol)
     }
 
-    pub fn curr_token_precedence(&self) -> u8 {
-        self.token_vec[self.lookahead].get_precedence()
+    pub fn curr_token_precedence(&self) -> (u8, &str) {
+        let token = self.token_vec[self.lookahead];
+        (token.get_precedence(), &token.token_value(&self.code))
     }
 
     pub fn previous_token(&mut self) -> Token {
@@ -396,10 +397,6 @@ impl PackratParser {
         )
     }
 
-    pub fn expect_binary_operator(&mut self) -> TokenNode {
-        self.expects(&["or", "and", ">", ">=", "<", "<=", "==", "!=", "+", "-", "*", "/"])
-    }
-
     pub fn expect_terminals(&mut self) -> TokenNode {
         self.expects(&["\n", ENDMARKER])
     }
@@ -559,10 +556,6 @@ impl PackratParser {
 
     pub fn expr(&mut self) -> ExpressionNode {
         components::expression::core::expr(self)
-    }
-
-    pub fn expr2(&mut self) -> ExpressionNode {
-        components::expression::pratt::expr(self)
     }
 
     pub fn pratt_expr(&mut self, precedence: u8) -> ExpressionNode {
