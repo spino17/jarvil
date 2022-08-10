@@ -150,7 +150,7 @@ impl PackratParser {
     }
 
     pub fn curr_token_precedence(&self) -> u8 {
-        todo!()
+        self.token_vec[self.lookahead].get_precedence()
     }
 
     pub fn previous_token(&mut self) -> Token {
@@ -396,8 +396,8 @@ impl PackratParser {
         )
     }
 
-    pub fn expect_operator(&mut self) -> TokenNode {
-        todo!()
+    pub fn expect_binary_operator(&mut self) -> TokenNode {
+        self.expects(&["or", "and", ">", ">=", "<", "<=", "==", "!=", "+", "-", "*", "/"])
     }
 
     pub fn expect_terminals(&mut self) -> TokenNode {

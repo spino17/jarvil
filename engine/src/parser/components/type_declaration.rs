@@ -57,8 +57,8 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                         &newline_node,
                     )
                 }
-                CoreToken::NEWLINE => {
-                    let newline_node = parser.expect("\n");
+                CoreToken::NEWLINE | CoreToken::ENDMARKER => {
+                    let newline_node = parser.expect_terminals();
                     LambdaDeclarationNode::new(
                         &type_name_node,
                         args_node,
@@ -70,21 +70,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                         None,
                         &newline_node,
                     )
-                }
-                CoreToken::ENDMARKER => {
-                    let endmarker_node = parser.expect(ENDMARKER);
-                    LambdaDeclarationNode::new(
-                        &type_name_node,
-                        args_node,
-                        None,
-                        &type_keyword_node,
-                        &colon_node,
-                        &lparen_node,
-                        &rparen_node,
-                        None,
-                        &endmarker_node,
-                    )
-                }
+                },
                 _ => {
                     parser.log_missing_token_error_for_multiple_expected_symbols(
                         &["->", "\n"],

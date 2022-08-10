@@ -4,14 +4,19 @@
 // 1. `http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/`
 // 2. `https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html`
 
-use crate::{parser::parser::PackratParser, ast::ast::{ExpressionNode, TokenNode}};
+use crate::{parser::parser::PackratParser, ast::ast::{ExpressionNode}};
 use super::core::{is_expression_starting_with, EXPRESSION_EXPECTED_STARTING_SYMBOLS};
 use crate::ast::ast::ErrornousNode;
 use std::rc::Rc;
 
-pub trait InfixParselets {  // will be implemented by binary as well as logical
-    fn parse(parser: &mut PackratParser, left_expr: &ExpressionNode, operator: &TokenNode) -> ExpressionNode;
-}
+// all the unary operators are right assosiative and all the binary operators are left assosiative.
+// below is the operator precedence in jarvil (lower to higher). This may be quite resembling with Python programming language.
+// "or"
+// "and"
+// ">", ">=", "<", "<=", "==", "!="
+// "-", "+"
+// "/", "*"
+// +, -, not, ()
 
 pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
     // check is_starting_with_expr here
@@ -39,13 +44,19 @@ pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
 pub fn pratt_expr(parser: &mut PackratParser, precedence: u8) -> ExpressionNode {
     let prefix = parser.unary_expr();
     let mut left_expr: ExpressionNode = ExpressionNode::new_with_unary(&prefix);
-    while precedence < parser.curr_token_precedence() {
-        let operator_node = parser.expect_operator();
-        let curr_precedence = operator_node.precedence();
-        let right_expr = parser.pratt_expr(curr_precedence);
-        // TODO - depending on the operator choose between binary or logical
+    loop {
+        let operator_precedence = parser.curr_token_precedence();
+        if precedence < operator_precedence {
+            break;
+        }
+        let operator_node = parser.expect_binary_operator();
+        let right_expr = parser.pratt_expr(operator_precedence);
         // TODO - also if operator is comparison, collect nodes in array to make sense of a < b >= c as a < b and b >= c
-        left_expr = ExpressionNode::new_with_binary(&operator_node, &left_expr, &right_expr)
+        if operator_precedence <= 2 {
+            left_expr = ExpressionNode::new_with_logical(&operator_node, &left_expr, &right_expr);
+        } else {
+            left_expr = ExpressionNode::new_with_binary(&operator_node, &left_expr, &right_expr);
+        }
     }
     left_expr
 }
