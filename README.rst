@@ -1,7 +1,9 @@
 Jarvil 0.1.0
 ============
 
-JARVIL (Just A Rather Very Idiotic Language) is a statically-typed programming language.
+Jarvil is a statically-typed programming language with syntactic resemblance to python. 
+Virtually, Jarvil code is just Python code with types sprinkled all over. These types enable an 
+extra layer of type-check system which checks for type related semantic errors at compile time.
 
 .. contents::
 
@@ -18,13 +20,16 @@ This will install the latest version of ``jarvil``.
 
 Motivation
 ----------
-Jarvil is a programming language made purely out of fun!
-This repo contains all my learnings on language design and writing a compiler. The patterns used in the implementation is heavily 
-inspired by the famous dragon book on compilers (``Compilers: Principles, Techniques, and Tools, Second Edition. Alfred V. Aho, 
-Monica S. Lam, Ravi Sethi, Jeffrey D. Ullman``). Because of the descriptive nature of this repo, it can be used by anyone who wishes
-to learn how to write a compiler for a simple language. All the stages for building the front-end of the compiler is implemented 
-from scratch like lexical analyzer, parser, AST, scopes, type-checker, code-generator etc. For the backend, I have used llvm using the 
-crate inkwell (safe wrapper on llvm-sys crate).
+Two things I really like in the programming world are Python syntax and the concept of statically-typed languages. 
+Why I like Python syntax is quite obvious (I mean who doesn’t like to write English instead of code ;p), the second one is because of my 
+experience working with statically-typed languages like Golang and Rust (and C in my early programming days). 
+After all these years, I can now confidently say that in most cases if my Golang or Rust code compiles and If I am not doing something fancy like 
+multithreading or concurrent programming, then my code would work just fine. This kind of confidence is further strengthened by the efforts of 
+languages like Rust which completely redefined what can be checked at compile time (I mean, data-race and dangling pointer checks at compile time 
+is still unbelievable) and so now even multithreading or concurrency is not a problem any more. 
+So with Rust I can rephrase my confidence as “If my code compiles, I know it will work just fine”. I never gained this confidence with languages 
+like Python or Ruby. Also I always wanted to make my own programming language. So I thought Python with static types would be an interesting project,
+something which TypeScript did for JavaScript. This is the genesis of the Project-Jarvil.
 
 Formal Description
 ------------------
@@ -39,135 +44,37 @@ Below is the complete grammer of the language with a custom (mostly copied from 
     # it surely contains enough so that anyone who wishes to learn language grammer can benefit from it.
 
 
+
     code: block ENDMARKER
 
-    # python style of block
     block: NEWLINE (INDENT stmt)*
 
+    expr: expr bin_op expr | un_op expr | factor
+
+    bin_op: 'or', 'and', '>', '>=', '<', '<=', '==', '!=', '+', '-', '*', '/'
+
+    un_op: '+', '-', 'not'
+
+    factor: <INT>, <FLOAT>, <LITERAL>, 'True', 'False', id, '(' expr ')'
+
+    params: expr (, expr)*
+
     atom: (id | id '(' [params] ')' | id::id '(' [params] ')' ) atom_factor
-    atom_factor:
-        | ('[' params ']' | '.' id ['(' [params] ')']) atom_factor
-        | ()
 
-    param:
-        | expr
-        | bexpr
-        | literal
-        | atom
+    atom_factor: ('.' id ['(' [params] ')'] | '[' expr ']' | '(' [params] ')') atom_factor
 
-    params:
-        | param ',' params
-        | param
+    type_expr: 'int' | 'float' | 'string' | 'bool' | id | '[' type_expr; <INT> ']'
 
-    type:
-        | TYPE
-        | id
+    name_type_spec: id ':' type_expr
 
-    stmt: 
-        | compound_stmt
-        | simple_stmt NEWLINE
+    name_type_specs: name_type_spec (, name_type_spec)*
 
-    simple_stmt:
-        | decls
-        | assign
-        | id '(' [params] ')'
-        | # calling a function, break, continue, return
+    r_assign: expr NEWLINE | 'func' '(' [name_type_specs] ')' ':' block
 
-    decls:
-        | decl ',' decls
-        | decl
+    'let' id '=' r_assign
 
-    decl:
-        | l_decl ['=' param]
+    atom '=' r_assign
 
-    l_decl:
-        | type id
+    'def' id '(' [name_type_specs] ')' ['->' type_expr] ':' block
 
-    assign:
-        | atom '=' param
-
-    compound_stmt:
-        | type_decl_stmt
-        | function_stmt
-        | if_stmt
-        | for_stmt
-        | while_stmt
-
-    type_decl_stmt:
-        | 'type' id ':' struct_block
-        | 'type' id ':' '(' [optparams] ')' ['->' id] NEWLINE
-
-    struct_block:
-        | (INDENT l_decl NEWLINE)*
-
-    function_stmt: 'def' id '(' [optparams] ')' ['->' id] ':' block
-
-    optparams:
-        | l_decl ',' optparams
-        | l_decl
-
-    if_stmt:
-        | 'if' bexpr ':' block elif_stmt
-        | 'if' bexpr ':' block [else_block]
-
-    elif_stmt:
-        | 'elif' bexpr ':' block elif_stmt
-        | 'elif' bexpr ':' block [else_block]
-
-    else_block:
-        | 'else' ':' block
-
-    while_stmt: 'while' bexpr ':' block
-
-    expr: 
-        | term additive
-        | term
-
-    additive:
-        | '+' expr
-        | '-' expr
-        | ()
-
-    term: 
-        | factor multitive
-        | factor
-
-    multitive:
-        | '*' term
-        | '/' term
-
-    factor:
-        | '(' expr ')'
-        | '+' factor
-        | '-' factor
-        | atom
-        | int
-        | float
-
-    comp_op:
-        | '=='
-        | '>='
-        | '>'
-        | '<='
-        | '<'
-
-    bexpr: 
-        | bterm oritive
-
-    oritive: 
-        | 'or' bexpr
-        | ()
-
-    bterm: bfactor anditive
-
-    anditive: 
-        | 'and' bterm
-        | ()
-
-    bfactor:
-        | 'not' bfactor
-        | expr comp_op expr
-        | '(' bexpr ')'
-        | atom
-        | 'True'
-        | 'False'
+    'type' id ':' NEWLINE (INDENT name_type_spec NEWLINE)* | '(' [name_type_specs] ')' ['->' type_expr]
