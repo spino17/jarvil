@@ -169,7 +169,7 @@ impl JarvilError {
                 flag = false;
             } else {
                 if flag && i < code_line_len - 1 {
-                    pointer_line.push('-')
+                    pointer_line.push('^')
                 } else {
                     pointer_line.push(' ');
                 }

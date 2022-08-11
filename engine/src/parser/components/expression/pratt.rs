@@ -1,8 +1,9 @@
-// This is alternate (and better) implementation for expression parser called Pratt Parser.
+// This is alternate (and better) implementation for expression parsing called Pratt Parser.
 // Many famous production-grade parsers like microsoft's `tolerant-php-parser`, `Golang` and `JSLint` uses this technique (among many others).
 // See following for more information:
 // 1. `http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/`
 // 2. `https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html`
+// NOTE: By default jarvil uses this implementation
 
 use crate::{parser::parser::PackratParser, ast::ast::{ExpressionNode, TokenNode}};
 use std::rc::Rc;
