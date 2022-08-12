@@ -22,13 +22,6 @@ use std::{
 
 pub trait Node {
     fn set_parent(&self, parent_node: WeakASTNode);
-    // TODO - below methods should be implemented for all nodes
-    // fn start_index(&self) -> usize;
-    // fn end_index(&self) -> usize;
-    // fn start_line_number(&self) -> usize,
-}
-
-pub trait Linearizer {
     fn start_index(&self) -> usize;
     fn end_index(&self) -> usize;
     fn start_line_number(&self) -> usize;
@@ -121,6 +114,16 @@ impl BlockNode {
 }
 impl Node for BlockNode {
     default_node_impl!(BlockNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().newline.start_index()
+    }
+    fn end_index(&self) -> usize {
+        let stmts_len = self.core_ref().stmts.as_ref().borrow().len();
+        self.core_ref().stmts.as_ref().borrow()[stmts_len - 1].end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().newline.start_line_number()
+    }
 }
 /*
 impl Linearizer for BlockNode {
@@ -207,6 +210,15 @@ impl StatemenIndentWrapperNode {
 }
 impl Node for StatemenIndentWrapperNode {
     default_node_impl!(StatemenIndentWrapperNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -255,6 +267,15 @@ impl SkippedTokens {
 }
 impl Node for SkippedTokens {
     default_node_impl!(SkippedTokens);
+    fn start_index(&self) -> usize {
+        self.core_ref().skipped_tokens[0].start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().skipped_tokens[self.core_ref().skipped_tokens.len() - 1].end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().skipped_tokens[0].start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -337,6 +358,15 @@ impl StatementNode {
 }
 impl Node for StatementNode {
     default_node_impl!(StatementNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementKind);
 
@@ -366,6 +396,15 @@ impl AssignmentNode {
 }
 impl Node for AssignmentNode {
     default_node_impl!(AssignmentNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -396,6 +435,15 @@ impl StructStatementNode {
 }
 impl Node for StructStatementNode {
     default_node_impl!(StructStatementNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().name_type_spec.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().newline.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().name_type_spec.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -444,6 +492,15 @@ impl TypeDeclarationNode {
 }
 impl Node for TypeDeclarationNode {
     default_node_impl!(TypeDeclarationNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(
     TypeDeclarationNode,
@@ -484,6 +541,15 @@ impl StructDeclarationNode {
 }
 impl Node for StructDeclarationNode {
     default_node_impl!(StructDeclarationNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().type_keyword.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().block.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().type_keyword.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -532,6 +598,15 @@ impl LambdaDeclarationNode {
 }
 impl Node for LambdaDeclarationNode {
     default_node_impl!(LambdaDeclarationNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(
     LambdaDeclarationNode,
@@ -585,8 +660,17 @@ impl OkLambdaDeclarationNode {
 
     core_node_access!(CoreOkLambdaDeclarationNode);
 }
-impl OkLambdaDeclarationNode {
+impl Node for OkLambdaDeclarationNode {
     default_node_impl!(OkLambdaDeclarationNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().type_keyword.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().newline.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().type_keyword.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -636,6 +720,15 @@ impl FunctionDeclarationNode {
 }
 impl Node for FunctionDeclarationNode {
     default_node_impl!(FunctionDeclarationNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(
     FunctionDeclarationNode,
@@ -705,6 +798,21 @@ impl OkFunctionDeclarationNode {
 }
 impl Node for OkFunctionDeclarationNode {
     default_node_impl!(OkFunctionDeclarationNode);
+    fn start_index(&self) -> usize {
+        match &self.core_ref().func_keyword {
+            FuncKeywordKind::DEF(token) => token.start_index(),
+            FuncKeywordKind::FUNC(token) => token.start_index(),
+        }
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().block.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        match &self.core_ref().func_keyword {
+            FuncKeywordKind::DEF(token) => token.start_line_number(),
+            FuncKeywordKind::FUNC(token) => token.start_line_number(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -740,6 +848,15 @@ impl VariableDeclarationNode {
 }
 impl Node for VariableDeclarationNode {
     default_node_impl!(VariableDeclarationNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().let_keyword.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().r_assign.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().let_keyword.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -779,6 +896,15 @@ impl NameTypeSpecsNode {
 }
 impl Node for NameTypeSpecsNode {
     default_node_impl!(NameTypeSpecsNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode, NameTypeSpecsKind);
 
@@ -837,6 +963,18 @@ impl OkNameTypeSpecsNode {
 }
 impl Node for OkNameTypeSpecsNode {
     default_node_impl!(OkNameTypeSpecsNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().arg.start_index()
+    }
+    fn end_index(&self) -> usize {
+        match &self.core_ref().remaining_args {
+            Some(remaining_args) => remaining_args.end_index(),
+            None => self.core_ref().arg.end_index()
+        }
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().arg.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -877,6 +1015,15 @@ impl NameTypeSpecNode {
 }
 impl Node for NameTypeSpecNode {
     default_node_impl!(NameTypeSpecNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().name.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().data_type.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().name.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -940,6 +1087,15 @@ impl TypeExpressionNode {
 }
 impl Node for TypeExpressionNode {
     default_node_impl!(TypeExpressionNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(
     TypeExpressionNode,
@@ -979,6 +1135,15 @@ impl AtomicTypeNode {
 }
 impl Node for AtomicTypeNode {
     default_node_impl!(AtomicTypeNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().kind.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().kind.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().kind.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1033,6 +1198,15 @@ impl ArrayTypeNode {
 }
 impl Node for ArrayTypeNode {
     default_node_impl!(ArrayTypeNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().lsquare.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().rsquare.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().lsquare.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1066,6 +1240,15 @@ impl UserDefinedTypeNode {
 }
 impl Node for UserDefinedTypeNode {
     default_node_impl!(UserDefinedTypeNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().name.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().name.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().name.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1126,6 +1309,15 @@ impl TokenNode {
 }
 impl Node for TokenNode {
     default_node_impl!(TokenNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(TokenNode, CoreTokenNode, TokenKind);
 
@@ -1187,6 +1379,15 @@ impl OkTokenNode {
 }
 impl Node for OkTokenNode {
     default_node_impl!(OkTokenNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().token.start_index
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().token.end_index
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().token.line_number
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1217,6 +1418,15 @@ impl MissingTokenNode {
 }
 impl Node for MissingTokenNode {
     default_node_impl!(MissingTokenNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().received_token.start_index
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().received_token.start_index
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().received_token.line_number
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1249,6 +1459,15 @@ impl SkippedTokenNode {
 }
 impl Node for SkippedTokenNode {
     default_node_impl!(SkippedTokenNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().skipped_token.start_index
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().skipped_token.end_index
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().skipped_token.line_number
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1338,6 +1557,15 @@ impl ExpressionNode {
 }
 impl Node for ExpressionNode {
     default_node_impl!(ExpressionNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(ExpressionNode, CoreExpressionNode, ExpressionKind);
 
@@ -1374,6 +1602,15 @@ impl ComparisonNode {
 }
 impl Node for ComparisonNode {
     default_node_impl!(ComparisonNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().operands[0].start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().operands[self.core_ref().operands.len() - 1].end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().operands[0].start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1457,8 +1694,17 @@ impl AtomicExpressionNode {
 
     core_node_access!(CoreAtomicExpressionNode);
 }
-impl AtomicExpressionNode {
+impl Node for AtomicExpressionNode {
     default_node_impl!(AtomicExpressionNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(
     AtomicExpressionNode,
@@ -1492,6 +1738,15 @@ impl ParenthesisedExpressionNode {
 }
 impl Node for ParenthesisedExpressionNode {
     default_node_impl!(ParenthesisedExpressionNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().lparen.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().rparen.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().lparen.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1550,6 +1805,15 @@ impl UnaryExpressionNode {
 }
 impl Node for UnaryExpressionNode {
     default_node_impl!(UnaryExpressionNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(
     UnaryExpressionNode,
@@ -1587,6 +1851,15 @@ impl OnlyUnaryExpressionNode {
 }
 impl Node for OnlyUnaryExpressionNode {
     default_node_impl!(OnlyUnaryExpressionNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().operator.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().unary_expr.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().operator.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1642,15 +1915,15 @@ impl BinaryExpressionNode {
 }
 impl Node for BinaryExpressionNode {
     default_node_impl!(BinaryExpressionNode);
-}
-
-#[derive(Debug, Clone)]
-pub struct CoreLogicalExpressionNode {
-    operator_kind: BinaryOperatorKind,
-    pub operator: TokenNode,
-    pub left_expr: ExpressionNode,
-    pub right_expr: ExpressionNode,
-    parent: Option<WeakASTNode>,
+    fn start_index(&self) -> usize {
+        self.core_ref().left_expr.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().right_expr.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().left_expr.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1681,6 +1954,15 @@ impl ParamsNode {
 }
 impl Node for ParamsNode {
     default_node_impl!(ParamsNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(ParamsNode, CoreParamsNode, ParamsKind);
 
@@ -1725,6 +2007,18 @@ impl OkParamsNode {
 }
 impl Node for OkParamsNode {
     default_node_impl!(OkParamsNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().param.start_index()
+    }
+    fn end_index(&self) -> usize {
+        match &self.core_ref().remaining_params {
+            Some(remaining_params) => remaining_params.end_index(),
+            None => self.core_ref().param.end_index()
+        }
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().param.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1760,6 +2054,15 @@ impl CallExpressionNode {
 }
 impl Node for CallExpressionNode {
     default_node_impl!(CallExpressionNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().function_name.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().rparen.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().function_name.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1801,6 +2104,15 @@ impl ClassMethodCallNode {
 }
 impl Node for ClassMethodCallNode {
     default_node_impl!(ClassMethodCallNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().class_name.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().rparen.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().class_name.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1909,6 +2221,15 @@ impl AtomNode {
 }
 impl Node for AtomNode {
     default_node_impl!(AtomNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1978,6 +2299,15 @@ impl AtomStartNode {
 }
 impl Node for AtomStartNode {
     default_node_impl!(AtomStartNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -2013,6 +2343,15 @@ impl CallNode {
 }
 impl Node for CallNode {
     default_node_impl!(CallNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().atom.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().rparen.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().atom.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -2041,6 +2380,15 @@ impl PropertyAccessNode {
 }
 impl Node for PropertyAccessNode {
     default_node_impl!(PropertyAccessNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().atom.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().propertry.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().atom.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -2082,6 +2430,15 @@ impl MethodAccessNode {
 }
 impl Node for MethodAccessNode {
     default_node_impl!(MethodAccessNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().atom.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().rparen.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().atom.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -2117,6 +2474,15 @@ impl IndexAccessNode {
 }
 impl Node for IndexAccessNode {
     default_node_impl!(IndexAccessNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().atom.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().rsquare.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().atom.start_line_number()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -2157,5 +2523,14 @@ impl RAssignmentNode {
 }
 impl Node for RAssignmentNode {
     default_node_impl!(RAssignmentNode);
+    fn start_index(&self) -> usize {
+        todo!()
+    }
+    fn end_index(&self) -> usize {
+        todo!()
+    }
+    fn start_line_number(&self) -> usize {
+        todo!()
+    }
 }
 default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode, RAssignmentKind);
