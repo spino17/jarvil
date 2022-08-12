@@ -5,7 +5,7 @@
 #[macro_use]
 use jarvil_macros::set_parent;
 #[macro_use]
-use jarvil_macros::NodeUtils;
+use jarvil_macros::Nodify;
 
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
@@ -28,6 +28,12 @@ pub trait Node {
     // fn start_line_number(&self) -> usize,
 }
 
+pub trait Linearizer {
+    fn start_index(&self) -> usize;
+    fn end_index(&self) -> usize;
+    fn start_line_number(&self) -> usize;
+}
+
 pub trait ErrornousNode {
     fn new_with_missing_tokens(
         expected_symbols: &Rc<Vec<&'static str>>,
@@ -36,10 +42,7 @@ pub trait ErrornousNode {
     ) -> Self;
 }
 
-// impl_weak_node!(WeakBlockNode, CoreBlockNode);
-// weak_ast_nodes!((BLOCK, WeakBlockNode));
-
-#[derive(Debug, Clone, NodeUtils)]
+#[derive(Debug, Clone, Nodify)]
 pub enum ASTNode {
     BLOCK(BlockNode),
     STATEMENT_INDENT_WRAPPER(StatemenIndentWrapperNode),
@@ -69,7 +72,6 @@ pub enum ASTNode {
     ONLY_UNARY_EXPRESSION(OnlyUnaryExpressionNode),
     BINARY_EXPRESSION(BinaryExpressionNode),
     COMPARISON(ComparisonNode),
-    // LOGICAL_EXPRESSION(LogicalExpressionNode),
     PARAMS(ParamsNode),
     OK_PARAMS(OkParamsNode),
     CALL_EXPRESSION(CallExpressionNode),
@@ -104,9 +106,9 @@ impl BlockNode {
             scope: None,
             parent: None,
         }));
-        set_parent!(newline, BLOCK, node, WeakBlockNode);
+        impl_set_parent!(newline, BLOCK, node, WeakBlockNode);
         for stmt in &*stmts.as_ref().borrow() {
-            set_parent!(stmt, BLOCK, node, WeakBlockNode);
+            impl_set_parent!(stmt, BLOCK, node, WeakBlockNode);
         }
         BlockNode(node)
     }
@@ -117,7 +119,26 @@ impl BlockNode {
 
     core_node_access!(CoreBlockNode);
 }
-default_node_impl!(BlockNode);
+impl Node for BlockNode {
+    default_node_impl!(BlockNode);
+}
+/*
+impl Linearizer for BlockNode {
+    fn start_index(&self) -> usize {
+        self.core_ref().newline.start_index()
+    }
+     
+    fn end_index(&self) -> usize {
+        let stmts = self.core_ref().stmts.as_ref().borrow();
+        let stmts_len = stmts.len();
+        stmts[stmts_len - 1].end_index()
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().newline.start_line_number()
+    }
+}
+ */
 
 #[derive(Debug, Clone)]
 pub struct CoreStatemenIndentWrapperNode {
@@ -160,7 +181,7 @@ impl StatemenIndentWrapperNode {
             kind: StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens.clone()),
             parent: None,
         }));
-        set_parent!(skipped_tokens, STATEMENT_INDENT_WRAPPER, node, WeakStatemenIndentWrapperNode);
+        impl_set_parent!(skipped_tokens, STATEMENT_INDENT_WRAPPER, node, WeakStatemenIndentWrapperNode);
         StatemenIndentWrapperNode(node)
     }
 
@@ -169,7 +190,7 @@ impl StatemenIndentWrapperNode {
             kind: StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens.clone()),
             parent: None,
         }));
-        set_parent!(skipped_tokens, STATEMENT_INDENT_WRAPPER, node, WeakStatemenIndentWrapperNode);
+        impl_set_parent!(skipped_tokens, STATEMENT_INDENT_WRAPPER, node, WeakStatemenIndentWrapperNode);
         StatemenIndentWrapperNode(node)
     }
 
@@ -178,13 +199,15 @@ impl StatemenIndentWrapperNode {
             kind: StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens.clone()),
             parent: None,
         }));
-        set_parent!(skipped_tokens, STATEMENT_INDENT_WRAPPER, node, WeakStatemenIndentWrapperNode);
+        impl_set_parent!(skipped_tokens, STATEMENT_INDENT_WRAPPER, node, WeakStatemenIndentWrapperNode);
         StatemenIndentWrapperNode(node)
     }
 
     core_node_access!(CoreStatemenIndentWrapperNode);
 }
-default_node_impl!(StatemenIndentWrapperNode);
+impl Node for StatemenIndentWrapperNode {
+    default_node_impl!(StatemenIndentWrapperNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokens {
@@ -201,7 +224,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
-            set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
+            impl_set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
         }
         SkippedTokens(node)
     }
@@ -212,7 +235,7 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
-            set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
+            impl_set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
         }
         SkippedTokens(node)
     }
@@ -223,14 +246,16 @@ impl SkippedTokens {
             parent: None,
         }));
         for skipped_token in extra_newlines.as_ref() {
-            set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
+            impl_set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
         }
         SkippedTokens(node)
     }
 
     core_node_access!(CoreSkippedTokens);
 }
-default_node_impl!(SkippedTokens);
+impl Node for SkippedTokens {
+    default_node_impl!(SkippedTokens);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreStatementNode {
@@ -310,7 +335,9 @@ impl StatementNode {
 
     core_node_access!(CoreStatementNode);
 }
-default_node_impl!(StatementNode);
+impl Node for StatementNode {
+    default_node_impl!(StatementNode);
+}
 default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementKind);
 
 #[derive(Debug, Clone)]
@@ -337,7 +364,9 @@ impl AssignmentNode {
 
     core_node_access!(CoreAssignmentNode);
 }
-default_node_impl!(AssignmentNode);
+impl Node for AssignmentNode {
+    default_node_impl!(AssignmentNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreStructStatementNode {
@@ -365,7 +394,9 @@ impl StructStatementNode {
 
     core_node_access!(CoreStructStatementNode);
 }
-default_node_impl!(StructStatementNode);
+impl Node for StructStatementNode {
+    default_node_impl!(StructStatementNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreTypeDeclarationNode {
@@ -411,7 +442,9 @@ impl TypeDeclarationNode {
 
     core_node_access!(CoreTypeDeclarationNode);
 }
-default_node_impl!(TypeDeclarationNode);
+impl Node for TypeDeclarationNode {
+    default_node_impl!(TypeDeclarationNode);
+}
 default_errornous_node_impl!(
     TypeDeclarationNode,
     CoreTypeDeclarationNode,
@@ -449,7 +482,9 @@ impl StructDeclarationNode {
 
     core_node_access!(CoreStructDeclarationNode);
 }
-default_node_impl!(StructDeclarationNode);
+impl Node for StructDeclarationNode {
+    default_node_impl!(StructDeclarationNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreLambdaDeclarationNode {
@@ -495,7 +530,9 @@ impl LambdaDeclarationNode {
 
     core_node_access!(CoreLambdaDeclarationNode);
 }
-default_node_impl!(LambdaDeclarationNode);
+impl Node for LambdaDeclarationNode {
+    default_node_impl!(LambdaDeclarationNode);
+}
 default_errornous_node_impl!(
     LambdaDeclarationNode,
     CoreLambdaDeclarationNode,
@@ -548,7 +585,9 @@ impl OkLambdaDeclarationNode {
 
     core_node_access!(CoreOkLambdaDeclarationNode);
 }
-default_node_impl!(OkLambdaDeclarationNode);
+impl OkLambdaDeclarationNode {
+    default_node_impl!(OkLambdaDeclarationNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreFunctionDeclarationNode {
@@ -595,7 +634,9 @@ impl FunctionDeclarationNode {
 
     core_node_access!(CoreFunctionDeclarationNode);
 }
-default_node_impl!(FunctionDeclarationNode);
+impl Node for FunctionDeclarationNode {
+    default_node_impl!(FunctionDeclarationNode);
+}
 default_errornous_node_impl!(
     FunctionDeclarationNode,
     CoreFunctionDeclarationNode,
@@ -651,10 +692,10 @@ impl OkFunctionDeclarationNode {
         }));
         match func_keyword {
             FuncKeywordKind::DEF(def_node) => {
-                set_parent!(def_node, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
+                impl_set_parent!(def_node, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
             }
             FuncKeywordKind::FUNC(func_node) => {
-                set_parent!(func_node, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
+                impl_set_parent!(func_node, OK_FUNCTION_DECLARATION, node, WeakOkFunctionDeclarationNode);
             }
         }
         OkFunctionDeclarationNode(node)
@@ -662,7 +703,9 @@ impl OkFunctionDeclarationNode {
 
     core_node_access!(CoreOkFunctionDeclarationNode);
 }
-default_node_impl!(OkFunctionDeclarationNode);
+impl Node for OkFunctionDeclarationNode {
+    default_node_impl!(OkFunctionDeclarationNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreVariableDeclarationNode {
@@ -695,7 +738,9 @@ impl VariableDeclarationNode {
 
     core_node_access!(CoreVariableDeclarationNode);
 }
-default_node_impl!(VariableDeclarationNode);
+impl Node for VariableDeclarationNode {
+    default_node_impl!(VariableDeclarationNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecsNode {
@@ -732,7 +777,9 @@ impl NameTypeSpecsNode {
 
     core_node_access!(CoreNameTypeSpecsNode);
 }
-default_node_impl!(NameTypeSpecsNode);
+impl Node for NameTypeSpecsNode {
+    default_node_impl!(NameTypeSpecsNode);
+}
 default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode, NameTypeSpecsKind);
 
 #[derive(Debug, Clone)]
@@ -788,7 +835,9 @@ impl OkNameTypeSpecsNode {
 
     core_node_access!(CoreOkNameTypeSpecsNode);
 }
-default_node_impl!(OkNameTypeSpecsNode);
+impl Node for OkNameTypeSpecsNode {
+    default_node_impl!(OkNameTypeSpecsNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecNode {
@@ -826,7 +875,9 @@ impl NameTypeSpecNode {
 
     core_node_access!(CoreNameTypeSpecNode);
 }
-default_node_impl!(NameTypeSpecNode);
+impl Node for NameTypeSpecNode {
+    default_node_impl!(NameTypeSpecNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreTypeExpressionNode {
@@ -887,7 +938,9 @@ impl TypeExpressionNode {
 
     core_node_access!(CoreTypeExpressionNode);
 }
-default_node_impl!(TypeExpressionNode);
+impl Node for TypeExpressionNode {
+    default_node_impl!(TypeExpressionNode);
+}
 default_errornous_node_impl!(
     TypeExpressionNode,
     CoreTypeExpressionNode,
@@ -924,7 +977,9 @@ impl AtomicTypeNode {
 
     core_node_access!(CoreAtomicTypeNode);
 }
-default_node_impl!(AtomicTypeNode);
+impl Node for AtomicTypeNode {
+    default_node_impl!(AtomicTypeNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreArrayTypeNode {
@@ -976,7 +1031,9 @@ impl ArrayTypeNode {
 
     core_node_access!(CoreArrayTypeNode);
 }
-default_node_impl!(ArrayTypeNode);
+impl Node for ArrayTypeNode {
+    default_node_impl!(ArrayTypeNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreUserDefinedTypeNode {
@@ -1007,7 +1064,9 @@ impl UserDefinedTypeNode {
 
     core_node_access!(CoreUserDefinedTypeNode);
 }
-default_node_impl!(UserDefinedTypeNode);
+impl Node for UserDefinedTypeNode {
+    default_node_impl!(UserDefinedTypeNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreTokenNode {
@@ -1065,7 +1124,9 @@ impl TokenNode {
 
     core_node_access!(CoreTokenNode);
 }
-default_node_impl!(TokenNode);
+impl Node for TokenNode {
+    default_node_impl!(TokenNode);
+}
 default_errornous_node_impl!(TokenNode, CoreTokenNode, TokenKind);
 
 #[derive(Debug, Clone)]
@@ -1124,7 +1185,9 @@ impl OkTokenNode {
 
     core_node_access!(CoreOkTokenNode);
 }
-default_node_impl!(OkTokenNode);
+impl Node for OkTokenNode {
+    default_node_impl!(OkTokenNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreMissingTokenNode {
@@ -1152,7 +1215,9 @@ impl MissingTokenNode {
 
     core_node_access!(CoreMissingTokenNode);
 }
-default_node_impl!(MissingTokenNode);
+impl Node for MissingTokenNode {
+    default_node_impl!(MissingTokenNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokenNode {
@@ -1182,7 +1247,9 @@ impl SkippedTokenNode {
 
     core_node_access!(CoreSkippedTokenNode);
 }
-default_node_impl!(SkippedTokenNode);
+impl Node for SkippedTokenNode {
+    default_node_impl!(SkippedTokenNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreExpressionNode {
@@ -1269,7 +1336,9 @@ impl ExpressionNode {
 
     core_node_access!(CoreExpressionNode);
 }
-default_node_impl!(ExpressionNode);
+impl Node for ExpressionNode {
+    default_node_impl!(ExpressionNode);
+}
 default_errornous_node_impl!(ExpressionNode, CoreExpressionNode, ExpressionKind);
 
 #[derive(Debug, Clone)]
@@ -1289,17 +1358,23 @@ impl ComparisonNode {
             parent: None,
         }));
         for operand in operands.as_ref() {
-            set_parent!(operand, COMPARISON, node, WeakComparisonNode);
+            impl_set_parent!(operand, COMPARISON, node, WeakComparisonNode);
         }
         for operator in operators.as_ref() {
-            set_parent!(operator, COMPARISON, node, WeakComparisonNode);
+            impl_set_parent!(operator, COMPARISON, node, WeakComparisonNode);
         }
         ComparisonNode(node)
     }
 
+    pub fn evaluate(&self) -> String {
+        todo!()
+    }
+
     core_node_access!(CoreComparisonNode);
 }
-default_node_impl!(ComparisonNode);
+impl Node for ComparisonNode {
+    default_node_impl!(ComparisonNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomicExpressionNode {
@@ -1382,7 +1457,9 @@ impl AtomicExpressionNode {
 
     core_node_access!(CoreAtomicExpressionNode);
 }
-default_node_impl!(AtomicExpressionNode);
+impl AtomicExpressionNode {
+    default_node_impl!(AtomicExpressionNode);
+}
 default_errornous_node_impl!(
     AtomicExpressionNode,
     CoreAtomicExpressionNode,
@@ -1413,7 +1490,9 @@ impl ParenthesisedExpressionNode {
 
     core_node_access!(CoreParenthesisedExpressionNode);
 }
-default_node_impl!(ParenthesisedExpressionNode);
+impl Node for ParenthesisedExpressionNode {
+    default_node_impl!(ParenthesisedExpressionNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreUnaryExpressionNode {
@@ -1463,9 +1542,15 @@ impl UnaryExpressionNode {
         UnaryExpressionNode(node)
     }
 
+    pub fn evaluate(&self) -> String {
+        todo!()
+    }
+
     core_node_access!(CoreUnaryExpressionNode);
 }
-default_node_impl!(UnaryExpressionNode);
+impl Node for UnaryExpressionNode {
+    default_node_impl!(UnaryExpressionNode);
+}
 default_errornous_node_impl!(
     UnaryExpressionNode,
     CoreUnaryExpressionNode,
@@ -1500,7 +1585,9 @@ impl OnlyUnaryExpressionNode {
 
     core_node_access!(CoreOnlyUnaryExpressionNode);
 }
-default_node_impl!(OnlyUnaryExpressionNode);
+impl Node for OnlyUnaryExpressionNode {
+    default_node_impl!(OnlyUnaryExpressionNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreBinaryExpressionNode {
@@ -1547,9 +1634,15 @@ impl BinaryExpressionNode {
         BinaryExpressionNode(node)
     }
 
+    pub fn evaluate(&self) -> String {
+        todo!()
+    }
+
     core_node_access!(CoreBinaryExpressionNode);
 }
-default_node_impl!(BinaryExpressionNode);
+impl Node for BinaryExpressionNode {
+    default_node_impl!(BinaryExpressionNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreLogicalExpressionNode {
@@ -1586,7 +1679,9 @@ impl ParamsNode {
 
     core_node_access!(CoreParamsNode);
 }
-default_node_impl!(ParamsNode);
+impl Node for ParamsNode {
+    default_node_impl!(ParamsNode);
+}
 default_errornous_node_impl!(ParamsNode, CoreParamsNode, ParamsKind);
 
 #[derive(Debug, Clone)]
@@ -1628,7 +1723,9 @@ impl OkParamsNode {
 
     core_node_access!(CoreOkParamsNode);
 }
-default_node_impl!(OkParamsNode);
+impl Node for OkParamsNode {
+    default_node_impl!(OkParamsNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreCallExpressionNode {
@@ -1661,7 +1758,9 @@ impl CallExpressionNode {
 
     core_node_access!(CoreCallExpressionNode);
 }
-default_node_impl!(CallExpressionNode);
+impl Node for CallExpressionNode {
+    default_node_impl!(CallExpressionNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreClassMethodCallNode {
@@ -1700,7 +1799,9 @@ impl ClassMethodCallNode {
 
     core_node_access!(CoreClassMethodCallNode);
 }
-default_node_impl!(ClassMethodCallNode);
+impl Node for ClassMethodCallNode {
+    default_node_impl!(ClassMethodCallNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomNode {
@@ -1806,7 +1907,9 @@ impl AtomNode {
 
     core_node_access!(CoreAtomNode);
 }
-default_node_impl!(AtomNode);
+impl Node for AtomNode {
+    default_node_impl!(AtomNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreAtomStartNode {
@@ -1873,7 +1976,9 @@ impl AtomStartNode {
 
     core_node_access!(CoreAtomStartNode);
 }
-default_node_impl!(AtomStartNode);
+impl Node for AtomStartNode {
+    default_node_impl!(AtomStartNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreCallNode {
@@ -1906,7 +2011,9 @@ impl CallNode {
 
     core_node_access!(CoreCallNode);
 }
-default_node_impl!(CallNode);
+impl Node for CallNode {
+    default_node_impl!(CallNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CorePropertyAccessNode {
@@ -1932,7 +2039,9 @@ impl PropertyAccessNode {
 
     core_node_access!(CorePropertyAccessNode);
 }
-default_node_impl!(PropertyAccessNode);
+impl Node for PropertyAccessNode {
+    default_node_impl!(PropertyAccessNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreMethodAccessNode {
@@ -1971,7 +2080,9 @@ impl MethodAccessNode {
 
     core_node_access!(CoreMethodAccessNode);
 }
-default_node_impl!(MethodAccessNode);
+impl Node for MethodAccessNode {
+    default_node_impl!(MethodAccessNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreIndexAccessNode {
@@ -2004,7 +2115,9 @@ impl IndexAccessNode {
 
     core_node_access!(CoreIndexAccessNode);
 }
-default_node_impl!(IndexAccessNode);
+impl Node for IndexAccessNode {
+    default_node_impl!(IndexAccessNode);
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreRAssignmentNode {
@@ -2042,5 +2155,7 @@ impl RAssignmentNode {
 
     core_node_access!(CoreRAssignmentNode);
 }
-default_node_impl!(RAssignmentNode);
+impl Node for RAssignmentNode {
+    default_node_impl!(RAssignmentNode);
+}
 default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode, RAssignmentKind);

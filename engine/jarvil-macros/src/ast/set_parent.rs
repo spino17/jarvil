@@ -152,9 +152,9 @@ pub fn impl_set_parent_macro(parent_node: &syn::Ident, weak_node: &syn::Ident, a
     let stmts = &block.stmts;
 
     let (node_args, optional_node_args) = get_node_args(&sig.inputs);
-    let set_parents_macro_stmt = get_set_parents_macro_expr("set_parents", &node_args, parent_node, weak_node);
+    let set_parents_macro_stmt = get_set_parents_macro_expr("impl_set_parents", &node_args, parent_node, weak_node);
     let set_parents_optional_macro_stmt =
-        get_set_parents_macro_expr("set_parents_optional", &optional_node_args, parent_node, weak_node);
+        get_set_parents_macro_expr("impl_set_parents_optional", &optional_node_args, parent_node, weak_node);
     let first_stmt = &stmts[0]; // TODO - check this first statement is let node = ...
     let remaining_stmt = &stmts[1..];
     let gen = quote! {
