@@ -7,6 +7,7 @@ use jarvil_macros::set_parent;
 #[macro_use]
 use jarvil_macros::Nodify;
 
+use crate::parser::components::expression::atom;
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
 use crate::{
@@ -125,23 +126,6 @@ impl Node for BlockNode {
         self.core_ref().newline.start_line_number()
     }
 }
-/*
-impl Linearizer for BlockNode {
-    fn start_index(&self) -> usize {
-        self.core_ref().newline.start_index()
-    }
-     
-    fn end_index(&self) -> usize {
-        let stmts = self.core_ref().stmts.as_ref().borrow();
-        let stmts_len = stmts.len();
-        stmts[stmts_len - 1].end_index()
-    }
-
-    fn start_line_number(&self) -> usize {
-        self.core_ref().newline.start_line_number()
-    }
-}
- */
 
 #[derive(Debug, Clone)]
 pub struct CoreStatemenIndentWrapperNode {
@@ -211,13 +195,31 @@ impl StatemenIndentWrapperNode {
 impl Node for StatemenIndentWrapperNode {
     default_node_impl!(StatemenIndentWrapperNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            StatementIndentWrapperKind::CORRECTLY_INDENTED(stmt) => stmt.start_index(),
+            StatementIndentWrapperKind::INCORRECTLY_INDENTED((stmt, _)) => stmt.start_index(),
+            StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.start_index(),
+            StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.start_index(),
+            StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens) => skipped_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            StatementIndentWrapperKind::CORRECTLY_INDENTED(stmt) => stmt.end_index(),
+            StatementIndentWrapperKind::INCORRECTLY_INDENTED((stmt, _)) => stmt.end_index(),
+            StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.end_index(),
+            StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.end_index(),
+            StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens) => skipped_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            StatementIndentWrapperKind::CORRECTLY_INDENTED(stmt) => stmt.start_line_number(),
+            StatementIndentWrapperKind::INCORRECTLY_INDENTED((stmt, _)) => stmt.start_line_number(),
+            StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.start_line_number(),
+            StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.start_line_number(),
+            StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens) => skipped_tokens.start_line_number(),
+        }
     }
 }
 
@@ -359,13 +361,37 @@ impl StatementNode {
 impl Node for StatementNode {
     default_node_impl!(StatementNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            StatementKind::EXPRESSION((expr, _)) => expr.start_index(),
+            StatementKind::ASSIGNMENT(assignment) => assignment.start_index(),
+            StatementKind::VARIABLE_DECLARATION(variable_decl) => variable_decl.start_index(), 
+            StatementKind::FUNCTION_DECLARATION(func_decl) => func_decl.start_index(),
+            StatementKind::TYPE_DECLARATION(type_decl) => type_decl.start_index(),
+            StatementKind::STRUCT_STATEMENT(struct_stmt) => struct_stmt.start_index(),
+            StatementKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            StatementKind::EXPRESSION((_, newline)) => newline.end_index(),
+            StatementKind::ASSIGNMENT(assignment) => assignment.end_index(),
+            StatementKind::VARIABLE_DECLARATION(variable_decl) => variable_decl.end_index(), 
+            StatementKind::FUNCTION_DECLARATION(func_decl) => func_decl.end_index(),
+            StatementKind::TYPE_DECLARATION(type_decl) => type_decl.end_index(),
+            StatementKind::STRUCT_STATEMENT(struct_stmt) => struct_stmt.end_index(),
+            StatementKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            StatementKind::EXPRESSION((expr, _)) => expr.start_line_number(),
+            StatementKind::ASSIGNMENT(assignment) => assignment.start_line_number(),
+            StatementKind::VARIABLE_DECLARATION(variable_decl) => variable_decl.start_line_number(), 
+            StatementKind::FUNCTION_DECLARATION(func_decl) => func_decl.start_line_number(),
+            StatementKind::TYPE_DECLARATION(type_decl) => type_decl.start_line_number(),
+            StatementKind::STRUCT_STATEMENT(struct_stmt) => struct_stmt.start_line_number(),
+            StatementKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementKind);
@@ -493,13 +519,25 @@ impl TypeDeclarationNode {
 impl Node for TypeDeclarationNode {
     default_node_impl!(TypeDeclarationNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            TypeDeclarationKind::STRUCT(struct_decl) => struct_decl.start_index(),
+            TypeDeclarationKind::LAMBDA(lambda_decl) => lambda_decl.start_index(),
+            TypeDeclarationKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            TypeDeclarationKind::STRUCT(struct_decl) => struct_decl.end_index(),
+            TypeDeclarationKind::LAMBDA(lambda_decl) => lambda_decl.end_index(),
+            TypeDeclarationKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            TypeDeclarationKind::STRUCT(struct_decl) => struct_decl.start_line_number(),
+            TypeDeclarationKind::LAMBDA(lambda_decl) => lambda_decl.start_line_number(),
+            TypeDeclarationKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(
@@ -599,13 +637,22 @@ impl LambdaDeclarationNode {
 impl Node for LambdaDeclarationNode {
     default_node_impl!(LambdaDeclarationNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            LambdaDeclarationKind::OK(ok_lambda_decl) => ok_lambda_decl.start_index(),
+            LambdaDeclarationKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            LambdaDeclarationKind::OK(ok_lambda_decl) => ok_lambda_decl.end_index(),
+            LambdaDeclarationKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            LambdaDeclarationKind::OK(ok_lambda_decl) => ok_lambda_decl.start_line_number(),
+            LambdaDeclarationKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(
@@ -721,13 +768,22 @@ impl FunctionDeclarationNode {
 impl Node for FunctionDeclarationNode {
     default_node_impl!(FunctionDeclarationNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            FunctionDeclarationKind::OK(ok_func_decl) => ok_func_decl.start_index(),
+            FunctionDeclarationKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            FunctionDeclarationKind::OK(ok_func_decl) => ok_func_decl.end_index(),
+            FunctionDeclarationKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            FunctionDeclarationKind::OK(ok_func_decl) => ok_func_decl.start_line_number(),
+            FunctionDeclarationKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(
@@ -897,13 +953,22 @@ impl NameTypeSpecsNode {
 impl Node for NameTypeSpecsNode {
     default_node_impl!(NameTypeSpecsNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            NameTypeSpecsKind::OK(ok_name_type_specs) => ok_name_type_specs.start_index(),
+            NameTypeSpecsKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            NameTypeSpecsKind::OK(ok_name_type_specs) => ok_name_type_specs.end_index(),
+            NameTypeSpecsKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            NameTypeSpecsKind::OK(ok_name_type_specs) => ok_name_type_specs.start_line_number(),
+            NameTypeSpecsKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode, NameTypeSpecsKind);
@@ -1088,13 +1153,28 @@ impl TypeExpressionNode {
 impl Node for TypeExpressionNode {
     default_node_impl!(TypeExpressionNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            TypeExpressionKind::ATOMIC(atomic) => atomic.start_index(),
+            TypeExpressionKind::USER_DEFINED(user_defined) => user_defined.start_index(),
+            TypeExpressionKind::ARRAY(array) => array.start_index(),
+            TypeExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            TypeExpressionKind::ATOMIC(atomic) => atomic.end_index(),
+            TypeExpressionKind::USER_DEFINED(user_defined) => user_defined.end_index(),
+            TypeExpressionKind::ARRAY(array) => array.end_index(),
+            TypeExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            TypeExpressionKind::ATOMIC(atomic) => atomic.start_line_number(),
+            TypeExpressionKind::USER_DEFINED(user_defined) => user_defined.start_line_number(),
+            TypeExpressionKind::ARRAY(array) => array.start_line_number(),
+            TypeExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(
@@ -1310,13 +1390,25 @@ impl TokenNode {
 impl Node for TokenNode {
     default_node_impl!(TokenNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            TokenKind::OK(ok_token) => ok_token.start_index(),
+            TokenKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+            TokenKind::SKIPPED(skipped_tokens) => skipped_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            TokenKind::OK(ok_token) => ok_token.end_index(),
+            TokenKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+            TokenKind::SKIPPED(skipped_tokens) => skipped_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            TokenKind::OK(ok_token) => ok_token.start_line_number(),
+            TokenKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+            TokenKind::SKIPPED(skipped_tokens) => skipped_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(TokenNode, CoreTokenNode, TokenKind);
@@ -1478,11 +1570,9 @@ pub struct CoreExpressionNode {
 
 #[derive(Debug, Clone)]
 pub enum ExpressionKind {
-    // ATOMIC(AtomicExpressionNode),
     UNARY(UnaryExpressionNode),
     BINARY(BinaryExpressionNode),
     COMPARISON(ComparisonNode),
-    // LOGICAL(LogicalExpressionNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -1558,13 +1648,28 @@ impl ExpressionNode {
 impl Node for ExpressionNode {
     default_node_impl!(ExpressionNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            ExpressionKind::UNARY(unary_expr) => unary_expr.start_index(),
+            ExpressionKind::BINARY(binary_expr) => binary_expr.start_index(),
+            ExpressionKind::COMPARISON(comp_expr) => comp_expr.start_index(),
+            ExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            ExpressionKind::UNARY(unary_expr) => unary_expr.end_index(),
+            ExpressionKind::BINARY(binary_expr) => binary_expr.end_index(),
+            ExpressionKind::COMPARISON(comp_expr) => comp_expr.end_index(),
+            ExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            ExpressionKind::UNARY(unary_expr) => unary_expr.start_line_number(),
+            ExpressionKind::BINARY(binary_expr) => binary_expr.start_line_number(),
+            ExpressionKind::COMPARISON(comp_expr) => comp_expr.start_line_number(),
+            ExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(ExpressionNode, CoreExpressionNode, ExpressionKind);
@@ -1592,10 +1697,6 @@ impl ComparisonNode {
             impl_set_parent!(operator, COMPARISON, node, WeakComparisonNode);
         }
         ComparisonNode(node)
-    }
-
-    pub fn evaluate(&self) -> String {
-        todo!()
     }
 
     core_node_access!(CoreComparisonNode);
@@ -1697,13 +1798,37 @@ impl AtomicExpressionNode {
 impl Node for AtomicExpressionNode {
     default_node_impl!(AtomicExpressionNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            AtomicExpressionKind::BOOL_VALUE(token) => token.start_index(),
+            AtomicExpressionKind::INTEGER(token) => token.start_index(),
+            AtomicExpressionKind::FLOATING_POINT_NUMBER(token) => token.start_index(),
+            AtomicExpressionKind::LITERAL(token) => token.start_index(),
+            AtomicExpressionKind::PARENTHESISED_EXPRESSION(parenthesised_expr) => parenthesised_expr.start_index(),
+            AtomicExpressionKind::ATOM(atom) => atom.start_index(),
+            AtomicExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            AtomicExpressionKind::BOOL_VALUE(token) => token.end_index(),
+            AtomicExpressionKind::INTEGER(token) => token.end_index(),
+            AtomicExpressionKind::FLOATING_POINT_NUMBER(token) => token.end_index(),
+            AtomicExpressionKind::LITERAL(token) => token.end_index(),
+            AtomicExpressionKind::PARENTHESISED_EXPRESSION(parenthesised_expr) => parenthesised_expr.end_index(),
+            AtomicExpressionKind::ATOM(atom) => atom.end_index(),
+            AtomicExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            AtomicExpressionKind::BOOL_VALUE(token) => token.start_line_number(),
+            AtomicExpressionKind::INTEGER(token) => token.start_line_number(),
+            AtomicExpressionKind::FLOATING_POINT_NUMBER(token) => token.start_line_number(),
+            AtomicExpressionKind::LITERAL(token) => token.start_line_number(),
+            AtomicExpressionKind::PARENTHESISED_EXPRESSION(parenthesised_expr) => parenthesised_expr.start_line_number(),
+            AtomicExpressionKind::ATOM(atom) => atom.start_line_number(),
+            AtomicExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(
@@ -1797,22 +1922,30 @@ impl UnaryExpressionNode {
         UnaryExpressionNode(node)
     }
 
-    pub fn evaluate(&self) -> String {
-        todo!()
-    }
-
     core_node_access!(CoreUnaryExpressionNode);
 }
 impl Node for UnaryExpressionNode {
     default_node_impl!(UnaryExpressionNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            UnaryExpressionKind::ATOMIC(atomic) => atomic.start_index(),
+            UnaryExpressionKind::UNARY(only_unary) => only_unary.start_index(),
+            UnaryExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            UnaryExpressionKind::ATOMIC(atomic) => atomic.end_index(),
+            UnaryExpressionKind::UNARY(only_unary) => only_unary.end_index(),
+            UnaryExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            UnaryExpressionKind::ATOMIC(atomic) => atomic.start_line_number(),
+            UnaryExpressionKind::UNARY(only_unary) => only_unary.start_line_number(),
+            UnaryExpressionKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(
@@ -1907,10 +2040,6 @@ impl BinaryExpressionNode {
         BinaryExpressionNode(node)
     }
 
-    pub fn evaluate(&self) -> String {
-        todo!()
-    }
-
     core_node_access!(CoreBinaryExpressionNode);
 }
 impl Node for BinaryExpressionNode {
@@ -1955,13 +2084,22 @@ impl ParamsNode {
 impl Node for ParamsNode {
     default_node_impl!(ParamsNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            ParamsKind::OK(ok_params) => ok_params.start_index(),
+            ParamsKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            ParamsKind::OK(ok_params) => ok_params.end_index(),
+            ParamsKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            ParamsKind::OK(ok_params) => ok_params.start_line_number(),
+            ParamsKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(ParamsNode, CoreParamsNode, ParamsKind);
@@ -2222,13 +2360,31 @@ impl AtomNode {
 impl Node for AtomNode {
     default_node_impl!(AtomNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            AtomKind::ATOM_START(atom_start) => atom_start.start_index(),
+            AtomKind::CALL(call) => call.start_index(),
+            AtomKind::PROPERTRY_ACCESS(property_access) => property_access.start_index(),
+            AtomKind::METHOD_ACCESS(method_access) => method_access.start_index(),
+            AtomKind::INDEX_ACCESS(index_access) => index_access.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            AtomKind::ATOM_START(atom_start) => atom_start.end_index(),
+            AtomKind::CALL(call) => call.end_index(),
+            AtomKind::PROPERTRY_ACCESS(property_access) => property_access.end_index(),
+            AtomKind::METHOD_ACCESS(method_access) => method_access.end_index(),
+            AtomKind::INDEX_ACCESS(index_access) => index_access.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            AtomKind::ATOM_START(atom_start) => atom_start.start_line_number(),
+            AtomKind::CALL(call) => call.start_line_number(),
+            AtomKind::PROPERTRY_ACCESS(property_access) => property_access.start_line_number(),
+            AtomKind::METHOD_ACCESS(method_access) => method_access.start_line_number(),
+            AtomKind::INDEX_ACCESS(index_access) => index_access.start_line_number(),
+        }
     }
 }
 
@@ -2300,13 +2456,25 @@ impl AtomStartNode {
 impl Node for AtomStartNode {
     default_node_impl!(AtomStartNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            AtomStartKind::IDENTIFIER(token) => token.start_index(),
+            AtomStartKind::FUNCTION_CALL(function_call) => function_call.start_index(),
+            AtomStartKind::CLASS_METHOD_CALL(class_method_call) => class_method_call.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            AtomStartKind::IDENTIFIER(token) => token.end_index(),
+            AtomStartKind::FUNCTION_CALL(function_call) => function_call.end_index(),
+            AtomStartKind::CLASS_METHOD_CALL(class_method_call) => class_method_call.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            AtomStartKind::IDENTIFIER(token) => token.start_line_number(),
+            AtomStartKind::FUNCTION_CALL(function_call) => function_call.start_line_number(),
+            AtomStartKind::CLASS_METHOD_CALL(class_method_call) => class_method_call.start_line_number(),
+        }
     }
 }
 
@@ -2524,13 +2692,25 @@ impl RAssignmentNode {
 impl Node for RAssignmentNode {
     default_node_impl!(RAssignmentNode);
     fn start_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            RAssignmentKind::LAMBDA(func_decl) => func_decl.start_index(),
+            RAssignmentKind::EXPRESSION((expr, _)) => expr.start_index(),
+            RAssignmentKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
+        }
     }
     fn end_index(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            RAssignmentKind::LAMBDA(func_decl) => func_decl.end_index(),
+            RAssignmentKind::EXPRESSION((_, newline)) => newline.end_index(),
+            RAssignmentKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+        }
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        match &self.core_ref().kind {
+            RAssignmentKind::LAMBDA(func_decl) => func_decl.start_line_number(),
+            RAssignmentKind::EXPRESSION((expr, _)) => expr.start_line_number(),
+            RAssignmentKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
+        }
     }
 }
 default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode, RAssignmentKind);
