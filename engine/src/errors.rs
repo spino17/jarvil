@@ -67,22 +67,22 @@ impl LexicalErrorData {
     }
 }
 
-pub enum ParseErrorKind {
+pub enum JarvilErrorKind {
     LEXICAL_ERROR,
     SYNTAX_ERROR,
     SEMANTIC_ERROR,
 }
 
-impl Display for ParseErrorKind {
+impl Display for JarvilErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            ParseErrorKind::LEXICAL_ERROR => {
+            JarvilErrorKind::LEXICAL_ERROR => {
                 write!(f, "{}", format!("{}", "---> Lexical Error".bright_red()))
             }
-            ParseErrorKind::SYNTAX_ERROR => {
+            JarvilErrorKind::SYNTAX_ERROR => {
                 write!(f, "{}", format!("{}", "---> Syntax Error".bright_red()))
             }
-            ParseErrorKind::SEMANTIC_ERROR => {
+            JarvilErrorKind::SEMANTIC_ERROR => {
                 write!(f, "{}", format!("{}", "---> Semantic Error".bright_red()))
             }
         }
@@ -110,7 +110,7 @@ impl JarvilError {
         line_start_index: usize,
         code_line: String,
         err_message: String,
-        err_kind: ParseErrorKind,
+        err_kind: JarvilErrorKind,
     ) -> String {
         if err_index < line_start_index {
             unreachable!("lookahead at which error occured can never be less than the start index of the line")
@@ -150,7 +150,7 @@ impl JarvilError {
         line_start_index: usize,
         code_line: String,
         err_message: String,
-        err_kind: ParseErrorKind,
+        err_kind: JarvilErrorKind,
     ) -> String {
         if start_err_index < line_start_index || end_err_index < line_start_index {
             unreachable!("lookahead at which error occured can never be less than the start index of the line")
@@ -199,7 +199,7 @@ impl JarvilError {
         end_line_number: usize,
         mut code_lines: Vec<String>,
         err_message: String,
-        err_kind: ParseErrorKind,
+        err_kind: JarvilErrorKind,
     ) -> String {
         if end_line_number < start_line_number {
             unreachable!("end line number cannot be less than start line number")

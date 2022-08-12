@@ -14,7 +14,7 @@ use crate::ast::ast::{ErrornousNode, OkTokenKind};
 use crate::code::Code;
 use crate::constants::common::{ENDMARKER, IDENTIFIER};
 use crate::context;
-use crate::errors::{JarvilError, ParseErrorKind};
+use crate::errors::{JarvilError, JarvilErrorKind};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
@@ -240,7 +240,7 @@ impl PackratParser {
                 line_start_index,
                 code_line,
                 err_str,
-                ParseErrorKind::SYNTAX_ERROR,
+                JarvilErrorKind::SYNTAX_ERROR,
             );
             let err = JarvilError::new(line_number, line_number, err_message);
             context::push_error(err);
@@ -289,7 +289,7 @@ impl PackratParser {
                 line_start_index,
                 code_line,
                 err_str,
-                ParseErrorKind::SYNTAX_ERROR,
+                JarvilErrorKind::SYNTAX_ERROR,
             );
             let err = JarvilError::new(line_number, line_number, err_message);
             context::push_error(err);
@@ -317,7 +317,7 @@ impl PackratParser {
                 line_start_index,
                 code_line,
                 err_str,
-                ParseErrorKind::SYNTAX_ERROR,
+                JarvilErrorKind::SYNTAX_ERROR,
             );
             let err = JarvilError::new(line_number, line_number, err_message);
             context::push_error(err);
@@ -348,10 +348,48 @@ impl PackratParser {
                 end_line_number,
                 code_lines,
                 err_str,
-                ParseErrorKind::SYNTAX_ERROR,
+                JarvilErrorKind::SYNTAX_ERROR,
             );
             let err = JarvilError::new(start_line_number, end_line_number, err_message);
             context::push_error(err);
+        }
+    }
+
+    pub fn log_invalid_l_value_error(&mut self, start_index: usize, end_index: usize, start_line_number: usize) {
+        if self.ignore_all_errors {
+            return;
+        }
+        let errors_len = context::errors_len();
+        if errors_len > 0 && context::curr_error_line_number() == start_line_number {
+            return;
+        } else {
+            let (start_line_number, end_line_number) = self.code.line_range_from_indexes(
+                start_index, end_index, start_line_number
+            );
+            let err_str = "expression cannot be assigned a value".to_string();
+            if start_line_number == end_line_number {
+                let err_message = JarvilError::form_single_line_underline_pointer_error(
+                    start_index,
+                    end_index,
+                    start_line_number,
+                    self.code.get_line_start_index(start_line_number),
+                    self.code.line(start_line_number),
+                    err_str,
+                    JarvilErrorKind::SYNTAX_ERROR,
+                );
+                let err = JarvilError::new(start_line_number, end_line_number, err_message);
+                context::push_error(err);
+            } else {
+                let err_message = JarvilError::form_multi_line_error(
+                    start_line_number, 
+                    end_line_number, 
+                    self.code.lines(start_line_number, end_line_number),
+                    err_str, 
+                    JarvilErrorKind::SYNTAX_ERROR
+                );
+                let err = JarvilError::new(start_line_number, end_line_number, err_message);
+                context::push_error(err);
+            }
         }
     }
 

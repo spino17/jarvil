@@ -89,20 +89,40 @@ impl Code {
         end_index - start_index
     }
 
-    pub fn line_data(
-        &self,
-        mut curr_line_number: usize,
-        index: usize,
-    ) -> (String, usize, usize, usize) {
+    pub fn line_range_from_indexes(&self, start_index: usize, end_index: usize, curr_line_number: usize) -> (usize, usize) {
+        let (start_line_number, _) = self.line_number_from_index(curr_line_number, start_index);
+        let code_lines = self.extract_code_lines();
+        let mut curr_line_number = start_line_number;
+        loop {
+            let curr_start_index = code_lines[curr_line_number - 1];
+            if end_index < curr_start_index {
+                break;
+            }
+            curr_line_number = curr_line_number + 1;
+        }
+        let end_line_number = curr_line_number - 1;
+        (start_line_number, end_line_number)
+    }
+
+    pub fn line_number_from_index(&self, mut curr_line_number: usize, index: usize) -> (usize, usize) {
         let code_lines = self.extract_code_lines();
         loop {
             let line_start_index = code_lines[curr_line_number - 1];
             if index >= line_start_index {
-                let s = self.line(curr_line_number);
-                return (s, line_start_index, curr_line_number, index);
+                return (curr_line_number, line_start_index)
             }
             curr_line_number = curr_line_number - 1;
         }
+    }
+
+    pub fn line_data(
+        &self,
+        curr_line_number: usize,
+        index: usize,
+    ) -> (String, usize, usize, usize) {
+        let (curr_line_number, line_start_index) = self.line_number_from_index(curr_line_number, index);
+        let s = self.line(curr_line_number);
+        (s, line_start_index, curr_line_number, index)
     }
 }
 

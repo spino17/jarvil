@@ -2,7 +2,7 @@ use crate::code::Code;
 use crate::context;
 use crate::errors::JarvilError;
 use crate::errors::LexicalErrorData;
-use crate::errors::ParseErrorKind;
+use crate::errors::JarvilErrorKind;
 use crate::lexer::token::CoreToken;
 use crate::lexer::token::Token;
 use std::mem;
@@ -124,7 +124,7 @@ impl CoreLexer {
                         line_start_index,
                         code_line,
                         err_str.to_string(),
-                        ParseErrorKind::LEXICAL_ERROR,
+                        JarvilErrorKind::LEXICAL_ERROR,
                     );
                     error = JarvilError::new(line_number, line_number, err_message);
                 }
@@ -138,7 +138,7 @@ impl CoreLexer {
                         end_line_number,
                         code_lines,
                         err_str.to_string(),
-                        ParseErrorKind::LEXICAL_ERROR,
+                        JarvilErrorKind::LEXICAL_ERROR,
                     );
                     error = JarvilError::new(start_line_number, end_line_number, err_message);
                 }
