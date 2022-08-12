@@ -1,5 +1,5 @@
 use crate::{ast::ast::ASTNode, scope::function, parser::components::expression::common::params};
-use super::ast::{StatementKind, StatementIndentWrapperKind, TypeDeclarationKind, LambdaDeclarationKind, FunctionDeclarationKind, RAssignmentKind, ExpressionKind, NameTypeSpecsKind, TypeExpressionKind, AtomicExpressionKind, UnaryExpressionKind, ParamsKind, AtomKind, AtomStartKind};
+use super::ast::{StatementKind, StatementIndentWrapperKind, TypeDeclarationKind, LambdaDeclarationKind, FunctionDeclarationKind, RAssignmentKind, ExpressionKind, NameTypeSpecsKind, TypeExpressionKind, AtomicExpressionKind, UnaryExpressionKind, ParamsKind, AtomKind, AtomStartKind, AssignmentKind};
 
 // This kind of visitor pattern implementation is taken from Golang Programming Language
 // See /src/go/ast/walk.go
@@ -73,8 +73,24 @@ pub trait Visitor {
             },
             ASTNode::ASSIGNMENT(assignment_node) => {
                 let core_assignment = assignment_node.core_ref();
-                self.walk(ASTNode::new_with_AtomNode(&core_assignment.l_atom));
-                self.walk(ASTNode::new_with_RAssignmentNode(&core_assignment.r_assign));
+                match &core_assignment.kind {
+                    AssignmentKind::OK(ok_assignment) => {
+                        self.walk(ASTNode::new_with_OkAssignmentNode(ok_assignment));
+                    },
+                    AssignmentKind::INVALID_L_VALUE(invalid_l_value) => {
+                        self.walk(ASTNode::new_with_InvalidLValueNode(invalid_l_value));
+                    }
+                }
+            },
+            ASTNode::OK_ASSIGNMENT(ok_assignment) => {
+                let core_ok_assignment = ok_assignment.core_ref();
+                self.walk(ASTNode::new_with_AtomNode(&core_ok_assignment.l_atom));
+                self.walk(ASTNode::new_with_RAssignmentNode(&core_ok_assignment.r_assign));
+            },
+            ASTNode::INVALID_L_VALUE(invalid_l_value) => {
+                let core_invalid_l_value = invalid_l_value.core_ref();
+                self.walk(ASTNode::new_with_ExpressionNode(&core_invalid_l_value.l_expr));
+                self.walk(ASTNode::new_with_RAssignmentNode(&core_invalid_l_value.r_assign));
             },
             ASTNode::STRUCT_STATEMENT(struct_statement_node) => {
                 let core_struct_stmt = struct_statement_node.core_ref();

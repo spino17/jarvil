@@ -7,7 +7,6 @@ use jarvil_macros::set_parent;
 #[macro_use]
 use jarvil_macros::Nodify;
 
-use crate::parser::components::expression::atom;
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
 use crate::{
@@ -43,6 +42,8 @@ pub enum ASTNode {
     SKIPPED_TOKENS(SkippedTokens),
     STATEMENT(StatementNode),
     ASSIGNMENT(AssignmentNode),
+    OK_ASSIGNMENT(OkAssignmentNode),
+    INVALID_L_VALUE(InvalidLValueNode),
     STRUCT_STATEMENT(StructStatementNode),
     TYPE_DECLARATION(TypeDeclarationNode),
     STRUCT_DECLARATION(StructDeclarationNode),
@@ -398,21 +399,30 @@ default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementKind);
 
 #[derive(Debug, Clone)]
 pub struct CoreAssignmentNode {
-    equal: TokenNode,
-    pub l_atom: AtomNode,
-    pub r_assign: RAssignmentNode,
+    pub kind: AssignmentKind,
     parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub struct AssignmentNode(Rc<RefCell<CoreAssignmentNode>>);
+pub enum AssignmentKind {
+    OK(OkAssignmentNode),
+    INVALID_L_VALUE(InvalidLValueNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct AssignmentNode(pub Rc<RefCell<CoreAssignmentNode>>);
 impl AssignmentNode {
-    #[set_parent(ASSIGNMENT, WeakAssignmentNode)]
     pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreAssignmentNode {
-            equal: equal.clone(),
-            l_atom: l_atom.clone(),
-            r_assign: r_assign.clone(),
+            kind: AssignmentKind::OK(OkAssignmentNode::new(l_atom, r_assign, equal)),
+            parent: None,
+        }));
+        AssignmentNode(node)
+    }
+
+    pub fn new_with_invalid_l_value(l_expr: &ExpressionNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreAssignmentNode{
+            kind: AssignmentKind::INVALID_L_VALUE(InvalidLValueNode::new(l_expr, r_assign, equal)),
             parent: None,
         }));
         AssignmentNode(node)
@@ -423,6 +433,52 @@ impl AssignmentNode {
 impl Node for AssignmentNode {
     default_node_impl!(AssignmentNode);
     fn start_index(&self) -> usize {
+        match &self.core_ref().kind {
+            AssignmentKind::OK(ok_assignment) => ok_assignment.start_index(),
+            AssignmentKind::INVALID_L_VALUE(invalid_l_value) => invalid_l_value.start_index(),
+        }
+    }
+    fn end_index(&self) -> usize {
+        match &self.core_ref().kind {
+            AssignmentKind::OK(ok_assignment) => ok_assignment.end_index(),
+            AssignmentKind::INVALID_L_VALUE(invalid_l_value) => invalid_l_value.end_index(),
+        }
+    }
+    fn start_line_number(&self) -> usize {
+        match &self.core_ref().kind {
+            AssignmentKind::OK(ok_assignment) => ok_assignment.start_line_number(),
+            AssignmentKind::INVALID_L_VALUE(invalid_l_value) => invalid_l_value.start_line_number(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreOkAssignmentNode {
+    equal: TokenNode,
+    pub l_atom: AtomNode,
+    pub r_assign: RAssignmentNode,
+    parent: Option<WeakASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct OkAssignmentNode(pub Rc<RefCell<CoreOkAssignmentNode>>);
+impl OkAssignmentNode {
+    #[set_parent(OK_ASSIGNMENT, WeakOkAssignmentNode)]
+    pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreOkAssignmentNode{
+            equal: equal.clone(),
+            l_atom: l_atom.clone(),
+            r_assign: r_assign.clone(),
+            parent: None,
+        }));
+        OkAssignmentNode(node)
+    }
+
+    core_node_access!(CoreOkAssignmentNode);
+}
+impl Node for OkAssignmentNode {
+    default_node_impl!(OkAssignmentNode);
+    fn start_index(&self) -> usize {
         self.core_ref().l_atom.start_index()
     }
     fn end_index(&self) -> usize {
@@ -430,6 +486,43 @@ impl Node for AssignmentNode {
     }
     fn start_line_number(&self) -> usize {
         self.core_ref().l_atom.start_line_number()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreInvalidLValueNode {
+    pub l_expr: ExpressionNode,
+    equal: TokenNode,
+    pub r_assign: RAssignmentNode,
+    parent: Option<WeakASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct InvalidLValueNode(pub Rc<RefCell<CoreInvalidLValueNode>>);
+impl InvalidLValueNode {
+    #[set_parent(INVALID_L_VALUE, WeakInvalidLValueNode)]
+    pub fn new(l_expr: &ExpressionNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreInvalidLValueNode{
+            l_expr: l_expr.clone(),
+            equal: equal.clone(),
+            r_assign: r_assign.clone(),
+            parent: None,
+        }));
+        InvalidLValueNode(node)
+    }
+
+    core_node_access!(CoreInvalidLValueNode);
+}
+impl Node for InvalidLValueNode {
+    default_node_impl!(InvalidLValueNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().l_expr.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().r_assign.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().l_expr.start_line_number()
     }
 }
 

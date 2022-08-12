@@ -89,3 +89,8 @@ pub fn tokenify_macro_derive(input: TokenStream) -> TokenStream {
     };
     impl_tokenify_macro(&input_ast)
 }
+
+#[proc_macro_attribute]
+pub fn node(args: TokenStream, input: TokenStream) -> TokenStream {
+    todo!()
+}
