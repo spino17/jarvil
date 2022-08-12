@@ -397,13 +397,13 @@ impl AssignmentNode {
 impl Node for AssignmentNode {
     default_node_impl!(AssignmentNode);
     fn start_index(&self) -> usize {
-        todo!()
+        self.core_ref().l_atom.start_index()
     }
     fn end_index(&self) -> usize {
-        todo!()
+        self.core_ref().r_assign.end_index()
     }
     fn start_line_number(&self) -> usize {
-        todo!()
+        self.core_ref().l_atom.start_line_number()
     }
 }
 
