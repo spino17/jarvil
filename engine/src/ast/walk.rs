@@ -1,4 +1,4 @@
-use crate::{ast::ast::ASTNode, scope::function, parser::components::expression::common::params};
+use crate::{ast::ast::ASTNode, scope::function, parser::components::expression::common::params, types::expr};
 use super::ast::{StatementKind, StatementIndentWrapperKind, TypeDeclarationKind, LambdaDeclarationKind, FunctionDeclarationKind, RAssignmentKind, ExpressionKind, NameTypeSpecsKind, TypeExpressionKind, AtomicExpressionKind, UnaryExpressionKind, ParamsKind, AtomKind, AtomStartKind, AssignmentKind};
 
 // This kind of visitor pattern implementation is taken from Golang Programming Language
@@ -191,8 +191,8 @@ pub trait Visitor {
             ASTNode::R_ASSIGNMENT(r_assignment_node) => {
                 let core_r_assignment = r_assignment_node.core_ref();
                 match &core_r_assignment.kind {
-                    RAssignmentKind::EXPRESSION((expr, _)) => {
-                        self.walk(ASTNode::new_with_ExpressionNode(expr));
+                    RAssignmentKind::EXPRESSION(expr_stmt) => {
+                        self.walk(ASTNode::new_with_ExpressionStatementNode(expr_stmt));
                     },
                     RAssignmentKind::LAMBDA(lambda) => {
                         self.walk(ASTNode::new_with_FunctionDeclarationNode(lambda));

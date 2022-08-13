@@ -2828,7 +2828,7 @@ pub struct CoreRAssignmentNode {
 #[derive(Debug, Clone)]
 pub enum RAssignmentKind {
     LAMBDA(FunctionDeclarationNode),
-    EXPRESSION((ExpressionNode, TokenNode)),
+    EXPRESSION(ExpressionStatementNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -2844,10 +2844,9 @@ impl RAssignmentNode {
         RAssignmentNode(node)
     }
 
-    #[set_parent(R_ASSIGNMENT, WeakRAssignmentNode)]
     pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreRAssignmentNode {
-            kind: RAssignmentKind::EXPRESSION((expr.clone(), newline.clone())),
+            kind: RAssignmentKind::EXPRESSION(ExpressionStatementNode::new(expr, newline)),
             parent: None,
         }));
         RAssignmentNode(node)
@@ -2860,21 +2859,21 @@ impl Node for RAssignmentNode {
     fn start_index(&self) -> usize {
         match &self.core_ref().kind {
             RAssignmentKind::LAMBDA(func_decl) => func_decl.start_index(),
-            RAssignmentKind::EXPRESSION((expr, _)) => expr.start_index(),
+            RAssignmentKind::EXPRESSION(expr_stmt) => expr_stmt.start_index(),
             RAssignmentKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
         }
     }
     fn end_index(&self) -> usize {
         match &self.core_ref().kind {
             RAssignmentKind::LAMBDA(func_decl) => func_decl.end_index(),
-            RAssignmentKind::EXPRESSION((_, newline)) => newline.end_index(),
+            RAssignmentKind::EXPRESSION(expr_stmt) => expr_stmt.end_index(),
             RAssignmentKind::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
         }
     }
     fn start_line_number(&self) -> usize {
         match &self.core_ref().kind {
             RAssignmentKind::LAMBDA(func_decl) => func_decl.start_line_number(),
-            RAssignmentKind::EXPRESSION((expr, _)) => expr.start_line_number(),
+            RAssignmentKind::EXPRESSION(expr_stmt) => expr_stmt.start_line_number(),
             RAssignmentKind::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
         }
     }
