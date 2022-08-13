@@ -172,7 +172,7 @@ impl PackratParser {
         loop {
             let token = &self.token_vec[self.lookahead];
             if token.is_eq("\n") {
-                ignored_newlines_vec.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
+                ignored_newlines_vec.push(SkippedTokenNode::new(&token));
                 self.scan_next_token();
             } else {
                 return ignored_newlines_vec;
@@ -200,11 +200,11 @@ impl PackratParser {
             let token = &self.token_vec[self.lookahead].clone();
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
                 self.log_trailing_skipped_tokens_error(&skipped_tokens);
-                skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
+                skipped_tokens.push(SkippedTokenNode::new(&token));
                 self.scan_next_token();
                 return skipped_tokens;
             } else {
-                skipped_tokens.push(SkippedTokenNode::new(&token, self.curr_lookahead()));
+                skipped_tokens.push(SkippedTokenNode::new(&token));
                 self.scan_next_token();
             }
         }
@@ -407,13 +407,12 @@ impl PackratParser {
             } else {
                 OkTokenKind::NON_IDENTIFIER
             };
-            TokenNode::new_with_ok_token(&token, self.curr_lookahead(), kind)
+            TokenNode::new_with_ok_token(&token, kind)
         } else {
             self.log_missing_token_error_for_single_expected_symbol(symbol, &token);
             TokenNode::new_with_missing_tokens(
                 &Rc::new(vec![symbol]),
                 &token,
-                self.curr_lookahead(),
             )
         }
     }
@@ -428,14 +427,13 @@ impl PackratParser {
                 } else {
                     OkTokenKind::NON_IDENTIFIER
                 };
-                return TokenNode::new_with_ok_token(&token, self.curr_lookahead(), kind);
+                return TokenNode::new_with_ok_token(&token, kind);
             }
         }
         // self.log_skipped_token_error(symbols, &token);
         TokenNode::new_with_missing_tokens(
             &Rc::new(symbols.to_vec()),
             &token,
-            self.curr_lookahead(),
         )
     }
 
@@ -455,7 +453,7 @@ impl PackratParser {
             let token = &self.token_vec[self.lookahead];
             match &token.core_token {
                 CoreToken::NEWLINE => {
-                    extra_newlines.push(SkippedTokenNode::new(token, self.curr_lookahead()));
+                    extra_newlines.push(SkippedTokenNode::new(token));
                     indent_spaces = 0;
                 }
                 CoreToken::ENDMARKER => {

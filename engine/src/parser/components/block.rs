@@ -49,7 +49,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
         };
         while !is_starting_with_fn(&parser.curr_token()) {
             let token = &parser.curr_token();
-            leading_skipped_tokens.push(SkippedTokenNode::new(token, parser.curr_lookahead()));
+            leading_skipped_tokens.push(SkippedTokenNode::new(token));
             parser.log_missing_token_error_for_multiple_expected_symbols(expected_symbols, token);
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
                 break;

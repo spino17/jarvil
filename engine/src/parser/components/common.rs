@@ -25,8 +25,7 @@ pub fn r_assign(
         );
         return RAssignmentNode::new_with_missing_tokens(
             &Rc::new(R_ASSIGNMENT_STARTING_SYMBOLS.to_vec()),
-            token,
-            parser.curr_lookahead(),
+            token
         );
     }
     match token.core_token {

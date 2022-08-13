@@ -34,8 +34,7 @@ pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
         );
         return ExpressionNode::new_with_missing_tokens(
             &Rc::new(EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
-            token,
-            parser.curr_lookahead(),
+            token
         );
     }
     // parser.logical_or()
@@ -144,8 +143,7 @@ pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
         );
         return UnaryExpressionNode::new_with_missing_tokens(
             &Rc::new(UNARY_EXPRESSION_STARTING_SYMBOLS.to_vec()),
-            token,
-            parser.curr_lookahead(),
+            token
         );
     }
     let unary_expr_node = match token.core_token {
@@ -212,8 +210,7 @@ pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
         );
         return AtomicExpressionNode::new_with_missing_tokens(
             &Rc::new(ATOMIC_EXPRESSION_STARTING_SYMBOLS.to_vec()),
-            token,
-            parser.curr_lookahead(),
+            token
         );
     }
     let atomic_expr_node = match token.core_token {

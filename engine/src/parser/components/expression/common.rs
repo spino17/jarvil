@@ -28,8 +28,7 @@ pub fn params(parser: &mut PackratParser) -> ParamsNode {
             parser.log_missing_token_error_for_multiple_expected_symbols(&[",", ")"], token);
             return ParamsNode::new_with_missing_tokens(
                 &Rc::new([",", ")"].to_vec()),
-                token,
-                parser.curr_lookahead(),
+                token
             );
         }
     }

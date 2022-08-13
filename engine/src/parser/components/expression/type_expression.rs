@@ -26,8 +26,7 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
         );
         return TypeExpressionNode::new_with_missing_tokens(
             &Rc::new(TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
-            &token,
-            parser.curr_lookahead(),
+            &token
         );
     }
     match token.core_token {

@@ -22,7 +22,6 @@ pub trait ErrornousNode {
     fn new_with_missing_tokens(
         expected_symbols: &Rc<Vec<&'static str>>,
         received_token: &Token,
-        lookahead: usize,
     ) -> Self;
 }
 
@@ -1292,15 +1291,14 @@ pub enum CoreTokenNode {
 #[derive(Debug, Clone)]
 pub struct TokenNode(Rc<CoreTokenNode>);
 impl TokenNode {
-    pub fn new_with_ok_token(token: &Token, lookahead: usize, kind: OkTokenKind) -> Self {
-        let node = Rc::new(CoreTokenNode::OK(OkTokenNode::new(token, lookahead, kind)));
+    pub fn new_with_ok_token(token: &Token, kind: OkTokenKind) -> Self {
+        let node = Rc::new(CoreTokenNode::OK(OkTokenNode::new(token, kind)));
         TokenNode(node)
     }
 
-    pub fn new_with_skipped_token(skipped_token: &Token, lookahead: usize) -> Self {
+    pub fn new_with_skipped_token(skipped_token: &Token) -> Self {
         let node = Rc::new(CoreTokenNode::SKIPPED(SkippedTokenNode::new(
             skipped_token,
-            lookahead,
         )));
         TokenNode(node)
     }
@@ -1358,7 +1356,6 @@ default_errornous_node_impl!(TokenNode, CoreTokenNode);
 pub struct CoreOkTokenNode {
     pub token: Token,
     pub kind: OkTokenKind,
-    pub lookahead: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -1366,14 +1363,14 @@ pub enum OkTokenKind {
     IDENTIFIER(Option<SymbolData>), // This is set when the identifier is resolved
     NON_IDENTIFIER,
 }
+
 #[derive(Debug, Clone)]
 pub struct OkTokenNode(Rc<CoreOkTokenNode>);
 impl OkTokenNode {
-    pub fn new(token: &Token, lookahead: usize, kind: OkTokenKind) -> Self {
+    pub fn new(token: &Token, kind: OkTokenKind) -> Self {
         OkTokenNode(Rc::new(CoreOkTokenNode {
             token: token.clone(),
             kind,
-            lookahead,
         }))
     }
 
@@ -1422,7 +1419,6 @@ impl Node for OkTokenNode {
 pub struct CoreMissingTokenNode {
     pub expected_symbols: Rc<Vec<&'static str>>,
     pub received_token: Token,
-    pub lookahead: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -1431,12 +1427,10 @@ impl MissingTokenNode {
     pub fn new(
         expected_symbols: &Rc<Vec<&'static str>>,
         received_token: &Token,
-        lookahead: usize,
     ) -> Self {
         let node = Rc::new(CoreMissingTokenNode {
             expected_symbols: expected_symbols.clone(),
-            received_token: received_token.clone(),
-            lookahead,
+            received_token: received_token.clone()
         });
         MissingTokenNode(node)
     }
@@ -1456,16 +1450,14 @@ impl Node for MissingTokenNode {
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokenNode {
     pub skipped_token: Token,
-    pub lookahead: usize,
 }
 
 #[derive(Debug, Clone)]
 pub struct SkippedTokenNode(Rc<CoreSkippedTokenNode>);
 impl SkippedTokenNode {
-    pub fn new(skipped_token: &Token, lookahead: usize) -> Self {
+    pub fn new(skipped_token: &Token) -> Self {
         let node = Rc::new(CoreSkippedTokenNode {
             skipped_token: skipped_token.clone(),
-            lookahead,
         });
         SkippedTokenNode(node)
     }
