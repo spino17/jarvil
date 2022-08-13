@@ -5,7 +5,10 @@
 // 2. `https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html`
 // NOTE: By default jarvil uses this implementation
 
-use crate::{parser::parser::PackratParser, ast::ast::{ExpressionNode, TokenNode}};
+use crate::{
+    ast::ast::{ExpressionNode, TokenNode},
+    parser::parser::PackratParser,
+};
 use std::rc::Rc;
 
 pub fn pratt_expr(parser: &mut PackratParser, precedence: u8) -> ExpressionNode {
@@ -23,12 +26,13 @@ pub fn pratt_expr(parser: &mut PackratParser, precedence: u8) -> ExpressionNode 
 }
 
 pub fn infix(
-    parser: &mut PackratParser, 
-    left_expr: &ExpressionNode, 
-    operator_node: &TokenNode, 
-    operator_precedence: u8
+    parser: &mut PackratParser,
+    left_expr: &ExpressionNode,
+    operator_node: &TokenNode,
+    operator_precedence: u8,
 ) -> ExpressionNode {
-    if is_comparison(operator_precedence) {  // precedence of comparison operators - TODO - write tests for this
+    if is_comparison(operator_precedence) {
+        // precedence of comparison operators - TODO - write tests for this
         parser.infix_comparison_expr(left_expr, operator_node, operator_precedence)
     } else {
         parser.infix_binary_expr(left_expr, operator_node, operator_precedence)
@@ -36,7 +40,10 @@ pub fn infix(
 }
 
 pub fn infix_comparison_expr(
-    parser: &mut PackratParser, left_expr: &ExpressionNode, operator_node: &TokenNode, operator_precedence: u8
+    parser: &mut PackratParser,
+    left_expr: &ExpressionNode,
+    operator_node: &TokenNode,
+    operator_precedence: u8,
 ) -> ExpressionNode {
     let mut operands: Vec<ExpressionNode> = vec![left_expr.clone()];
     let mut operators: Vec<TokenNode> = vec![operator_node.clone()];
@@ -53,13 +60,16 @@ pub fn infix_comparison_expr(
         operators.push(operator_node);
     }
     if operators.len() == 1 {
-        return ExpressionNode::new_with_binary(&operators[0], &operands[0], &operands[1])
+        return ExpressionNode::new_with_binary(&operators[0], &operands[0], &operands[1]);
     }
     ExpressionNode::new_with_comparison(&Rc::new(operands), &Rc::new(operators))
 }
 
 pub fn infix_binary_expr(
-    parser: &mut PackratParser, left_expr: &ExpressionNode, operator_node: &TokenNode, operator_precedence: u8
+    parser: &mut PackratParser,
+    left_expr: &ExpressionNode,
+    operator_node: &TokenNode,
+    operator_precedence: u8,
 ) -> ExpressionNode {
     let right_expr = parser.pratt_expr(operator_precedence);
     ExpressionNode::new_with_binary(&operator_node, &left_expr, &right_expr)

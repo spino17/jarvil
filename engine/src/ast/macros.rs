@@ -1,3 +1,4 @@
+/*
 macro_rules! default_node_impl {
     ($t: ident) => {
         fn set_parent(&self, parent_node: WeakASTNode) {
@@ -5,35 +6,21 @@ macro_rules! default_node_impl {
         }
     };
 }
-
-macro_rules! core_node_access {
-    ($t: ident) => {
-        pub fn core_ref(&self) -> Ref<$t> {
-            self.0.as_ref().borrow()
-        }
-
-        pub fn core_ref_mut(&self) -> RefMut<$t> {
-            self.0.as_ref().borrow_mut()
-        }
-    };
-}
+ */
 
 macro_rules! default_errornous_node_impl {
-    ($t: ident, $u: ident, $v: ident) => {
+    ($t: ident, $u: ident) => {
         impl ErrornousNode for $t {
             fn new_with_missing_tokens(
                 expected_symbols: &Rc<Vec<&'static str>>,
                 received_token: &Token,
                 lookahead: usize,
             ) -> Self {
-                $t(Rc::new(RefCell::new($u {
-                    kind: $v::MISSING_TOKENS(MissingTokenNode::new(
-                        expected_symbols,
-                        received_token,
-                        lookahead,
-                    )),
-                    parent: None,
-                })))
+                $t(Rc::new($u::MISSING_TOKENS(MissingTokenNode::new(
+                    expected_symbols,
+                    received_token,
+                    lookahead,
+                ))))
             }
         }
     };
@@ -68,7 +55,7 @@ macro_rules! impl_ast_node {
         )*
     };
 }
-
+/*
 macro_rules! impl_set_parent {
     ($t: ident, $u: ident, $v: ident, $s: ident) => {
         $t.set_parent(WeakASTNode::$u($s(Rc::downgrade(&$v))));
@@ -95,6 +82,7 @@ macro_rules! impl_set_parents_optional {
         )*
     };
 }
+ */
 
 macro_rules! extract_from_option {
     ($t: ident) => {

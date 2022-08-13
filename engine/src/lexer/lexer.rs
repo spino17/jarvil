@@ -1,8 +1,8 @@
 use crate::code::Code;
 use crate::context;
 use crate::errors::JarvilError;
-use crate::errors::LexicalErrorData;
 use crate::errors::JarvilErrorKind;
+use crate::errors::LexicalErrorData;
 use crate::lexer::token::CoreToken;
 use crate::lexer::token::Token;
 use std::mem;

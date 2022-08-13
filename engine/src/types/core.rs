@@ -15,7 +15,7 @@ pub enum CoreType {
     ATOMIC(Atomic),
     // STRUCT(Struct),
     // LAMBDA(Lambda),
-    USER_DEFINED(Rc<String>),  // TODO - for lambda we need structural equivalance - compare params and return_type
+    USER_DEFINED(Rc<String>), // TODO - for lambda we need structural equivalance - compare params and return_type
     ARRAY(Array),
     // ENUMERATION,
     // TUPLES,

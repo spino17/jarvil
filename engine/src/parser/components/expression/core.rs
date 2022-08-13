@@ -80,9 +80,9 @@ pub fn comparison(parser: &mut PackratParser) -> ExpressionNode {
         operators.push(operator_node);
     }
     if operators.len() == 0 {
-        return operands[0].clone()
+        return operands[0].clone();
     } else if operators.len() == 1 {
-        return ExpressionNode::new_with_binary(&operators[0], &operands[0], &operands[1])
+        return ExpressionNode::new_with_binary(&operators[0], &operands[0], &operands[1]);
     }
     ExpressionNode::new_with_comparison(&Rc::new(operands), &Rc::new(operators))
 }
@@ -117,7 +117,7 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
         CoreToken::PLUS => true,
         CoreToken::DASH => true,
-        CoreToken::NOT  => true,
+        CoreToken::NOT => true,
         _ => is_atomic_expression_starting_with(token),
     }
 }
@@ -182,13 +182,13 @@ pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
 
 pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
-        CoreToken::INTEGER                  => true,
-        CoreToken::FLOATING_POINT_NUMBER    => true,
-        CoreToken::LITERAL                  => true,
-        CoreToken::TRUE                     => true,
-        CoreToken::FALSE                    => true,
-        CoreToken::IDENTIFIER               => true,
-        CoreToken::LPAREN                   => true,
+        CoreToken::INTEGER => true,
+        CoreToken::FLOATING_POINT_NUMBER => true,
+        CoreToken::LITERAL => true,
+        CoreToken::TRUE => true,
+        CoreToken::FALSE => true,
+        CoreToken::IDENTIFIER => true,
+        CoreToken::LPAREN => true,
         _ => false,
     }
 }

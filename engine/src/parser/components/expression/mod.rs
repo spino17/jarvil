@@ -1,5 +1,5 @@
 pub mod atom;
 pub mod common;
 pub mod core;
-pub mod type_expression;
 pub mod pratt;
+pub mod type_expression;

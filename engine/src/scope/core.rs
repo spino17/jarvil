@@ -1,7 +1,7 @@
 use crate::errors::JarvilError;
 use crate::scope::function::FunctionData;
-use crate::scope::variables::VariableData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
+use crate::scope::variables::VariableData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
@@ -195,7 +195,7 @@ impl Namespace {
 impl Clone for Namespace {
     fn clone(&self) -> Self {
         Namespace {
-            variables: self.variables.clone(),  // TODO - variables and lambdas
+            variables: self.variables.clone(), // TODO - variables and lambdas
             types: self.types.clone(),
             functions: self.functions.clone(),
         }

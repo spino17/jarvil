@@ -31,21 +31,19 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
         let indent_result = parser.expect_indent_spaces();
         let skipped_tokens = indent_result.skipped_tokens;
         if skipped_tokens.len() > 0 {
-            stmts_vec
-                .as_ref()
-                .borrow_mut()
-                .push(StatemenIndentWrapperNode::new_with_trailing_skipped_tokens(
+            stmts_vec.as_ref().borrow_mut().push(
+                StatemenIndentWrapperNode::new_with_trailing_skipped_tokens(
                     &SkippedTokensNode::new_with_trailing_skipped_tokens(&Rc::new(skipped_tokens)),
-                ));
+                ),
+            );
         }
         let extra_newlines = indent_result.extra_newlines;
         if extra_newlines.len() > 0 {
-            stmts_vec
-                .as_ref()
-                .borrow_mut()
-                .push(StatemenIndentWrapperNode::new_with_extra_newlines(
+            stmts_vec.as_ref().borrow_mut().push(
+                StatemenIndentWrapperNode::new_with_extra_newlines(
                     &SkippedTokensNode::new_with_extra_newlines(&Rc::new(extra_newlines)),
-                ));
+                ),
+            );
         }
         let incorrect_indent_data = match indent_result.kind {
             IndentResultKind::CORRECT_INDENTATION => None,
@@ -65,14 +63,13 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             parser.scan_next_token();
         }
         if leading_skipped_tokens.len() > 0 {
-            stmts_vec
-                .as_ref()
-                .borrow_mut()
-                .push(StatemenIndentWrapperNode::new_with_leading_skipped_tokens(
+            stmts_vec.as_ref().borrow_mut().push(
+                StatemenIndentWrapperNode::new_with_leading_skipped_tokens(
                     &SkippedTokensNode::new_with_leading_skipped_tokens(&Rc::new(mem::take(
                         &mut leading_skipped_tokens,
                     ))),
-                ));
+                ),
+            );
         }
         let token = &parser.curr_token();
         if token.is_eq(ENDMARKER) {
@@ -111,21 +108,19 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                     );
                     stmt_node
                 };
-                stmts_vec
-                    .as_ref()
-                    .borrow_mut()
-                    .push(
-                        StatemenIndentWrapperNode::new_with_incorrectly_indented(
-                            &stmt_node, indent_data.0, indent_data.1
-                        )
-                    );
+                stmts_vec.as_ref().borrow_mut().push(
+                    StatemenIndentWrapperNode::new_with_incorrectly_indented(
+                        &stmt_node,
+                        indent_data.0,
+                        indent_data.1,
+                    ),
+                );
             }
             None => {
                 let stmt_node = statement_parsing_fn(parser);
-                stmts_vec
-                    .as_ref()
-                    .borrow_mut()
-                    .push(StatemenIndentWrapperNode::new_with_correctly_indented(&stmt_node));
+                stmts_vec.as_ref().borrow_mut().push(
+                    StatemenIndentWrapperNode::new_with_correctly_indented(&stmt_node),
+                );
             }
         }
     }

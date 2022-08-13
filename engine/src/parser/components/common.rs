@@ -32,10 +32,8 @@ pub fn r_assign(
     match token.core_token {
         CoreToken::FUNC => {
             let func_keyword_node = parser.expect("func");
-            let func_decl_node = parser.function_decl(
-                identifier_name,
-                &FuncKeywordKind::FUNC(func_keyword_node),
-            );
+            let func_decl_node =
+                parser.function_decl(identifier_name, &FuncKeywordKind::FUNC(func_keyword_node));
             RAssignmentNode::new_with_lambda(&func_decl_node)
         }
         _ => {

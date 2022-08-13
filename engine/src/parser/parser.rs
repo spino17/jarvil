@@ -355,7 +355,12 @@ impl PackratParser {
         }
     }
 
-    pub fn log_invalid_l_value_error(&mut self, start_index: usize, end_index: usize, start_line_number: usize) {
+    pub fn log_invalid_l_value_error(
+        &mut self,
+        start_index: usize,
+        end_index: usize,
+        start_line_number: usize,
+    ) {
         if self.ignore_all_errors {
             return;
         }
@@ -363,9 +368,9 @@ impl PackratParser {
         if errors_len > 0 && context::curr_error_line_number() == start_line_number {
             return;
         } else {
-            let (start_line_number, end_line_number) = self.code.line_range_from_indexes(
-                start_index, end_index, start_line_number
-            );
+            let (start_line_number, end_line_number) =
+                self.code
+                    .line_range_from_indexes(start_index, end_index, start_line_number);
             let err_str = "expression cannot be assigned a value".to_string();
             if start_line_number == end_line_number {
                 let err_message = JarvilError::form_single_line_underline_pointer_error(
@@ -381,11 +386,11 @@ impl PackratParser {
                 context::push_error(err);
             } else {
                 let err_message = JarvilError::form_multi_line_error(
-                    start_line_number, 
-                    end_line_number, 
+                    start_line_number,
+                    end_line_number,
                     self.code.lines(start_line_number, end_line_number),
-                    err_str, 
-                    JarvilErrorKind::SYNTAX_ERROR
+                    err_str,
+                    JarvilErrorKind::SYNTAX_ERROR,
                 );
                 let err = JarvilError::new(start_line_number, end_line_number, err_message);
                 context::push_error(err);
@@ -600,20 +605,41 @@ impl PackratParser {
         components::expression::pratt::pratt_expr(self, precedence)
     }
 
-    pub fn infix(&mut self, left_expr: &ExpressionNode, operator_node: &TokenNode, operator_precedence: u8) -> ExpressionNode {
+    pub fn infix(
+        &mut self,
+        left_expr: &ExpressionNode,
+        operator_node: &TokenNode,
+        operator_precedence: u8,
+    ) -> ExpressionNode {
         components::expression::pratt::infix(self, left_expr, operator_node, operator_precedence)
     }
 
     pub fn infix_comparison_expr(
-        &mut self, left_expr: &ExpressionNode, operator_node: &TokenNode, operator_precedence: u8
+        &mut self,
+        left_expr: &ExpressionNode,
+        operator_node: &TokenNode,
+        operator_precedence: u8,
     ) -> ExpressionNode {
-        components::expression::pratt::infix_comparison_expr(self, left_expr, operator_node, operator_precedence)
+        components::expression::pratt::infix_comparison_expr(
+            self,
+            left_expr,
+            operator_node,
+            operator_precedence,
+        )
     }
-    
+
     pub fn infix_binary_expr(
-        &mut self, left_expr: &ExpressionNode, operator_node: &TokenNode, operator_precedence: u8
+        &mut self,
+        left_expr: &ExpressionNode,
+        operator_node: &TokenNode,
+        operator_precedence: u8,
     ) -> ExpressionNode {
-        components::expression::pratt::infix_binary_expr(self, left_expr, operator_node, operator_precedence)
+        components::expression::pratt::infix_binary_expr(
+            self,
+            left_expr,
+            operator_node,
+            operator_precedence,
+        )
     }
 
     pub fn trailing_atom(&mut self, atom_start: AtomNode) -> AtomNode {
