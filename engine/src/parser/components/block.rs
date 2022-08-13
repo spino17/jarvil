@@ -25,23 +25,23 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
 ) -> BlockNode {
     let newline_node = parser.expect("\n");
     parser.set_indent_level(parser.curr_indent_level() + 1);
-    let stmts_vec: Rc<RefCell<Vec<StatemenIndentWrapperNode>>> = Rc::new(RefCell::new(vec![]));
+    let mut stmts_vec: Vec<StatemenIndentWrapperNode> = vec![];
     let mut leading_skipped_tokens: Vec<SkippedTokenNode> = vec![];
     loop {
         let indent_result = parser.expect_indent_spaces();
         let skipped_tokens = indent_result.skipped_tokens;
         if skipped_tokens.len() > 0 {
-            stmts_vec.as_ref().borrow_mut().push(
+            stmts_vec.push(
                 StatemenIndentWrapperNode::new_with_trailing_skipped_tokens(
-                    &SkippedTokensNode::new_with_trailing_skipped_tokens(&Rc::new(skipped_tokens)),
+                    &SkippedTokensNode::new_with_trailing_skipped_tokens(skipped_tokens),
                 ),
             );
         }
         let extra_newlines = indent_result.extra_newlines;
         if extra_newlines.len() > 0 {
-            stmts_vec.as_ref().borrow_mut().push(
+            stmts_vec.push(
                 StatemenIndentWrapperNode::new_with_extra_newlines(
-                    &SkippedTokensNode::new_with_extra_newlines(&Rc::new(extra_newlines)),
+                    &SkippedTokensNode::new_with_extra_newlines(extra_newlines),
                 ),
             );
         }
@@ -50,7 +50,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
             IndentResultKind::BLOCK_OVER => {
                 parser.set_indent_level(parser.curr_indent_level() - 1);
-                return BlockNode::new(&stmts_vec, &newline_node);
+                return BlockNode::new(stmts_vec, &newline_node);
             }
         };
         while !is_starting_with_fn(&parser.curr_token()) {
@@ -63,18 +63,16 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             parser.scan_next_token();
         }
         if leading_skipped_tokens.len() > 0 {
-            stmts_vec.as_ref().borrow_mut().push(
+            stmts_vec.push(
                 StatemenIndentWrapperNode::new_with_leading_skipped_tokens(
-                    &SkippedTokensNode::new_with_leading_skipped_tokens(&Rc::new(mem::take(
-                        &mut leading_skipped_tokens,
-                    ))),
+                    &SkippedTokensNode::new_with_leading_skipped_tokens(mem::take(&mut leading_skipped_tokens)),
                 ),
             );
         }
         let token = &parser.curr_token();
         if token.is_eq(ENDMARKER) {
             parser.set_indent_level(parser.curr_indent_level() - 1);
-            return BlockNode::new(&stmts_vec, &newline_node);
+            return BlockNode::new(stmts_vec, &newline_node);
         }
         if token.is_eq("\n") {
             continue;
@@ -108,7 +106,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                     );
                     stmt_node
                 };
-                stmts_vec.as_ref().borrow_mut().push(
+                stmts_vec.push(
                     StatemenIndentWrapperNode::new_with_incorrectly_indented(
                         &stmt_node,
                         indent_data.0,
@@ -118,7 +116,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             }
             None => {
                 let stmt_node = statement_parsing_fn(parser);
-                stmts_vec.as_ref().borrow_mut().push(
+                stmts_vec.push(
                     StatemenIndentWrapperNode::new_with_correctly_indented(&stmt_node),
                 );
             }

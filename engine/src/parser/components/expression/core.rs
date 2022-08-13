@@ -84,7 +84,7 @@ pub fn comparison(parser: &mut PackratParser) -> ExpressionNode {
     } else if operators.len() == 1 {
         return ExpressionNode::new_with_binary(&operators[0], &operands[0], &operands[1]);
     }
-    ExpressionNode::new_with_comparison(&Rc::new(operands), &Rc::new(operators))
+    ExpressionNode::new_with_comparison(operands, operators)
 }
 
 pub fn term(parser: &mut PackratParser) -> ExpressionNode {

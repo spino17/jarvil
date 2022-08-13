@@ -82,17 +82,17 @@ pub enum ASTNode {
 #[derive(Debug, Clone)]
 pub struct CoreBlockNode {
     newline: TokenNode,
-    pub stmts: Rc<RefCell<Vec<StatemenIndentWrapperNode>>>,
+    pub stmts: Vec<StatemenIndentWrapperNode>,
     scope: Option<Namespace>,
 }
 
 #[derive(Debug, Clone)]
 pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapperNode>>>, newline: &TokenNode) -> Self {
+    pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode {
             newline: newline.clone(),
-            stmts: stmts.clone(),
+            stmts,
             scope: None,
         }));
         BlockNode(node)
@@ -107,8 +107,8 @@ impl Node for BlockNode {
         self.0.as_ref().borrow().newline.start_index()
     }
     fn end_index(&self) -> usize {
-        let stmts_len = self.0.as_ref().borrow().stmts.as_ref().borrow().len();
-        self.0.as_ref().borrow().stmts.as_ref().borrow()[stmts_len - 1].end_index()
+        let stmts_len = self.0.as_ref().borrow().stmts.len();
+        self.0.as_ref().borrow().stmts[stmts_len - 1].end_index()
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().borrow().newline.start_line_number()
@@ -222,27 +222,27 @@ impl Node for StatemenIndentWrapperNode {
 
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokensNode {
-    pub skipped_tokens: Rc<Vec<SkippedTokenNode>>,
+    pub skipped_tokens: Vec<SkippedTokenNode>,
 }
 
 #[derive(Debug, Clone)]
 pub struct SkippedTokensNode(Rc<CoreSkippedTokensNode>);
 impl SkippedTokensNode {
-    pub fn new_with_leading_skipped_tokens(skipped_tokens: &Rc<Vec<SkippedTokenNode>>) -> Self {
+    pub fn new_with_leading_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
         let node = Rc::new(CoreSkippedTokensNode {
             skipped_tokens: skipped_tokens.clone(),
         });
         SkippedTokensNode(node)
     }
 
-    pub fn new_with_trailing_skipped_tokens(skipped_tokens: &Rc<Vec<SkippedTokenNode>>) -> Self {
+    pub fn new_with_trailing_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
         let node = Rc::new(CoreSkippedTokensNode {
             skipped_tokens: skipped_tokens.clone(),
         });
         SkippedTokensNode(node)
     }
 
-    pub fn new_with_extra_newlines(extra_newlines: &Rc<Vec<SkippedTokenNode>>) -> Self {
+    pub fn new_with_extra_newlines(extra_newlines: Vec<SkippedTokenNode>) -> Self {
         let node = Rc::new(CoreSkippedTokensNode {
             skipped_tokens: extra_newlines.clone(),
         });
@@ -1535,8 +1535,8 @@ impl ExpressionNode {
     }
 
     pub fn new_with_comparison(
-        operands: &Rc<Vec<ExpressionNode>>,
-        operators: &Rc<Vec<TokenNode>>,
+        operands: Vec<ExpressionNode>,
+        operators: Vec<TokenNode>,
     ) -> Self {
         let node = Rc::new(CoreExpressionNode::COMPARISON(ComparisonNode::new(
             operands, operators,
@@ -1597,17 +1597,17 @@ default_errornous_node_impl!(ExpressionNode, CoreExpressionNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreComparisonNode {
-    pub operands: Rc<Vec<ExpressionNode>>,
-    pub operators: Rc<Vec<TokenNode>>,
+    pub operands: Vec<ExpressionNode>,
+    pub operators: Vec<TokenNode>,
 }
 
 #[derive(Debug, Clone)]
 pub struct ComparisonNode(Rc<CoreComparisonNode>);
 impl ComparisonNode {
-    pub fn new(operands: &Rc<Vec<ExpressionNode>>, operators: &Rc<Vec<TokenNode>>) -> Self {
+    pub fn new(operands: Vec<ExpressionNode>, operators: Vec<TokenNode>) -> Self {
         let node = Rc::new(CoreComparisonNode {
-            operands: operands.clone(),
-            operators: operators.clone(),
+            operands,
+            operators,
         });
         ComparisonNode(node)
     }
