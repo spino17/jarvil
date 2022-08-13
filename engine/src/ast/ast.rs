@@ -10,10 +10,7 @@ use crate::{
     scope::core::Namespace,
     types::{array::Array, core::Type},
 };
-use std::{
-    cell::{RefCell},
-    rc::{Rc, Weak},
-};
+use std::{cell::RefCell, rc::Rc};
 
 pub trait Node {
     fn start_index(&self) -> usize;
@@ -229,23 +226,17 @@ pub struct CoreSkippedTokensNode {
 pub struct SkippedTokensNode(Rc<CoreSkippedTokensNode>);
 impl SkippedTokensNode {
     pub fn new_with_leading_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
-        let node = Rc::new(CoreSkippedTokensNode {
-            skipped_tokens,
-        });
+        let node = Rc::new(CoreSkippedTokensNode { skipped_tokens });
         SkippedTokensNode(node)
     }
 
     pub fn new_with_trailing_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
-        let node = Rc::new(CoreSkippedTokensNode {
-            skipped_tokens,
-        });
+        let node = Rc::new(CoreSkippedTokensNode { skipped_tokens });
         SkippedTokensNode(node)
     }
 
     pub fn new_with_extra_newlines(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
-        let node = Rc::new(CoreSkippedTokensNode {
-            skipped_tokens,
-        });
+        let node = Rc::new(CoreSkippedTokensNode { skipped_tokens });
         SkippedTokensNode(node)
     }
 }
@@ -671,19 +662,18 @@ impl LambdaDeclarationNode {
         right_arrow: Option<&TokenNode>,
         newline: &TokenNode,
     ) -> Self {
-        LambdaDeclarationNode(Rc::new(CoreLambdaDeclarationNode::OK(
-            OkLambdaDeclarationNode::new(
-                name,
-                args,
-                return_type,
-                type_keyword,
-                colon,
-                lparen,
-                rparen,
-                right_arrow,
-                newline,
-            ),
-        )))
+        let node = Rc::new(CoreLambdaDeclarationNode::OK(OkLambdaDeclarationNode::new(
+            name,
+            args,
+            return_type,
+            type_keyword,
+            colon,
+            lparen,
+            rparen,
+            right_arrow,
+            newline,
+        )));
+        LambdaDeclarationNode(node)
     }
 }
 impl Node for LambdaDeclarationNode {
@@ -1443,11 +1433,12 @@ impl MissingTokenNode {
         received_token: &Token,
         lookahead: usize,
     ) -> Self {
-        MissingTokenNode(Rc::new(CoreMissingTokenNode {
+        let node = Rc::new(CoreMissingTokenNode {
             expected_symbols: expected_symbols.clone(),
             received_token: received_token.clone(),
             lookahead,
-        }))
+        });
+        MissingTokenNode(node)
     }
 }
 impl Node for MissingTokenNode {
@@ -1472,10 +1463,11 @@ pub struct CoreSkippedTokenNode {
 pub struct SkippedTokenNode(Rc<CoreSkippedTokenNode>);
 impl SkippedTokenNode {
     pub fn new(skipped_token: &Token, lookahead: usize) -> Self {
-        SkippedTokenNode(Rc::new(CoreSkippedTokenNode {
+        let node = Rc::new(CoreSkippedTokenNode {
             skipped_token: skipped_token.clone(),
             lookahead,
-        }))
+        });
+        SkippedTokenNode(node)
     }
 
     pub fn index(&self) -> usize {
@@ -1534,10 +1526,7 @@ impl ExpressionNode {
         ExpressionNode(node)
     }
 
-    pub fn new_with_comparison(
-        operands: Vec<ExpressionNode>,
-        operators: Vec<TokenNode>,
-    ) -> Self {
+    pub fn new_with_comparison(operands: Vec<ExpressionNode>, operators: Vec<TokenNode>) -> Self {
         let node = Rc::new(CoreExpressionNode::COMPARISON(ComparisonNode::new(
             operands, operators,
         )));
