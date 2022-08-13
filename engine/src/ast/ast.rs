@@ -2,11 +2,6 @@
 // ASTNode has weak reference to core nodes to avoid memory leaks.
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
 
-#[macro_use]
-use jarvil_macros::set_parent;
-#[macro_use]
-use jarvil_macros::Nodify;
-
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
 use crate::{
@@ -16,12 +11,11 @@ use crate::{
     types::{array::Array, core::Type},
 };
 use std::{
-    cell::{Ref, RefCell, RefMut},
+    cell::{RefCell},
     rc::{Rc, Weak},
 };
 
 pub trait Node {
-    // fn set_parent(&self, parent_node: WeakASTNode);
     fn start_index(&self) -> usize;
     fn end_index(&self) -> usize;
     fn start_line_number(&self) -> usize;
@@ -35,7 +29,7 @@ pub trait ErrornousNode {
     ) -> Self;
 }
 
-#[derive(Debug, Clone, Nodify)]
+#[derive(Debug, Clone)]
 pub enum ASTNode {
     BLOCK(BlockNode),
     STATEMENT_INDENT_WRAPPER(StatemenIndentWrapperNode),
@@ -85,21 +79,6 @@ pub enum ASTNode {
     SKIPPED_TOKEN(SkippedTokenNode),
 }
 
-pub struct SyntaxNode {
-    kind: ASTNode,
-    parent: Option<WeakASTNode>,
-}
-
-impl SyntaxNode {
-    fn new_with_block_node() -> BlockNode {
-        todo!()
-    }
-
-    fn set_parent(&mut self, parent: WeakASTNode) {
-        self.parent = Some(parent);
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct CoreBlockNode {
     newline: TokenNode,
@@ -108,7 +87,7 @@ pub struct CoreBlockNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct BlockNode(pub Rc<RefCell<CoreBlockNode>>);
+pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
     pub fn new(stmts: &Rc<RefCell<Vec<StatemenIndentWrapperNode>>>, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode {
@@ -146,7 +125,7 @@ pub enum CoreStatemenIndentWrapperNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct StatemenIndentWrapperNode(pub Rc<CoreStatemenIndentWrapperNode>);
+pub struct StatemenIndentWrapperNode(Rc<CoreStatemenIndentWrapperNode>);
 impl StatemenIndentWrapperNode {
     pub fn new_with_correctly_indented(stmt: &StatementNode) -> Self {
         let node = Rc::new(CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(
@@ -247,7 +226,7 @@ pub struct CoreSkippedTokensNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct SkippedTokensNode(pub Rc<CoreSkippedTokensNode>);
+pub struct SkippedTokensNode(Rc<CoreSkippedTokensNode>);
 impl SkippedTokensNode {
     pub fn new_with_leading_skipped_tokens(skipped_tokens: &Rc<Vec<SkippedTokenNode>>) -> Self {
         let node = Rc::new(CoreSkippedTokensNode {
@@ -294,7 +273,7 @@ pub enum CoreStatementNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct StatementNode(pub Rc<CoreStatementNode>);
+pub struct StatementNode(Rc<CoreStatementNode>);
 impl StatementNode {
     pub fn new_with_expression(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(CoreStatementNode::EXPRESSION(ExpressionStatementNode::new(
@@ -379,7 +358,7 @@ pub struct CoreIncorrectlyIndentedStatementNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct IncorrectlyIndentedStatementNode(pub Rc<CoreIncorrectlyIndentedStatementNode>);
+pub struct IncorrectlyIndentedStatementNode(Rc<CoreIncorrectlyIndentedStatementNode>);
 impl IncorrectlyIndentedStatementNode {
     fn new(stmt: &StatementNode, expected_indent: i64, received_indent: i64) -> Self {
         let node = Rc::new(CoreIncorrectlyIndentedStatementNode {
@@ -409,7 +388,7 @@ pub struct CoreExpressionStatementNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct ExpressionStatementNode(pub Rc<CoreExpressionStatementNode>);
+pub struct ExpressionStatementNode(Rc<CoreExpressionStatementNode>);
 impl ExpressionStatementNode {
     fn new(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(CoreExpressionStatementNode {
@@ -489,7 +468,7 @@ pub struct CoreOkAssignmentNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct OkAssignmentNode(pub Rc<CoreOkAssignmentNode>);
+pub struct OkAssignmentNode(Rc<CoreOkAssignmentNode>);
 impl OkAssignmentNode {
     pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
         let node = Rc::new(CoreOkAssignmentNode {
@@ -520,7 +499,7 @@ pub struct CoreInvalidLValueNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct InvalidLValueNode(pub Rc<CoreInvalidLValueNode>);
+pub struct InvalidLValueNode(Rc<CoreInvalidLValueNode>);
 impl InvalidLValueNode {
     pub fn new(l_expr: &ExpressionNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
         let node = Rc::new(CoreInvalidLValueNode {
@@ -1321,7 +1300,7 @@ pub enum CoreTokenNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct TokenNode(pub Rc<CoreTokenNode>);
+pub struct TokenNode(Rc<CoreTokenNode>);
 impl TokenNode {
     pub fn new_with_ok_token(token: &Token, lookahead: usize, kind: OkTokenKind) -> Self {
         let node = Rc::new(CoreTokenNode::OK(OkTokenNode::new(token, lookahead, kind)));
@@ -1454,7 +1433,6 @@ pub struct CoreMissingTokenNode {
     pub expected_symbols: Rc<Vec<&'static str>>,
     pub received_token: Token,
     pub lookahead: usize,
-    pub parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -1469,7 +1447,6 @@ impl MissingTokenNode {
             expected_symbols: expected_symbols.clone(),
             received_token: received_token.clone(),
             lookahead,
-            parent: None,
         }))
     }
 }

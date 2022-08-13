@@ -2,7 +2,6 @@
 use jarvil_macros::Tokenify;
 use super::helper::is_letter;
 use super::lexer::CoreLexer;
-use crate::ast::ast::WeakASTNode;
 use crate::code::Code;
 use crate::constants::common::{
     AND, ATOMIC_TYPE, BLANK, BLOCK_COMMENT, BREAK, COLON, COMMA, CONTINUE, DASH, DEF, DOT,
@@ -122,7 +121,6 @@ pub struct Token {
     pub start_index: usize,
     pub end_index: usize,
     pub trivia: Option<Rc<Vec<Token>>>,
-    pub parent: Option<WeakASTNode>,
 }
 
 impl Token {
@@ -245,7 +243,6 @@ impl Token {
             start_index,
             end_index,
             trivia: None,
-            parent: None,
         };
         match &core_token {
             CoreToken::LEXICAL_ERROR(lexical_err_value) => match lexical_err_value.0 {

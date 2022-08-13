@@ -162,7 +162,6 @@ impl PackratParser {
                 start_index: 0,
                 end_index: 0,
                 trivia: None,
-                parent: None,
             };
         }
         self.token_vec[self.lookahead - 1].clone()
@@ -655,10 +654,6 @@ impl PackratParser {
         components::expression::common::params(self)
     }
 
-    pub fn params_within_parenthesis(&mut self) -> (Option<ParamsNode>, TokenNode, TokenNode) {
-        components::expression::common::params_within_parenthesis(self)
-    }
-
     // declaration
     pub fn variable_decl(&mut self) -> VariableDeclarationNode {
         components::variable_declaration::variable_decl(self)
@@ -670,12 +665,6 @@ impl PackratParser {
 
     pub fn name_type_specs(&mut self) -> NameTypeSpecsNode {
         components::function_declaration::name_type_specs(self)
-    }
-
-    pub fn name_type_specs_within_parenthesis(
-        &mut self,
-    ) -> (Option<NameTypeSpecsNode>, TokenNode, TokenNode) {
-        components::function_declaration::name_type_specs_within_parenthesis(self)
     }
 
     pub fn r_assign(&mut self, identifier_name: Option<&TokenNode>) -> RAssignmentNode {
