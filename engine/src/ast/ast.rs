@@ -85,6 +85,21 @@ pub enum ASTNode {
     SKIPPED_TOKEN(SkippedTokenNode)
 }
 
+pub struct SyntaxNode {
+    kind: ASTNode,
+    parent: Option<WeakASTNode>,
+}
+
+impl SyntaxNode {
+    fn new_with_block_node() -> BlockNode {
+        todo!()
+    }
+    
+    fn set_parent(&mut self, parent: WeakASTNode) {
+        self.parent = Some(parent);
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CoreBlockNode {
     newline: TokenNode,
