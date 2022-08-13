@@ -230,21 +230,21 @@ pub struct SkippedTokensNode(Rc<CoreSkippedTokensNode>);
 impl SkippedTokensNode {
     pub fn new_with_leading_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
         let node = Rc::new(CoreSkippedTokensNode {
-            skipped_tokens: skipped_tokens.clone(),
+            skipped_tokens,
         });
         SkippedTokensNode(node)
     }
 
     pub fn new_with_trailing_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
         let node = Rc::new(CoreSkippedTokensNode {
-            skipped_tokens: skipped_tokens.clone(),
+            skipped_tokens,
         });
         SkippedTokensNode(node)
     }
 
-    pub fn new_with_extra_newlines(extra_newlines: Vec<SkippedTokenNode>) -> Self {
+    pub fn new_with_extra_newlines(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
         let node = Rc::new(CoreSkippedTokensNode {
-            skipped_tokens: extra_newlines.clone(),
+            skipped_tokens,
         });
         SkippedTokensNode(node)
     }
