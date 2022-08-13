@@ -7,7 +7,7 @@
 // Swift - `https://github.com/apple/swift/tree/5e2c815edfd758f9b1309ce07bfc01c4bc20ec23/lib/Syntax`
 
 use crate::ast::ast::{
-    BlockNode, SkippedTokenNode, SkippedTokens, StatemenIndentWrapperNode, StatementNode,
+    BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
 };
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
@@ -35,7 +35,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                 .as_ref()
                 .borrow_mut()
                 .push(StatemenIndentWrapperNode::new_with_trailing_skipped_tokens(
-                    &SkippedTokens::new_with_trailing_skipped_tokens(&Rc::new(skipped_tokens)),
+                    &SkippedTokensNode::new_with_trailing_skipped_tokens(&Rc::new(skipped_tokens)),
                 ));
         }
         let extra_newlines = indent_result.extra_newlines;
@@ -44,7 +44,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                 .as_ref()
                 .borrow_mut()
                 .push(StatemenIndentWrapperNode::new_with_extra_newlines(
-                    &SkippedTokens::new_with_extra_newlines(&Rc::new(extra_newlines)),
+                    &SkippedTokensNode::new_with_extra_newlines(&Rc::new(extra_newlines)),
                 ));
         }
         let incorrect_indent_data = match indent_result.kind {
@@ -69,7 +69,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                 .as_ref()
                 .borrow_mut()
                 .push(StatemenIndentWrapperNode::new_with_leading_skipped_tokens(
-                    &SkippedTokens::new_with_leading_skipped_tokens(&Rc::new(mem::take(
+                    &SkippedTokensNode::new_with_leading_skipped_tokens(&Rc::new(mem::take(
                         &mut leading_skipped_tokens,
                     ))),
                 ));

@@ -25,19 +25,23 @@ pub trait Visitor {
                     StatementIndentWrapperKind::CORRECTLY_INDENTED(stmt_node) => {
                         self.walk(ASTNode::new_with_StatementNode(stmt_node));
                     }
-                    StatementIndentWrapperKind::INCORRECTLY_INDENTED((stmt_node, _)) => {
-                        self.walk(ASTNode::new_with_StatementNode(stmt_node));
+                    StatementIndentWrapperKind::INCORRECTLY_INDENTED(incorrectly_indented_stmt) => {
+                        self.walk(ASTNode::new_with_IncorrectlyIndentedStatementNode(incorrectly_indented_stmt));
                     },
                     StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens) => {
-                        self.walk(ASTNode::new_with_SkippedTokens(skipped_tokens));
+                        self.walk(ASTNode::new_with_SkippedTokensNode(skipped_tokens));
                     },
                     StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens) => {
-                        self.walk(ASTNode::new_with_SkippedTokens(skipped_tokens));
+                        self.walk(ASTNode::new_with_SkippedTokensNode(skipped_tokens));
                     },
                     StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens) => {
-                        self.walk(ASTNode::new_with_SkippedTokens(skipped_tokens));
+                        self.walk(ASTNode::new_with_SkippedTokensNode(skipped_tokens));
                     },
                 }
+            },
+            ASTNode::INCORRECTLY_INDENTED_STATEMENT(incorrectly_indented_stmt) => {
+                let core_incorrectly_indented_stmt = incorrectly_indented_stmt.core_ref();
+                self.walk(ASTNode::new_with_StatementNode(&core_incorrectly_indented_stmt.stmt));
             },
             ASTNode::SKIPPED_TOKENS(skipped_tokens) => {
                 let core_skipped_tokens = skipped_tokens.core_ref();

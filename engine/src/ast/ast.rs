@@ -39,7 +39,8 @@ pub trait ErrornousNode {
 pub enum ASTNode {
     BLOCK(BlockNode),
     STATEMENT_INDENT_WRAPPER(StatemenIndentWrapperNode),
-    SKIPPED_TOKENS(SkippedTokens),
+    SKIPPED_TOKENS(SkippedTokensNode),
+    INCORRECTLY_INDENTED_STATEMENT(IncorrectlyIndentedStatementNode),
     STATEMENT(StatementNode),
     EXPRESSION_STATEMENT(ExpressionStatementNode),
     ASSIGNMENT(AssignmentNode),
@@ -138,10 +139,10 @@ pub struct CoreStatemenIndentWrapperNode {
 #[derive(Debug, Clone)]
 pub enum StatementIndentWrapperKind {
     CORRECTLY_INDENTED(StatementNode),
-    INCORRECTLY_INDENTED((StatementNode, (i64, i64))),
-    LEADING_SKIPPED_TOKENS(SkippedTokens), // skipped tokens leading to the next stmt in block
-    TRAILING_SKIPPED_TOKENS(SkippedTokens), // skipped tokens trailing to the previous stmt in block
-    EXTRA_NEWLINES(SkippedTokens),
+    INCORRECTLY_INDENTED(IncorrectlyIndentedStatementNode),
+    LEADING_SKIPPED_TOKENS(SkippedTokensNode), // skipped tokens leading to the next stmt in block
+    TRAILING_SKIPPED_TOKENS(SkippedTokensNode), // skipped tokens trailing to the previous stmt in block
+    EXTRA_NEWLINES(SkippedTokensNode),
 }
 
 #[derive(Debug, Clone)]
@@ -156,39 +157,38 @@ impl StatemenIndentWrapperNode {
         StatemenIndentWrapperNode(node)
     }
 
-    #[set_parent(STATEMENT_INDENT_WRAPPER, WeakStatemenIndentWrapperNode)]
     pub fn new_with_incorrectly_indented(stmt: &StatementNode, expected_indent: i64, received_indent: i64) -> Self {
         let node = Rc::new(RefCell::new(CoreStatemenIndentWrapperNode{
-            kind: StatementIndentWrapperKind::INCORRECTLY_INDENTED((stmt.clone(), (expected_indent, received_indent))),
+            kind: StatementIndentWrapperKind::INCORRECTLY_INDENTED(IncorrectlyIndentedStatementNode::new(stmt, expected_indent, received_indent)),
             parent: None,
         }));
         StatemenIndentWrapperNode(node)
     }
 
-    pub fn new_with_leading_skipped_tokens(skipped_tokens: &SkippedTokens) -> Self {
+    #[set_parent(STATEMENT_INDENT_WRAPPER, WeakStatemenIndentWrapperNode)]
+    pub fn new_with_leading_skipped_tokens(skipped_tokens: &SkippedTokensNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatemenIndentWrapperNode{
             kind: StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens.clone()),
             parent: None,
         }));
-        impl_set_parent!(skipped_tokens, STATEMENT_INDENT_WRAPPER, node, WeakStatemenIndentWrapperNode);
         StatemenIndentWrapperNode(node)
     }
 
-    pub fn new_with_trailing_skipped_tokens(skipped_tokens: &SkippedTokens) -> Self {
+    #[set_parent(STATEMENT_INDENT_WRAPPER, WeakStatemenIndentWrapperNode)]
+    pub fn new_with_trailing_skipped_tokens(skipped_tokens: &SkippedTokensNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatemenIndentWrapperNode{
             kind: StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens.clone()),
             parent: None,
         }));
-        impl_set_parent!(skipped_tokens, STATEMENT_INDENT_WRAPPER, node, WeakStatemenIndentWrapperNode);
         StatemenIndentWrapperNode(node)
     }
 
-    pub fn new_with_extra_newlines(skipped_tokens: &SkippedTokens) -> Self {
+    #[set_parent(STATEMENT_INDENT_WRAPPER, WeakStatemenIndentWrapperNode)]
+    pub fn new_with_extra_newlines(skipped_tokens: &SkippedTokensNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatemenIndentWrapperNode{
             kind: StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens.clone()),
             parent: None,
         }));
-        impl_set_parent!(skipped_tokens, STATEMENT_INDENT_WRAPPER, node, WeakStatemenIndentWrapperNode);
         StatemenIndentWrapperNode(node)
     }
 
@@ -199,7 +199,7 @@ impl Node for StatemenIndentWrapperNode {
     fn start_index(&self) -> usize {
         match &self.core_ref().kind {
             StatementIndentWrapperKind::CORRECTLY_INDENTED(stmt) => stmt.start_index(),
-            StatementIndentWrapperKind::INCORRECTLY_INDENTED((stmt, _)) => stmt.start_index(),
+            StatementIndentWrapperKind::INCORRECTLY_INDENTED(incorrectly_indented_stmt) => incorrectly_indented_stmt.start_index(),
             StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.start_index(),
             StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.start_index(),
             StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens) => skipped_tokens.start_index(),
@@ -208,7 +208,7 @@ impl Node for StatemenIndentWrapperNode {
     fn end_index(&self) -> usize {
         match &self.core_ref().kind {
             StatementIndentWrapperKind::CORRECTLY_INDENTED(stmt) => stmt.end_index(),
-            StatementIndentWrapperKind::INCORRECTLY_INDENTED((stmt, _)) => stmt.end_index(),
+            StatementIndentWrapperKind::INCORRECTLY_INDENTED(incorrectly_indented_stmt) => incorrectly_indented_stmt.end_index(),
             StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.end_index(),
             StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.end_index(),
             StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens) => skipped_tokens.end_index(),
@@ -217,7 +217,7 @@ impl Node for StatemenIndentWrapperNode {
     fn start_line_number(&self) -> usize {
         match &self.core_ref().kind {
             StatementIndentWrapperKind::CORRECTLY_INDENTED(stmt) => stmt.start_line_number(),
-            StatementIndentWrapperKind::INCORRECTLY_INDENTED((stmt, _)) => stmt.start_line_number(),
+            StatementIndentWrapperKind::INCORRECTLY_INDENTED(incorrectly_indented_stmt) => incorrectly_indented_stmt.start_line_number(),
             StatementIndentWrapperKind::LEADING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.start_line_number(),
             StatementIndentWrapperKind::TRAILING_SKIPPED_TOKENS(skipped_tokens) => skipped_tokens.start_line_number(),
             StatementIndentWrapperKind::EXTRA_NEWLINES(skipped_tokens) => skipped_tokens.start_line_number(),
@@ -226,50 +226,50 @@ impl Node for StatemenIndentWrapperNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct CoreSkippedTokens {
+pub struct CoreSkippedTokensNode {
     pub skipped_tokens: Rc<Vec<SkippedTokenNode>>,
     parent: Option<WeakASTNode>,
 }
 
 #[derive(Debug, Clone)]
-pub struct SkippedTokens(pub Rc<RefCell<CoreSkippedTokens>>);
-impl SkippedTokens {
+pub struct SkippedTokensNode(pub Rc<RefCell<CoreSkippedTokensNode>>);
+impl SkippedTokensNode {
     pub fn new_with_leading_skipped_tokens(skipped_tokens: &Rc<Vec<SkippedTokenNode>>) -> Self {
-        let node = Rc::new(RefCell::new(CoreSkippedTokens {
+        let node = Rc::new(RefCell::new(CoreSkippedTokensNode{
             skipped_tokens: skipped_tokens.clone(),
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
-            impl_set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
+            impl_set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokensNode);
         }
-        SkippedTokens(node)
+        SkippedTokensNode(node)
     }
 
     pub fn new_with_trailing_skipped_tokens(skipped_tokens: &Rc<Vec<SkippedTokenNode>>) -> Self {
-        let node = Rc::new(RefCell::new(CoreSkippedTokens {
+        let node = Rc::new(RefCell::new(CoreSkippedTokensNode{
             skipped_tokens: skipped_tokens.clone(),
             parent: None,
         }));
         for skipped_token in skipped_tokens.as_ref() {
-            impl_set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
+            impl_set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokensNode);
         }
-        SkippedTokens(node)
+        SkippedTokensNode(node)
     }
 
     pub fn new_with_extra_newlines(extra_newlines: &Rc<Vec<SkippedTokenNode>>) -> Self {
-        let node = Rc::new(RefCell::new(CoreSkippedTokens {
+        let node = Rc::new(RefCell::new(CoreSkippedTokensNode{
             skipped_tokens: extra_newlines.clone(),
             parent: None,
         }));
         for skipped_token in extra_newlines.as_ref() {
-            impl_set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokens);
+            impl_set_parent!(skipped_token, SKIPPED_TOKENS, node, WeakSkippedTokensNode);
         }
-        SkippedTokens(node)
+        SkippedTokensNode(node)
     }
 
-    core_node_access!(CoreSkippedTokens);
+    core_node_access!(CoreSkippedTokensNode);
 }
-impl Node for SkippedTokens {
+impl Node for SkippedTokensNode {
     default_node_impl!(SkippedTokens);
     fn start_index(&self) -> usize {
         self.core_ref().skipped_tokens[0].start_index()
@@ -304,7 +304,6 @@ pub enum StatementKind {
 #[derive(Debug, Clone)]
 pub struct StatementNode(pub Rc<RefCell<CoreStatementNode>>);
 impl StatementNode {
-    #[set_parent(STATEMENT, WeakStatementNode)]
     pub fn new_with_expression(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
             kind: StatementKind::EXPRESSION(ExpressionStatementNode::new(expr, newline)),
@@ -397,6 +396,43 @@ impl Node for StatementNode {
     }
 }
 default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementKind);
+
+#[derive(Debug, Clone)]
+pub struct CoreIncorrectlyIndentedStatementNode {
+    pub stmt: StatementNode,
+    expected_indent: i64,
+    received_indent: i64,
+    parent: Option<WeakASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct IncorrectlyIndentedStatementNode(pub Rc<RefCell<CoreIncorrectlyIndentedStatementNode>>);
+impl IncorrectlyIndentedStatementNode {
+    #[set_parent(INCORRECTLY_INDENTED_STATEMENT, WeakIncorrectlyIndentedStatementNode)]
+    fn new(stmt: &StatementNode, expected_indent: i64, received_indent: i64) -> Self {
+        let node = Rc::new(RefCell::new(CoreIncorrectlyIndentedStatementNode{
+            stmt: stmt.clone(),
+            expected_indent,
+            received_indent,
+            parent: None,
+        }));
+        IncorrectlyIndentedStatementNode(node)
+    }
+
+    core_node_access!(CoreIncorrectlyIndentedStatementNode);
+}
+impl Node for IncorrectlyIndentedStatementNode {
+    default_node_impl!(IncorrectlyIndentedStatementNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().stmt.start_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().stmt.end_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().stmt.start_line_number()
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct CoreExpressionStatementNode {
