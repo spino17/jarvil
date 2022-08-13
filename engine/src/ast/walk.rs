@@ -48,8 +48,8 @@ pub trait Visitor {
             ASTNode::STATEMENT(statement_node) => {
                 let core_stmt = statement_node.core_ref();
                 match &core_stmt.kind {
-                    StatementKind::EXPRESSION((expr_node, _)) => {
-                        self.walk(ASTNode::new_with_ExpressionNode(expr_node));
+                    StatementKind::EXPRESSION(expr_stmt) => {
+                        self.walk(ASTNode::new_with_ExpressionStatementNode(expr_stmt));
                     },
                     StatementKind::ASSIGNMENT(assignment_node) => {
                         self.walk(ASTNode::new_with_AssignmentNode(assignment_node));
@@ -70,6 +70,10 @@ pub trait Visitor {
                         self.walk(ASTNode::new_with_MissingTokenNode(missing_token_node));
                     },
                 }
+            },
+            ASTNode::EXPRESSION_STATEMENT(expr_stmt) => {
+                let core_expr_stmt = expr_stmt.core_ref();
+                self.walk(ASTNode::new_with_ExpressionNode(&core_expr_stmt.expr));
             },
             ASTNode::ASSIGNMENT(assignment_node) => {
                 let core_assignment = assignment_node.core_ref();

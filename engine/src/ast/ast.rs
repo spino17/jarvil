@@ -41,6 +41,7 @@ pub enum ASTNode {
     STATEMENT_INDENT_WRAPPER(StatemenIndentWrapperNode),
     SKIPPED_TOKENS(SkippedTokens),
     STATEMENT(StatementNode),
+    EXPRESSION_STATEMENT(ExpressionStatementNode),
     ASSIGNMENT(AssignmentNode),
     OK_ASSIGNMENT(OkAssignmentNode),
     INVALID_L_VALUE(InvalidLValueNode),
@@ -291,7 +292,7 @@ pub struct CoreStatementNode {
 pub enum StatementKind {
     // expr, variable declaration, type struct declaration, type lambda declaration, interface declaration,
     // assignment, if, for, while, return, continue, break, implementation of interfaces, implementation of structs
-    EXPRESSION((ExpressionNode, TokenNode)),
+    EXPRESSION(ExpressionStatementNode),
     ASSIGNMENT(AssignmentNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
     FUNCTION_DECLARATION(FunctionDeclarationNode),
@@ -306,7 +307,7 @@ impl StatementNode {
     #[set_parent(STATEMENT, WeakStatementNode)]
     pub fn new_with_expression(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreStatementNode {
-            kind: StatementKind::EXPRESSION((expr.clone(), newline.clone())),
+            kind: StatementKind::EXPRESSION(ExpressionStatementNode::new(expr, newline)),
             parent: None,
         }));
         StatementNode(node)
@@ -363,7 +364,7 @@ impl Node for StatementNode {
     default_node_impl!(StatementNode);
     fn start_index(&self) -> usize {
         match &self.core_ref().kind {
-            StatementKind::EXPRESSION((expr, _)) => expr.start_index(),
+            StatementKind::EXPRESSION(expr_stmt) => expr_stmt.start_index(),
             StatementKind::ASSIGNMENT(assignment) => assignment.start_index(),
             StatementKind::VARIABLE_DECLARATION(variable_decl) => variable_decl.start_index(), 
             StatementKind::FUNCTION_DECLARATION(func_decl) => func_decl.start_index(),
@@ -374,7 +375,7 @@ impl Node for StatementNode {
     }
     fn end_index(&self) -> usize {
         match &self.core_ref().kind {
-            StatementKind::EXPRESSION((_, newline)) => newline.end_index(),
+            StatementKind::EXPRESSION(expr_stmt) => expr_stmt.end_index(),
             StatementKind::ASSIGNMENT(assignment) => assignment.end_index(),
             StatementKind::VARIABLE_DECLARATION(variable_decl) => variable_decl.end_index(), 
             StatementKind::FUNCTION_DECLARATION(func_decl) => func_decl.end_index(),
@@ -385,7 +386,7 @@ impl Node for StatementNode {
     }
     fn start_line_number(&self) -> usize {
         match &self.core_ref().kind {
-            StatementKind::EXPRESSION((expr, _)) => expr.start_line_number(),
+            StatementKind::EXPRESSION(expr_stmt) => expr_stmt.start_line_number(),
             StatementKind::ASSIGNMENT(assignment) => assignment.start_line_number(),
             StatementKind::VARIABLE_DECLARATION(variable_decl) => variable_decl.start_line_number(), 
             StatementKind::FUNCTION_DECLARATION(func_decl) => func_decl.start_line_number(),
@@ -396,6 +397,42 @@ impl Node for StatementNode {
     }
 }
 default_errornous_node_impl!(StatementNode, CoreStatementNode, StatementKind);
+
+#[derive(Debug, Clone)]
+pub struct CoreExpressionStatementNode {
+    pub expr: ExpressionNode,
+    newline: TokenNode,
+    parent: Option<WeakASTNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExpressionStatementNode(pub Rc<RefCell<CoreExpressionStatementNode>>);
+impl ExpressionStatementNode {
+    #[set_parent(EXPRESSION_STATEMENT, WeakExpressionStatementNode)]
+    fn new(expr: &ExpressionNode, newline: &TokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreExpressionStatementNode{
+            expr: expr.clone(),
+            newline: newline.clone(),
+            parent: None,
+        }));
+        ExpressionStatementNode(node)
+    }
+
+    core_node_access!(CoreExpressionStatementNode);
+}
+impl Node for ExpressionStatementNode {
+    default_node_impl!(ExpressionStatementNode);
+    fn start_index(&self) -> usize {
+        self.core_ref().expr.start_index()
+    }
+    fn end_index(&self) -> usize {
+        self.core_ref().newline.end_index()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().expr.start_line_number()
+    }
+}
+
 
 #[derive(Debug, Clone)]
 pub struct CoreAssignmentNode {
