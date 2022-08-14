@@ -1922,7 +1922,7 @@ default_errornous_node_impl!(ParamsNode, CoreParamsNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreOkParamsNode {
-    comma: Option<TokenNode>,
+    pub comma: Option<TokenNode>,
     pub param: ExpressionNode,
     pub remaining_params: Option<ParamsNode>,
 }
