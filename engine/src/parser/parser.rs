@@ -8,7 +8,7 @@ use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
     FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, ParamsNode, RAssignmentNode,
     SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    UnaryExpressionNode, VariableDeclarationNode,
+    UnaryExpressionNode, VariableDeclarationNode, Node,
 };
 use crate::ast::ast::{ErrornousNode, OkTokenKind};
 use crate::code::Code;
@@ -303,12 +303,12 @@ impl PackratParser {
         let skipped_tokens_len = skipped_tokens.len();
         let (code_line, line_start_index, line_number, start_err_index) = self
             .code
-            .line_data(skipped_tokens[0].line_number(), skipped_tokens[0].index());
+            .line_data(skipped_tokens[0].start_line_number(), skipped_tokens[0].start_index());
         if errors_len > 0 && context::curr_error_line_number() == line_number {
             return;
         } else {
             let err_str = String::from("invalid sequence of tokens found at the trail of the line");
-            let end_err_index = skipped_tokens[skipped_tokens_len - 1].index();
+            let end_err_index = skipped_tokens[skipped_tokens_len - 1].end_index();
             let err_message = JarvilError::form_single_line_underline_pointer_error(
                 start_err_index,
                 end_err_index,

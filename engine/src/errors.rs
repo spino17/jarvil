@@ -164,7 +164,7 @@ impl JarvilError {
             if i == start_pointer_index {
                 pointer_line.push('^');
                 flag = true;
-            } else if i == end_pointer_index {
+            } else if i == end_pointer_index - 1 {
                 pointer_line.push('^');
                 flag = false;
             } else {
