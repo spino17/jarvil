@@ -99,3 +99,27 @@ macro_rules! impl_range {
         )
     };
 }
+
+macro_rules! impl_enum_variant {
+    ($v: expr, $s: ident, $(($t: ident, $u: ident)),*) => {
+        match $v {
+            $(
+                $t::$u(x) => {
+                    x.$s()
+                }
+            )*,
+        }
+    };
+}
+
+macro_rules! impl_node_variant_for_range {
+    ($v: expr, $(($t: ident, $u: ident)),*) => {
+        match $v {
+            $(
+                $t::$u(x) => {
+                    impl_range!(x, x)
+                }
+            )*,
+        }
+    };
+}

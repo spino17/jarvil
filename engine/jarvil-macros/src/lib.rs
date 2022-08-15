@@ -3,6 +3,7 @@ mod ast;
 mod token;
 use crate::ast::{ast_node::impl_weak_nodes_macro};
 use crate::token::impl_tokenify_macro;
+use crate::ast::ast_node::impl_node_trait;
 use proc_macro::*;
 use std::str::FromStr;
 use syn::{
@@ -63,7 +64,11 @@ pub fn tokenify_macro_derive(input: TokenStream) -> TokenStream {
     impl_tokenify_macro(&input_ast)
 }
 
-#[proc_macro_attribute]
-pub fn node(args: TokenStream, input: TokenStream) -> TokenStream {
-    todo!()
+#[proc_macro_derive(Node)]
+pub fn node(input: TokenStream) -> TokenStream {
+    let input_ast: syn::DeriveInput = match syn::parse(input.clone()) {
+        Ok(it) => it,
+        Err(e) => return token_stream_with_error(input, e),
+    };
+    impl_node_trait(&input_ast)
 }

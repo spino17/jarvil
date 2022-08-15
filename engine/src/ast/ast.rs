@@ -5,7 +5,9 @@
 
 #[macro_use]
 use jarvil_macros::Nodify;
-use crate::parser::components::assignment;
+#[macro_use]
+use jarvil_macros::Node;
+
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
 use crate::{
@@ -600,7 +602,7 @@ impl Node for StructDeclarationNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreLambdaDeclarationNode {
     OK(OkLambdaDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
@@ -632,26 +634,6 @@ impl LambdaDeclarationNode {
             newline,
         )));
         LambdaDeclarationNode(node)
-    }
-}
-impl Node for LambdaDeclarationNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreLambdaDeclarationNode::OK(ok_lambda_decl) => {
-                impl_range!(ok_lambda_decl, ok_lambda_decl)
-            }
-            CoreLambdaDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreLambdaDeclarationNode::OK(ok_lambda_decl) => ok_lambda_decl.start_line_number(),
-            CoreLambdaDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_line_number()
-            }
-        }
     }
 }
 default_errornous_node_impl!(LambdaDeclarationNode, CoreLambdaDeclarationNode);

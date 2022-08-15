@@ -1,8 +1,8 @@
 pub mod ast {
     #[macro_use]
     use jarvil_macros::Nodify;
-    use text_size::{TextRange, TextSize};
-    use crate::parser::components::assignment;
+    #[macro_use]
+    use jarvil_macros::Node;
     use crate::scope::core::SymbolData;
     use crate::types::atomic::Atomic;
     use crate::{
@@ -13,6 +13,7 @@ pub mod ast {
     };
     use std::sync::Weak;
     use std::{cell::RefCell, rc::Rc};
+    use text_size::{TextRange, TextSize};
     pub trait Node {
         fn range(&self) -> TextRange;
         fn start_line_number(&self) -> usize;
@@ -1972,27 +1973,29 @@ pub mod ast {
     impl Node for StatemenIndentWrapperNode {
         fn range(&self) -> TextRange {
             match &self.0.as_ref() {
-                CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => {
-                    TextRange::new(TextSize::from(stmt.range().start()), stmt.range().end())
-                }
-                CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
-                    TextRange::new(TextSize::from(stmt.range().start()), stmt.range().end())
-                }
+                CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => TextRange::new(
+                    TextSize::from(stmt.range().start()),
+                    TextSize::from(stmt.range().end()),
+                ),
+                CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => TextRange::new(
+                    TextSize::from(stmt.range().start()),
+                    TextSize::from(stmt.range().end()),
+                ),
                 CoreStatemenIndentWrapperNode::LEADING_SKIPPED_TOKENS(skipped_tokens) => {
                     TextRange::new(
                         TextSize::from(skipped_tokens.range().start()),
-                        skipped_tokens.range().end(),
+                        TextSize::from(skipped_tokens.range().end()),
                     )
                 }
                 CoreStatemenIndentWrapperNode::TRAILING_SKIPPED_TOKENS(skipped_tokens) => {
                     TextRange::new(
                         TextSize::from(skipped_tokens.range().start()),
-                        skipped_tokens.range().end(),
+                        TextSize::from(skipped_tokens.range().end()),
                     )
                 }
                 CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(skipped_tokens) => TextRange::new(
                     TextSize::from(skipped_tokens.range().start()),
-                    skipped_tokens.range().end(),
+                    TextSize::from(skipped_tokens.range().end()),
                 ),
             }
         }
@@ -2918,6 +2921,26 @@ pub mod ast {
             }
         }
     }
+    impl Node for LambdaDeclarationNode {
+        fn range(&self) -> TextRange {
+            match &self.0.as_ref() {
+                CoreLambdaDeclarationNode::OK(x) => TextRange::new(
+                    TextSize::from(x.range().start()),
+                    TextSize::from(x.range().end()),
+                ),
+                CoreLambdaDeclarationNode::MISSING_TOKENS(x) => TextRange::new(
+                    TextSize::from(x.range().start()),
+                    TextSize::from(x.range().end()),
+                ),
+            }
+        }
+        fn start_line_number(&self) -> usize {
+            match &self.0.as_ref() {
+                CoreLambdaDeclarationNode::OK(x) => x.start_line_number(),
+                CoreLambdaDeclarationNode::MISSING_TOKENS(x) => x.start_line_number(),
+            }
+        }
+    }
     pub struct LambdaDeclarationNode(Rc<CoreLambdaDeclarationNode>);
     #[automatically_derived]
     impl ::core::fmt::Debug for LambdaDeclarationNode {
@@ -2956,28 +2979,6 @@ pub mod ast {
                 newline,
             )));
             LambdaDeclarationNode(node)
-        }
-    }
-    impl Node for LambdaDeclarationNode {
-        fn range(&self) -> TextRange {
-            match &self.0.as_ref() {
-                CoreLambdaDeclarationNode::OK(ok_lambda_decl) => TextRange::new(
-                    TextSize::from(ok_lambda_decl.range().start()),
-                    TextSize::from(ok_lambda_decl.range().end()),
-                ),
-                CoreLambdaDeclarationNode::MISSING_TOKENS(missing_tokens) => TextRange::new(
-                    TextSize::from(missing_tokens.range().start()),
-                    TextSize::from(missing_tokens.range().end()),
-                ),
-            }
-        }
-        fn start_line_number(&self) -> usize {
-            match &self.0.as_ref() {
-                CoreLambdaDeclarationNode::OK(ok_lambda_decl) => ok_lambda_decl.start_line_number(),
-                CoreLambdaDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                    missing_tokens.start_line_number()
-                }
-            }
         }
     }
     impl ErrornousNode for LambdaDeclarationNode {

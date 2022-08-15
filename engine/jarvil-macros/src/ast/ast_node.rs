@@ -1,6 +1,9 @@
 extern crate proc_macro;
+use std::fmt::format;
+
 use proc_macro::*;
 use quote::quote;
+use syn::{punctuated::Punctuated, PathSegment, token::Colon2};
 use crate::get_macro_expr_stmt;
 
 pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
@@ -57,6 +60,56 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
         #weak_nodes_macro_stmt;
         impl ASTNode {
             #impl_ast_node;
+        }
+    };
+    gen.into()
+}
+
+pub fn type_from_str(type_name: &str) -> syn::Type {
+    let mut punc: Punctuated<PathSegment, Colon2> = syn::punctuated::Punctuated::new();
+    punc.push(syn::PathSegment{
+        ident: proc_macro2::Ident::new(type_name, proc_macro2::Span::call_site()),
+        arguments: syn::PathArguments::None,
+    });
+    syn::Type::Path(syn::TypePath{
+        qself: None,
+        path: syn::Path{
+            leading_colon: None,
+            segments: punc,
+        }
+    })
+}
+
+pub fn impl_node_trait(ast: &syn::DeriveInput) -> TokenStream {
+    let name = &ast.ident.to_string();  // eg. CoreBlockNode
+    let node_type = type_from_str(&name[4..]);
+    let enum_data = match &ast.data {
+        syn::Data::Enum(enum_data) => enum_data,
+        _ => panic!("Node macro should only be used for `Core<Node>` enum")
+    };
+    let variant_iter = &mut enum_data.variants.iter();
+    let mut flag = false;
+    let mut common_str = "".to_string();
+    while let Some(variant) = variant_iter.next() {
+        let variant_name = variant.ident.to_string();  // eg. `BLOCK`
+        if flag {
+            common_str.push_str(", ");
+        }
+        common_str.push_str(&format!("({}, {})", name, variant_name));
+        flag = true;
+    }
+    let range_macro_str = format!("&self.0.as_ref(), {}", &common_str);
+    let start_line_number_str = format!("&self.0.as_ref(), start_line_number, {}", &common_str);
+    let range_macro_expr = get_macro_expr_stmt("impl_node_variant_for_range", &range_macro_str);
+    let start_line_number_macro_expr = get_macro_expr_stmt("impl_enum_variant", &start_line_number_str);
+    let gen = quote! {
+        impl Node for #node_type {
+            fn range(&self) -> TextRange {
+                #range_macro_expr
+            }
+            fn start_line_number(&self) -> usize {
+                #start_line_number_macro_expr
+            }
         }
     };
     gen.into()
