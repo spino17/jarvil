@@ -100,7 +100,12 @@ pub struct JarvilError {
     kind: JarvilErrorKind,
 }
 impl JarvilError {
-    fn new(start_index: usize, end_index: usize, err_message: String, kind: JarvilErrorKind) -> Self {
+    fn new(
+        start_index: usize,
+        end_index: usize,
+        err_message: String,
+        kind: JarvilErrorKind,
+    ) -> Self {
         JarvilError {
             start_index,
             end_index,

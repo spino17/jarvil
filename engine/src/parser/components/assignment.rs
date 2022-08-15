@@ -10,8 +10,8 @@ pub fn assignment(parser: &mut PackratParser, expr: &ExpressionNode) -> Assignme
         Some(atom_node) => AssignmentNode::new(&atom_node, &r_assign_node, &equal_node),
         None => {
             parser.log_invalid_l_value_error(
-                expr.start_index(),
-                expr.end_index(),
+                expr.range().start().into(),
+                expr.range().end().into(),
                 expr.start_line_number(),
             );
             AssignmentNode::new_with_invalid_l_value(&expr, &r_assign_node, &equal_node)

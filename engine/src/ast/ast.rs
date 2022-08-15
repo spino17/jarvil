@@ -5,6 +5,7 @@
 
 #[macro_use]
 use jarvil_macros::Nodify;
+use crate::parser::components::assignment;
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
 use crate::{
@@ -15,10 +16,10 @@ use crate::{
 };
 use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
+use text_size::{TextRange, TextSize};
 
 pub trait Node {
-    fn start_index(&self) -> usize;
-    fn end_index(&self) -> usize;
+    fn range(&self) -> TextRange;
     fn start_line_number(&self) -> usize;
 }
 
@@ -103,12 +104,12 @@ impl BlockNode {
     }
 }
 impl Node for BlockNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().borrow().newline.start_index()
-    }
-    fn end_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         let stmts_len = self.0.as_ref().borrow().stmts.len();
-        self.0.as_ref().borrow().stmts[stmts_len - 1].end_index()
+        impl_range!(
+            self.0.as_ref().borrow().newline,
+            self.0.as_ref().borrow().stmts[stmts_len - 1]
+        )
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().borrow().newline.start_line_number()
@@ -167,37 +168,22 @@ impl StatemenIndentWrapperNode {
     }
 }
 impl Node for StatemenIndentWrapperNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.start_index(),
-            CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(incorrectly_indented_stmt) => {
-                incorrectly_indented_stmt.start_index()
+            CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => {
+                impl_range!(stmt, stmt)
+            }
+            CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
+                impl_range!(stmt, stmt)
             }
             CoreStatemenIndentWrapperNode::LEADING_SKIPPED_TOKENS(skipped_tokens) => {
-                skipped_tokens.start_index()
+                impl_range!(skipped_tokens, skipped_tokens)
             }
             CoreStatemenIndentWrapperNode::TRAILING_SKIPPED_TOKENS(skipped_tokens) => {
-                skipped_tokens.start_index()
+                impl_range!(skipped_tokens, skipped_tokens)
             }
             CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(skipped_tokens) => {
-                skipped_tokens.start_index()
-            }
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.end_index(),
-            CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(incorrectly_indented_stmt) => {
-                incorrectly_indented_stmt.end_index()
-            }
-            CoreStatemenIndentWrapperNode::LEADING_SKIPPED_TOKENS(skipped_tokens) => {
-                skipped_tokens.end_index()
-            }
-            CoreStatemenIndentWrapperNode::TRAILING_SKIPPED_TOKENS(skipped_tokens) => {
-                skipped_tokens.end_index()
-            }
-            CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(skipped_tokens) => {
-                skipped_tokens.end_index()
+                impl_range!(skipped_tokens, skipped_tokens)
             }
         }
     }
@@ -244,11 +230,12 @@ impl SkippedTokensNode {
     }
 }
 impl Node for SkippedTokensNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().skipped_tokens[0].start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().skipped_tokens[self.0.as_ref().skipped_tokens.len() - 1].end_index()
+    fn range(&self) -> TextRange {
+        let core_skipped_tokens = &self.0.as_ref().skipped_tokens;
+        impl_range!(
+            core_skipped_tokens[0],
+            core_skipped_tokens[core_skipped_tokens.len() - 1]
+        )
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().skipped_tokens[0].start_line_number()
@@ -306,26 +293,21 @@ impl StatementNode {
     }
 }
 impl Node for StatementNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreStatementNode::EXPRESSION(expr_stmt) => expr_stmt.start_index(),
-            CoreStatementNode::ASSIGNMENT(assignment) => assignment.start_index(),
-            CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => variable_decl.start_index(),
-            CoreStatementNode::FUNCTION_DECLARATION(func_decl) => func_decl.start_index(),
-            CoreStatementNode::TYPE_DECLARATION(type_decl) => type_decl.start_index(),
-            CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => struct_stmt.start_index(),
-            CoreStatementNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreStatementNode::EXPRESSION(expr_stmt) => expr_stmt.end_index(),
-            CoreStatementNode::ASSIGNMENT(assignment) => assignment.end_index(),
-            CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => variable_decl.end_index(),
-            CoreStatementNode::FUNCTION_DECLARATION(func_decl) => func_decl.end_index(),
-            CoreStatementNode::TYPE_DECLARATION(type_decl) => type_decl.end_index(),
-            CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => struct_stmt.end_index(),
-            CoreStatementNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+            CoreStatementNode::EXPRESSION(expr_stmt) => impl_range!(expr_stmt, expr_stmt),
+            CoreStatementNode::ASSIGNMENT(assignment) => impl_range!(assignment, assignment),
+            CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
+                impl_range!(variable_decl, variable_decl)
+            }
+            CoreStatementNode::FUNCTION_DECLARATION(func_decl) => impl_range!(func_decl, func_decl),
+            CoreStatementNode::TYPE_DECLARATION(type_decl) => impl_range!(type_decl, type_decl),
+            CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
+                impl_range!(struct_stmt, struct_stmt)
+            }
+            CoreStatementNode::MISSING_TOKENS(missing_tokens) => {
+                impl_range!(missing_tokens, missing_tokens)
+            }
         }
     }
     fn start_line_number(&self) -> usize {
@@ -364,13 +346,10 @@ impl IncorrectlyIndentedStatementNode {
     }
 }
 impl Node for IncorrectlyIndentedStatementNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().stmt.start_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().stmt, self.0.as_ref().stmt)
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().stmt.end_index()
-    }
-    fn end_index(&self) -> usize {
         self.0.as_ref().stmt.start_line_number()
     }
 }
@@ -393,11 +372,8 @@ impl ExpressionStatementNode {
     }
 }
 impl Node for ExpressionStatementNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().expr.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().newline.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().expr, self.0.as_ref().newline)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().expr.start_line_number()
@@ -432,16 +408,12 @@ impl AssignmentNode {
     }
 }
 impl Node for AssignmentNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreAssignmentNode::OK(ok_assignment) => ok_assignment.start_index(),
-            CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value) => invalid_l_value.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreAssignmentNode::OK(ok_assignment) => ok_assignment.end_index(),
-            CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value) => invalid_l_value.end_index(),
+            CoreAssignmentNode::OK(ok_assignment) => impl_range!(ok_assignment, ok_assignment),
+            CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value) => {
+                impl_range!(invalid_l_value, invalid_l_value)
+            }
         }
     }
     fn start_line_number(&self) -> usize {
@@ -474,11 +446,8 @@ impl OkAssignmentNode {
     }
 }
 impl Node for OkAssignmentNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().l_atom.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().r_assign.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().l_atom, self.0.as_ref().r_assign)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().l_atom.start_line_number()
@@ -505,11 +474,8 @@ impl InvalidLValueNode {
     }
 }
 impl Node for InvalidLValueNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().l_expr.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().r_assign.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().l_expr, self.0.as_ref().r_assign)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().l_expr.start_line_number()
@@ -539,11 +505,8 @@ impl StructStatementNode {
     }
 }
 impl Node for StructStatementNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().name_type_spec.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().newline.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().name_type_spec, self.0.as_ref().newline)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().name_type_spec.start_line_number()
@@ -581,18 +544,13 @@ impl TypeDeclarationNode {
     }
 }
 impl Node for TypeDeclarationNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreTypeDeclarationNode::STRUCT(struct_decl) => struct_decl.start_index(),
-            CoreTypeDeclarationNode::LAMBDA(lambda_decl) => lambda_decl.start_index(),
-            CoreTypeDeclarationNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreTypeDeclarationNode::STRUCT(struct_decl) => struct_decl.end_index(),
-            CoreTypeDeclarationNode::LAMBDA(lambda_decl) => lambda_decl.end_index(),
-            CoreTypeDeclarationNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+            CoreTypeDeclarationNode::STRUCT(struct_decl) => impl_range!(struct_decl, struct_decl),
+            CoreTypeDeclarationNode::LAMBDA(lambda_decl) => impl_range!(lambda_decl, lambda_decl),
+            CoreTypeDeclarationNode::MISSING_TOKENS(missing_tokens) => {
+                impl_range!(missing_tokens, missing_tokens)
+            }
         }
     }
     fn start_line_number(&self) -> usize {
@@ -634,11 +592,8 @@ impl StructDeclarationNode {
     }
 }
 impl Node for StructDeclarationNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().type_keyword.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().block.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().type_keyword, self.0.as_ref().block)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().type_keyword.start_line_number()
@@ -680,18 +635,14 @@ impl LambdaDeclarationNode {
     }
 }
 impl Node for LambdaDeclarationNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreLambdaDeclarationNode::OK(ok_lambda_decl) => ok_lambda_decl.start_index(),
-            CoreLambdaDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_index()
+            CoreLambdaDeclarationNode::OK(ok_lambda_decl) => {
+                impl_range!(ok_lambda_decl, ok_lambda_decl)
             }
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreLambdaDeclarationNode::OK(ok_lambda_decl) => ok_lambda_decl.end_index(),
-            CoreLambdaDeclarationNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+            CoreLambdaDeclarationNode::MISSING_TOKENS(missing_tokens) => {
+                impl_range!(missing_tokens, missing_tokens)
+            }
         }
     }
     fn start_line_number(&self) -> usize {
@@ -747,11 +698,8 @@ impl OkLambdaDeclarationNode {
     }
 }
 impl Node for OkLambdaDeclarationNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().type_keyword.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().newline.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().type_keyword, self.0.as_ref().newline)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().type_keyword.start_line_number()
@@ -795,19 +743,13 @@ impl FunctionDeclarationNode {
     }
 }
 impl Node for FunctionDeclarationNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreFunctionDeclarationNode::OK(ok_func_decl) => ok_func_decl.start_index(),
-            CoreFunctionDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_index()
+            CoreFunctionDeclarationNode::OK(ok_func_decl) => {
+                impl_range!(ok_func_decl, ok_func_decl)
             }
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreFunctionDeclarationNode::OK(ok_func_decl) => ok_func_decl.end_index(),
             CoreFunctionDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.end_index()
+                impl_range!(missing_tokens, missing_tokens)
             }
         }
     }
@@ -870,14 +812,11 @@ impl OkFunctionDeclarationNode {
     }
 }
 impl Node for OkFunctionDeclarationNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref().func_keyword {
-            FuncKeywordKind::DEF(token) => token.start_index(),
-            FuncKeywordKind::FUNC(token) => token.start_index(),
+            FuncKeywordKind::DEF(token) => impl_range!(token, self.0.as_ref().block),
+            FuncKeywordKind::FUNC(token) => impl_range!(token, self.0.as_ref().block),
         }
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().block.end_index()
     }
     fn start_line_number(&self) -> usize {
         match &self.0.as_ref().func_keyword {
@@ -914,11 +853,8 @@ impl VariableDeclarationNode {
     }
 }
 impl Node for VariableDeclarationNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().let_keyword.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().r_assign.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().let_keyword, self.0.as_ref().r_assign)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().let_keyword.start_line_number()
@@ -940,16 +876,14 @@ impl NameTypeSpecsNode {
     }
 }
 impl Node for NameTypeSpecsNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreNameTypeSpecsNode::OK(ok_name_type_specs) => ok_name_type_specs.start_index(),
-            CoreNameTypeSpecsNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreNameTypeSpecsNode::OK(ok_name_type_specs) => ok_name_type_specs.end_index(),
-            CoreNameTypeSpecsNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+            CoreNameTypeSpecsNode::OK(ok_name_type_specs) => {
+                impl_range!(ok_name_type_specs, ok_name_type_specs)
+            }
+            CoreNameTypeSpecsNode::MISSING_TOKENS(missing_tokens) => {
+                impl_range!(missing_tokens, missing_tokens)
+            }
         }
     }
     fn start_line_number(&self) -> usize {
@@ -996,13 +930,10 @@ impl OkNameTypeSpecsNode {
     }
 }
 impl Node for OkNameTypeSpecsNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().arg.start_index()
-    }
-    fn end_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_args {
-            Some(remaining_args) => remaining_args.end_index(),
-            None => self.0.as_ref().arg.end_index(),
+            Some(remaining_args) => impl_range!(self.0.as_ref().arg, remaining_args),
+            None => impl_range!(self.0.as_ref().arg, self.0.as_ref().arg),
         }
     }
     fn start_line_number(&self) -> usize {
@@ -1030,11 +961,8 @@ impl NameTypeSpecNode {
     }
 }
 impl Node for NameTypeSpecNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().name.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().data_type.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().name, self.0.as_ref().data_type)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().name.start_line_number()
@@ -1091,20 +1019,16 @@ impl TypeExpressionNode {
     }
 }
 impl Node for TypeExpressionNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.start_index(),
-            CoreTypeExpressionNode::USER_DEFINED(user_defined) => user_defined.start_index(),
-            CoreTypeExpressionNode::ARRAY(array) => array.start_index(),
-            CoreTypeExpressionNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.end_index(),
-            CoreTypeExpressionNode::USER_DEFINED(user_defined) => user_defined.end_index(),
-            CoreTypeExpressionNode::ARRAY(array) => array.end_index(),
-            CoreTypeExpressionNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+            CoreTypeExpressionNode::ATOMIC(atomic) => impl_range!(atomic, atomic),
+            CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
+                impl_range!(user_defined, user_defined)
+            }
+            CoreTypeExpressionNode::ARRAY(array) => impl_range!(array, array),
+            CoreTypeExpressionNode::MISSING_TOKENS(missing_tokens) => {
+                impl_range!(missing_tokens, missing_tokens)
+            }
         }
     }
     fn start_line_number(&self) -> usize {
@@ -1146,11 +1070,8 @@ impl AtomicTypeNode {
     }
 }
 impl Node for AtomicTypeNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().kind.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().kind.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().kind, self.0.as_ref().kind)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().kind.start_line_number()
@@ -1203,11 +1124,8 @@ impl ArrayTypeNode {
     }
 }
 impl Node for ArrayTypeNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().lsquare.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().rsquare.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().lsquare, self.0.as_ref().rsquare)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().lsquare.start_line_number()
@@ -1239,11 +1157,8 @@ impl UserDefinedTypeNode {
     }
 }
 impl Node for UserDefinedTypeNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().name.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().name.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().name, self.0.as_ref().name)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().name.start_line_number()
@@ -1295,18 +1210,13 @@ impl TokenNode {
     }
 }
 impl Node for TokenNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreTokenNode::OK(ok_token) => ok_token.start_index(),
-            CoreTokenNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
-            CoreTokenNode::SKIPPED(skipped_tokens) => skipped_tokens.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreTokenNode::OK(ok_token) => ok_token.end_index(),
-            CoreTokenNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
-            CoreTokenNode::SKIPPED(skipped_tokens) => skipped_tokens.end_index(),
+            CoreTokenNode::OK(ok_token) => impl_range!(ok_token, ok_token),
+            CoreTokenNode::MISSING_TOKENS(missing_tokens) => {
+                impl_range!(missing_tokens, missing_tokens)
+            }
+            CoreTokenNode::SKIPPED(skipped_tokens) => impl_range!(skipped_tokens, skipped_tokens),
         }
     }
     fn start_line_number(&self) -> usize {
@@ -1371,11 +1281,8 @@ impl OkTokenNode {
     }
 }
 impl Node for OkTokenNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().token.start_index
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().token.end_index
+    fn range(&self) -> TextRange {
+        self.0.as_ref().token.range
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().token.line_number
@@ -1400,11 +1307,9 @@ impl MissingTokenNode {
     }
 }
 impl Node for MissingTokenNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().received_token.start_index
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().received_token.start_index
+    fn range(&self) -> TextRange {
+        let received_token = &self.0.as_ref().received_token;
+        TextRange::new(received_token.range.start(), received_token.range.start())
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().received_token.line_number
@@ -1435,11 +1340,8 @@ impl SkippedTokenNode {
     }
 }
 impl Node for SkippedTokenNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().skipped_token.start_index
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().skipped_token.end_index
+    fn range(&self) -> TextRange {
+        self.0.as_ref().skipped_token.range
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().skipped_token.line_number
@@ -1511,20 +1413,14 @@ impl ExpressionNode {
     }
 }
 impl Node for ExpressionNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreExpressionNode::UNARY(unary_expr) => unary_expr.start_index(),
-            CoreExpressionNode::BINARY(binary_expr) => binary_expr.start_index(),
-            CoreExpressionNode::COMPARISON(comp_expr) => comp_expr.start_index(),
-            CoreExpressionNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreExpressionNode::UNARY(unary_expr) => unary_expr.end_index(),
-            CoreExpressionNode::BINARY(binary_expr) => binary_expr.end_index(),
-            CoreExpressionNode::COMPARISON(comp_expr) => comp_expr.end_index(),
-            CoreExpressionNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+            CoreExpressionNode::UNARY(unary_expr) => impl_range!(unary_expr, unary_expr),
+            CoreExpressionNode::BINARY(binary_expr) => impl_range!(binary_expr, binary_expr),
+            CoreExpressionNode::COMPARISON(comp_expr) => impl_range!(comp_expr, comp_expr),
+            CoreExpressionNode::MISSING_TOKENS(missing_tokens) => {
+                impl_range!(missing_tokens, missing_tokens)
+            }
         }
     }
     fn start_line_number(&self) -> usize {
@@ -1558,11 +1454,12 @@ impl ComparisonNode {
     }
 }
 impl Node for ComparisonNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().operands[0].start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().operands[self.0.as_ref().operands.len() - 1].end_index()
+    fn range(&self) -> TextRange {
+        let core_node = self.0.as_ref();
+        impl_range!(
+            core_node.operands[0],
+            core_node.operands[core_node.operands.len() - 1]
+        )
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().operands[0].start_line_number()
@@ -1622,32 +1519,19 @@ impl AtomicExpressionNode {
     }
 }
 impl Node for AtomicExpressionNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreAtomicExpressionNode::BOOL_VALUE(token) => token.start_index(),
-            CoreAtomicExpressionNode::INTEGER(token) => token.start_index(),
-            CoreAtomicExpressionNode::FLOATING_POINT_NUMBER(token) => token.start_index(),
-            CoreAtomicExpressionNode::LITERAL(token) => token.start_index(),
+            CoreAtomicExpressionNode::BOOL_VALUE(token) => impl_range!(token, token),
+            CoreAtomicExpressionNode::INTEGER(token) => impl_range!(token, token),
+            CoreAtomicExpressionNode::FLOATING_POINT_NUMBER(token) => impl_range!(token, token),
+            CoreAtomicExpressionNode::LITERAL(token) => impl_range!(token, token),
             CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(parenthesised_expr) => {
-                parenthesised_expr.start_index()
+                impl_range!(parenthesised_expr, parenthesised_expr)
             }
-            CoreAtomicExpressionNode::ATOM(atom) => atom.start_index(),
+            CoreAtomicExpressionNode::ATOM(atom) => impl_range!(atom, atom),
             CoreAtomicExpressionNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_index()
+                impl_range!(missing_tokens, missing_tokens)
             }
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreAtomicExpressionNode::BOOL_VALUE(token) => token.end_index(),
-            CoreAtomicExpressionNode::INTEGER(token) => token.end_index(),
-            CoreAtomicExpressionNode::FLOATING_POINT_NUMBER(token) => token.end_index(),
-            CoreAtomicExpressionNode::LITERAL(token) => token.end_index(),
-            CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(parenthesised_expr) => {
-                parenthesised_expr.end_index()
-            }
-            CoreAtomicExpressionNode::ATOM(atom) => atom.end_index(),
-            CoreAtomicExpressionNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
         }
     }
     fn start_line_number(&self) -> usize {
@@ -1688,11 +1572,8 @@ impl ParenthesisedExpressionNode {
     }
 }
 impl Node for ParenthesisedExpressionNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().lparen.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().rparen.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().lparen.start_line_number()
@@ -1733,18 +1614,13 @@ impl UnaryExpressionNode {
     }
 }
 impl Node for UnaryExpressionNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreUnaryExpressionNode::ATOMIC(atomic) => atomic.start_index(),
-            CoreUnaryExpressionNode::UNARY(only_unary) => only_unary.start_index(),
-            CoreUnaryExpressionNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreUnaryExpressionNode::ATOMIC(atomic) => atomic.end_index(),
-            CoreUnaryExpressionNode::UNARY(only_unary) => only_unary.end_index(),
-            CoreUnaryExpressionNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+            CoreUnaryExpressionNode::ATOMIC(atomic) => impl_range!(atomic, atomic),
+            CoreUnaryExpressionNode::UNARY(only_unary) => impl_range!(only_unary, only_unary),
+            CoreUnaryExpressionNode::MISSING_TOKENS(missing_tokens) => {
+                impl_range!(missing_tokens, missing_tokens)
+            }
         }
     }
     fn start_line_number(&self) -> usize {
@@ -1783,11 +1659,8 @@ impl OnlyUnaryExpressionNode {
     }
 }
 impl Node for OnlyUnaryExpressionNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().operator.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().unary_expr.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().operator, self.0.as_ref().unary_expr)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().operator.start_line_number()
@@ -1837,11 +1710,8 @@ impl BinaryExpressionNode {
     }
 }
 impl Node for BinaryExpressionNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().left_expr.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().right_expr.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().left_expr, self.0.as_ref().right_expr)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().left_expr.start_line_number()
@@ -1863,16 +1733,12 @@ impl ParamsNode {
     }
 }
 impl Node for ParamsNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreParamsNode::OK(ok_params) => ok_params.start_index(),
-            CoreParamsNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreParamsNode::OK(ok_params) => ok_params.end_index(),
-            CoreParamsNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+            CoreParamsNode::OK(ok_params) => impl_range!(ok_params, ok_params),
+            CoreParamsNode::MISSING_TOKENS(missing_tokens) => {
+                impl_range!(missing_tokens, missing_tokens)
+            }
         }
     }
     fn start_line_number(&self) -> usize {
@@ -1917,13 +1783,10 @@ impl OkParamsNode {
     }
 }
 impl Node for OkParamsNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().param.start_index()
-    }
-    fn end_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_params {
-            Some(remaining_params) => remaining_params.end_index(),
-            None => self.0.as_ref().param.end_index(),
+            Some(remaining_params) => impl_range!(self.0.as_ref().param, remaining_params),
+            None => impl_range!(self.0.as_ref().param, self.0.as_ref().param),
         }
     }
     fn start_line_number(&self) -> usize {
@@ -1958,11 +1821,8 @@ impl CallExpressionNode {
     }
 }
 impl Node for CallExpressionNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().function_name.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().rparen.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().function_name, self.0.as_ref().rparen)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().function_name.start_line_number()
@@ -2002,11 +1862,8 @@ impl ClassMethodCallNode {
     }
 }
 impl Node for ClassMethodCallNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().class_name.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().rparen.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().class_name, self.0.as_ref().rparen)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().class_name.start_line_number()
@@ -2101,22 +1958,15 @@ impl AtomNode {
     }
 }
 impl Node for AtomNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreAtomNode::ATOM_START(atom_start) => atom_start.start_index(),
-            CoreAtomNode::CALL(call) => call.start_index(),
-            CoreAtomNode::PROPERTRY_ACCESS(property_access) => property_access.start_index(),
-            CoreAtomNode::METHOD_ACCESS(method_access) => method_access.start_index(),
-            CoreAtomNode::INDEX_ACCESS(index_access) => index_access.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreAtomNode::ATOM_START(atom_start) => atom_start.end_index(),
-            CoreAtomNode::CALL(call) => call.end_index(),
-            CoreAtomNode::PROPERTRY_ACCESS(property_access) => property_access.end_index(),
-            CoreAtomNode::METHOD_ACCESS(method_access) => method_access.end_index(),
-            CoreAtomNode::INDEX_ACCESS(index_access) => index_access.end_index(),
+            CoreAtomNode::ATOM_START(atom_start) => impl_range!(atom_start, atom_start),
+            CoreAtomNode::CALL(call) => impl_range!(call, call),
+            CoreAtomNode::PROPERTRY_ACCESS(property_access) => {
+                impl_range!(property_access, property_access)
+            }
+            CoreAtomNode::METHOD_ACCESS(method_access) => impl_range!(method_access, method_access),
+            CoreAtomNode::INDEX_ACCESS(index_access) => impl_range!(index_access, index_access),
         }
     }
     fn start_line_number(&self) -> usize {
@@ -2179,21 +2029,14 @@ impl AtomStartNode {
     }
 }
 impl Node for AtomStartNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreAtomStartNode::IDENTIFIER(token) => token.start_index(),
-            CoreAtomStartNode::FUNCTION_CALL(function_call) => function_call.start_index(),
-            CoreAtomStartNode::CLASS_METHOD_CALL(class_method_call) => {
-                class_method_call.start_index()
+            CoreAtomStartNode::IDENTIFIER(token) => impl_range!(token, token),
+            CoreAtomStartNode::FUNCTION_CALL(function_call) => {
+                impl_range!(function_call, function_call)
             }
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreAtomStartNode::IDENTIFIER(token) => token.end_index(),
-            CoreAtomStartNode::FUNCTION_CALL(function_call) => function_call.end_index(),
             CoreAtomStartNode::CLASS_METHOD_CALL(class_method_call) => {
-                class_method_call.end_index()
+                impl_range!(class_method_call, class_method_call)
             }
         }
     }
@@ -2235,11 +2078,8 @@ impl CallNode {
     }
 }
 impl Node for CallNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().atom.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().rparen.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().atom, self.0.as_ref().rparen)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().atom.start_line_number()
@@ -2266,11 +2106,8 @@ impl PropertyAccessNode {
     }
 }
 impl Node for PropertyAccessNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().atom.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().propertry.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().atom, self.0.as_ref().propertry)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().atom.start_line_number()
@@ -2310,11 +2147,8 @@ impl MethodAccessNode {
     }
 }
 impl Node for MethodAccessNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().atom.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().rparen.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().atom, self.0.as_ref().rparen)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().atom.start_line_number()
@@ -2348,11 +2182,8 @@ impl IndexAccessNode {
     }
 }
 impl Node for IndexAccessNode {
-    fn start_index(&self) -> usize {
-        self.0.as_ref().atom.start_index()
-    }
-    fn end_index(&self) -> usize {
-        self.0.as_ref().rsquare.end_index()
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().atom, self.0.as_ref().rsquare)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().atom.start_line_number()
@@ -2382,18 +2213,13 @@ impl RAssignmentNode {
     }
 }
 impl Node for RAssignmentNode {
-    fn start_index(&self) -> usize {
+    fn range(&self) -> TextRange {
         match &self.0.as_ref() {
-            CoreRAssignmentNode::LAMBDA(func_decl) => func_decl.start_index(),
-            CoreRAssignmentNode::EXPRESSION(expr_stmt) => expr_stmt.start_index(),
-            CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_index(),
-        }
-    }
-    fn end_index(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreRAssignmentNode::LAMBDA(func_decl) => func_decl.end_index(),
-            CoreRAssignmentNode::EXPRESSION(expr_stmt) => expr_stmt.end_index(),
-            CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => missing_tokens.end_index(),
+            CoreRAssignmentNode::LAMBDA(func_decl) => impl_range!(func_decl, func_decl),
+            CoreRAssignmentNode::EXPRESSION(expr_stmt) => impl_range!(expr_stmt, expr_stmt),
+            CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => {
+                impl_range!(missing_tokens, missing_tokens)
+            }
         }
     }
     fn start_line_number(&self) -> usize {

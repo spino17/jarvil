@@ -12,7 +12,9 @@ use crate::constants::common::{
     SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, TRUE, TYPE_KEYWORD, WHILE,
 };
 use crate::lexer::helper;
+use std::convert::TryFrom;
 use std::rc::Rc;
+use text_size::{TextRange, TextSize};
 
 #[derive(Debug, Clone, PartialEq, Tokenify)]
 pub enum CoreToken {
@@ -118,8 +120,7 @@ pub struct MissingToken {
 pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
-    pub start_index: usize,
-    pub end_index: usize,
+    pub range: TextRange,
     pub trivia: Option<Rc<Vec<Token>>>,
 }
 
@@ -240,8 +241,10 @@ impl Token {
         let token = Token {
             line_number: *line_number,
             core_token: core_token.clone(),
-            start_index,
-            end_index,
+            range: TextRange::new(
+                TextSize::try_from(start_index).unwrap(),
+                TextSize::try_from(end_index).unwrap(),
+            ),
             trivia: None,
         };
         match &core_token {
@@ -271,7 +274,16 @@ impl Token {
     }
 
     pub fn index(&self) -> usize {
-        (self.start_index + self.end_index) / 2 as usize
+        let r: usize = (self.range.start() + self.range.end()).into();
+        r / 2
+    }
+
+    pub fn start_index(&self) -> usize {
+        self.range.start().into()
+    }
+
+    pub fn end_index(&self) -> usize {
+        self.range.end().into()
     }
 
     pub fn name(&self) -> String {
@@ -279,11 +291,7 @@ impl Token {
     }
 
     pub fn token_value(&self, code: &Code) -> String {
-        code.token_value(self.start_index, Some(self.end_index))
-    }
-
-    pub fn width(&self) -> usize {
-        self.end_index - self.start_index
+        code.token_from_range(self.range)
     }
 
     pub fn is_eq(&self, symbol: &str) -> bool {

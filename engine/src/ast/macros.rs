@@ -90,3 +90,12 @@ macro_rules! extract_from_option {
         }
     };
 }
+
+macro_rules! impl_range {
+    ($t: expr, $u: expr) => {
+        TextRange::new(
+            TextSize::from($t.range().start()),
+            TextSize::from($u.range().end()),
+        )
+    };
+}

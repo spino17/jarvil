@@ -65,16 +65,11 @@ impl Scope {
         })))
     }
 
-    fn insert(
-        &self,
-        key: String,
-        meta_data: MetaData,
-        line_number: usize,
-    ) -> Option<()> {
+    fn insert(&self, key: String, meta_data: MetaData, line_number: usize) -> Option<()> {
         match self.0.borrow().get(&key) {
             Some(value) => {
                 // `{}` is already declared in the current block
-                return None
+                return None;
             }
             None => {}
         }

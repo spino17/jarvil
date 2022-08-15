@@ -1,5 +1,7 @@
 use std::{collections::binary_heap::Iter, rc::Rc};
 
+use text_size::TextRange;
+
 pub struct Code {
     code_vec: Rc<Vec<char>>,
     code_lines: Option<Rc<Vec<usize>>>,
@@ -44,6 +46,10 @@ impl Code {
             Some(end_index) => self.code_vec[start_index..end_index].iter().collect(),
             None => self.code_vec[start_index..].iter().collect(),
         }
+    }
+
+    pub fn token_from_range(&self, range: TextRange) -> String {
+        self.token_value(range.start().into(), Some(range.end().into()))
     }
 
     pub fn token_value_as_iter(

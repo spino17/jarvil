@@ -21,7 +21,9 @@ use crate::parser::helper::{IndentResult, IndentResultKind};
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
+use std::convert::TryFrom;
 use std::rc::Rc;
+use text_size::{TextRange, TextSize};
 
 pub trait Parser {
     fn parse(self, token_vec: Vec<Token>) -> BlockNode;
@@ -159,8 +161,10 @@ impl PackratParser {
             return Token {
                 line_number: 1,
                 core_token: CoreToken::NEWLINE,
-                start_index: 0,
-                end_index: 0,
+                range: TextRange::new(
+                    TextSize::try_from(0 as usize).unwrap(),
+                    TextSize::try_from(0 as usize).unwrap(),
+                ),
                 trivia: None,
             };
         }
@@ -244,8 +248,8 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        // context::push_error(err);
-        self.log_error(err)
+        context::push_error(err);
+        // self.log_error(err)
     }
 
     pub fn log_missing_token_error_for_multiple_expected_symbols(
@@ -257,8 +261,8 @@ impl PackratParser {
             return;
         }
         let (code_line, line_start_index, line_number, err_index) = self
-        .code
-        .line_data(recevied_token.line_number, recevied_token.index());
+            .code
+            .line_data(recevied_token.line_number, recevied_token.index());
         let errors_len = context::errors_len();
         // -> TODO - check whether error on same line already exists
         if expected_symbols.len() == 1 {
@@ -304,10 +308,10 @@ impl PackratParser {
         let skipped_tokens_len = skipped_tokens.len();
         let (code_line, line_start_index, line_number, start_err_index) = self.code.line_data(
             skipped_tokens[0].start_line_number(),
-            skipped_tokens[0].start_index(),
+            skipped_tokens[0].range().start().into(),
         );
         let err_str = String::from("invalid sequence of tokens found at the trail of the line");
-        let end_err_index = skipped_tokens[skipped_tokens_len - 1].end_index();
+        let end_err_index = skipped_tokens[skipped_tokens_len - 1].range().end().into();
         let err = JarvilError::form_single_line_error(
             start_err_index,
             end_err_index,
@@ -317,8 +321,8 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        // context::push_error(err);
-        self.log_error(err)
+        context::push_error(err);
+        // self.log_error(err)
     }
 
     pub fn log_incorrectly_indented_block_error(
@@ -344,8 +348,8 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        // context::push_error(err);
-        self.log_error(err)
+        context::push_error(err);
+        // self.log_error(err)
     }
 
     pub fn log_invalid_l_value_error(
@@ -359,7 +363,9 @@ impl PackratParser {
         }
         let errors_len = context::errors_len();
         // -> TODO - check whether error on same line already exists
-        let (start_line_number, end_line_number) = self.code.line_range_from_indexes(start_index, end_index, start_line_number);
+        let (start_line_number, end_line_number) =
+            self.code
+                .line_range_from_indexes(start_index, end_index, start_line_number);
         let err_str = "expression cannot be assigned a value".to_string();
         if start_line_number == end_line_number {
             let err = JarvilError::form_single_line_error(
@@ -371,8 +377,8 @@ impl PackratParser {
                 err_str,
                 JarvilErrorKind::SYNTAX_ERROR,
             );
-            // context::push_error(err);
-            self.log_error(err)
+            context::push_error(err);
+            // self.log_error(err)
         } else {
             let err = JarvilError::form_multi_line_error(
                 start_line_number,
@@ -381,8 +387,8 @@ impl PackratParser {
                 err_str,
                 JarvilErrorKind::SYNTAX_ERROR,
             );
-            // context::push_error(err);
-            self.log_error(err)
+            context::push_error(err);
+            // self.log_error(err)
         }
     }
 
@@ -447,7 +453,7 @@ impl PackratParser {
                     }
                 }
                 _ => {
-                    indent_spaces = (token.start_index
+                    indent_spaces = (token.start_index()
                         - self.code.get_line_start_index(token.line_number))
                         as i64;
                     expected_indent_spaces = expected_indent_spaces + self.correction_indent();

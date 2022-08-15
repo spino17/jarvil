@@ -1,3 +1,6 @@
+use text_size::TextRange;
+use text_size::TextSize;
+
 use crate::code::Code;
 use crate::context;
 use crate::errors::JarvilError;
@@ -5,6 +8,7 @@ use crate::errors::JarvilErrorKind;
 use crate::errors::LexicalErrorData;
 use crate::lexer::token::CoreToken;
 use crate::lexer::token::Token;
+use std::convert::TryFrom;
 use std::mem;
 use std::rc::Rc;
 use std::vec;
@@ -27,8 +31,10 @@ impl Lexer for CoreLexer {
         token_vec.push(Token {
             line_number: self.line_number,
             core_token: CoreToken::NEWLINE,
-            start_index: 0,
-            end_index: 0,
+            range: TextRange::new(
+                TextSize::try_from(0 as usize).unwrap(),
+                TextSize::try_from(0 as usize).unwrap(),
+            ),
             trivia: None,
         });
         let mut trivia_vec: Vec<Token> = vec![];
@@ -51,8 +57,10 @@ impl Lexer for CoreLexer {
         let mut token = Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
-            start_index: code.len(),
-            end_index: code.len(),
+            range: TextRange::new(
+                TextSize::try_from(code.len()).unwrap(),
+                TextSize::try_from(code.len()).unwrap(),
+            ),
             trivia: None,
         };
         if trivia_vec.len() > 0 {
