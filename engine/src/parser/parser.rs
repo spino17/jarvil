@@ -54,7 +54,7 @@ pub struct PackratParser {
     cache: Vec<Rc<RoutineCache>>,
     ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
-    // errors: Vec<ParseError>  // reported errors during the parsing, useful for terminal based compilation
+    errors: Vec<JarvilError>,
 }
 
 impl PackratParser {
@@ -76,7 +76,7 @@ impl PackratParser {
             ],
             ignore_all_errors: false,
             correction_indent: 0,
-            // errors: vec![],
+            errors: vec![],
         }
     }
 }
@@ -210,6 +210,10 @@ impl PackratParser {
         }
     }
 
+    pub fn log_error(&mut self, err: JarvilError) {
+        self.errors.push(err);
+    }
+
     // ------------------- error logging utilities for terminal-based compilation -------------------
     pub fn log_missing_token_error_for_single_expected_symbol(
         &mut self,
@@ -240,7 +244,8 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        context::push_error(err);
+        // context::push_error(err);
+        self.log_error(err)
     }
 
     pub fn log_missing_token_error_for_multiple_expected_symbols(
@@ -286,7 +291,8 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        context::push_error(err);
+        // context::push_error(err);
+        self.log_error(err)
     }
 
     pub fn log_trailing_skipped_tokens_error(&mut self, skipped_tokens: &Vec<SkippedTokenNode>) {
@@ -311,7 +317,8 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        context::push_error(err);
+        // context::push_error(err);
+        self.log_error(err)
     }
 
     pub fn log_incorrectly_indented_block_error(
@@ -337,7 +344,8 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        context::push_error(err);
+        // context::push_error(err);
+        self.log_error(err)
     }
 
     pub fn log_invalid_l_value_error(
@@ -363,7 +371,8 @@ impl PackratParser {
                 err_str,
                 JarvilErrorKind::SYNTAX_ERROR,
             );
-            context::push_error(err);
+            // context::push_error(err);
+            self.log_error(err)
         } else {
             let err = JarvilError::form_multi_line_error(
                 start_line_number,
@@ -372,9 +381,9 @@ impl PackratParser {
                 err_str,
                 JarvilErrorKind::SYNTAX_ERROR,
             );
-            context::push_error(err);
+            // context::push_error(err);
+            self.log_error(err)
         }
-    
     }
 
     // ------------------- parsing routines for terminals and block indentation -------------------
