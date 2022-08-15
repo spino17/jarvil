@@ -28,7 +28,7 @@ macro_rules! impl_weak_node {
     ($(($t: ident, $v: ident)),*) => {
         $(
             #[derive(Debug, Clone)]
-            pub struct $t(pub Weak<RefCell<$v>>);
+            pub struct $t(Weak<$v>);
         )*
     };
 }

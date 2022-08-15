@@ -1,9 +1,10 @@
-// AST Nodes have inner mutability to enable dynamic changes to AST like monomorphism of generics or macro expansion.
-// ASTNode has weak reference to core nodes to avoid memory leaks.
-// See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
+// This module contains green tree nodes. Green Tree is top to down immutable typed structure with no parent information.
+// See the following for more information on green and red tree, immutability and cheap mutations.
+// 1. `https://github.com/apple/swift/tree/5e2c815edfd758f9b1309ce07bfc01c4bc20ec23/lib/Syntax`
+// 2. `https://github.com/rust-analyzer/rowan`
+
 #[macro_use]
 use jarvil_macros::Nodify;
-
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
 use crate::{
@@ -80,9 +81,9 @@ pub enum ASTNode {
 
 #[derive(Debug, Clone)]
 pub struct CoreBlockNode {
-    newline: TokenNode,
+    pub newline: TokenNode,
     pub stmts: Vec<StatemenIndentWrapperNode>,
-    scope: Option<Namespace>,
+    pub scope: Option<Namespace>,
 }
 
 #[derive(Debug, Clone)]
