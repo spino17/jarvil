@@ -118,7 +118,7 @@ impl Node for BlockNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreStatemenIndentWrapperNode {
     CORRECTLY_INDENTED(StatementNode),
     INCORRECTLY_INDENTED(IncorrectlyIndentedStatementNode),
@@ -169,44 +169,6 @@ impl StatemenIndentWrapperNode {
         StatemenIndentWrapperNode(node)
     }
 }
-impl Node for StatemenIndentWrapperNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => {
-                impl_range!(stmt, stmt)
-            }
-            CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
-                impl_range!(stmt, stmt)
-            }
-            CoreStatemenIndentWrapperNode::LEADING_SKIPPED_TOKENS(skipped_tokens) => {
-                impl_range!(skipped_tokens, skipped_tokens)
-            }
-            CoreStatemenIndentWrapperNode::TRAILING_SKIPPED_TOKENS(skipped_tokens) => {
-                impl_range!(skipped_tokens, skipped_tokens)
-            }
-            CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(skipped_tokens) => {
-                impl_range!(skipped_tokens, skipped_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.start_line_number(),
-            CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(incorrectly_indented_stmt) => {
-                incorrectly_indented_stmt.start_line_number()
-            }
-            CoreStatemenIndentWrapperNode::LEADING_SKIPPED_TOKENS(skipped_tokens) => {
-                skipped_tokens.start_line_number()
-            }
-            CoreStatemenIndentWrapperNode::TRAILING_SKIPPED_TOKENS(skipped_tokens) => {
-                skipped_tokens.start_line_number()
-            }
-            CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(skipped_tokens) => {
-                skipped_tokens.start_line_number()
-            }
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct CoreSkippedTokensNode {
@@ -244,7 +206,7 @@ impl Node for SkippedTokensNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreStatementNode {
     EXPRESSION(ExpressionStatementNode),
     ASSIGNMENT(AssignmentNode),
@@ -292,38 +254,6 @@ impl StatementNode {
     pub fn new_with_struct_stmt(struct_stmt: &StructStatementNode) -> Self {
         let node = Rc::new(CoreStatementNode::STRUCT_STATEMENT(struct_stmt.clone()));
         StatementNode(node)
-    }
-}
-impl Node for StatementNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreStatementNode::EXPRESSION(expr_stmt) => impl_range!(expr_stmt, expr_stmt),
-            CoreStatementNode::ASSIGNMENT(assignment) => impl_range!(assignment, assignment),
-            CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
-                impl_range!(variable_decl, variable_decl)
-            }
-            CoreStatementNode::FUNCTION_DECLARATION(func_decl) => impl_range!(func_decl, func_decl),
-            CoreStatementNode::TYPE_DECLARATION(type_decl) => impl_range!(type_decl, type_decl),
-            CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
-                impl_range!(struct_stmt, struct_stmt)
-            }
-            CoreStatementNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreStatementNode::EXPRESSION(expr_stmt) => expr_stmt.start_line_number(),
-            CoreStatementNode::ASSIGNMENT(assignment) => assignment.start_line_number(),
-            CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
-                variable_decl.start_line_number()
-            }
-            CoreStatementNode::FUNCTION_DECLARATION(func_decl) => func_decl.start_line_number(),
-            CoreStatementNode::TYPE_DECLARATION(type_decl) => type_decl.start_line_number(),
-            CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => struct_stmt.start_line_number(),
-            CoreStatementNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
-        }
     }
 }
 default_errornous_node_impl!(StatementNode, CoreStatementNode);
@@ -382,7 +312,7 @@ impl Node for ExpressionStatementNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreAssignmentNode {
     OK(OkAssignmentNode),
     INVALID_L_VALUE(InvalidLValueNode),
@@ -407,24 +337,6 @@ impl AssignmentNode {
             l_expr, r_assign, equal,
         )));
         AssignmentNode(node)
-    }
-}
-impl Node for AssignmentNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreAssignmentNode::OK(ok_assignment) => impl_range!(ok_assignment, ok_assignment),
-            CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value) => {
-                impl_range!(invalid_l_value, invalid_l_value)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreAssignmentNode::OK(ok_assignment) => ok_assignment.start_line_number(),
-            CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value) => {
-                invalid_l_value.start_line_number()
-            }
-        }
     }
 }
 
@@ -515,7 +427,7 @@ impl Node for StructStatementNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreTypeDeclarationNode {
     STRUCT(StructDeclarationNode),
     LAMBDA(LambdaDeclarationNode),
@@ -543,26 +455,6 @@ impl TypeDeclarationNode {
     pub fn new_with_lambda(lambda: &LambdaDeclarationNode) -> Self {
         let node = Rc::new(CoreTypeDeclarationNode::LAMBDA(lambda.clone()));
         TypeDeclarationNode(node)
-    }
-}
-impl Node for TypeDeclarationNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreTypeDeclarationNode::STRUCT(struct_decl) => impl_range!(struct_decl, struct_decl),
-            CoreTypeDeclarationNode::LAMBDA(lambda_decl) => impl_range!(lambda_decl, lambda_decl),
-            CoreTypeDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreTypeDeclarationNode::STRUCT(struct_decl) => struct_decl.start_line_number(),
-            CoreTypeDeclarationNode::LAMBDA(lambda_decl) => lambda_decl.start_line_number(),
-            CoreTypeDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_line_number()
-            }
-        }
     }
 }
 default_errornous_node_impl!(TypeDeclarationNode, CoreTypeDeclarationNode);
@@ -688,7 +580,7 @@ impl Node for OkLambdaDeclarationNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreFunctionDeclarationNode {
     OK(OkFunctionDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
@@ -722,26 +614,6 @@ impl FunctionDeclarationNode {
             ),
         ));
         FunctionDeclarationNode(node)
-    }
-}
-impl Node for FunctionDeclarationNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreFunctionDeclarationNode::OK(ok_func_decl) => {
-                impl_range!(ok_func_decl, ok_func_decl)
-            }
-            CoreFunctionDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreFunctionDeclarationNode::OK(ok_func_decl) => ok_func_decl.start_line_number(),
-            CoreFunctionDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_line_number()
-            }
-        }
     }
 }
 default_errornous_node_impl!(FunctionDeclarationNode, CoreFunctionDeclarationNode);
@@ -843,7 +715,7 @@ impl Node for VariableDeclarationNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreNameTypeSpecsNode {
     OK(OkNameTypeSpecsNode),
     MISSING_TOKENS(MissingTokenNode),
@@ -855,26 +727,6 @@ impl NameTypeSpecsNode {
     pub fn new(ok_name_type_specs: &OkNameTypeSpecsNode) -> Self {
         let node = Rc::new(CoreNameTypeSpecsNode::OK(ok_name_type_specs.clone()));
         NameTypeSpecsNode(node)
-    }
-}
-impl Node for NameTypeSpecsNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreNameTypeSpecsNode::OK(ok_name_type_specs) => {
-                impl_range!(ok_name_type_specs, ok_name_type_specs)
-            }
-            CoreNameTypeSpecsNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreNameTypeSpecsNode::OK(ok_name_type_specs) => ok_name_type_specs.start_line_number(),
-            CoreNameTypeSpecsNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_line_number()
-            }
-        }
     }
 }
 default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode);
@@ -951,7 +803,7 @@ impl Node for NameTypeSpecNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreTypeExpressionNode {
     ATOMIC(AtomicTypeNode),
     USER_DEFINED(UserDefinedTypeNode),
@@ -997,30 +849,6 @@ impl TypeExpressionNode {
             }
             CoreTypeExpressionNode::ARRAY(array_type) => array_type.get_type_obj(code),
             _ => None,
-        }
-    }
-}
-impl Node for TypeExpressionNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreTypeExpressionNode::ATOMIC(atomic) => impl_range!(atomic, atomic),
-            CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
-                impl_range!(user_defined, user_defined)
-            }
-            CoreTypeExpressionNode::ARRAY(array) => impl_range!(array, array),
-            CoreTypeExpressionNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.start_line_number(),
-            CoreTypeExpressionNode::USER_DEFINED(user_defined) => user_defined.start_line_number(),
-            CoreTypeExpressionNode::ARRAY(array) => array.start_line_number(),
-            CoreTypeExpressionNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_line_number()
-            }
         }
     }
 }
@@ -1147,7 +975,7 @@ impl Node for UserDefinedTypeNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreTokenNode {
     OK(OkTokenNode),
     MISSING_TOKENS(MissingTokenNode),
@@ -1188,24 +1016,6 @@ impl TokenNode {
                 None => None,
             },
             _ => None,
-        }
-    }
-}
-impl Node for TokenNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreTokenNode::OK(ok_token) => impl_range!(ok_token, ok_token),
-            CoreTokenNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-            CoreTokenNode::SKIPPED(skipped_tokens) => impl_range!(skipped_tokens, skipped_tokens),
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreTokenNode::OK(ok_token) => ok_token.start_line_number(),
-            CoreTokenNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
-            CoreTokenNode::SKIPPED(skipped_tokens) => skipped_tokens.start_line_number(),
         }
     }
 }
@@ -1330,7 +1140,7 @@ impl Node for SkippedTokenNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreExpressionNode {
     UNARY(UnaryExpressionNode),
     BINARY(BinaryExpressionNode),
@@ -1394,28 +1204,6 @@ impl ExpressionNode {
         }
     }
 }
-impl Node for ExpressionNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreExpressionNode::UNARY(unary_expr) => impl_range!(unary_expr, unary_expr),
-            CoreExpressionNode::BINARY(binary_expr) => impl_range!(binary_expr, binary_expr),
-            CoreExpressionNode::COMPARISON(comp_expr) => impl_range!(comp_expr, comp_expr),
-            CoreExpressionNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreExpressionNode::UNARY(unary_expr) => unary_expr.start_line_number(),
-            CoreExpressionNode::BINARY(binary_expr) => binary_expr.start_line_number(),
-            CoreExpressionNode::COMPARISON(comp_expr) => comp_expr.start_line_number(),
-            CoreExpressionNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_line_number()
-            }
-        }
-    }
-}
 default_errornous_node_impl!(ExpressionNode, CoreExpressionNode);
 
 #[derive(Debug, Clone)]
@@ -1448,7 +1236,7 @@ impl Node for ComparisonNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreAtomicExpressionNode {
     BOOL_VALUE(TokenNode),
     INTEGER(TokenNode),
@@ -1500,38 +1288,6 @@ impl AtomicExpressionNode {
         AtomicExpressionNode(node)
     }
 }
-impl Node for AtomicExpressionNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreAtomicExpressionNode::BOOL_VALUE(token) => impl_range!(token, token),
-            CoreAtomicExpressionNode::INTEGER(token) => impl_range!(token, token),
-            CoreAtomicExpressionNode::FLOATING_POINT_NUMBER(token) => impl_range!(token, token),
-            CoreAtomicExpressionNode::LITERAL(token) => impl_range!(token, token),
-            CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(parenthesised_expr) => {
-                impl_range!(parenthesised_expr, parenthesised_expr)
-            }
-            CoreAtomicExpressionNode::ATOM(atom) => impl_range!(atom, atom),
-            CoreAtomicExpressionNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreAtomicExpressionNode::BOOL_VALUE(token) => token.start_line_number(),
-            CoreAtomicExpressionNode::INTEGER(token) => token.start_line_number(),
-            CoreAtomicExpressionNode::FLOATING_POINT_NUMBER(token) => token.start_line_number(),
-            CoreAtomicExpressionNode::LITERAL(token) => token.start_line_number(),
-            CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(parenthesised_expr) => {
-                parenthesised_expr.start_line_number()
-            }
-            CoreAtomicExpressionNode::ATOM(atom) => atom.start_line_number(),
-            CoreAtomicExpressionNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_line_number()
-            }
-        }
-    }
-}
 default_errornous_node_impl!(AtomicExpressionNode, CoreAtomicExpressionNode);
 
 #[derive(Debug, Clone)]
@@ -1562,7 +1318,7 @@ impl Node for ParenthesisedExpressionNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreUnaryExpressionNode {
     ATOMIC(AtomicExpressionNode),
     UNARY(OnlyUnaryExpressionNode),
@@ -1593,26 +1349,6 @@ impl UnaryExpressionNode {
             OnlyUnaryExpressionNode::new(operator, unary_expr, operator_kind),
         ));
         UnaryExpressionNode(node)
-    }
-}
-impl Node for UnaryExpressionNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreUnaryExpressionNode::ATOMIC(atomic) => impl_range!(atomic, atomic),
-            CoreUnaryExpressionNode::UNARY(only_unary) => impl_range!(only_unary, only_unary),
-            CoreUnaryExpressionNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreUnaryExpressionNode::ATOMIC(atomic) => atomic.start_line_number(),
-            CoreUnaryExpressionNode::UNARY(only_unary) => only_unary.start_line_number(),
-            CoreUnaryExpressionNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_line_number()
-            }
-        }
     }
 }
 default_errornous_node_impl!(UnaryExpressionNode, CoreUnaryExpressionNode);
@@ -1700,7 +1436,7 @@ impl Node for BinaryExpressionNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreParamsNode {
     OK(OkParamsNode),
     MISSING_TOKENS(MissingTokenNode),
@@ -1712,22 +1448,6 @@ impl ParamsNode {
     pub fn new(ok_params_node: &OkParamsNode) -> Self {
         let node = Rc::new(CoreParamsNode::OK(ok_params_node.clone()));
         ParamsNode(node)
-    }
-}
-impl Node for ParamsNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreParamsNode::OK(ok_params) => impl_range!(ok_params, ok_params),
-            CoreParamsNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreParamsNode::OK(ok_params) => ok_params.start_line_number(),
-            CoreParamsNode::MISSING_TOKENS(missing_tokens) => missing_tokens.start_line_number(),
-        }
     }
 }
 default_errornous_node_impl!(ParamsNode, CoreParamsNode);
@@ -1852,7 +1572,7 @@ impl Node for ClassMethodCallNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreAtomNode {
     ATOM_START(AtomStartNode),            // id, id(...), id::id(...)
     CALL(CallNode),                       // A(...)
@@ -1939,30 +1659,8 @@ impl AtomNode {
         }
     }
 }
-impl Node for AtomNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreAtomNode::ATOM_START(atom_start) => impl_range!(atom_start, atom_start),
-            CoreAtomNode::CALL(call) => impl_range!(call, call),
-            CoreAtomNode::PROPERTRY_ACCESS(property_access) => {
-                impl_range!(property_access, property_access)
-            }
-            CoreAtomNode::METHOD_ACCESS(method_access) => impl_range!(method_access, method_access),
-            CoreAtomNode::INDEX_ACCESS(index_access) => impl_range!(index_access, index_access),
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreAtomNode::ATOM_START(atom_start) => atom_start.start_line_number(),
-            CoreAtomNode::CALL(call) => call.start_line_number(),
-            CoreAtomNode::PROPERTRY_ACCESS(property_access) => property_access.start_line_number(),
-            CoreAtomNode::METHOD_ACCESS(method_access) => method_access.start_line_number(),
-            CoreAtomNode::INDEX_ACCESS(index_access) => index_access.start_line_number(),
-        }
-    }
-}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreAtomStartNode {
     IDENTIFIER(TokenNode),                  // id
     FUNCTION_CALL(CallExpressionNode),      // id(...)
@@ -2007,28 +1705,6 @@ impl AtomStartNode {
         match &self.0.as_ref() {
             CoreAtomStartNode::IDENTIFIER(_) => true,
             _ => false,
-        }
-    }
-}
-impl Node for AtomStartNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreAtomStartNode::IDENTIFIER(token) => impl_range!(token, token),
-            CoreAtomStartNode::FUNCTION_CALL(function_call) => {
-                impl_range!(function_call, function_call)
-            }
-            CoreAtomStartNode::CLASS_METHOD_CALL(class_method_call) => {
-                impl_range!(class_method_call, class_method_call)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreAtomStartNode::IDENTIFIER(token) => token.start_line_number(),
-            CoreAtomStartNode::FUNCTION_CALL(function_call) => function_call.start_line_number(),
-            CoreAtomStartNode::CLASS_METHOD_CALL(class_method_call) => {
-                class_method_call.start_line_number()
-            }
         }
     }
 }
@@ -2172,7 +1848,7 @@ impl Node for IndexAccessNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Node)]
 pub enum CoreRAssignmentNode {
     LAMBDA(FunctionDeclarationNode),
     EXPRESSION(ExpressionStatementNode),
@@ -2192,26 +1868,6 @@ impl RAssignmentNode {
             ExpressionStatementNode::new(expr, newline),
         ));
         RAssignmentNode(node)
-    }
-}
-impl Node for RAssignmentNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref() {
-            CoreRAssignmentNode::LAMBDA(func_decl) => impl_range!(func_decl, func_decl),
-            CoreRAssignmentNode::EXPRESSION(expr_stmt) => impl_range!(expr_stmt, expr_stmt),
-            CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => {
-                impl_range!(missing_tokens, missing_tokens)
-            }
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        match &self.0.as_ref() {
-            CoreRAssignmentNode::LAMBDA(func_decl) => func_decl.start_line_number(),
-            CoreRAssignmentNode::EXPRESSION(expr_stmt) => expr_stmt.start_line_number(),
-            CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => {
-                missing_tokens.start_line_number()
-            }
-        }
     }
 }
 default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode);
