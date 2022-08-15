@@ -116,8 +116,9 @@ impl CoreLexer {
                     let err_str = invalid_char_lexical_error_data.err_message.clone();
                     let (code_line, line_start_index, line_number, err_index) =
                         code.line_data(invalid_token.line_number, invalid_token.index());
-                    let err_message = JarvilError::form_single_line_single_pointer_error(
+                    let err_message = JarvilError::form_single_line_error(
                         err_index,
+                        err_index + 1,
                         line_number,
                         line_start_index,
                         code_line,

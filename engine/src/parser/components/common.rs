@@ -37,7 +37,7 @@ pub fn r_assign(
         }
         _ => {
             let expr_node = parser.expr();
-            let newline = parser.expect_terminals();
+            let newline = parser.expect_terminators();
             RAssignmentNode::new_with_expr(&expr_node, &newline)
         }
     }

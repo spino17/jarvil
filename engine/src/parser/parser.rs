@@ -233,8 +233,9 @@ impl PackratParser {
                 format_symbol(expected_symbol),
                 recevied_token.name()
             );
-            let err_message = JarvilError::form_single_line_single_pointer_error(
+            let err_message = JarvilError::form_single_line_error(
                 err_index,
+                err_index + 1,
                 line_number,
                 line_start_index,
                 code_line,
@@ -282,8 +283,9 @@ impl PackratParser {
                 format_symbol(expected_symbols[symbols_len - 1]),
                 recevied_token.name()
             ));
-            let err_message = JarvilError::form_single_line_single_pointer_error(
+            let err_message = JarvilError::form_single_line_error(
                 err_index,
+                err_index + 1,
                 line_number,
                 line_start_index,
                 code_line,
@@ -310,7 +312,7 @@ impl PackratParser {
         } else {
             let err_str = String::from("invalid sequence of tokens found at the trail of the line");
             let end_err_index = skipped_tokens[skipped_tokens_len - 1].end_index();
-            let err_message = JarvilError::form_single_line_underline_pointer_error(
+            let err_message = JarvilError::form_single_line_error(
                 start_err_index,
                 end_err_index,
                 line_number,
@@ -373,7 +375,7 @@ impl PackratParser {
                     .line_range_from_indexes(start_index, end_index, start_line_number);
             let err_str = "expression cannot be assigned a value".to_string();
             if start_line_number == end_line_number {
-                let err_message = JarvilError::form_single_line_underline_pointer_error(
+                let err_message = JarvilError::form_single_line_error(
                     start_index,
                     end_index,
                     start_line_number,
@@ -432,7 +434,7 @@ impl PackratParser {
         TokenNode::new_with_missing_tokens(&Rc::new(symbols.to_vec()), &token)
     }
 
-    pub fn expect_terminals(&mut self) -> TokenNode {
+    pub fn expect_terminators(&mut self) -> TokenNode {
         self.expects(&["\n", ENDMARKER])
     }
 

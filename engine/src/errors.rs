@@ -103,7 +103,7 @@ impl JarvilError {
             err_message: Rc::new(err_message),
         }
     }
-
+    /*
     pub fn form_single_line_single_pointer_error(
         err_index: usize,
         line_number: usize,
@@ -143,8 +143,9 @@ impl JarvilError {
             err_message.yellow().bold()
         )
     }
+     */
 
-    pub fn form_single_line_underline_pointer_error(
+    pub fn form_single_line_error(
         start_err_index: usize,
         end_err_index: usize,
         line_number: usize,
@@ -160,21 +161,11 @@ impl JarvilError {
         let start_pointer_index = start_err_index - line_start_index;
         let end_pointer_index = end_err_index - line_start_index;
         let mut pointer_line: Vec<char> = vec![];
-        let mut flag = false;
-        let code_line_len = code_line.len();
         for (i, _) in code_line.chars().enumerate() {
-            if i == start_pointer_index {
+            if i >= start_pointer_index && i < end_pointer_index {
                 pointer_line.push('^');
-                flag = true;
-            } else if i == end_pointer_index - 1 {
-                pointer_line.push('^');
-                flag = false;
             } else {
-                if flag && i < code_line_len - 1 {
-                    pointer_line.push('^')
-                } else {
-                    pointer_line.push(' ');
-                }
+                pointer_line.push(' ');
             }
         }
         let pointer_line: String = pointer_line.iter().collect();
@@ -204,7 +195,7 @@ impl JarvilError {
         err_kind: JarvilErrorKind,
     ) -> String {
         assert!(
-            end_line_number > start_line_number,
+            end_line_number >= start_line_number,
             "end line number cannot be less than start line number"
         );
         let code_lines_len = code_lines.len();

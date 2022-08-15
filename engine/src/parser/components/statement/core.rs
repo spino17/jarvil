@@ -79,7 +79,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
                     StatementNode::new_with_assignment(&assignment_node)
                 }
                 _ => {
-                    let newline_node = parser.expect_terminals();
+                    let newline_node = parser.expect_terminators();
                     StatementNode::new_with_expression(&expr_node, &newline_node)
                 }
             }
@@ -113,7 +113,7 @@ pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {
     let struct_name = parser.expect(IDENTIFIER);
     let colon_node = parser.expect(":");
     let type_expr_node = parser.type_expr();
-    let newline_node = parser.expect_terminals();
+    let newline_node = parser.expect_terminators();
     let struct_stmt =
         StructStatementNode::new(&struct_name, &type_expr_node, &colon_node, &newline_node);
     StatementNode::new_with_struct_stmt(&struct_stmt)
