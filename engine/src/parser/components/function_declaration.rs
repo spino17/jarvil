@@ -42,7 +42,7 @@ pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
             parser.log_missing_token_error_for_multiple_expected_symbols(&[",", ")"], token);
             return NameTypeSpecsNode::new_with_missing_tokens(
                 &Rc::new([",", ")"].to_vec()),
-                token
+                token,
             );
         }
     }
@@ -126,7 +126,7 @@ pub fn function_decl(
             parser.log_missing_token_error_for_multiple_expected_symbols(&[":", "->"], token);
             return FunctionDeclarationNode::new_with_missing_tokens(
                 &Rc::new([":", "->"].to_vec()),
-                token
+                token,
             );
         }
     }

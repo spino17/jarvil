@@ -13,8 +13,8 @@ use crate::{
     scope::core::Namespace,
     types::{array::Array, core::Type},
 };
-use std::{cell::RefCell, rc::Rc};
 use std::sync::Weak;
+use std::{cell::RefCell, rc::Rc};
 
 pub trait Node {
     fn start_index(&self) -> usize;
@@ -1301,9 +1301,7 @@ impl TokenNode {
     }
 
     pub fn new_with_skipped_token(skipped_token: &Token) -> Self {
-        let node = Rc::new(CoreTokenNode::SKIPPED(SkippedTokenNode::new(
-            skipped_token,
-        )));
+        let node = Rc::new(CoreTokenNode::SKIPPED(SkippedTokenNode::new(skipped_token)));
         TokenNode(node)
     }
 
@@ -1428,13 +1426,10 @@ pub struct CoreMissingTokenNode {
 #[derive(Debug, Clone)]
 pub struct MissingTokenNode(Rc<CoreMissingTokenNode>);
 impl MissingTokenNode {
-    pub fn new(
-        expected_symbols: &Rc<Vec<&'static str>>,
-        received_token: &Token,
-    ) -> Self {
+    pub fn new(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token) -> Self {
         let node = Rc::new(CoreMissingTokenNode {
             expected_symbols: expected_symbols.clone(),
-            received_token: received_token.clone()
+            received_token: received_token.clone(),
         });
         MissingTokenNode(node)
     }

@@ -78,7 +78,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                     );
                     let lambda_node = LambdaDeclarationNode::new_with_missing_tokens(
                         &Rc::new(["->", "\n"].to_vec()),
-                        token
+                        token,
                     );
                     return TypeDeclarationNode::new_with_lambda(&lambda_node);
                 }
@@ -89,7 +89,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
             parser.log_missing_token_error_for_multiple_expected_symbols(&["\n", "("], token);
             return TypeDeclarationNode::new_with_missing_tokens(
                 &Rc::new(["\n", "("].to_vec()),
-                token
+                token,
             );
         }
     };

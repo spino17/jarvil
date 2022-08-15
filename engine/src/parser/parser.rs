@@ -6,9 +6,9 @@
 use super::helper::format_symbol;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
-    FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, ParamsNode, RAssignmentNode,
-    SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    UnaryExpressionNode, VariableDeclarationNode, Node,
+    FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, Node, ParamsNode,
+    RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
+    TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::ast::ast::{ErrornousNode, OkTokenKind};
 use crate::code::Code;
@@ -301,9 +301,10 @@ impl PackratParser {
         }
         let errors_len = context::errors_len();
         let skipped_tokens_len = skipped_tokens.len();
-        let (code_line, line_start_index, line_number, start_err_index) = self
-            .code
-            .line_data(skipped_tokens[0].start_line_number(), skipped_tokens[0].start_index());
+        let (code_line, line_start_index, line_number, start_err_index) = self.code.line_data(
+            skipped_tokens[0].start_line_number(),
+            skipped_tokens[0].start_index(),
+        );
         if errors_len > 0 && context::curr_error_line_number() == line_number {
             return;
         } else {
@@ -410,10 +411,7 @@ impl PackratParser {
             TokenNode::new_with_ok_token(&token, kind)
         } else {
             self.log_missing_token_error_for_single_expected_symbol(symbol, &token);
-            TokenNode::new_with_missing_tokens(
-                &Rc::new(vec![symbol]),
-                &token,
-            )
+            TokenNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
         }
     }
 
@@ -431,10 +429,7 @@ impl PackratParser {
             }
         }
         // self.log_skipped_token_error(symbols, &token);
-        TokenNode::new_with_missing_tokens(
-            &Rc::new(symbols.to_vec()),
-            &token,
-        )
+        TokenNode::new_with_missing_tokens(&Rc::new(symbols.to_vec()), &token)
     }
 
     pub fn expect_terminals(&mut self) -> TokenNode {
