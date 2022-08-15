@@ -33,10 +33,6 @@ impl Context {
         self.parse_errors.push(err);
     }
 
-    fn curr_error_line_number(&self) -> usize {
-        self.parse_errors[self.parse_errors.len() - 1].end_line_number
-    }
-
     pub fn first_error(&self) -> Option<JarvilError> {
         let errors_len = self.parse_errors.len();
         if errors_len == 0 {
@@ -90,15 +86,6 @@ pub fn push_error(err: JarvilError) {
             panic!("{}", err)
         }
         _ => {}
-    }
-}
-
-pub fn curr_error_line_number() -> usize {
-    match CONTEXT.try_with(|ctx| ctx.borrow().curr_error_line_number()) {
-        Ok(val) => val,
-        Err(err) => {
-            panic!("{}", err)
-        }
     }
 }
 

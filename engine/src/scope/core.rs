@@ -70,16 +70,16 @@ impl Scope {
         key: String,
         meta_data: MetaData,
         line_number: usize,
-    ) -> Result<(), JarvilError> {
+    ) -> Option<()> {
         match self.0.borrow().get(&key) {
             Some(value) => {
-                let err_str = format!("`{}` is already declared in the current block", key);
-                return Err(JarvilError::new(value.1, value.1, err_str));
+                // `{}` is already declared in the current block
+                return None
             }
             None => {}
         }
         self.0.borrow_mut().set(key.clone(), meta_data, line_number);
-        Ok(())
+        Some(())
     }
 
     fn lookup(&self, key: &str) -> Option<SymbolData> {
@@ -175,7 +175,7 @@ impl Namespace {
         name: String,
         data_type: Type,
         line_number: usize,
-    ) -> Result<(), JarvilError> {
+    ) -> Option<()> {
         let meta_data = MetaData::VARIABLE(VariableData {
             data_type,
             is_init: false,

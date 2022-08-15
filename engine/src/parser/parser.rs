@@ -225,26 +225,22 @@ impl PackratParser {
             .code
             .line_data(recevied_token.line_number, recevied_token.index());
         let errors_len = context::errors_len();
-        if errors_len > 0 && context::curr_error_line_number() == line_number {
-            return;
-        } else {
-            let err_str = format!(
-                "expected `{}`, got `{}`",
-                format_symbol(expected_symbol),
-                recevied_token.name()
-            );
-            let err_message = JarvilError::form_single_line_error(
-                err_index,
-                err_index + 1,
-                line_number,
-                line_start_index,
-                code_line,
-                err_str,
-                JarvilErrorKind::SYNTAX_ERROR,
-            );
-            let err = JarvilError::new(line_number, line_number, err_message);
-            context::push_error(err);
-        }
+        // -> TODO - check whether error on same line already exists
+        let err_str = format!(
+            "expected `{}`, got `{}`",
+            format_symbol(expected_symbol),
+            recevied_token.name()
+        );
+        let err = JarvilError::form_single_line_error(
+            err_index,
+            err_index + 1,
+            line_number,
+            line_start_index,
+            code_line,
+            err_str,
+            JarvilErrorKind::SYNTAX_ERROR,
+        );
+        context::push_error(err);
     }
 
     pub fn log_missing_token_error_for_multiple_expected_symbols(
@@ -255,46 +251,42 @@ impl PackratParser {
         if self.ignore_all_errors {
             return;
         }
+        let (code_line, line_start_index, line_number, err_index) = self
+        .code
+        .line_data(recevied_token.line_number, recevied_token.index());
+        let errors_len = context::errors_len();
+        // -> TODO - check whether error on same line already exists
         if expected_symbols.len() == 1 {
             return self.log_missing_token_error_for_single_expected_symbol(
                 expected_symbols[0],
                 recevied_token,
             );
         }
-        let errors_len = context::errors_len();
-        let (code_line, line_start_index, line_number, err_index) = self
-            .code
-            .line_data(recevied_token.line_number, recevied_token.index());
-        if errors_len > 0 && context::curr_error_line_number() == line_number {
-            return;
-        } else {
-            let mut err_str = String::from("expected ");
-            let mut flag = false;
-            let symbols_len = expected_symbols.len();
-            for index in 0..symbols_len - 1 {
-                if flag {
-                    err_str.push_str(", ");
-                }
-                err_str.push_str(&format!("`{}`", format_symbol(expected_symbols[index])));
-                flag = true;
+        let mut err_str = String::from("expected ");
+        let mut flag = false;
+        let symbols_len = expected_symbols.len();
+        for index in 0..symbols_len - 1 {
+            if flag {
+                err_str.push_str(", ");
             }
-            err_str.push_str(&format!(
-                " or `{}`, got `{}`",
-                format_symbol(expected_symbols[symbols_len - 1]),
-                recevied_token.name()
-            ));
-            let err_message = JarvilError::form_single_line_error(
-                err_index,
-                err_index + 1,
-                line_number,
-                line_start_index,
-                code_line,
-                err_str,
-                JarvilErrorKind::SYNTAX_ERROR,
-            );
-            let err = JarvilError::new(line_number, line_number, err_message);
-            context::push_error(err);
+            err_str.push_str(&format!("`{}`", format_symbol(expected_symbols[index])));
+            flag = true;
         }
+        err_str.push_str(&format!(
+            " or `{}`, got `{}`",
+            format_symbol(expected_symbols[symbols_len - 1]),
+            recevied_token.name()
+        ));
+        let err = JarvilError::form_single_line_error(
+            err_index,
+            err_index + 1,
+            line_number,
+            line_start_index,
+            code_line,
+            err_str,
+            JarvilErrorKind::SYNTAX_ERROR,
+        );
+        context::push_error(err);
     }
 
     pub fn log_trailing_skipped_tokens_error(&mut self, skipped_tokens: &Vec<SkippedTokenNode>) {
@@ -302,28 +294,24 @@ impl PackratParser {
             return;
         }
         let errors_len = context::errors_len();
+        // -> TODO - check whether error on same line already exists
         let skipped_tokens_len = skipped_tokens.len();
         let (code_line, line_start_index, line_number, start_err_index) = self.code.line_data(
             skipped_tokens[0].start_line_number(),
             skipped_tokens[0].start_index(),
         );
-        if errors_len > 0 && context::curr_error_line_number() == line_number {
-            return;
-        } else {
-            let err_str = String::from("invalid sequence of tokens found at the trail of the line");
-            let end_err_index = skipped_tokens[skipped_tokens_len - 1].end_index();
-            let err_message = JarvilError::form_single_line_error(
-                start_err_index,
-                end_err_index,
-                line_number,
-                line_start_index,
-                code_line,
-                err_str,
-                JarvilErrorKind::SYNTAX_ERROR,
-            );
-            let err = JarvilError::new(line_number, line_number, err_message);
-            context::push_error(err);
-        }
+        let err_str = String::from("invalid sequence of tokens found at the trail of the line");
+        let end_err_index = skipped_tokens[skipped_tokens_len - 1].end_index();
+        let err = JarvilError::form_single_line_error(
+            start_err_index,
+            end_err_index,
+            line_number,
+            line_start_index,
+            code_line,
+            err_str,
+            JarvilErrorKind::SYNTAX_ERROR,
+        );
+        context::push_error(err);
     }
 
     pub fn log_incorrectly_indented_block_error(
@@ -337,24 +325,19 @@ impl PackratParser {
             return;
         }
         let errors_len = context::errors_len();
-        if errors_len > 0 && context::curr_error_line_number() == start_line_number {
-            return;
-        } else {
-            let code_lines: Vec<String> = self.code.lines(start_line_number, end_line_number);
-            let err_str = format!(
-                "expected an indented block with `{}` spaces, got `{}` spaces",
-                expected_indent, received_indent
-            );
-            let err_message = JarvilError::form_multi_line_error(
-                start_line_number,
-                end_line_number,
-                code_lines,
-                err_str,
-                JarvilErrorKind::SYNTAX_ERROR,
-            );
-            let err = JarvilError::new(start_line_number, end_line_number, err_message);
-            context::push_error(err);
-        }
+        // -> TODO - check whether error on same line already exists
+        let err_str = format!(
+            "expected an indented block with `{}` spaces, got `{}` spaces",
+            expected_indent, received_indent
+        );
+        let err = JarvilError::form_multi_line_error(
+            start_line_number,
+            end_line_number,
+            &self.code,
+            err_str,
+            JarvilErrorKind::SYNTAX_ERROR,
+        );
+        context::push_error(err);
     }
 
     pub fn log_invalid_l_value_error(
@@ -367,37 +350,31 @@ impl PackratParser {
             return;
         }
         let errors_len = context::errors_len();
-        if errors_len > 0 && context::curr_error_line_number() == start_line_number {
-            return;
+        // -> TODO - check whether error on same line already exists
+        let (start_line_number, end_line_number) = self.code.line_range_from_indexes(start_index, end_index, start_line_number);
+        let err_str = "expression cannot be assigned a value".to_string();
+        if start_line_number == end_line_number {
+            let err = JarvilError::form_single_line_error(
+                start_index,
+                end_index,
+                start_line_number,
+                self.code.get_line_start_index(start_line_number),
+                self.code.line(start_line_number),
+                err_str,
+                JarvilErrorKind::SYNTAX_ERROR,
+            );
+            context::push_error(err);
         } else {
-            let (start_line_number, end_line_number) =
-                self.code
-                    .line_range_from_indexes(start_index, end_index, start_line_number);
-            let err_str = "expression cannot be assigned a value".to_string();
-            if start_line_number == end_line_number {
-                let err_message = JarvilError::form_single_line_error(
-                    start_index,
-                    end_index,
-                    start_line_number,
-                    self.code.get_line_start_index(start_line_number),
-                    self.code.line(start_line_number),
-                    err_str,
-                    JarvilErrorKind::SYNTAX_ERROR,
-                );
-                let err = JarvilError::new(start_line_number, end_line_number, err_message);
-                context::push_error(err);
-            } else {
-                let err_message = JarvilError::form_multi_line_error(
-                    start_line_number,
-                    end_line_number,
-                    self.code.lines(start_line_number, end_line_number),
-                    err_str,
-                    JarvilErrorKind::SYNTAX_ERROR,
-                );
-                let err = JarvilError::new(start_line_number, end_line_number, err_message);
-                context::push_error(err);
-            }
+            let err = JarvilError::form_multi_line_error(
+                start_line_number,
+                end_line_number,
+                &self.code,
+                err_str,
+                JarvilErrorKind::SYNTAX_ERROR,
+            );
+            context::push_error(err);
         }
+    
     }
 
     // ------------------- parsing routines for terminals and block indentation -------------------

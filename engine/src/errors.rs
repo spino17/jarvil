@@ -1,7 +1,9 @@
+use crate::code::Code;
 use crate::context;
 use crate::lexer::token::Token;
 use colored::Colorize;
 use std::fmt::Formatter;
+use std::io::BufRead;
 use std::rc::Rc;
 use std::{fmt::Display, io::Error as IOError};
 
@@ -91,59 +93,18 @@ impl Display for JarvilErrorKind {
 
 #[derive(Debug, Clone)]
 pub struct JarvilError {
-    pub start_line_number: usize,
-    pub end_line_number: usize,
-    pub err_message: Rc<String>,
+    start_index: usize,
+    end_index: usize,
+    err_message: Rc<String>,
 }
 impl JarvilError {
-    pub fn new(start_line_number: usize, end_line_number: usize, err_message: String) -> Self {
+    fn new(start_index: usize, end_index: usize, err_message: String) -> Self {
         JarvilError {
-            start_line_number,
-            end_line_number,
+            start_index,
+            end_index,
             err_message: Rc::new(err_message),
         }
     }
-    /*
-    pub fn form_single_line_single_pointer_error(
-        err_index: usize,
-        line_number: usize,
-        line_start_index: usize,
-        code_line: String,
-        err_message: String,
-        err_kind: JarvilErrorKind,
-    ) -> String {
-        assert!(
-            err_index > line_start_index,
-            "lookahead at which error occured can never be less than the start index of the line"
-        );
-        let pointer_index = err_index - line_start_index;
-        let mut pointer_line: Vec<char> = vec![];
-        for (i, _) in code_line.chars().enumerate() {
-            if i == pointer_index {
-                pointer_line.push('^');
-            } else {
-                pointer_line.push(' ');
-            }
-        }
-        let pointer_line: String = pointer_line.iter().collect();
-        let blank_str = " ".repeat(int_length(line_number));
-        let err_code_part = format!(
-            "{} |\n{} | {}\n{} | {}",
-            blank_str,
-            line_number,
-            code_line.clone(),
-            blank_str,
-            pointer_line.yellow()
-        )
-        .bright_blue();
-        format!(
-            "\n{}\n{}\n{}\n",
-            err_kind,
-            err_code_part,
-            err_message.yellow().bold()
-        )
-    }
-     */
 
     pub fn form_single_line_error(
         start_err_index: usize,
@@ -153,7 +114,7 @@ impl JarvilError {
         code_line: String,
         err_message: String,
         err_kind: JarvilErrorKind,
-    ) -> String {
+    ) -> Self {
         assert!(
             !(start_err_index < line_start_index || end_err_index < line_start_index),
             "lookahead at which error occured can never be less than the start index of the line"
@@ -179,25 +140,27 @@ impl JarvilError {
             pointer_line.yellow()
         )
         .bright_blue();
-        format!(
+        let err_message = format!(
             "\n{}\n{}\n{}\n",
             err_kind,
             err_code_part,
             err_message.yellow().bold()
-        )
+        );
+        JarvilError::new(start_err_index, end_err_index, err_message)
     }
 
     pub fn form_multi_line_error(
         start_line_number: usize,
         end_line_number: usize,
-        mut code_lines: Vec<String>,
+        code: &Code,
         err_message: String,
         err_kind: JarvilErrorKind,
-    ) -> String {
+    ) -> Self {
         assert!(
             end_line_number >= start_line_number,
             "end line number cannot be less than start line number"
         );
+        let mut code_lines = code.lines(start_line_number, end_line_number);
         let code_lines_len = code_lines.len();
         let max_error_lines = context::max_error_lines();
         if code_lines_len > max_error_lines {
@@ -223,11 +186,16 @@ impl JarvilError {
         }
         err_code_part.push_str("\n");
         err_code_part.push_str(&format!("{} |\n", blank_str));
-        format!(
+        let err_message = format!(
             "\n{}\n{}\n{}\n",
             err_kind,
             err_code_part.bright_blue(),
             err_message.yellow().bold()
+        );
+        JarvilError::new(
+            code.get_line_start_index(start_line_number),
+            code.get_line_start_index(end_line_number),
+            err_message
         )
     }
 }

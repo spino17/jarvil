@@ -72,7 +72,6 @@ impl CoreLexer {
             code_lines: vec![],
             line_start_index: 0,
             lexical_errors_data: vec![],
-            // lexical_errors: vec![],
         }
     }
 
@@ -109,14 +108,14 @@ impl CoreLexer {
     pub fn log_all_lexical_errors(&mut self, code: &Code) {
         let mut errors: Vec<JarvilError> = vec![];
         for error_data in &self.lexical_errors_data {
-            let error: JarvilError;
+            let err: JarvilError;
             match error_data {
                 LexicalErrorData::INVALID_CHAR(invalid_char_lexical_error_data) => {
                     let invalid_token = invalid_char_lexical_error_data.invalid_token.clone();
                     let err_str = invalid_char_lexical_error_data.err_message.clone();
                     let (code_line, line_start_index, line_number, err_index) =
                         code.line_data(invalid_token.line_number, invalid_token.index());
-                    let err_message = JarvilError::form_single_line_error(
+                    err = JarvilError::form_single_line_error(
                         err_index,
                         err_index + 1,
                         line_number,
@@ -125,24 +124,21 @@ impl CoreLexer {
                         err_str.to_string(),
                         JarvilErrorKind::LEXICAL_ERROR,
                     );
-                    error = JarvilError::new(line_number, line_number, err_message);
                 }
                 LexicalErrorData::NO_CLOSING_SYMBOLS(no_closing_symbols_lexical_error_data) => {
                     let start_line_number = no_closing_symbols_lexical_error_data.start_line_number;
                     let end_line_number = no_closing_symbols_lexical_error_data.end_line_number;
                     let err_str = no_closing_symbols_lexical_error_data.err_message.clone();
-                    let code_lines = code.lines(start_line_number, end_line_number);
-                    let err_message = JarvilError::form_multi_line_error(
+                    err = JarvilError::form_multi_line_error(
                         start_line_number,
                         end_line_number,
-                        code_lines,
+                        &code,
                         err_str.to_string(),
                         JarvilErrorKind::LEXICAL_ERROR,
                     );
-                    error = JarvilError::new(start_line_number, end_line_number, err_message);
                 }
             }
-            errors.push(error);
+            errors.push(err);
         }
         context::set_errors(errors);
         let _errors_data = mem::take(&mut self.lexical_errors_data);
