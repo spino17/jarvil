@@ -1,6 +1,8 @@
 // AST Nodes have inner mutability to enable dynamic changes to AST like monomorphism of generics or macro expansion.
 // ASTNode has weak reference to core nodes to avoid memory leaks.
 // See `https://doc.rust-lang.org/book/ch15-06-reference-cycles.html` for more information
+#[macro_use]
+use jarvil_macros::Nodify;
 
 use crate::scope::core::SymbolData;
 use crate::types::atomic::Atomic;
@@ -11,6 +13,7 @@ use crate::{
     types::{array::Array, core::Type},
 };
 use std::{cell::RefCell, rc::Rc};
+use std::sync::Weak;
 
 pub trait Node {
     fn start_index(&self) -> usize;
@@ -25,7 +28,7 @@ pub trait ErrornousNode {
     ) -> Self;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Nodify)]
 pub enum ASTNode {
     BLOCK(BlockNode),
     STATEMENT_INDENT_WRAPPER(StatemenIndentWrapperNode),

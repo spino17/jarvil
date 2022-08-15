@@ -2,6 +2,8 @@ use crate::{
     ast::ast::ASTNode, parser::components::expression::common::params, scope::function, types::expr,
 };
 
+use super::ast::StatementNode;
+
 // This kind of visitor pattern implementation is taken from Golang Programming Language
 // See /src/go/ast/walk.go
 pub trait Visitor {
