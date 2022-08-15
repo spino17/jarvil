@@ -27,11 +27,11 @@ impl AbstractType for Array {
         }
     }
 
-    fn string(&self) -> std::rc::Rc<String> {
-        Rc::new(format!(
+    fn string(&self) -> String {
+        format!(
             "[{}; {}]",
             AbstractType::string(&self.element_type),
             self.size
-        ))
+        )
     }
 }

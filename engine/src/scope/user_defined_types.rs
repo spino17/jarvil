@@ -13,11 +13,11 @@ pub enum UserDefinedTypeData {
 
 #[derive(Debug, Clone)]
 pub struct StructData {
-    pub name: Rc<String>,
-    fields: Rc<FxHashMap<Rc<String>, Type>>,
+    pub name: String,
+    fields: Rc<FxHashMap<String, Type>>,
     constructor: FunctionData,
-    methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
-    class_methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
+    methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
+    class_methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -28,6 +28,6 @@ pub enum StructMethod {
 
 #[derive(Debug, Clone)]
 pub struct LambdaData {
-    pub name: Rc<String>,
+    pub name: String,
     pub function_data: FunctionData,
 }

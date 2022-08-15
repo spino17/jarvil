@@ -234,27 +234,3 @@ impl Display for CompilationError {
         }
     }
 }
-
-/*
-pub fn aggregate_errors(errors: Vec<ParseError>) -> ParseError {
-    let mut curr_line_number = std::usize::MAX;
-    let mut curr_err_index = 0;
-    let mut curr_error = None;
-    for err in errors {
-        if err.err_index > curr_err_index {
-            curr_err_index = err.err_index;
-            curr_line_number = err.line_number;
-            curr_error = Some(err);
-        } else if err.err_index == curr_err_index {
-            if err.line_number < curr_line_number {
-                curr_line_number = err.line_number;
-                curr_error = Some(err);
-            }
-        }
-    }
-    match curr_error {
-        Some(err) => err,
-        None => unreachable!("aggregated error can be None only when provided vector of errors were empty which is not possible")
-    }
-}
- */

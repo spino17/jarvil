@@ -938,15 +938,6 @@ impl NameTypeSpecsNode {
         let node = Rc::new(CoreNameTypeSpecsNode::OK(ok_name_type_specs.clone()));
         NameTypeSpecsNode(node)
     }
-
-    pub fn get_name_type_spec_objs(&self, code: &Code) -> Vec<(Option<Rc<String>>, Option<Type>)> {
-        match &self.0.as_ref() {
-            CoreNameTypeSpecsNode::OK(ok_name_type_specs) => {
-                ok_name_type_specs.get_name_type_spec_objs(code)
-            }
-            _ => vec![],
-        }
-    }
 }
 impl Node for NameTypeSpecsNode {
     fn start_index(&self) -> usize {
@@ -1003,20 +994,6 @@ impl OkNameTypeSpecsNode {
         });
         OkNameTypeSpecsNode(node)
     }
-
-    pub fn get_name_type_spec_objs(&self, code: &Code) -> Vec<(Option<Rc<String>>, Option<Type>)> {
-        let mut name_type_specs_vec: Vec<(Option<Rc<String>>, Option<Type>)> = vec![];
-        let arg_obj = self.0.as_ref().arg.get_name_spec_obj(code);
-        name_type_specs_vec.push(arg_obj);
-        match &self.0.as_ref().remaining_args {
-            Some(remaining_args) => {
-                let mut remaining_args_objs = remaining_args.get_name_type_spec_objs(code);
-                name_type_specs_vec.append(&mut remaining_args_objs);
-            }
-            None => {}
-        }
-        name_type_specs_vec
-    }
 }
 impl Node for OkNameTypeSpecsNode {
     fn start_index(&self) -> usize {
@@ -1050,18 +1027,6 @@ impl NameTypeSpecNode {
             data_type: param_type.clone(),
         });
         NameTypeSpecNode(node)
-    }
-
-    pub fn get_name_spec_obj(&self, code: &Code) -> (Option<Rc<String>>, Option<Type>) {
-        let name = match self.0.as_ref().name.get_ok() {
-            Some(ok_name_node) => Some(Rc::new(ok_name_node.token_value(code))),
-            None => None,
-        };
-        let type_obj = match self.0.as_ref().data_type.get_type_obj(code) {
-            Some(type_obj) => Some(type_obj),
-            None => None,
-        };
-        (name, type_obj)
     }
 }
 impl Node for NameTypeSpecNode {

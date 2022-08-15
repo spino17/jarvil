@@ -73,12 +73,12 @@ impl AbstractType for Atomic {
         }
     }
 
-    fn string(&self) -> Rc<String> {
+    fn string(&self) -> String {
         match self {
-            Atomic::INT => Rc::new(String::from(INT)),
-            Atomic::FLOAT => Rc::new(String::from(FLOAT)),
-            Atomic::STRING => Rc::new(String::from(STRING)),
-            Atomic::BOOL => Rc::new(String::from(BOOL)),
+            Atomic::INT => String::from(INT),
+            Atomic::FLOAT => String::from(FLOAT),
+            Atomic::STRING => String::from(STRING),
+            Atomic::BOOL => String::from(BOOL),
         }
     }
 }

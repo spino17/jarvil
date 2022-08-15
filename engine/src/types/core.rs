@@ -6,7 +6,7 @@ use std::str;
 
 pub trait AbstractType {
     fn is_eq(&self, base_type: &Type) -> bool;
-    fn string(&self) -> Rc<String>;
+    fn string(&self) -> String;
     // fn get_memory_width(&self) -> usize;
 }
 
@@ -15,7 +15,7 @@ pub enum CoreType {
     ATOMIC(Atomic),
     // STRUCT(Struct),
     // LAMBDA(Lambda),
-    USER_DEFINED(Rc<String>), // TODO - for lambda we need structural equivalance - compare params and return_type
+    USER_DEFINED(String), // TODO - for lambda we need structural equivalance - compare params and return_type
     ARRAY(Array),
     // ENUMERATION,
     // TUPLES,
@@ -38,9 +38,7 @@ impl Type {
     }
 
     pub fn new_with_user_defined(user_defined_type_str: String) -> Type {
-        Type(Rc::new(CoreType::USER_DEFINED(Rc::new(
-            user_defined_type_str,
-        ))))
+        Type(Rc::new(CoreType::USER_DEFINED(user_defined_type_str)))
     }
 
     pub fn is_atomic(&self, atomic_type_name: &str) -> bool {
@@ -89,12 +87,12 @@ impl AbstractType for Type {
         }
     }
 
-    fn string(&self) -> Rc<String> {
+    fn string(&self) -> String {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic_data) => atomic_data.string(),
             CoreType::ARRAY(array_data) => array_data.string(),
             CoreType::USER_DEFINED(user_defined_data) => user_defined_data.clone(),
-            CoreType::NON_TYPED => Rc::new(String::from(NON_TYPED)),
+            CoreType::NON_TYPED => String::from(NON_TYPED),
         }
     }
 }
