@@ -247,9 +247,10 @@ impl Token {
         match &core_token {
             CoreToken::LEXICAL_ERROR(lexical_err_value) => match lexical_err_value.0 {
                 LexicalErrorKind::INVALID_CHAR => {
-                    if end_line_number != start_line_number {
-                        unreachable!("invalid char should occur on the same line")
-                    }
+                    assert!(
+                        end_line_number == start_line_number,
+                        "invalid char should occur on the same line"
+                    );
                     lexer.log_invalid_char_lexical_error(&token, &lexical_err_value.1);
                 }
                 LexicalErrorKind::NO_CLOSING_SYMBOLS => {

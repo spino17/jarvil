@@ -112,9 +112,10 @@ impl JarvilError {
         err_message: String,
         err_kind: JarvilErrorKind,
     ) -> String {
-        if err_index < line_start_index {
-            unreachable!("lookahead at which error occured can never be less than the start index of the line")
-        }
+        assert!(
+            err_index > line_start_index,
+            "lookahead at which error occured can never be less than the start index of the line"
+        );
         let pointer_index = err_index - line_start_index;
         let mut pointer_line: Vec<char> = vec![];
         for (i, _) in code_line.chars().enumerate() {
@@ -152,9 +153,10 @@ impl JarvilError {
         err_message: String,
         err_kind: JarvilErrorKind,
     ) -> String {
-        if start_err_index < line_start_index || end_err_index < line_start_index {
-            unreachable!("lookahead at which error occured can never be less than the start index of the line")
-        }
+        assert!(
+            !(start_err_index < line_start_index || end_err_index < line_start_index),
+            "lookahead at which error occured can never be less than the start index of the line"
+        );
         let start_pointer_index = start_err_index - line_start_index;
         let end_pointer_index = end_err_index - line_start_index;
         let mut pointer_line: Vec<char> = vec![];
@@ -201,9 +203,10 @@ impl JarvilError {
         err_message: String,
         err_kind: JarvilErrorKind,
     ) -> String {
-        if end_line_number < start_line_number {
-            unreachable!("end line number cannot be less than start line number")
-        }
+        assert!(
+            end_line_number > start_line_number,
+            "end line number cannot be less than start line number"
+        );
         let code_lines_len = code_lines.len();
         let max_error_lines = context::max_error_lines();
         if code_lines_len > max_error_lines {
