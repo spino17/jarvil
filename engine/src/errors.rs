@@ -69,6 +69,7 @@ impl LexicalErrorData {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum JarvilErrorKind {
     LEXICAL_ERROR,
     SYNTAX_ERROR,
@@ -96,13 +97,15 @@ pub struct JarvilError {
     start_index: usize,
     end_index: usize,
     err_message: Rc<String>,
+    kind: JarvilErrorKind,
 }
 impl JarvilError {
-    fn new(start_index: usize, end_index: usize, err_message: String) -> Self {
+    fn new(start_index: usize, end_index: usize, err_message: String, kind: JarvilErrorKind) -> Self {
         JarvilError {
             start_index,
             end_index,
             err_message: Rc::new(err_message),
+            kind,
         }
     }
 
@@ -146,7 +149,7 @@ impl JarvilError {
             err_code_part,
             err_message.yellow().bold()
         );
-        JarvilError::new(start_err_index, end_err_index, err_message)
+        JarvilError::new(start_err_index, end_err_index, err_message, err_kind)
     }
 
     pub fn form_multi_line_error(
@@ -195,7 +198,8 @@ impl JarvilError {
         JarvilError::new(
             code.get_line_start_index(start_line_number),
             code.get_line_start_index(end_line_number),
-            err_message
+            err_message,
+            err_kind,
         )
     }
 }
