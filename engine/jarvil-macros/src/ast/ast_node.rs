@@ -2,7 +2,7 @@ extern crate proc_macro;
 use std::fmt::format;
 
 use proc_macro::*;
-use quote::quote;
+use quote::{quote, format_ident};
 use syn::{punctuated::Punctuated, PathSegment, token::Colon2};
 use crate::get_macro_expr_stmt;
 

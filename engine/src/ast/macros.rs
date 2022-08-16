@@ -123,3 +123,19 @@ macro_rules! impl_node_variant_for_range {
         }
     };
 }
+
+macro_rules! impl_core_ref {
+    ($t: ident) => {
+        pub fn core_ref(&self) -> &$t {
+            self.0.as_ref()
+        }
+    };
+}
+
+macro_rules! impl_node_walk {
+    ($t: ident, $u: ident, $v: ident) => {
+        fn $t(&mut self, x: &$u) {
+            self.walk(ASTNode::$v(x));
+        }
+    };
+}

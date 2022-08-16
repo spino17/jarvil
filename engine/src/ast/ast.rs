@@ -9,9 +9,6 @@ use jarvil_macros::Nodify;
 use jarvil_macros::Node;
 
 use crate::scope::core::IdentifierKind;
-use crate::scope::core::SymbolData;
-use crate::scope::function::FunctionData;
-use crate::scope::variables::VariableData;
 use crate::types::atomic::Atomic;
 use crate::{
     code::Code,
@@ -172,9 +169,7 @@ impl StatemenIndentWrapperNode {
         StatemenIndentWrapperNode(node)
     }
 
-    pub fn core_ref(&self) -> &CoreStatemenIndentWrapperNode {
-        self.0.as_ref()
-    }
+    impl_core_ref!(CoreStatemenIndentWrapperNode);
 }
 
 #[derive(Debug, Clone)]
@@ -199,6 +194,8 @@ impl SkippedTokensNode {
         let node = Rc::new(CoreSkippedTokensNode { skipped_tokens });
         SkippedTokensNode(node)
     }
+
+    impl_core_ref!(CoreSkippedTokensNode);
 }
 impl Node for SkippedTokensNode {
     fn range(&self) -> TextRange {
@@ -262,6 +259,8 @@ impl StatementNode {
         let node = Rc::new(CoreStatementNode::STRUCT_STATEMENT(struct_stmt.clone()));
         StatementNode(node)
     }
+
+    impl_core_ref!(CoreStatementNode);
 }
 default_errornous_node_impl!(StatementNode, CoreStatementNode);
 
@@ -283,6 +282,8 @@ impl IncorrectlyIndentedStatementNode {
         });
         IncorrectlyIndentedStatementNode(node)
     }
+
+    impl_core_ref!(CoreIncorrectlyIndentedStatementNode);
 }
 impl Node for IncorrectlyIndentedStatementNode {
     fn range(&self) -> TextRange {
@@ -309,6 +310,8 @@ impl ExpressionStatementNode {
         });
         ExpressionStatementNode(node)
     }
+
+    impl_core_ref!(CoreExpressionStatementNode);
 }
 impl Node for ExpressionStatementNode {
     fn range(&self) -> TextRange {
@@ -345,6 +348,8 @@ impl AssignmentNode {
         )));
         AssignmentNode(node)
     }
+
+    impl_core_ref!(CoreAssignmentNode);
 }
 
 #[derive(Debug, Clone)]
@@ -365,6 +370,8 @@ impl OkAssignmentNode {
         });
         OkAssignmentNode(node)
     }
+
+    impl_core_ref!(CoreOkAssignmentNode);
 }
 impl Node for OkAssignmentNode {
     fn range(&self) -> TextRange {
@@ -393,6 +400,8 @@ impl InvalidLValueNode {
         });
         InvalidLValueNode(node)
     }
+
+    impl_core_ref!(CoreInvalidLValueNode);
 }
 impl Node for InvalidLValueNode {
     fn range(&self) -> TextRange {
@@ -424,6 +433,8 @@ impl StructStatementNode {
         });
         StructStatementNode(node)
     }
+
+    impl_core_ref!(CoreStructStatementNode);
 }
 impl Node for StructStatementNode {
     fn range(&self) -> TextRange {
@@ -463,6 +474,8 @@ impl TypeDeclarationNode {
         let node = Rc::new(CoreTypeDeclarationNode::LAMBDA(lambda.clone()));
         TypeDeclarationNode(node)
     }
+
+    impl_core_ref!(CoreTypeDeclarationNode);
 }
 default_errornous_node_impl!(TypeDeclarationNode, CoreTypeDeclarationNode);
 
@@ -491,6 +504,8 @@ impl StructDeclarationNode {
         });
         StructDeclarationNode(node)
     }
+
+    impl_core_ref!(CoreStructDeclarationNode);
 }
 impl Node for StructDeclarationNode {
     fn range(&self) -> TextRange {
@@ -534,6 +549,8 @@ impl LambdaDeclarationNode {
         )));
         LambdaDeclarationNode(node)
     }
+
+    impl_core_ref!(CoreLambdaDeclarationNode);
 }
 default_errornous_node_impl!(LambdaDeclarationNode, CoreLambdaDeclarationNode);
 
@@ -577,6 +594,8 @@ impl OkLambdaDeclarationNode {
         });
         OkLambdaDeclarationNode(node)
     }
+
+    impl_core_ref!(CoreOkLambdaDeclarationNode);
 }
 impl Node for OkLambdaDeclarationNode {
     fn range(&self) -> TextRange {
@@ -622,6 +641,8 @@ impl FunctionDeclarationNode {
         ));
         FunctionDeclarationNode(node)
     }
+
+    impl_core_ref!(CoreFunctionDeclarationNode);
 }
 default_errornous_node_impl!(FunctionDeclarationNode, CoreFunctionDeclarationNode);
 
@@ -671,6 +692,8 @@ impl OkFunctionDeclarationNode {
         });
         OkFunctionDeclarationNode(node)
     }
+
+    impl_core_ref!(CoreOkFunctionDeclarationNode);
 }
 impl Node for OkFunctionDeclarationNode {
     fn range(&self) -> TextRange {
@@ -712,6 +735,8 @@ impl VariableDeclarationNode {
         });
         VariableDeclarationNode(node)
     }
+
+    impl_core_ref!(CoreVariableDeclarationNode);
 }
 impl Node for VariableDeclarationNode {
     fn range(&self) -> TextRange {
@@ -735,6 +760,8 @@ impl NameTypeSpecsNode {
         let node = Rc::new(CoreNameTypeSpecsNode::OK(ok_name_type_specs.clone()));
         NameTypeSpecsNode(node)
     }
+
+    impl_core_ref!(CoreNameTypeSpecsNode);
 }
 default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode);
 
@@ -769,6 +796,8 @@ impl OkNameTypeSpecsNode {
         });
         OkNameTypeSpecsNode(node)
     }
+
+    impl_core_ref!(CoreOkNameTypeSpecsNode);
 }
 impl Node for OkNameTypeSpecsNode {
     fn range(&self) -> TextRange {
@@ -800,6 +829,8 @@ impl NameTypeSpecNode {
         });
         NameTypeSpecNode(node)
     }
+
+    impl_core_ref!(CoreNameTypeSpecNode);
 }
 impl Node for NameTypeSpecNode {
     fn range(&self) -> TextRange {
@@ -858,6 +889,8 @@ impl TypeExpressionNode {
             _ => None,
         }
     }
+
+    impl_core_ref!(CoreTypeExpressionNode);
 }
 default_errornous_node_impl!(TypeExpressionNode, CoreTypeExpressionNode);
 
@@ -885,6 +918,8 @@ impl AtomicTypeNode {
             None => return None,
         }
     }
+
+    impl_core_ref!(CoreAtomicTypeNode);
 }
 impl Node for AtomicTypeNode {
     fn range(&self) -> TextRange {
@@ -939,6 +974,8 @@ impl ArrayTypeNode {
             None => return None,
         }
     }
+
+    impl_core_ref!(CoreArrayTypeNode);
 }
 impl Node for ArrayTypeNode {
     fn range(&self) -> TextRange {
@@ -972,6 +1009,8 @@ impl UserDefinedTypeNode {
             None => None,
         }
     }
+
+    impl_core_ref!(CoreUserDefinedTypeNode);
 }
 impl Node for UserDefinedTypeNode {
     fn range(&self) -> TextRange {
@@ -1025,6 +1064,8 @@ impl TokenNode {
             _ => None,
         }
     }
+
+    impl_core_ref!(CoreTokenNode);
 }
 default_errornous_node_impl!(TokenNode, CoreTokenNode);
 
@@ -1078,6 +1119,8 @@ impl OkTokenNode {
             _ => false,
         }
     }
+
+    impl_core_ref!(CoreOkTokenNode);
 }
 impl Node for OkTokenNode {
     fn range(&self) -> TextRange {
@@ -1104,6 +1147,8 @@ impl MissingTokenNode {
         });
         MissingTokenNode(node)
     }
+
+    impl_core_ref!(CoreMissingTokenNode);
 }
 impl Node for MissingTokenNode {
     fn range(&self) -> TextRange {
@@ -1137,6 +1182,8 @@ impl SkippedTokenNode {
     pub fn line_number(&self) -> usize {
         self.0.as_ref().skipped_token.line_number
     }
+
+    impl_core_ref!(CoreSkippedTokenNode);
 }
 impl Node for SkippedTokenNode {
     fn range(&self) -> TextRange {
@@ -1210,6 +1257,8 @@ impl ExpressionNode {
             _ => return None,
         }
     }
+
+    impl_core_ref!(CoreExpressionNode);
 }
 default_errornous_node_impl!(ExpressionNode, CoreExpressionNode);
 
@@ -1229,6 +1278,8 @@ impl ComparisonNode {
         });
         ComparisonNode(node)
     }
+
+    impl_core_ref!(CoreComparisonNode);
 }
 impl Node for ComparisonNode {
     fn range(&self) -> TextRange {
@@ -1294,6 +1345,8 @@ impl AtomicExpressionNode {
         let node = Rc::new(CoreAtomicExpressionNode::ATOM(atom.clone()));
         AtomicExpressionNode(node)
     }
+
+    impl_core_ref!(CoreAtomicExpressionNode);
 }
 default_errornous_node_impl!(AtomicExpressionNode, CoreAtomicExpressionNode);
 
@@ -1315,6 +1368,8 @@ impl ParenthesisedExpressionNode {
         });
         ParenthesisedExpressionNode(node)
     }
+
+    impl_core_ref!(CoreParenthesisedExpressionNode);
 }
 impl Node for ParenthesisedExpressionNode {
     fn range(&self) -> TextRange {
@@ -1357,6 +1412,8 @@ impl UnaryExpressionNode {
         ));
         UnaryExpressionNode(node)
     }
+
+    impl_core_ref!(CoreUnaryExpressionNode);
 }
 default_errornous_node_impl!(UnaryExpressionNode, CoreUnaryExpressionNode);
 
@@ -1382,6 +1439,8 @@ impl OnlyUnaryExpressionNode {
         });
         OnlyUnaryExpressionNode(node)
     }
+
+    impl_core_ref!(CoreOnlyUnaryExpressionNode);
 }
 impl Node for OnlyUnaryExpressionNode {
     fn range(&self) -> TextRange {
@@ -1433,6 +1492,8 @@ impl BinaryExpressionNode {
         });
         BinaryExpressionNode(node)
     }
+
+    impl_core_ref!(CoreBinaryExpressionNode);
 }
 impl Node for BinaryExpressionNode {
     fn range(&self) -> TextRange {
@@ -1456,6 +1517,8 @@ impl ParamsNode {
         let node = Rc::new(CoreParamsNode::OK(ok_params_node.clone()));
         ParamsNode(node)
     }
+
+    impl_core_ref!(CoreParamsNode);
 }
 default_errornous_node_impl!(ParamsNode, CoreParamsNode);
 
@@ -1490,6 +1553,8 @@ impl OkParamsNode {
         });
         OkParamsNode(node)
     }
+
+    impl_core_ref!(CoreOkParamsNode);
 }
 impl Node for OkParamsNode {
     fn range(&self) -> TextRange {
@@ -1528,6 +1593,8 @@ impl CallExpressionNode {
         });
         CallExpressionNode(node)
     }
+
+    impl_core_ref!(CoreCallExpressionNode);
 }
 impl Node for CallExpressionNode {
     fn range(&self) -> TextRange {
@@ -1569,6 +1636,8 @@ impl ClassMethodCallNode {
         });
         ClassMethodCallNode(node)
     }
+
+    impl_core_ref!(CoreClassMethodCallNode);
 }
 impl Node for ClassMethodCallNode {
     fn range(&self) -> TextRange {
@@ -1665,6 +1734,8 @@ impl AtomNode {
             }
         }
     }
+
+    impl_core_ref!(CoreAtomNode);
 }
 
 #[derive(Debug, Clone, Node)]
@@ -1714,6 +1785,8 @@ impl AtomStartNode {
             _ => false,
         }
     }
+
+    impl_core_ref!(CoreAtomStartNode);
 }
 
 #[derive(Debug, Clone)]
@@ -1741,6 +1814,8 @@ impl CallNode {
         });
         CallNode(node)
     }
+
+    impl_core_ref!(CoreCallNode);
 }
 impl Node for CallNode {
     fn range(&self) -> TextRange {
@@ -1769,6 +1844,8 @@ impl PropertyAccessNode {
         });
         PropertyAccessNode(node)
     }
+
+    impl_core_ref!(CorePropertyAccessNode);
 }
 impl Node for PropertyAccessNode {
     fn range(&self) -> TextRange {
@@ -1810,6 +1887,8 @@ impl MethodAccessNode {
         });
         MethodAccessNode(node)
     }
+
+    impl_core_ref!(CoreMethodAccessNode);
 }
 impl Node for MethodAccessNode {
     fn range(&self) -> TextRange {
@@ -1845,6 +1924,8 @@ impl IndexAccessNode {
         });
         IndexAccessNode(node)
     }
+
+    impl_core_ref!(CoreIndexAccessNode);
 }
 impl Node for IndexAccessNode {
     fn range(&self) -> TextRange {
@@ -1876,5 +1957,7 @@ impl RAssignmentNode {
         ));
         RAssignmentNode(node)
     }
+
+    impl_core_ref!(CoreRAssignmentNode);
 }
 default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode);
