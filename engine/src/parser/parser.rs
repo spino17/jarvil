@@ -26,7 +26,7 @@ use std::rc::Rc;
 use text_size::{TextRange, TextSize};
 
 pub trait Parser {
-    fn parse(self, token_vec: Vec<Token>) -> BlockNode;
+    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<JarvilError>);
 }
 
 #[derive(Debug)]
@@ -84,9 +84,9 @@ impl PackratParser {
 }
 
 impl Parser for PackratParser {
-    fn parse(mut self, token_vec: Vec<Token>) -> BlockNode {
+    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<JarvilError>) {
         let code_node = self.code(token_vec);
-        code_node
+        (code_node, std::mem::take(&mut self.errors))
     }
 }
 
@@ -232,7 +232,6 @@ impl PackratParser {
         let (code_line, line_start_index, line_number, err_index) = self
             .code
             .line_data(recevied_token.line_number, recevied_token.index());
-        let errors_len = context::errors_len();
         // -> TODO - check whether error on same line already exists
         let err_str = format!(
             "expected `{}`, got `{}`",
@@ -248,8 +247,8 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        context::push_error(err);
-        // self.log_error(err)
+        // context::push_error(err);
+        self.log_error(err)
     }
 
     pub fn log_missing_token_error_for_multiple_expected_symbols(
@@ -263,7 +262,6 @@ impl PackratParser {
         let (code_line, line_start_index, line_number, err_index) = self
             .code
             .line_data(recevied_token.line_number, recevied_token.index());
-        let errors_len = context::errors_len();
         // -> TODO - check whether error on same line already exists
         if expected_symbols.len() == 1 {
             return self.log_missing_token_error_for_single_expected_symbol(
@@ -303,7 +301,6 @@ impl PackratParser {
         if self.ignore_all_errors {
             return;
         }
-        let errors_len = context::errors_len();
         // -> TODO - check whether error on same line already exists
         let skipped_tokens_len = skipped_tokens.len();
         let (code_line, line_start_index, line_number, start_err_index) = self.code.line_data(
@@ -321,8 +318,8 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        context::push_error(err);
-        // self.log_error(err)
+        // context::push_error(err);
+        self.log_error(err)
     }
 
     pub fn log_incorrectly_indented_block_error(
@@ -335,7 +332,6 @@ impl PackratParser {
         if self.ignore_all_errors {
             return;
         }
-        let errors_len = context::errors_len();
         // -> TODO - check whether error on same line already exists
         let err_str = format!(
             "expected an indented block with `{}` spaces, got `{}` spaces",
@@ -348,8 +344,8 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        context::push_error(err);
-        // self.log_error(err)
+        // context::push_error(err);
+        self.log_error(err)
     }
 
     pub fn log_invalid_l_value_error(
@@ -361,7 +357,6 @@ impl PackratParser {
         if self.ignore_all_errors {
             return;
         }
-        let errors_len = context::errors_len();
         // -> TODO - check whether error on same line already exists
         let (start_line_number, end_line_number) =
             self.code
@@ -377,8 +372,8 @@ impl PackratParser {
                 err_str,
                 JarvilErrorKind::SYNTAX_ERROR,
             );
-            context::push_error(err);
-            // self.log_error(err)
+            // context::push_error(err);
+            self.log_error(err)
         } else {
             let err = JarvilError::form_multi_line_error(
                 start_line_number,
@@ -387,8 +382,8 @@ impl PackratParser {
                 err_str,
                 JarvilErrorKind::SYNTAX_ERROR,
             );
-            context::push_error(err);
-            // self.log_error(err)
+            // context::push_error(err);
+            self.log_error(err)
         }
     }
 

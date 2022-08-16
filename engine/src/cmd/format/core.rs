@@ -8,7 +8,7 @@ use crate::ast::ast::{BlockNode, StatementNode};
 use crate::errors::JarvilError;
 use crate::utils::common::build_ast;
 use crate::{code::Code, context};
-use std::mem;
+use std::{mem, error};
 
 pub struct Formatter {
     formatted_code_str: String,
@@ -29,10 +29,9 @@ impl Formatter {
 
     pub fn format(code_vec: Vec<char>) -> Result<String, JarvilError> {
         let mut code = Code::new(code_vec);
-        let ast = build_ast(&mut code);
-        match context::first_error() {
-            Some(err) => return Err(err),
-            None => {}
+        let (ast, errors) = build_ast(&mut code);
+        if errors.len() > 0 {
+            return Err(errors[0].clone())
         }
         let mut formatter = Formatter::new(&code);
         // TODO - use `ast` to get the formatted version of code

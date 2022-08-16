@@ -17,6 +17,8 @@ mod utils;
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use std::env::args;
+use convert_case::{Case, Casing};
+use crate::ast::ast::NODES_ARRAY;
 
 fn start_compiler(args: Vec<String>) {
     let code_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
@@ -30,4 +32,6 @@ fn start_compiler(args: Vec<String>) {
 fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
+    println!("{}", "StatementIndentWrapperNode".to_case(Case::Snake));
+    println!("{:?}", NODES_ARRAY);
 }

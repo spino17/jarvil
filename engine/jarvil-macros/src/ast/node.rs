@@ -1,10 +1,28 @@
 extern crate proc_macro;
-use std::fmt::format;
-
 use proc_macro::*;
-use quote::{quote, format_ident};
-use syn::{punctuated::Punctuated, PathSegment, token::Colon2};
+use quote::{quote};
+use syn::{punctuated::Punctuated, PathSegment, token::{Colon2, Comma}, Expr, Token, ExprTuple};
 use crate::get_macro_expr_stmt;
+
+pub fn get_tuple_from_str(entry_1: &str, entry_2: &str) -> syn::ExprTuple {
+    let mut elems: Punctuated<Expr, Comma> = syn::punctuated::Punctuated::default();
+    elems.push(Expr::Lit(syn::ExprLit{
+        attrs: vec![],
+        lit: syn::Lit::Str(syn::LitStr::new(entry_1, proc_macro2::Span::call_site())),
+    }));
+    elems.push_punct(Token![,](proc_macro2::Span::call_site()));
+    elems.push(Expr::Lit(syn::ExprLit{
+        attrs: vec![],
+        lit: syn::Lit::Str(syn::LitStr::new(entry_2, proc_macro2::Span::call_site())),
+    }));
+    syn::ExprTuple{
+        attrs: vec![],
+        paren_token: syn::token::Paren{
+            span: proc_macro2::Span::call_site(),
+        },
+        elems,
+    }
+}
 
 pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
     let enum_name = &ast.ident;
@@ -16,10 +34,12 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
         _ => panic!("tokenify macro should only be used for `crate::lexer::token::CoreToken` enum")
     };
     let variant_iter = &mut enum_data.variants.iter();
+    let variants_len = enum_data.variants.len();
     let mut impl_weak_str = "".to_string();
     let mut weak_str = "".to_string();
     let mut impl_ast_node = "".to_string();
     let mut flag = false;
+    let mut variants_info: Vec<ExprTuple> = vec![];
     while let Some(variant) = variant_iter.next() {
         let variant_name = variant.ident.to_string();  // eg. `BLOCK`
         let field_name = match &variant.fields {
@@ -40,6 +60,7 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
             _ => panic!("type of the data in the variant of `ASTNode` should be a node")
         };
         let variant_field_name = variant_field_name.to_string();  // eg. BlockNode
+        variants_info.push(get_tuple_from_str(&variant_name, &variant_field_name));
         let weak_name = format!("Weak{}", &variant_field_name);
         let core_name = format!("Core{}", &variant_field_name);
         if flag {
@@ -61,6 +82,9 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
         impl ASTNode {
             #impl_ast_node;
         }
+        pub const NODES_ARRAY: [(&'static str, &'static str); #variants_len] = [
+            #(#variants_info,)*
+        ];
     };
     gen.into()
 }

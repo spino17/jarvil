@@ -14,7 +14,7 @@ use std::rc::Rc;
 use std::vec;
 
 pub trait Lexer {
-    fn tokenize(&mut self, code: &mut Code) -> Vec<Token>;
+    fn tokenize(&mut self, code: &mut Code) -> (Vec<Token>, Vec<JarvilError>);
 }
 
 pub struct CoreLexer {
@@ -26,7 +26,7 @@ pub struct CoreLexer {
 }
 
 impl Lexer for CoreLexer {
-    fn tokenize(&mut self, code: &mut Code) -> Vec<Token> {
+    fn tokenize(&mut self, code: &mut Code) -> (Vec<Token>, Vec<JarvilError>) {
         let mut token_vec: Vec<Token> = Vec::new();
         token_vec.push(Token {
             line_number: self.line_number,
@@ -67,8 +67,8 @@ impl Lexer for CoreLexer {
             token.set_trivia(mem::take(&mut trivia_vec));
         }
         token_vec.push(token);
-        self.log_all_lexical_errors(code);
-        token_vec
+        let errors = self.log_all_lexical_errors(code);
+        (token_vec, errors)
     }
 }
 
@@ -113,7 +113,7 @@ impl CoreLexer {
             ))
     }
 
-    pub fn log_all_lexical_errors(&mut self, code: &Code) {
+    pub fn log_all_lexical_errors(&mut self, code: &Code) -> Vec<JarvilError> {
         let mut errors: Vec<JarvilError> = vec![];
         for error_data in &self.lexical_errors_data {
             let err: JarvilError;
@@ -148,7 +148,8 @@ impl CoreLexer {
             }
             errors.push(err);
         }
-        context::set_errors(errors);
+        // context::set_errors(errors);
         let _errors_data = mem::take(&mut self.lexical_errors_data);
+        errors
     }
 }

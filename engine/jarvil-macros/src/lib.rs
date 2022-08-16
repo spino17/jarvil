@@ -1,9 +1,9 @@
 extern crate proc_macro;
 mod ast;
 mod token;
-use crate::ast::{ast_node::impl_weak_nodes_macro};
+use crate::ast::{node::impl_weak_nodes_macro};
 use crate::token::impl_tokenify_macro;
-use crate::ast::ast_node::impl_node_trait;
+use crate::ast::node::impl_node_trait;
 use proc_macro::*;
 use std::str::FromStr;
 use syn::{

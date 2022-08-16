@@ -9,7 +9,6 @@ thread_local! {
 // overriding mechanism to set custom values through command line or IDE settings.
 
 struct Context {
-    parse_errors: Vec<JarvilError>,
     indent_spaces: i64,
     max_error_lines: usize,
     max_line_width: usize,
@@ -18,32 +17,10 @@ struct Context {
 impl Context {
     fn new() -> Self {
         Context {
-            parse_errors: vec![],
             indent_spaces: 4,    // default indentation is 4 spaces
             max_error_lines: 10, // default max lines shown in error messages
             max_line_width: 88,  // default max line width used while formatting (same as black)
         }
-    }
-
-    fn set_errors(&mut self, err: Vec<JarvilError>) {
-        self.parse_errors = err;
-    }
-
-    fn push_error(&mut self, err: JarvilError) {
-        self.parse_errors.push(err);
-    }
-
-    pub fn first_error(&self) -> Option<JarvilError> {
-        let errors_len = self.parse_errors.len();
-        if errors_len == 0 {
-            None
-        } else {
-            Some(self.parse_errors[0].clone())
-        }
-    }
-
-    fn errors_len(&self) -> usize {
-        self.parse_errors.len()
     }
 
     fn set_indent(&mut self, indent_spaces: i64) {
@@ -68,42 +45,6 @@ impl Context {
 
     fn max_line_width(&self) -> usize {
         self.max_line_width
-    }
-}
-
-pub fn set_errors(err: Vec<JarvilError>) {
-    match CONTEXT.try_with(|ctx| ctx.borrow_mut().set_errors(err)) {
-        Err(err) => {
-            panic!("{}", err)
-        }
-        _ => {}
-    }
-}
-
-pub fn push_error(err: JarvilError) {
-    match CONTEXT.try_with(|ctx| ctx.borrow_mut().push_error(err)) {
-        Err(err) => {
-            panic!("{}", err)
-        }
-        _ => {}
-    }
-}
-
-pub fn first_error() -> Option<JarvilError> {
-    match CONTEXT.try_with(|ctx| ctx.borrow().first_error()) {
-        Ok(val) => val,
-        Err(err) => {
-            panic!("{}", err)
-        }
-    }
-}
-
-pub fn errors_len() -> usize {
-    match CONTEXT.try_with(|ctx| ctx.borrow_mut().errors_len()) {
-        Ok(val) => val,
-        Err(err) => {
-            panic!("{}", err)
-        }
     }
 }
 

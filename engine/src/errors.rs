@@ -2,6 +2,8 @@ use crate::code::Code;
 use crate::context;
 use crate::lexer::token::Token;
 use colored::Colorize;
+use text_size::{TextRange, TextSize};
+use std::convert::TryFrom;
 use std::fmt::Formatter;
 use std::io::BufRead;
 use std::rc::Rc;
@@ -94,8 +96,7 @@ impl Display for JarvilErrorKind {
 
 #[derive(Debug, Clone)]
 pub struct JarvilError {
-    start_index: usize,
-    end_index: usize,
+    range: TextRange,
     err_message: Rc<String>,
     kind: JarvilErrorKind,
 }
@@ -106,9 +107,9 @@ impl JarvilError {
         err_message: String,
         kind: JarvilErrorKind,
     ) -> Self {
+        let range = TextRange::new(TextSize::try_from(start_index).unwrap(), TextSize::try_from(end_index).unwrap());
         JarvilError {
-            start_index,
-            end_index,
+            range,
             err_message: Rc::new(err_message),
             kind,
         }

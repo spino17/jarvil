@@ -20,6 +20,7 @@ use super::ast::{StatemenIndentWrapperNode, CoreStatemenIndentWrapperNode, State
 
 pub trait Visitor {
     fn visit(&mut self, node: &ASTNode) -> Option<()>;
+
     impl_node_walk!(walk_block, BlockNode, new_with_BlockNode);
     impl_node_walk!(walk_stmt_indent_wrapper, StatemenIndentWrapperNode, new_with_StatemenIndentWrapperNode);
     impl_node_walk!(walk_stmt, StatementNode, new_with_StatementNode);
