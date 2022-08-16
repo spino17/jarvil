@@ -18,38 +18,43 @@ macro_rules! set_to_parent_scope {
 }
 
 #[derive(Debug, Clone)]
-pub enum MetaData {
-    VARIABLE(VariableData),
-    USER_DEFINED_TYPE(UserDefinedTypeData),
-    FUNCTION(FunctionData),
+pub enum IdentifierKind {
+    VARIABLE(SymbolData<VariableData>),
+    USER_DEFINED_TYPE(SymbolData<UserDefinedTypeData>),
+    FUNCTION(SymbolData<FunctionData>),
 }
-
-#[derive(Debug, Clone)]
-pub struct SymbolData(Rc<RefCell<MetaData>>, usize); // meta data and line on which it was declared
 
 #[derive(Debug)]
-pub struct CoreScope {
-    symbol_table: FxHashMap<String, SymbolData>,
-    parent_scope: Option<Scope>,
+pub struct SymbolData<T>(Rc<RefCell<T>>, usize); // meta data and line on which it was declared
+impl<T> Clone for SymbolData<T> {
+    fn clone(&self) -> Self {
+        SymbolData(self.0.clone(), self.1)
+    }
 }
 
-impl CoreScope {
-    fn set(&mut self, name: String, meta_data: MetaData, line_number: usize) {
+#[derive(Debug)]
+pub struct CoreScope<T> {
+    symbol_table: FxHashMap<String, SymbolData<T>>,
+    parent_scope: Option<Scope<T>>,
+}
+
+impl<T> CoreScope<T> {
+    fn set(&mut self, name: String, meta_data: T, line_number: usize) {
         self.symbol_table.insert(
             name,
             SymbolData(Rc::new(RefCell::new(meta_data)), line_number),
         );
     }
 
-    fn get(&self, name: &str) -> Option<&SymbolData> {
+    fn get(&self, name: &str) -> Option<&SymbolData<T>> {
         self.symbol_table.get(name)
     }
 }
 
 #[derive(Debug, Clone)]
-struct Scope(Rc<RefCell<CoreScope>>);
+struct Scope<T>(Rc<RefCell<CoreScope<T>>>);
 
-impl Scope {
+impl<T> Scope<T> {
     fn new() -> Self {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
@@ -57,7 +62,7 @@ impl Scope {
         })))
     }
 
-    fn new_with_parent_scope(parent_scope: &Scope) -> Self {
+    fn new_with_parent_scope(parent_scope: &Scope<T>) -> Self {
         let scope = parent_scope.0.clone();
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
@@ -65,7 +70,7 @@ impl Scope {
         })))
     }
 
-    fn insert(&self, key: String, meta_data: MetaData, line_number: usize) -> Option<()> {
+    fn insert(&self, key: String, meta_data: T, line_number: usize) -> Option<()> {
         match self.0.borrow().get(&key) {
             Some(value) => {
                 // `{}` is already declared in the current block
@@ -77,7 +82,7 @@ impl Scope {
         Some(())
     }
 
-    fn lookup(&self, key: &str) -> Option<SymbolData> {
+    fn lookup(&self, key: &str) -> Option<SymbolData<T>> {
         // resolved data and depth
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
@@ -94,29 +99,6 @@ impl Scope {
             }
         }
     }
-
-    // call this method only after resolving phase is done
-    /*
-    fn lookup_with_depth(&self, key: &Rc<String>, depth: usize) -> SymbolData {
-        let scope_ref = self.0.borrow();
-        if depth == 0 {
-            match scope_ref.get(key) {
-                Some(value) => return SymbolData(value.0.clone(), value.1),
-                None => unreachable!(
-                    "data for key `{}` should be present if resolving phase is done",
-                    key
-                ),
-            }
-        } else {
-            match &scope_ref.parent_scope {
-                Some(parent_env) => return parent_env.lookup_with_depth(key, depth - 1),
-                None => unreachable!(
-                    "depth should be less than or equal to the depth of the scope chain"
-                ),
-            }
-        }
-    }
-     */
 }
 
 pub enum NameSpaceKind {
@@ -127,9 +109,9 @@ pub enum NameSpaceKind {
 
 #[derive(Debug)]
 pub struct Namespace {
-    variables: Scope,
-    types: Scope,
-    functions: Scope,
+    variables: Scope<VariableData>,
+    types: Scope<UserDefinedTypeData>,
+    functions: Scope<FunctionData>,
 }
 
 impl Namespace {
@@ -153,16 +135,16 @@ impl Namespace {
         set_to_parent_scope!(functions, self);
     }
 
-    pub fn lookup_in_namespace(
-        &self,
-        key: &str,
-        namespace_kind: NameSpaceKind,
-    ) -> Option<SymbolData> {
-        match namespace_kind {
-            NameSpaceKind::VARIABLES => self.variables.lookup(key),
-            NameSpaceKind::TYPES => self.types.lookup(key),
-            NameSpaceKind::FUNCTIONS => self.functions.lookup(key),
-        }
+    pub fn lookup_in_variables_namespace(&self, key: &str) -> Option<SymbolData<VariableData>> {
+        self.variables.lookup(key)
+    }
+
+    pub fn lookup_in_types_namespace(&self, key: &str) -> Option<SymbolData<UserDefinedTypeData>> {
+        self.types.lookup(key)
+    }
+
+    pub fn lookup_in_functions_namespace(&self, key: &str) -> Option<SymbolData<FunctionData>> {
+        self.functions.lookup(key)
     }
 
     pub fn declare_variable(
@@ -171,10 +153,10 @@ impl Namespace {
         data_type: Type,
         line_number: usize,
     ) -> Option<()> {
-        let meta_data = MetaData::VARIABLE(VariableData {
+        let meta_data = VariableData {
             data_type,
             is_init: false,
-        });
+        };
         self.variables.insert(name, meta_data, line_number)
     }
 

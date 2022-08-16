@@ -8,7 +8,10 @@ use jarvil_macros::Nodify;
 #[macro_use]
 use jarvil_macros::Node;
 
+use crate::scope::core::IdentifierKind;
 use crate::scope::core::SymbolData;
+use crate::scope::function::FunctionData;
+use crate::scope::variables::VariableData;
 use crate::types::atomic::Atomic;
 use crate::{
     code::Code,
@@ -90,7 +93,7 @@ pub struct CoreBlockNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct BlockNode(Rc<RefCell<CoreBlockNode>>);
+pub struct BlockNode(pub Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
     pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode {
@@ -167,6 +170,10 @@ impl StatemenIndentWrapperNode {
             skipped_tokens.clone(),
         ));
         StatemenIndentWrapperNode(node)
+    }
+
+    pub fn core_ref(&self) -> &CoreStatemenIndentWrapperNode {
+        self.0.as_ref()
     }
 }
 
@@ -1029,7 +1036,7 @@ pub struct CoreOkTokenNode {
 
 #[derive(Debug, Clone)]
 pub enum OkTokenKind {
-    IDENTIFIER(Option<SymbolData>), // This is set when the identifier is resolved
+    IDENTIFIER(Option<IdentifierKind>), // This is set when the identifier is resolved
     NON_IDENTIFIER,
 }
 
@@ -1045,18 +1052,18 @@ impl OkTokenNode {
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match &self.0.as_ref().token.core_token {
-            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NOT_EQUAL),
-            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DOUBLE_EQUAL),
-            CoreToken::RBRACKET => Some(BinaryOperatorKind::GREATER),
-            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GREATER_EQUAL),
-            CoreToken::LBRACKET => Some(BinaryOperatorKind::LESS),
-            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LESS_EQUAL),
-            CoreToken::DASH => Some(BinaryOperatorKind::MINUS),
-            CoreToken::PLUS => Some(BinaryOperatorKind::PLUS),
-            CoreToken::SLASH => Some(BinaryOperatorKind::DIVIDE),
-            CoreToken::STAR => Some(BinaryOperatorKind::MULTIPLY),
-            CoreToken::AND => Some(BinaryOperatorKind::AND),
-            CoreToken::OR => Some(BinaryOperatorKind::OR),
+            CoreToken::NOT_EQUAL        => Some(BinaryOperatorKind::NOT_EQUAL),
+            CoreToken::DOUBLE_EQUAL     => Some(BinaryOperatorKind::DOUBLE_EQUAL),
+            CoreToken::RBRACKET         => Some(BinaryOperatorKind::GREATER),
+            CoreToken::GREATER_EQUAL    => Some(BinaryOperatorKind::GREATER_EQUAL),
+            CoreToken::LBRACKET         => Some(BinaryOperatorKind::LESS),
+            CoreToken::LESS_EQUAL       => Some(BinaryOperatorKind::LESS_EQUAL),
+            CoreToken::DASH             => Some(BinaryOperatorKind::MINUS),
+            CoreToken::PLUS             => Some(BinaryOperatorKind::PLUS),
+            CoreToken::SLASH            => Some(BinaryOperatorKind::DIVIDE),
+            CoreToken::STAR             => Some(BinaryOperatorKind::MULTIPLY),
+            CoreToken::AND              => Some(BinaryOperatorKind::AND),
+            CoreToken::OR               => Some(BinaryOperatorKind::OR),
             _ => None,
         }
     }
