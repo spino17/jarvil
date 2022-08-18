@@ -247,7 +247,6 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        // context::push_error(err);
         self.log_error(err)
     }
 
@@ -293,7 +292,6 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        // context::push_error(err);
         self.log_error(err)
     }
 
@@ -318,7 +316,6 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        // context::push_error(err);
         self.log_error(err)
     }
 
@@ -344,7 +341,6 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        // context::push_error(err);
         self.log_error(err)
     }
 
@@ -372,7 +368,6 @@ impl PackratParser {
                 err_str,
                 JarvilErrorKind::SYNTAX_ERROR,
             );
-            // context::push_error(err);
             self.log_error(err)
         } else {
             let err = JarvilError::form_multi_line_error(
@@ -382,7 +377,6 @@ impl PackratParser {
                 err_str,
                 JarvilErrorKind::SYNTAX_ERROR,
             );
-            // context::push_error(err);
             self.log_error(err)
         }
     }
@@ -417,7 +411,7 @@ impl PackratParser {
                 return TokenNode::new_with_ok_token(&token, kind);
             }
         }
-        // self.log_skipped_token_error(symbols, &token);
+        self.log_missing_token_error_for_multiple_expected_symbols(symbols, &token);
         TokenNode::new_with_missing_tokens(&Rc::new(symbols.to_vec()), &token)
     }
 

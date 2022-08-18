@@ -51,6 +51,7 @@ pub enum ASTNode {
     FUNCTION_DECLARATION(FunctionDeclarationNode),
     OK_FUNCTION_DECLARATION(OkFunctionDeclarationNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
+    RETURN_STATEMENT(ReturnStatementNode),
     R_ASSIGNMENT(RAssignmentNode),
     NAME_TYPE_SPECS(NameTypeSpecsNode),
     OK_NAME_TYPE_SPECS(OkNameTypeSpecsNode),
@@ -215,6 +216,7 @@ pub enum CoreStatementNode {
     EXPRESSION(ExpressionStatementNode),
     ASSIGNMENT(AssignmentNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
+    RETURN(ReturnStatementNode),
     FUNCTION_DECLARATION(FunctionDeclarationNode),
     TYPE_DECLARATION(TypeDeclarationNode),
     STRUCT_STATEMENT(StructStatementNode),
@@ -257,6 +259,11 @@ impl StatementNode {
 
     pub fn new_with_struct_stmt(struct_stmt: &StructStatementNode) -> Self {
         let node = Rc::new(CoreStatementNode::STRUCT_STATEMENT(struct_stmt.clone()));
+        StatementNode(node)
+    }
+
+    pub fn new_with_return_statement(return_keyword: &TokenNode, expr: &ExpressionNode, newline: &TokenNode) -> Self {
+        let node = Rc::new(CoreStatementNode::RETURN(ReturnStatementNode::new(return_keyword, expr, newline)));
         StatementNode(node)
     }
 
@@ -744,6 +751,36 @@ impl Node for VariableDeclarationNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().let_keyword.start_line_number()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreReturnStatementNode {
+    pub return_keyword: TokenNode,
+    pub expr: ExpressionNode,
+    pub newline: TokenNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct ReturnStatementNode(Rc<CoreReturnStatementNode>);
+impl ReturnStatementNode {
+    fn new(return_keyword: &TokenNode, expr: &ExpressionNode, newline: &TokenNode) -> Self {
+        let node = Rc::new(CoreReturnStatementNode{
+            return_keyword: return_keyword.clone(),
+            expr: expr.clone(),
+            newline: newline.clone(),
+        });
+        ReturnStatementNode(node)
+    }
+
+    impl_core_ref!(CoreReturnStatementNode);
+}
+impl Node for ReturnStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().return_keyword, self.core_ref().newline)
+    }
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().return_keyword.start_line_number()
     }
 }
 

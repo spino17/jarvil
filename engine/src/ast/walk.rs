@@ -1,7 +1,7 @@
 use crate::{
     ast::ast::ASTNode, parser::components::{expression::common::params, block}
 };
-use super::ast::{StatemenIndentWrapperNode, CoreStatemenIndentWrapperNode, StatementNode, IncorrectlyIndentedStatementNode, 
+use crate::ast::ast::{StatemenIndentWrapperNode, CoreStatemenIndentWrapperNode, StatementNode, IncorrectlyIndentedStatementNode, 
     SkippedTokenNode, SkippedTokensNode, CoreStatementNode, ExpressionStatementNode, AssignmentNode, VariableDeclarationNode, 
     FunctionDeclarationNode, TypeDeclarationNode, StructStatementNode, MissingTokenNode, CoreAssignmentNode, OkAssignmentNode, 
     InvalidLValueNode, CoreTypeDeclarationNode, StructDeclarationNode, LambdaDeclarationNode, BlockNode, CoreLambdaDeclarationNode, 
@@ -12,6 +12,8 @@ use super::ast::{StatemenIndentWrapperNode, CoreStatemenIndentWrapperNode, State
     OnlyUnaryExpressionNode, CoreParamsNode, OkParamsNode, ParamsNode, CoreAtomNode, AtomStartNode, CallNode, PropertyAccessNode, 
     MethodAccessNode, IndexAccessNode, CoreAtomStartNode, CallExpressionNode, ClassMethodCallNode
 };
+
+use super::ast::ReturnStatementNode;
 
 // This kind of visitor pattern implementation is taken from Golang Programming Language
 // See /src/go/ast/walk.go
@@ -66,6 +68,7 @@ pub trait Visitor {
     impl_node_walk!(walk_index_access, IndexAccessNode, new_with_IndexAccessNode);
     impl_node_walk!(walk_call_expression, CallExpressionNode, new_with_CallExpressionNode);
     impl_node_walk!(walk_class_method_call, ClassMethodCallNode, new_with_ClassMethodCallNode);
+    impl_node_walk!(walk_return_stmt, ReturnStatementNode, new_with_ReturnStatementNode);
 
     // This method is AST walk which means it does not visit symbols. Visiting symbols can be useful while formatting
     fn walk(&mut self, node: ASTNode) {
@@ -127,6 +130,9 @@ pub trait Visitor {
                     CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
                         self.walk_struct_stmt(struct_stmt);
                     },
+                    CoreStatementNode::RETURN(return_stmt) => {
+                        self.walk_return_stmt(return_stmt);
+                    }
                     CoreStatementNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     },
@@ -242,6 +248,10 @@ pub trait Visitor {
                 self.walk_token(&core_variable_decl.name);
                 self.walk_r_assignment(&core_variable_decl.r_assign);
             },
+            ASTNode::RETURN_STATEMENT(return_stmt) => {
+                let core_return_stmt = return_stmt.core_ref();
+                self.walk_expression(&core_return_stmt.expr);
+            }
             ASTNode::R_ASSIGNMENT(r_assignment_node) => {
                 let core_r_assignment = r_assignment_node.core_ref();
                 match core_r_assignment {

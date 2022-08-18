@@ -1,4 +1,4 @@
-use crate::ast::ast::{FuncKeywordKind, StatementNode, StructStatementNode};
+use crate::ast::ast::{FuncKeywordKind, StatementNode, StructStatementNode, ReturnStatementNode};
 use crate::constants::common::IDENTIFIER;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
@@ -67,7 +67,12 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
         }
         CoreToken::INTERFACE_KEYWORD => todo!(),
         CoreToken::IMPL => todo!(),
-        CoreToken::RETURN => todo!(),
+        CoreToken::RETURN => {
+            let return_node = parser.expect("return");
+            let expr_node = parser.expr();
+            let newline = parser.expect_terminators();
+            StatementNode::new_with_return_statement(&return_node, &expr_node, &newline)
+        },
         CoreToken::BREAK => todo!(),
         CoreToken::CONTINUE => todo!(),
         _ => {
