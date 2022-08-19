@@ -1,7 +1,8 @@
 use crate::{
-    ast::ast::ASTNode, parser::components::{expression::common::params, block}
+    ast::ast::ASTNode
 };
-use crate::ast::ast::{StatemenIndentWrapperNode, CoreStatemenIndentWrapperNode, StatementNode, IncorrectlyIndentedStatementNode, 
+use crate::ast::ast::{
+    StatemenIndentWrapperNode, CoreStatemenIndentWrapperNode, StatementNode, IncorrectlyIndentedStatementNode, 
     SkippedTokenNode, SkippedTokensNode, CoreStatementNode, ExpressionStatementNode, AssignmentNode, VariableDeclarationNode, 
     FunctionDeclarationNode, TypeDeclarationNode, StructStatementNode, MissingTokenNode, CoreAssignmentNode, OkAssignmentNode, 
     InvalidLValueNode, CoreTypeDeclarationNode, StructDeclarationNode, LambdaDeclarationNode, BlockNode, CoreLambdaDeclarationNode, 
@@ -10,10 +11,8 @@ use crate::ast::ast::{StatemenIndentWrapperNode, CoreStatemenIndentWrapperNode, 
     CoreTypeExpressionNode, AtomicTypeNode, UserDefinedTypeNode, ArrayTypeNode, CoreExpressionNode, UnaryExpressionNode, BinaryExpressionNode, 
     ComparisonNode, CoreAtomicExpressionNode, ParenthesisedExpressionNode, AtomNode, CoreUnaryExpressionNode, AtomicExpressionNode, 
     OnlyUnaryExpressionNode, CoreParamsNode, OkParamsNode, ParamsNode, CoreAtomNode, AtomStartNode, CallNode, PropertyAccessNode, 
-    MethodAccessNode, IndexAccessNode, CoreAtomStartNode, CallExpressionNode, ClassMethodCallNode
+    MethodAccessNode, IndexAccessNode, CoreAtomStartNode, CallExpressionNode, ClassMethodCallNode, ReturnStatementNode
 };
-
-use super::ast::ReturnStatementNode;
 
 // This kind of visitor pattern implementation is taken from Golang Programming Language
 // See /src/go/ast/walk.go
@@ -71,13 +70,13 @@ pub trait Visitor {
     impl_node_walk!(walk_return_stmt, ReturnStatementNode, new_with_ReturnStatementNode);
 
     // This method is AST walk which means it does not visit symbols. Visiting symbols can be useful while formatting
-    fn walk(&mut self, node: ASTNode) {
-        match self.visit(&node) {
+    fn walk(&mut self, node: &ASTNode) {
+        match self.visit(node) {
             None => return,
             _ => {}
         }
 
-        match &node {
+        match node {
             ASTNode::BLOCK(block_node) => {
                 for stmt in &block_node.0.as_ref().borrow().stmts {
                     self.walk_stmt_indent_wrapper(stmt);
@@ -196,7 +195,7 @@ pub trait Visitor {
             },
             ASTNode::OK_LAMBDA_DECLARATION(ok_lambda_declaration_node) => {
                 let core_ok_lambda_decl = ok_lambda_declaration_node.core_ref();
-                self.walk(ASTNode::new_with_TokenNode(&core_ok_lambda_decl.name));
+                self.walk_token(&core_ok_lambda_decl.name);
                 match &core_ok_lambda_decl.args {
                     Some(args) => {
                         self.walk_name_type_specs(args);
@@ -248,7 +247,7 @@ pub trait Visitor {
                 self.walk_token(&core_variable_decl.name);
                 self.walk_r_assignment(&core_variable_decl.r_assign);
             },
-            ASTNode::RETURN_STATEMENT(return_stmt) => {
+            ASTNode::RETURN(return_stmt) => {
                 let core_return_stmt = return_stmt.core_ref();
                 self.walk_expression(&core_return_stmt.expr);
             }

@@ -135,7 +135,7 @@ macro_rules! impl_core_ref {
 macro_rules! impl_node_walk {
     ($t: ident, $u: ident, $v: ident) => {
         fn $t(&mut self, x: &$u) {
-            self.walk(ASTNode::$v(x));
+            self.walk(&ASTNode::$v(x));
         }
     };
 }

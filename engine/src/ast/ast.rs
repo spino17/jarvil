@@ -51,7 +51,7 @@ pub enum ASTNode {
     FUNCTION_DECLARATION(FunctionDeclarationNode),
     OK_FUNCTION_DECLARATION(OkFunctionDeclarationNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
-    RETURN_STATEMENT(ReturnStatementNode),
+    RETURN(ReturnStatementNode),
     R_ASSIGNMENT(RAssignmentNode),
     NAME_TYPE_SPECS(NameTypeSpecsNode),
     OK_NAME_TYPE_SPECS(OkNameTypeSpecsNode),

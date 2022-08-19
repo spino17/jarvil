@@ -113,7 +113,6 @@ pub struct Namespace {
     types: Scope<UserDefinedTypeData>,
     functions: Scope<FunctionData>,
 }
-
 impl Namespace {
     pub fn new() -> Self {
         Namespace {
@@ -168,7 +167,6 @@ impl Namespace {
         todo!()
     }
 }
-
 impl Clone for Namespace {
     fn clone(&self) -> Self {
         Namespace {
@@ -176,5 +174,10 @@ impl Clone for Namespace {
             types: self.types.clone(),
             functions: self.functions.clone(),
         }
+    }
+}
+impl Default for Namespace {
+    fn default() -> Self {
+        Namespace::new()
     }
 }
