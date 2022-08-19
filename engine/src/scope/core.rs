@@ -82,15 +82,14 @@ impl<T> Scope<T> {
         Some(())
     }
 
-    fn lookup(&self, key: &str) -> Option<SymbolData<T>> {
-        // resolved data and depth
+    fn lookup(&self, key: &str) -> Option<(SymbolData<T>, usize)> {
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
-            Some(value) => Some(value.clone()),
+            Some(value) => Some((value.clone(), 0)),
             None => {
                 if let Some(parent_env) = &scope_ref.parent_scope {
                     match &parent_env.lookup(key) {
-                        Some(result) => Some(result.clone()),
+                        Some(result) => Some((result.0.clone(), result.1 + 1)),
                         None => None,
                     }
                 } else {
@@ -134,15 +133,15 @@ impl Namespace {
         set_to_parent_scope!(functions, self);
     }
 
-    pub fn lookup_in_variables_namespace(&self, key: &str) -> Option<SymbolData<VariableData>> {
+    pub fn lookup_in_variables_namespace(&self, key: &str) -> Option<(SymbolData<VariableData>, usize)> {
         self.variables.lookup(key)
     }
 
-    pub fn lookup_in_types_namespace(&self, key: &str) -> Option<SymbolData<UserDefinedTypeData>> {
+    pub fn lookup_in_types_namespace(&self, key: &str) -> Option<(SymbolData<UserDefinedTypeData>, usize)> {
         self.types.lookup(key)
     }
 
-    pub fn lookup_in_functions_namespace(&self, key: &str) -> Option<SymbolData<FunctionData>> {
+    pub fn lookup_in_functions_namespace(&self, key: &str) -> Option<(SymbolData<FunctionData>, usize)> {
         self.functions.lookup(key)
     }
 
