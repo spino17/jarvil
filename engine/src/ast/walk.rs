@@ -14,6 +14,8 @@ use crate::ast::ast::{
     MethodAccessNode, IndexAccessNode, CoreAtomStartNode, CallExpressionNode, ClassMethodCallNode, ReturnStatementNode
 };
 
+use super::ast::{CoreTokenNode, OkTokenKind, OkTokenNode};
+
 // This kind of visitor pattern implementation is taken from Golang Programming Language
 // See /src/go/ast/walk.go
 
@@ -68,6 +70,7 @@ pub trait Visitor {
     impl_node_walk!(walk_call_expression, CallExpressionNode, new_with_CallExpressionNode);
     impl_node_walk!(walk_class_method_call, ClassMethodCallNode, new_with_ClassMethodCallNode);
     impl_node_walk!(walk_return_stmt, ReturnStatementNode, new_with_ReturnStatementNode);
+    impl_node_walk!(walk_ok_token, OkTokenNode, new_with_OkTokenNode);
 
     // This method is AST walk which means it does not visit symbols. Visiting symbols can be useful while formatting
     fn walk(&mut self, node: &ASTNode) {
@@ -509,8 +512,13 @@ pub trait Visitor {
                 self.walk_atom(&core_index_access.atom);
                 self.walk_expression(&core_index_access.index);
             },
-            ASTNode::TOKEN(_) => {
-                // do nothing
+            ASTNode::TOKEN(token) => {
+                let token = token.core_ref();
+                match token {
+                    CoreTokenNode::OK(ok_token) => self.walk_ok_token(ok_token),
+                    CoreTokenNode::MISSING_TOKENS(missing_tokens) => self.walk_missing_tokens(missing_tokens),
+                    CoreTokenNode::SKIPPED(skipped_token) => self.walk_skipped_token(skipped_token),
+                }
             },
             ASTNode::OK_TOKEN(_) => {
                 // do nothing
