@@ -3,7 +3,6 @@ use crate::lexer::token::CoreToken;
 use crate::{constants::common::IDENTIFIER, parser::parser::PackratParser};
 
 pub fn trailing_atom(parser: &mut PackratParser, atom_start: AtomNode) -> AtomNode {
-    // parser.ignore_newlines();
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::DOT => {
@@ -40,7 +39,6 @@ pub fn trailing_atom(parser: &mut PackratParser, atom_start: AtomNode) -> AtomNo
             }
         }
         CoreToken::LPAREN => {
-            // let (params_node, lparen_node, rparen_node) = parser.params_within_parenthesis();
             let lparen_node = parser.expect("(");
             let mut params_node: Option<&ParamsNode> = None;
             let params: ParamsNode;
@@ -77,7 +75,6 @@ pub fn atom(parser: &mut PackratParser) -> AtomNode {
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::LPAREN => {
-            // let (params_node, lparen_node, rparen_node) = parser.params_within_parenthesis();
             let lparen_node = parser.expect("(");
             let mut params_node: Option<&ParamsNode> = None;
             let params: ParamsNode;
@@ -99,7 +96,6 @@ pub fn atom(parser: &mut PackratParser) -> AtomNode {
         CoreToken::DOUBLE_COLON => {
             let double_colon_node = parser.expect("::");
             let class_method_name = parser.expect_ident();
-            // let (params_node, lparen_node, rparen_node) = parser.params_within_parenthesis();
             let lparen_node = parser.expect("(");
             let mut params_node: Option<&ParamsNode> = None;
             let params: ParamsNode;

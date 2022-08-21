@@ -7,7 +7,7 @@ use crate::parser::components::statement::core::{
     is_statement_within_function_starting_with, STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS,
 };
 use crate::{
-    ast::ast::NameTypeSpecsNode, constants::common::IDENTIFIER, parser::parser::PackratParser,
+    ast::ast::NameTypeSpecsNode, parser::parser::PackratParser,
 };
 use std::rc::Rc;
 
@@ -48,18 +48,6 @@ pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
     }
 }
 
-pub fn name_type_specs_within_parenthesis(
-    parser: &mut PackratParser,
-) -> (Option<NameTypeSpecsNode>, TokenNode, TokenNode) {
-    let lparen_node = parser.expect("(");
-    let mut args: Option<NameTypeSpecsNode> = None;
-    if !parser.check_curr_token(")") {
-        args = Some(parser.name_type_specs());
-    }
-    let rparen_node = parser.expect(")");
-    (args, lparen_node, rparen_node)
-}
-
 pub fn function_name(parser: &mut PackratParser) -> (IdentifierNode, TokenNode) {
     let def_keyword_node = parser.expect("def");
     let name_node = parser.expect_ident();
@@ -71,7 +59,6 @@ pub fn function_decl(
     name_node: Option<&IdentifierNode>,
     func_keyword_node: &FuncKeywordKind,
 ) -> FunctionDeclarationNode {
-    // let (args_node, lparen_node, rparen_node) = parser.name_type_specs_within_parenthesis();
     let lparen_node = parser.expect("(");
     let mut args_node: Option<&NameTypeSpecsNode> = None;
     let name_type_specs_node: NameTypeSpecsNode;
