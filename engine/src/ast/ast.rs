@@ -8,6 +8,7 @@ use jarvil_macros::Nodify;
 #[macro_use]
 use jarvil_macros::Node;
 
+use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::core::IdentifierKind;
 use crate::types::atomic::Atomic;
 use crate::{
@@ -1129,21 +1130,7 @@ impl OkTokenNode {
     }
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
-        match &self.0.as_ref().token.core_token {
-            CoreToken::NOT_EQUAL        => Some(BinaryOperatorKind::NOT_EQUAL),
-            CoreToken::DOUBLE_EQUAL     => Some(BinaryOperatorKind::DOUBLE_EQUAL),
-            CoreToken::RBRACKET         => Some(BinaryOperatorKind::GREATER),
-            CoreToken::GREATER_EQUAL    => Some(BinaryOperatorKind::GREATER_EQUAL),
-            CoreToken::LBRACKET         => Some(BinaryOperatorKind::LESS),
-            CoreToken::LESS_EQUAL       => Some(BinaryOperatorKind::LESS_EQUAL),
-            CoreToken::DASH             => Some(BinaryOperatorKind::MINUS),
-            CoreToken::PLUS             => Some(BinaryOperatorKind::PLUS),
-            CoreToken::SLASH            => Some(BinaryOperatorKind::DIVIDE),
-            CoreToken::STAR             => Some(BinaryOperatorKind::MULTIPLY),
-            CoreToken::AND              => Some(BinaryOperatorKind::AND),
-            CoreToken::OR               => Some(BinaryOperatorKind::OR),
-            _ => None,
-        }
+        self.core_ref().token.is_binary_operator()
     }
 
     pub fn token_value(&self, code: &Code) -> String {
@@ -1151,10 +1138,7 @@ impl OkTokenNode {
     }
 
     pub fn is_identifier(&self) -> bool {
-        match self.0.as_ref().kind {
-            OkTokenKind::IDENTIFIER(_) => true,
-            _ => false,
-        }
+        self.core_ref().token.is_identifier()
     }
 
     impl_core_ref!(CoreOkTokenNode);
@@ -1494,22 +1478,6 @@ pub struct CoreBinaryExpressionNode {
     pub operator: TokenNode,
     pub left_expr: ExpressionNode,
     pub right_expr: ExpressionNode,
-}
-
-#[derive(Debug, Clone)]
-pub enum BinaryOperatorKind {
-    NOT_EQUAL,
-    DOUBLE_EQUAL,
-    GREATER,
-    GREATER_EQUAL,
-    LESS,
-    LESS_EQUAL,
-    MINUS,
-    PLUS,
-    DIVIDE,
-    MULTIPLY,
-    AND,
-    OR,
 }
 
 #[derive(Debug, Clone)]

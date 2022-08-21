@@ -1,7 +1,5 @@
 #[macro_use]
 use jarvil_macros::Tokenify;
-use super::helper::is_letter;
-use super::lexer::CoreLexer;
 use crate::code::Code;
 use crate::constants::common::{
     AND, ATOMIC_TYPE, BLANK, BLOCK_COMMENT, BREAK, COLON, COMMA, CONTINUE, DASH, DEF, DOT,
@@ -11,10 +9,8 @@ use crate::constants::common::{
     NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN, RSQUARE,
     SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, TRUE, TYPE_KEYWORD, WHILE,
 };
-use crate::lexer::helper;
-use std::convert::TryFrom;
 use std::rc::Rc;
-use text_size::{TextRange, TextSize};
+use text_size::TextRange;
 
 #[derive(Debug, Clone, PartialEq, Tokenify)]
 pub enum CoreToken {
@@ -104,6 +100,22 @@ pub enum CoreToken {
     LEXICAL_ERROR((LexicalErrorKind, Rc<String>)),
 }
 
+#[derive(Debug, Clone)]
+pub enum BinaryOperatorKind {
+    NOT_EQUAL,
+    DOUBLE_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
+    LESS,
+    LESS_EQUAL,
+    MINUS,
+    PLUS,
+    DIVIDE,
+    MULTIPLY,
+    AND,
+    OR,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum LexicalErrorKind {
     INVALID_CHAR,
@@ -125,150 +137,6 @@ pub struct Token {
 }
 
 impl Token {
-    // This method tokenize the code in O(|code|)
-    pub fn extract_lexeme(lexer: &mut CoreLexer, code: &Code) -> Token {
-        let begin_lexeme = &mut lexer.begin_lexeme;
-        let line_number = &mut lexer.line_number;
-        let code_lines = &mut lexer.code_lines;
-        let line_start_index = &mut lexer.line_start_index;
-
-        let start_index = *begin_lexeme;
-        let start_line_number = *line_number;
-        let critical_char = code.get_char(*begin_lexeme);
-        let core_token = match critical_char {
-            '(' => {
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::LPAREN
-            }
-            ')' => {
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::RPAREN
-            }
-            '{' => {
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::LBRACE
-            }
-            '}' => {
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::RBRACE
-            }
-            '[' => {
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::LSQUARE
-            }
-            ']' => {
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::RSQUARE
-            }
-            ';' => {
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::SEMICOLON
-            }
-            ',' => {
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::COMMA
-            }
-            '.' => {
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::DOT
-            }
-            /*
-            '\t'        =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::TAB, String::from("\t"))
-            },
-             */
-            '+' => {
-                *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::PLUS
-            }
-            '\n' => {
-                code_lines.push(*line_start_index);
-                *line_start_index = *begin_lexeme + 1;
-                *begin_lexeme = *begin_lexeme + 1;
-                *line_number = *line_number + 1;
-                CoreToken::NEWLINE
-            }
-            '/' => helper::extract_slash_prefix_lexeme(
-                begin_lexeme,
-                line_number,
-                code,
-                code_lines,
-                line_start_index,
-            ),
-            '"' => helper::extract_double_quote_prefix_lexeme(
-                begin_lexeme,
-                line_number,
-                code,
-                code_lines,
-                line_start_index,
-            ),
-            '\'' => helper::extract_single_quote_prefix_lexeme(
-                begin_lexeme,
-                line_number,
-                code,
-                code_lines,
-                line_start_index,
-            ),
-            '!' => helper::extract_exclaimation_prefix_lexeme(begin_lexeme, code),
-            ' ' => helper::extract_blank_prefix_lexeme(begin_lexeme, code),
-            '-' => helper::extract_dash_prefix_lexeme(begin_lexeme, code),
-            '*' => helper::extract_star_prefix_lexeme(begin_lexeme, code),
-            '#' => helper::extract_hash_prefix_lexeme(begin_lexeme, code),
-            '=' => helper::extract_equal_prefix_lexeme(begin_lexeme, code),
-            '>' => helper::extract_rbracket_prefix_lexeme(begin_lexeme, code),
-            '<' => helper::extract_lbracket_prefix_lexeme(begin_lexeme, code),
-            ':' => helper::extract_colon_prefix_lexeme(begin_lexeme, code),
-            c => {
-                let token: CoreToken;
-                if is_letter(&c) {
-                    token = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
-                } else if c.is_digit(10) {
-                    token = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
-                } else {
-                    let error_str = Rc::new(format!("invalid character `{}` found", c));
-                    token = CoreToken::LEXICAL_ERROR((
-                        LexicalErrorKind::INVALID_CHAR,
-                        error_str.clone(),
-                    ));
-                    *begin_lexeme = *begin_lexeme + 1;
-                }
-                token
-            }
-        };
-        let end_index = *begin_lexeme;
-        let end_line_number = *line_number;
-        let token = Token {
-            line_number: *line_number,
-            core_token: core_token.clone(),
-            range: TextRange::new(
-                TextSize::try_from(start_index).unwrap(),
-                TextSize::try_from(end_index).unwrap(),
-            ),
-            trivia: None,
-        };
-        match &core_token {
-            CoreToken::LEXICAL_ERROR(lexical_err_value) => match lexical_err_value.0 {
-                LexicalErrorKind::INVALID_CHAR => {
-                    assert!(
-                        end_line_number == start_line_number,
-                        "invalid char should occur on the same line"
-                    );
-                    lexer.log_invalid_char_lexical_error(&token, &lexical_err_value.1);
-                }
-                LexicalErrorKind::NO_CLOSING_SYMBOLS => {
-                    lexer.log_no_closing_symbols_lexical_error(
-                        start_line_number,
-                        end_line_number,
-                        &lexical_err_value.1,
-                    );
-                }
-            },
-            _ => {}
-        }
-        token
-    }
-
     pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
         self.trivia = Some(Rc::new(trivia_vec));
     }
@@ -296,6 +164,28 @@ impl Token {
 
     pub fn is_eq(&self, symbol: &str) -> bool {
         self.core_token.is_eq(symbol)
+    }
+
+    pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
+        match self.core_token {
+            CoreToken::NOT_EQUAL        => Some(BinaryOperatorKind::NOT_EQUAL),
+            CoreToken::DOUBLE_EQUAL     => Some(BinaryOperatorKind::DOUBLE_EQUAL),
+            CoreToken::RBRACKET         => Some(BinaryOperatorKind::GREATER),
+            CoreToken::GREATER_EQUAL    => Some(BinaryOperatorKind::GREATER_EQUAL),
+            CoreToken::LBRACKET         => Some(BinaryOperatorKind::LESS),
+            CoreToken::LESS_EQUAL       => Some(BinaryOperatorKind::LESS_EQUAL),
+            CoreToken::DASH             => Some(BinaryOperatorKind::MINUS),
+            CoreToken::PLUS             => Some(BinaryOperatorKind::PLUS),
+            CoreToken::SLASH            => Some(BinaryOperatorKind::DIVIDE),
+            CoreToken::STAR             => Some(BinaryOperatorKind::MULTIPLY),
+            CoreToken::AND              => Some(BinaryOperatorKind::AND),
+            CoreToken::OR               => Some(BinaryOperatorKind::OR),
+            _ => None,
+        }
+    }
+
+    pub fn is_identifier(&self) -> bool {
+        self.core_token.IDENTIFIER()
     }
 
     pub fn get_precedence(&self) -> u8 {

@@ -1,17 +1,17 @@
 use text_size::TextRange;
 use text_size::TextSize;
-
 use crate::code::Code;
-use crate::context;
 use crate::errors::JarvilError;
 use crate::errors::JarvilErrorKind;
 use crate::errors::LexicalErrorData;
 use crate::lexer::token::CoreToken;
 use crate::lexer::token::Token;
+use crate::lexer::helper;
 use std::convert::TryFrom;
 use std::mem;
 use std::rc::Rc;
 use std::vec;
+use super::token::LexicalErrorKind;
 
 pub trait Lexer {
     fn tokenize(&mut self, code: &mut Code) -> (Vec<Token>, Vec<JarvilError>);
@@ -83,8 +83,147 @@ impl CoreLexer {
         }
     }
 
-    pub fn extract_lexeme(&mut self, code: &Code) -> Token {
-        Token::extract_lexeme(self, code)
+    fn extract_lexeme(&mut self, code: &Code) -> Token {
+        let begin_lexeme = &mut self.begin_lexeme;
+        let line_number = &mut self.line_number;
+        let code_lines = &mut self.code_lines;
+        let line_start_index = &mut self.line_start_index;
+
+        let start_index = *begin_lexeme;
+        let start_line_number = *line_number;
+        let critical_char = code.get_char(*begin_lexeme);
+        let core_token = match critical_char {
+            '(' => {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::LPAREN
+            }
+            ')' => {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::RPAREN
+            }
+            '{' => {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::LBRACE
+            }
+            '}' => {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::RBRACE
+            }
+            '[' => {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::LSQUARE
+            }
+            ']' => {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::RSQUARE
+            }
+            ';' => {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::SEMICOLON
+            }
+            ',' => {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::COMMA
+            }
+            '.' => {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::DOT
+            }
+            /*
+            '\t'        =>      {
+                *begin_lexeme = *begin_lexeme + 1;
+                (CoreToken::TAB, String::from("\t"))
+            },
+             */
+            '+' => {
+                *begin_lexeme = *begin_lexeme + 1;
+                CoreToken::PLUS
+            }
+            '\n' => {
+                code_lines.push(*line_start_index);
+                *line_start_index = *begin_lexeme + 1;
+                *begin_lexeme = *begin_lexeme + 1;
+                *line_number = *line_number + 1;
+                CoreToken::NEWLINE
+            }
+            '/' => helper::extract_slash_prefix_lexeme(
+                begin_lexeme,
+                line_number,
+                code,
+                code_lines,
+                line_start_index,
+            ),
+            '"' => helper::extract_double_quote_prefix_lexeme(
+                begin_lexeme,
+                line_number,
+                code,
+                code_lines,
+                line_start_index,
+            ),
+            '\'' => helper::extract_single_quote_prefix_lexeme(
+                begin_lexeme,
+                line_number,
+                code,
+                code_lines,
+                line_start_index,
+            ),
+            '!' => helper::extract_exclaimation_prefix_lexeme(begin_lexeme, code),
+            ' ' => helper::extract_blank_prefix_lexeme(begin_lexeme, code),
+            '-' => helper::extract_dash_prefix_lexeme(begin_lexeme, code),
+            '*' => helper::extract_star_prefix_lexeme(begin_lexeme, code),
+            '#' => helper::extract_hash_prefix_lexeme(begin_lexeme, code),
+            '=' => helper::extract_equal_prefix_lexeme(begin_lexeme, code),
+            '>' => helper::extract_rbracket_prefix_lexeme(begin_lexeme, code),
+            '<' => helper::extract_lbracket_prefix_lexeme(begin_lexeme, code),
+            ':' => helper::extract_colon_prefix_lexeme(begin_lexeme, code),
+            c => {
+                let token: CoreToken;
+                if helper::is_letter(&c) {
+                    token = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
+                } else if c.is_digit(10) {
+                    token = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
+                } else {
+                    let error_str = Rc::new(format!("invalid character `{}` found", c));
+                    token = CoreToken::LEXICAL_ERROR((
+                        LexicalErrorKind::INVALID_CHAR,
+                        error_str.clone(),
+                    ));
+                    *begin_lexeme = *begin_lexeme + 1;
+                }
+                token
+            }
+        };
+        let end_index = *begin_lexeme;
+        let end_line_number = *line_number;
+        let token = Token {
+            line_number: *line_number,
+            core_token: core_token.clone(),
+            range: TextRange::new(
+                TextSize::try_from(start_index).unwrap(),
+                TextSize::try_from(end_index).unwrap(),
+            ),
+            trivia: None,
+        };
+        match &core_token {
+            CoreToken::LEXICAL_ERROR(lexical_err_value) => match lexical_err_value.0 {
+                LexicalErrorKind::INVALID_CHAR => {
+                    assert!(
+                        end_line_number == start_line_number,
+                        "invalid char should occur on the same line"
+                    );
+                    self.log_invalid_char_lexical_error(&token, &lexical_err_value.1);
+                }
+                LexicalErrorKind::NO_CLOSING_SYMBOLS => {
+                    self.log_no_closing_symbols_lexical_error(
+                        start_line_number,
+                        end_line_number,
+                        &lexical_err_value.1,
+                    );
+                }
+            },
+            _ => {}
+        }
+        token
     }
 
     pub fn log_invalid_char_lexical_error(

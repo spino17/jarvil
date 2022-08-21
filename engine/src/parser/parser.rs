@@ -398,6 +398,23 @@ impl PackratParser {
         }
     }
 
+    pub fn expect_ident(&mut self) -> TokenNode {
+        let token = self.curr_token();
+        let symbol = IDENTIFIER;
+        if token.is_eq(symbol) {
+            self.scan_next_token();
+            let kind = if symbol == IDENTIFIER {
+                OkTokenKind::IDENTIFIER(None)
+            } else {
+                OkTokenKind::NON_IDENTIFIER
+            };
+            TokenNode::new_with_ok_token(&token, kind)
+        } else {
+            self.log_missing_token_error_for_single_expected_symbol(symbol, &token);
+            TokenNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
+        }
+    }
+
     pub fn expects(&mut self, symbols: &[&'static str]) -> TokenNode {
         let token = self.curr_token();
         for &symbol in symbols {
