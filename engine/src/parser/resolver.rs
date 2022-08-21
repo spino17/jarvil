@@ -43,7 +43,7 @@ impl Visitor for Resolver {
                 todo!();
                 return None
             },
-            ASTNode::OK_TOKEN(ok_token) => {
+            ASTNode::ATOM_START(atom_start) => {
                 todo!();
                 return None
             },
