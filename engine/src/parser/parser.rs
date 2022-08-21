@@ -8,9 +8,9 @@ use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
     FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, Node, ParamsNode,
     RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
-    TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
+    TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode, IdentifierNode,
 };
-use crate::ast::ast::{ErrornousNode, OkTokenKind};
+use crate::ast::ast::{ErrornousNode};
 use crate::code::Code;
 use crate::constants::common::{ENDMARKER, IDENTIFIER};
 use crate::context;
@@ -384,34 +384,27 @@ impl PackratParser {
     // ------------------- parsing routines for terminals and block indentation -------------------
     pub fn expect(&mut self, symbol: &'static str) -> TokenNode {
         let token = self.curr_token();
+        if symbol.eq(IDENTIFIER) {
+            unreachable!("use `expect_ident` for parsing identifier");
+        }
         if token.is_eq(symbol) {
             self.scan_next_token();
-            let kind = if symbol == IDENTIFIER {
-                OkTokenKind::IDENTIFIER(None)
-            } else {
-                OkTokenKind::NON_IDENTIFIER
-            };
-            TokenNode::new_with_ok_token(&token, kind)
+            TokenNode::new_with_ok(&token)
         } else {
             self.log_missing_token_error_for_single_expected_symbol(symbol, &token);
             TokenNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
         }
     }
 
-    pub fn expect_ident(&mut self) -> TokenNode {
+    pub fn expect_ident(&mut self) -> IdentifierNode {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
             self.scan_next_token();
-            let kind = if symbol == IDENTIFIER {
-                OkTokenKind::IDENTIFIER(None)
-            } else {
-                OkTokenKind::NON_IDENTIFIER
-            };
-            TokenNode::new_with_ok_token(&token, kind)
+            IdentifierNode::new_with_ok(&token)
         } else {
             self.log_missing_token_error_for_single_expected_symbol(symbol, &token);
-            TokenNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
+            IdentifierNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
         }
     }
 
@@ -420,12 +413,7 @@ impl PackratParser {
         for &symbol in symbols {
             if token.is_eq(symbol) {
                 self.scan_next_token();
-                let kind = if symbol == IDENTIFIER {
-                    OkTokenKind::IDENTIFIER(None)
-                } else {
-                    OkTokenKind::NON_IDENTIFIER
-                };
-                return TokenNode::new_with_ok_token(&token, kind);
+                return TokenNode::new_with_ok(&token);
             }
         }
         self.log_missing_token_error_for_multiple_expected_symbols(symbols, &token);
@@ -660,17 +648,17 @@ impl PackratParser {
         components::function_declaration::name_type_specs(self)
     }
 
-    pub fn r_assign(&mut self, identifier_name: Option<&TokenNode>) -> RAssignmentNode {
+    pub fn r_assign(&mut self, identifier_name: Option<&IdentifierNode>) -> RAssignmentNode {
         components::common::r_assign(self, identifier_name)
     }
 
-    pub fn function_name(&mut self) -> (TokenNode, TokenNode) {
+    pub fn function_name(&mut self) -> (IdentifierNode, TokenNode) {
         components::function_declaration::function_name(self)
     }
 
     pub fn function_decl(
         &mut self,
-        name: Option<&TokenNode>,
+        name: Option<&IdentifierNode>,
         func_keyword: &FuncKeywordKind,
     ) -> FunctionDeclarationNode {
         components::function_declaration::function_decl(self, name, func_keyword)

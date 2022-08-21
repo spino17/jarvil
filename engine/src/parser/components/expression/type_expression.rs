@@ -35,7 +35,7 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
             TypeExpressionNode::new_with_atomic_type(&atomic_type_node)
         },
         CoreToken::IDENTIFIER   => {
-            let identifier_node = parser.expect(IDENTIFIER);
+            let identifier_node = parser.expect_ident();
             TypeExpressionNode::new_with_user_defined_type(&identifier_node)
         },
         CoreToken::LSQUARE      => {

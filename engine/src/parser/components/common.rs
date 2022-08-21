@@ -1,5 +1,5 @@
 use super::expression::core::is_expression_starting_with;
-use crate::ast::ast::{ErrornousNode, FuncKeywordKind, RAssignmentNode, TokenNode};
+use crate::ast::ast::{ErrornousNode, FuncKeywordKind, RAssignmentNode, IdentifierNode};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::parser::PackratParser;
 use std::rc::Rc;
@@ -15,7 +15,7 @@ pub const R_ASSIGNMENT_STARTING_SYMBOLS: [&'static str; 2] = ["<expression>", "f
 
 pub fn r_assign(
     parser: &mut PackratParser,
-    identifier_name: Option<&TokenNode>,
+    identifier_name: Option<&IdentifierNode>,
 ) -> RAssignmentNode {
     let token = &parser.curr_token();
     if !is_r_assign_starting_with(token) {

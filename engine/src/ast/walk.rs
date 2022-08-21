@@ -14,7 +14,7 @@ use crate::ast::ast::{
     MethodAccessNode, IndexAccessNode, CoreAtomStartNode, CallExpressionNode, ClassMethodCallNode, ReturnStatementNode
 };
 
-use super::ast::{CoreTokenNode, OkTokenKind, OkTokenNode};
+use super::ast::{CoreTokenNode, OkTokenNode, CoreIdentifierNode, OkIdentifierNode, IdentifierNode};
 
 // This kind of visitor pattern implementation is taken from Golang Programming Language
 // See /src/go/ast/walk.go
@@ -71,6 +71,8 @@ pub trait Visitor {
     impl_node_walk!(walk_class_method_call, ClassMethodCallNode, new_with_ClassMethodCallNode);
     impl_node_walk!(walk_return_stmt, ReturnStatementNode, new_with_ReturnStatementNode);
     impl_node_walk!(walk_ok_token, OkTokenNode, new_with_OkTokenNode);
+    impl_node_walk!(walk_ok_identifier, OkIdentifierNode, new_with_OkIdentifierNode);
+    impl_node_walk!(walk_identifier, IdentifierNode, new_with_IdentifierNode);
 
     // This method is AST walk which means it does not visit symbols. Visiting symbols can be useful while formatting
     fn walk(&mut self, node: &ASTNode) {
@@ -183,7 +185,7 @@ pub trait Visitor {
             },
             ASTNode::STRUCT_DECLARATION(struct_declaration_node) => {
                 let core_struct_decl = struct_declaration_node.core_ref();
-                self.walk_token(&core_struct_decl.name);
+                self.walk_identifier(&core_struct_decl.name);
                 self.walk_block(&core_struct_decl.block);
             },
             ASTNode::LAMBDA_DECLARATION(lambda_declaration_node) => {
@@ -198,7 +200,7 @@ pub trait Visitor {
             },
             ASTNode::OK_LAMBDA_DECLARATION(ok_lambda_declaration_node) => {
                 let core_ok_lambda_decl = ok_lambda_declaration_node.core_ref();
-                self.walk_token(&core_ok_lambda_decl.name);
+                self.walk_identifier(&core_ok_lambda_decl.name);
                 match &core_ok_lambda_decl.args {
                     Some(args) => {
                         self.walk_name_type_specs(args);
@@ -227,7 +229,7 @@ pub trait Visitor {
                 let core_ok_func_decl = ok_function_declaration_node.core_ref();
                 match &core_ok_func_decl.name {
                     Some(func_name) => {
-                        self.walk_token(func_name);
+                        self.walk_identifier(func_name);
                     },
                     None => {}
                 }
@@ -247,7 +249,7 @@ pub trait Visitor {
             },
             ASTNode::VARIABLE_DECLARATION(variable_declaration_node) => {
                 let core_variable_decl = variable_declaration_node.core_ref();
-                self.walk_token(&core_variable_decl.name);
+                self.walk_identifier(&core_variable_decl.name);
                 self.walk_r_assignment(&core_variable_decl.r_assign);
             },
             ASTNode::RETURN(return_stmt) => {
@@ -291,7 +293,7 @@ pub trait Visitor {
             },
             ASTNode::NAME_TYPE_SPEC(name_type_spec_node) => {
                 let core_name_type_spec = name_type_spec_node.core_ref();
-                self.walk_token(&core_name_type_spec.name);
+                self.walk_identifier(&core_name_type_spec.name);
                 self.walk_type_expression(&core_name_type_spec.data_type);
             },
             ASTNode::TYPE_EXPRESSION(type_expression_node) => {
@@ -322,7 +324,7 @@ pub trait Visitor {
             },
             ASTNode::USER_DEFINED_TYPE(user_defined_type) => {
                 let core_user_defined_type = user_defined_type.core_ref();
-                self.walk_token(&core_user_defined_type.name)
+                self.walk_identifier(&core_user_defined_type.name)
             },
             ASTNode::EXPRESSION(expression_node) => {
                 let core_expr = expression_node.core_ref();
@@ -428,7 +430,7 @@ pub trait Visitor {
             },
             ASTNode::CALL_EXPRESSION(call_expression_node) => {
                 let core_call_expr = call_expression_node.core_ref();
-                self.walk_token(&core_call_expr.function_name);
+                self.walk_identifier(&core_call_expr.function_name);
                 match &core_call_expr.params {
                     Some(params) => {
                         self.walk_params(params)
@@ -438,8 +440,8 @@ pub trait Visitor {
             },
             ASTNode::CLASS_METHOD_CALL(class_method_call_node) => {
                 let core_class_method_call = class_method_call_node.core_ref();
-                self.walk_token(&core_class_method_call.class_name);
-                self.walk_token(&core_class_method_call.class_method_name);
+                self.walk_identifier(&core_class_method_call.class_name);
+                self.walk_identifier(&core_class_method_call.class_method_name);
                 match &core_class_method_call.params {
                     Some(params) => {
                         self.walk_params(params);
@@ -471,7 +473,7 @@ pub trait Visitor {
                 let core_atom_start = atom_start_node.core_ref();
                 match core_atom_start {
                     CoreAtomStartNode::IDENTIFIER(token) => {
-                        self.walk_token(token);
+                        self.walk_identifier(token);
                     },
                     CoreAtomStartNode::FUNCTION_CALL(call_expr) => {
                         self.walk_call_expression(call_expr);
@@ -494,12 +496,12 @@ pub trait Visitor {
             ASTNode::PROPERTY_ACCESS(property_access_node) => {
                 let core_property_access = property_access_node.core_ref();
                 self.walk_atom(&core_property_access.atom);
-                self.walk_token(&core_property_access.propertry);
+                self.walk_identifier(&core_property_access.propertry);
             },
             ASTNode::METHOD_ACCESS(method_access_node) => {
                 let core_method_access = method_access_node.core_ref();
                 self.walk_atom(&core_method_access.atom);
-                self.walk_token(&core_method_access.method_name);
+                self.walk_identifier(&core_method_access.method_name);
                 match &core_method_access.params {
                     Some(params) => {
                         self.walk_params(params);
@@ -519,6 +521,17 @@ pub trait Visitor {
                     CoreTokenNode::MISSING_TOKENS(missing_tokens) => self.walk_missing_tokens(missing_tokens),
                     CoreTokenNode::SKIPPED(skipped_token) => self.walk_skipped_token(skipped_token),
                 }
+            },
+            ASTNode::IDENTIFIER(identifier) => {
+                let core_identifier = identifier.core_ref();
+                match core_identifier {
+                    CoreIdentifierNode::OK(ok_identifier) => self.walk_ok_identifier(ok_identifier),
+                    CoreIdentifierNode::MISSING_TOKENS(missing_tokens) => self.walk_missing_tokens(missing_tokens),
+                    CoreIdentifierNode::SKIPPED(skipped_token) => self.walk_skipped_token(skipped_token),
+                }
+            },
+            ASTNode::OK_IDENTIFIER(_) => {
+                // do nothing
             },
             ASTNode::OK_TOKEN(_) => {
                 // do nothing

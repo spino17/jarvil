@@ -115,7 +115,7 @@ pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
 }
 
 pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {
-    let struct_name = parser.expect(IDENTIFIER);
+    let struct_name = parser.expect_ident();
     let colon_node = parser.expect(":");
     let type_expr_node = parser.type_expr();
     let newline_node = parser.expect_terminators();

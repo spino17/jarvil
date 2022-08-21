@@ -9,6 +9,7 @@ use jarvil_macros::Nodify;
 use jarvil_macros::Node;
 
 use crate::lexer::token::BinaryOperatorKind;
+use crate::lexer::token::MissingToken;
 use crate::scope::core::IdentifierKind;
 use crate::types::atomic::Atomic;
 use crate::{
@@ -78,6 +79,8 @@ pub enum ASTNode {
     PROPERTY_ACCESS(PropertyAccessNode),
     METHOD_ACCESS(MethodAccessNode),
     INDEX_ACCESS(IndexAccessNode),
+    IDENTIFIER(IdentifierNode),
+    OK_IDENTIFIER(OkIdentifierNode),
     TOKEN(TokenNode),
     OK_TOKEN(OkTokenNode),
     MISSING_TOKEN(MissingTokenNode),
@@ -430,7 +433,7 @@ pub struct CoreStructStatementNode {
 pub struct StructStatementNode(Rc<CoreStructStatementNode>);
 impl StructStatementNode {
     pub fn new(
-        param_name: &TokenNode,
+        param_name: &IdentifierNode,
         param_type: &TypeExpressionNode,
         colon: &TokenNode,
         newline: &TokenNode,
@@ -464,7 +467,7 @@ pub enum CoreTypeDeclarationNode {
 pub struct TypeDeclarationNode(Rc<CoreTypeDeclarationNode>);
 impl TypeDeclarationNode {
     pub fn new_with_struct(
-        name: &TokenNode,
+        name: &IdentifierNode,
         block: &BlockNode,
         type_keyword: &TokenNode,
         colon: &TokenNode,
@@ -491,7 +494,7 @@ default_errornous_node_impl!(TypeDeclarationNode, CoreTypeDeclarationNode);
 pub struct CoreStructDeclarationNode {
     pub type_keyword: TokenNode,
     pub colon: TokenNode,
-    pub name: TokenNode,
+    pub name: IdentifierNode,
     pub block: BlockNode,
 }
 
@@ -499,7 +502,7 @@ pub struct CoreStructDeclarationNode {
 pub struct StructDeclarationNode(Rc<CoreStructDeclarationNode>);
 impl StructDeclarationNode {
     pub fn new(
-        name: &TokenNode,
+        name: &IdentifierNode,
         block: &BlockNode,
         type_keyword: &TokenNode,
         colon: &TokenNode,
@@ -534,7 +537,7 @@ pub enum CoreLambdaDeclarationNode {
 pub struct LambdaDeclarationNode(Rc<CoreLambdaDeclarationNode>);
 impl LambdaDeclarationNode {
     pub fn new(
-        name: &TokenNode,
+        name: &IdentifierNode,
         args: Option<&NameTypeSpecsNode>,
         return_type: Option<&TypeExpressionNode>,
         type_keyword: &TokenNode,
@@ -570,7 +573,7 @@ pub struct CoreOkLambdaDeclarationNode {
     pub rparen: TokenNode,
     pub right_arrow: Option<TokenNode>,
     pub newline: TokenNode,
-    pub name: TokenNode,
+    pub name: IdentifierNode,
     pub args: Option<NameTypeSpecsNode>,
     pub return_type: Option<TypeExpressionNode>,
 }
@@ -579,7 +582,7 @@ pub struct CoreOkLambdaDeclarationNode {
 pub struct OkLambdaDeclarationNode(Rc<CoreOkLambdaDeclarationNode>);
 impl OkLambdaDeclarationNode {
     pub fn new(
-        name: &TokenNode,
+        name: &IdentifierNode,
         args: Option<&NameTypeSpecsNode>,
         return_type: Option<&TypeExpressionNode>,
         type_keyword: &TokenNode,
@@ -624,7 +627,7 @@ pub enum CoreFunctionDeclarationNode {
 pub struct FunctionDeclarationNode(Rc<CoreFunctionDeclarationNode>);
 impl FunctionDeclarationNode {
     pub fn new(
-        name: Option<&TokenNode>,
+        name: Option<&IdentifierNode>,
         args: Option<&NameTypeSpecsNode>,
         return_type: Option<&TypeExpressionNode>,
         block: &BlockNode,
@@ -661,7 +664,7 @@ pub struct CoreOkFunctionDeclarationNode {
     pub rparen: TokenNode,
     pub right_arrow: Option<TokenNode>,
     pub colon: TokenNode,
-    pub name: Option<TokenNode>,
+    pub name: Option<IdentifierNode>,
     pub args: Option<NameTypeSpecsNode>,
     pub return_type: Option<TypeExpressionNode>,
     pub block: BlockNode,
@@ -677,7 +680,7 @@ pub enum FuncKeywordKind {
 pub struct OkFunctionDeclarationNode(Rc<CoreOkFunctionDeclarationNode>);
 impl OkFunctionDeclarationNode {
     pub fn new(
-        name: Option<&TokenNode>,
+        name: Option<&IdentifierNode>,
         args: Option<&NameTypeSpecsNode>,
         return_type: Option<&TypeExpressionNode>,
         block: &BlockNode,
@@ -722,7 +725,7 @@ impl Node for OkFunctionDeclarationNode {
 pub struct CoreVariableDeclarationNode {
     pub let_keyword: TokenNode,
     pub equal: TokenNode,
-    pub name: TokenNode,
+    pub name: IdentifierNode,
     pub r_assign: RAssignmentNode,
 }
 
@@ -730,7 +733,7 @@ pub struct CoreVariableDeclarationNode {
 pub struct VariableDeclarationNode(Rc<CoreVariableDeclarationNode>);
 impl VariableDeclarationNode {
     pub fn new(
-        name: &TokenNode,
+        name: &IdentifierNode,
         r_assign: &RAssignmentNode,
         let_keyword: &TokenNode,
         equal: &TokenNode,
@@ -852,14 +855,14 @@ impl Node for OkNameTypeSpecsNode {
 #[derive(Debug, Clone)]
 pub struct CoreNameTypeSpecNode {
     pub colon: TokenNode,
-    pub name: TokenNode,
+    pub name: IdentifierNode,
     pub data_type: TypeExpressionNode,
 }
 
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(Rc<CoreNameTypeSpecNode>);
 impl NameTypeSpecNode {
-    pub fn new(param_name: &TokenNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
+    pub fn new(param_name: &IdentifierNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
         let node = Rc::new(CoreNameTypeSpecNode {
             colon: colon.clone(),
             name: param_name.clone(),
@@ -897,7 +900,7 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
-    pub fn new_with_user_defined_type(identifier: &TokenNode) -> Self {
+    pub fn new_with_user_defined_type(identifier: &IdentifierNode) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::USER_DEFINED(
             UserDefinedTypeNode::new(identifier),
         ));
@@ -1026,13 +1029,13 @@ impl Node for ArrayTypeNode {
 
 #[derive(Debug, Clone)]
 pub struct CoreUserDefinedTypeNode {
-    pub name: TokenNode,
+    pub name: IdentifierNode,
 }
 
 #[derive(Debug, Clone)]
 pub struct UserDefinedTypeNode(Rc<CoreUserDefinedTypeNode>);
 impl UserDefinedTypeNode {
-    pub fn new(identifier: &TokenNode) -> Self {
+    pub fn new(identifier: &IdentifierNode) -> Self {
         let node = Rc::new(CoreUserDefinedTypeNode {
             name: identifier.clone(),
         });
@@ -1060,6 +1063,69 @@ impl Node for UserDefinedTypeNode {
 }
 
 #[derive(Debug, Clone, Node)]
+pub enum CoreIdentifierNode {
+    OK(OkIdentifierNode),
+    MISSING_TOKENS(MissingTokenNode),
+    SKIPPED(SkippedTokenNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct IdentifierNode(Rc<CoreIdentifierNode>);
+impl IdentifierNode {
+    pub fn new_with_ok(token: &Token) -> Self {
+        let node = Rc::new(CoreIdentifierNode::OK(OkIdentifierNode::new(token)));
+        IdentifierNode(node)
+    }
+
+    pub fn new_with_skipped_token(skipped_token: &Token) -> Self {
+        let node = Rc::new(CoreIdentifierNode::SKIPPED(SkippedTokenNode::new(skipped_token)));
+        IdentifierNode(node)
+    }
+
+    pub fn get_ok(&self) -> Option<OkIdentifierNode> {
+        match &self.0.as_ref() {
+            CoreIdentifierNode::OK(ok_token_node) => Some(ok_token_node.clone()),
+            _ => None,
+        }
+    }
+
+    impl_core_ref!(CoreIdentifierNode);
+}
+default_errornous_node_impl!(IdentifierNode, CoreIdentifierNode);
+
+#[derive(Debug, Clone)]
+pub struct CoreOkIdentifierNode {
+    pub token: Token,
+    pub decl: Option<IdentifierKind>,
+}
+
+#[derive(Debug, Clone)]
+pub struct OkIdentifierNode(Rc<CoreOkIdentifierNode>);
+impl OkIdentifierNode {
+    fn new(token: &Token) -> Self {
+        let node = Rc::new(CoreOkIdentifierNode{
+            token: token.clone(),
+            decl: None,
+        });
+        OkIdentifierNode(node)
+    }
+
+    pub fn token_value(&self, code: &Code) -> String {
+        self.0.as_ref().token.token_value(code)
+    }
+
+    impl_core_ref!(CoreOkIdentifierNode);
+}
+impl Node for OkIdentifierNode {
+    fn range(&self) -> TextRange {
+        self.core_ref().token.range
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().token.line_number
+    }
+}
+
+#[derive(Debug, Clone, Node)]
 pub enum CoreTokenNode {
     OK(OkTokenNode),
     MISSING_TOKENS(MissingTokenNode),
@@ -1069,8 +1135,8 @@ pub enum CoreTokenNode {
 #[derive(Debug, Clone)]
 pub struct TokenNode(Rc<CoreTokenNode>);
 impl TokenNode {
-    pub fn new_with_ok_token(token: &Token, kind: OkTokenKind) -> Self {
-        let node = Rc::new(CoreTokenNode::OK(OkTokenNode::new(token, kind)));
+    pub fn new_with_ok(token: &Token) -> Self {
+        let node = Rc::new(CoreTokenNode::OK(OkTokenNode::new(token)));
         TokenNode(node)
     }
 
@@ -1110,22 +1176,14 @@ default_errornous_node_impl!(TokenNode, CoreTokenNode);
 #[derive(Debug, Clone)]
 pub struct CoreOkTokenNode {
     pub token: Token,
-    pub kind: OkTokenKind,
-}
-
-#[derive(Debug, Clone)]
-pub enum OkTokenKind {
-    IDENTIFIER(Option<IdentifierKind>), // This is set when the identifier is resolved
-    NON_IDENTIFIER,
 }
 
 #[derive(Debug, Clone)]
 pub struct OkTokenNode(Rc<CoreOkTokenNode>);
 impl OkTokenNode {
-    pub fn new(token: &Token, kind: OkTokenKind) -> Self {
+    pub fn new(token: &Token) -> Self {
         OkTokenNode(Rc::new(CoreOkTokenNode {
             token: token.clone(),
-            kind,
         }))
     }
 
@@ -1577,7 +1635,7 @@ impl Node for OkParamsNode {
 pub struct CoreCallExpressionNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
-    pub function_name: TokenNode,
+    pub function_name: IdentifierNode,
     pub params: Option<ParamsNode>,
 }
 
@@ -1585,7 +1643,7 @@ pub struct CoreCallExpressionNode {
 pub struct CallExpressionNode(Rc<CoreCallExpressionNode>);
 impl CallExpressionNode {
     pub fn new(
-        function_name: &TokenNode,
+        function_name: &IdentifierNode,
         params: Option<&ParamsNode>,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1615,8 +1673,8 @@ pub struct CoreClassMethodCallNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
     pub double_colon: TokenNode,
-    pub class_name: TokenNode,
-    pub class_method_name: TokenNode,
+    pub class_name: IdentifierNode,
+    pub class_method_name: IdentifierNode,
     pub params: Option<ParamsNode>,
 }
 
@@ -1624,8 +1682,8 @@ pub struct CoreClassMethodCallNode {
 pub struct ClassMethodCallNode(Rc<CoreClassMethodCallNode>);
 impl ClassMethodCallNode {
     pub fn new(
-        class_name: &TokenNode,
-        class_method_name: &TokenNode,
+        class_name: &IdentifierNode,
+        class_method_name: &IdentifierNode,
         params: Option<&ParamsNode>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
@@ -1684,7 +1742,7 @@ impl AtomNode {
 
     pub fn new_with_propertry_access(
         atom: &AtomNode,
-        propertry: &TokenNode,
+        propertry: &IdentifierNode,
         dot: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreAtomNode::PROPERTRY_ACCESS(PropertyAccessNode::new(
@@ -1695,7 +1753,7 @@ impl AtomNode {
 
     pub fn new_with_method_access(
         atom: &AtomNode,
-        method_name: &TokenNode,
+        method_name: &IdentifierNode,
         params: Option<&ParamsNode>,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1745,7 +1803,7 @@ impl AtomNode {
 
 #[derive(Debug, Clone, Node)]
 pub enum CoreAtomStartNode {
-    IDENTIFIER(TokenNode),                  // id
+    IDENTIFIER(IdentifierNode),             // id
     FUNCTION_CALL(CallExpressionNode),      // id(...)
     CLASS_METHOD_CALL(ClassMethodCallNode), // id::id(...)
 }
@@ -1753,7 +1811,7 @@ pub enum CoreAtomStartNode {
 #[derive(Debug, Clone)]
 pub struct AtomStartNode(Rc<CoreAtomStartNode>);
 impl AtomStartNode {
-    pub fn new_with_identifier(token: &TokenNode) -> Self {
+    pub fn new_with_identifier(token: &IdentifierNode) -> Self {
         let node = Rc::new(CoreAtomStartNode::IDENTIFIER(token.clone()));
         AtomStartNode(node)
     }
@@ -1764,8 +1822,8 @@ impl AtomStartNode {
     }
 
     pub fn new_with_class_method_call(
-        class_name: &TokenNode,
-        class_method_name: &TokenNode,
+        class_name: &IdentifierNode,
+        class_method_name: &IdentifierNode,
         params: Option<&ParamsNode>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
@@ -1835,13 +1893,13 @@ impl Node for CallNode {
 pub struct CorePropertyAccessNode {
     pub dot: TokenNode,
     pub atom: AtomNode,
-    pub propertry: TokenNode,
+    pub propertry: IdentifierNode,
 }
 
 #[derive(Debug, Clone)]
 pub struct PropertyAccessNode(Rc<CorePropertyAccessNode>);
 impl PropertyAccessNode {
-    fn new(atom: &AtomNode, propertry: &TokenNode, dot: &TokenNode) -> Self {
+    fn new(atom: &AtomNode, propertry: &IdentifierNode, dot: &TokenNode) -> Self {
         let node = Rc::new(CorePropertyAccessNode {
             dot: dot.clone(),
             atom: atom.clone(),
@@ -1867,7 +1925,7 @@ pub struct CoreMethodAccessNode {
     pub rparen: TokenNode,
     pub dot: TokenNode,
     pub atom: AtomNode,
-    pub method_name: TokenNode,
+    pub method_name: IdentifierNode,
     pub params: Option<ParamsNode>,
 }
 
@@ -1876,7 +1934,7 @@ pub struct MethodAccessNode(Rc<CoreMethodAccessNode>);
 impl MethodAccessNode {
     pub fn new(
         atom: &AtomNode,
-        method_name: &TokenNode,
+        method_name: &IdentifierNode,
         params: Option<&ParamsNode>,
         lparen: &TokenNode,
         rparen: &TokenNode,

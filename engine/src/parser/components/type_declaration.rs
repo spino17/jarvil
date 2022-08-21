@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
     let type_keyword_node = parser.expect("type");
-    let type_name_node = parser.expect(IDENTIFIER);
+    let type_name_node = parser.expect_ident();
     let colon_node = parser.expect(":");
     let token = &parser.curr_token();
     let type_decl_node = match token.core_token {

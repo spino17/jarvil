@@ -1,4 +1,4 @@
-use crate::ast::ast::ErrornousNode;
+use crate::ast::ast::{ErrornousNode, IdentifierNode};
 use crate::ast::ast::{
     FuncKeywordKind, FunctionDeclarationNode, NameTypeSpecNode, OkNameTypeSpecsNode, TokenNode,
 };
@@ -12,7 +12,7 @@ use crate::{
 use std::rc::Rc;
 
 pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
-    let name_node = parser.expect(IDENTIFIER);
+    let name_node = parser.expect_ident();
     let colon_node = parser.expect(":");
     let type_expr_node = parser.type_expr();
     NameTypeSpecNode::new(&name_node, &type_expr_node, &colon_node)
@@ -60,15 +60,15 @@ pub fn name_type_specs_within_parenthesis(
     (args, lparen_node, rparen_node)
 }
 
-pub fn function_name(parser: &mut PackratParser) -> (TokenNode, TokenNode) {
+pub fn function_name(parser: &mut PackratParser) -> (IdentifierNode, TokenNode) {
     let def_keyword_node = parser.expect("def");
-    let name_node = parser.expect(IDENTIFIER);
+    let name_node = parser.expect_ident();
     (name_node, def_keyword_node)
 }
 
 pub fn function_decl(
     parser: &mut PackratParser,
-    name_node: Option<&TokenNode>,
+    name_node: Option<&IdentifierNode>,
     func_keyword_node: &FuncKeywordKind,
 ) -> FunctionDeclarationNode {
     // let (args_node, lparen_node, rparen_node) = parser.name_type_specs_within_parenthesis();
