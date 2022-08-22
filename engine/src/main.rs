@@ -23,9 +23,8 @@ use crate::ast::ast::NODES_ARRAY;
 fn start_compiler(args: Vec<String>) {
     let code_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     let result = build(code_vec);
-    match result {
-        Err(err) => println!("{}", err),
-        _ => {}
+    if let Err(err) = result {
+        println!("{}", err)
     }
 }
 

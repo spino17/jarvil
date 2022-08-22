@@ -71,12 +71,8 @@ impl<T> Scope<T> {
     }
 
     fn insert(&self, key: String, meta_data: T, line_number: usize) -> Option<()> {
-        match self.0.borrow().get(&key) {
-            Some(value) => {
-                // `{}` is already declared in the current block
-                return None;
-            }
-            None => {}
+        if let Some(value) = self.0.borrow().get(&key) {
+            return None;
         }
         self.0.borrow_mut().set(key.clone(), meta_data, line_number);
         Some(())

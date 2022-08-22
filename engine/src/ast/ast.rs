@@ -9,12 +9,11 @@ use jarvil_macros::Nodify;
 use jarvil_macros::Node;
 
 use crate::lexer::token::BinaryOperatorKind;
-use crate::lexer::token::MissingToken;
 use crate::scope::core::IdentifierKind;
 use crate::types::atomic::Atomic;
 use crate::{
     code::Code,
-    lexer::token::{CoreToken, Token},
+    lexer::token::Token,
     scope::core::Namespace,
     types::{array::Array, core::Type},
 };

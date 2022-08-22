@@ -145,7 +145,6 @@ pub trait Visitor {
             ASTNode::EXPRESSION_STATEMENT(expr_stmt) => {
                 let core_expr_stmt = expr_stmt.core_ref();
                 self.walk_expression(&core_expr_stmt.expr);
-                self.walk_token(&core_expr_stmt.newline);
             },
             ASTNode::ASSIGNMENT(assignment_node) => {
                 match assignment_node.core_ref() {
@@ -201,17 +200,11 @@ pub trait Visitor {
             ASTNode::OK_LAMBDA_DECLARATION(ok_lambda_declaration_node) => {
                 let core_ok_lambda_decl = ok_lambda_declaration_node.core_ref();
                 self.walk_identifier(&core_ok_lambda_decl.name);
-                match &core_ok_lambda_decl.args {
-                    Some(args) => {
-                        self.walk_name_type_specs(args);
-                    },
-                    None => {}
+                if let Some(args) = &core_ok_lambda_decl.args {
+                    self.walk_name_type_specs(args);
                 }
-                match &core_ok_lambda_decl.return_type {
-                    Some(return_type) => {
-                        self.walk_type_expression(return_type);
-                    },
-                    None => {}
+                if let Some(return_type) = &core_ok_lambda_decl.return_type {
+                    self.walk_type_expression(return_type);
                 }
             },
             ASTNode::FUNCTION_DECLARATION(function_declaration_node) => {
@@ -227,23 +220,14 @@ pub trait Visitor {
             },
             ASTNode::OK_FUNCTION_DECLARATION(ok_function_declaration_node) => {
                 let core_ok_func_decl = ok_function_declaration_node.core_ref();
-                match &core_ok_func_decl.name {
-                    Some(func_name) => {
-                        self.walk_identifier(func_name);
-                    },
-                    None => {}
+                if let Some(func_name) = &core_ok_func_decl.name {
+                    self.walk_identifier(func_name);
                 }
-                match &core_ok_func_decl.args {
-                    Some(name_type_specs) => {
-                        self.walk_name_type_specs(name_type_specs);
-                    },
-                    None => {}
+                if let Some(name_type_specs) = &core_ok_func_decl.args {
+                    self.walk_name_type_specs(name_type_specs);
                 }
-                match &core_ok_func_decl.return_type {
-                    Some(return_type) => {
-                        self.walk_type_expression(return_type);
-                    },
-                    None => {}
+                if let Some(return_type) = &core_ok_func_decl.return_type {
+                    self.walk_type_expression(return_type);
                 }
                 self.walk_block(&core_ok_func_decl.block);
             },
@@ -284,11 +268,8 @@ pub trait Visitor {
             ASTNode::OK_NAME_TYPE_SPECS(ok_name_type_specs_node) => {
                 let core_ok_name_type_specs = ok_name_type_specs_node.core_ref();
                 self.walk_name_type_spec(&core_ok_name_type_specs.arg);
-                match &core_ok_name_type_specs.remaining_args {
-                    Some(remaining_args) => {
-                        self.walk_name_type_specs(remaining_args);
-                    },
-                    None => {}
+                if let Some(remaining_args) = &core_ok_name_type_specs.remaining_args {
+                    self.walk_name_type_specs(remaining_args);
                 }
             },
             ASTNode::NAME_TYPE_SPEC(name_type_spec_node) => {
@@ -421,32 +402,23 @@ pub trait Visitor {
             ASTNode::OK_PARAMS(ok_params_node) => {
                 let core_ok_params = ok_params_node.core_ref();
                 self.walk_expression(&core_ok_params.param);
-                match &core_ok_params.remaining_params {
-                    Some(remaining_params) => {
-                        self.walk_params(remaining_params);
-                    },
-                    None => {}
+                if let Some(remaining_params) = &core_ok_params.remaining_params {
+                    self.walk_params(remaining_params);
                 }
             },
             ASTNode::CALL_EXPRESSION(call_expression_node) => {
                 let core_call_expr = call_expression_node.core_ref();
                 self.walk_identifier(&core_call_expr.function_name);
-                match &core_call_expr.params {
-                    Some(params) => {
-                        self.walk_params(params)
-                    },
-                    None => {}
+                if let Some(params) = &core_call_expr.params {
+                    self.walk_params(params)
                 }
             },
             ASTNode::CLASS_METHOD_CALL(class_method_call_node) => {
                 let core_class_method_call = class_method_call_node.core_ref();
                 self.walk_identifier(&core_class_method_call.class_name);
                 self.walk_identifier(&core_class_method_call.class_method_name);
-                match &core_class_method_call.params {
-                    Some(params) => {
-                        self.walk_params(params);
-                    },
-                    None => {}
+                if let Some(params) = &core_class_method_call.params {
+                    self.walk_params(params);
                 }
             },
             ASTNode::ATOM(atom_node) => {
@@ -486,11 +458,8 @@ pub trait Visitor {
             ASTNode::CALL(call_node) => {
                 let core_call = call_node.core_ref();
                 self.walk_atom(&core_call.atom);
-                match &core_call.params {
-                    Some(params) => {
-                        self.walk_params(params);
-                    },
-                    None => {}
+                if let Some(params) = &core_call.params {
+                    self.walk_params(params);
                 }
             },
             ASTNode::PROPERTY_ACCESS(property_access_node) => {
@@ -502,11 +471,8 @@ pub trait Visitor {
                 let core_method_access = method_access_node.core_ref();
                 self.walk_atom(&core_method_access.atom);
                 self.walk_identifier(&core_method_access.method_name);
-                match &core_method_access.params {
-                    Some(params) => {
-                        self.walk_params(params);
-                    },
-                    None => {}
+                if let Some(params) = &core_method_access.params {
+                    self.walk_params(params);
                 }
             },
             ASTNode::INDEX_ACCESS(index_access_node) => {

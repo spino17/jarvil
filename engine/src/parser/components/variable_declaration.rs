@@ -1,5 +1,5 @@
 use crate::{
-    ast::ast::VariableDeclarationNode, constants::common::IDENTIFIER, parser::parser::PackratParser,
+    ast::ast::VariableDeclarationNode, parser::parser::PackratParser,
 };
 
 pub fn variable_decl(parser: &mut PackratParser) -> VariableDeclarationNode {
