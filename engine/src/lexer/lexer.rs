@@ -1,9 +1,7 @@
 use text_size::TextRange;
 use text_size::TextSize;
 use crate::code::Code;
-use crate::errors::JarvilError;
-use crate::errors::JarvilErrorKind;
-use crate::errors::LexicalErrorData;
+use crate::error::core::{LexicalErrorData, JarvilErrorKind, JarvilError};
 use crate::lexer::token::CoreToken;
 use crate::lexer::token::Token;
 use crate::lexer::helper;
@@ -196,7 +194,7 @@ impl CoreLexer {
         let end_index = *begin_lexeme;
         let end_line_number = *line_number;
         let token = Token {
-            line_number: *line_number,
+            line_number: start_line_number,
             core_token: core_token.clone(),
             range: TextRange::new(
                 TextSize::try_from(start_index).unwrap(),

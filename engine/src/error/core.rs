@@ -5,9 +5,8 @@ use colored::Colorize;
 use text_size::{TextRange, TextSize};
 use std::convert::TryFrom;
 use std::fmt::Formatter;
-use std::io::BufRead;
 use std::rc::Rc;
-use std::{fmt::Display, io::Error as IOError};
+use std::fmt::Display;
 
 pub fn int_length(n: usize) -> usize {
     let base = 10;
@@ -213,34 +212,5 @@ impl JarvilError {
 impl Display for JarvilError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.err_message)
-    }
-}
-
-#[derive(Debug)]
-pub enum CompilationError {
-    IO_ERROR(IOError),
-    PARSE_ERROR(JarvilError),
-}
-
-impl From<IOError> for CompilationError {
-    fn from(err: IOError) -> Self {
-        CompilationError::IO_ERROR(err)
-    }
-}
-
-impl From<JarvilError> for CompilationError {
-    fn from(err: JarvilError) -> Self {
-        CompilationError::PARSE_ERROR(err)
-    }
-}
-
-impl Display for CompilationError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            CompilationError::IO_ERROR(err) => write!(f, "---> IO Error\n{}", err.to_string()),
-            CompilationError::PARSE_ERROR(parse_error) => {
-                write!(f, "{}", parse_error.err_message)
-            }
-        }
     }
 }

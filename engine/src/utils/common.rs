@@ -1,6 +1,6 @@
 use crate::ast::ast::BlockNode;
 use crate::code::Code;
-use crate::errors::JarvilError;
+use crate::error::core::JarvilError;
 use crate::lexer::lexer::{CoreLexer, Lexer};
 use crate::parser::parser::{PackratParser, Parser};
 

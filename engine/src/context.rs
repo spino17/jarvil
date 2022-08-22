@@ -1,4 +1,3 @@
-use crate::errors::JarvilError;
 use std::cell::RefCell;
 
 thread_local! {

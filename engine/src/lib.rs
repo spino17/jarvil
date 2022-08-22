@@ -3,7 +3,7 @@ pub mod cmd;
 pub mod code;
 pub mod constants;
 pub mod context;
-pub mod errors;
+pub mod error;
 pub mod lexer;
 pub mod parser;
 pub mod reader;

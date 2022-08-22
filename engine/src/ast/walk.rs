@@ -13,7 +13,6 @@ use crate::ast::ast::{
     OnlyUnaryExpressionNode, CoreParamsNode, OkParamsNode, ParamsNode, CoreAtomNode, AtomStartNode, CallNode, PropertyAccessNode, 
     MethodAccessNode, IndexAccessNode, CoreAtomStartNode, CallExpressionNode, ClassMethodCallNode, ReturnStatementNode
 };
-
 use super::ast::{CoreTokenNode, OkTokenNode, CoreIdentifierNode, OkIdentifierNode, IdentifierNode};
 
 // This kind of visitor pattern implementation is taken from Golang Programming Language

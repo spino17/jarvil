@@ -1,4 +1,4 @@
-use crate::{scope::core::Namespace, code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode}}, errors::JarvilError};
+use crate::{scope::core::Namespace, code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode}}, error::core::JarvilError};
 
 pub enum ResolverMode {
     DECLARE,  // first pass

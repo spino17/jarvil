@@ -14,7 +14,7 @@ use crate::ast::ast::{ErrornousNode};
 use crate::code::Code;
 use crate::constants::common::{ENDMARKER, IDENTIFIER};
 use crate::context;
-use crate::errors::{JarvilError, JarvilErrorKind};
+use crate::error::core::{JarvilError, JarvilErrorKind};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};

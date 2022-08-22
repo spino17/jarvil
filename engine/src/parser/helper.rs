@@ -1,6 +1,6 @@
 use crate::ast::ast::SkippedTokenNode;
 use crate::constants::common::NEWLINE;
-use crate::errors::JarvilError;
+use crate::error::core::JarvilError;
 use crate::parser::parser::ParseSuccess;
 use crate::types::core::Type;
 

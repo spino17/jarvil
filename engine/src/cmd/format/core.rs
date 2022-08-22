@@ -5,7 +5,7 @@
 // http://journal.stuffwithstuff.com/2015/09/08/the-hardest-program-ive-ever-written/
 
 use crate::ast::ast::{BlockNode, StatementNode};
-use crate::errors::JarvilError;
+use crate::error::core::JarvilError;
 use crate::utils::common::build_ast;
 use crate::{code::Code, context};
 use std::{mem, error};

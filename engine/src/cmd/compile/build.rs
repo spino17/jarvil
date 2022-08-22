@@ -1,6 +1,6 @@
 use crate::code::Code;
 use crate::context;
-use crate::errors::JarvilError;
+use crate::error::core::JarvilError;
 use crate::utils::common::build_ast;
 
 pub fn build(code_vec: Vec<char>) -> Result<(), JarvilError> {

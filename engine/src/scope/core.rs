@@ -1,4 +1,4 @@
-use crate::errors::JarvilError;
+use crate::error::core::JarvilError;
 use crate::scope::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
