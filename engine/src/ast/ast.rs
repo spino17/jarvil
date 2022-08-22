@@ -1096,7 +1096,7 @@ default_errornous_node_impl!(IdentifierNode, CoreIdentifierNode);
 #[derive(Debug, Clone)]
 pub struct CoreOkIdentifierNode {
     pub token: Token,
-    pub decl: Option<IdentifierKind>,
+    pub decl: Option<(IdentifierKind, usize)>,  // (symbol data reference, depth)
 }
 
 #[derive(Debug, Clone)]
