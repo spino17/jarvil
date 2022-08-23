@@ -6,7 +6,7 @@ use crate::ast::ast::{
     SkippedTokenNode, SkippedTokensNode, CoreStatementNode, ExpressionStatementNode, AssignmentNode, VariableDeclarationNode, 
     FunctionDeclarationNode, TypeDeclarationNode, StructStatementNode, MissingTokenNode, CoreAssignmentNode, OkAssignmentNode, 
     InvalidLValueNode, CoreTypeDeclarationNode, StructDeclarationNode, LambdaDeclarationNode, BlockNode, CoreLambdaDeclarationNode, 
-    TokenNode, NameTypeSpecNode, OkLambdaDeclarationNode, NameTypeSpecsNode, TypeExpressionNode, CoreFunctionDeclarationNode, 
+    TokenNode, NameTypeSpecNode, OkLambdaTypeDeclarationNode, NameTypeSpecsNode, TypeExpressionNode, CoreFunctionDeclarationNode, 
     OkFunctionDeclarationNode, RAssignmentNode, CoreRAssignmentNode, ExpressionNode, CoreNameTypeSpecsNode, OkNameTypeSpecsNode, 
     CoreTypeExpressionNode, AtomicTypeNode, UserDefinedTypeNode, ArrayTypeNode, CoreExpressionNode, UnaryExpressionNode, BinaryExpressionNode, 
     ComparisonNode, CoreAtomicExpressionNode, ParenthesisedExpressionNode, AtomNode, CoreUnaryExpressionNode, AtomicExpressionNode, 
@@ -43,7 +43,7 @@ pub trait Visitor {
     impl_node_walk!(walk_token, TokenNode, new_with_TokenNode);
     impl_node_walk!(walk_name_type_spec, NameTypeSpecNode, new_with_NameTypeSpecNode);
     impl_node_walk!(walk_name_type_specs, NameTypeSpecsNode, new_with_NameTypeSpecsNode);
-    impl_node_walk!(walk_ok_lambda_declaration, OkLambdaDeclarationNode, new_with_OkLambdaDeclarationNode);
+    impl_node_walk!(walk_ok_lambda_type_declaration, OkLambdaTypeDeclarationNode, new_with_OkLambdaTypeDeclarationNode);
     impl_node_walk!(walk_type_expression, TypeExpressionNode, new_with_TypeExpressionNode);
     impl_node_walk!(walk_ok_func_decl, OkFunctionDeclarationNode, new_with_OkFunctionDeclarationNode);
     impl_node_walk!(walk_r_assignment, RAssignmentNode, new_with_RAssignmentNode);
@@ -189,14 +189,14 @@ pub trait Visitor {
             ASTNode::LAMBDA_DECLARATION(lambda_declaration_node) => {
                 match &lambda_declaration_node.core_ref() {
                     CoreLambdaDeclarationNode::OK(ok_lambda_decl) => {
-                        self.walk_ok_lambda_declaration(ok_lambda_decl);
+                        self.walk_ok_lambda_type_declaration(ok_lambda_decl);
                     },
                     CoreLambdaDeclarationNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             },
-            ASTNode::OK_LAMBDA_DECLARATION(ok_lambda_declaration_node) => {
+            ASTNode::OK_LAMBDA_TYPE_DECLARATION(ok_lambda_declaration_node) => {
                 let core_ok_lambda_decl = ok_lambda_declaration_node.core_ref();
                 self.walk_identifier(&core_ok_lambda_decl.name);
                 if let Some(args) = &core_ok_lambda_decl.args {

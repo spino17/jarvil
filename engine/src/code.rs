@@ -1,5 +1,4 @@
-use std::{collections::binary_heap::Iter, rc::Rc};
-
+use std::rc::Rc;
 use text_size::TextRange;
 
 pub struct Code {

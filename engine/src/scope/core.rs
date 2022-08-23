@@ -7,6 +7,8 @@ use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use super::variables::ExpressionVariable;
+
 macro_rules! set_to_parent_scope {
     ($t: ident, $u: ident) => {
         let parent_scope = match &$u.$t.0.as_ref().borrow().parent_scope {
@@ -147,10 +149,10 @@ impl Namespace {
         data_type: Type,
         line_number: usize,
     ) -> Option<()> {
-        let meta_data = VariableData {
+        let meta_data = VariableData::EXPRESSION(ExpressionVariable {
             data_type,
             is_init: false,
-        };
+        });
         self.variables.insert(name, meta_data, line_number)
     }
 

@@ -100,6 +100,17 @@ macro_rules! impl_range {
     };
 }
 
+macro_rules! impl_node {
+    ($t: expr, $u: expr) => {
+        fn range(&self) -> TextRange {
+            impl_range!($t, $u)
+        }
+        fn start_line_number(&self) -> usize {
+            $t.start_line_number()
+        }
+    };
+}
+
 macro_rules! impl_enum_variant {
     ($v: expr, $s: ident, $(($t: ident, $u: ident)),*) => {
         match $v {

@@ -48,7 +48,7 @@ pub enum ASTNode {
     TYPE_DECLARATION(TypeDeclarationNode),
     STRUCT_DECLARATION(StructDeclarationNode),
     LAMBDA_DECLARATION(LambdaDeclarationNode),
-    OK_LAMBDA_DECLARATION(OkLambdaDeclarationNode),
+    OK_LAMBDA_TYPE_DECLARATION(OkLambdaTypeDeclarationNode),
     FUNCTION_DECLARATION(FunctionDeclarationNode),
     OK_FUNCTION_DECLARATION(OkFunctionDeclarationNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
@@ -528,7 +528,7 @@ impl Node for StructDeclarationNode {
 
 #[derive(Debug, Clone, Node)]
 pub enum CoreLambdaDeclarationNode {
-    OK(OkLambdaDeclarationNode),
+    OK(OkLambdaTypeDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -546,7 +546,7 @@ impl LambdaDeclarationNode {
         right_arrow: Option<&TokenNode>,
         newline: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreLambdaDeclarationNode::OK(OkLambdaDeclarationNode::new(
+        let node = Rc::new(CoreLambdaDeclarationNode::OK(OkLambdaTypeDeclarationNode::new(
             name,
             args,
             return_type,
@@ -565,7 +565,7 @@ impl LambdaDeclarationNode {
 default_errornous_node_impl!(LambdaDeclarationNode, CoreLambdaDeclarationNode);
 
 #[derive(Debug, Clone)]
-pub struct CoreOkLambdaDeclarationNode {
+pub struct CoreOkLambdaTypeDeclarationNode {
     pub type_keyword: TokenNode,
     pub colon: TokenNode,
     pub lparen: TokenNode,
@@ -578,8 +578,8 @@ pub struct CoreOkLambdaDeclarationNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct OkLambdaDeclarationNode(Rc<CoreOkLambdaDeclarationNode>);
-impl OkLambdaDeclarationNode {
+pub struct OkLambdaTypeDeclarationNode(Rc<CoreOkLambdaTypeDeclarationNode>);
+impl OkLambdaTypeDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
         args: Option<&NameTypeSpecsNode>,
@@ -591,7 +591,7 @@ impl OkLambdaDeclarationNode {
         right_arrow: Option<&TokenNode>,
         newline: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreOkLambdaDeclarationNode {
+        let node = Rc::new(CoreOkLambdaTypeDeclarationNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
             right_arrow: extract_from_option!(right_arrow),
@@ -602,12 +602,12 @@ impl OkLambdaDeclarationNode {
             args: extract_from_option!(args),
             return_type: extract_from_option!(return_type),
         });
-        OkLambdaDeclarationNode(node)
+        OkLambdaTypeDeclarationNode(node)
     }
 
-    impl_core_ref!(CoreOkLambdaDeclarationNode);
+    impl_core_ref!(CoreOkLambdaTypeDeclarationNode);
 }
-impl Node for OkLambdaDeclarationNode {
+impl Node for OkLambdaTypeDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().type_keyword, self.0.as_ref().newline)
     }
