@@ -31,6 +31,4 @@ fn start_compiler(args: Vec<String>) {
 fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
-    println!("{}", "StatementIndentWrapperNode".to_case(Case::Snake));
-    println!("{:?}", NODES_ARRAY);
 }
