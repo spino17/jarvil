@@ -919,17 +919,6 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
-    pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
-        match &self.0.as_ref() {
-            CoreTypeExpressionNode::ATOMIC(atomic_type) => atomic_type.get_type_obj(code),
-            CoreTypeExpressionNode::USER_DEFINED(user_defined_type) => {
-                user_defined_type.get_type_obj(code)
-            }
-            CoreTypeExpressionNode::ARRAY(array_type) => array_type.get_type_obj(code),
-            _ => None,
-        }
-    }
-
     impl_core_ref!(CoreTypeExpressionNode);
 }
 default_errornous_node_impl!(TypeExpressionNode, CoreTypeExpressionNode);
@@ -947,16 +936,6 @@ impl AtomicTypeNode {
             kind: token.clone(),
         });
         AtomicTypeNode(node)
-    }
-
-    pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
-        match self.0.as_ref().kind.get_ok() {
-            Some(ok_atomic_type) => {
-                let atomic_type_str = ok_atomic_type.token_value(code);
-                return Atomic::new_with_type_str(&atomic_type_str);
-            }
-            None => return None,
-        }
     }
 
     impl_core_ref!(CoreAtomicTypeNode);
@@ -999,22 +978,6 @@ impl ArrayTypeNode {
         ArrayTypeNode(node)
     }
 
-    pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
-        match self.0.as_ref().sub_type.get_type_obj(code) {
-            Some(sub_type_obj) => match self.0.as_ref().size.get_ok() {
-                Some(size) => {
-                    let size = match size.token_value(code).parse::<usize>() {
-                        Ok(size) => size,
-                        Err(_) => return None,
-                    };
-                    return Some(Array::new(size, sub_type_obj));
-                }
-                None => return None,
-            },
-            None => return None,
-        }
-    }
-
     impl_core_ref!(CoreArrayTypeNode);
 }
 impl Node for ArrayTypeNode {
@@ -1039,15 +1002,6 @@ impl UserDefinedTypeNode {
             name: identifier.clone(),
         });
         UserDefinedTypeNode(node)
-    }
-
-    pub fn get_type_obj(&self, code: &Code) -> Option<Type> {
-        match self.0.as_ref().name.get_ok() {
-            Some(ok_token_node) => {
-                Some(Type::new_with_user_defined(ok_token_node.token_value(code)))
-            }
-            None => None,
-        }
     }
 
     impl_core_ref!(CoreUserDefinedTypeNode);
@@ -1085,6 +1039,13 @@ impl IdentifierNode {
         match &self.0.as_ref() {
             CoreIdentifierNode::OK(ok_token_node) => Some(ok_token_node.clone()),
             _ => None,
+        }
+    }
+
+    pub fn value(&self, code: &Code) -> Option<String> {
+        match &self.core_ref() {
+            CoreIdentifierNode::OK(ok_identifier) => Some(ok_identifier.token_value(code)),
+            _ => None
         }
     }
 

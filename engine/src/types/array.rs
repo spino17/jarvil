@@ -7,12 +7,6 @@ pub struct Array {
     pub element_type: Type,
 }
 
-impl Array {
-    pub fn new(size: usize, element_type: Type) -> Type {
-        Type::new_with_array(Array { size, element_type })
-    }
-}
-
 impl AbstractType for Array {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {

@@ -1,4 +1,10 @@
-use crate::{scope::core::Namespace, code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, OkFunctionDeclarationNode, StructDeclarationNode, LambdaDeclarationNode, OkLambdaTypeDeclarationNode}}, error::core::JarvilError};
+use crate::{
+    scope::{core::{Namespace, SymbolData}, variables::VariableData}, code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, 
+    CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, OkFunctionDeclarationNode, StructDeclarationNode, 
+    LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node
+    }}, 
+    error::core::JarvilError
+};
 
 pub enum ResolverMode {
     DECLARE,  // first pass
@@ -33,8 +39,8 @@ impl Resolver {
         (std::mem::take(&mut self.namespace), std::mem::take(&mut self.errors))
     }
 
-    pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
-        todo!()
+    pub fn declare_variable(&mut self, variable_name: String, is_init: bool, line_number: usize) {
+        self.namespace.declare_variable(variable_name, is_init, line_number);
     }
 
     pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
@@ -45,7 +51,7 @@ impl Resolver {
         todo!()
     }
 
-    pub fn declare_lambda(&mut self, lambda_decl: &OkLambdaTypeDeclarationNode) {
+    pub fn declare_lambda_type(&mut self, lambda: &OkLambdaTypeDeclarationNode) {
         todo!()
     }
 }
@@ -55,7 +61,16 @@ impl Visitor for Resolver {
             ResolverMode::DECLARE => {
                 match node {
                     ASTNode::VARIABLE_DECLARATION(variable_decl) => {
-                        self.declare_variable(variable_decl);
+                        let core_variable_decl = variable_decl.core_ref();
+                        self.walk_r_assignment(&core_variable_decl.r_assign);
+                        if let Some(name) = core_variable_decl.name.value(&self.code) {
+                            match core_variable_decl.r_assign.core_ref() {
+                                CoreRAssignmentNode::EXPRESSION(_) | CoreRAssignmentNode::LAMBDA(_) => {
+                                    self.declare_variable(name, true, variable_decl.start_line_number())
+                                },
+                                _ => {}
+                            };
+                        }
                         return None
                     },
                     ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
@@ -67,13 +82,28 @@ impl Visitor for Resolver {
                         return None
                     },
                     ASTNode::OK_LAMBDA_TYPE_DECLARATION(lambda_type_decl) => {
-                        self.declare_lambda(lambda_type_decl);
+                        self.declare_lambda_type(lambda_type_decl);
                         return None
                     },
                     ASTNode::ATOM_START(atom_start) => {
                         match atom_start.core_ref() {
-                            CoreAtomStartNode::IDENTIFIER(identifier) => todo!(),
-                            CoreAtomStartNode::FUNCTION_CALL(func_call) => todo!(),
+                            CoreAtomStartNode::IDENTIFIER(identifier) => {
+                                if let Some(variable_name) = identifier.value(&self.code) {
+                                    match self.namespace.lookup_in_variables_namespace(&variable_name) {
+                                        Some(symbol_data) => todo!(), // bind the symbol data to identifier node
+                                        None => todo!(), // TODO - raise error variable `{}` is not declared in the scope
+                                    }
+                                }
+                            },
+                            CoreAtomStartNode::FUNCTION_CALL(func_call) => {
+                                let core_func_call = func_call.core_ref();
+                                if let Some(lambda_name) = core_func_call.function_name.value(&self.code) {
+                                    if let Some(symbol_data) 
+                                    = self.namespace.lookup_in_variables_namespace(&lambda_name) {
+                                        todo!()  // bind the symbol data to identifier node
+                                    }
+                                }
+                            },
                             _ => {}
                         }
                         return None
@@ -85,7 +115,10 @@ impl Visitor for Resolver {
                 match node {
                     ASTNode::ATOM_START(atom_start) => {
                         match atom_start.core_ref() {
-                            CoreAtomStartNode::FUNCTION_CALL(func_call) => todo!(),
+                            CoreAtomStartNode::FUNCTION_CALL(func_call) => {
+                                // TODO - check if the node is already bind to some declaration
+                                todo!()
+                            },
                             CoreAtomStartNode::CLASS_METHOD_CALL(class_method_call) => todo!(),
                             _ => {}
                         }

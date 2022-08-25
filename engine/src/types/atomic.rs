@@ -1,6 +1,5 @@
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::types::core::{AbstractType, CoreType, Type};
-use std::rc::Rc;
 
 #[derive(Debug)]
 pub enum Atomic {
@@ -11,17 +10,6 @@ pub enum Atomic {
 }
 
 impl Atomic {
-    pub fn new_with_type_str(type_str: &str) -> Option<Type> {
-        let type_obj = match type_str {
-            INT => Type::new_with_atomic(Atomic::INT),
-            FLOAT => Type::new_with_atomic(Atomic::FLOAT),
-            STRING => Type::new_with_atomic(Atomic::STRING),
-            BOOL => Type::new_with_atomic(Atomic::BOOL),
-            _ => return None,
-        };
-        Some(type_obj)
-    }
-
     pub fn get_atomic_type(&self) -> &str {
         match self {
             Atomic::INT => INT,

@@ -3,6 +3,7 @@ use crate::types::{array::Array, atomic::Atomic};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use std::str;
+use super::lambda::Lambda;
 
 pub trait AbstractType {
     fn is_eq(&self, base_type: &Type) -> bool;
@@ -13,9 +14,8 @@ pub trait AbstractType {
 #[derive(Debug)]
 pub enum CoreType {
     ATOMIC(Atomic),
-    // STRUCT(Struct),
-    // LAMBDA(Lambda),
-    USER_DEFINED(String), // TODO - for lambda we need structural equivalance - compare params and return_type
+    STRUCT(String),
+    LAMBDA(Lambda),
     ARRAY(Array),
     // ENUMERATION,
     // TUPLES,
@@ -29,18 +29,6 @@ pub enum CoreType {
 pub struct Type(pub Rc<CoreType>);
 
 impl Type {
-    pub fn new_with_atomic(atomic_type: Atomic) -> Type {
-        Type(Rc::new(CoreType::ATOMIC(atomic_type)))
-    }
-
-    pub fn new_with_array(array_type: Array) -> Type {
-        Type(Rc::new(CoreType::ARRAY(array_type)))
-    }
-
-    pub fn new_with_user_defined(user_defined_type_str: String) -> Type {
-        Type(Rc::new(CoreType::USER_DEFINED(user_defined_type_str)))
-    }
-
     pub fn is_atomic(&self, atomic_type_name: &str) -> bool {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic_type) => match atomic_type_name {
@@ -74,12 +62,15 @@ impl Type {
 impl AbstractType for Type {
     fn is_eq(&self, base_type: &Type) -> bool {
         match self.0.as_ref() {
-            CoreType::ATOMIC(atomic_data) => atomic_data.is_eq(base_type),
-            CoreType::USER_DEFINED(user_defined_data) => match base_type.0.as_ref() {
-                CoreType::USER_DEFINED(base_type_data) => user_defined_data.eq(base_type_data),
-                _ => false,
-            },
-            CoreType::ARRAY(array_data) => array_data.is_eq(base_type),
+            CoreType::ATOMIC(atomic) => atomic.is_eq(base_type),
+            CoreType::STRUCT(name) => {
+                match base_type.0.as_ref() {
+                    CoreType::STRUCT(base_name) => name.eq(base_name),
+                    _ => false
+                }
+            }
+            CoreType::LAMBDA(lambda) => lambda.is_eq(base_type),
+            CoreType::ARRAY(array) => array.is_eq(base_type),
             CoreType::NON_TYPED => match base_type.0.as_ref() {
                 CoreType::NON_TYPED => true,
                 _ => false,
@@ -91,7 +82,8 @@ impl AbstractType for Type {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic_data) => atomic_data.string(),
             CoreType::ARRAY(array_data) => array_data.string(),
-            CoreType::USER_DEFINED(user_defined_data) => user_defined_data.clone(),
+            CoreType::STRUCT(name) => name.clone(),
+            CoreType::LAMBDA(lambda) => lambda.string(),
             CoreType::NON_TYPED => String::from(NON_TYPED),
         }
     }
@@ -102,7 +94,8 @@ impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic_data) => write!(f, "{}", atomic_data.string()),
-            CoreType::USER_DEFINED(user_defined_data) => write!(f, "{}", user_defined_data),
+            CoreType::STRUCT(name) => write!(f, "{}", name),
+            CoreType::LAMBDA(lambda) => write!(f, "{}", lambda.string()),
             CoreType::ARRAY(array_data) => write!(f, "{}", array_data.string()),
             CoreType::NON_TYPED => write!(f, "{}", NON_TYPED),
         }

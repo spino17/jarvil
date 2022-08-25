@@ -7,8 +7,6 @@ use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::variables::ExpressionVariable;
-
 macro_rules! set_to_parent_scope {
     ($t: ident, $u: ident) => {
         let parent_scope = match &$u.$t.0.as_ref().borrow().parent_scope {
@@ -27,7 +25,7 @@ pub enum IdentifierKind {
 }
 
 #[derive(Debug)]
-pub struct SymbolData<T>(Rc<RefCell<T>>, usize); // meta data and line on which it was declared
+pub struct SymbolData<T>(pub Rc<RefCell<T>>, usize); // meta data and line on which it was declared
 impl<T> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone(), self.1)
@@ -73,7 +71,7 @@ impl<T> Scope<T> {
     }
 
     fn insert(&self, key: String, meta_data: T, line_number: usize) -> Option<()> {
-        if let Some(value) = self.0.borrow().get(&key) {
+        if let Some(_) = self.0.borrow().get(&key) {
             return None;
         }
         self.0.borrow_mut().set(key.clone(), meta_data, line_number);
@@ -146,22 +144,14 @@ impl Namespace {
     pub fn declare_variable(
         &self,
         name: String,
-        data_type: Type,
+        is_init: bool,
         line_number: usize,
     ) -> Option<()> {
-        let meta_data = VariableData::EXPRESSION(ExpressionVariable {
-            data_type,
-            is_init: false,
-        });
+        let meta_data = VariableData {
+            data_type: None,  // would be filled in type-check phase
+            is_init,
+        };
         self.variables.insert(name, meta_data, line_number)
-    }
-
-    // pub fn declare_lambda(...)
-
-    pub fn define_variable(&self, name: String) -> Result<(), JarvilError> {
-        // SET is_init => true
-        // possible errors => no entry with key `name` exists in the scope
-        todo!()
     }
 }
 impl Clone for Namespace {
