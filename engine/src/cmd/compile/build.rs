@@ -1,5 +1,4 @@
 use crate::code::Code;
-use crate::context;
 use crate::error::core::JarvilError;
 use crate::utils::common::build_ast;
 

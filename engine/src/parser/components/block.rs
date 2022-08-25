@@ -23,7 +23,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
     statement_parsing_fn: G,
     expected_symbols: &[&'static str],
 ) -> BlockNode {
-    let newline_node = parser.expect("\n");
+    let newline_node = parser.expect_terminators();
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let mut stmts_vec: Vec<StatemenIndentWrapperNode> = vec![];
     let mut leading_skipped_tokens: Vec<SkippedTokenNode> = vec![];

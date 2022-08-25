@@ -17,8 +17,6 @@ mod error;
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use std::env::args;
-use convert_case::{Case, Casing};
-use crate::ast::ast::NODES_ARRAY;
 
 fn start_compiler(args: Vec<String>) {
     let code_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
