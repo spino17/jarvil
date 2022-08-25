@@ -6,14 +6,13 @@ use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum UserDefinedTypeData {
-    STRUCT(StructData),
-    LAMBDA(LambdaData),
+    STRUCT(Option<StructData>),
+    LAMBDA(Option<LambdaTypeData>),
     // GENERIC(GenericType),
 }
 
 #[derive(Debug, Clone)]
 pub struct StructData {
-    pub name: String,
     fields: Rc<FxHashMap<String, Type>>,
     constructor: FunctionData,
     methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
@@ -21,13 +20,6 @@ pub struct StructData {
 }
 
 #[derive(Debug, Clone)]
-pub enum StructMethod {
-    METHOD(FunctionData),
-    CLASS_METHOD(FunctionData),
-}
-
-#[derive(Debug, Clone)]
-pub struct LambdaData {
-    pub name: String,
-    pub function_data: FunctionData,
+pub struct LambdaTypeData {
+    pub function_data: Option<FunctionData>,
 }
