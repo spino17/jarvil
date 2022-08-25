@@ -52,8 +52,9 @@ impl AbstractType for Lambda {
             _ => false
         }
     }
-
-    fn string(&self) -> String {
+}
+impl ToString for Lambda {
+    fn to_string(&self) -> String {
         match &self.name {
             Some(name) => format!("{}", name),
             None => {
@@ -63,12 +64,12 @@ impl AbstractType for Lambda {
                     if flag {
                         params_str.push_str(",")
                     }
-                    params_str.push_str(&format!("{}", param.1.string()));
+                    params_str.push_str(&format!("{}", param.1.to_string()));
                     flag = true;
                 }
                 let mut return_type_str = String::from("");
                 match self.function_data.return_type.as_ref() {
-                    Some(return_type) => return_type_str.push_str(&format!("{}", return_type.string())),
+                    Some(return_type) => return_type_str.push_str(&format!("{}", return_type.to_string())),
                     None => return_type_str.push_str("void"),
                 }
                 format!("func({}) -> ({})", params_str, return_type_str)

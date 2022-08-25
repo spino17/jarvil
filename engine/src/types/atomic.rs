@@ -60,8 +60,9 @@ impl AbstractType for Atomic {
             _ => false,
         }
     }
-
-    fn string(&self) -> String {
+}
+impl ToString for Atomic {
+    fn to_string(&self) -> String {
         match self {
             Atomic::INT => String::from(INT),
             Atomic::FLOAT => String::from(FLOAT),

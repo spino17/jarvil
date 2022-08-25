@@ -10,6 +10,10 @@ use jarvil_macros::Node;
 
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::core::IdentifierKind;
+use crate::scope::core::SymbolData;
+use crate::scope::function::FunctionData;
+use crate::scope::user_defined_types::UserDefinedTypeData;
+use crate::scope::variables::VariableData;
 use crate::types::atomic::Atomic;
 use crate::{
     code::Code,
@@ -1042,13 +1046,6 @@ impl IdentifierNode {
         }
     }
 
-    pub fn value(&self, code: &Code) -> Option<String> {
-        match &self.core_ref() {
-            CoreIdentifierNode::OK(ok_identifier) => Some(ok_identifier.token_value(code)),
-            _ => None
-        }
-    }
-
     impl_core_ref!(CoreIdentifierNode);
 }
 default_errornous_node_impl!(IdentifierNode, CoreIdentifierNode);
@@ -1060,28 +1057,38 @@ pub struct CoreOkIdentifierNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct OkIdentifierNode(Rc<CoreOkIdentifierNode>);
+pub struct OkIdentifierNode(Rc<RefCell<CoreOkIdentifierNode>>);
 impl OkIdentifierNode {
     fn new(token: &Token) -> Self {
-        let node = Rc::new(CoreOkIdentifierNode{
+        let node = Rc::new(RefCell::new(CoreOkIdentifierNode{
             token: token.clone(),
             decl: None,
-        });
+        }));
         OkIdentifierNode(node)
     }
 
     pub fn token_value(&self, code: &Code) -> String {
-        self.0.as_ref().token.token_value(code)
+        self.0.as_ref().borrow().token.token_value(code)
     }
 
-    impl_core_ref!(CoreOkIdentifierNode);
+    pub fn bind_variable_decl(&self, symbol_data: SymbolData<VariableData>, depth: usize) {
+        todo!()
+    }
+
+    pub fn bind_user_defined_type_decl(&self, symbol_data: SymbolData<UserDefinedTypeData>, depth: usize) {
+        todo!()
+    }
+
+    pub fn bind_function_decl(&self, symbol_data: SymbolData<FunctionData>, depth: usize) {
+        todo!()
+    }
 }
 impl Node for OkIdentifierNode {
     fn range(&self) -> TextRange {
-        self.core_ref().token.range
+        self.0.as_ref().borrow().token.range
     }
     fn start_line_number(&self) -> usize {
-        self.core_ref().token.line_number
+        self.0.as_ref().borrow().token.line_number
     }
 }
 

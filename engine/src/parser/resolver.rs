@@ -1,7 +1,7 @@
 use crate::{
     scope::{core::{Namespace, SymbolData}, variables::VariableData}, code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, 
     CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, OkFunctionDeclarationNode, StructDeclarationNode, 
-    LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node
+    LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, CoreIdentifierNode
     }}, 
     error::core::JarvilError
 };
@@ -54,6 +54,10 @@ impl Resolver {
     pub fn declare_lambda_type(&mut self, lambda: &OkLambdaTypeDeclarationNode) {
         todo!()
     }
+
+    pub fn log_undefined_identifier_in_scope_error(&mut self, name: String) {
+        todo!()
+    }
 }
 impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
@@ -63,7 +67,8 @@ impl Visitor for Resolver {
                     ASTNode::VARIABLE_DECLARATION(variable_decl) => {
                         let core_variable_decl = variable_decl.core_ref();
                         self.walk_r_assignment(&core_variable_decl.r_assign);
-                        if let Some(name) = core_variable_decl.name.value(&self.code) {
+                        if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+                            let name = ok_identifier.token_value(&self.code);
                             match core_variable_decl.r_assign.core_ref() {
                                 CoreRAssignmentNode::EXPRESSION(_) | CoreRAssignmentNode::LAMBDA(_) => {
                                     self.declare_variable(name, true, variable_decl.start_line_number())
@@ -88,19 +93,23 @@ impl Visitor for Resolver {
                     ASTNode::ATOM_START(atom_start) => {
                         match atom_start.core_ref() {
                             CoreAtomStartNode::IDENTIFIER(identifier) => {
-                                if let Some(variable_name) = identifier.value(&self.code) {
+                                if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
+                                    let variable_name = ok_identifier.token_value(&self.code);
                                     match self.namespace.lookup_in_variables_namespace(&variable_name) {
-                                        Some(symbol_data) => todo!(), // bind the symbol data to identifier node
-                                        None => todo!(), // TODO - raise error variable `{}` is not declared in the scope
+                                        Some(symbol_data) => {
+                                            ok_identifier.bind_variable_decl(symbol_data.0, symbol_data.1);
+                                        },
+                                        None => self.log_undefined_identifier_in_scope_error(variable_name)
                                     }
                                 }
                             },
                             CoreAtomStartNode::FUNCTION_CALL(func_call) => {
                                 let core_func_call = func_call.core_ref();
-                                if let Some(lambda_name) = core_func_call.function_name.value(&self.code) {
-                                    if let Some(symbol_data) 
+                                if let CoreIdentifierNode::OK(ok_identifier) = core_func_call.function_name.core_ref() {
+                                    let lambda_name = ok_identifier.token_value(&self.code);
+                                    if let Some(symbol_data)
                                     = self.namespace.lookup_in_variables_namespace(&lambda_name) {
-                                        todo!()  // bind the symbol data to identifier node
+                                        ok_identifier.bind_variable_decl(symbol_data.0, symbol_data.1);
                                     }
                                 }
                             },

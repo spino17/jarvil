@@ -1,5 +1,5 @@
 use crate::types::core::{AbstractType, CoreType, Type};
-use std::rc::Rc;
+use std::{rc::Rc, fmt::Formatter};
 
 #[derive(Debug)]
 pub struct Array {
@@ -20,11 +20,14 @@ impl AbstractType for Array {
             _ => false,
         }
     }
+}
 
-    fn string(&self) -> String {
-        format!(
+impl std::fmt::Display for Array {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f, 
             "[{}; {}]",
-            AbstractType::string(&self.element_type),
+            self.element_type.to_string(),
             self.size
         )
     }
