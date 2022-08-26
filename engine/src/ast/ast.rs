@@ -25,6 +25,8 @@ use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
 use text_size::{TextRange, TextSize};
 
+use super::iterators::NameTypeSpecsIterator;
+
 pub trait Node {
     fn range(&self) -> TextRange;
     fn start_line_number(&self) -> usize;
@@ -803,6 +805,10 @@ impl NameTypeSpecsNode {
     pub fn new(ok_name_type_specs: &OkNameTypeSpecsNode) -> Self {
         let node = Rc::new(CoreNameTypeSpecsNode::OK(ok_name_type_specs.clone()));
         NameTypeSpecsNode(node)
+    }
+
+    pub fn iter(&self) -> NameTypeSpecsIterator {
+        NameTypeSpecsIterator::new(self)
     }
 
     impl_core_ref!(CoreNameTypeSpecsNode);

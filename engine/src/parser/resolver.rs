@@ -1,7 +1,8 @@
+use text_size::TextRange;
 use crate::{
-    scope::{core::{Namespace, SymbolData}, variables::VariableData}, code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, 
-    CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, OkFunctionDeclarationNode, StructDeclarationNode, 
-    LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, CoreIdentifierNode
+        scope::{core::{Namespace, SymbolData}, variables::VariableData}, code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, 
+        CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, OkFunctionDeclarationNode, StructDeclarationNode, 
+        LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, CoreIdentifierNode, CoreNameTypeSpecsNode
     }}, 
     error::core::JarvilError
 };
@@ -39,12 +40,68 @@ impl Resolver {
         (std::mem::take(&mut self.namespace), std::mem::take(&mut self.errors))
     }
 
-    pub fn declare_variable(&mut self, variable_name: String, is_init: bool, line_number: usize) {
-        self.namespace.declare_variable(variable_name, is_init, line_number);
+    pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
+        let core_variable_decl = variable_decl.core_ref();
+        self.walk_r_assignment(&core_variable_decl.r_assign);
+        if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+            let name = ok_identifier.token_value(&self.code);
+            match core_variable_decl.r_assign.core_ref() {
+                CoreRAssignmentNode::EXPRESSION(_) | CoreRAssignmentNode::LAMBDA(_) => {
+                    let symbol_data = self.namespace.declare_variable(
+                        name, variable_decl.start_line_number()
+                    );
+                    match symbol_data {
+                        Ok(symbol_data) => ok_identifier.bind_variable_decl(symbol_data, 0),
+                        Err(previous_decl_line_number) => {
+                            let name = ok_identifier.token_value(&self.code);
+                            self.log_identifier_already_declared_in_current_scope_error(
+                                name, ok_identifier.range(), previous_decl_line_number
+                            );
+                        }
+                    }
+                },
+                _ => {}
+            };
+        }
     }
 
     pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
-        todo!()
+        let core_func_decl = func_decl.core_ref();
+        let func_name = &core_func_decl.name;
+        let params = &core_func_decl.args;
+        let return_type = &core_func_decl.return_type;
+        let func_body = &core_func_decl.block;
+        if let Some(identifier) = func_name {
+            if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
+                let name = ok_identifier.token_value(&self.code);
+                match self.namespace.declare_function(name, ok_identifier.start_line_number()) {
+                    Ok(symbol_data) => ok_identifier.bind_function_decl(symbol_data, 0),
+                    Err(previous_decl_line_number) => {
+                        let name = ok_identifier.token_value(&self.code);
+                        self.log_identifier_already_declared_in_current_scope_error(
+                            name, ok_identifier.range(), previous_decl_line_number
+                        );
+                    }
+                }
+            }
+        }
+        self.namespace.open_scope();
+        if let Some(params) = params {
+            let params_iter = params.iter();
+            for param in params_iter {
+                let core_param = param.core_ref();
+                let param_name = &core_param.name;
+                if let CoreIdentifierNode::OK(ok_identifier) = param_name.core_ref() {
+                    let name = ok_identifier.token_value(&self.code);
+                    match self.namespace.declare_variable(name, ok_identifier.start_line_number()) {
+                        Ok(symbol_data) => ok_identifier.bind_variable_decl(symbol_data, 0),
+                        Err(_) => unreachable!("new scope cannot have params already set")
+                    }
+                }
+            }
+        }
+        self.walk_block(func_body);
+        self.namespace.close_scope();
     }
 
     pub fn declare_struct(&mut self, struct_decl: &StructDeclarationNode) {
@@ -55,7 +112,11 @@ impl Resolver {
         todo!()
     }
 
-    pub fn log_undefined_identifier_in_scope_error(&mut self, name: String) {
+    pub fn log_undefined_identifier_in_scope_error(&mut self, name: String, error_range: TextRange) {
+        todo!()
+    }
+
+    pub fn log_identifier_already_declared_in_current_scope_error(&mut self, name: String, error_range: TextRange, previous_decl_line: usize) {
         todo!()
     }
 }
@@ -65,17 +126,7 @@ impl Visitor for Resolver {
             ResolverMode::DECLARE => {
                 match node {
                     ASTNode::VARIABLE_DECLARATION(variable_decl) => {
-                        let core_variable_decl = variable_decl.core_ref();
-                        self.walk_r_assignment(&core_variable_decl.r_assign);
-                        if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-                            let name = ok_identifier.token_value(&self.code);
-                            match core_variable_decl.r_assign.core_ref() {
-                                CoreRAssignmentNode::EXPRESSION(_) | CoreRAssignmentNode::LAMBDA(_) => {
-                                    self.declare_variable(name, true, variable_decl.start_line_number())
-                                },
-                                _ => {}
-                            };
-                        }
+                        self.declare_variable(variable_decl);
                         return None
                     },
                     ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
@@ -99,7 +150,7 @@ impl Visitor for Resolver {
                                         Some(symbol_data) => {
                                             ok_identifier.bind_variable_decl(symbol_data.0, symbol_data.1);
                                         },
-                                        None => self.log_undefined_identifier_in_scope_error(variable_name)
+                                        None => self.log_undefined_identifier_in_scope_error(variable_name, ok_identifier.range())
                                     }
                                 }
                             },

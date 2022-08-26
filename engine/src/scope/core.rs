@@ -5,16 +5,6 @@ use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-macro_rules! set_to_parent_scope {
-    ($t: ident, $u: ident) => {
-        let parent_scope = match &$u.$t.0.as_ref().borrow().parent_scope {
-            Some(parent_scope) => parent_scope.clone(),
-            None => unreachable!("attempt to close namespace should not be done at global level"),
-        };
-        $u.$t = parent_scope;
-    };
-}
-
 #[derive(Debug, Clone)]
 pub enum IdentifierKind {
     VARIABLE(SymbolData<VariableData>),
@@ -23,7 +13,7 @@ pub enum IdentifierKind {
 }
 
 #[derive(Debug)]
-pub struct SymbolData<T>(pub Rc<RefCell<T>>, usize); // meta data and line on which it was declared
+pub struct SymbolData<T>(pub Rc<RefCell<Option<T>>>, usize); // meta data and line on which it was declared
 impl<T> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone(), self.1)
@@ -37,11 +27,13 @@ pub struct CoreScope<T> {
 }
 
 impl<T> CoreScope<T> {
-    fn set(&mut self, name: String, meta_data: T, line_number: usize) {
+    fn set(&mut self, name: String, line_number: usize) -> SymbolData<T> {
+        let symbol_data = SymbolData(Rc::new(RefCell::new(None)), line_number);
         self.symbol_table.insert(
             name,
-            SymbolData(Rc::new(RefCell::new(meta_data)), line_number),
+            symbol_data.clone(),
         );
+        symbol_data
     }
 
     fn get(&self, name: &str) -> Option<&SymbolData<T>> {
@@ -68,12 +60,12 @@ impl<T> Scope<T> {
         })))
     }
 
-    fn insert(&self, key: String, meta_data: T, line_number: usize) -> Option<()> {
-        if let Some(_) = self.0.borrow().get(&key) {
-            return None;
+    fn insert(&self, key: String, line_number: usize) -> Result<SymbolData<T>, usize> {
+        if let Some(symbol_data) = self.0.borrow().get(&key) {
+            return Err(symbol_data.1);
         }
-        self.0.borrow_mut().set(key.clone(), meta_data, line_number);
-        Some(())
+        let symbol_data = self.0.borrow_mut().set(key.clone(), line_number);
+        Ok(symbol_data)
     }
 
     fn lookup(&self, key: &str) -> Option<(SymbolData<T>, usize)> {
@@ -139,17 +131,12 @@ impl Namespace {
         self.functions.lookup(key)
     }
 
-    pub fn declare_variable(
-        &self,
-        name: String,
-        is_init: bool,
-        line_number: usize,
-    ) -> Option<()> {
-        let meta_data = VariableData {
-            data_type: None,  // would be filled in type-check phase
-            is_init,
-        };
-        self.variables.insert(name, meta_data, line_number)
+    pub fn declare_variable(&self, name: String, line_number: usize) -> Result<SymbolData<VariableData>, usize> {
+        self.variables.insert(name, line_number)
+    }
+
+    pub fn declare_function(&self, name: String, line_number: usize) -> Result<SymbolData<FunctionData>, usize> {
+        self.functions.insert(name, line_number)
     }
 }
 impl Clone for Namespace {
