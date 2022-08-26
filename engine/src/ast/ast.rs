@@ -670,7 +670,7 @@ pub struct CoreOkFunctionDeclarationNode {
     pub right_arrow: Option<TokenNode>,
     pub colon: TokenNode,
     pub name: Option<IdentifierNode>,
-    pub args: Option<NameTypeSpecsNode>,
+    pub params: Option<NameTypeSpecsNode>,
     pub return_type: Option<TypeExpressionNode>,
     pub block: BlockNode,
 }
@@ -686,7 +686,7 @@ pub struct OkFunctionDeclarationNode(Rc<CoreOkFunctionDeclarationNode>);
 impl OkFunctionDeclarationNode {
     pub fn new(
         name: Option<&IdentifierNode>,
-        args: Option<&NameTypeSpecsNode>,
+        params: Option<&NameTypeSpecsNode>,
         return_type: Option<&TypeExpressionNode>,
         block: &BlockNode,
         func_keyword: &FuncKeywordKind,
@@ -702,7 +702,7 @@ impl OkFunctionDeclarationNode {
             right_arrow: extract_from_option!(right_arrow),
             colon: colon.clone(),
             name: extract_from_option!(name),
-            args: extract_from_option!(args),
+            params: extract_from_option!(params),
             return_type: extract_from_option!(return_type),
             block: block.clone(),
         });

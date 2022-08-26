@@ -222,7 +222,7 @@ pub trait Visitor {
                 if let Some(func_name) = &core_ok_func_decl.name {
                     self.walk_identifier(func_name);
                 }
-                if let Some(name_type_specs) = &core_ok_func_decl.args {
+                if let Some(name_type_specs) = &core_ok_func_decl.params {
                     self.walk_name_type_specs(name_type_specs);
                 }
                 if let Some(return_type) = &core_ok_func_decl.return_type {

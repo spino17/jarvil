@@ -6,8 +6,8 @@ use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum UserDefinedTypeData {
-    STRUCT(Option<StructData>),
-    LAMBDA(Option<LambdaTypeData>),
+    STRUCT(StructData),
+    LAMBDA(LambdaTypeData),
     // GENERIC(GenericType),
 }
 
@@ -21,5 +21,5 @@ pub struct StructData {
 
 #[derive(Debug, Clone)]
 pub struct LambdaTypeData {
-    pub function_data: Option<FunctionData>,
+    pub func_data: FunctionData,
 }

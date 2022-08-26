@@ -68,8 +68,7 @@ impl Resolver {
     pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
         let core_func_decl = func_decl.core_ref();
         let func_name = &core_func_decl.name;
-        let params = &core_func_decl.args;
-        let return_type = &core_func_decl.return_type;
+        let params = &core_func_decl.params;
         let func_body = &core_func_decl.block;
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
@@ -101,6 +100,7 @@ impl Resolver {
             }
         }
         self.walk_block(func_body);
+        func_body.set_scope(&self.namespace);
         self.namespace.close_scope();
     }
 
