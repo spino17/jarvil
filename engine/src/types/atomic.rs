@@ -9,12 +9,13 @@ pub enum Atomic {
     BOOL,
 }
 impl Atomic {
-    pub fn get_atomic_type(&self) -> &str {
-        match self {
-            Atomic::INT => INT,
-            Atomic::FLOAT => FLOAT,
-            Atomic::STRING => STRING,
-            Atomic::BOOL => BOOL,
+    pub fn new(name: &str) -> Atomic {
+        match name {
+            INT => Atomic::INT,
+            FLOAT => Atomic::FLOAT,
+            STRING => Atomic::STRING,
+            BOOL => Atomic::BOOL,
+            _ => unreachable!("name should be `{}`, `{}`, `{}` and `{}`", INT, FLOAT, STRING, BOOL)
         }
     }
 

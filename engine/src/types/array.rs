@@ -6,6 +6,14 @@ pub struct Array {
     pub size: usize,
     pub element_type: Type,
 }
+impl Array {
+    pub fn new(element_type: &Type, size: usize) -> Array {
+        Array{
+            element_type: element_type.clone(),
+            size,
+        }
+    }
+}
 impl AbstractType for Array {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {

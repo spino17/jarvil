@@ -6,6 +6,14 @@ pub struct Struct {
     pub name: String,
     pub symbol_data: SymbolData<UserDefinedTypeData>,
 }
+impl Struct {
+    pub fn new(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Struct {
+        Struct {
+            name,
+            symbol_data: symbol_data.clone(),
+        }
+    } 
+}
 impl AbstractType for Struct {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {

@@ -7,6 +7,14 @@ pub struct Lambda {
     pub name: Option<String>,
     pub symbol_data: SymbolData<UserDefinedTypeData>,
 }
+impl Lambda {
+    pub fn new(name: Option<String>, symbol_data: &SymbolData<UserDefinedTypeData>) -> Lambda {
+        Lambda{
+            name,
+            symbol_data: symbol_data.clone(),
+        }
+    }
+}
 impl AbstractType for Lambda {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {

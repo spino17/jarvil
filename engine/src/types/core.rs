@@ -1,4 +1,6 @@
 use crate::constants::common::{BOOL, FLOAT, INT, NON_TYPED, STRING};
+use crate::scope::core::SymbolData;
+use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
@@ -15,16 +17,33 @@ pub enum CoreType {
     STRUCT(Struct),
     LAMBDA(Lambda),
     ARRAY(Array),
+    NON_TYPED,
+    // TODO - add below types also
     // ENUMERATION,
     // TUPLES,
-    // ARRAY,
     // REFERENCE,
-    // GENERIC(Generic)
-    NON_TYPED,
+    // GENERIC
 }
 
 #[derive(Debug, Clone)]
 pub struct Type(pub Rc<CoreType>);
+impl Type {
+    fn new_with_atomic(name: &str) -> Type {
+        Type(Rc::new(CoreType::ATOMIC(Atomic::new(name))))
+    }
+
+    fn new_with_struct(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
+        Type(Rc::new(CoreType::STRUCT(Struct::new(name, symbol_data))))
+    }
+
+    fn new_with_lambda(name: Option<String>, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
+        Type(Rc::new(CoreType::LAMBDA(Lambda::new(name, symbol_data))))
+    }
+
+    fn new_with_array(element_type: &Type, size: usize) -> Type {
+        Type(Rc::new(CoreType::ARRAY(Array::new(element_type, size))))
+    }
+}
 impl AbstractType for Type {
     fn is_eq(&self, base_type: &Type) -> bool {
         match self.0.as_ref() {
