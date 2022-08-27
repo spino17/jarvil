@@ -60,10 +60,11 @@ impl<T> Scope<T> {
         })))
     }
 
-    fn insert<U: FnOnce(&Scope<T>, &Rc<String>) -> Option<&SymbolData<T>>>(
+    fn insert<U: Fn(Scope<T>, Rc<String>) -> Option<SymbolData<T>>>(
         &self, key: &Rc<String>, line_number: usize, lookup_fn: U
     ) -> Result<SymbolData<T>, usize> {
-        if let Some(symbol_data) = lookup_fn(self, key) {
+        let scope = Scope(self.0.clone());
+        if let Some(symbol_data) = lookup_fn(scope, key.clone()) {
             return Err(symbol_data.1);
         }
         let symbol_data = self.0.borrow_mut().set(key, line_number);
@@ -134,23 +135,29 @@ impl Namespace {
     }
 
     pub fn declare_variable(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<VariableData>, usize> {
-        let lookup_func = |scope: &Scope<VariableData>, key| {
-            scope.0.as_ref().borrow().get(key)
+        let lookup_func = |scope: Scope<VariableData>, key: Rc<String>| {
+            match scope.0.as_ref().borrow().get(&key) {
+                Some(symbol_data) => Some(symbol_data.clone()),
+                None => None,
+            }
         };
         self.variables.insert(name, line_number, lookup_func)
     }
 
     pub fn declare_function(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<FunctionData>, usize> {
-        let lookup_func = |scope: &Scope<FunctionData>, key| {
-            scope.0.as_ref().borrow().get(key)
+        let lookup_func = |scope: Scope<FunctionData>, key: Rc<String>| {
+            match scope.0.as_ref().borrow().get(&key) {
+                Some(symbol_data) => Some(symbol_data.clone()),
+                None => None,
+            }
         };
         self.functions.insert(name, line_number, lookup_func)
     }
 
     pub fn declare_user_defined_type(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<UserDefinedTypeData>, usize> {
-        let lookup_func = |scope: &Scope<UserDefinedTypeData>, key| {
-            match scope.lookup(key) {
-                Some((symbol_data, _)) => Some(&symbol_data),
+        let lookup_func = |scope: Scope<UserDefinedTypeData>, key: Rc<String>| {
+            match scope.lookup(&key) {
+                Some((symbol_data, _)) => Some(symbol_data),
                 None => None
             }
         };

@@ -1079,15 +1079,15 @@ impl OkIdentifierNode {
     }
 
     pub fn bind_variable_decl(&self, symbol_data: SymbolData<VariableData>, depth: usize) {
-        todo!()
+        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::VARIABLE(symbol_data), depth));
     }
 
     pub fn bind_user_defined_type_decl(&self, symbol_data: SymbolData<UserDefinedTypeData>, depth: usize) {
-        todo!()
+        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::USER_DEFINED_TYPE(symbol_data), depth));
     }
 
     pub fn bind_function_decl(&self, symbol_data: SymbolData<FunctionData>, depth: usize) {
-        todo!()
+        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::FUNCTION(symbol_data), depth));
     }
 }
 impl Node for OkIdentifierNode {
