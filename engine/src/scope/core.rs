@@ -138,6 +138,10 @@ impl Namespace {
     pub fn declare_function(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<FunctionData>, usize> {
         self.functions.insert(name, line_number)
     }
+
+    pub fn declare_user_defined_type(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<UserDefinedTypeData>, usize> {
+        self.types.insert(name, line_number)
+    }
 }
 impl Clone for Namespace {
     fn clone(&self) -> Self {

@@ -4,9 +4,9 @@ use crate::{
         CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, OkFunctionDeclarationNode, StructDeclarationNode, 
         LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, CoreIdentifierNode, CoreNameTypeSpecsNode
     }}, 
-    error::core::JarvilError
+    error::core::{JarvilError, JarvilErrorKind}
 };
-use std::rc::Rc;
+use std::{rc::Rc, convert::TryInto};
 
 pub enum ResolverMode {
     DECLARE,  // first pass
@@ -55,7 +55,11 @@ impl Resolver {
                         Ok(symbol_data) => ok_identifier.bind_variable_decl(symbol_data, 0),
                         Err(previous_decl_line_number) => {
                             self.log_identifier_already_declared_in_current_scope_error(
-                                &name, ok_identifier.range(), previous_decl_line_number
+                                &name, 
+                                ok_identifier.range(), 
+                                previous_decl_line_number, 
+                                ok_identifier.start_line_number(), 
+                                false
                             );
                         }
                     }
@@ -77,7 +81,7 @@ impl Resolver {
                     Ok(symbol_data) => ok_identifier.bind_function_decl(symbol_data, 0),
                     Err(previous_decl_line_number) => {
                         self.log_identifier_already_declared_in_current_scope_error(
-                            &name, ok_identifier.range(), previous_decl_line_number
+                            &name, ok_identifier.range(), previous_decl_line_number, ok_identifier.start_line_number(), false
                         );
                     }
                 }
@@ -104,21 +108,84 @@ impl Resolver {
     }
 
     pub fn declare_struct(&mut self, struct_decl: &StructDeclarationNode) {
-        todo!()
+        let core_struct_decl = struct_decl.core_ref();
+        if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
+            let name = Rc::new(ok_identifier.token_value(&self.code));
+            match self.namespace.declare_user_defined_type(&name, ok_identifier.start_line_number()) {
+                Ok(symbol_data) => ok_identifier.bind_user_defined_type_decl(symbol_data, 0),
+                Err(previous_decl_line_number) => {
+                    self.log_identifier_already_declared_in_current_scope_error(
+                        &name, ok_identifier.range(), previous_decl_line_number, ok_identifier.start_line_number(), true
+                    );
+                }
+            }
+        }
     }
 
-    pub fn declare_lambda_type(&mut self, lambda: &OkLambdaTypeDeclarationNode) {
-        todo!()
+    pub fn declare_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
+        let core_lambda_type_decl = lambda_type_decl.core_ref();
+        if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
+            let name = Rc::new(ok_identifier.token_value(&self.code));
+            match self.namespace.declare_user_defined_type(&name, ok_identifier.start_line_number()) {
+                Ok(symbol_data) => ok_identifier.bind_user_defined_type_decl(symbol_data, 0),
+                Err(previous_decl_line_number) => {
+                    self.log_identifier_already_declared_in_current_scope_error(
+                        &name, ok_identifier.range(), previous_decl_line_number, ok_identifier.start_line_number(), true
+                    );
+                }
+            }
+        }
     }
 
-    pub fn log_undefined_identifier_in_scope_error(&mut self, name: &Rc<String>, error_range: TextRange) {
-        todo!()
+    pub fn log_undefined_identifier_in_scope_error(&mut self, name: &Rc<String>, error_range: TextRange, line_number: usize) {
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let (code_line, line_start_index, line_number, start_err_index) = self.code.line_data(
+            line_number,
+            start_err_index,
+        );
+        let err_str = format!("identifier `{}` not declared in the scope", name);
+        let err = JarvilError::form_single_line_error(
+            start_err_index,
+            end_err_index,
+            line_number,
+            line_start_index,
+            code_line,
+            err_str,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
     }
 
     pub fn log_identifier_already_declared_in_current_scope_error(
-        &mut self, name: &Rc<String>, error_range: TextRange, previous_decl_line: usize
+        &mut self, 
+        name: &Rc<String>, 
+        error_range: TextRange, 
+        previous_decl_line: usize, 
+        line_number: usize,
+        is_type: bool,
     ) {
-        todo!()
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let (code_line, line_start_index, line_number, start_err_index) = self.code.line_data(
+            line_number,
+            start_err_index,
+        );
+        let err_str = if is_type {
+            format!("type `{}` is already declared in the scope on line {}", name, previous_decl_line)
+        } else {
+            format!("identifier `{}` is already declared in the current block on line {}", name, previous_decl_line)
+        };
+        let err = JarvilError::form_single_line_error(
+            start_err_index,
+            end_err_index,
+            line_number,
+            line_start_index,
+            code_line,
+            err_str,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
     }
 }
 impl Visitor for Resolver {
@@ -151,7 +218,9 @@ impl Visitor for Resolver {
                                         Some(symbol_data) => {
                                             ok_identifier.bind_variable_decl(symbol_data.0, symbol_data.1);
                                         },
-                                        None => self.log_undefined_identifier_in_scope_error(&variable_name, ok_identifier.range())
+                                        None => self.log_undefined_identifier_in_scope_error(
+                                            &variable_name, ok_identifier.range(), ok_identifier.start_line_number()
+                                        )
                                     }
                                 }
                             },
