@@ -1089,6 +1089,10 @@ impl OkIdentifierNode {
     pub fn bind_function_decl(&self, symbol_data: SymbolData<FunctionData>, depth: usize) {
         self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::FUNCTION(symbol_data), depth));
     }
+
+    pub fn is_resolved(&self) -> bool {
+        self.0.as_ref().borrow().decl.is_some()
+    }
 }
 impl Node for OkIdentifierNode {
     fn range(&self) -> TextRange {

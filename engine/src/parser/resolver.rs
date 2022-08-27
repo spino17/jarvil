@@ -6,7 +6,7 @@ use crate::{
     }}, 
     error::core::{JarvilError, JarvilErrorKind}
 };
-use std::{rc::Rc, convert::TryInto};
+use std::rc::Rc;
 
 pub enum ResolverMode {
     DECLARE,  // first pass
@@ -243,19 +243,52 @@ impl Visitor for Resolver {
             },
             ResolverMode::RESOLVE => {
                 match node {
+                    ASTNode::VARIABLE_DECLARATION(variable_decl) => {
+                        todo!();
+                        return None
+                    },
+                    ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
+                        todo!();
+                        return None
+                    },
+                    ASTNode::STRUCT_DECLARATION(struct_decl) => {
+                        todo!();
+                        return None
+                    },
+                    ASTNode::OK_LAMBDA_TYPE_DECLARATION(lambda_type_decl) => {
+                        todo!();
+                        return None
+                    },
                     ASTNode::ATOM_START(atom_start) => {
                         match atom_start.core_ref() {
                             CoreAtomStartNode::FUNCTION_CALL(func_call) => {
-                                // TODO - check if the node is already bind to some declaration
-                                todo!()
+                                let core_func_call = func_call.core_ref();
+                                if let CoreIdentifierNode::OK(ok_identifier) = core_func_call.function_name.core_ref() {
+                                    if !ok_identifier.is_resolved() {
+                                        let func_name = Rc::new(ok_identifier.token_value(&self.code));
+                                        if let Some(symbol_data)
+                                        = self.namespace.lookup_in_functions_namespace(&func_name) {
+                                            ok_identifier.bind_function_decl(symbol_data.0, symbol_data.1);
+                                        }
+                                    }
+                                }
                             },
-                            CoreAtomStartNode::CLASS_METHOD_CALL(class_method_call) => todo!(),
+                            CoreAtomStartNode::CLASS_METHOD_CALL(class_method_call) => {
+                                let core_class_method_call = class_method_call.core_ref();
+                                if let CoreIdentifierNode::OK(ok_identifier) = core_class_method_call.class_name.core_ref() {
+                                    let class_name = Rc::new(ok_identifier.token_value(&self.code));
+                                    match self.namespace.lookup_in_types_namespace(&class_name) {
+                                        Some(symbol_data) => {
+                                            ok_identifier.bind_user_defined_type_decl(symbol_data.0, symbol_data.1);
+                                        },
+                                        None => self.log_undefined_identifier_in_scope_error(
+                                            &class_name, ok_identifier.range(), ok_identifier.start_line_number()
+                                        )
+                                    }
+                                }
+                            },
                             _ => {}
                         }
-                        return None
-                    },
-                    ASTNode::USER_DEFINED_TYPE(user_defined_type) => {
-                        todo!();
                         return None
                     },
                     _ => return Some(())
