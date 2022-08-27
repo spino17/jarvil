@@ -6,6 +6,7 @@ use crate::{
     }}, 
     error::core::JarvilError
 };
+use std::rc::Rc;
 
 pub enum ResolverMode {
     DECLARE,  // first pass
@@ -44,18 +45,17 @@ impl Resolver {
         let core_variable_decl = variable_decl.core_ref();
         self.walk_r_assignment(&core_variable_decl.r_assign);
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            let name = ok_identifier.token_value(&self.code);
+            let name = Rc::new(ok_identifier.token_value(&self.code));
             match core_variable_decl.r_assign.core_ref() {
                 CoreRAssignmentNode::EXPRESSION(_) | CoreRAssignmentNode::LAMBDA(_) => {
                     let symbol_data = self.namespace.declare_variable(
-                        name, variable_decl.start_line_number()
+                        &name, variable_decl.start_line_number()
                     );
                     match symbol_data {
                         Ok(symbol_data) => ok_identifier.bind_variable_decl(symbol_data, 0),
                         Err(previous_decl_line_number) => {
-                            let name = ok_identifier.token_value(&self.code);
                             self.log_identifier_already_declared_in_current_scope_error(
-                                name, ok_identifier.range(), previous_decl_line_number
+                                &name, ok_identifier.range(), previous_decl_line_number
                             );
                         }
                     }
@@ -72,13 +72,12 @@ impl Resolver {
         let func_body = &core_func_decl.block;
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                let name = ok_identifier.token_value(&self.code);
-                match self.namespace.declare_function(name, ok_identifier.start_line_number()) {
+                let name = Rc::new(ok_identifier.token_value(&self.code));
+                match self.namespace.declare_function(&name, ok_identifier.start_line_number()) {
                     Ok(symbol_data) => ok_identifier.bind_function_decl(symbol_data, 0),
                     Err(previous_decl_line_number) => {
-                        let name = ok_identifier.token_value(&self.code);
                         self.log_identifier_already_declared_in_current_scope_error(
-                            name, ok_identifier.range(), previous_decl_line_number
+                            &name, ok_identifier.range(), previous_decl_line_number
                         );
                     }
                 }
@@ -91,8 +90,8 @@ impl Resolver {
                 let core_param = param.core_ref();
                 let param_name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = param_name.core_ref() {
-                    let name = ok_identifier.token_value(&self.code);
-                    match self.namespace.declare_variable(name, ok_identifier.start_line_number()) {
+                    let name = Rc::new(ok_identifier.token_value(&self.code));
+                    match self.namespace.declare_variable(&name, ok_identifier.start_line_number()) {
                         Ok(symbol_data) => ok_identifier.bind_variable_decl(symbol_data, 0),
                         Err(_) => unreachable!("new scope cannot have params already set")
                     }
@@ -112,11 +111,13 @@ impl Resolver {
         todo!()
     }
 
-    pub fn log_undefined_identifier_in_scope_error(&mut self, name: String, error_range: TextRange) {
+    pub fn log_undefined_identifier_in_scope_error(&mut self, name: &Rc<String>, error_range: TextRange) {
         todo!()
     }
 
-    pub fn log_identifier_already_declared_in_current_scope_error(&mut self, name: String, error_range: TextRange, previous_decl_line: usize) {
+    pub fn log_identifier_already_declared_in_current_scope_error(
+        &mut self, name: &Rc<String>, error_range: TextRange, previous_decl_line: usize
+    ) {
         todo!()
     }
 }
@@ -145,19 +146,19 @@ impl Visitor for Resolver {
                         match atom_start.core_ref() {
                             CoreAtomStartNode::IDENTIFIER(identifier) => {
                                 if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                                    let variable_name = ok_identifier.token_value(&self.code);
+                                    let variable_name = Rc::new(ok_identifier.token_value(&self.code));
                                     match self.namespace.lookup_in_variables_namespace(&variable_name) {
                                         Some(symbol_data) => {
                                             ok_identifier.bind_variable_decl(symbol_data.0, symbol_data.1);
                                         },
-                                        None => self.log_undefined_identifier_in_scope_error(variable_name, ok_identifier.range())
+                                        None => self.log_undefined_identifier_in_scope_error(&variable_name, ok_identifier.range())
                                     }
                                 }
                             },
                             CoreAtomStartNode::FUNCTION_CALL(func_call) => {
                                 let core_func_call = func_call.core_ref();
                                 if let CoreIdentifierNode::OK(ok_identifier) = core_func_call.function_name.core_ref() {
-                                    let lambda_name = ok_identifier.token_value(&self.code);
+                                    let lambda_name = Rc::new(ok_identifier.token_value(&self.code));
                                     if let Some(symbol_data)
                                     = self.namespace.lookup_in_variables_namespace(&lambda_name) {
                                         ok_identifier.bind_variable_decl(symbol_data.0, symbol_data.1);

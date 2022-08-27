@@ -22,21 +22,21 @@ impl<T> Clone for SymbolData<T> {
 
 #[derive(Debug)]
 pub struct CoreScope<T> {
-    symbol_table: FxHashMap<String, SymbolData<T>>,
+    symbol_table: FxHashMap<Rc<String>, SymbolData<T>>,
     parent_scope: Option<Scope<T>>,
 }
 
 impl<T> CoreScope<T> {
-    fn set(&mut self, name: String, line_number: usize) -> SymbolData<T> {
+    fn set(&mut self, name: &Rc<String>, line_number: usize) -> SymbolData<T> {
         let symbol_data = SymbolData(Rc::new(RefCell::new(None)), line_number);
         self.symbol_table.insert(
-            name,
+            name.clone(),
             symbol_data.clone(),
         );
         symbol_data
     }
 
-    fn get(&self, name: &str) -> Option<&SymbolData<T>> {
+    fn get(&self, name: &Rc<String>) -> Option<&SymbolData<T>> {
         self.symbol_table.get(name)
     }
 }
@@ -60,15 +60,15 @@ impl<T> Scope<T> {
         })))
     }
 
-    fn insert(&self, key: String, line_number: usize) -> Result<SymbolData<T>, usize> {
+    fn insert(&self, key: &Rc<String>, line_number: usize) -> Result<SymbolData<T>, usize> {
         if let Some(symbol_data) = self.0.borrow().get(&key) {
             return Err(symbol_data.1);
         }
-        let symbol_data = self.0.borrow_mut().set(key.clone(), line_number);
+        let symbol_data = self.0.borrow_mut().set(key, line_number);
         Ok(symbol_data)
     }
 
-    fn lookup(&self, key: &str) -> Option<(SymbolData<T>, usize)> {
+    fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData<T>, usize)> {
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
             Some(value) => Some((value.clone(), 0)),
@@ -119,23 +119,23 @@ impl Namespace {
         set_to_parent_scope!(functions, self);
     }
 
-    pub fn lookup_in_variables_namespace(&self, key: &str) -> Option<(SymbolData<VariableData>, usize)> {
+    pub fn lookup_in_variables_namespace(&self, key: &Rc<String>) -> Option<(SymbolData<VariableData>, usize)> {
         self.variables.lookup(key)
     }
 
-    pub fn lookup_in_types_namespace(&self, key: &str) -> Option<(SymbolData<UserDefinedTypeData>, usize)> {
+    pub fn lookup_in_types_namespace(&self, key: &Rc<String>) -> Option<(SymbolData<UserDefinedTypeData>, usize)> {
         self.types.lookup(key)
     }
 
-    pub fn lookup_in_functions_namespace(&self, key: &str) -> Option<(SymbolData<FunctionData>, usize)> {
+    pub fn lookup_in_functions_namespace(&self, key: &Rc<String>) -> Option<(SymbolData<FunctionData>, usize)> {
         self.functions.lookup(key)
     }
 
-    pub fn declare_variable(&self, name: String, line_number: usize) -> Result<SymbolData<VariableData>, usize> {
+    pub fn declare_variable(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<VariableData>, usize> {
         self.variables.insert(name, line_number)
     }
 
-    pub fn declare_function(&self, name: String, line_number: usize) -> Result<SymbolData<FunctionData>, usize> {
+    pub fn declare_function(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<FunctionData>, usize> {
         self.functions.insert(name, line_number)
     }
 }

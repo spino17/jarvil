@@ -26,6 +26,7 @@ use std::{cell::RefCell, rc::Rc};
 use text_size::{TextRange, TextSize};
 
 use super::iterators::NameTypeSpecsIterator;
+use super::iterators::ParamsIterator;
 
 pub trait Node {
     fn range(&self) -> TextRange;
@@ -1552,6 +1553,10 @@ impl ParamsNode {
     pub fn new(ok_params_node: &OkParamsNode) -> Self {
         let node = Rc::new(CoreParamsNode::OK(ok_params_node.clone()));
         ParamsNode(node)
+    }
+
+    pub fn iter(&self) -> ParamsIterator {
+        ParamsIterator::new(self)
     }
 
     impl_core_ref!(CoreParamsNode);

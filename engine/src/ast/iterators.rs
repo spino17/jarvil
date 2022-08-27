@@ -1,4 +1,4 @@
-use super::ast::{NameTypeSpecsNode, NameTypeSpecNode, CoreNameTypeSpecsNode};
+use super::ast::{NameTypeSpecsNode, NameTypeSpecNode, CoreNameTypeSpecsNode, ParamsNode, CoreParamsNode, ExpressionNode};
 
 pub struct NameTypeSpecsIterator {
     node: Option<NameTypeSpecsNode>,
@@ -29,5 +29,37 @@ impl Iterator for NameTypeSpecsIterator {
             None => None,
         };
         Some(ok_name_type_specs.core_ref().arg.clone())
+    }
+}
+
+pub struct ParamsIterator {
+    node: Option<ParamsNode>,
+}
+impl ParamsIterator {
+    pub fn new(node: &ParamsNode) -> Self {
+        ParamsIterator {
+            node: Some(node.clone())
+        }
+    }
+}
+impl Iterator for ParamsIterator {
+    type Item = ExpressionNode;
+    fn next(&mut self) -> Option<Self::Item> {
+        let ok_params = match &self.node {
+            Some(node) => {
+                match node.core_ref() {
+                    CoreParamsNode::OK(ok_params) => {
+                        ok_params.clone()
+                    },
+                    _ => return None
+                }
+            },
+            None => return None
+        };
+        self.node = match &ok_params.core_ref().remaining_params {
+            Some(remaining_params) => Some(remaining_params.clone()),
+            None => None,
+        };
+        Some(ok_params.core_ref().param.clone())
     }
 }
