@@ -1,14 +1,9 @@
-use crate::ast::ast::OkIdentifierNode;
-use crate::code::Code;
-use crate::parser::resolver::Resolver;
-use crate::scope::function::CoreFunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 use super::function::FunctionData;
-use crate::ast::ast::Node;
 
 #[derive(Debug, Clone)]
 pub enum IdentifierKind {
@@ -146,7 +141,7 @@ impl Namespace {
                 None => None,
             }
         };
-        self.variables.insert(name, VariableData(None), line_number, lookup_func)
+        self.variables.insert(name, VariableData::default(), line_number, lookup_func)
     }
 
     pub fn declare_function(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<FunctionData>, usize> {

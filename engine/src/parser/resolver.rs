@@ -243,17 +243,6 @@ impl Visitor for Resolver {
                         match atom_start.core_ref() {
                             CoreAtomStartNode::IDENTIFIER(identifier) => {
                                 if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                                    /*
-                                    let variable_name = Rc::new(ok_identifier.token_value(&self.code));
-                                    match self.namespace.lookup_in_variables_namespace(&variable_name) {
-                                        Some(symbol_data) => {
-                                            ok_identifier.bind_variable_decl(symbol_data.0, symbol_data.1);
-                                        },
-                                        None => self.log_undefined_identifier_in_scope_error(
-                                            &variable_name, ok_identifier.range(), ok_identifier.start_line_number()
-                                        )
-                                    }
-                                     */
                                     let lookup_fn = |namespace: &Namespace, key: &Rc<String>| {
                                         namespace.lookup_in_variables_namespace(key)
                                     };
