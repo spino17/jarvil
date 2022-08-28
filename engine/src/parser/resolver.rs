@@ -70,6 +70,27 @@ impl Resolver {
         }
     }
 
+    pub fn try_resolving<
+        T, 
+        U: Fn(&Namespace, &Rc<String>) -> Option<(SymbolData<T>, usize)>,
+        V: Fn(&OkIdentifierNode, SymbolData<T>, usize)
+    >(
+        &mut self, 
+        identifer: &OkIdentifierNode, 
+        lookup_fn: U, 
+        bind_fn: V
+    ) {
+        let name = Rc::new(identifer.token_value(&self.code));
+        match lookup_fn(&self.namespace, &name) {
+            Some(symbol_data) => {
+                bind_fn(identifer, symbol_data.0, symbol_data.1);
+            },
+            None => self.log_undefined_identifier_in_scope_error(
+                &name, identifer.range(), identifer.start_line_number()
+            )
+        }
+    }
+
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         self.walk_r_assignment(&core_variable_decl.r_assign);
@@ -222,6 +243,7 @@ impl Visitor for Resolver {
                         match atom_start.core_ref() {
                             CoreAtomStartNode::IDENTIFIER(identifier) => {
                                 if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
+                                    /*
                                     let variable_name = Rc::new(ok_identifier.token_value(&self.code));
                                     match self.namespace.lookup_in_variables_namespace(&variable_name) {
                                         Some(symbol_data) => {
@@ -231,6 +253,15 @@ impl Visitor for Resolver {
                                             &variable_name, ok_identifier.range(), ok_identifier.start_line_number()
                                         )
                                     }
+                                     */
+                                    let lookup_fn = |namespace: &Namespace, key: &Rc<String>| {
+                                        namespace.lookup_in_variables_namespace(key)
+                                    };
+                                    let bind_fn 
+                                    = |identifier: &OkIdentifierNode, symbol_data: SymbolData<VariableData>, depth: usize| {
+                                        identifier.bind_variable_decl(symbol_data, depth)
+                                    };
+                                    self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                 }
                             },
                             CoreAtomStartNode::FUNCTION_CALL(func_call) => {
@@ -274,30 +305,28 @@ impl Visitor for Resolver {
                                 let core_func_call = func_call.core_ref();
                                 if let CoreIdentifierNode::OK(ok_identifier) = core_func_call.function_name.core_ref() {
                                     if !ok_identifier.is_resolved() {
-                                        let func_name = Rc::new(ok_identifier.token_value(&self.code));
-                                        match self.namespace.lookup_in_functions_namespace(&func_name) {
-                                            Some(symbol_data) => {
-                                                ok_identifier.bind_function_decl(symbol_data.0, symbol_data.1);
-                                            },
-                                            None => self.log_undefined_identifier_in_scope_error(
-                                                &func_name, ok_identifier.range(), ok_identifier.start_line_number()
-                                            )
-                                        }
+                                        let lookup_fn = |namespace: &Namespace, key: &Rc<String>| {
+                                            namespace.lookup_in_functions_namespace(key)
+                                        };
+                                        let bind_fn 
+                                        = |identifier: &OkIdentifierNode, symbol_data: SymbolData<FunctionData>, depth: usize| {
+                                            identifier.bind_function_decl(symbol_data, depth)
+                                        };
+                                        self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                     }
                                 }
                             },
                             CoreAtomStartNode::CLASS_METHOD_CALL(class_method_call) => {
                                 let core_class_method_call = class_method_call.core_ref();
                                 if let CoreIdentifierNode::OK(ok_identifier) = core_class_method_call.class_name.core_ref() {
-                                    let class_name = Rc::new(ok_identifier.token_value(&self.code));
-                                    match self.namespace.lookup_in_types_namespace(&class_name) {
-                                        Some(symbol_data) => {
-                                            ok_identifier.bind_user_defined_type_decl(symbol_data.0, symbol_data.1);
-                                        },
-                                        None => self.log_undefined_identifier_in_scope_error(
-                                            &class_name, ok_identifier.range(), ok_identifier.start_line_number()
-                                        )
-                                    }
+                                    let lookup_fn = |namespace: &Namespace, key: &Rc<String>| {
+                                        namespace.lookup_in_types_namespace(key)
+                                    };
+                                    let bind_fn 
+                                    = |identifier: &OkIdentifierNode, symbol_data: SymbolData<UserDefinedTypeData>, depth: usize| {
+                                        identifier.bind_user_defined_type_decl(symbol_data, depth)
+                                    };
+                                    self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                 }
                             },
                             _ => {}
