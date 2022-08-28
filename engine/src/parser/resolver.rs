@@ -2,7 +2,7 @@ use text_size::TextRange;
 use crate::{
         scope::{core::{Namespace, SymbolData}, variables::VariableData}, code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, 
         CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, OkFunctionDeclarationNode, StructDeclarationNode, 
-        LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, CoreIdentifierNode, CoreNameTypeSpecsNode
+        LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, CoreIdentifierNode, CoreNameTypeSpecsNode, OkIdentifierNode
     }}, 
     error::core::{JarvilError, JarvilErrorKind}
 };
@@ -15,7 +15,7 @@ pub enum ResolverMode {
 
 pub struct Resolver {
     namespace: Namespace,
-    code: Code,
+    pub code: Code,
     errors: Vec<JarvilError>,
     mode: ResolverMode,
 }
@@ -41,31 +41,45 @@ impl Resolver {
         (std::mem::take(&mut self.namespace), std::mem::take(&mut self.errors))
     }
 
+    pub fn try_declare_and_bind(&mut self, identifier: &OkIdentifierNode) {
+        let name = Rc::new(identifier.token_value(&self.code));
+        let symbol_data = self.namespace.declare_variable(
+            &name, identifier.start_line_number()
+        );
+        match symbol_data {
+            Ok(symbol_data) => identifier.bind_variable_decl(symbol_data, 0),
+            Err(previous_decl_line_number) => {
+                self.log_identifier_already_declared_in_current_scope_error(
+                    &name, 
+                    identifier.range(), 
+                    previous_decl_line_number, 
+                    identifier.start_line_number(), 
+                    false
+                );
+            }
+        }
+    }
+
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         self.walk_r_assignment(&core_variable_decl.r_assign);
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(&self.code));
-            match core_variable_decl.r_assign.core_ref() {
-                CoreRAssignmentNode::EXPRESSION(_) | CoreRAssignmentNode::LAMBDA(_) => {
-                    let symbol_data = self.namespace.declare_variable(
-                        &name, variable_decl.start_line_number()
+            let symbol_data = self.namespace.declare_variable(
+                &name, ok_identifier.start_line_number()
+            );
+            match symbol_data {
+                Ok(symbol_data) => ok_identifier.bind_variable_decl(symbol_data, 0),
+                Err(previous_decl_line_number) => {
+                    self.log_identifier_already_declared_in_current_scope_error(
+                        &name, 
+                        ok_identifier.range(), 
+                        previous_decl_line_number, 
+                        ok_identifier.start_line_number(), 
+                        false
                     );
-                    match symbol_data {
-                        Ok(symbol_data) => ok_identifier.bind_variable_decl(symbol_data, 0),
-                        Err(previous_decl_line_number) => {
-                            self.log_identifier_already_declared_in_current_scope_error(
-                                &name, 
-                                ok_identifier.range(), 
-                                previous_decl_line_number, 
-                                ok_identifier.start_line_number(), 
-                                false
-                            );
-                        }
-                    }
-                },
-                _ => {}
-            };
+                }
+            }
         }
     }
 
@@ -81,7 +95,11 @@ impl Resolver {
                     Ok(symbol_data) => ok_identifier.bind_function_decl(symbol_data, 0),
                     Err(previous_decl_line_number) => {
                         self.log_identifier_already_declared_in_current_scope_error(
-                            &name, ok_identifier.range(), previous_decl_line_number, ok_identifier.start_line_number(), false
+                            &name, 
+                            ok_identifier.range(), 
+                            previous_decl_line_number, 
+                            ok_identifier.start_line_number(),
+                            false
                         );
                     }
                 }
@@ -111,11 +129,15 @@ impl Resolver {
         let core_struct_decl = struct_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(&self.code));
-            match self.namespace.declare_user_defined_type(&name, ok_identifier.start_line_number()) {
+            match self.namespace.declare_struct_type(&name, ok_identifier.start_line_number()) {
                 Ok(symbol_data) => ok_identifier.bind_user_defined_type_decl(symbol_data, 0),
                 Err(previous_decl_line_number) => {
                     self.log_identifier_already_declared_in_current_scope_error(
-                        &name, ok_identifier.range(), previous_decl_line_number, ok_identifier.start_line_number(), true
+                        &name, 
+                        ok_identifier.range(), 
+                        previous_decl_line_number, 
+                        ok_identifier.start_line_number(), 
+                        true
                     );
                 }
             }
@@ -126,11 +148,15 @@ impl Resolver {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(&self.code));
-            match self.namespace.declare_user_defined_type(&name, ok_identifier.start_line_number()) {
+            match self.namespace.declare_lambda_type(&name, ok_identifier.start_line_number()) {
                 Ok(symbol_data) => ok_identifier.bind_user_defined_type_decl(symbol_data, 0),
                 Err(previous_decl_line_number) => {
                     self.log_identifier_already_declared_in_current_scope_error(
-                        &name, ok_identifier.range(), previous_decl_line_number, ok_identifier.start_line_number(), true
+                        &name, 
+                        ok_identifier.range(), 
+                        previous_decl_line_number, 
+                        ok_identifier.start_line_number(), 
+                        true
                     );
                 }
             }

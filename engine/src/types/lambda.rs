@@ -23,13 +23,23 @@ impl AbstractType for Lambda {
                 // This structural equivalence is important because we can have lambda types which are not named for example:
                 // let x = (...) -> <Type>: block would have `x` to be of type `Lambda` with no name but symbol_data.
                 let self_func_data 
-                = match self.symbol_data.0.as_ref().borrow().as_ref().expect("symbol_data should be set") {
-                    UserDefinedTypeData::LAMBDA(lambda_data) => lambda_data.func_data.clone(),
+                = match &*self.symbol_data.0.as_ref().borrow() {
+                    UserDefinedTypeData::LAMBDA(lambda_data) => {
+                        match lambda_data {
+                            Some(lambda_data) => lambda_data.func_data.clone(),
+                            None => unreachable!("lambda data should be set")
+                        }
+                    },
                     _ => unreachable!("lambda type should have reference to a lambda variant symbol entry"),
                 };
                 let base_func_data 
-                = match lambda_data.symbol_data.0.as_ref().borrow().as_ref().expect("symbol_data should be set") {
-                    UserDefinedTypeData::LAMBDA(lambda_data) => lambda_data.func_data.clone(),
+                = match &*lambda_data.symbol_data.0.as_ref().borrow() {
+                    UserDefinedTypeData::LAMBDA(lambda_data) => {
+                        match lambda_data {
+                            Some(lambda_data) => lambda_data.func_data.clone(),
+                            None => unreachable!("lambda data should be set")
+                        }
+                    },
                     _ => unreachable!("lambda type should have reference to a lambda variant symbol entry"),
                 };
                 let self_params_len = self_func_data.params.len();
@@ -78,9 +88,13 @@ impl ToString for Lambda {
         match &self.name {
             Some(name) => format!("{}", name),
             None => {
-                let self_func_data 
-                = match self.symbol_data.0.as_ref().borrow().as_ref().expect("symbol_data should be set") {
-                    UserDefinedTypeData::LAMBDA(lambda_data) => lambda_data.func_data.clone(),
+                let self_func_data = match &*self.symbol_data.0.as_ref().borrow() {
+                    UserDefinedTypeData::LAMBDA(lambda_data) => {
+                        match lambda_data {
+                            Some(lambda_data) => lambda_data.func_data.clone(),
+                            None => unreachable!("lambda data should be set")
+                        }
+                    },
                     _ => unreachable!("lambda type should have reference to a lambda variant symbol entry"),
                 };
                 let mut params_str = String::from("");

@@ -11,6 +11,7 @@ use jarvil_macros::Node;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::core::IdentifierKind;
 use crate::scope::core::SymbolData;
+use crate::scope::function::CoreFunctionData;
 use crate::scope::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
@@ -1013,6 +1014,19 @@ impl UserDefinedTypeNode {
             name: identifier.clone(),
         });
         UserDefinedTypeNode(node)
+    }
+
+    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> Option<(Type, SymbolData<UserDefinedTypeData>, usize)> {
+        if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
+            let name = Rc::new(ok_identifier.token_value(code));
+            match scope.lookup_in_types_namespace(&name) {
+                Some(symbol_data) => {
+                    todo!()
+                },
+                None => return None
+            }
+        }
+        None
     }
 
     impl_core_ref!(CoreUserDefinedTypeNode);

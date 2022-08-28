@@ -1,9 +1,14 @@
-use crate::scope::function::FunctionData;
+use crate::ast::ast::OkIdentifierNode;
+use crate::code::Code;
+use crate::parser::resolver::Resolver;
+use crate::scope::function::CoreFunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
+use super::function::FunctionData;
+use crate::ast::ast::Node;
 
 #[derive(Debug, Clone)]
 pub enum IdentifierKind {
@@ -13,7 +18,7 @@ pub enum IdentifierKind {
 }
 
 #[derive(Debug)]
-pub struct SymbolData<T>(pub Rc<RefCell<Option<T>>>, usize); // meta data and line on which it was declared
+pub struct SymbolData<T>(pub Rc<RefCell<T>>, usize); // meta data and line on which it was declared
 impl<T> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone(), self.1)
@@ -27,8 +32,8 @@ pub struct CoreScope<T> {
 }
 
 impl<T> CoreScope<T> {
-    fn set(&mut self, name: &Rc<String>, line_number: usize) -> SymbolData<T> {
-        let symbol_data = SymbolData(Rc::new(RefCell::new(None)), line_number);
+    fn set(&mut self, name: &Rc<String>, meta_data: T, line_number: usize) -> SymbolData<T> {
+        let symbol_data = SymbolData(Rc::new(RefCell::new(meta_data)), line_number);
         self.symbol_table.insert(
             name.clone(),
             symbol_data.clone(),
@@ -42,7 +47,7 @@ impl<T> CoreScope<T> {
 }
 
 #[derive(Debug, Clone)]
-struct Scope<T>(Rc<RefCell<CoreScope<T>>>);
+pub struct Scope<T>(Rc<RefCell<CoreScope<T>>>);
 
 impl<T> Scope<T> {
     fn new() -> Self {
@@ -61,13 +66,13 @@ impl<T> Scope<T> {
     }
 
     fn insert<U: Fn(Scope<T>, Rc<String>) -> Option<SymbolData<T>>>(
-        &self, key: &Rc<String>, line_number: usize, lookup_fn: U
+        &self, key: &Rc<String>, meta_data: T, line_number: usize, lookup_fn: U
     ) -> Result<SymbolData<T>, usize> {
         let scope = Scope(self.0.clone());
         if let Some(symbol_data) = lookup_fn(scope, key.clone()) {
             return Err(symbol_data.1);
         }
-        let symbol_data = self.0.borrow_mut().set(key, line_number);
+        let symbol_data = self.0.borrow_mut().set(key, meta_data, line_number);
         Ok(symbol_data)
     }
 
@@ -141,7 +146,7 @@ impl Namespace {
                 None => None,
             }
         };
-        self.variables.insert(name, line_number, lookup_func)
+        self.variables.insert(name, VariableData(None), line_number, lookup_func)
     }
 
     pub fn declare_function(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<FunctionData>, usize> {
@@ -151,17 +156,27 @@ impl Namespace {
                 None => None,
             }
         };
-        self.functions.insert(name, line_number, lookup_func)
+        self.functions.insert(name, FunctionData(None), line_number, lookup_func)
     }
 
-    pub fn declare_user_defined_type(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<UserDefinedTypeData>, usize> {
+    pub fn declare_struct_type(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<UserDefinedTypeData>, usize> {
         let lookup_func = |scope: Scope<UserDefinedTypeData>, key: Rc<String>| {
             match scope.lookup(&key) {
                 Some((symbol_data, _)) => Some(symbol_data),
                 None => None
             }
         };
-        self.types.insert(name, line_number, lookup_func)
+        self.types.insert(name, UserDefinedTypeData::STRUCT(None), line_number, lookup_func)
+    }
+
+    pub fn declare_lambda_type(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<UserDefinedTypeData>, usize> {
+        let lookup_func = |scope: Scope<UserDefinedTypeData>, key: Rc<String>| {
+            match scope.lookup(&key) {
+                Some((symbol_data, _)) => Some(symbol_data),
+                None => None
+            }
+        };
+        self.types.insert(name, UserDefinedTypeData::LAMBDA(None), line_number, lookup_func)
     }
 }
 impl Clone for Namespace {
