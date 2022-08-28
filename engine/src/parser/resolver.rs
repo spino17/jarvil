@@ -1,8 +1,9 @@
 use text_size::TextRange;
 use crate::{
-        scope::{core::{Namespace, SymbolData}, variables::VariableData}, code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, 
-        CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, OkFunctionDeclarationNode, StructDeclarationNode, 
-        LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, CoreIdentifierNode, CoreNameTypeSpecsNode, OkIdentifierNode
+        scope::{core::{Namespace, SymbolData}, variables::VariableData, function::FunctionData, user_defined_types::UserDefinedTypeData}, 
+        code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, 
+        OkFunctionDeclarationNode, StructDeclarationNode, LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, 
+        CoreIdentifierNode, CoreNameTypeSpecsNode, OkIdentifierNode
     }}, 
     error::core::{JarvilError, JarvilErrorKind}
 };
@@ -41,13 +42,22 @@ impl Resolver {
         (std::mem::take(&mut self.namespace), std::mem::take(&mut self.errors))
     }
 
-    pub fn try_declare_and_bind(&mut self, identifier: &OkIdentifierNode) {
+    pub fn try_declare_and_bind<
+        T, 
+        U: Fn(&Namespace, &Rc<String>, usize) -> Result<SymbolData<T>, usize>, 
+        V: Fn(&OkIdentifierNode, SymbolData<T>)
+    >(
+        &mut self, 
+        identifier: &OkIdentifierNode,
+        declare_fn: U,
+        bind_fn: V,
+    ) {
         let name = Rc::new(identifier.token_value(&self.code));
-        let symbol_data = self.namespace.declare_variable(
-            &name, identifier.start_line_number()
+        let symbol_data = declare_fn(
+            &self.namespace, &name, identifier.start_line_number()
         );
         match symbol_data {
-            Ok(symbol_data) => identifier.bind_variable_decl(symbol_data, 0),
+            Ok(symbol_data) => bind_fn(identifier, symbol_data),
             Err(previous_decl_line_number) => {
                 self.log_identifier_already_declared_in_current_scope_error(
                     &name, 
@@ -64,22 +74,13 @@ impl Resolver {
         let core_variable_decl = variable_decl.core_ref();
         self.walk_r_assignment(&core_variable_decl.r_assign);
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            let name = Rc::new(ok_identifier.token_value(&self.code));
-            let symbol_data = self.namespace.declare_variable(
-                &name, ok_identifier.start_line_number()
-            );
-            match symbol_data {
-                Ok(symbol_data) => ok_identifier.bind_variable_decl(symbol_data, 0),
-                Err(previous_decl_line_number) => {
-                    self.log_identifier_already_declared_in_current_scope_error(
-                        &name, 
-                        ok_identifier.range(), 
-                        previous_decl_line_number, 
-                        ok_identifier.start_line_number(), 
-                        false
-                    );
-                }
-            }
+            let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
+                namespace.declare_variable(name, start_line_number)
+            };
+            let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<VariableData>| {
+                identifier.bind_variable_decl(symbol_data, 0)
+            };
+            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
         }
     }
 
@@ -90,19 +91,13 @@ impl Resolver {
         let func_body = &core_func_decl.block;
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                let name = Rc::new(ok_identifier.token_value(&self.code));
-                match self.namespace.declare_function(&name, ok_identifier.start_line_number()) {
-                    Ok(symbol_data) => ok_identifier.bind_function_decl(symbol_data, 0),
-                    Err(previous_decl_line_number) => {
-                        self.log_identifier_already_declared_in_current_scope_error(
-                            &name, 
-                            ok_identifier.range(), 
-                            previous_decl_line_number, 
-                            ok_identifier.start_line_number(),
-                            false
-                        );
-                    }
-                }
+                let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
+                    namespace.declare_function(name, start_line_number)
+                };
+                let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<FunctionData>| {
+                    identifier.bind_function_decl(symbol_data, 0)
+                };
+                self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
             }
         }
         self.namespace.open_scope();
@@ -128,38 +123,26 @@ impl Resolver {
     pub fn declare_struct(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
-            let name = Rc::new(ok_identifier.token_value(&self.code));
-            match self.namespace.declare_struct_type(&name, ok_identifier.start_line_number()) {
-                Ok(symbol_data) => ok_identifier.bind_user_defined_type_decl(symbol_data, 0),
-                Err(previous_decl_line_number) => {
-                    self.log_identifier_already_declared_in_current_scope_error(
-                        &name, 
-                        ok_identifier.range(), 
-                        previous_decl_line_number, 
-                        ok_identifier.start_line_number(), 
-                        true
-                    );
-                }
-            }
+            let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
+                namespace.declare_struct_type(name, start_line_number)
+            };
+            let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<UserDefinedTypeData>| {
+                identifier.bind_user_defined_type_decl(symbol_data, 0)
+            };
+            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
         }
     }
 
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
-            let name = Rc::new(ok_identifier.token_value(&self.code));
-            match self.namespace.declare_lambda_type(&name, ok_identifier.start_line_number()) {
-                Ok(symbol_data) => ok_identifier.bind_user_defined_type_decl(symbol_data, 0),
-                Err(previous_decl_line_number) => {
-                    self.log_identifier_already_declared_in_current_scope_error(
-                        &name, 
-                        ok_identifier.range(), 
-                        previous_decl_line_number, 
-                        ok_identifier.start_line_number(), 
-                        true
-                    );
-                }
-            }
+            let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
+                namespace.declare_lambda_type(name, start_line_number)
+            };
+            let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<UserDefinedTypeData>| {
+                identifier.bind_user_defined_type_decl(symbol_data, 0)
+            };
+            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
         }
     }
 
@@ -292,9 +275,13 @@ impl Visitor for Resolver {
                                 if let CoreIdentifierNode::OK(ok_identifier) = core_func_call.function_name.core_ref() {
                                     if !ok_identifier.is_resolved() {
                                         let func_name = Rc::new(ok_identifier.token_value(&self.code));
-                                        if let Some(symbol_data)
-                                        = self.namespace.lookup_in_functions_namespace(&func_name) {
-                                            ok_identifier.bind_function_decl(symbol_data.0, symbol_data.1);
+                                        match self.namespace.lookup_in_functions_namespace(&func_name) {
+                                            Some(symbol_data) => {
+                                                ok_identifier.bind_function_decl(symbol_data.0, symbol_data.1);
+                                            },
+                                            None => self.log_undefined_identifier_in_scope_error(
+                                                &func_name, ok_identifier.range(), ok_identifier.start_line_number()
+                                            )
                                         }
                                     }
                                 }

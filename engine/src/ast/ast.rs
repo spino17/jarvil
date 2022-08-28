@@ -11,16 +11,14 @@ use jarvil_macros::Node;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::core::IdentifierKind;
 use crate::scope::core::SymbolData;
-use crate::scope::function::CoreFunctionData;
 use crate::scope::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
-use crate::types::atomic::Atomic;
 use crate::{
     code::Code,
     lexer::token::Token,
     scope::core::Namespace,
-    types::{array::Array, core::Type},
+    types::core::Type,
 };
 use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
