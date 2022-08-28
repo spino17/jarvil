@@ -58,8 +58,8 @@ pub const LEXICAL_ERROR: &'static str           = "<lexical error>";
 pub const SINGLE_LINE_COMMENT: &'static str     = "<single line comment>";
 pub const BLOCK_COMMENT: &'static str           = "<block comment>";
 pub const BLANK: &'static str                   = "<blank>";
-pub const NON_TYPED: &'static str               = "non-typed";
-pub const UNKNOWN: &'static str                = "unknown";
+pub const NON_TYPED: &'static str               = "<non-typed>";
+pub const UNKNOWN: &'static str                 = "<unknown>";
 
 // KEYWORDS + ATOMIC_TYPES => RESERVED_WORDS
 pub const KEYWORDS: [&'static str; 21] = [

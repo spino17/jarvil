@@ -1018,13 +1018,21 @@ impl UserDefinedTypeNode {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(code));
             match scope.lookup_in_types_namespace(&name) {
-                Some(symbol_data) => {
-                    todo!()
+                Some((symbol_data, depth)) => {
+                    let temp_symbol_data = symbol_data.clone();
+                    match &*symbol_data.0.as_ref().borrow() {
+                        UserDefinedTypeData::STRUCT(_) => {
+                            return Some((Type::new_with_struct(name.to_string(), &temp_symbol_data), temp_symbol_data, depth))
+                        },
+                        UserDefinedTypeData::LAMBDA(_) => {
+                            return Some((Type::new_with_lambda(Some(name.to_string()), &temp_symbol_data), temp_symbol_data, depth))
+                        }
+                    }
                 },
                 None => return None
-            }
+            };
         }
-        None
+        return None
     }
 
     impl_core_ref!(CoreUserDefinedTypeNode);
