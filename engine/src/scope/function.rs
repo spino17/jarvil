@@ -2,21 +2,21 @@ use crate::types::core::Type;
 use std::{rc::Rc, vec};
 
 #[derive(Debug)]
-pub struct CoreFunctionData {
+pub struct FunctionData {
     pub params: Rc<Vec<(String, Type)>>,
     pub return_type: Option<Type>,
 }
-impl Default for CoreFunctionData {
+impl Default for FunctionData {
     fn default() -> Self {
-        CoreFunctionData{
+        FunctionData{
             params: Rc::new(vec![]),
             return_type: None,
         }
     }
 }
-impl Clone for CoreFunctionData {
+impl Clone for FunctionData {
     fn clone(&self) -> Self {
-        CoreFunctionData{
+        FunctionData{
             params: self.params.clone(),
             return_type: match &self.return_type {
                 Some(return_type) => Some(return_type.clone()),
@@ -25,6 +25,3 @@ impl Clone for CoreFunctionData {
         }
     }
 }
-
-#[derive(Debug, Clone)]
-pub struct FunctionData(pub Option<CoreFunctionData>);

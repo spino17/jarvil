@@ -25,20 +25,14 @@ impl AbstractType for Lambda {
                 let self_func_data 
                 = match &*self.symbol_data.0.as_ref().borrow() {
                     UserDefinedTypeData::LAMBDA(lambda_data) => {
-                        match lambda_data {
-                            Some(lambda_data) => lambda_data.func_data.clone(),
-                            None => unreachable!("lambda data should be set")
-                        }
+                        lambda_data.func_data.clone()
                     },
                     _ => unreachable!("lambda type should have reference to a lambda variant symbol entry"),
                 };
                 let base_func_data 
                 = match &*lambda_data.symbol_data.0.as_ref().borrow() {
                     UserDefinedTypeData::LAMBDA(lambda_data) => {
-                        match lambda_data {
-                            Some(lambda_data) => lambda_data.func_data.clone(),
-                            None => unreachable!("lambda data should be set")
-                        }
+                        lambda_data.func_data.clone()
                     },
                     _ => unreachable!("lambda type should have reference to a lambda variant symbol entry"),
                 };
@@ -90,10 +84,7 @@ impl ToString for Lambda {
             None => {
                 let self_func_data = match &*self.symbol_data.0.as_ref().borrow() {
                     UserDefinedTypeData::LAMBDA(lambda_data) => {
-                        match lambda_data {
-                            Some(lambda_data) => lambda_data.func_data.clone(),
-                            None => unreachable!("lambda data should be set")
-                        }
+                        lambda_data.func_data.clone()
                     },
                     _ => unreachable!("lambda type should have reference to a lambda variant symbol entry"),
                 };

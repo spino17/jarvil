@@ -151,7 +151,7 @@ impl Namespace {
                 None => None,
             }
         };
-        self.functions.insert(name, FunctionData(None), line_number, lookup_func)
+        self.functions.insert(name, FunctionData::default(), line_number, lookup_func)
     }
 
     pub fn declare_struct_type(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<UserDefinedTypeData>, usize> {
@@ -161,7 +161,7 @@ impl Namespace {
                 None => None
             }
         };
-        self.types.insert(name, UserDefinedTypeData::STRUCT(None), line_number, lookup_func)
+        self.types.insert(name, UserDefinedTypeData::default_with_struct(), line_number, lookup_func)
     }
 
     pub fn declare_lambda_type(&self, name: &Rc<String>, line_number: usize) -> Result<SymbolData<UserDefinedTypeData>, usize> {
@@ -171,7 +171,7 @@ impl Namespace {
                 None => None
             }
         };
-        self.types.insert(name, UserDefinedTypeData::LAMBDA(None), line_number, lookup_func)
+        self.types.insert(name, UserDefinedTypeData::default_with_lambda(), line_number, lookup_func)
     }
 }
 impl Clone for Namespace {
