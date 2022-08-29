@@ -14,6 +14,11 @@ pub enum IdentifierKind {
 
 #[derive(Debug)]
 pub struct SymbolData<T>(pub Rc<RefCell<T>>, usize); // meta data and line on which it was declared
+impl<T> SymbolData<T> {
+    pub fn new(core_data: T, decl_line_number: usize) -> Self {
+        SymbolData(Rc::new(RefCell::new(core_data)), decl_line_number)
+    }
+}
 impl<T> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone(), self.1)

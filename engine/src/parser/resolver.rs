@@ -1,14 +1,14 @@
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
 use crate::{
-        scope::{core::{Namespace, SymbolData, IdentifierKind}, variables::VariableData, function::FunctionData, user_defined_types::UserDefinedTypeData}, 
+        scope::{core::{Namespace, SymbolData, IdentifierKind}, variables::VariableData, function::FunctionData, user_defined_types::{UserDefinedTypeData, LambdaTypeData}}, 
         code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, 
         OkFunctionDeclarationNode, StructDeclarationNode, LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, 
         CoreIdentifierNode, CoreNameTypeSpecsNode, OkIdentifierNode, TypeResolveKind, TypeExpressionNode, CoreStatemenIndentWrapperNode, CoreStatementNode
     }}, 
     error::core::{JarvilError, JarvilErrorKind}, types::core::Type
 };
-use std::{rc::Rc, vec};
+use std::{rc::Rc, vec, cell::RefCell};
 
 pub enum ResolverMode {
     DECLARE,  // first pass
@@ -238,7 +238,11 @@ impl Resolver {
                             func_symbol_data.0.as_ref().borrow_mut().set_data(params_vec, return_type);
                         },
                         IdentifierKind::VARIABLE(variable_symbol_data) => {
-                            todo!()
+                            let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(params_vec, return_type));
+                            let lambda_type_obj = Type::new_with_lambda(
+                                None, &SymbolData::new(symbol_data, ok_identifier.start_line_number())
+                            );
+                            variable_symbol_data.0.as_ref().borrow_mut().set_data_type(&lambda_type_obj);
                         }
                         _ => unreachable!("function name `{}` should be resolved to `SymbolData<FunctionData>`", ok_identifier.token_value(&self.code))
                     }
