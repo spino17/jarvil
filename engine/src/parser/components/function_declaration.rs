@@ -19,9 +19,7 @@ pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
 }
 
 pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
-    // parser.ignore_newlines();
     let first_arg_node = parser.name_type_spec();
-    // parser.ignore_newlines();
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::COMMA => {

@@ -1,6 +1,5 @@
 use crate::ast::ast::{ErrornousNode, NameTypeSpecsNode};
-use crate::ast::ast::{LambdaDeclarationNode, TypeDeclarationNode, TypeExpressionNode};
-use crate::constants::common::ENDMARKER;
+use crate::ast::ast::{LambdaDeclarationNode, TypeDeclarationNode};
 use crate::lexer::token::CoreToken;
 use crate::{constants::common::IDENTIFIER, parser::parser::PackratParser};
 use std::rc::Rc;
@@ -30,7 +29,6 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
         }
         CoreToken::LPAREN => {
             // lambda type
-            // let (args_node, lparen_node, rparen_node) = parser.name_type_specs_within_parenthesis();
             let lparen_node = parser.expect("(");
             let mut args_node: Option<&NameTypeSpecsNode> = None;
             let name_type_specs_node: NameTypeSpecsNode;

@@ -245,42 +245,42 @@ impl Resolver {
 
     pub fn resolve_struct(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
+        let mut fields_map: FxHashMap<Rc<String>, Type> = FxHashMap::default();
+        let struct_body = &core_struct_decl.block;
+        for stmt in &struct_body.0.as_ref().borrow().stmts {
+            let stmt = match stmt.core_ref() {
+                CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
+                CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
+                    stmt.core_ref().stmt.clone()
+                },
+                _ => continue
+            };
+            match stmt.core_ref() {
+                CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
+                    let core_struct_stmt = struct_stmt.core_ref();
+                    let name = &core_struct_stmt.name_type_spec.core_ref().name;
+                    if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                        let field_name = Rc::new(ok_identifier.token_value(&self.code));
+                        let type_obj = self.type_obj_from_expression(
+                            &core_struct_stmt.name_type_spec.core_ref().data_type
+                        );
+                        match fields_map.get(&field_name) {
+                            Some(type_obj) => {
+                                self.log_struct_field_with_same_name_exist_error(
+                                    &field_name, ok_identifier.range(), ok_identifier.start_line_number(), type_obj
+                                );
+                            },
+                            None => {
+                                fields_map.insert(field_name.clone(), type_obj);
+                            }
+                        }
+                    }
+                },
+                _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
+            }
+        }
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             if let Some(symbol_data) = ok_identifier.symbol_data() {
-                let mut fields_map: FxHashMap<Rc<String>, Type> = FxHashMap::default();
-                let struct_body = &core_struct_decl.block;
-                for stmt in &struct_body.0.as_ref().borrow().stmts {
-                    let stmt = match stmt.core_ref() {
-                        CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
-                        CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
-                            stmt.core_ref().stmt.clone()
-                        },
-                        _ => continue
-                    };
-                    match stmt.core_ref() {
-                        CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
-                            let core_struct_stmt = struct_stmt.core_ref();
-                            let name = &core_struct_stmt.name_type_spec.core_ref().name;
-                            if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                                let field_name = Rc::new(ok_identifier.token_value(&self.code));
-                                let type_obj = self.type_obj_from_expression(
-                                    &core_struct_stmt.name_type_spec.core_ref().data_type
-                                );
-                                match fields_map.get(&field_name) {
-                                    Some(type_obj) => {
-                                        self.log_struct_field_with_same_name_exist_error(
-                                            &field_name, ok_identifier.range(), ok_identifier.start_line_number(), type_obj
-                                        );
-                                    },
-                                    None => {
-                                        fields_map.insert(field_name.clone(), type_obj);
-                                    }
-                                }
-                            }
-                        },
-                        _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
-                    }
-                }
                 match symbol_data.0 {
                     IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_data) => {
                         match &mut *user_defined_type_symbol_data.0.as_ref().borrow_mut() {
@@ -298,30 +298,30 @@ impl Resolver {
     
     pub fn resolve_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
+        let mut params_vec: Vec<(String, Type)> = vec![];
+        let params = &core_lambda_type_decl.params;
+        let return_type = &core_lambda_type_decl.return_type;
+        let return_type: Option<Type> = match return_type {
+            Some(return_type_expr) => {
+                let type_obj = self.type_obj_from_expression(return_type_expr);
+                Some(type_obj)
+            },
+            None => None
+        };
+        if let Some(params) = params {
+            let params_iter = params.iter();
+            for param in params_iter {
+                let core_param = param.core_ref();
+                let name = &core_param.name;
+                if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                    let variable_name = ok_identifier.token_value(&self.code);
+                    let type_obj = self.type_obj_from_expression(&core_param.data_type);
+                    params_vec.push((variable_name, type_obj));
+                }
+            }
+        }
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             if let Some(symbol_data) = ok_identifier.symbol_data() {
-                let mut params_vec: Vec<(String, Type)> = vec![];
-                let params = &core_lambda_type_decl.params;
-                let return_type = &core_lambda_type_decl.return_type;
-                let return_type: Option<Type> = match return_type {
-                    Some(return_type_expr) => {
-                        let type_obj = self.type_obj_from_expression(return_type_expr);
-                        Some(type_obj)
-                    },
-                    None => None
-                };
-                if let Some(params) = params {
-                    let params_iter = params.iter();
-                    for param in params_iter {
-                        let core_param = param.core_ref();
-                        let name = &core_param.name;
-                        if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                            let variable_name = ok_identifier.token_value(&self.code);
-                            let type_obj = self.type_obj_from_expression(&core_param.data_type);
-                            params_vec.push((variable_name, type_obj));
-                        }
-                    }
-                }
                 match symbol_data.0 {
                     IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_data) => {
                         match &mut *user_defined_type_symbol_data.0.as_ref().borrow_mut() {
