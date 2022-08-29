@@ -6,7 +6,7 @@ use crate::{
         OkFunctionDeclarationNode, StructDeclarationNode, LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, 
         CoreIdentifierNode, CoreNameTypeSpecsNode, OkIdentifierNode, TypeResolveKind, TypeExpressionNode, CoreStatemenIndentWrapperNode, CoreStatementNode
     }}, 
-    error::core::{JarvilError, JarvilErrorKind}, types::{core::Type, lambda}
+    error::core::{JarvilError, JarvilErrorKind}, types::core::Type
 };
 use std::{rc::Rc, vec};
 
@@ -189,14 +189,6 @@ impl Resolver {
         }
     }
 
-    pub fn type_obj_from_expression_in_parent_scope(&mut self, type_expr: &TypeExpressionNode) -> Type {
-        let temp_namespace = self.namespace.clone();
-        self.namespace.close_scope();
-        let type_obj = self.type_obj_from_expression(type_expr);
-        self.namespace = temp_namespace;
-        type_obj
-    }
-
     pub fn resolve_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
         let core_func_decl = func_decl.core_ref();
         let func_name = &core_func_decl.name;
@@ -274,11 +266,15 @@ impl Resolver {
                                 let type_obj = self.type_obj_from_expression(
                                     &core_struct_stmt.name_type_spec.core_ref().data_type
                                 );
-                                // TODO - check whether field_name already exist in field_map
-                                if let Some(type_obj) = fields_map.insert(field_name.clone(), type_obj) {
-                                    self.log_struct_field_with_same_name_exist_error(
-                                        &field_name, ok_identifier.range(), ok_identifier.start_line_number(), type_obj
-                                    );
+                                match fields_map.get(&field_name) {
+                                    Some(type_obj) => {
+                                        self.log_struct_field_with_same_name_exist_error(
+                                            &field_name, ok_identifier.range(), ok_identifier.start_line_number(), type_obj
+                                        );
+                                    },
+                                    None => {
+                                        fields_map.insert(field_name.clone(), type_obj);
+                                    }
                                 }
                             }
                         },
@@ -399,7 +395,7 @@ impl Resolver {
         name: &Rc<String>, 
         error_range: TextRange, 
         line_number: usize,
-        type_obj: Type
+        type_obj: &Type
     ) { // TODO - make this a multi-line error consisting of both the fields and the struct declaration snippet
         let start_err_index: usize = error_range.start().into();
         let end_err_index: usize = error_range.end().into();
