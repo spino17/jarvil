@@ -52,6 +52,7 @@ impl Resolver {
         identifier: &OkIdentifierNode,
         declare_fn: U,
         bind_fn: V,
+        is_type: bool,
     ) {
         let name = Rc::new(identifier.token_value(&self.code));
         let symbol_data = declare_fn(
@@ -65,7 +66,7 @@ impl Resolver {
                     identifier.range(), 
                     previous_decl_line_number, 
                     identifier.start_line_number(), 
-                    false
+                    is_type
                 );
             }
         }
@@ -102,7 +103,7 @@ impl Resolver {
             let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
                 identifier.bind_variable_decl(symbol_data, 0)
             };
-            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
+            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn, false);
         }
     }
 
@@ -119,7 +120,7 @@ impl Resolver {
                 let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<FunctionData>| {
                     identifier.bind_function_decl(symbol_data, 0)
                 };
-                self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
+                self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn, false);
             }
         }
         self.namespace.open_scope();
@@ -158,7 +159,7 @@ impl Resolver {
             let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<UserDefinedTypeData>| {
                 identifier.bind_user_defined_type_decl(symbol_data, 0)
             };
-            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
+            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn, true);
         }
     }
 
@@ -171,7 +172,7 @@ impl Resolver {
             let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<UserDefinedTypeData>| {
                 identifier.bind_user_defined_type_decl(symbol_data, 0)
             };
-            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
+            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn, true);
         }
     }
 
@@ -236,7 +237,10 @@ impl Resolver {
                         IdentifierKind::FUNCTION(func_symbol_data) => {
                             func_symbol_data.0.as_ref().borrow_mut().set_data(params_vec, return_type);
                         },
-                        _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>`")
+                        IdentifierKind::VARIABLE(variable_symbol_data) => {
+                            todo!()
+                        }
+                        _ => unreachable!("function name `{}` should be resolved to `SymbolData<FunctionData>`", ok_identifier.token_value(&self.code))
                     }
                 }
             }
