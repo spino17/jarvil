@@ -20,7 +20,7 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::FxHashMap;
-use std::{cell::RefCell, rc::Rc, vec};
+use std::{rc::Rc, vec};
 use text_size::TextRange;
 
 pub enum ResolverMode {
