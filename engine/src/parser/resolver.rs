@@ -99,7 +99,7 @@ impl Resolver {
                 namespace.declare_variable(name, start_line_number)
             };
             let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<VariableData>| {
-                identifier.bind_variable_decl(symbol_data, 0)
+                identifier.bind_variable_decl(&symbol_data, 0)
             };
             self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
         }
@@ -116,7 +116,7 @@ impl Resolver {
                     namespace.declare_function(name, start_line_number)
                 };
                 let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<FunctionData>| {
-                    identifier.bind_function_decl(symbol_data, 0)
+                    identifier.bind_function_decl(&symbol_data, 0)
                 };
                 self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
             }
@@ -130,7 +130,7 @@ impl Resolver {
                 if let CoreIdentifierNode::OK(ok_identifier) = param_name.core_ref() {
                     let name = Rc::new(ok_identifier.token_value(&self.code));
                     match self.namespace.declare_variable(&name, ok_identifier.start_line_number()) {
-                        Ok(symbol_data) => ok_identifier.bind_variable_decl(symbol_data, 0),
+                        Ok(symbol_data) => ok_identifier.bind_variable_decl(&symbol_data, 0),
                         Err(_) => unreachable!("new scope cannot have params already set")
                     }
                 }
@@ -148,7 +148,7 @@ impl Resolver {
                 namespace.declare_struct_type(name, start_line_number)
             };
             let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<UserDefinedTypeData>| {
-                identifier.bind_user_defined_type_decl(symbol_data, 0)
+                identifier.bind_user_defined_type_decl(&symbol_data, 0)
             };
             self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
         }
@@ -161,7 +161,7 @@ impl Resolver {
                 namespace.declare_lambda_type(name, start_line_number)
             };
             let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<UserDefinedTypeData>| {
-                identifier.bind_user_defined_type_decl(symbol_data, 0)
+                identifier.bind_user_defined_type_decl(&symbol_data, 0)
             };
             self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
         }
@@ -248,7 +248,7 @@ impl Visitor for Resolver {
                                     };
                                     let bind_fn 
                                     = |identifier: &OkIdentifierNode, symbol_data: SymbolData<VariableData>, depth: usize| {
-                                        identifier.bind_variable_decl(symbol_data, depth)
+                                        identifier.bind_variable_decl(&symbol_data, depth)
                                     };
                                     self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                 }
@@ -259,7 +259,7 @@ impl Visitor for Resolver {
                                     let lambda_name = Rc::new(ok_identifier.token_value(&self.code));
                                     if let Some(symbol_data)
                                     = self.namespace.lookup_in_variables_namespace(&lambda_name) {
-                                        ok_identifier.bind_variable_decl(symbol_data.0, symbol_data.1);
+                                        ok_identifier.bind_variable_decl(&symbol_data.0, symbol_data.1);
                                     }
                                 }
                             },
@@ -272,10 +272,6 @@ impl Visitor for Resolver {
             },
             ResolverMode::RESOLVE => {
                 match node {
-                    ASTNode::VARIABLE_DECLARATION(variable_decl) => {
-                        todo!();
-                        return None
-                    },
                     ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
                         todo!();
                         return None
@@ -299,7 +295,7 @@ impl Visitor for Resolver {
                                         };
                                         let bind_fn 
                                         = |identifier: &OkIdentifierNode, symbol_data: SymbolData<FunctionData>, depth: usize| {
-                                            identifier.bind_function_decl(symbol_data, depth)
+                                            identifier.bind_function_decl(&symbol_data, depth)
                                         };
                                         self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                     }
@@ -313,7 +309,7 @@ impl Visitor for Resolver {
                                     };
                                     let bind_fn 
                                     = |identifier: &OkIdentifierNode, symbol_data: SymbolData<UserDefinedTypeData>, depth: usize| {
-                                        identifier.bind_user_defined_type_decl(symbol_data, depth)
+                                        identifier.bind_user_defined_type_decl(&symbol_data, depth)
                                     };
                                     self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                 }

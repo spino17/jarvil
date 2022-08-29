@@ -899,6 +899,12 @@ pub enum CoreTypeExpressionNode {
     MISSING_TOKENS(MissingTokenNode),
 }
 
+pub enum TypeResolveKind {
+    RESOLVED(Type),
+    UNRESOLVED(OkIdentifierNode),
+    INVALID,
+}
+
 #[derive(Debug, Clone)]
 pub struct TypeExpressionNode(Rc<CoreTypeExpressionNode>);
 impl TypeExpressionNode {
@@ -929,6 +935,15 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
+    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+        match self.core_ref() {
+            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj(scope, code),
+            CoreTypeExpressionNode::ARRAY(array) => array.type_obj(scope, code),
+            CoreTypeExpressionNode::USER_DEFINED(user_defined) => user_defined.type_obj(scope, code),
+            CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID
+        }
+    }
+
     impl_core_ref!(CoreTypeExpressionNode);
 }
 default_errornous_node_impl!(TypeExpressionNode, CoreTypeExpressionNode);
@@ -946,6 +961,15 @@ impl AtomicTypeNode {
             kind: token.clone(),
         });
         AtomicTypeNode(node)
+    }
+
+    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+        match self.core_ref().kind.core_ref() {
+            CoreTokenNode::OK(ok_token) => {
+                return TypeResolveKind::RESOLVED(Type::new_with_atomic(&ok_token.token_value(code)))
+            },
+            _ => return TypeResolveKind::INVALID
+        }
     }
 
     impl_core_ref!(CoreAtomicTypeNode);
@@ -988,6 +1012,24 @@ impl ArrayTypeNode {
         ArrayTypeNode(node)
     }
 
+    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+        let element_type = match self.core_ref().sub_type.type_obj(scope, code) {
+            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+            TypeResolveKind::UNRESOLVED(identifier_node) => return TypeResolveKind::UNRESOLVED(identifier_node),
+            TypeResolveKind::RESOLVED(type_obj) => type_obj,
+        };
+        match self.core_ref().size.core_ref() {
+            CoreTokenNode::OK(ok_token) => {
+                match ok_token.token_value(code).parse::<usize>() {
+                    Ok(size) => return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type, size)),
+                    _ => TypeResolveKind::INVALID
+                }
+                
+            },
+            _ => return TypeResolveKind::INVALID
+        }
+    }
+
     impl_core_ref!(CoreArrayTypeNode);
 }
 impl Node for ArrayTypeNode {
@@ -1014,7 +1056,7 @@ impl UserDefinedTypeNode {
         UserDefinedTypeNode(node)
     }
 
-    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> Option<(Type, SymbolData<UserDefinedTypeData>, usize)> {
+    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(code));
             match scope.lookup_in_types_namespace(&name) {
@@ -1022,17 +1064,20 @@ impl UserDefinedTypeNode {
                     let temp_symbol_data = symbol_data.clone();
                     match &*symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::STRUCT(_) => {
-                            return Some((Type::new_with_struct(name.to_string(), &temp_symbol_data), temp_symbol_data, depth))
+                            ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
+                            return TypeResolveKind::RESOLVED(Type::new_with_struct(name.to_string(), &temp_symbol_data)
+                            )
                         },
                         UserDefinedTypeData::LAMBDA(_) => {
-                            return Some((Type::new_with_lambda(Some(name.to_string()), &temp_symbol_data), temp_symbol_data, depth))
+                            ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
+                            return TypeResolveKind::RESOLVED(Type::new_with_lambda(Some(name.to_string()), &temp_symbol_data))
                         }
                     }
                 },
-                None => return None
+                None => return TypeResolveKind::UNRESOLVED(ok_identifier.clone())
             };
         }
-        return None
+        return TypeResolveKind::INVALID
     }
 
     impl_core_ref!(CoreUserDefinedTypeNode);
@@ -1098,16 +1143,16 @@ impl OkIdentifierNode {
         self.0.as_ref().borrow().token.token_value(code)
     }
 
-    pub fn bind_variable_decl(&self, symbol_data: SymbolData<VariableData>, depth: usize) {
-        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::VARIABLE(symbol_data), depth));
+    pub fn bind_variable_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
+        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::VARIABLE(symbol_data.clone()), depth));
     }
 
-    pub fn bind_user_defined_type_decl(&self, symbol_data: SymbolData<UserDefinedTypeData>, depth: usize) {
-        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::USER_DEFINED_TYPE(symbol_data), depth));
+    pub fn bind_user_defined_type_decl(&self, symbol_data: &SymbolData<UserDefinedTypeData>, depth: usize) {
+        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::USER_DEFINED_TYPE(symbol_data.clone()), depth));
     }
 
-    pub fn bind_function_decl(&self, symbol_data: SymbolData<FunctionData>, depth: usize) {
-        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::FUNCTION(symbol_data), depth));
+    pub fn bind_function_decl(&self, symbol_data: &SymbolData<FunctionData>, depth: usize) {
+        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::FUNCTION(symbol_data.clone()), depth));
     }
 
     pub fn is_resolved(&self) -> bool {
