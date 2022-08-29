@@ -45,7 +45,7 @@ impl Resolver {
     pub fn try_declare_and_bind<
         T, 
         U: Fn(&Namespace, &Rc<String>, usize) -> Result<SymbolData<T>, usize>, 
-        V: Fn(&OkIdentifierNode, SymbolData<T>)
+        V: Fn(&OkIdentifierNode, &SymbolData<T>)
     >(
         &mut self, 
         identifier: &OkIdentifierNode,
@@ -57,7 +57,7 @@ impl Resolver {
             &self.namespace, &name, identifier.start_line_number()
         );
         match symbol_data {
-            Ok(symbol_data) => bind_fn(identifier, symbol_data),
+            Ok(symbol_data) => bind_fn(identifier, &symbol_data),
             Err(previous_decl_line_number) => {
                 self.log_identifier_already_declared_in_current_scope_error(
                     &name, 
@@ -73,7 +73,7 @@ impl Resolver {
     pub fn try_resolving<
         T, 
         U: Fn(&Namespace, &Rc<String>) -> Option<(SymbolData<T>, usize)>,
-        V: Fn(&OkIdentifierNode, SymbolData<T>, usize)
+        V: Fn(&OkIdentifierNode, &SymbolData<T>, usize)
     >(
         &mut self, 
         identifer: &OkIdentifierNode, 
@@ -83,7 +83,7 @@ impl Resolver {
         let name = Rc::new(identifer.token_value(&self.code));
         match lookup_fn(&self.namespace, &name) {
             Some(symbol_data) => {
-                bind_fn(identifer, symbol_data.0, symbol_data.1);
+                bind_fn(identifer, &symbol_data.0, symbol_data.1);
             },
             None => self.log_undefined_identifier_in_scope_error(
                 &name, identifer.range(), identifer.start_line_number()
@@ -98,8 +98,8 @@ impl Resolver {
             let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
                 namespace.declare_variable(name, start_line_number)
             };
-            let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<VariableData>| {
-                identifier.bind_variable_decl(&symbol_data, 0)
+            let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
+                identifier.bind_variable_decl(symbol_data, 0)
             };
             self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
         }
@@ -115,8 +115,8 @@ impl Resolver {
                 let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
                     namespace.declare_function(name, start_line_number)
                 };
-                let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<FunctionData>| {
-                    identifier.bind_function_decl(&symbol_data, 0)
+                let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<FunctionData>| {
+                    identifier.bind_function_decl(symbol_data, 0)
                 };
                 self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
             }
@@ -147,8 +147,8 @@ impl Resolver {
             let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
                 namespace.declare_struct_type(name, start_line_number)
             };
-            let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<UserDefinedTypeData>| {
-                identifier.bind_user_defined_type_decl(&symbol_data, 0)
+            let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<UserDefinedTypeData>| {
+                identifier.bind_user_defined_type_decl(symbol_data, 0)
             };
             self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
         }
@@ -160,8 +160,8 @@ impl Resolver {
             let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
                 namespace.declare_lambda_type(name, start_line_number)
             };
-            let bind_fn = |identifier: &OkIdentifierNode, symbol_data: SymbolData<UserDefinedTypeData>| {
-                identifier.bind_user_defined_type_decl(&symbol_data, 0)
+            let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<UserDefinedTypeData>| {
+                identifier.bind_user_defined_type_decl(symbol_data, 0)
             };
             self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn);
         }
@@ -247,8 +247,8 @@ impl Visitor for Resolver {
                                         namespace.lookup_in_variables_namespace(key)
                                     };
                                     let bind_fn 
-                                    = |identifier: &OkIdentifierNode, symbol_data: SymbolData<VariableData>, depth: usize| {
-                                        identifier.bind_variable_decl(&symbol_data, depth)
+                                    = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>, depth: usize| {
+                                        identifier.bind_variable_decl(symbol_data, depth)
                                     };
                                     self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                 }
@@ -294,8 +294,8 @@ impl Visitor for Resolver {
                                             namespace.lookup_in_functions_namespace(key)
                                         };
                                         let bind_fn 
-                                        = |identifier: &OkIdentifierNode, symbol_data: SymbolData<FunctionData>, depth: usize| {
-                                            identifier.bind_function_decl(&symbol_data, depth)
+                                        = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<FunctionData>, depth: usize| {
+                                            identifier.bind_function_decl(symbol_data, depth)
                                         };
                                         self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                     }
@@ -308,8 +308,8 @@ impl Visitor for Resolver {
                                         namespace.lookup_in_types_namespace(key)
                                     };
                                     let bind_fn 
-                                    = |identifier: &OkIdentifierNode, symbol_data: SymbolData<UserDefinedTypeData>, depth: usize| {
-                                        identifier.bind_user_defined_type_decl(&symbol_data, depth)
+                                    = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<UserDefinedTypeData>, depth: usize| {
+                                        identifier.bind_user_defined_type_decl(symbol_data, depth)
                                     };
                                     self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                 }
