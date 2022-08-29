@@ -583,7 +583,7 @@ pub struct CoreOkLambdaTypeDeclarationNode {
     pub right_arrow: Option<TokenNode>,
     pub newline: TokenNode,
     pub name: IdentifierNode,
-    pub args: Option<NameTypeSpecsNode>,
+    pub params: Option<NameTypeSpecsNode>,
     pub return_type: Option<TypeExpressionNode>,
 }
 
@@ -592,7 +592,7 @@ pub struct OkLambdaTypeDeclarationNode(Rc<CoreOkLambdaTypeDeclarationNode>);
 impl OkLambdaTypeDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
-        args: Option<&NameTypeSpecsNode>,
+        params: Option<&NameTypeSpecsNode>,
         return_type: Option<&TypeExpressionNode>,
         type_keyword: &TokenNode,
         colon: &TokenNode,
@@ -609,7 +609,7 @@ impl OkLambdaTypeDeclarationNode {
             type_keyword: type_keyword.clone(),
             colon: colon.clone(),
             name: name.clone(),
-            args: extract_from_option!(args),
+            params: extract_from_option!(params),
             return_type: extract_from_option!(return_type),
         });
         OkLambdaTypeDeclarationNode(node)

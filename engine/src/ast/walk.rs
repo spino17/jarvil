@@ -199,7 +199,7 @@ pub trait Visitor {
             ASTNode::OK_LAMBDA_TYPE_DECLARATION(ok_lambda_declaration_node) => {
                 let core_ok_lambda_decl = ok_lambda_declaration_node.core_ref();
                 self.walk_identifier(&core_ok_lambda_decl.name);
-                if let Some(args) = &core_ok_lambda_decl.args {
+                if let Some(args) = &core_ok_lambda_decl.params {
                     self.walk_name_type_specs(args);
                 }
                 if let Some(return_type) = &core_ok_lambda_decl.return_type {

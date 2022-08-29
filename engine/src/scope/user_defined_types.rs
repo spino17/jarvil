@@ -39,3 +39,8 @@ impl StructData {
 pub struct LambdaTypeData {
     pub func_data: FunctionData,
 }
+impl LambdaTypeData {
+    pub fn set_params_and_return_type(&mut self, params: Vec<(String, Type)>, return_type: Option<Type>) {
+        self.func_data.set_data(params, return_type);
+    }
+}

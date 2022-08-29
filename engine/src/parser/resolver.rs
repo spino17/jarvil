@@ -301,7 +301,46 @@ impl Resolver {
     }
     
     pub fn resolve_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
-        todo!()
+        let core_lambda_type_decl = lambda_type_decl.core_ref();
+        if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
+            if let Some(symbol_data) = ok_identifier.symbol_data() {
+                let mut params_vec: Vec<(String, Type)> = vec![];
+                let params = &core_lambda_type_decl.params;
+                let return_type = &core_lambda_type_decl.return_type;
+                let return_type: Option<Type> = match return_type {
+                    Some(return_type_expr) => {
+                        let type_obj = self.type_obj_from_expression(return_type_expr);
+                        Some(type_obj)
+                    },
+                    None => None
+                };
+                if let Some(params) = params {
+                    let params_iter = params.iter();
+                    for param in params_iter {
+                        let core_param = param.core_ref();
+                        let name = &core_param.name;
+                        if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                            let variable_name = ok_identifier.token_value(&self.code);
+                            let type_obj = self.type_obj_from_expression(&core_param.data_type);
+                            params_vec.push((variable_name, type_obj));
+                        }
+                    }
+                }
+                match symbol_data.0 {
+                    IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_data) => {
+                        match &mut *user_defined_type_symbol_data.0.as_ref().borrow_mut() {
+                            UserDefinedTypeData::LAMBDA(lambda_data) => {
+                                lambda_data.set_params_and_return_type(params_vec, return_type);
+                            },
+                            _ => unreachable!(
+                                "lambda type name should be binded with `LambdaTypeData` variant of `SymbolData<UserDefinedTypeData>`"
+                            )
+                        }
+                    },
+                    _ => unreachable!("lambda type name should be resolved to `SymbolData<UserDefinedTypeData>`")
+                }
+            }
+        }
     }
 
     pub fn log_undefined_identifier_in_scope_error(&mut self, name: &Rc<String>, error_range: TextRange, line_number: usize) {
@@ -394,7 +433,7 @@ impl Resolver {
             line_number,
             start_err_index,
         );
-        let err_str = format!("param with name `{}` already exist", param_name);
+        let err_str = format!("param with name `{}` already exist on line {}", param_name, previous_decl_line_number);
         let err = JarvilError::form_single_line_error(
             start_err_index,
             end_err_index,
