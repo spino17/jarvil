@@ -1,13 +1,13 @@
 use text_size::TextRange;
 use crate::{
-        scope::{core::{Namespace, SymbolData}, variables::VariableData, function::FunctionData, user_defined_types::UserDefinedTypeData}, 
+        scope::{core::{Namespace, SymbolData, IdentifierKind}, variables::VariableData, function::FunctionData, user_defined_types::UserDefinedTypeData}, 
         code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, 
         OkFunctionDeclarationNode, StructDeclarationNode, LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, 
-        CoreIdentifierNode, CoreNameTypeSpecsNode, OkIdentifierNode
+        CoreIdentifierNode, CoreNameTypeSpecsNode, OkIdentifierNode, TypeResolveKind, TypeExpressionNode
     }}, 
-    error::core::{JarvilError, JarvilErrorKind}
+    error::core::{JarvilError, JarvilErrorKind}, types::core::Type
 };
-use std::rc::Rc;
+use std::{rc::Rc, vec};
 
 pub enum ResolverMode {
     DECLARE,  // first pass
@@ -76,17 +76,17 @@ impl Resolver {
         V: Fn(&OkIdentifierNode, &SymbolData<T>, usize)
     >(
         &mut self, 
-        identifer: &OkIdentifierNode, 
+        identifier: &OkIdentifierNode, 
         lookup_fn: U, 
         bind_fn: V
     ) {
-        let name = Rc::new(identifer.token_value(&self.code));
+        let name = Rc::new(identifier.token_value(&self.code));
         match lookup_fn(&self.namespace, &name) {
             Some(symbol_data) => {
-                bind_fn(identifer, &symbol_data.0, symbol_data.1);
+                bind_fn(identifier, &symbol_data.0, symbol_data.1);
             },
             None => self.log_undefined_identifier_in_scope_error(
-                &name, identifer.range(), identifer.start_line_number()
+                &name, identifier.range(), identifier.start_line_number()
             )
         }
     }
@@ -167,6 +167,88 @@ impl Resolver {
         }
     }
 
+    pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
+        match type_expr.type_obj(&self.namespace, &self.code) {
+            TypeResolveKind::RESOLVED(type_obj) => type_obj,
+            TypeResolveKind::UNRESOLVED(identifier) => {
+                let name = Rc::new(identifier.token_value(&self.code));
+                self.log_undefined_identifier_in_scope_error(
+                    &name, identifier.range(), identifier.start_line_number()
+                );
+                return Type::new_with_unknown()
+            },
+            TypeResolveKind::INVALID => Type::new_with_unknown()
+        }
+    }
+
+    pub fn type_obj_from_expression_in_parent_scope(&mut self, type_expr: &TypeExpressionNode) -> Type {
+        let temp_namespace = self.namespace.clone();
+        self.namespace.close_scope();
+        let type_obj = self.type_obj_from_expression(type_expr);
+        self.namespace = temp_namespace;
+        type_obj
+    }
+
+    pub fn resolve_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
+        let core_func_decl = func_decl.core_ref();
+        let func_name = &core_func_decl.name;
+        let params = &core_func_decl.params;
+        let return_type = &core_func_decl.return_type;
+        let func_body = &core_func_decl.block;
+        self.namespace = match func_body.scope() {
+            Some(namespace) => namespace,
+            None => unreachable!("block should have scope reference after first phase")
+        };
+        let mut params_vec: Vec<(String, Type)> = vec![];
+        let return_type: Option<Type> = match return_type {
+            Some(return_type_expr) => {
+                let type_obj = self.type_obj_from_expression_in_parent_scope(return_type_expr);
+                Some(type_obj)
+            },
+            None => None
+        };
+        if let Some(params) = params {
+            let params_iter = params.iter();
+            for param in params_iter {
+                let core_param = param.core_ref();
+                let name = &core_param.name;
+                if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                    let variable_name = ok_identifier.token_value(&self.code);
+                    let type_obj = self.type_obj_from_expression_in_parent_scope(&core_param.data_type);
+                    match ok_identifier.symbol_data() {
+                        Some(symbol_data) => {
+                            match symbol_data.0 {
+                                IdentifierKind::VARIABLE(variable_symbol_data) => {
+                                    variable_symbol_data.0.as_ref().borrow_mut().set_data_type(&type_obj);
+                                },
+                                _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>`")
+                            }
+                        },
+                        None => unreachable!("param name should be resolved in the first phase")
+                    }
+                    params_vec.push((variable_name, type_obj));
+                }
+            }
+        }
+        self.walk_block(func_body);
+        self.namespace.close_scope();
+        if let Some(identifier) = func_name {
+            if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
+                match ok_identifier.symbol_data() {
+                    Some(symbol_data) => {
+                        match symbol_data.0 {
+                            IdentifierKind::FUNCTION(func_symbol_data) => {
+                                func_symbol_data.0.as_ref().borrow_mut().set_data(params_vec, return_type);
+                            },
+                            _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>`")
+                        }
+                    },
+                    None => unreachable!("function name should be resolved in the first phase")
+                }
+            }
+        }
+    }
+
     pub fn log_undefined_identifier_in_scope_error(&mut self, name: &Rc<String>, error_range: TextRange, line_number: usize) {
         let start_err_index: usize = error_range.start().into();
         let end_err_index: usize = error_range.end().into();
@@ -174,7 +256,7 @@ impl Resolver {
             line_number,
             start_err_index,
         );
-        let err_str = format!("identifier `{}` not declared in the scope", name);
+        let err_str = format!("identifier `{}` is not declared in the scope", name);
         let err = JarvilError::form_single_line_error(
             start_err_index,
             end_err_index,
@@ -253,7 +335,7 @@ impl Visitor for Resolver {
                                     self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                 }
                             },
-                            CoreAtomStartNode::FUNCTION_CALL(func_call) => {
+                            CoreAtomStartNode::CALL(func_call) => {
                                 let core_func_call = func_call.core_ref();
                                 if let CoreIdentifierNode::OK(ok_identifier) = core_func_call.function_name.core_ref() {
                                     let lambda_name = Rc::new(ok_identifier.token_value(&self.code));
@@ -273,7 +355,7 @@ impl Visitor for Resolver {
             ResolverMode::RESOLVE => {
                 match node {
                     ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
-                        todo!();
+                        self.resolve_function(func_decl);
                         return None
                     },
                     ASTNode::STRUCT_DECLARATION(struct_decl) => {
@@ -286,7 +368,7 @@ impl Visitor for Resolver {
                     },
                     ASTNode::ATOM_START(atom_start) => {
                         match atom_start.core_ref() {
-                            CoreAtomStartNode::FUNCTION_CALL(func_call) => {
+                            CoreAtomStartNode::CALL(func_call) => {
                                 let core_func_call = func_call.core_ref();
                                 if let CoreIdentifierNode::OK(ok_identifier) = core_func_call.function_name.core_ref() {
                                     if !ok_identifier.is_resolved() {

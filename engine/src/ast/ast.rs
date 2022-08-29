@@ -114,6 +114,10 @@ impl BlockNode {
     pub fn set_scope(&self, scope: &Namespace) {
         self.0.as_ref().borrow_mut().scope = Some(scope.clone());
     }
+
+    pub fn scope(&self) -> Option<Namespace> {
+        self.0.as_ref().borrow().scope.clone()
+    }
 }
 impl Node for BlockNode {
     fn range(&self) -> TextRange {
@@ -1155,6 +1159,13 @@ impl OkIdentifierNode {
         self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::FUNCTION(symbol_data.clone()), depth));
     }
 
+    pub fn symbol_data(&self) -> Option<(IdentifierKind, usize)> {
+        match &self.0.as_ref().borrow().decl {
+            Some(symbol_data) => Some((symbol_data.0.clone(), symbol_data.1)),
+            None => None
+        }
+    }
+
     pub fn is_resolved(&self) -> bool {
         self.0.as_ref().borrow().decl.is_some()
     }
@@ -1851,7 +1862,7 @@ impl AtomNode {
 #[derive(Debug, Clone, Node)]
 pub enum CoreAtomStartNode {
     IDENTIFIER(IdentifierNode),             // id
-    FUNCTION_CALL(CallExpressionNode),      // id(...)
+    CALL(CallExpressionNode),      // id(...)
     CLASS_METHOD_CALL(ClassMethodCallNode), // id::id(...)
 }
 
@@ -1864,7 +1875,7 @@ impl AtomStartNode {
     }
 
     pub fn new_with_function_call(call_expr: &CallExpressionNode) -> Self {
-        let node = Rc::new(CoreAtomStartNode::FUNCTION_CALL(call_expr.clone()));
+        let node = Rc::new(CoreAtomStartNode::CALL(call_expr.clone()));
         AtomStartNode(node)
     }
 

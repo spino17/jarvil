@@ -446,7 +446,7 @@ pub trait Visitor {
                     CoreAtomStartNode::IDENTIFIER(token) => {
                         self.walk_identifier(token);
                     },
-                    CoreAtomStartNode::FUNCTION_CALL(call_expr) => {
+                    CoreAtomStartNode::CALL(call_expr) => {
                         self.walk_call_expression(call_expr);
                     },
                     CoreAtomStartNode::CLASS_METHOD_CALL(class_method) => {
