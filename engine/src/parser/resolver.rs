@@ -132,7 +132,11 @@ impl Resolver {
                     let name = Rc::new(ok_identifier.token_value(&self.code));
                     match self.namespace.declare_variable(&name, ok_identifier.start_line_number()) {
                         Ok(symbol_data) => ok_identifier.bind_variable_decl(&symbol_data, 0),
-                        Err(_) => unreachable!("new scope cannot have params already set")
+                        Err(previous_decl_line_number) => {
+                            self.log_param_with_same_name_already_exist_error(
+                                &name, ok_identifier.range(), ok_identifier.start_line_number(), previous_decl_line_number
+                            )
+                        }
                     }
                 }
             }
@@ -222,10 +226,10 @@ impl Resolver {
                                 IdentifierKind::VARIABLE(variable_symbol_data) => {
                                     variable_symbol_data.0.as_ref().borrow_mut().set_data_type(&type_obj);
                                 },
-                                _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>`")
+                                _ => unreachable!("param name should be resolved to `SymbolData<VariableData>`")
                             }
                         },
-                        None => unreachable!("param name should be resolved in the first phase")
+                        None => continue
                     }
                     params_vec.push((variable_name, type_obj));
                 }
@@ -235,16 +239,13 @@ impl Resolver {
         self.namespace.close_scope();
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                match ok_identifier.symbol_data() {
-                    Some(symbol_data) => {
-                        match symbol_data.0 {
-                            IdentifierKind::FUNCTION(func_symbol_data) => {
-                                func_symbol_data.0.as_ref().borrow_mut().set_data(params_vec, return_type);
-                            },
-                            _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>`")
-                        }
-                    },
-                    None => unreachable!("function name should be resolved in the first phase")
+                if let Some(symbol_data) = ok_identifier.symbol_data() {
+                    match symbol_data.0 {
+                        IdentifierKind::FUNCTION(func_symbol_data) => {
+                            func_symbol_data.0.as_ref().borrow_mut().set_data(params_vec, return_type);
+                        },
+                        _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>`")
+                    }
                 }
             }
         }
@@ -253,50 +254,47 @@ impl Resolver {
     pub fn resolve_struct(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
-            let mut fields_map: FxHashMap<Rc<String>, Type> = FxHashMap::default();
-            let struct_body = &core_struct_decl.block;
-            for stmt in &struct_body.0.as_ref().borrow().stmts {
-                let stmt = match stmt.core_ref() {
-                    CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
-                    CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
-                        stmt.core_ref().stmt.clone()
-                    },
-                    _ => continue
-                };
-                match stmt.core_ref() {
-                    CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
-                        let core_struct_stmt = struct_stmt.core_ref();
-                        let name = &core_struct_stmt.name_type_spec.core_ref().name;
-                        if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                            let field_name = Rc::new(ok_identifier.token_value(&self.code));
-                            let type_obj = self.type_obj_from_expression(
-                                &core_struct_stmt.name_type_spec.core_ref().data_type
-                            );
-                            if let Some(type_obj) = fields_map.insert(field_name.clone(), type_obj) {
-                                self.log_struct_field_with_same_name_exist_error(
-                                    &field_name, ok_identifier.range(), ok_identifier.start_line_number(), type_obj
+            if let Some(symbol_data) = ok_identifier.symbol_data() {
+                let mut fields_map: FxHashMap<Rc<String>, Type> = FxHashMap::default();
+                let struct_body = &core_struct_decl.block;
+                for stmt in &struct_body.0.as_ref().borrow().stmts {
+                    let stmt = match stmt.core_ref() {
+                        CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
+                        CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
+                            stmt.core_ref().stmt.clone()
+                        },
+                        _ => continue
+                    };
+                    match stmt.core_ref() {
+                        CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
+                            let core_struct_stmt = struct_stmt.core_ref();
+                            let name = &core_struct_stmt.name_type_spec.core_ref().name;
+                            if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                                let field_name = Rc::new(ok_identifier.token_value(&self.code));
+                                let type_obj = self.type_obj_from_expression(
+                                    &core_struct_stmt.name_type_spec.core_ref().data_type
                                 );
-                            }
-                        }
-                    },
-                    _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
-                }
-            }
-            match ok_identifier.symbol_data() {
-                Some(symbol_data) => {
-                    match symbol_data.0 {
-                        IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_data) => {
-                            match &mut *user_defined_type_symbol_data.0.as_ref().borrow_mut() {
-                                UserDefinedTypeData::STRUCT(struct_data) => {
-                                    struct_data.set_fields(fields_map);
-                                },
-                                _ => unreachable!("struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`")
+                                if let Some(type_obj) = fields_map.insert(field_name.clone(), type_obj) {
+                                    self.log_struct_field_with_same_name_exist_error(
+                                        &field_name, ok_identifier.range(), ok_identifier.start_line_number(), type_obj
+                                    );
+                                }
                             }
                         },
-                        _ => unreachable!("struct name should be resolved to `SymbolData<UserDefinedTypeData>`")
+                        _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
                     }
-                },
-                None => unreachable!("struct name should be resolved in the first phase")
+                }
+                match symbol_data.0 {
+                    IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_data) => {
+                        match &mut *user_defined_type_symbol_data.0.as_ref().borrow_mut() {
+                            UserDefinedTypeData::STRUCT(struct_data) => {
+                                struct_data.set_fields(fields_map);
+                            },
+                            _ => unreachable!("struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`")
+                        }
+                    },
+                    _ => unreachable!("struct name should be resolved to `SymbolData<UserDefinedTypeData>`")
+                }
             }
         }
     }
@@ -370,6 +368,28 @@ impl Resolver {
             start_err_index,
         );
         let err_str = format!("field `{}` already exists with type `{}`", name, type_obj);
+        let err = JarvilError::form_single_line_error(
+            start_err_index,
+            end_err_index,
+            line_number,
+            line_start_index,
+            code_line,
+            err_str,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
+    }
+
+    pub fn log_param_with_same_name_already_exist_error(
+        &mut self, name: &Rc<String>, error_range: TextRange, line_number: usize, previous_decl_line_number: usize
+    ) {
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let (code_line, line_start_index, line_number, start_err_index) = self.code.line_data(
+            line_number,
+            start_err_index,
+        );
+        let err_str = format!("param with name `{}` already exists", name);
         let err = JarvilError::form_single_line_error(
             start_err_index,
             end_err_index,
