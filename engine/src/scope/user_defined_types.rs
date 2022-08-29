@@ -1,4 +1,5 @@
 use crate::types::core::Type;
+use crate::types::r#struct::Struct;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -23,10 +24,15 @@ impl UserDefinedTypeData {
 
 #[derive(Debug, Clone, Default)]
 pub struct StructData {
-    fields: Rc<FxHashMap<String, Type>>,
+    fields: Rc<FxHashMap<Rc<String>, Type>>,
     constructor: FunctionData,
     methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
     class_methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
+}
+impl StructData {
+    pub fn set_fields(&mut self, fields: FxHashMap<Rc<String>, Type>) {
+        self.fields = Rc::new(fields);
+    }
 }
 
 #[derive(Debug, Clone, Default)]

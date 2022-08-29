@@ -1,11 +1,12 @@
+use rustc_hash::FxHashMap;
 use text_size::TextRange;
 use crate::{
         scope::{core::{Namespace, SymbolData, IdentifierKind}, variables::VariableData, function::FunctionData, user_defined_types::UserDefinedTypeData}, 
         code::Code, ast::{walk::Visitor, ast::{ASTNode, BlockNode, CoreAtomStartNode, VariableDeclarationNode, FunctionDeclarationNode, 
         OkFunctionDeclarationNode, StructDeclarationNode, LambdaDeclarationNode, OkLambdaTypeDeclarationNode, CoreRAssignmentNode, Node, 
-        CoreIdentifierNode, CoreNameTypeSpecsNode, OkIdentifierNode, TypeResolveKind, TypeExpressionNode
+        CoreIdentifierNode, CoreNameTypeSpecsNode, OkIdentifierNode, TypeResolveKind, TypeExpressionNode, CoreStatemenIndentWrapperNode, CoreStatementNode
     }}, 
-    error::core::{JarvilError, JarvilErrorKind}, types::core::Type
+    error::core::{JarvilError, JarvilErrorKind}, types::{core::Type, lambda}
 };
 use std::{rc::Rc, vec};
 
@@ -249,6 +250,61 @@ impl Resolver {
         }
     }
 
+    pub fn resolve_struct(&mut self, struct_decl: &StructDeclarationNode) {
+        let core_struct_decl = struct_decl.core_ref();
+        if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
+            let mut fields_map: FxHashMap<Rc<String>, Type> = FxHashMap::default();
+            let struct_body = &core_struct_decl.block;
+            for stmt in &struct_body.0.as_ref().borrow().stmts {
+                let stmt = match stmt.core_ref() {
+                    CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
+                    CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
+                        stmt.core_ref().stmt.clone()
+                    },
+                    _ => continue
+                };
+                match stmt.core_ref() {
+                    CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
+                        let core_struct_stmt = struct_stmt.core_ref();
+                        let name = &core_struct_stmt.name_type_spec.core_ref().name;
+                        if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                            let field_name = Rc::new(ok_identifier.token_value(&self.code));
+                            let type_obj = self.type_obj_from_expression(
+                                &core_struct_stmt.name_type_spec.core_ref().data_type
+                            );
+                            if let Some(type_obj) = fields_map.insert(field_name.clone(), type_obj) {
+                                self.log_struct_field_with_same_name_exist_error(
+                                    &field_name, ok_identifier.range(), ok_identifier.start_line_number(), type_obj
+                                );
+                            }
+                        }
+                    },
+                    _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
+                }
+            }
+            match ok_identifier.symbol_data() {
+                Some(symbol_data) => {
+                    match symbol_data.0 {
+                        IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_data) => {
+                            match &mut *user_defined_type_symbol_data.0.as_ref().borrow_mut() {
+                                UserDefinedTypeData::STRUCT(struct_data) => {
+                                    struct_data.set_fields(fields_map);
+                                },
+                                _ => unreachable!("struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`")
+                            }
+                        },
+                        _ => unreachable!("struct name should be resolved to `SymbolData<UserDefinedTypeData>`")
+                    }
+                },
+                None => unreachable!("struct name should be resolved in the first phase")
+            }
+        }
+    }
+    
+    pub fn resolve_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
+        todo!()
+    }
+
     pub fn log_undefined_identifier_in_scope_error(&mut self, name: &Rc<String>, error_range: TextRange, line_number: usize) {
         let start_err_index: usize = error_range.start().into();
         let end_err_index: usize = error_range.end().into();
@@ -288,6 +344,32 @@ impl Resolver {
         } else {
             format!("identifier `{}` is already declared in the current block on line {}", name, previous_decl_line)
         };
+        let err = JarvilError::form_single_line_error(
+            start_err_index,
+            end_err_index,
+            line_number,
+            line_start_index,
+            code_line,
+            err_str,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
+    }
+
+    pub fn log_struct_field_with_same_name_exist_error(
+        &mut self, 
+        name: &Rc<String>, 
+        error_range: TextRange, 
+        line_number: usize,
+        type_obj: Type
+    ) { // TODO - make this a multi-line error consisting of both the fields and the struct declaration snippet
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let (code_line, line_start_index, line_number, start_err_index) = self.code.line_data(
+            line_number,
+            start_err_index,
+        );
+        let err_str = format!("field `{}` already exists with type `{}`", name, type_obj);
         let err = JarvilError::form_single_line_error(
             start_err_index,
             end_err_index,
@@ -359,11 +441,11 @@ impl Visitor for Resolver {
                         return None
                     },
                     ASTNode::STRUCT_DECLARATION(struct_decl) => {
-                        todo!();
+                        self.resolve_struct(struct_decl);
                         return None
                     },
                     ASTNode::OK_LAMBDA_TYPE_DECLARATION(lambda_type_decl) => {
-                        todo!();
+                        self.resolve_lambda_type(lambda_type_decl);
                         return None
                     },
                     ASTNode::ATOM_START(atom_start) => {
