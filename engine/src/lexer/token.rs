@@ -168,18 +168,18 @@ impl Token {
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match self.core_token {
-            CoreToken::NOT_EQUAL        => Some(BinaryOperatorKind::NOT_EQUAL),
-            CoreToken::DOUBLE_EQUAL     => Some(BinaryOperatorKind::DOUBLE_EQUAL),
-            CoreToken::RBRACKET         => Some(BinaryOperatorKind::GREATER),
-            CoreToken::GREATER_EQUAL    => Some(BinaryOperatorKind::GREATER_EQUAL),
-            CoreToken::LBRACKET         => Some(BinaryOperatorKind::LESS),
-            CoreToken::LESS_EQUAL       => Some(BinaryOperatorKind::LESS_EQUAL),
-            CoreToken::DASH             => Some(BinaryOperatorKind::MINUS),
-            CoreToken::PLUS             => Some(BinaryOperatorKind::PLUS),
-            CoreToken::SLASH            => Some(BinaryOperatorKind::DIVIDE),
-            CoreToken::STAR             => Some(BinaryOperatorKind::MULTIPLY),
-            CoreToken::AND              => Some(BinaryOperatorKind::AND),
-            CoreToken::OR               => Some(BinaryOperatorKind::OR),
+            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NOT_EQUAL),
+            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DOUBLE_EQUAL),
+            CoreToken::RBRACKET => Some(BinaryOperatorKind::GREATER),
+            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GREATER_EQUAL),
+            CoreToken::LBRACKET => Some(BinaryOperatorKind::LESS),
+            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LESS_EQUAL),
+            CoreToken::DASH => Some(BinaryOperatorKind::MINUS),
+            CoreToken::PLUS => Some(BinaryOperatorKind::PLUS),
+            CoreToken::SLASH => Some(BinaryOperatorKind::DIVIDE),
+            CoreToken::STAR => Some(BinaryOperatorKind::MULTIPLY),
+            CoreToken::AND => Some(BinaryOperatorKind::AND),
+            CoreToken::OR => Some(BinaryOperatorKind::OR),
             _ => None,
         }
     }

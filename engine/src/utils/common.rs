@@ -8,7 +8,7 @@ pub fn build_ast(code: &mut Code) -> (BlockNode, Vec<JarvilError>) {
     let mut core_lexer = CoreLexer::new();
     let (token_vec, mut lexical_errors) = core_lexer.tokenize(code);
     let parser = PackratParser::new(&*code);
-    let (ast, mut parse_errors)= parser.parse(token_vec);
+    let (ast, mut parse_errors) = parser.parse(token_vec);
     lexical_errors.append(&mut parse_errors);
     (ast, lexical_errors)
 }

@@ -12,7 +12,7 @@ impl VariableData {
 }
 impl Default for VariableData {
     fn default() -> Self {
-        VariableData{
+        VariableData {
             data_type: Type::new_with_unknown(),
             is_init: true,
         }

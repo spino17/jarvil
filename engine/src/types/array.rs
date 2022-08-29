@@ -1,5 +1,5 @@
 use crate::types::core::{AbstractType, CoreType, Type};
-use std::{rc::Rc, fmt::Formatter};
+use std::{fmt::Formatter, rc::Rc};
 
 #[derive(Debug)]
 pub struct Array {
@@ -8,7 +8,7 @@ pub struct Array {
 }
 impl Array {
     pub fn new(element_type: &Type, size: usize) -> Array {
-        Array{
+        Array {
             element_type: element_type.clone(),
             size,
         }
@@ -30,11 +30,6 @@ impl AbstractType for Array {
 }
 impl std::fmt::Display for Array {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f, 
-            "[{}; {}]",
-            self.element_type.to_string(),
-            self.size
-        )
+        write!(f, "[{}; {}]", self.element_type.to_string(), self.size)
     }
 }

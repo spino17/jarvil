@@ -15,7 +15,10 @@ impl Atomic {
             FLOAT => Atomic::FLOAT,
             STRING => Atomic::STRING,
             BOOL => Atomic::BOOL,
-            _ => unreachable!("name should be `{}`, `{}`, `{}` and `{}`", INT, FLOAT, STRING, BOOL)
+            _ => unreachable!(
+                "name should be `{}`, `{}`, `{}` and `{}`",
+                INT, FLOAT, STRING, BOOL
+            ),
         }
     }
 

@@ -10,7 +10,7 @@ pub fn build(code_vec: Vec<char>) -> Result<(), JarvilError> {
     let (scope_table, mut semantic_errors) = resolver.resolve_ast(&ast);
     parser_errors.append(&mut semantic_errors);
     if parser_errors.len() > 0 {
-        return Err(parser_errors[0].clone())
+        return Err(parser_errors[0].clone());
     }
     // TODO - use `ast` for name resolution, type checking and code generation
     Ok(())

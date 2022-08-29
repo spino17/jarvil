@@ -2,11 +2,11 @@ use crate::code::Code;
 use crate::context;
 use crate::lexer::token::Token;
 use colored::Colorize;
-use text_size::{TextRange, TextSize};
 use std::convert::TryFrom;
+use std::fmt::Display;
 use std::fmt::Formatter;
 use std::rc::Rc;
-use std::fmt::Display;
+use text_size::{TextRange, TextSize};
 
 pub fn int_length(n: usize) -> usize {
     let base = 10;
@@ -106,7 +106,10 @@ impl JarvilError {
         err_message: String,
         kind: JarvilErrorKind,
     ) -> Self {
-        let range = TextRange::new(TextSize::try_from(start_index).unwrap(), TextSize::try_from(end_index).unwrap());
+        let range = TextRange::new(
+            TextSize::try_from(start_index).unwrap(),
+            TextSize::try_from(end_index).unwrap(),
+        );
         JarvilError {
             range,
             err_message: Rc::new(err_message),

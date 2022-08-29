@@ -1,15 +1,15 @@
-use text_size::TextRange;
-use text_size::TextSize;
+use super::token::LexicalErrorKind;
 use crate::code::Code;
-use crate::error::core::{LexicalErrorData, JarvilErrorKind, JarvilError};
+use crate::error::core::{JarvilError, JarvilErrorKind, LexicalErrorData};
+use crate::lexer::helper;
 use crate::lexer::token::CoreToken;
 use crate::lexer::token::Token;
-use crate::lexer::helper;
 use std::convert::TryFrom;
 use std::mem;
 use std::rc::Rc;
 use std::vec;
-use super::token::LexicalErrorKind;
+use text_size::TextRange;
+use text_size::TextSize;
 
 pub trait Lexer {
     fn tokenize(&mut self, code: &mut Code) -> (Vec<Token>, Vec<JarvilError>);

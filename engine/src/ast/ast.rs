@@ -14,12 +14,7 @@ use crate::scope::core::SymbolData;
 use crate::scope::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
-use crate::{
-    code::Code,
-    lexer::token::Token,
-    scope::core::Namespace,
-    types::core::Type,
-};
+use crate::{code::Code, lexer::token::Token, scope::core::Namespace, types::core::Type};
 use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
 use text_size::{TextRange, TextSize};
@@ -275,8 +270,16 @@ impl StatementNode {
         StatementNode(node)
     }
 
-    pub fn new_with_return_statement(return_keyword: &TokenNode, expr: &ExpressionNode, newline: &TokenNode) -> Self {
-        let node = Rc::new(CoreStatementNode::RETURN(ReturnStatementNode::new(return_keyword, expr, newline)));
+    pub fn new_with_return_statement(
+        return_keyword: &TokenNode,
+        expr: &ExpressionNode,
+        newline: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(CoreStatementNode::RETURN(ReturnStatementNode::new(
+            return_keyword,
+            expr,
+            newline,
+        )));
         StatementNode(node)
     }
 
@@ -556,17 +559,19 @@ impl LambdaDeclarationNode {
         right_arrow: Option<&TokenNode>,
         newline: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreLambdaDeclarationNode::OK(OkLambdaTypeDeclarationNode::new(
-            name,
-            args,
-            return_type,
-            type_keyword,
-            colon,
-            lparen,
-            rparen,
-            right_arrow,
-            newline,
-        )));
+        let node = Rc::new(CoreLambdaDeclarationNode::OK(
+            OkLambdaTypeDeclarationNode::new(
+                name,
+                args,
+                return_type,
+                type_keyword,
+                colon,
+                lparen,
+                rparen,
+                right_arrow,
+                newline,
+            ),
+        ));
         LambdaDeclarationNode(node)
     }
 
@@ -645,6 +650,7 @@ impl FunctionDeclarationNode {
         rparen: &TokenNode,
         right_arrow: Option<&TokenNode>,
         colon: &TokenNode,
+        is_lambda: bool,
     ) -> Self {
         let node = Rc::new(CoreFunctionDeclarationNode::OK(
             OkFunctionDeclarationNode::new(
@@ -657,6 +663,7 @@ impl FunctionDeclarationNode {
                 rparen,
                 right_arrow,
                 colon,
+                is_lambda,
             ),
         ));
         FunctionDeclarationNode(node)
@@ -677,6 +684,7 @@ pub struct CoreOkFunctionDeclarationNode {
     pub params: Option<NameTypeSpecsNode>,
     pub return_type: Option<TypeExpressionNode>,
     pub block: BlockNode,
+    pub is_lambda: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -698,6 +706,7 @@ impl OkFunctionDeclarationNode {
         rparen: &TokenNode,
         right_arrow: Option<&TokenNode>,
         colon: &TokenNode,
+        is_lambda: bool,
     ) -> Self {
         let node = Rc::new(CoreOkFunctionDeclarationNode {
             func_keyword: func_keyword.clone(),
@@ -709,6 +718,7 @@ impl OkFunctionDeclarationNode {
             params: extract_from_option!(params),
             return_type: extract_from_option!(return_type),
             block: block.clone(),
+            is_lambda,
         });
         OkFunctionDeclarationNode(node)
     }
@@ -778,7 +788,7 @@ pub struct CoreReturnStatementNode {
 pub struct ReturnStatementNode(Rc<CoreReturnStatementNode>);
 impl ReturnStatementNode {
     fn new(return_keyword: &TokenNode, expr: &ExpressionNode, newline: &TokenNode) -> Self {
-        let node = Rc::new(CoreReturnStatementNode{
+        let node = Rc::new(CoreReturnStatementNode {
             return_keyword: return_keyword.clone(),
             expr: expr.clone(),
             newline: newline.clone(),
@@ -875,7 +885,11 @@ pub struct CoreNameTypeSpecNode {
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(Rc<CoreNameTypeSpecNode>);
 impl NameTypeSpecNode {
-    pub fn new(param_name: &IdentifierNode, param_type: &TypeExpressionNode, colon: &TokenNode) -> Self {
+    pub fn new(
+        param_name: &IdentifierNode,
+        param_type: &TypeExpressionNode,
+        colon: &TokenNode,
+    ) -> Self {
         let node = Rc::new(CoreNameTypeSpecNode {
             colon: colon.clone(),
             name: param_name.clone(),
@@ -943,8 +957,10 @@ impl TypeExpressionNode {
         match self.core_ref() {
             CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj(scope, code),
             CoreTypeExpressionNode::ARRAY(array) => array.type_obj(scope, code),
-            CoreTypeExpressionNode::USER_DEFINED(user_defined) => user_defined.type_obj(scope, code),
-            CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID
+            CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
+                user_defined.type_obj(scope, code)
+            }
+            CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID,
         }
     }
 
@@ -970,9 +986,11 @@ impl AtomicTypeNode {
     pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
         match self.core_ref().kind.core_ref() {
             CoreTokenNode::OK(ok_token) => {
-                return TypeResolveKind::RESOLVED(Type::new_with_atomic(&ok_token.token_value(code)))
-            },
-            _ => return TypeResolveKind::INVALID
+                return TypeResolveKind::RESOLVED(Type::new_with_atomic(
+                    &ok_token.token_value(code),
+                ))
+            }
+            _ => return TypeResolveKind::INVALID,
         }
     }
 
@@ -1019,18 +1037,19 @@ impl ArrayTypeNode {
     pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
         let element_type = match self.core_ref().sub_type.type_obj(scope, code) {
             TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
-            TypeResolveKind::UNRESOLVED(identifier_node) => return TypeResolveKind::UNRESOLVED(identifier_node),
+            TypeResolveKind::UNRESOLVED(identifier_node) => {
+                return TypeResolveKind::UNRESOLVED(identifier_node)
+            }
             TypeResolveKind::RESOLVED(type_obj) => type_obj,
         };
         match self.core_ref().size.core_ref() {
-            CoreTokenNode::OK(ok_token) => {
-                match ok_token.token_value(code).parse::<usize>() {
-                    Ok(size) => return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type, size)),
-                    _ => TypeResolveKind::INVALID
+            CoreTokenNode::OK(ok_token) => match ok_token.token_value(code).parse::<usize>() {
+                Ok(size) => {
+                    return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type, size))
                 }
-                
+                _ => TypeResolveKind::INVALID,
             },
-            _ => return TypeResolveKind::INVALID
+            _ => return TypeResolveKind::INVALID,
         }
     }
 
@@ -1069,19 +1088,24 @@ impl UserDefinedTypeNode {
                     match &*symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::STRUCT(_) => {
                             ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
-                            return TypeResolveKind::RESOLVED(Type::new_with_struct(name.to_string(), &temp_symbol_data)
-                            )
-                        },
+                            return TypeResolveKind::RESOLVED(Type::new_with_struct(
+                                name.to_string(),
+                                &temp_symbol_data,
+                            ));
+                        }
                         UserDefinedTypeData::LAMBDA(_) => {
                             ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
-                            return TypeResolveKind::RESOLVED(Type::new_with_lambda(Some(name.to_string()), &temp_symbol_data))
+                            return TypeResolveKind::RESOLVED(Type::new_with_lambda(
+                                Some(name.to_string()),
+                                &temp_symbol_data,
+                            ));
                         }
                     }
-                },
-                None => return TypeResolveKind::UNRESOLVED(ok_identifier.clone())
+                }
+                None => return TypeResolveKind::UNRESOLVED(ok_identifier.clone()),
             };
         }
-        return TypeResolveKind::INVALID
+        return TypeResolveKind::INVALID;
     }
 
     impl_core_ref!(CoreUserDefinedTypeNode);
@@ -1111,7 +1135,9 @@ impl IdentifierNode {
     }
 
     pub fn new_with_skipped_token(skipped_token: &Token) -> Self {
-        let node = Rc::new(CoreIdentifierNode::SKIPPED(SkippedTokenNode::new(skipped_token)));
+        let node = Rc::new(CoreIdentifierNode::SKIPPED(SkippedTokenNode::new(
+            skipped_token,
+        )));
         IdentifierNode(node)
     }
 
@@ -1129,14 +1155,14 @@ default_errornous_node_impl!(IdentifierNode, CoreIdentifierNode);
 #[derive(Debug, Clone)]
 pub struct CoreOkIdentifierNode {
     pub token: Token,
-    pub decl: Option<(IdentifierKind, usize)>,  // (symbol data reference, depth)
+    pub decl: Option<(IdentifierKind, usize)>, // (symbol data reference, depth)
 }
 
 #[derive(Debug, Clone)]
 pub struct OkIdentifierNode(Rc<RefCell<CoreOkIdentifierNode>>);
 impl OkIdentifierNode {
     fn new(token: &Token) -> Self {
-        let node = Rc::new(RefCell::new(CoreOkIdentifierNode{
+        let node = Rc::new(RefCell::new(CoreOkIdentifierNode {
             token: token.clone(),
             decl: None,
         }));
@@ -1148,21 +1174,30 @@ impl OkIdentifierNode {
     }
 
     pub fn bind_variable_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
-        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::VARIABLE(symbol_data.clone()), depth));
+        self.0.as_ref().borrow_mut().decl =
+            Some((IdentifierKind::VARIABLE(symbol_data.clone()), depth));
     }
 
-    pub fn bind_user_defined_type_decl(&self, symbol_data: &SymbolData<UserDefinedTypeData>, depth: usize) {
-        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::USER_DEFINED_TYPE(symbol_data.clone()), depth));
+    pub fn bind_user_defined_type_decl(
+        &self,
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        depth: usize,
+    ) {
+        self.0.as_ref().borrow_mut().decl = Some((
+            IdentifierKind::USER_DEFINED_TYPE(symbol_data.clone()),
+            depth,
+        ));
     }
 
     pub fn bind_function_decl(&self, symbol_data: &SymbolData<FunctionData>, depth: usize) {
-        self.0.as_ref().borrow_mut().decl = Some((IdentifierKind::FUNCTION(symbol_data.clone()), depth));
+        self.0.as_ref().borrow_mut().decl =
+            Some((IdentifierKind::FUNCTION(symbol_data.clone()), depth));
     }
 
     pub fn symbol_data(&self) -> Option<(IdentifierKind, usize)> {
         match &self.0.as_ref().borrow().decl {
             Some(symbol_data) => Some((symbol_data.0.clone(), symbol_data.1)),
-            None => None
+            None => None,
         }
     }
 
@@ -1862,7 +1897,7 @@ impl AtomNode {
 #[derive(Debug, Clone, Node)]
 pub enum CoreAtomStartNode {
     IDENTIFIER(IdentifierNode),             // id
-    CALL(CallExpressionNode),      // id(...)
+    CALL(CallExpressionNode),               // id(...)
     CLASS_METHOD_CALL(ClassMethodCallNode), // id::id(...)
 }
 

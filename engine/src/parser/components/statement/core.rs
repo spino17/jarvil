@@ -1,4 +1,4 @@
-use crate::ast::ast::{FuncKeywordKind, StatementNode, StructStatementNode, ReturnStatementNode};
+use crate::ast::ast::{FuncKeywordKind, ReturnStatementNode, StatementNode, StructStatementNode};
 use crate::constants::common::IDENTIFIER;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
@@ -54,8 +54,11 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
         }
         CoreToken::DEF => {
             let (function_name, def_keyword) = parser.function_name();
-            let function_decl_node =
-                parser.function_decl(Some(&function_name), &FuncKeywordKind::DEF(def_keyword));
+            let function_decl_node = parser.function_decl(
+                Some(&function_name),
+                &FuncKeywordKind::DEF(def_keyword),
+                false,
+            );
             StatementNode::new_with_function_declaration(&function_decl_node)
         }
         CoreToken::FOR => todo!(),
@@ -72,7 +75,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
             let expr_node = parser.expr();
             let newline = parser.expect_terminators();
             StatementNode::new_with_return_statement(&return_node, &expr_node, &newline)
-        },
+        }
         CoreToken::BREAK => todo!(),
         CoreToken::CONTINUE => todo!(),
         _ => {

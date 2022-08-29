@@ -14,7 +14,7 @@ impl FunctionData {
 }
 impl Default for FunctionData {
     fn default() -> Self {
-        FunctionData{
+        FunctionData {
             params: Rc::new(vec![]),
             return_type: None,
         }
@@ -22,12 +22,12 @@ impl Default for FunctionData {
 }
 impl Clone for FunctionData {
     fn clone(&self) -> Self {
-        FunctionData{
+        FunctionData {
             params: self.params.clone(),
             return_type: match &self.return_type {
                 Some(return_type) => Some(return_type.clone()),
                 None => None,
-            }
+            },
         }
     }
 }

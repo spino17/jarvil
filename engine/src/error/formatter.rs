@@ -1,6 +1,4 @@
-pub struct ErrorMetaData {
-    
-}
+pub struct ErrorMetaData {}
 
 pub trait ErrorFormatter {
     fn format(meta_data: ErrorMetaData) -> String;

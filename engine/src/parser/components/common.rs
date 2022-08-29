@@ -1,5 +1,5 @@
 use super::expression::core::is_expression_starting_with;
-use crate::ast::ast::{ErrornousNode, FuncKeywordKind, RAssignmentNode, IdentifierNode};
+use crate::ast::ast::{ErrornousNode, FuncKeywordKind, IdentifierNode, RAssignmentNode};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::parser::PackratParser;
 use std::rc::Rc;
@@ -31,8 +31,11 @@ pub fn r_assign(
     match token.core_token {
         CoreToken::FUNC => {
             let func_keyword_node = parser.expect("func");
-            let func_decl_node =
-                parser.function_decl(identifier_name, &FuncKeywordKind::FUNC(func_keyword_node));
+            let func_decl_node = parser.function_decl(
+                identifier_name,
+                &FuncKeywordKind::FUNC(func_keyword_node),
+                true,
+            );
             RAssignmentNode::new_with_lambda(&func_decl_node)
         }
         _ => {

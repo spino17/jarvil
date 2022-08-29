@@ -4,13 +4,13 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use super::helper::format_symbol;
+use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
-    FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, Node, ParamsNode,
+    FunctionDeclarationNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, ParamsNode,
     RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
-    TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode, IdentifierNode,
+    TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
 };
-use crate::ast::ast::{ErrornousNode};
 use crate::code::Code;
 use crate::constants::common::{ENDMARKER, IDENTIFIER};
 use crate::context;
@@ -660,8 +660,9 @@ impl PackratParser {
         &mut self,
         name: Option<&IdentifierNode>,
         func_keyword: &FuncKeywordKind,
+        is_lambda: bool,
     ) -> FunctionDeclarationNode {
-        components::function_declaration::function_decl(self, name, func_keyword)
+        components::function_declaration::function_decl(self, name, func_keyword, is_lambda)
     }
 
     pub fn struct_stmt(&mut self) -> StatementNode {

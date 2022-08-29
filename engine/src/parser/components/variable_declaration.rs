@@ -1,6 +1,4 @@
-use crate::{
-    ast::ast::VariableDeclarationNode, parser::parser::PackratParser,
-};
+use crate::{ast::ast::VariableDeclarationNode, parser::parser::PackratParser};
 
 pub fn variable_decl(parser: &mut PackratParser) -> VariableDeclarationNode {
     let let_node = parser.expect("let");

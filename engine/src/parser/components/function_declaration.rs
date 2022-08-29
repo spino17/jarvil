@@ -6,9 +6,7 @@ use crate::lexer::token::CoreToken;
 use crate::parser::components::statement::core::{
     is_statement_within_function_starting_with, STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS,
 };
-use crate::{
-    ast::ast::NameTypeSpecsNode, parser::parser::PackratParser,
-};
+use crate::{ast::ast::NameTypeSpecsNode, parser::parser::PackratParser};
 use std::rc::Rc;
 
 pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
@@ -56,6 +54,7 @@ pub fn function_decl(
     parser: &mut PackratParser,
     name_node: Option<&IdentifierNode>,
     func_keyword_node: &FuncKeywordKind,
+    is_lambda: bool,
 ) -> FunctionDeclarationNode {
     let lparen_node = parser.expect("(");
     let mut args_node: Option<&NameTypeSpecsNode> = None;
@@ -86,6 +85,7 @@ pub fn function_decl(
                 &rparen_node,
                 Some(&r_arrow_node),
                 &colon_node,
+                is_lambda,
             );
         }
         CoreToken::COLON => {
@@ -105,6 +105,7 @@ pub fn function_decl(
                 &rparen_node,
                 None,
                 &colon_node,
+                is_lambda,
             );
         }
         _ => {
