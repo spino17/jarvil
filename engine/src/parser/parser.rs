@@ -191,7 +191,7 @@ impl PackratParser {
         if self.token_vec[self.lookahead - 1].is_eq("\n")
             || self.token_vec[self.lookahead].is_eq("\n")
             || self.token_vec[self.lookahead].is_eq(ENDMARKER)
-        {
+        {   
             true
         } else {
             false

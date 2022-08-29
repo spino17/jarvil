@@ -53,7 +53,7 @@ impl Resolver {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        ast.set_scope(&self.namespace);
+        // ast.set_scope(&self.namespace);
         (
             std::mem::take(&mut self.namespace),
             std::mem::take(&mut self.errors),

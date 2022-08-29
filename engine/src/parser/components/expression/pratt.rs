@@ -9,7 +9,6 @@ use crate::{
     ast::ast::{ExpressionNode, TokenNode},
     parser::parser::PackratParser,
 };
-use std::rc::Rc;
 
 pub fn pratt_expr(parser: &mut PackratParser, precedence: u8) -> ExpressionNode {
     let prefix = parser.unary_expr();
