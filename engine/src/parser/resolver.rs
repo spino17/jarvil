@@ -134,7 +134,10 @@ impl Resolver {
                         Ok(symbol_data) => ok_identifier.bind_variable_decl(&symbol_data, 0),
                         Err(previous_decl_line_number) => {
                             self.log_param_with_same_name_already_exist_error(
-                                &name, ok_identifier.range(), ok_identifier.start_line_number(), previous_decl_line_number
+                                &name,
+                                ok_identifier.range(), 
+                                ok_identifier.start_line_number(), 
+                                previous_decl_line_number
                             )
                         }
                     }
@@ -200,14 +203,10 @@ impl Resolver {
         let params = &core_func_decl.params;
         let return_type = &core_func_decl.return_type;
         let func_body = &core_func_decl.block;
-        self.namespace = match func_body.scope() {
-            Some(namespace) => namespace,
-            None => unreachable!("block should have scope reference after first phase")
-        };
         let mut params_vec: Vec<(String, Type)> = vec![];
         let return_type: Option<Type> = match return_type {
             Some(return_type_expr) => {
-                let type_obj = self.type_obj_from_expression_in_parent_scope(return_type_expr);
+                let type_obj = self.type_obj_from_expression(return_type_expr);
                 Some(type_obj)
             },
             None => None
@@ -219,7 +218,7 @@ impl Resolver {
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
                     let variable_name = ok_identifier.token_value(&self.code);
-                    let type_obj = self.type_obj_from_expression_in_parent_scope(&core_param.data_type);
+                    let type_obj = self.type_obj_from_expression(&core_param.data_type);
                     match ok_identifier.symbol_data() {
                         Some(symbol_data) => {
                             match symbol_data.0 {
@@ -235,6 +234,7 @@ impl Resolver {
                 }
             }
         }
+        self.namespace = func_body.scope().expect("scope should be set to the `BlockNode` in the first phase");
         self.walk_block(func_body);
         self.namespace.close_scope();
         if let Some(identifier) = func_name {
@@ -274,6 +274,7 @@ impl Resolver {
                                 let type_obj = self.type_obj_from_expression(
                                     &core_struct_stmt.name_type_spec.core_ref().data_type
                                 );
+                                // TODO - check whether field_name already exist in field_map
                                 if let Some(type_obj) = fields_map.insert(field_name.clone(), type_obj) {
                                     self.log_struct_field_with_same_name_exist_error(
                                         &field_name, ok_identifier.range(), ok_identifier.start_line_number(), type_obj
@@ -381,7 +382,11 @@ impl Resolver {
     }
 
     pub fn log_param_with_same_name_already_exist_error(
-        &mut self, name: &Rc<String>, error_range: TextRange, line_number: usize, previous_decl_line_number: usize
+        &mut self, 
+        param_name: &Rc<String>, 
+        error_range: TextRange, 
+        line_number: usize, 
+        previous_decl_line_number: usize
     ) {
         let start_err_index: usize = error_range.start().into();
         let end_err_index: usize = error_range.end().into();
@@ -389,7 +394,7 @@ impl Resolver {
             line_number,
             start_err_index,
         );
-        let err_str = format!("param with name `{}` already exists", name);
+        let err_str = format!("param with name `{}` already exist", param_name);
         let err = JarvilError::form_single_line_error(
             start_err_index,
             end_err_index,
