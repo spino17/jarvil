@@ -1,72 +1,83 @@
 use crate::code::Code;
 use crate::context;
-use crate::lexer::token::Token;
 use colored::Colorize;
+use std::borrow::Borrow;
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::fmt::Formatter;
+use std::ops::Index;
 use std::rc::Rc;
+use std::cell::RefCell;
+use std::cmp::min;
 use text_size::{TextRange, TextSize};
+use crate::error::helper::{format_line_number, int_length};
 
-pub fn int_length(n: usize) -> usize {
-    let base = 10;
-    let mut power = base;
-    let mut count = 1;
-    while n >= power {
-        count += 1;
-        if let Some(new_power) = power.checked_mul(base) {
-            power = new_power;
-        } else {
-            break;
+pub struct JarvilErrorVec {
+    errors: Vec<Rc<RefCell<Vec<JarvilError>>>>,
+    len: usize,
+}
+impl JarvilErrorVec {
+    pub fn new() -> Self {
+        JarvilErrorVec {
+            errors: vec![],
+            len: 0,
         }
     }
-    count
-}
 
-pub fn format_line_number(line_number: usize, max_line_number: usize) -> String {
-    let line_number_len = int_length(line_number);
-    let max_line_number_len = int_length(max_line_number);
-    let blank_str = " ".repeat(max_line_number_len - line_number_len);
-    format!("{}{}", line_number, blank_str)
-}
-
-#[derive(Debug)]
-pub struct InvalidCharLexicalErrorData {
-    pub invalid_token: Token,
-    pub err_message: Rc<String>,
-}
-
-#[derive(Debug)]
-pub struct NoClosingSymbolsLexicalErrorData {
-    pub start_line_number: usize,
-    pub end_line_number: usize,
-    pub err_message: Rc<String>,
-}
-
-#[derive(Debug)]
-pub enum LexicalErrorData {
-    INVALID_CHAR(InvalidCharLexicalErrorData),
-    NO_CLOSING_SYMBOLS(NoClosingSymbolsLexicalErrorData),
-}
-
-impl LexicalErrorData {
-    pub fn new_with_invalid_char(invalid_token: &Token, err_message: &Rc<String>) -> Self {
-        LexicalErrorData::INVALID_CHAR(InvalidCharLexicalErrorData {
-            invalid_token: invalid_token.clone(),
-            err_message: err_message.clone(),
-        })
+    pub fn push(&mut self, err: JarvilError) {
+        let line_number = err.line_number();
+        let errors_len = self.errors.len();
+        if line_number - 1 < errors_len {
+            self.errors[line_number - 1].as_ref().borrow_mut().push(err);
+        } else {
+            self.errors.resize(line_number, Rc::new(RefCell::new(vec![])));
+            self.errors[line_number - 1].as_ref().borrow_mut().push(err);
+        }
+        self.len = self.len + 1;
     }
 
-    pub fn new_with_no_closing_symbols(
-        start_line_number: usize,
-        end_line_number: usize,
-        err_message: &Rc<String>,
-    ) -> Self {
-        LexicalErrorData::NO_CLOSING_SYMBOLS(NoClosingSymbolsLexicalErrorData {
-            start_line_number,
-            end_line_number,
-            err_message: err_message.clone(),
-        })
+    pub fn append(&mut self, err_vec: &mut JarvilErrorVec) {
+        let len_1 = self.errors.len();
+        let len_2 = err_vec.errors.len();
+        let min_len = min(len_1, len_2);
+        if min_len == len_1 {
+            for i in 0..min_len {
+                err_vec.errors[i].as_ref().borrow_mut().append(&mut *self.errors[i].as_ref().borrow_mut());
+            }
+        } else {
+            for i in 0..min_len {
+                self.errors[i].as_ref().borrow_mut().append(&mut *err_vec.errors[i].as_ref().borrow_mut());
+            }
+        }
+    }
+
+    pub fn errors_on_line(&self, line_number: usize) -> Rc<RefCell<Vec<JarvilError>>> {
+        self.errors[line_number - 1].clone()
+    }
+
+    pub fn vec_start_index(&self, index: usize) -> usize {
+        if index == 0 {
+            return 0
+        } else {
+            self.errors[index - 1].as_ref().borrow().len()
+        }
+    }
+
+    pub fn get(&self, index: usize) -> Option<JarvilError> {
+        if index >= self.len || index < 0 {
+            return None
+        }
+        let mut counter = 0;
+        let mut total_index = 0;
+        loop {
+            total_index = total_index + self.errors[counter].as_ref().borrow().len();
+            if total_index - 1 >= index {
+                break;
+            }
+            counter = counter + 1;
+        };
+        let start_index = self.vec_start_index(counter);
+        Some(self.errors[counter].as_ref().borrow()[index - start_index].clone())
     }
 }
 
@@ -98,12 +109,14 @@ pub struct JarvilError {
     range: TextRange,
     err_message: Rc<String>,
     kind: JarvilErrorKind,
+    start_line_number: usize,
 }
 impl JarvilError {
     fn new(
         start_index: usize,
         end_index: usize,
         err_message: String,
+        start_line_number: usize,
         kind: JarvilErrorKind,
     ) -> Self {
         let range = TextRange::new(
@@ -114,7 +127,12 @@ impl JarvilError {
             range,
             err_message: Rc::new(err_message),
             kind,
+            start_line_number,
         }
+    }
+
+    fn line_number(&self) -> usize {
+        self.start_line_number
     }
 
     pub fn form_single_line_error(
@@ -157,7 +175,9 @@ impl JarvilError {
             err_code_part,
             err_message.yellow().bold()
         );
-        JarvilError::new(start_err_index, end_err_index, err_message, err_kind)
+        JarvilError::new(
+            start_err_index, end_err_index, err_message, line_number, err_kind
+        )
     }
 
     pub fn form_multi_line_error(
@@ -207,7 +227,8 @@ impl JarvilError {
             code.get_line_start_index(start_line_number),
             code.get_line_start_index(end_line_number),
             err_message,
-            err_kind,
+            start_line_number,
+            err_kind
         )
     }
 }

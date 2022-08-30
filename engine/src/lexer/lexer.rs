@@ -1,6 +1,6 @@
 use super::token::LexicalErrorKind;
 use crate::code::Code;
-use crate::error::core::{JarvilError, JarvilErrorKind, LexicalErrorData};
+use crate::error::{core::{JarvilError, JarvilErrorKind}, helper::{LexicalErrorData}};
 use crate::lexer::helper;
 use crate::lexer::token::CoreToken;
 use crate::lexer::token::Token;
