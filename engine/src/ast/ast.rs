@@ -95,7 +95,7 @@ pub struct CoreBlockNode {
     kind: BlockKind,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BlockKind {
     TOP,
     FUNC,
@@ -121,6 +121,10 @@ impl BlockNode {
 
     pub fn scope(&self) -> Option<Namespace> {
         self.0.as_ref().borrow().scope.clone()
+    }
+
+    pub fn kind(&self) -> BlockKind {
+        self.0.as_ref().borrow().kind.clone()
     }
 }
 impl Node for BlockNode {
