@@ -1,4 +1,5 @@
-use crate::{scope::core::Namespace, code::Code, ast::{ast::{BlockNode, ASTNode, StatementNode}, walk::Visitor}, error::core::JarvilError};
+use crate::{scope::core::Namespace, code::Code, ast::{ast::{BlockNode, ASTNode, StatementNode, CoreStatementNode, ExpressionNode, AssignmentNode, 
+    VariableDeclarationNode, FunctionDeclarationNode, TypeDeclarationNode, ReturnStatementNode}, walk::Visitor}, error::core::JarvilError};
 
 pub struct TypeChecker {
     namespace: Namespace,
@@ -22,9 +23,54 @@ impl TypeChecker {
         std::mem::take(&mut self.errors)
     }
 
-    pub fn check_stmt(&mut self, stmt: &StatementNode) {
-        // TODO - type-check all the statements here
+    pub fn check_expr(&mut self, expr: &ExpressionNode) {
+        // TODO - check the binary and unary operands and atom chaining
+        // 1. operators, operands validity
+        // 2. call expr should have correct number and type of params
+        // 3. atom chaining should be valid according to types
         todo!()
+    }
+
+    pub fn check_assignment(&mut self, assignment: &AssignmentNode) {
+        // TODO - check types on both sides are same
+        todo!()
+    }
+
+    pub fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
+        // TODO - get the type of left side and set the data_type in scope table entry
+        todo!()
+    }
+
+    pub fn check_func_decl(&mut self, func_decl: &FunctionDeclarationNode) {
+        // TODO - set the new entry in the context for checking return type
+        todo!()
+    }
+
+    pub fn check_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {
+        // TODO - check the type of return type according to the current context
+        todo!()
+    }
+
+    pub fn check_stmt(&mut self, stmt: &StatementNode) {
+        match stmt.core_ref() {
+            CoreStatementNode::EXPRESSION(expr_stmt) => {
+                let core_expr_stmt = expr_stmt.core_ref();
+                self.check_expr(&core_expr_stmt.expr);
+            }
+            CoreStatementNode::ASSIGNMENT(assignment) => {
+                self.check_assignment(assignment);
+            }
+            CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
+                self.check_variable_decl(variable_decl);
+            }
+            CoreStatementNode::FUNCTION_DECLARATION(func_decl) => {
+                self.check_func_decl(func_decl);
+            }
+            CoreStatementNode::RETURN(return_stmt) => {
+                self.check_return_stmt(return_stmt);
+            }
+            _ => return
+        }
     }
 }
 impl Visitor for TypeChecker {

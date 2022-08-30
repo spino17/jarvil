@@ -67,7 +67,7 @@ pub trait Visitor {
         new_with_FunctionDeclarationNode
     );
     impl_node_walk!(
-        walk_type_declaration,
+        walk_type_decl,
         TypeDeclarationNode,
         new_with_TypeDeclarationNode
     );
@@ -261,7 +261,7 @@ pub trait Visitor {
                     self.walk_func_decl(func_decl);
                 }
                 CoreStatementNode::TYPE_DECLARATION(type_decl) => {
-                    self.walk_type_declaration(type_decl);
+                    self.walk_type_decl(type_decl);
                 }
                 CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
                     self.walk_struct_stmt(struct_stmt);

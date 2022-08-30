@@ -1,13 +1,3 @@
-/*
-macro_rules! default_node_impl {
-    ($t: ident) => {
-        fn set_parent(&self, parent_node: WeakASTNode) {
-            self.core_ref_mut().parent = Some(parent_node);
-        }
-    };
-}
- */
-
 macro_rules! default_errornous_node_impl {
     ($t: ident, $u: ident) => {
         impl ErrornousNode for $t {
@@ -53,34 +43,6 @@ macro_rules! impl_ast_node {
         )*
     };
 }
-/*
-macro_rules! impl_set_parent {
-    ($t: ident, $u: ident, $v: ident, $s: ident) => {
-        $t.set_parent(WeakASTNode::$u($s(Rc::downgrade(&$v))));
-    };
-}
-
-macro_rules! impl_set_parents {
-    (($($t: ident),*), $u: ident, $v: ident, $s: ident) => {
-        $(
-            impl_set_parent!($t, $u, $v, $s);
-        )*
-    };
-}
-
-macro_rules! impl_set_parents_optional {
-    (($($t: ident),*), $u: ident, $v: ident, $s: ident) => {
-        $(
-            match $t {
-                Some($t) => {
-                    impl_set_parent!($t, $u, $v, $s);
-                }
-                None => {}
-            }
-        )*
-    };
-}
- */
 
 macro_rules! extract_from_option {
     ($t: ident) => {
