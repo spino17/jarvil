@@ -4,7 +4,7 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use super::helper::format_symbol;
-use crate::ast::ast::ErrornousNode;
+use crate::ast::ast::{ErrornousNode, BlockKind};
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
     FunctionDeclarationNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, ParamsNode,
@@ -525,12 +525,14 @@ impl PackratParser {
         is_starting_with_fn: F,
         statement_parsing_fn: G,
         expected_symbols: &[&'static str],
+        kind: BlockKind
     ) -> BlockNode {
         components::block::block(
             self,
             is_starting_with_fn,
             statement_parsing_fn,
             expected_symbols,
+            kind,
         )
     }
 

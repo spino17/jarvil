@@ -92,16 +92,25 @@ pub struct CoreBlockNode {
     pub newline: TokenNode,
     pub stmts: Vec<StatemenIndentWrapperNode>,
     pub scope: Option<Namespace>,
+    kind: BlockKind,
+}
+
+#[derive(Debug, Clone)]
+pub enum BlockKind {
+    TOP,
+    FUNC,
+    STRUCT,
 }
 
 #[derive(Debug, Clone)]
 pub struct BlockNode(pub Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: &TokenNode) -> Self {
+    pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: &TokenNode, kind: BlockKind) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode {
             newline: newline.clone(),
             stmts,
             scope: None,
+            kind,
         }));
         BlockNode(node)
     }

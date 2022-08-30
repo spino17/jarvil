@@ -1,3 +1,6 @@
+// See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to 
+// cover and the representation of type expressions in terms of type objects.
+
 use crate::{scope::core::Namespace, code::Code, ast::{ast::{BlockNode, ASTNode, StatementNode, CoreStatementNode, ExpressionNode, AssignmentNode, 
     VariableDeclarationNode, FunctionDeclarationNode, TypeDeclarationNode, ReturnStatementNode}, walk::Visitor}, error::core::JarvilError};
 
@@ -13,6 +16,16 @@ impl TypeChecker {
             code: code.clone(),
             errors: vec![],
         }
+    }
+
+    pub fn open_scope(&mut self, block: &BlockNode) {
+        self.namespace = block.scope().expect("scope should be set to the `BlockNode` in the resolver phase");
+        // TODO - set the context also
+    }
+
+    pub fn close_scope(&mut self) {
+        self.namespace.close_scope();
+        // TODO - unset the context to previous one
     }
 
     pub fn check_ast(&mut self, ast: &BlockNode) -> Vec<JarvilError> {

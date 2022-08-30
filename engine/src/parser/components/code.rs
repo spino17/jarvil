@@ -1,4 +1,4 @@
-use crate::ast::ast::BlockNode;
+use crate::ast::ast::{BlockNode, BlockKind};
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
 use crate::parser::components::statement::core::{
@@ -12,6 +12,7 @@ pub fn code(parser: &mut PackratParser, token_vec: Vec<Token>) -> BlockNode {
         |token| is_statement_starting_with(token),
         |parser| parser.stmt(),
         &STATEMENT_EXPECTED_STARTING_SYMBOLS,
+        BlockKind::TOP
     );
     parser.expect(ENDMARKER);
     block_node

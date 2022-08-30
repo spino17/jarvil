@@ -9,7 +9,7 @@
 // block_kind: statement, struct, interface, implementation of struct, function
 
 use crate::ast::ast::{
-    BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
+    BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode, BlockKind,
 };
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
@@ -22,6 +22,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
     is_starting_with_fn: F,
     statement_parsing_fn: G,
     expected_symbols: &[&'static str],
+    kind: BlockKind
 ) -> BlockNode {
     let newline_node = parser.expect_terminators();
     parser.set_indent_level(parser.curr_indent_level() + 1);
@@ -46,7 +47,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
             IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
             IndentResultKind::BLOCK_OVER => {
                 parser.set_indent_level(parser.curr_indent_level() - 1);
-                return BlockNode::new(stmts_vec, &newline_node);
+                return BlockNode::new(stmts_vec, &newline_node, kind);
             }
         };
         while !is_starting_with_fn(&parser.curr_token()) {
@@ -68,7 +69,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
         let token = &parser.curr_token();
         if token.is_eq(ENDMARKER) {
             parser.set_indent_level(parser.curr_indent_level() - 1);
-            return BlockNode::new(stmts_vec, &newline_node);
+            return BlockNode::new(stmts_vec, &newline_node, kind);
         }
         if token.is_eq("\n") {
             continue;

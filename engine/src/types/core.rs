@@ -7,6 +7,9 @@ use crate::types::{array::Array, atomic::Atomic};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
+// Type is data structure for type object. Type objects are more desirable than type expressions as the later contains a lot of information
+// not really useful for doing type-analysis.
+
 pub trait AbstractType {
     fn is_eq(&self, base_type: &Type) -> bool;
 }
