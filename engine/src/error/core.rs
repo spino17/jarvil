@@ -1,11 +1,9 @@
 use crate::code::Code;
 use crate::context;
 use colored::Colorize;
-use std::borrow::Borrow;
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::fmt::Formatter;
-use std::ops::Index;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::cmp::min;

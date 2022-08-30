@@ -13,6 +13,5 @@ pub fn build(code_vec: Vec<char>) -> Result<(), JarvilError> {
     if errors.len() > 0 {
         return Err(errors[0].clone());
     }
-    // TODO - use `ast` for name resolution, type checking and code generation
     Ok(())
 }

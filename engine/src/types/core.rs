@@ -1,10 +1,10 @@
 use super::lambda::Lambda;
 use super::r#struct::Struct;
-use crate::constants::common::{BOOL, FLOAT, INT, NON_TYPED, STRING, UNKNOWN};
+use crate::constants::common::{NON_TYPED, UNKNOWN};
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
-use std::fmt::{write, Debug, Formatter};
+use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
 pub trait AbstractType {

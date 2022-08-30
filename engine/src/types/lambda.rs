@@ -87,7 +87,7 @@ impl ToString for Lambda {
                 let mut flag = false;
                 for param in self_func_data.params.as_ref() {
                     if flag {
-                        params_str.push_str(",")
+                        params_str.push_str(", ")
                     }
                     params_str.push_str(&format!("{}", param.1.to_string()));
                     flag = true;
