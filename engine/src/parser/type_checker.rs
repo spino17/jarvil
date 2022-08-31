@@ -4,11 +4,12 @@
 use crate::{
     ast::{
         ast::{
-            ASTNode, AssignmentNode, BlockKind, BlockNode, CoreFunctionDeclarationNode,
-            CoreIdentifierNode, CoreStatemenIndentWrapperNode, CoreStatementNode, ExpressionNode,
-            FunctionDeclarationNode, Node, OkFunctionDeclarationNode, ReturnStatementNode,
-            StatementNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind,
-            VariableDeclarationNode, RAssignmentNode, CoreRAssignmentNode, CoreAssignmentNode, AtomNode,
+            ASTNode, AssignmentNode, AtomNode, BlockKind, BlockNode, CoreAssignmentNode,
+            CoreFunctionDeclarationNode, CoreIdentifierNode, CoreRAssignmentNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, ExpressionNode,
+            FunctionDeclarationNode, Node, OkFunctionDeclarationNode, RAssignmentNode,
+            ReturnStatementNode, StatementNode, TypeDeclarationNode, TypeExpressionNode,
+            TypeResolveKind, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -114,7 +115,9 @@ impl TypeChecker {
     pub fn check_r_assign(&mut self, r_assign: &RAssignmentNode) -> Type {
         let core_r_assign = r_assign.core_ref();
         match core_r_assign {
-            CoreRAssignmentNode::EXPRESSION(expr_stmt) => self.check_expr(&expr_stmt.core_ref().expr),
+            CoreRAssignmentNode::EXPRESSION(expr_stmt) => {
+                self.check_expr(&expr_stmt.core_ref().expr)
+            }
             CoreRAssignmentNode::LAMBDA(lambda) => {
                 let core_lambda = lambda.core_ref();
                 match core_lambda {
@@ -122,11 +125,11 @@ impl TypeChecker {
                         let core_ok_func_decl = ok_func_decl.core_ref();
                         self.walk_block(&core_ok_func_decl.block);
                         return self.type_of_lambda(ok_func_decl);
-                    },
-                    _ => Type::new_with_unknown()
+                    }
+                    _ => Type::new_with_unknown(),
                 }
-            },
-            _ => Type::new_with_unknown()
+            }
+            _ => Type::new_with_unknown(),
         }
     }
 
@@ -147,7 +150,7 @@ impl TypeChecker {
                 let l_type = self.check_atom(&core_ok_assignment.l_atom);
                 let r_assign = &core_ok_assignment.r_assign;
                 (l_type, r_assign)
-            },
+            }
             CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value) => {
                 let core_invalid_l_value = invalid_l_value.core_ref();
                 let expr = &core_invalid_l_value.l_expr;
@@ -159,10 +162,10 @@ impl TypeChecker {
         let r_type = self.check_r_assign(r_assign);
         if !l_type.is_eq(&r_type) {
             self.log_mismatch_type_of_left_and_right_side_error(
-                assignment.range(), 
+                assignment.range(),
                 assignment.start_line_number(),
                 &l_type,
-                &r_type
+                &r_type,
             )
         }
     }
