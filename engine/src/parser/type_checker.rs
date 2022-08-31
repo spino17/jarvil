@@ -5,7 +5,7 @@ use text_size::TextRange;
 
 use crate::{scope::core::Namespace, code::Code, ast::{ast::{BlockNode, ASTNode, StatementNode, CoreStatementNode, ExpressionNode, AssignmentNode, 
     VariableDeclarationNode, FunctionDeclarationNode, TypeDeclarationNode, ReturnStatementNode, BlockKind, CoreFunctionDeclarationNode, TypeResolveKind, 
-    CoreStatemenIndentWrapperNode, Node}, walk::Visitor}, error::core::JarvilError, types::core::Type};
+    CoreStatemenIndentWrapperNode, Node}, walk::Visitor}, error::core::{JarvilError, JarvilErrorKind}, types::core::Type};
 use std::rc::Rc;
 
 struct Context {
@@ -73,10 +73,7 @@ impl TypeChecker {
                 Some(return_type_expr) => {
                     match return_type_expr.type_obj(&self.namespace, &self.code) {
                         TypeResolveKind::RESOLVED(type_obj) => Some(type_obj),
-                        TypeResolveKind::UNRESOLVED(identifier) => {
-                            let name = Rc::new(identifier.token_value(&self.code));
-                            Some(Type::new_with_unknown())
-                        }
+                        TypeResolveKind::UNRESOLVED(_) => Some(Type::new_with_unknown()),
                         TypeResolveKind::INVALID => Some(Type::new_with_unknown()),
                     }
                 },
@@ -102,7 +99,9 @@ impl TypeChecker {
             }
             if !has_return_stmt && return_type_obj.is_some() {
                 let return_type_node = return_type_node.as_ref().unwrap();
-                self.log_expected_return_statement_error(return_type_node.range(), return_type_node.start_line_number());
+                self.log_expected_return_statement_error(
+                    return_type_node.range(), return_type_node.start_line_number()
+                );
             }
             self.close_scope();
             self.context.func_stack.pop();
@@ -110,9 +109,13 @@ impl TypeChecker {
     }
 
     pub fn check_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {
+        let core_return_stmt = return_stmt.core_ref();
         let func_stack_len = self.context.func_stack.len();
         if func_stack_len == 0 {
-            self.log_return_statement_not_inside_function_error(return_stmt.range());
+            self.log_return_statement_not_inside_function_error(
+                core_return_stmt.return_keyword.range(), 
+                core_return_stmt.return_keyword.start_line_number()
+            );
         }
         // TODO - get the type of the return expr and compare it with self.context.func_stack[func_stack_len - 1] entry
     }
@@ -139,12 +142,40 @@ impl TypeChecker {
         }
     }
 
-    pub fn log_return_statement_not_inside_function_error(&mut self, error_range: TextRange) {
-        todo!()
+    pub fn log_return_statement_not_inside_function_error(&mut self, error_range: TextRange, line_number: usize) {
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let (code_line, line_start_index, line_number, start_err_index) =
+            self.code.line_data(line_number, start_err_index);
+        let err_str = format!("invalid `return` statement");
+        let err = JarvilError::form_single_line_error(
+            start_err_index,
+            end_err_index,
+            line_number,
+            line_start_index,
+            code_line,
+            err_str,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
     }
 
     pub fn log_expected_return_statement_error(&mut self, error_range: TextRange, line_number: usize) {
-        todo!()
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let (code_line, line_start_index, line_number, start_err_index) =
+            self.code.line_data(line_number, start_err_index);
+        let err_str = format!("function body has `return` statement");
+        let err = JarvilError::form_single_line_error(
+            start_err_index,
+            end_err_index,
+            line_number,
+            line_start_index,
+            code_line,
+            err_str,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
     }
 }
 impl Visitor for TypeChecker {
