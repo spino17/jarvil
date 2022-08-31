@@ -214,10 +214,6 @@ impl PackratParser {
         }
     }
 
-    pub fn log_error(&mut self, err: JarvilError) {
-        self.errors.push(err);
-    }
-
     // ------------------- error logging utilities for terminal-based compilation -------------------
     pub fn log_missing_token_error_for_single_expected_symbol(
         &mut self,
@@ -247,7 +243,7 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        self.log_error(err)
+        self.errors.push(err)
     }
 
     pub fn log_missing_token_error_for_multiple_expected_symbols(
@@ -292,7 +288,7 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        self.log_error(err)
+        self.errors.push(err)
     }
 
     pub fn log_trailing_skipped_tokens_error(&mut self, skipped_tokens: &Vec<SkippedTokenNode>) {
@@ -316,7 +312,7 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        self.log_error(err)
+        self.errors.push(err)
     }
 
     pub fn log_incorrectly_indented_block_error(
@@ -341,7 +337,7 @@ impl PackratParser {
             err_str,
             JarvilErrorKind::SYNTAX_ERROR,
         );
-        self.log_error(err)
+        self.errors.push(err)
     }
 
     pub fn log_invalid_l_value_error(
@@ -354,31 +350,16 @@ impl PackratParser {
             return;
         }
         // -> TODO - check whether error on same line already exists
-        let (start_line_number, end_line_number) =
-            self.code
-                .line_range_from_indexes(start_index, end_index, start_line_number);
         let err_str = "expression cannot be assigned a value".to_string();
-        if start_line_number == end_line_number {
-            let err = JarvilError::form_single_line_error(
-                start_index,
-                end_index,
-                start_line_number,
-                self.code.get_line_start_index(start_line_number),
-                self.code.line(start_line_number),
-                err_str,
-                JarvilErrorKind::SYNTAX_ERROR,
-            );
-            self.log_error(err)
-        } else {
-            let err = JarvilError::form_multi_line_error(
-                start_line_number,
-                end_line_number,
-                &self.code,
-                err_str,
-                JarvilErrorKind::SYNTAX_ERROR,
-            );
-            self.log_error(err)
-        }
+        let err = JarvilError::form_error(
+            start_index,
+            end_index,
+            start_line_number,
+            &self.code,
+            err_str,
+            JarvilErrorKind::SYNTAX_ERROR,
+        );
+        self.errors.push(err)
     }
 
     // ------------------- parsing routines for terminals and block indentation -------------------

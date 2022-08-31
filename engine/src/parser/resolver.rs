@@ -241,12 +241,12 @@ impl Resolver {
         let return_type = &core_func_decl.return_type;
         let func_body = &core_func_decl.block;
         let mut params_vec: Vec<(String, Type)> = vec![];
-        let return_type: Option<Type> = match return_type {
+        let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
-                Some(type_obj)
+                type_obj
             }
-            None => None,
+            None => Type::new_with_void(),
         };
         if let Some(params) = params {
             let params_iter = params.iter();
@@ -377,12 +377,12 @@ impl Resolver {
         let mut params_vec: Vec<(String, Type)> = vec![];
         let params = &core_lambda_type_decl.params;
         let return_type = &core_lambda_type_decl.return_type;
-        let return_type: Option<Type> = match return_type {
+        let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
-                Some(type_obj)
+                type_obj
             }
-            None => None,
+            None => Type::new_with_void(),
         };
         if let Some(params) = params {
             let params_iter = params.iter();

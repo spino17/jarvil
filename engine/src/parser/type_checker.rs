@@ -1,7 +1,6 @@
 // See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to
 // cover and the representation of type expressions in terms of type objects.
 
-use text_size::TextRange;
 use crate::{
     ast::{
         ast::{
@@ -15,11 +14,12 @@ use crate::{
     code::Code,
     error::core::{JarvilError, JarvilErrorKind},
     scope::core::Namespace,
-    types::core::Type,
+    types::core::{AbstractType, Type},
 };
+use text_size::TextRange;
 
 struct Context {
-    func_stack: Vec<Option<Type>>,
+    func_stack: Vec<Type>,
 }
 
 pub struct TypeChecker {
@@ -56,7 +56,7 @@ impl TypeChecker {
         std::mem::take(&mut self.errors)
     }
 
-    pub fn check_expr(&mut self, expr: &ExpressionNode) {
+    pub fn check_expr(&mut self, expr: &ExpressionNode) -> Type {
         // TODO - check the binary and unary operands and atom chaining
         // 1. operators, operands validity
         // 2. call expr should have correct number and type of params
@@ -75,19 +75,18 @@ impl TypeChecker {
     }
 
     pub fn check_func_decl(&mut self, func_decl: &FunctionDeclarationNode) {
-        // TODO - set the new entry in the context for checking return type
         if let CoreFunctionDeclarationNode::OK(ok_func_decl) = func_decl.core_ref() {
             let core_ok_func_decl = ok_func_decl.core_ref();
             let return_type_node = &core_ok_func_decl.return_type;
             let return_type_obj = match return_type_node {
                 Some(return_type_expr) => {
                     match return_type_expr.type_obj(&self.namespace, &self.code) {
-                        TypeResolveKind::RESOLVED(type_obj) => Some(type_obj),
-                        TypeResolveKind::UNRESOLVED(_) => Some(Type::new_with_unknown()),
-                        TypeResolveKind::INVALID => Some(Type::new_with_unknown()),
+                        TypeResolveKind::RESOLVED(type_obj) => type_obj,
+                        TypeResolveKind::UNRESOLVED(_) => Type::new_with_unknown(),
+                        TypeResolveKind::INVALID => Type::new_with_unknown(),
                     }
                 }
-                None => None,
+                None => Type::new_with_void(),
             };
             self.open_scope(&core_ok_func_decl.block);
             self.context.func_stack.push(return_type_obj.clone());
@@ -107,7 +106,7 @@ impl TypeChecker {
                     // TODO - we can break here as any statement following return statement is dead code
                 }
             }
-            if !has_return_stmt && return_type_obj.is_some() {
+            if !has_return_stmt && !return_type_obj.is_void() {
                 let return_type_node = return_type_node.as_ref().unwrap();
                 self.log_expected_return_statement_error(
                     return_type_node.range(),
@@ -124,11 +123,21 @@ impl TypeChecker {
         let func_stack_len = self.context.func_stack.len();
         if func_stack_len == 0 {
             self.log_return_statement_not_inside_function_error(
-                core_return_stmt.return_keyword.range(),
-                core_return_stmt.return_keyword.start_line_number(),
+                return_stmt.range(),
+                return_stmt.start_line_number(),
             );
         }
-        // TODO - get the type of the return expr and compare it with self.context.func_stack[func_stack_len - 1] entry
+        let expr = &core_return_stmt.expr;
+        let expr_type_obj = self.check_expr(expr);
+        let expected_type_obj = self.context.func_stack[func_stack_len - 1].clone();
+        if !expr_type_obj.is_eq(&expected_type_obj) {
+            self.log_mismatch_type_of_return_value_error(
+                expr.range(),
+                expr.start_line_number(),
+                &expr_type_obj,
+                &expected_type_obj,
+            );
+        }
     }
 
     pub fn check_stmt(&mut self, stmt: &StatementNode) {
@@ -160,15 +169,12 @@ impl TypeChecker {
     ) {
         let start_err_index: usize = error_range.start().into();
         let end_err_index: usize = error_range.end().into();
-        let (code_line, line_start_index, line_number, start_err_index) =
-            self.code.line_data(line_number, start_err_index);
         let err_str = format!("invalid `return` statement");
-        let err = JarvilError::form_single_line_error(
+        let err = JarvilError::form_error(
             start_err_index,
             end_err_index,
             line_number,
-            line_start_index,
-            code_line,
+            &self.code,
             err_str,
             JarvilErrorKind::SEMANTIC_ERROR,
         );
@@ -184,13 +190,37 @@ impl TypeChecker {
         let end_err_index: usize = error_range.end().into();
         let (code_line, line_start_index, line_number, start_err_index) =
             self.code.line_data(line_number, start_err_index);
-        let err_str = format!("function body has `return` statement");
+        let err_str = format!("function body has no `return` statement");
         let err = JarvilError::form_single_line_error(
             start_err_index,
             end_err_index,
             line_number,
             line_start_index,
             code_line,
+            err_str,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
+    }
+
+    pub fn log_mismatch_type_of_return_value_error(
+        &mut self,
+        error_range: TextRange,
+        start_line_number: usize,
+        expected_type: &Type,
+        received_type: &Type,
+    ) {
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let err_str = format!(
+            "mismatched types\nexpected return value type `{}`, got `{}`",
+            expected_type, received_type
+        );
+        let err = JarvilError::form_error(
+            start_err_index,
+            end_err_index,
+            start_line_number,
+            &self.code,
             err_str,
             JarvilErrorKind::SEMANTIC_ERROR,
         );

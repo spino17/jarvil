@@ -4,7 +4,7 @@ use crate::constants::common::{NON_TYPED, UNKNOWN};
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
-use std::fmt::{Debug, Formatter};
+use std::fmt::{write, Debug, Formatter};
 use std::rc::Rc;
 
 // Type is data structure for type object. Type objects are more desirable than type expressions as the later contains a lot of information
@@ -22,6 +22,7 @@ pub enum CoreType {
     ARRAY(Array),
     NON_TYPED,
     UNKNOWN,
+    VOID,
     // TODO - add below types also
     // ENUMERATION,
     // TUPLES,
@@ -54,6 +55,17 @@ impl Type {
     pub fn new_with_unknown() -> Type {
         Type(Rc::new(CoreType::UNKNOWN))
     }
+
+    pub fn new_with_void() -> Type {
+        Type(Rc::new(CoreType::VOID))
+    }
+
+    pub fn is_void(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::VOID => true,
+            _ => false,
+        }
+    }
 }
 impl AbstractType for Type {
     fn is_eq(&self, base_type: &Type) -> bool {
@@ -70,6 +82,10 @@ impl AbstractType for Type {
                 CoreType::NON_TYPED => true,
                 _ => false,
             },
+            CoreType::VOID => match base_type.0.as_ref() {
+                CoreType::VOID => true,
+                _ => false,
+            },
         }
     }
 }
@@ -82,6 +98,7 @@ impl std::fmt::Display for Type {
             CoreType::ARRAY(array_type) => write!(f, "{}", array_type.to_string()),
             CoreType::UNKNOWN => write!(f, "{}", UNKNOWN),
             CoreType::NON_TYPED => write!(f, "{}", NON_TYPED),
+            CoreType::VOID => write!(f, "()"),
         }
     }
 }

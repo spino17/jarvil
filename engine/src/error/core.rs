@@ -240,6 +240,38 @@ impl JarvilError {
             err_kind,
         )
     }
+
+    pub fn form_error(
+        start_index: usize,
+        end_index: usize,
+        start_line_number: usize,
+        code: &Code,
+        err_message: String,
+        err_kind: JarvilErrorKind,
+    ) -> Self {
+        let (start_line_number, end_line_number) =
+            code.line_range_from_indexes(start_index, end_index, start_line_number);
+        let err = if start_line_number == end_line_number {
+            JarvilError::form_single_line_error(
+                start_index,
+                end_index,
+                start_line_number,
+                code.get_line_start_index(start_line_number),
+                code.line(start_line_number),
+                err_message,
+                err_kind,
+            )
+        } else {
+            JarvilError::form_multi_line_error(
+                start_line_number,
+                end_line_number,
+                code,
+                err_message,
+                err_kind,
+            )
+        };
+        err
+    }
 }
 
 impl Display for JarvilError {

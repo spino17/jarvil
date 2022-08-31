@@ -39,22 +39,9 @@ impl AbstractType for Lambda {
                 if self_params_len != base_params_len {
                     return false;
                 }
-                if (self_func_data.return_type.is_none() && base_func_data.return_type.is_some())
-                    || (self_func_data.return_type.is_some()
-                        && base_func_data.return_type.is_none())
-                {
-                    return false;
-                }
-                let is_return_type_eq = match self_func_data.return_type.as_ref() {
-                    Some(self_return_type) => match base_func_data.return_type.as_ref() {
-                        Some(base_return_type) => self_return_type.is_eq(base_return_type),
-                        _ => unreachable!("both lambda types should have a return type"),
-                    },
-                    None => match base_func_data.return_type.as_ref() {
-                        None => true,
-                        _ => unreachable!("both lambda types should not have return type"),
-                    },
-                };
+                let is_return_type_eq = self_func_data
+                    .return_type
+                    .is_eq(&base_func_data.return_type);
                 if !is_return_type_eq {
                     return false;
                 }
@@ -92,14 +79,7 @@ impl ToString for Lambda {
                     params_str.push_str(&format!("{}", param.1.to_string()));
                     flag = true;
                 }
-                let mut return_type_str = String::from("");
-                match self_func_data.return_type.as_ref() {
-                    Some(return_type) => {
-                        return_type_str.push_str(&format!("{}", return_type.to_string()))
-                    }
-                    None => return_type_str.push_str("void"),
-                }
-                format!("func({}) -> ({})", params_str, return_type_str)
+                format!("func({}) -> {}", params_str, self_func_data.return_type)
             }
         }
     }
