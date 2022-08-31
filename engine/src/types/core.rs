@@ -1,6 +1,7 @@
 use super::lambda::Lambda;
 use super::r#struct::Struct;
 use crate::constants::common::{NON_TYPED, UNKNOWN};
+use crate::parser::components::expression::atom;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
@@ -64,6 +65,35 @@ impl Type {
         match self.0.as_ref() {
             CoreType::VOID => true,
             _ => false,
+        }
+    }
+
+    pub fn is_bool(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::ATOMIC(atomic) => atomic.is_bool(),
+            _ => false,
+        }
+    }
+
+    pub fn is_int(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::ATOMIC(atomic) => atomic.is_int(),
+            _ => false,
+        }
+    }
+
+    pub fn is_float(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::ATOMIC(atomic) => atomic.is_float(),
+            _ => false,
+        }
+    }
+
+    pub fn is_numeric(&self) -> bool {
+        if self.is_int() || self.is_float() {
+            true
+        } else {
+            false
         }
     }
 }

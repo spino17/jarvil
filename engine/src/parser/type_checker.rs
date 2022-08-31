@@ -4,27 +4,40 @@
 use crate::{
     ast::{
         ast::{
-            ASTNode, AssignmentNode, AtomNode, BlockKind, BlockNode, CoreAssignmentNode,
-            CoreFunctionDeclarationNode, CoreIdentifierNode, CoreRAssignmentNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, ExpressionNode,
-            FunctionDeclarationNode, Node, OkFunctionDeclarationNode, RAssignmentNode,
-            ReturnStatementNode, StatementNode, TypeDeclarationNode, TypeExpressionNode,
-            TypeResolveKind, VariableDeclarationNode,
+            ASTNode, AssignmentNode, AtomNode, AtomicExpressionNode, BinaryExpressionNode,
+            BlockKind, BlockNode, ComparisonNode, CoreAssignmentNode, CoreAtomicExpressionNode,
+            CoreExpressionNode, CoreFunctionDeclarationNode, CoreIdentifierNode,
+            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, Node,
+            OkFunctionDeclarationNode, OnlyUnaryExpressionNode, RAssignmentNode,
+            ReturnStatementNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+            TypeResolveKind, UnaryExpressionNode, UnaryOperatorKind, VariableDeclarationNode,
         },
         walk::Visitor,
     },
     code::Code,
+    constants::common::{BOOL, FLOAT, INT, STRING},
     error::core::{JarvilError, JarvilErrorKind},
     scope::{
         core::{IdentifierKind, Namespace, SymbolData},
         user_defined_types::{LambdaTypeData, UserDefinedTypeData},
     },
-    types::core::{AbstractType, Type},
+    types::{
+        atomic,
+        core::{AbstractType, Type},
+    },
 };
 use text_size::TextRange;
 
 struct Context {
     func_stack: Vec<Type>,
+}
+
+pub enum AtomicTokenExprKind {
+    BOOL,
+    INTEGER,
+    FLOAT,
+    LITERAL,
 }
 
 pub struct TypeChecker {
@@ -133,12 +146,99 @@ impl TypeChecker {
         }
     }
 
+    pub fn check_token(&mut self, token: &TokenNode, kind: AtomicTokenExprKind) -> Type {
+        match token.core_ref() {
+            CoreTokenNode::OK(_) => match kind {
+                AtomicTokenExprKind::INTEGER => Type::new_with_atomic(INT),
+                AtomicTokenExprKind::BOOL => Type::new_with_atomic(BOOL),
+                AtomicTokenExprKind::FLOAT => Type::new_with_atomic(FLOAT),
+                AtomicTokenExprKind::LITERAL => Type::new_with_atomic(STRING),
+            },
+            _ => Type::new_with_unknown(),
+        }
+    }
+
+    pub fn check_atomic_expr(&mut self, atomic_expr: &AtomicExpressionNode) -> Type {
+        let core_atomic_expr = atomic_expr.core_ref();
+        match core_atomic_expr {
+            CoreAtomicExpressionNode::BOOL_VALUE(token) => {
+                self.check_token(token, AtomicTokenExprKind::BOOL)
+            }
+            CoreAtomicExpressionNode::INTEGER(token) => {
+                self.check_token(token, AtomicTokenExprKind::INTEGER)
+            }
+            CoreAtomicExpressionNode::FLOATING_POINT_NUMBER(token) => {
+                self.check_token(token, AtomicTokenExprKind::FLOAT)
+            }
+            CoreAtomicExpressionNode::LITERAL(token) => {
+                self.check_token(token, AtomicTokenExprKind::LITERAL)
+            }
+            CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(parenthesised_expr) => {
+                self.check_expr(&parenthesised_expr.core_ref().expr)
+            }
+            CoreAtomicExpressionNode::ATOM(atom) => self.check_atom(atom),
+            _ => Type::new_with_unknown(),
+        }
+    }
+
+    pub fn check_only_unary_expr(&mut self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
+        let core_only_unary_expr = only_unary_expr.core_ref();
+        let operand_type = self.check_unary_expr(&core_only_unary_expr.unary_expr);
+        match core_only_unary_expr.operator_kind {
+            UnaryOperatorKind::PLUS | UnaryOperatorKind::MINUS => {
+                if operand_type.is_numeric() {
+                    return operand_type;
+                } else {
+                    // TODO - raise error `unary expression with operator `+` or `-` is valid only for numeric (`int`, `float`) operand`
+                    return Type::new_with_unknown();
+                }
+            }
+            UnaryOperatorKind::NOT => {
+                if operand_type.is_bool() {
+                    // TODO - raise error `unary expression with operator `not` is valid only for boolean operand`
+                    return operand_type;
+                } else {
+                    return Type::new_with_unknown();
+                }
+            }
+        }
+    }
+
+    pub fn check_unary_expr(&mut self, unary_expr: &UnaryExpressionNode) -> Type {
+        let core_unary_expr = unary_expr.core_ref();
+        match core_unary_expr {
+            CoreUnaryExpressionNode::ATOMIC(atomic) => self.check_atomic_expr(atomic),
+            CoreUnaryExpressionNode::UNARY(unary) => self.check_only_unary_expr(unary),
+            _ => Type::new_with_unknown(),
+        }
+    }
+
+    pub fn check_binary_expr(&mut self, binary_expr: &BinaryExpressionNode) -> Type {
+        let core_binary_expr = binary_expr.core_ref();
+        let l_type = self.check_expr(&core_binary_expr.left_expr);
+        // TODO - check the operator and depending on the operator check whether binary operation is valid for l_type and r_type
+        let r_type = self.check_expr(&core_binary_expr.right_expr);
+        todo!()
+    }
+
+    pub fn check_comp_expr(&mut self, comp_expr: &ComparisonNode) -> Type {
+        todo!()
+    }
+
     pub fn check_expr(&mut self, expr: &ExpressionNode) -> Type {
         // TODO - check the binary and unary operands and atom chaining
         // 1. operators, operands validity
         // 2. call expr should have correct number and type of params
         // 3. atom chaining should be valid according to types
-        todo!()
+        let core_expr = expr.core_ref();
+        match core_expr {
+            CoreExpressionNode::UNARY(unary_expr) => self.check_unary_expr(unary_expr),
+            CoreExpressionNode::BINARY(binary_expr) => self.check_binary_expr(binary_expr),
+            CoreExpressionNode::COMPARISON(comparison_expr) => {
+                self.check_comp_expr(comparison_expr)
+            }
+            _ => Type::new_with_unknown(),
+        }
     }
 
     pub fn check_assignment(&mut self, assignment: &AssignmentNode) {

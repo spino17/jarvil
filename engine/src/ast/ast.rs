@@ -1422,10 +1422,6 @@ impl ExpressionNode {
         ExpressionNode(node)
     }
 
-    pub fn data_type(&self) -> Type {
-        todo!()
-    }
-
     pub fn is_valid_l_value(&self) -> Option<AtomNode> {
         match &self.0.as_ref() {
             CoreExpressionNode::UNARY(unary_expr_node) => match &unary_expr_node.0.as_ref() {
