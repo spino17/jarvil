@@ -309,7 +309,7 @@ impl Resolver {
                                 .set_data_type(&lambda_type_obj);
                         }
                         _ => unreachable!(
-                            "function name `{}` should be resolved to `SymbolData<FunctionData>`",
+                            "function name `{}` should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`",
                             ok_identifier.token_value(&self.code)
                         ),
                     }

@@ -96,6 +96,13 @@ impl Type {
             false
         }
     }
+
+    pub fn is_lambda(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::LAMBDA(_) => true,
+            _ => false,
+        }
+    }
 }
 impl AbstractType for Type {
     fn is_eq(&self, base_type: &Type) -> bool {
