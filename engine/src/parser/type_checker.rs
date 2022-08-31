@@ -8,7 +8,7 @@ use crate::{
             CoreIdentifierNode, CoreStatemenIndentWrapperNode, CoreStatementNode, ExpressionNode,
             FunctionDeclarationNode, Node, OkFunctionDeclarationNode, ReturnStatementNode,
             StatementNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind,
-            VariableDeclarationNode,
+            VariableDeclarationNode, RAssignmentNode, CoreRAssignmentNode, CoreAssignmentNode, AtomNode,
         },
         walk::Visitor,
     },
@@ -107,6 +107,29 @@ impl TypeChecker {
         std::mem::take(&mut self.errors)
     }
 
+    pub fn check_atom(&mut self, atom: &AtomNode) -> Type {
+        todo!()
+    }
+
+    pub fn check_r_assign(&mut self, r_assign: &RAssignmentNode) -> Type {
+        let core_r_assign = r_assign.core_ref();
+        match core_r_assign {
+            CoreRAssignmentNode::EXPRESSION(expr_stmt) => self.check_expr(&expr_stmt.core_ref().expr),
+            CoreRAssignmentNode::LAMBDA(lambda) => {
+                let core_lambda = lambda.core_ref();
+                match core_lambda {
+                    CoreFunctionDeclarationNode::OK(ok_func_decl) => {
+                        let core_ok_func_decl = ok_func_decl.core_ref();
+                        self.walk_block(&core_ok_func_decl.block);
+                        return self.type_of_lambda(ok_func_decl);
+                    },
+                    _ => Type::new_with_unknown()
+                }
+            },
+            _ => Type::new_with_unknown()
+        }
+    }
+
     pub fn check_expr(&mut self, expr: &ExpressionNode) -> Type {
         // TODO - check the binary and unary operands and atom chaining
         // 1. operators, operands validity
@@ -117,7 +140,31 @@ impl TypeChecker {
 
     pub fn check_assignment(&mut self, assignment: &AssignmentNode) {
         // TODO - check types on both sides are same
-        todo!()
+        let core_assignment = assignment.core_ref();
+        let (l_type, r_assign) = match core_assignment {
+            CoreAssignmentNode::OK(ok_assignment) => {
+                let core_ok_assignment = ok_assignment.core_ref();
+                let l_type = self.check_atom(&core_ok_assignment.l_atom);
+                let r_assign = &core_ok_assignment.r_assign;
+                (l_type, r_assign)
+            },
+            CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value) => {
+                let core_invalid_l_value = invalid_l_value.core_ref();
+                let expr = &core_invalid_l_value.l_expr;
+                let r_assign = &core_invalid_l_value.r_assign;
+                let l_type = self.check_expr(expr);
+                (l_type, r_assign)
+            }
+        };
+        let r_type = self.check_r_assign(r_assign);
+        if !l_type.is_eq(&r_type) {
+            self.log_mismatch_type_of_left_and_right_side_error(
+                assignment.range(), 
+                assignment.start_line_number(),
+                &l_type,
+                &r_type
+            )
+        }
     }
 
     pub fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
@@ -179,8 +226,8 @@ impl TypeChecker {
             self.log_mismatch_type_of_return_value_error(
                 expr.range(),
                 expr.start_line_number(),
-                &expr_type_obj,
                 &expected_type_obj,
+                &expr_type_obj,
             );
         }
     }
@@ -259,6 +306,30 @@ impl TypeChecker {
         let end_err_index: usize = error_range.end().into();
         let err_str = format!(
             "mismatched types\nexpected return value type `{}`, got `{}`",
+            expected_type, received_type
+        );
+        let err = JarvilError::form_error(
+            start_err_index,
+            end_err_index,
+            start_line_number,
+            &self.code,
+            err_str,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
+    }
+
+    pub fn log_mismatch_type_of_left_and_right_side_error(
+        &mut self,
+        error_range: TextRange,
+        start_line_number: usize,
+        expected_type: &Type,
+        received_type: &Type,
+    ) {
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let err_str = format!(
+            "mismatched types\nleft side has type `{}`, right side has type `{}`",
             expected_type, received_type
         );
         let err = JarvilError::form_error(
