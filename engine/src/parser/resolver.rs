@@ -133,7 +133,7 @@ impl Resolver {
         let func_name = &core_func_decl.name;
         let params = &core_func_decl.params;
         let func_body = &core_func_decl.block;
-        let is_lambda = &core_func_decl.is_lambda;
+        let is_lambda = core_func_decl.is_lambda;
         self.namespace.open_scope();
         if let Some(params) = params {
             let params_iter = params.iter();
@@ -163,7 +163,7 @@ impl Resolver {
         self.namespace.close_scope();
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                if *is_lambda {
+                if is_lambda {
                     let declare_fn =
                         |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
                             namespace.declare_variable(name, start_line_number)
@@ -594,6 +594,7 @@ impl Visitor for Resolver {
                 }
                 ASTNode::ATOM_START(atom_start) => {
                     match atom_start.core_ref() {
+                        // TODO - add for identifier to search in types namespace for constructor expression like <Type>(...)
                         CoreAtomStartNode::CALL(func_call) => {
                             let core_func_call = func_call.core_ref();
                             if let CoreIdentifierNode::OK(ok_identifier) =

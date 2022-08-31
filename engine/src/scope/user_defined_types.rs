@@ -23,9 +23,9 @@ impl UserDefinedTypeData {
 
 #[derive(Debug, Clone, Default)]
 pub struct StructData {
-    fields: Rc<FxHashMap<Rc<String>, Type>>,
+    pub fields: Rc<FxHashMap<Rc<String>, Type>>,
     constructor: FunctionData,
-    methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
+    pub methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
     class_methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
 }
 impl StructData {

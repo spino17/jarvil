@@ -1,13 +1,16 @@
 // See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to
 // cover and the representation of type expressions in terms of type objects.
 
+use std::rc::Rc;
+
 use crate::{
     ast::{
         ast::{
-            ASTNode, AssignmentNode, AtomNode, AtomicExpressionNode, BinaryExpressionNode,
-            BlockKind, BlockNode, ComparisonNode, CoreAssignmentNode, CoreAtomicExpressionNode,
-            CoreExpressionNode, CoreFunctionDeclarationNode, CoreIdentifierNode,
-            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
+            BinaryExpressionNode, BlockKind, BlockNode, ComparisonNode, CoreAssignmentNode,
+            CoreAtomNode, CoreAtomicExpressionNode, CoreExpressionNode,
+            CoreFunctionDeclarationNode, CoreIdentifierNode, CoreRAssignmentNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, NameTypeSpecsNode,
             Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode,
             ReturnStatementNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
@@ -20,11 +23,12 @@ use crate::{
     error::core::{JarvilError, JarvilErrorKind},
     scope::{
         core::{IdentifierKind, Namespace, SymbolData},
+        function::FunctionData,
         user_defined_types::{LambdaTypeData, UserDefinedTypeData},
     },
     types::{
         atomic,
-        core::{AbstractType, Type},
+        core::{AbstractType, CoreType, Type},
     },
 };
 use text_size::TextRange;
@@ -138,6 +142,57 @@ impl TypeChecker {
         lambda_type_obj
     }
 
+    pub fn is_callable(&mut self, atom: &AtomNode) -> Option<FunctionData> {
+        let atom_type_obj = self.check_atom(atom);
+        match atom_type_obj.0.as_ref() {
+            CoreType::LAMBDA(lambda) => match &*lambda.symbol_data.0.as_ref().borrow() {
+                UserDefinedTypeData::LAMBDA(lambda) => return Some(lambda.func_data.clone()),
+                _ => unreachable!(),
+            },
+            _ => None,
+        }
+    }
+
+    pub fn is_indexable_with_type(&mut self, base_type: &Type, index_type: &Type) -> Option<Type> {
+        todo!()
+    }
+
+    pub fn check_params_type_and_count(
+        &mut self,
+        expected_params: &Rc<Vec<(String, Type)>>,
+        received_params: &Option<ParamsNode>,
+    ) {
+        let expected_params_len = expected_params.len();
+        match received_params {
+            Some(received_params) => {
+                let expected_params = expected_params.as_ref();
+                let received_params_iter = received_params.iter();
+                let mut index = 0;
+                for received_param in received_params_iter {
+                    let param_type_obj = self.check_expr(&received_param);
+                    if index >= expected_params_len {
+                        // TODO - return `more than expected arguments were passed`
+                    }
+                    let expected_params_type_obj = &expected_params[index].1;
+                    if !param_type_obj.is_eq(expected_params_type_obj) {
+                        // TODO - return `type mismatch\nexpected type for argument {index} is {}, got {}`
+                    }
+                    index = index + 1;
+                }
+                if index < expected_params_len {
+                    // TODO - return `expected {} arguments, {} were passed`
+                }
+            }
+            None => {
+                if expected_params_len != 0 {
+                    // TODO - return unequal params
+                } else {
+                    // TODO - return success
+                }
+            }
+        }
+    }
+
     pub fn check_ast(&mut self, ast: &BlockNode) -> Vec<JarvilError> {
         let core_block = ast.0.as_ref().borrow();
         for stmt in &core_block.stmts {
@@ -146,8 +201,120 @@ impl TypeChecker {
         std::mem::take(&mut self.errors)
     }
 
-    pub fn check_atom(&mut self, atom: &AtomNode) -> Type {
+    pub fn check_atom_start(&mut self, atom_start: &AtomStartNode) -> Type {
         todo!()
+    }
+
+    pub fn check_atom(&mut self, atom: &AtomNode) -> Type {
+        let core_atom = atom.core_ref();
+        match core_atom {
+            CoreAtomNode::ATOM_START(atom_start) => self.check_atom_start(atom_start),
+            CoreAtomNode::CALL(call) => {
+                let core_call = call.core_ref();
+                let atom = &core_call.atom;
+                let params = &core_call.params;
+                match self.is_callable(atom) {
+                    Some(func_data) => {
+                        let params_vec = func_data.params;
+                        let return_type = func_data.return_type;
+                        self.check_params_type_and_count(&params_vec, params);
+                        // TODO - check params type and number are correct
+                        return return_type;
+                    }
+                    None => {
+                        // TODO - raise error `expression is not callable`
+                        return Type::new_with_unknown();
+                    }
+                }
+            }
+            CoreAtomNode::PROPERTRY_ACCESS(property_access) => {
+                let core_property_access = property_access.core_ref();
+                let atom_type_obj = self.check_atom(&core_property_access.atom);
+                let property_name = &core_property_access.propertry;
+                if let CoreIdentifierNode::OK(ok_identifier) = property_name.core_ref() {
+                    let property_name = Rc::new(ok_identifier.token_value(&self.code));
+                    match atom_type_obj.0.as_ref() {
+                        CoreType::STRUCT(struct_type) => {
+                            let symbol_data = &struct_type.symbol_data;
+                            match &*symbol_data.0.as_ref().borrow() {
+                                UserDefinedTypeData::STRUCT(struct_symbol_data) => {
+                                    match struct_symbol_data.fields.as_ref().get(&property_name) {
+                                        Some(type_obj) => return type_obj.clone(),
+                                        None => {
+                                            // TODO - raise error `no property named `{}` exist for expression with type `{}``
+                                            return Type::new_with_unknown();
+                                        }
+                                    }
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        _ => {
+                            // TODO - raise error `no property named `{}` exist for expression with type `{}``
+                            return Type::new_with_unknown();
+                        }
+                    }
+                }
+                Type::new_with_unknown()
+            }
+            CoreAtomNode::METHOD_ACCESS(method_access) => {
+                // TODO - check for possiblitiy of a field access with type lambda which will have similar node
+                let core_method_access = method_access.core_ref();
+                let atom_type_obj = self.check_atom(&core_method_access.atom);
+                let method_name = &core_method_access.method_name;
+                let params = &core_method_access.params;
+                if let CoreIdentifierNode::OK(ok_identifier) = method_name.core_ref() {
+                    let method_name = ok_identifier.token_value(&self.code);
+                    match atom_type_obj.0.as_ref() {
+                        CoreType::STRUCT(struct_type) => {
+                            let symbol_data = &struct_type.symbol_data;
+                            match &*symbol_data.0.as_ref().borrow() {
+                                UserDefinedTypeData::STRUCT(struct_symbol_data) => {
+                                    match struct_symbol_data
+                                        .methods
+                                        .as_ref()
+                                        .borrow()
+                                        .get(&method_name)
+                                    {
+                                        Some(func_data) => {
+                                            let expected_params = &func_data.params;
+                                            let return_type = &func_data.return_type;
+                                            self.check_params_type_and_count(
+                                                expected_params,
+                                                params,
+                                            );
+                                            return return_type.clone();
+                                        }
+                                        None => {
+                                            // TODO - raise error `no method named `{}` exist for expression with type `{}``
+                                            return Type::new_with_unknown();
+                                        }
+                                    }
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        _ => {
+                            // TODO - raise error `no method named `{}` exist for expression with type `{}``
+                            return Type::new_with_unknown();
+                        }
+                    }
+                }
+                Type::new_with_unknown()
+            }
+            CoreAtomNode::INDEX_ACCESS(index_access) => {
+                let core_index_access = index_access.core_ref();
+                let atom_type_obj = self.check_atom(&core_index_access.atom);
+                let index_type_obj = self.check_expr(&core_index_access.index);
+                match self.is_indexable_with_type(&atom_type_obj, &index_type_obj) {
+                    Some(element_type) => return element_type.clone(),
+                    _ => {
+                        // TODO - raise error `expression with type {} is not indexable with value of type {}`
+                        return Type::new_with_unknown();
+                    }
+                }
+            }
+        }
     }
 
     pub fn check_r_assign(&mut self, r_assign: &RAssignmentNode) -> Type {
