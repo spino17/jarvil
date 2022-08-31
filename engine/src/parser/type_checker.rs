@@ -8,10 +8,10 @@ use crate::{
             BlockKind, BlockNode, ComparisonNode, CoreAssignmentNode, CoreAtomicExpressionNode,
             CoreExpressionNode, CoreFunctionDeclarationNode, CoreIdentifierNode,
             CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, Node,
-            OkFunctionDeclarationNode, OnlyUnaryExpressionNode, RAssignmentNode,
+            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, NameTypeSpecsNode,
+            Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode,
             ReturnStatementNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-            TypeResolveKind, UnaryExpressionNode, UnaryOperatorKind, VariableDeclarationNode, ParamsNode, NameTypeSpecsNode,
+            TypeResolveKind, UnaryExpressionNode, UnaryOperatorKind, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -28,7 +28,6 @@ use crate::{
     },
 };
 use text_size::TextRange;
-use std::rc::Rc;
 
 struct Context {
     func_stack: Vec<Type>,
@@ -76,9 +75,9 @@ impl TypeChecker {
     }
 
     pub fn params_and_return_type_obj_from_expr(
-        &self, 
-        return_type: &Option<TypeExpressionNode>, 
-        params: &Option<NameTypeSpecsNode>
+        &self,
+        return_type: &Option<TypeExpressionNode>,
+        params: &Option<NameTypeSpecsNode>,
     ) -> (Vec<(String, Type)>, Type) {
         let mut params_vec: Vec<(String, Type)> = vec![];
         let return_type: Type = match return_type {
@@ -94,9 +93,9 @@ impl TypeChecker {
                 let core_param = param.core_ref();
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                    let variable_name = ok_identifier.token_value(&self.code);
-                    let type_obj = self.type_obj_from_expression(&core_param.data_type);
                     if let Some(_) = ok_identifier.symbol_data() {
+                        let variable_name = ok_identifier.token_value(&self.code);
+                        let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         params_vec.push((variable_name, type_obj));
                     }
                 }
@@ -107,30 +106,29 @@ impl TypeChecker {
 
     pub fn type_of_lambda(&self, func_decl: &OkFunctionDeclarationNode) -> Type {
         let core_func_decl = func_decl.core_ref();
-        assert!(core_func_decl.is_lambda, "construction of type is only valid for lambda declaration");
+        assert!(
+            core_func_decl.is_lambda,
+            "construction of type is only valid for lambda declaration"
+        );
         let func_name = &core_func_decl.name;
         let params = &core_func_decl.params;
         let return_type = &core_func_decl.return_type;
         let (params_vec, return_type) = match func_name {
-            Some(func_name) => {
-                match func_name.core_ref() {
-                    CoreIdentifierNode::OK(ok_identifier) => {
-                        match ok_identifier.symbol_data() {
-                            Some(symbol_data) => {
-                                match symbol_data.0 {
-                                    IdentifierKind::VARIABLE(variable_symbol_data) => {
-                                        return variable_symbol_data.0.as_ref().borrow().data_type.clone()
-                                    },
-                                    _ => unreachable!("lambda name `{}` should be resolved to `SymbolData<VariableData>`"),
-                                }
-                            },
-                            None => self.params_and_return_type_obj_from_expr(return_type, params)
+            Some(func_name) => match func_name.core_ref() {
+                CoreIdentifierNode::OK(ok_identifier) => match ok_identifier.symbol_data() {
+                    Some(symbol_data) => match symbol_data.0 {
+                        IdentifierKind::VARIABLE(variable_symbol_data) => {
+                            return variable_symbol_data.0.as_ref().borrow().data_type.clone()
                         }
+                        _ => unreachable!(
+                            "lambda name `{}` should be resolved to `SymbolData<VariableData>`"
+                        ),
                     },
-                    _ => self.params_and_return_type_obj_from_expr(return_type, params)
-                }
+                    None => self.params_and_return_type_obj_from_expr(return_type, params),
+                },
+                _ => self.params_and_return_type_obj_from_expr(return_type, params),
             },
-            None => self.params_and_return_type_obj_from_expr(return_type, params)
+            None => self.params_and_return_type_obj_from_expr(return_type, params),
         };
         let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(params_vec, return_type));
         let lambda_type_obj = Type::new_with_lambda(
@@ -210,19 +208,31 @@ impl TypeChecker {
 
     pub fn check_only_unary_expr(&mut self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
         let core_only_unary_expr = only_unary_expr.core_ref();
-        let operand_type = self.check_unary_expr(&core_only_unary_expr.unary_expr);
-        match core_only_unary_expr.operator_kind {
+        let unary_expr = &core_only_unary_expr.unary_expr;
+        let operand_type = self.check_unary_expr(&unary_expr);
+        let operator_kind = &core_only_unary_expr.operator_kind;
+        match operator_kind {
             UnaryOperatorKind::PLUS | UnaryOperatorKind::MINUS => {
                 if operand_type.is_numeric() {
                     return operand_type;
                 } else {
-                    // TODO - raise error `unary expression with operator `+` or `-` is valid only for numeric (`int`, `float`) operand`
+                    self.log_invalid_type_of_unary_operand_error(
+                        unary_expr.range(),
+                        unary_expr.start_line_number(),
+                        &operand_type,
+                        operator_kind,
+                    );
                     return Type::new_with_unknown();
                 }
             }
             UnaryOperatorKind::NOT => {
                 if operand_type.is_bool() {
-                    // TODO - raise error `unary expression with operator `not` is valid only for boolean operand`
+                    self.log_invalid_type_of_unary_operand_error(
+                        unary_expr.range(),
+                        unary_expr.start_line_number(),
+                        &operand_type,
+                        operator_kind,
+                    );
                     return operand_type;
                 } else {
                     return Type::new_with_unknown();
@@ -253,10 +263,6 @@ impl TypeChecker {
     }
 
     pub fn check_expr(&mut self, expr: &ExpressionNode) -> Type {
-        // TODO - check the binary and unary operands and atom chaining
-        // 1. operators, operands validity
-        // 2. call expr should have correct number and type of params
-        // 3. atom chaining should be valid according to types
         let core_expr = expr.core_ref();
         match core_expr {
             CoreExpressionNode::UNARY(unary_expr) => self.check_unary_expr(unary_expr),
@@ -269,7 +275,6 @@ impl TypeChecker {
     }
 
     pub fn check_assignment(&mut self, assignment: &AssignmentNode) {
-        // TODO - check types on both sides are same
         let core_assignment = assignment.core_ref();
         let (l_type, r_assign) = match core_assignment {
             CoreAssignmentNode::OK(ok_assignment) => {
@@ -301,13 +306,20 @@ impl TypeChecker {
         let core_variable_decl = variable_decl.core_ref();
         let r_type = self.check_r_assign(&core_variable_decl.r_assign);
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            if !r_type.is_lambda() {  // variable with lambda type is already set in resolving phase => see `resolve_function` method
+            if !r_type.is_lambda() {
+                // variable with lambda type is already set in resolving phase => see `resolve_function` method
                 if let Some(symbol_data) = ok_identifier.symbol_data() {
                     match symbol_data.0 {
                         IdentifierKind::VARIABLE(variable_symbol_data) => {
-                            variable_symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
-                        },
-                        _ => unreachable!("lambda name `{}` should be resolved to `SymbolData<VariableData>`")
+                            variable_symbol_data
+                                .0
+                                .as_ref()
+                                .borrow_mut()
+                                .set_data_type(&r_type);
+                        }
+                        _ => unreachable!(
+                            "lambda name `{}` should be resolved to `SymbolData<VariableData>`"
+                        ),
                     }
                 }
             }
@@ -474,6 +486,36 @@ impl TypeChecker {
             "mismatched types\nleft side has type `{}`, right side has type `{}`",
             expected_type, received_type
         );
+        let err = JarvilError::form_error(
+            start_err_index,
+            end_err_index,
+            start_line_number,
+            &self.code,
+            err_str,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
+    }
+
+    pub fn log_invalid_type_of_unary_operand_error(
+        &mut self,
+        error_range: TextRange,
+        start_line_number: usize,
+        received_type: &Type,
+        operator_kind: &UnaryOperatorKind,
+    ) {
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let err_str = match operator_kind {
+            UnaryOperatorKind::PLUS | UnaryOperatorKind::MINUS => {
+                format!(
+                    "unary expression with operator `+` or `-` is valid only for numeric (`int`, `float`) operand, got operand with type `{}`", received_type
+                )
+            }
+            UnaryOperatorKind::NOT => {
+                format!("unary expression with operator `not` is valid only for boolean operand, got operand with type `{}`", received_type)
+            }
+        };
         let err = JarvilError::form_error(
             start_err_index,
             end_err_index,

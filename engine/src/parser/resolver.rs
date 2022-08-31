@@ -254,9 +254,9 @@ impl Resolver {
                 let core_param = param.core_ref();
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                    let variable_name = ok_identifier.token_value(&self.code);
-                    let type_obj = self.type_obj_from_expression(&core_param.data_type);
                     if let Some(symbol_data) = ok_identifier.symbol_data() {
+                        let variable_name = ok_identifier.token_value(&self.code);
+                        let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         match symbol_data.0 {
                             IdentifierKind::VARIABLE(variable_symbol_data) => {
                                 variable_symbol_data
