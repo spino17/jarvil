@@ -218,7 +218,7 @@ pub trait Visitor {
                 for stmt in &block_node.0.as_ref().borrow().stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
-            },
+            }
             ASTNode::STATEMENT_INDENT_WRAPPER(stmt_indent_wrapper_node) => {
                 match stmt_indent_wrapper_node.core_ref() {
                     CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => {
@@ -237,16 +237,16 @@ pub trait Visitor {
                         self.walk_skipped_tokens(skipped_tokens);
                     }
                 }
-            },
+            }
             ASTNode::SKIPPED_TOKENS(skipped_tokens) => {
                 for skipped_token in &skipped_tokens.core_ref().skipped_tokens {
                     self.walk_skipped_token(skipped_token);
                 }
-            },
+            }
             ASTNode::INCORRECTLY_INDENTED_STATEMENT(stmt) => {
                 let core_stmt = stmt.core_ref();
                 self.walk_stmt(&core_stmt.stmt);
-            },
+            }
             ASTNode::STATEMENT(statement_node) => match statement_node.core_ref() {
                 CoreStatementNode::EXPRESSION(expr_stmt) => {
                     self.walk_expr_stmt(expr_stmt);
@@ -276,7 +276,7 @@ pub trait Visitor {
             ASTNode::EXPRESSION_STATEMENT(expr_stmt) => {
                 let core_expr_stmt = expr_stmt.core_ref();
                 self.walk_expression(&core_expr_stmt.expr);
-            },
+            }
             ASTNode::ASSIGNMENT(assignment_node) => match assignment_node.core_ref() {
                 CoreAssignmentNode::OK(ok_assignment) => {
                     self.walk_ok_assignment(ok_assignment);
@@ -289,15 +289,15 @@ pub trait Visitor {
                 let core_ok_assignment = ok_assignment.core_ref();
                 self.walk_atom(&core_ok_assignment.l_atom);
                 self.walk_r_assignment(&core_ok_assignment.r_assign);
-            },
+            }
             ASTNode::INVALID_L_VALUE(invalid_l_value) => {
                 let core_invalid_l_value = invalid_l_value.core_ref();
                 self.walk_expression(&core_invalid_l_value.l_expr);
                 self.walk_r_assignment(&core_invalid_l_value.r_assign);
-            },
+            }
             ASTNode::STRUCT_STATEMENT(struct_statement) => {
                 self.walk_name_type_spec(&struct_statement.core_ref().name_type_spec);
-            },
+            }
             ASTNode::TYPE_DECLARATION(type_declaration_node) => {
                 match &type_declaration_node.core_ref() {
                     CoreTypeDeclarationNode::STRUCT(struct_decl) => {
@@ -310,12 +310,12 @@ pub trait Visitor {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
-            },
+            }
             ASTNode::STRUCT_DECLARATION(struct_declaration_node) => {
                 let core_struct_decl = struct_declaration_node.core_ref();
                 self.walk_identifier(&core_struct_decl.name);
                 self.walk_block(&core_struct_decl.block);
-            },
+            }
             ASTNode::LAMBDA_DECLARATION(lambda_declaration_node) => {
                 match &lambda_declaration_node.core_ref() {
                     CoreLambdaDeclarationNode::OK(ok_lambda_decl) => {
@@ -325,7 +325,7 @@ pub trait Visitor {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
-            },
+            }
             ASTNode::OK_LAMBDA_TYPE_DECLARATION(ok_lambda_declaration_node) => {
                 let core_ok_lambda_decl = ok_lambda_declaration_node.core_ref();
                 self.walk_identifier(&core_ok_lambda_decl.name);
@@ -335,7 +335,7 @@ pub trait Visitor {
                 if let Some(return_type) = &core_ok_lambda_decl.return_type {
                     self.walk_type_expression(return_type);
                 }
-            },
+            }
             ASTNode::FUNCTION_DECLARATION(function_declaration_node) => {
                 let core_func_decl = function_declaration_node.core_ref();
                 match &core_func_decl {
@@ -346,7 +346,7 @@ pub trait Visitor {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
-            },
+            }
             ASTNode::OK_FUNCTION_DECLARATION(ok_function_declaration_node) => {
                 let core_ok_func_decl = ok_function_declaration_node.core_ref();
                 if let Some(func_name) = &core_ok_func_decl.name {
@@ -359,16 +359,16 @@ pub trait Visitor {
                     self.walk_type_expression(return_type);
                 }
                 self.walk_block(&core_ok_func_decl.block);
-            },
+            }
             ASTNode::VARIABLE_DECLARATION(variable_declaration_node) => {
                 let core_variable_decl = variable_declaration_node.core_ref();
                 self.walk_identifier(&core_variable_decl.name);
                 self.walk_r_assignment(&core_variable_decl.r_assign);
-            },
+            }
             ASTNode::RETURN(return_stmt) => {
                 let core_return_stmt = return_stmt.core_ref();
                 self.walk_expression(&core_return_stmt.expr);
-            },
+            }
             ASTNode::R_ASSIGNMENT(r_assignment_node) => {
                 let core_r_assignment = r_assignment_node.core_ref();
                 match core_r_assignment {
@@ -382,7 +382,7 @@ pub trait Visitor {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
-            },
+            }
             ASTNode::NAME_TYPE_SPECS(name_type_specs_node) => {
                 let core_name_type_specs = name_type_specs_node.core_ref();
                 match core_name_type_specs {
@@ -393,19 +393,19 @@ pub trait Visitor {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
-            },
+            }
             ASTNode::OK_NAME_TYPE_SPECS(ok_name_type_specs_node) => {
                 let core_ok_name_type_specs = ok_name_type_specs_node.core_ref();
                 self.walk_name_type_spec(&core_ok_name_type_specs.arg);
                 if let Some(remaining_args) = &core_ok_name_type_specs.remaining_args {
                     self.walk_name_type_specs(remaining_args);
                 }
-            },
+            }
             ASTNode::NAME_TYPE_SPEC(name_type_spec_node) => {
                 let core_name_type_spec = name_type_spec_node.core_ref();
                 self.walk_identifier(&core_name_type_spec.name);
                 self.walk_type_expression(&core_name_type_spec.data_type);
-            },
+            }
             ASTNode::TYPE_EXPRESSION(type_expression_node) => {
                 let core_type_expr = type_expression_node.core_ref();
                 match core_type_expr {
@@ -422,20 +422,20 @@ pub trait Visitor {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
-            },
+            }
             ASTNode::ATOMIC_TYPE(atomic_type_node) => {
                 let core_atomic_type = atomic_type_node.core_ref();
                 self.walk_token(&core_atomic_type.kind)
-            },
+            }
             ASTNode::ARRAY_TYPE(array_type_node) => {
                 let core_array_type = array_type_node.core_ref();
                 self.walk_type_expression(&core_array_type.sub_type);
                 self.walk_token(&core_array_type.size);
-            },
+            }
             ASTNode::USER_DEFINED_TYPE(user_defined_type) => {
                 let core_user_defined_type = user_defined_type.core_ref();
                 self.walk_identifier(&core_user_defined_type.name)
-            },
+            }
             ASTNode::EXPRESSION(expression_node) => {
                 let core_expr = expression_node.core_ref();
                 match core_expr {
@@ -452,7 +452,7 @@ pub trait Visitor {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
-            },
+            }
             ASTNode::ATOMIC_EXPRESSION(atomic_expression_node) => {
                 let core_atomic_expr = atomic_expression_node.core_ref();
                 match core_atomic_expr {
@@ -478,11 +478,11 @@ pub trait Visitor {
                         self.walk_missing_tokens(missing_tokens)
                     }
                 }
-            },
+            }
             ASTNode::PARENTHESISED_EXPRESSION(parenthesised_expression_node) => {
                 let parenthesised_expr = parenthesised_expression_node.core_ref();
                 self.walk_expression(&parenthesised_expr.expr);
-            },
+            }
             ASTNode::UNARY_EXPRESSION(unary_expression_node) => {
                 let core_unary_expr = unary_expression_node.core_ref();
                 match core_unary_expr {
@@ -496,18 +496,18 @@ pub trait Visitor {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
-            },
+            }
             ASTNode::ONLY_UNARY_EXPRESSION(only_unary_expression_node) => {
                 let core_only_unary_expr = only_unary_expression_node.core_ref();
                 self.walk_token(&core_only_unary_expr.operator);
                 self.walk_unary_expression(&core_only_unary_expr.unary_expr);
-            },
+            }
             ASTNode::BINARY_EXPRESSION(binary_expression_node) => {
                 let core_binary_expr = binary_expression_node.core_ref();
                 self.walk_expression(&core_binary_expr.left_expr);
                 self.walk_token(&core_binary_expr.operator);
                 self.walk_expression(&core_binary_expr.right_expr);
-            },
+            }
             ASTNode::COMPARISON(comparison_expression_node) => {
                 let core_comp_expr = comparison_expression_node.core_ref();
                 let operator_len = core_comp_expr.operators.len();
@@ -516,7 +516,7 @@ pub trait Visitor {
                     self.walk_token(&core_comp_expr.operators[i]);
                     self.walk_expression(&core_comp_expr.operands[i]);
                 }
-            },
+            }
             ASTNode::PARAMS(params_node) => {
                 let core_params = params_node.core_ref();
                 match core_params {
@@ -527,21 +527,21 @@ pub trait Visitor {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
-            },
+            }
             ASTNode::OK_PARAMS(ok_params_node) => {
                 let core_ok_params = ok_params_node.core_ref();
                 self.walk_expression(&core_ok_params.param);
                 if let Some(remaining_params) = &core_ok_params.remaining_params {
                     self.walk_params(remaining_params);
                 }
-            },
+            }
             ASTNode::CALL_EXPRESSION(call_expression_node) => {
                 let core_call_expr = call_expression_node.core_ref();
                 self.walk_identifier(&core_call_expr.function_name);
                 if let Some(params) = &core_call_expr.params {
                     self.walk_params(params)
                 }
-            },
+            }
             ASTNode::CLASS_METHOD_CALL(class_method_call_node) => {
                 let core_class_method_call = class_method_call_node.core_ref();
                 self.walk_identifier(&core_class_method_call.class_name);
@@ -549,7 +549,7 @@ pub trait Visitor {
                 if let Some(params) = &core_class_method_call.params {
                     self.walk_params(params);
                 }
-            },
+            }
             ASTNode::ATOM(atom_node) => {
                 let core_atom = atom_node.core_ref();
                 match core_atom {
@@ -569,7 +569,7 @@ pub trait Visitor {
                         self.walk_index_access(index_access);
                     }
                 }
-            },
+            }
             ASTNode::ATOM_START(atom_start_node) => {
                 let core_atom_start = atom_start_node.core_ref();
                 match core_atom_start {
@@ -583,19 +583,19 @@ pub trait Visitor {
                         self.walk_class_method_call(class_method);
                     }
                 }
-            },
+            }
             ASTNode::CALL(call_node) => {
                 let core_call = call_node.core_ref();
                 self.walk_atom(&core_call.atom);
                 if let Some(params) = &core_call.params {
                     self.walk_params(params);
                 }
-            },
+            }
             ASTNode::PROPERTY_ACCESS(property_access_node) => {
                 let core_property_access = property_access_node.core_ref();
                 self.walk_atom(&core_property_access.atom);
                 self.walk_identifier(&core_property_access.propertry);
-            },
+            }
             ASTNode::METHOD_ACCESS(method_access_node) => {
                 let core_method_access = method_access_node.core_ref();
                 self.walk_atom(&core_method_access.atom);
@@ -603,12 +603,12 @@ pub trait Visitor {
                 if let Some(params) = &core_method_access.params {
                     self.walk_params(params);
                 }
-            },
+            }
             ASTNode::INDEX_ACCESS(index_access_node) => {
                 let core_index_access = index_access_node.core_ref();
                 self.walk_atom(&core_index_access.atom);
                 self.walk_expression(&core_index_access.index);
-            },
+            }
             ASTNode::TOKEN(token) => {
                 let token = token.core_ref();
                 match token {
@@ -618,7 +618,7 @@ pub trait Visitor {
                     }
                     CoreTokenNode::SKIPPED(skipped_token) => self.walk_skipped_token(skipped_token),
                 }
-            },
+            }
             ASTNode::IDENTIFIER(identifier) => {
                 let core_identifier = identifier.core_ref();
                 match core_identifier {
@@ -630,16 +630,16 @@ pub trait Visitor {
                         self.walk_skipped_token(skipped_token)
                     }
                 }
-            },
+            }
             ASTNode::OK_IDENTIFIER(_) => {
                 // do nothing
-            },
+            }
             ASTNode::OK_TOKEN(_) => {
                 // do nothing
-            },
+            }
             ASTNode::MISSING_TOKEN(_) => {
                 // do nothing
-            },
+            }
             ASTNode::SKIPPED_TOKEN(_) => {
                 // do nothing
             }

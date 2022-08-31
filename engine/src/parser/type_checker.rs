@@ -1,12 +1,22 @@
-// See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to 
+// See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to
 // cover and the representation of type expressions in terms of type objects.
 
 use text_size::TextRange;
-
-use crate::{scope::core::Namespace, code::Code, ast::{ast::{BlockNode, ASTNode, StatementNode, CoreStatementNode, ExpressionNode, AssignmentNode, 
-    VariableDeclarationNode, FunctionDeclarationNode, TypeDeclarationNode, ReturnStatementNode, BlockKind, CoreFunctionDeclarationNode, TypeResolveKind, 
-    CoreStatemenIndentWrapperNode, Node}, walk::Visitor}, error::core::{JarvilError, JarvilErrorKind}, types::core::Type};
-use std::rc::Rc;
+use crate::{
+    ast::{
+        ast::{
+            ASTNode, AssignmentNode, BlockKind, BlockNode, CoreFunctionDeclarationNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, ExpressionNode,
+            FunctionDeclarationNode, Node, ReturnStatementNode, StatementNode, TypeDeclarationNode,
+            TypeResolveKind, VariableDeclarationNode,
+        },
+        walk::Visitor,
+    },
+    code::Code,
+    error::core::{JarvilError, JarvilErrorKind},
+    scope::core::Namespace,
+    types::core::Type,
+};
 
 struct Context {
     func_stack: Vec<Option<Type>>,
@@ -20,18 +30,18 @@ pub struct TypeChecker {
 }
 impl TypeChecker {
     pub fn new(code: &Code, scope: &Namespace) -> Self {
-        TypeChecker{
+        TypeChecker {
             namespace: scope.clone(),
             code: code.clone(),
             errors: vec![],
-            context: Context {
-                func_stack: vec![],
-            }
+            context: Context { func_stack: vec![] },
         }
     }
 
     pub fn open_scope(&mut self, block: &BlockNode) {
-        self.namespace = block.scope().expect("scope should be set to the `BlockNode` in the resolver phase");
+        self.namespace = block
+            .scope()
+            .expect("scope should be set to the `BlockNode` in the resolver phase");
     }
 
     pub fn close_scope(&mut self) {
@@ -76,8 +86,8 @@ impl TypeChecker {
                         TypeResolveKind::UNRESOLVED(_) => Some(Type::new_with_unknown()),
                         TypeResolveKind::INVALID => Some(Type::new_with_unknown()),
                     }
-                },
-                None => None
+                }
+                None => None,
             };
             self.open_scope(&core_ok_func_decl.block);
             self.context.func_stack.push(return_type_obj.clone());
@@ -88,8 +98,8 @@ impl TypeChecker {
                     CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
                         let core_stmt = stmt.core_ref();
                         core_stmt.stmt.clone()
-                    },
-                    _ => continue
+                    }
+                    _ => continue,
                 };
                 self.walk_stmt(&stmt);
                 if let CoreStatementNode::RETURN(_) = stmt.core_ref() {
@@ -100,7 +110,8 @@ impl TypeChecker {
             if !has_return_stmt && return_type_obj.is_some() {
                 let return_type_node = return_type_node.as_ref().unwrap();
                 self.log_expected_return_statement_error(
-                    return_type_node.range(), return_type_node.start_line_number()
+                    return_type_node.range(),
+                    return_type_node.start_line_number(),
                 );
             }
             self.close_scope();
@@ -113,8 +124,8 @@ impl TypeChecker {
         let func_stack_len = self.context.func_stack.len();
         if func_stack_len == 0 {
             self.log_return_statement_not_inside_function_error(
-                core_return_stmt.return_keyword.range(), 
-                core_return_stmt.return_keyword.start_line_number()
+                core_return_stmt.return_keyword.range(),
+                core_return_stmt.return_keyword.start_line_number(),
             );
         }
         // TODO - get the type of the return expr and compare it with self.context.func_stack[func_stack_len - 1] entry
@@ -138,11 +149,15 @@ impl TypeChecker {
             CoreStatementNode::RETURN(return_stmt) => {
                 self.check_return_stmt(return_stmt);
             }
-            _ => return
+            _ => return,
         }
     }
 
-    pub fn log_return_statement_not_inside_function_error(&mut self, error_range: TextRange, line_number: usize) {
+    pub fn log_return_statement_not_inside_function_error(
+        &mut self,
+        error_range: TextRange,
+        line_number: usize,
+    ) {
         let start_err_index: usize = error_range.start().into();
         let end_err_index: usize = error_range.end().into();
         let (code_line, line_start_index, line_number, start_err_index) =
@@ -160,7 +175,11 @@ impl TypeChecker {
         self.errors.push(err);
     }
 
-    pub fn log_expected_return_statement_error(&mut self, error_range: TextRange, line_number: usize) {
+    pub fn log_expected_return_statement_error(
+        &mut self,
+        error_range: TextRange,
+        line_number: usize,
+    ) {
         let start_err_index: usize = error_range.start().into();
         let end_err_index: usize = error_range.end().into();
         let (code_line, line_start_index, line_number, start_err_index) =
@@ -183,9 +202,9 @@ impl Visitor for TypeChecker {
         match node {
             ASTNode::STATEMENT(stmt) => {
                 self.check_stmt(stmt);
-                return None
-            },
-            _ => Some(())
+                return None;
+            }
+            _ => Some(()),
         }
     }
 }

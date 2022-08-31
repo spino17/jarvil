@@ -1,14 +1,14 @@
 use crate::code::Code;
 use crate::context;
+use crate::error::helper::{format_line_number, int_length};
 use colored::Colorize;
+use std::cell::RefCell;
+use std::cmp::min;
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::rc::Rc;
-use std::cell::RefCell;
-use std::cmp::min;
 use text_size::{TextRange, TextSize};
-use crate::error::helper::{format_line_number, int_length};
 
 pub struct JarvilErrorVec {
     errors: Vec<Rc<RefCell<Vec<JarvilError>>>>,
@@ -28,7 +28,8 @@ impl JarvilErrorVec {
         if line_number - 1 < errors_len {
             self.errors[line_number - 1].as_ref().borrow_mut().push(err);
         } else {
-            self.errors.resize(line_number, Rc::new(RefCell::new(vec![])));
+            self.errors
+                .resize(line_number, Rc::new(RefCell::new(vec![])));
             self.errors[line_number - 1].as_ref().borrow_mut().push(err);
         }
         self.len = self.len + 1;
@@ -40,11 +41,17 @@ impl JarvilErrorVec {
         let min_len = min(len_1, len_2);
         if min_len == len_1 {
             for i in 0..min_len {
-                err_vec.errors[i].as_ref().borrow_mut().append(&mut *self.errors[i].as_ref().borrow_mut());
+                err_vec.errors[i]
+                    .as_ref()
+                    .borrow_mut()
+                    .append(&mut *self.errors[i].as_ref().borrow_mut());
             }
         } else {
             for i in 0..min_len {
-                self.errors[i].as_ref().borrow_mut().append(&mut *err_vec.errors[i].as_ref().borrow_mut());
+                self.errors[i]
+                    .as_ref()
+                    .borrow_mut()
+                    .append(&mut *err_vec.errors[i].as_ref().borrow_mut());
             }
         }
     }
@@ -55,7 +62,7 @@ impl JarvilErrorVec {
 
     pub fn vec_start_index(&self, index: usize) -> usize {
         if index == 0 {
-            return 0
+            return 0;
         } else {
             self.errors[index - 1].as_ref().borrow().len()
         }
@@ -63,7 +70,7 @@ impl JarvilErrorVec {
 
     pub fn get(&self, index: usize) -> Option<JarvilError> {
         if index >= self.len || index < 0 {
-            return None
+            return None;
         }
         let mut counter = 0;
         let mut total_index = 0;
@@ -73,7 +80,7 @@ impl JarvilErrorVec {
                 break;
             }
             counter = counter + 1;
-        };
+        }
         let start_index = self.vec_start_index(counter);
         Some(self.errors[counter].as_ref().borrow()[index - start_index].clone())
     }
@@ -174,7 +181,11 @@ impl JarvilError {
             err_message.yellow().bold()
         );
         JarvilError::new(
-            start_err_index, end_err_index, err_message, line_number, err_kind
+            start_err_index,
+            end_err_index,
+            err_message,
+            line_number,
+            err_kind,
         )
     }
 
@@ -226,7 +237,7 @@ impl JarvilError {
             code.get_line_start_index(end_line_number),
             err_message,
             start_line_number,
-            err_kind
+            err_kind,
         )
     }
 }

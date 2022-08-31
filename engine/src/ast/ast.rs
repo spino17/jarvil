@@ -105,7 +105,11 @@ pub enum BlockKind {
 #[derive(Debug, Clone)]
 pub struct BlockNode(pub Rc<RefCell<CoreBlockNode>>);
 impl BlockNode {
-    pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: &TokenNode, kind: BlockKind) -> Self {
+    pub fn new(
+        stmts: Vec<StatemenIndentWrapperNode>,
+        newline: &TokenNode,
+        kind: BlockKind,
+    ) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode {
             newline: newline.clone(),
             stmts,

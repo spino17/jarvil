@@ -9,7 +9,8 @@
 // block_kind: statement, struct, interface, implementation of struct, function
 
 use crate::ast::ast::{
-    BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode, BlockKind,
+    BlockKind, BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode,
+    StatementNode,
 };
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
@@ -22,7 +23,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
     is_starting_with_fn: F,
     statement_parsing_fn: G,
     expected_symbols: &[&'static str],
-    kind: BlockKind
+    kind: BlockKind,
 ) -> BlockNode {
     let newline_node = parser.expect_terminators();
     parser.set_indent_level(parser.curr_indent_level() + 1);

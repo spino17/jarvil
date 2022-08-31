@@ -1,4 +1,4 @@
-use crate::ast::ast::{ErrornousNode, NameTypeSpecsNode, BlockKind};
+use crate::ast::ast::{BlockKind, ErrornousNode, NameTypeSpecsNode};
 use crate::ast::ast::{LambdaDeclarationNode, TypeDeclarationNode};
 use crate::lexer::token::CoreToken;
 use crate::{constants::common::IDENTIFIER, parser::parser::PackratParser};
@@ -19,7 +19,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                 },
                 |parser| parser.struct_stmt(),
                 &[IDENTIFIER],
-                BlockKind::STRUCT
+                BlockKind::STRUCT,
             );
             TypeDeclarationNode::new_with_struct(
                 &type_name_node,

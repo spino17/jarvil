@@ -1,4 +1,4 @@
-use crate::ast::ast::{ErrornousNode, IdentifierNode, BlockKind};
+use crate::ast::ast::{BlockKind, ErrornousNode, IdentifierNode};
 use crate::ast::ast::{
     FuncKeywordKind, FunctionDeclarationNode, NameTypeSpecNode, OkNameTypeSpecsNode, TokenNode,
 };
@@ -95,7 +95,7 @@ pub fn function_decl(
                 |token| is_statement_within_function_starting_with(token),
                 |parser| parser.stmt(),
                 &STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS,
-                BlockKind::FUNC
+                BlockKind::FUNC,
             );
             return FunctionDeclarationNode::new(
                 name_node,
