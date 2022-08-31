@@ -5,15 +5,19 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, BlockKind, BlockNode, CoreFunctionDeclarationNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, ExpressionNode,
-            FunctionDeclarationNode, Node, ReturnStatementNode, StatementNode, TypeDeclarationNode,
-            TypeResolveKind, VariableDeclarationNode,
+            CoreIdentifierNode, CoreStatemenIndentWrapperNode, CoreStatementNode, ExpressionNode,
+            FunctionDeclarationNode, Node, OkFunctionDeclarationNode, ReturnStatementNode,
+            StatementNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind,
+            VariableDeclarationNode,
         },
         walk::Visitor,
     },
     code::Code,
     error::core::{JarvilError, JarvilErrorKind},
-    scope::core::Namespace,
+    scope::{
+        core::{IdentifierKind, Namespace, SymbolData},
+        user_defined_types::{LambdaTypeData, UserDefinedTypeData},
+    },
     types::core::{AbstractType, Type},
 };
 use text_size::TextRange;
@@ -48,6 +52,53 @@ impl TypeChecker {
         self.namespace.close_scope();
     }
 
+    pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
+        match type_expr.type_obj(&self.namespace, &self.code) {
+            TypeResolveKind::RESOLVED(type_obj) => type_obj,
+            TypeResolveKind::UNRESOLVED(_) => return Type::new_with_unknown(),
+            TypeResolveKind::INVALID => Type::new_with_unknown(),
+        }
+    }
+
+    pub fn type_of_lambda(&self, func_decl: &OkFunctionDeclarationNode) -> Type {
+        let core_func_decl = func_decl.core_ref();
+        let func_name = &core_func_decl.name;
+        assert!(
+            func_name.is_none(),
+            "construction of type for lambda is valid only for unnamed function declarations"
+        );
+        let params = &core_func_decl.params;
+        let return_type = &core_func_decl.return_type;
+        let mut params_vec: Vec<(String, Type)> = vec![];
+        let return_type: Type = match return_type {
+            Some(return_type_expr) => {
+                let type_obj = self.type_obj_from_expression(return_type_expr);
+                type_obj
+            }
+            None => Type::new_with_void(),
+        };
+        if let Some(params) = params {
+            let params_iter = params.iter();
+            for param in params_iter {
+                let core_param = param.core_ref();
+                let name = &core_param.name;
+                if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                    let variable_name = ok_identifier.token_value(&self.code);
+                    let type_obj = self.type_obj_from_expression(&core_param.data_type);
+                    if let Some(_) = ok_identifier.symbol_data() {
+                        params_vec.push((variable_name, type_obj));
+                    }
+                }
+            }
+        }
+        let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(params_vec, return_type));
+        let lambda_type_obj = Type::new_with_lambda(
+            None,
+            &SymbolData::new(symbol_data, core_func_decl.lparen.start_line_number()),
+        );
+        lambda_type_obj
+    }
+
     pub fn check_ast(&mut self, ast: &BlockNode) -> Vec<JarvilError> {
         let core_block = ast.0.as_ref().borrow();
         for stmt in &core_block.stmts {
@@ -79,13 +130,7 @@ impl TypeChecker {
             let core_ok_func_decl = ok_func_decl.core_ref();
             let return_type_node = &core_ok_func_decl.return_type;
             let return_type_obj = match return_type_node {
-                Some(return_type_expr) => {
-                    match return_type_expr.type_obj(&self.namespace, &self.code) {
-                        TypeResolveKind::RESOLVED(type_obj) => type_obj,
-                        TypeResolveKind::UNRESOLVED(_) => Type::new_with_unknown(),
-                        TypeResolveKind::INVALID => Type::new_with_unknown(),
-                    }
-                }
+                Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),
                 None => Type::new_with_void(),
             };
             self.open_scope(&core_ok_func_decl.block);
