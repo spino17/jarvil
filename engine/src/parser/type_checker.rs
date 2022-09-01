@@ -242,7 +242,9 @@ impl TypeChecker {
                         match result {
                             ParamsTypeNCountResult::OK => return return_type,
                             _ => {
-                                self.log_params_type_and_count_check_error(&result);
+                                self.log_params_type_and_count_check_error(
+                                    atom.range(), atom.start_line_number(), &result
+                                );
                                 return Type::new_with_unknown();
                             }
                         }
@@ -337,7 +339,9 @@ impl TypeChecker {
                                     match result {
                                         ParamsTypeNCountResult::OK => return return_type.clone(),
                                         _ => {
-                                            self.log_params_type_and_count_check_error(&result);
+                                            self.log_params_type_and_count_check_error(
+                                                method.range(), method.start_line_number(), &result
+                                            );
                                             return Type::new_with_unknown();
                                         }
                                     }
@@ -377,7 +381,7 @@ impl TypeChecker {
                     Some(element_type) => return element_type.clone(),
                     _ => {
                         let err_message = format!(
-                            "expression with type {} is not indexable with value of type {}",
+                            "expression with type `{}` is not indexable with value of type `{}`",
                             atom_type_obj, index_type_obj
                         );
                         self.log_error(atom.range(), atom.start_line_number(), err_message);
@@ -668,19 +672,24 @@ impl TypeChecker {
         self.errors.push(err);
     }
 
-    pub fn log_params_type_and_count_check_error(&mut self, result: &ParamsTypeNCountResult) {
-        match result {
+    pub fn log_params_type_and_count_check_error(&mut self, error_range: TextRange, start_line_number: usize, result: &ParamsTypeNCountResult) {
+        let err_message = match result {
             ParamsTypeNCountResult::OK => unreachable!("ok case should be handled in the caller"),
             ParamsTypeNCountResult::LESS_PARAMS((expected_params_num, received_params_num)) => {
-                // TODO - raise error `expected number of arguments {}, got {}`
+                format!("expected {} arguments, got {}", expected_params_num, received_params_num)
             }
             ParamsTypeNCountResult::MORE_PARAMS(expected_params_num) => {
-                // TODO - raise error `expected number of arguments {}, got more than that`
+                format!("expected {} arguments, got more than that", expected_params_num)
             }
             ParamsTypeNCountResult::MISMATCHED_TYPE(mismatch_type_vec) => {
-                // TODO - raise error `mismatched types\nargument {} expected type {}, got {}`
+                let mut err_message = "mismatched types".to_string();
+                for entry in mismatch_type_vec {
+                    err_message.push_str(&format!("\nargument {} expected type `{}`, got `{}`", entry.2, entry.0, entry.1));
+                }
+                err_message
             }
-        }
+        };
+        self.log_error(error_range, start_line_number, err_message);
     }
 
     /*
