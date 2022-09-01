@@ -1,5 +1,8 @@
 use super::core::{AbstractType, CoreType, Type};
-use crate::scope::{core::SymbolData, user_defined_types::UserDefinedTypeData};
+use crate::scope::{
+    core::SymbolData,
+    user_defined_types::UserDefinedTypeData,
+};
 
 #[derive(Debug)]
 pub struct Struct {

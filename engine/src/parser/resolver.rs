@@ -10,7 +10,13 @@ use crate::{
         walk::Visitor,
     },
     code::Code,
-    error::core::{JarvilError, JarvilErrorKind},
+    error::{
+        constants::{
+            LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG, SCOPE_NOT_SET_TO_BLOCK_MSG,
+            STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
+        },
+        core::{JarvilError, JarvilErrorKind},
+    },
     scope::{
         core::{IdentifierKind, Namespace, SymbolData},
         function::FunctionData,
@@ -265,9 +271,7 @@ impl Resolver {
                 }
             }
         }
-        self.namespace = func_body
-            .scope()
-            .expect("scope should be set to the `BlockNode` in the first phase");
+        self.namespace = func_body.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
         self.walk_block(func_body);
         self.namespace.close_scope();
         let is_lambda = core_func_decl.is_lambda;
@@ -348,9 +352,12 @@ impl Resolver {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "struct name should be resolved to `SymbolData<UserDefinedTypeData>`",
             ) {
-                symbol_data.0.as_ref().borrow_mut().struct_data_mut(
-                    "struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`"
-                ).set_fields(fields_map);
+                symbol_data
+                    .0
+                    .as_ref()
+                    .borrow_mut()
+                    .struct_data_mut(STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG)
+                    .set_fields(fields_map);
             }
         }
     }
@@ -383,9 +390,12 @@ impl Resolver {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "lambda type name should be resolved to `SymbolData<UserDefinedTypeData>`",
             ) {
-                symbol_data.0.as_ref().borrow_mut().lambda_data_mut(
-                    "lambda type name should be binded with `LambdaTypeData` variant of `SymbolData<UserDefinedTypeData>`"
-                ).set_params_and_return_type(params_vec, return_type)
+                symbol_data
+                    .0
+                    .as_ref()
+                    .borrow_mut()
+                    .lambda_data_mut(LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG)
+                    .set_params_and_return_type(params_vec, return_type)
             }
         }
     }

@@ -20,7 +20,13 @@ use crate::{
     },
     code::Code,
     constants::common::{BOOL, FLOAT, INT, STRING},
-    error::core::{JarvilError, JarvilErrorKind},
+    error::{
+        constants::{
+            LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG, SCOPE_NOT_SET_TO_BLOCK_MSG,
+            STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
+        },
+        core::{JarvilError, JarvilErrorKind},
+    },
     scope::{
         core::{IdentifierKind, Namespace, SymbolData},
         function::FunctionData,
@@ -61,9 +67,7 @@ impl TypeChecker {
     }
 
     pub fn open_scope(&mut self, block: &BlockNode) {
-        self.namespace = block
-            .scope()
-            .expect("scope should be set to the `BlockNode` in the resolver phase");
+        self.namespace = block.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
     }
 
     pub fn close_scope(&mut self) {
@@ -140,13 +144,16 @@ impl TypeChecker {
     pub fn is_callable(&mut self, atom: &AtomNode) -> Option<FunctionData> {
         let atom_type_obj = self.check_atom(atom);
         match atom_type_obj.0.as_ref() {
-            CoreType::LAMBDA(lambda) => {
-                Some(
-                    lambda.symbol_data.0.as_ref().borrow().lambda_data("
-                        lambda type name should be binded with `LambdaTypeData` variant of `SymbolData<UserDefinedTypeData>`
-                    ").func_data.clone()
-                )
-            },
+            CoreType::LAMBDA(lambda) => Some(
+                lambda
+                    .symbol_data
+                    .0
+                    .as_ref()
+                    .borrow()
+                    .lambda_data(LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG)
+                    .func_data
+                    .clone(),
+            ),
             _ => None,
         }
     }
@@ -233,9 +240,14 @@ impl TypeChecker {
                     let property_name = Rc::new(ok_identifier.token_value(&self.code));
                     match atom_type_obj.0.as_ref() {
                         CoreType::STRUCT(struct_type) => {
-                            match struct_type.symbol_data.0.as_ref().borrow().struct_data("
-                                struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`
-                            ").try_field(&property_name) {
+                            match struct_type
+                                .symbol_data
+                                .0
+                                .as_ref()
+                                .borrow()
+                                .struct_data(STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG)
+                                .try_field(&property_name)
+                            {
                                 Some(type_obj) => return type_obj,
                                 None => {
                                     // TODO - raise error `no property named `{}` exist for expression with type `{}``
@@ -261,18 +273,20 @@ impl TypeChecker {
                     let method_name = ok_identifier.token_value(&self.code);
                     match atom_type_obj.0.as_ref() {
                         CoreType::STRUCT(struct_type) => {
-                            match struct_type.symbol_data.0.as_ref().borrow().struct_data("
-                                struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`
-                            ").try_method(&method_name) {
+                            match struct_type
+                                .symbol_data
+                                .0
+                                .as_ref()
+                                .borrow()
+                                .struct_data(STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG)
+                                .try_method(&method_name)
+                            {
                                 Some(func_data) => {
                                     let expected_params = &func_data.params;
                                     let return_type = &func_data.return_type;
-                                    self.check_params_type_and_count(
-                                        expected_params,
-                                        params,
-                                    );
+                                    self.check_params_type_and_count(expected_params, params);
                                     return return_type.clone();
-                                },
+                                }
                                 None => {
                                     // TODO - raise error `no method named `{}` exist for expression with type `{}``
                                     return Type::new_with_unknown();
