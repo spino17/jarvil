@@ -386,22 +386,28 @@ impl TypeChecker {
                 if operand_type.is_numeric() {
                     return operand_type;
                 } else {
-                    self.log_invalid_type_of_unary_operand_error(
+                    let err_message = format!(
+                        "unary expression with operator `+` or `-` is valid only for numeric (`int`, `float`) operand, got operand with type `{}`", 
+                        operand_type
+                    );
+                    self.log_error(
                         unary_expr.range(),
                         unary_expr.start_line_number(),
-                        &operand_type,
-                        operator_kind,
+                        err_message
                     );
                     return Type::new_with_unknown();
                 }
             }
             UnaryOperatorKind::NOT => {
                 if operand_type.is_bool() {
-                    self.log_invalid_type_of_unary_operand_error(
+                    let err_message = format!(
+                        "unary expression with operator `not` is valid only for boolean operand, got operand with type `{}`", 
+                        operand_type
+                    );
+                    self.log_error(
                         unary_expr.range(),
                         unary_expr.start_line_number(),
-                        &operand_type,
-                        operator_kind,
+                        err_message
                     );
                     return operand_type;
                 } else {
@@ -463,11 +469,15 @@ impl TypeChecker {
         };
         let r_type = self.check_r_assign(r_assign);
         if !l_type.is_eq(&r_type) {
-            self.log_mismatch_type_of_left_and_right_side_error(
+            let err_message = format!(
+                "mismatched types\nleft side has type `{}`, right side has type `{}`",
+                l_type, 
+                r_type
+            );
+            self.log_error(
                 assignment.range(),
                 assignment.start_line_number(),
-                &l_type,
-                &r_type,
+                err_message
             )
         }
     }
@@ -515,9 +525,11 @@ impl TypeChecker {
             }
             if !has_return_stmt && !return_type_obj.is_void() {
                 let return_type_node = return_type_node.as_ref().unwrap();
-                self.log_expected_return_statement_error(
+                let err_message = format!("function body has no `return` statement");
+                self.log_error(
                     return_type_node.range(),
                     return_type_node.start_line_number(),
+                    err_message
                 );
             }
             self.close_scope();
@@ -529,20 +541,26 @@ impl TypeChecker {
         let core_return_stmt = return_stmt.core_ref();
         let func_stack_len = self.context.func_stack.len();
         if func_stack_len == 0 {
-            self.log_return_statement_not_inside_function_error(
+            let err_message = format!("invalid `return` statement");
+            self.log_error(
                 return_stmt.range(),
                 return_stmt.start_line_number(),
+                err_message
             );
         }
         let expr = &core_return_stmt.expr;
         let expr_type_obj = self.check_expr(expr);
         let expected_type_obj = self.context.func_stack[func_stack_len - 1].clone();
         if !expr_type_obj.is_eq(&expected_type_obj) {
-            self.log_mismatch_type_of_return_value_error(
+            let err_message = format!(
+                "mismatched types\nexpected return value type `{}`, got `{}`",
+                expected_type_obj, 
+                expr_type_obj
+            );
+            self.log_error(
                 expr.range(),
                 expr.start_line_number(),
-                &expected_type_obj,
-                &expr_type_obj,
+                err_message
             );
         }
     }
@@ -569,6 +587,21 @@ impl TypeChecker {
         }
     }
 
+    pub fn log_error(&mut self, error_range: TextRange, start_line_number: usize, err_message: String) {
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let err = JarvilError::form_error(
+            start_err_index,
+            end_err_index,
+            start_line_number,
+            &self.code,
+            err_message,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
+    }
+
+    /*
     pub fn log_return_statement_not_inside_function_error(
         &mut self,
         error_range: TextRange,
@@ -687,6 +720,7 @@ impl TypeChecker {
         );
         self.errors.push(err);
     }
+     */
 }
 impl Visitor for TypeChecker {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
