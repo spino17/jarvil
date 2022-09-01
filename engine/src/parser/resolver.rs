@@ -580,8 +580,8 @@ impl Visitor for Resolver {
                 }
                 ASTNode::ATOM_START(atom_start) => {
                     match atom_start.core_ref() {
-                        // TODO - add for identifier to search in types namespace for constructor expression like <Type>(...)
                         CoreAtomStartNode::CALL(func_call) => {
+                            // TODO - try also looking into type namespace for constructor calls <Type>(...)
                             let core_func_call = func_call.core_ref();
                             if let CoreIdentifierNode::OK(ok_identifier) =
                                 core_func_call.function_name.core_ref()

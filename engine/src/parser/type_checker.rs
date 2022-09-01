@@ -245,7 +245,9 @@ impl TypeChecker {
                                 .0
                                 .as_ref()
                                 .borrow()
-                                .struct_data(STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG)
+                                .struct_data(
+                                    STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
+                                )
                                 .try_field(&property_name)
                             {
                                 Some(type_obj) => return type_obj,
@@ -278,7 +280,9 @@ impl TypeChecker {
                                 .0
                                 .as_ref()
                                 .borrow()
-                                .struct_data(STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG)
+                                .struct_data(
+                                    STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
+                                )
                                 .try_method(&method_name)
                             {
                                 Some(func_data) => {
