@@ -8,7 +8,7 @@ use crate::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
             BinaryExpressionNode, BlockKind, BlockNode, ComparisonNode, CoreAssignmentNode,
-            CoreAtomNode, CoreAtomicExpressionNode, CoreExpressionNode,
+            CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
             CoreFunctionDeclarationNode, CoreIdentifierNode, CoreRAssignmentNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, NameTypeSpecsNode,
@@ -223,7 +223,147 @@ impl TypeChecker {
     }
 
     pub fn check_atom_start(&mut self, atom_start: &AtomStartNode) -> Type {
-        todo!()
+        let core_atom_start = atom_start.core_ref();
+        match core_atom_start {
+            CoreAtomStartNode::IDENTIFIER(token) => match token.core_ref() {
+                CoreIdentifierNode::OK(ok_identifier) => {
+                    match ok_identifier.variable_symbol_data(
+                        "variable name should be resolved to `SymbolData<VariableData>`",
+                    ) {
+                        Some(variable_symbol_data) => {
+                            return variable_symbol_data.0.as_ref().borrow().data_type.clone()
+                        }
+                        None => return Type::new_with_unknown(),
+                    }
+                }
+                _ => Type::new_with_unknown(),
+            },
+            CoreAtomStartNode::CALL(call_expr) => {
+                let core_call_expr = call_expr.core_ref();
+                let func_name = &core_call_expr.function_name;
+                let params = &core_call_expr.params;
+                if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
+                    if let Some(symbol_data) = ok_identifier.symbol_data() {
+                        let (expected_params, return_type) = match symbol_data.0 {
+                            IdentifierKind::FUNCTION(func_symbol_data) => {
+                                let func_data = func_symbol_data.0.as_ref().borrow().clone();
+                                let expected_params = func_data.params;
+                                let return_type = func_data.return_type;
+                                (expected_params, return_type)
+                            },
+                            IdentifierKind::VARIABLE(variable_symbol_data) => {
+                                let lambda_type = variable_symbol_data.0.as_ref().borrow().data_type.clone();
+                                match lambda_type.0.as_ref() {
+                                    CoreType::LAMBDA(lambda_data) => {
+                                        let func_data = lambda_data.symbol_data.0.as_ref().borrow().lambda_data(
+                                            LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG
+                                        ).func_data.clone();
+                                        let expected_params = func_data.params;
+                                        let return_type = func_data.return_type;
+                                        (expected_params, return_type)
+                                    },
+                                    _ => {
+                                        let err_message = format!(
+                                            "variable `{}` with type `{}` is not callable",
+                                            ok_identifier.token_value(&self.code),
+                                            lambda_type
+                                        );
+                                        self.log_error(func_name.range(), func_name.start_line_number(), err_message);
+                                        return Type::new_with_unknown()
+                                    }
+                                }
+                            },
+                            _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`")
+                        };
+                        let result = self.check_params_type_and_count(&expected_params, params);
+                        match result {
+                            ParamsTypeNCountResult::OK => return return_type,
+                            _ => {
+                                self.log_params_type_and_count_check_error(
+                                    func_name.range(),
+                                    func_name.start_line_number(),
+                                    &result,
+                                );
+                                return Type::new_with_unknown();
+                            }
+                        }
+                    }
+                }
+                Type::new_with_unknown()
+            }
+            CoreAtomStartNode::CLASS_METHOD_CALL(class_method) => {
+                let core_class_method = class_method.core_ref();
+                let class = &core_class_method.class_name;
+                let class_method = &core_class_method.class_method_name;
+                let params = &core_class_method.params;
+                if let CoreIdentifierNode::OK(ok_identifier) = class.core_ref() {
+                    let class_name = ok_identifier.token_value(&self.code);
+                    match ok_identifier.user_defined_type_symbol_data(
+                        "classname should be resolved to `SymbolData<UserDefinedTypeData>`",
+                    ) {
+                        Some(type_symbol_data) => match &*type_symbol_data.0.as_ref().borrow() {
+                            UserDefinedTypeData::STRUCT(struct_data) => {
+                                let class_method_name = match class_method.core_ref() {
+                                    CoreIdentifierNode::OK(class_method) => {
+                                        class_method.token_value(&self.code)
+                                    }
+                                    _ => return Type::new_with_unknown(),
+                                };
+                                match struct_data
+                                    .class_methods
+                                    .as_ref()
+                                    .borrow()
+                                    .get(&class_method_name)
+                                {
+                                    Some(func_data) => {
+                                        let expected_params = func_data.params.clone();
+                                        let return_type = func_data.return_type.clone();
+                                        let result = self
+                                            .check_params_type_and_count(&expected_params, params);
+                                        match result {
+                                            ParamsTypeNCountResult::OK => return return_type,
+                                            _ => {
+                                                self.log_params_type_and_count_check_error(
+                                                    class_method.range(),
+                                                    class_method.start_line_number(),
+                                                    &result,
+                                                );
+                                                return Type::new_with_unknown();
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        let err_message = format!(
+                                            "no classmethod named `{}` exist for struct `{}`",
+                                            class_method_name, class_name
+                                        );
+                                        self.log_error(
+                                            class_method.range(),
+                                            class_method.start_line_number(),
+                                            err_message,
+                                        );
+                                        return Type::new_with_unknown();
+                                    }
+                                }
+                            }
+                            _ => {
+                                let err_message =
+                                    "classmethods are only supported for `struct` types"
+                                        .to_string();
+                                self.log_error(
+                                    class.range(),
+                                    class.start_line_number(),
+                                    err_message,
+                                );
+                                return Type::new_with_unknown();
+                            }
+                        },
+                        None => return Type::new_with_unknown(),
+                    }
+                }
+                Type::new_with_unknown()
+            }
+        }
     }
 
     pub fn check_atom(&mut self, atom: &AtomNode) -> Type {
@@ -243,7 +383,9 @@ impl TypeChecker {
                             ParamsTypeNCountResult::OK => return return_type,
                             _ => {
                                 self.log_params_type_and_count_check_error(
-                                    atom.range(), atom.start_line_number(), &result
+                                    atom.range(),
+                                    atom.start_line_number(),
+                                    &result,
                                 );
                                 return Type::new_with_unknown();
                             }
@@ -340,7 +482,9 @@ impl TypeChecker {
                                         ParamsTypeNCountResult::OK => return return_type.clone(),
                                         _ => {
                                             self.log_params_type_and_count_check_error(
-                                                method.range(), method.start_line_number(), &result
+                                                method.range(),
+                                                method.start_line_number(),
+                                                &result,
                                             );
                                             return Type::new_with_unknown();
                                         }
@@ -672,19 +816,33 @@ impl TypeChecker {
         self.errors.push(err);
     }
 
-    pub fn log_params_type_and_count_check_error(&mut self, error_range: TextRange, start_line_number: usize, result: &ParamsTypeNCountResult) {
+    pub fn log_params_type_and_count_check_error(
+        &mut self,
+        error_range: TextRange,
+        start_line_number: usize,
+        result: &ParamsTypeNCountResult,
+    ) {
         let err_message = match result {
-            ParamsTypeNCountResult::OK => unreachable!("ok case should be handled in the caller"),
+            ParamsTypeNCountResult::OK => return,
             ParamsTypeNCountResult::LESS_PARAMS((expected_params_num, received_params_num)) => {
-                format!("expected {} arguments, got {}", expected_params_num, received_params_num)
+                format!(
+                    "expected {} arguments, got {}",
+                    expected_params_num, received_params_num
+                )
             }
             ParamsTypeNCountResult::MORE_PARAMS(expected_params_num) => {
-                format!("expected {} arguments, got more than that", expected_params_num)
+                format!(
+                    "expected {} arguments, got more than that",
+                    expected_params_num
+                )
             }
             ParamsTypeNCountResult::MISMATCHED_TYPE(mismatch_type_vec) => {
                 let mut err_message = "mismatched types".to_string();
                 for entry in mismatch_type_vec {
-                    err_message.push_str(&format!("\nargument {} expected type `{}`, got `{}`", entry.2, entry.0, entry.1));
+                    err_message.push_str(&format!(
+                        "\nargument {} expected type `{}`, got `{}`",
+                        entry.2, entry.0, entry.1
+                    ));
                 }
                 err_message
             }
