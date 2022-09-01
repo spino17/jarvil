@@ -15,6 +15,7 @@ use crate::scope::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::{code::Code, lexer::token::Token, scope::core::Namespace, types::core::Type};
+use std::borrow::Borrow;
 use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
 use text_size::{TextRange, TextSize};
@@ -1214,6 +1215,45 @@ impl OkIdentifierNode {
     pub fn symbol_data(&self) -> Option<(IdentifierKind, usize)> {
         match &self.0.as_ref().borrow().decl {
             Some(symbol_data) => Some((symbol_data.0.clone(), symbol_data.1)),
+            None => None,
+        }
+    }
+
+    pub fn variable_symbol_data(
+        &self,
+        panic_message: &'static str,
+    ) -> Option<SymbolData<VariableData>> {
+        match &self.0.as_ref().borrow().decl {
+            Some(symbol_data) => match &symbol_data.0 {
+                IdentifierKind::VARIABLE(x) => return Some(x.clone()),
+                _ => panic!("{}", panic_message),
+            },
+            None => None,
+        }
+    }
+
+    pub fn function_symbol_data(
+        &self,
+        panic_message: &'static str,
+    ) -> Option<SymbolData<FunctionData>> {
+        match &self.0.as_ref().borrow().decl {
+            Some(symbol_data) => match &symbol_data.0 {
+                IdentifierKind::FUNCTION(x) => return Some(x.clone()),
+                _ => panic!("{}", panic_message),
+            },
+            None => None,
+        }
+    }
+
+    pub fn user_defined_type_symbol_data(
+        &self,
+        panic_message: &'static str,
+    ) -> Option<SymbolData<UserDefinedTypeData>> {
+        match &self.0.as_ref().borrow().decl {
+            Some(symbol_data) => match &symbol_data.0 {
+                IdentifierKind::USER_DEFINED_TYPE(x) => return Some(x.clone()),
+                _ => panic!("{}", panic_message),
+            },
             None => None,
         }
     }

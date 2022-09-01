@@ -254,21 +254,12 @@ impl Resolver {
                 let core_param = param.core_ref();
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                    if let Some(symbol_data) = ok_identifier.symbol_data() {
+                    if let Some(symbol_data) = ok_identifier.variable_symbol_data(
+                        "param name should be resolved to `SymbolData<VariableData>`",
+                    ) {
                         let variable_name = ok_identifier.token_value(&self.code);
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
-                        match symbol_data.0 {
-                            IdentifierKind::VARIABLE(variable_symbol_data) => {
-                                variable_symbol_data
-                                    .0
-                                    .as_ref()
-                                    .borrow_mut()
-                                    .set_data_type(&type_obj);
-                            }
-                            _ => unreachable!(
-                                "param name should be resolved to `SymbolData<VariableData>`"
-                            ),
-                        }
+                        symbol_data.0.as_ref().borrow_mut().set_data_type(&type_obj);
                         params_vec.push((variable_name, type_obj));
                     }
                 }
@@ -309,8 +300,7 @@ impl Resolver {
                                 .set_data_type(&lambda_type_obj);
                         }
                         _ => unreachable!(
-                            "function name `{}` should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`",
-                            ok_identifier.token_value(&self.code)
+                            "function name should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`"
                         ),
                     }
                 }
@@ -355,17 +345,14 @@ impl Resolver {
             }
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
-            if let Some(symbol_data) = ok_identifier.symbol_data() {
-                match symbol_data.0 {
-                    IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_data) => {
-                        match &mut *user_defined_type_symbol_data.0.as_ref().borrow_mut() {
-                            UserDefinedTypeData::STRUCT(struct_data) => {
-                                struct_data.set_fields(fields_map);
-                            },
-                            _ => unreachable!("struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`")
-                        }
+            if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
+                "struct name should be resolved to `SymbolData<UserDefinedTypeData>`",
+            ) {
+                match &mut *symbol_data.0.as_ref().borrow_mut() {
+                    UserDefinedTypeData::STRUCT(struct_data) => {
+                        struct_data.set_fields(fields_map);
                     },
-                    _ => unreachable!("struct name should be resolved to `SymbolData<UserDefinedTypeData>`")
+                    _ => unreachable!("struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`")
                 }
             }
         }
@@ -396,19 +383,16 @@ impl Resolver {
             }
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
-            if let Some(symbol_data) = ok_identifier.symbol_data() {
-                match symbol_data.0 {
-                    IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_data) => {
-                        match &mut *user_defined_type_symbol_data.0.as_ref().borrow_mut() {
-                            UserDefinedTypeData::LAMBDA(lambda_data) => {
-                                lambda_data.set_params_and_return_type(params_vec, return_type);
-                            },
-                            _ => unreachable!(
-                                "lambda type name should be binded with `LambdaTypeData` variant of `SymbolData<UserDefinedTypeData>`"
-                            )
-                        }
+            if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
+                "lambda type name should be resolved to `SymbolData<UserDefinedTypeData>`",
+            ) {
+                match &mut *symbol_data.0.as_ref().borrow_mut() {
+                    UserDefinedTypeData::LAMBDA(lambda_data) => {
+                        lambda_data.set_params_and_return_type(params_vec, return_type);
                     },
-                    _ => unreachable!("lambda type name should be resolved to `SymbolData<UserDefinedTypeData>`")
+                    _ => unreachable!(
+                        "lambda type name should be binded with `LambdaTypeData` variant of `SymbolData<UserDefinedTypeData>`"
+                    )
                 }
             }
         }

@@ -97,7 +97,7 @@ impl TypeChecker {
                 let core_param = param.core_ref();
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                    if let Some(_) = ok_identifier.symbol_data() {
+                    if ok_identifier.is_resolved() {
                         let variable_name = ok_identifier.token_value(&self.code);
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         params_vec.push((variable_name, type_obj));
@@ -119,15 +119,10 @@ impl TypeChecker {
         let return_type = &core_func_decl.return_type;
         let (params_vec, return_type) = match func_name {
             Some(func_name) => match func_name.core_ref() {
-                CoreIdentifierNode::OK(ok_identifier) => match ok_identifier.symbol_data() {
-                    Some(symbol_data) => match symbol_data.0 {
-                        IdentifierKind::VARIABLE(variable_symbol_data) => {
-                            return variable_symbol_data.0.as_ref().borrow().data_type.clone()
-                        }
-                        _ => unreachable!(
-                            "lambda name `{}` should be resolved to `SymbolData<VariableData>`"
-                        ),
-                    },
+                CoreIdentifierNode::OK(ok_identifier) => match ok_identifier.variable_symbol_data(
+                    "lambda name should be resolved to `SymbolData<VariableData>`",
+                ) {
+                    Some(symbol_data) => return symbol_data.0.as_ref().borrow().data_type.clone(),
                     None => self.params_and_return_type_obj_from_expr(return_type, params),
                 },
                 _ => self.params_and_return_type_obj_from_expr(return_type, params),
@@ -475,19 +470,10 @@ impl TypeChecker {
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
             if !r_type.is_lambda() {
                 // variable with lambda type is already set in resolving phase => see `resolve_function` method
-                if let Some(symbol_data) = ok_identifier.symbol_data() {
-                    match symbol_data.0 {
-                        IdentifierKind::VARIABLE(variable_symbol_data) => {
-                            variable_symbol_data
-                                .0
-                                .as_ref()
-                                .borrow_mut()
-                                .set_data_type(&r_type);
-                        }
-                        _ => unreachable!(
-                            "lambda name `{}` should be resolved to `SymbolData<VariableData>`"
-                        ),
-                    }
+                if let Some(symbol_data) = ok_identifier.variable_symbol_data(
+                    "variable name should be resolved to `SymbolData<VariableData>`",
+                ) {
+                    symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
                 }
             }
         };
