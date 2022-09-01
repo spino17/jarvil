@@ -1,7 +1,7 @@
 // See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to
 // cover and the representation of type expressions in terms of type objects.
 
-use std::rc::Rc;
+use std::{fmt::format, rc::Rc};
 
 use crate::{
     ast::{
@@ -48,6 +48,13 @@ pub enum AtomicTokenExprKind {
     INTEGER,
     FLOAT,
     LITERAL,
+}
+
+pub enum ParamsTypeNCountResult {
+    OK,
+    MORE_PARAMS(usize),
+    LESS_PARAMS((usize, usize)), // (expected_params_num, received_params_num)
+    MISMATCHED_TYPE(Vec<(Type, Type, usize)>), // (expected_type, received_type, index_of_param)
 }
 
 pub struct TypeChecker {
@@ -166,33 +173,42 @@ impl TypeChecker {
         &mut self,
         expected_params: &Rc<Vec<(String, Type)>>,
         received_params: &Option<ParamsNode>,
-    ) {
+    ) -> ParamsTypeNCountResult {
         let expected_params_len = expected_params.len();
         match received_params {
             Some(received_params) => {
                 let expected_params = expected_params.as_ref();
                 let received_params_iter = received_params.iter();
                 let mut index = 0;
+                let mut mismatch_types_vec: Vec<(Type, Type, usize)> = vec![]; // (expected_type, received_type, index_of_param)
                 for received_param in received_params_iter {
                     let param_type_obj = self.check_expr(&received_param);
                     if index >= expected_params_len {
-                        // TODO - return `more than expected arguments were passed`
+                        return ParamsTypeNCountResult::MORE_PARAMS(expected_params_len);
                     }
                     let expected_params_type_obj = &expected_params[index].1;
                     if !param_type_obj.is_eq(expected_params_type_obj) {
-                        // TODO - return `type mismatch\nexpected type for argument {index} is {}, got {}`
+                        mismatch_types_vec.push((
+                            expected_params_type_obj.clone(),
+                            param_type_obj.clone(),
+                            index + 1,
+                        ));
                     }
                     index = index + 1;
                 }
                 if index < expected_params_len {
-                    // TODO - return `expected {} arguments, {} were passed`
+                    return ParamsTypeNCountResult::LESS_PARAMS((expected_params_len, index));
+                } else if mismatch_types_vec.len() > 0 {
+                    return ParamsTypeNCountResult::MISMATCHED_TYPE(mismatch_types_vec);
+                } else {
+                    return ParamsTypeNCountResult::OK;
                 }
             }
             None => {
                 if expected_params_len != 0 {
-                    // TODO - return unequal params
+                    return ParamsTypeNCountResult::LESS_PARAMS((expected_params_len, 0));
                 } else {
-                    // TODO - return success
+                    return ParamsTypeNCountResult::OK;
                 }
             }
         }
@@ -220,23 +236,34 @@ impl TypeChecker {
                 let params = &core_call.params;
                 match self.is_callable(atom) {
                     Some(func_data) => {
-                        let params_vec = func_data.params;
+                        let expected_params = func_data.params;
                         let return_type = func_data.return_type;
-                        self.check_params_type_and_count(&params_vec, params);
-                        // TODO - check params type and number are correct
-                        return return_type;
+                        let result = self.check_params_type_and_count(&expected_params, params);
+                        match result {
+                            ParamsTypeNCountResult::OK => return return_type,
+                            _ => {
+                                self.log_params_type_and_count_check_error(&result);
+                                return Type::new_with_unknown();
+                            }
+                        }
                     }
                     None => {
-                        // TODO - raise error `expression is not callable`
+                        let err_message = "expression is not callable";
+                        self.log_error(
+                            atom.range(),
+                            atom.start_line_number(),
+                            err_message.to_string(),
+                        );
                         return Type::new_with_unknown();
                     }
                 }
             }
             CoreAtomNode::PROPERTRY_ACCESS(property_access) => {
                 let core_property_access = property_access.core_ref();
-                let atom_type_obj = self.check_atom(&core_property_access.atom);
-                let property_name = &core_property_access.propertry;
-                if let CoreIdentifierNode::OK(ok_identifier) = property_name.core_ref() {
+                let atom = &core_property_access.atom;
+                let atom_type_obj = self.check_atom(atom);
+                let property = &core_property_access.propertry;
+                if let CoreIdentifierNode::OK(ok_identifier) = property.core_ref() {
                     let property_name = Rc::new(ok_identifier.token_value(&self.code));
                     match atom_type_obj.0.as_ref() {
                         CoreType::STRUCT(struct_type) => {
@@ -252,13 +279,30 @@ impl TypeChecker {
                             {
                                 Some(type_obj) => return type_obj,
                                 None => {
-                                    // TODO - raise error `no property named `{}` exist for expression with type `{}``
+                                    let err_message = format!(
+                                        "no property named `{}` exist for expression with type `{}`",
+                                        property_name,
+                                        atom_type_obj
+                                    );
+                                    self.log_error(
+                                        property.range(),
+                                        property.start_line_number(),
+                                        err_message,
+                                    );
                                     return Type::new_with_unknown();
                                 }
                             }
                         }
                         _ => {
-                            // TODO - raise error `no property named `{}` exist for expression with type `{}``
+                            let err_message = format!(
+                                "no property named `{}` exist for expression with type `{}`",
+                                property_name, atom_type_obj
+                            );
+                            self.log_error(
+                                property.range(),
+                                property.start_line_number(),
+                                err_message,
+                            );
                             return Type::new_with_unknown();
                         }
                     }
@@ -269,9 +313,9 @@ impl TypeChecker {
                 // TODO - check for possiblitiy of a field access with type lambda which will have similar node
                 let core_method_access = method_access.core_ref();
                 let atom_type_obj = self.check_atom(&core_method_access.atom);
-                let method_name = &core_method_access.method_name;
+                let method = &core_method_access.method_name;
                 let params = &core_method_access.params;
-                if let CoreIdentifierNode::OK(ok_identifier) = method_name.core_ref() {
+                if let CoreIdentifierNode::OK(ok_identifier) = method.core_ref() {
                     let method_name = ok_identifier.token_value(&self.code);
                     match atom_type_obj.0.as_ref() {
                         CoreType::STRUCT(struct_type) => {
@@ -288,17 +332,36 @@ impl TypeChecker {
                                 Some(func_data) => {
                                     let expected_params = &func_data.params;
                                     let return_type = &func_data.return_type;
-                                    self.check_params_type_and_count(expected_params, params);
-                                    return return_type.clone();
+                                    let result =
+                                        self.check_params_type_and_count(&expected_params, params);
+                                    match result {
+                                        ParamsTypeNCountResult::OK => return return_type.clone(),
+                                        _ => {
+                                            self.log_params_type_and_count_check_error(&result);
+                                            return Type::new_with_unknown();
+                                        }
+                                    }
                                 }
                                 None => {
-                                    // TODO - raise error `no method named `{}` exist for expression with type `{}``
+                                    let err_message = format!(
+                                        "no method named `{}` exist for expression with type `{}`",
+                                        method_name, atom_type_obj
+                                    );
+                                    self.log_error(
+                                        method.range(),
+                                        method.start_line_number(),
+                                        err_message,
+                                    );
                                     return Type::new_with_unknown();
                                 }
                             }
                         }
                         _ => {
-                            // TODO - raise error `no method named `{}` exist for expression with type `{}``
+                            let err_message = format!(
+                                "no method named `{}` exist for expression with type `{}`",
+                                method_name, atom_type_obj
+                            );
+                            self.log_error(method.range(), method.start_line_number(), err_message);
                             return Type::new_with_unknown();
                         }
                     }
@@ -307,12 +370,17 @@ impl TypeChecker {
             }
             CoreAtomNode::INDEX_ACCESS(index_access) => {
                 let core_index_access = index_access.core_ref();
-                let atom_type_obj = self.check_atom(&core_index_access.atom);
+                let atom = &core_index_access.atom;
+                let atom_type_obj = self.check_atom(atom);
                 let index_type_obj = self.check_expr(&core_index_access.index);
                 match self.is_indexable_with_type(&atom_type_obj, &index_type_obj) {
                     Some(element_type) => return element_type.clone(),
                     _ => {
-                        // TODO - raise error `expression with type {} is not indexable with value of type {}`
+                        let err_message = format!(
+                            "expression with type {} is not indexable with value of type {}",
+                            atom_type_obj, index_type_obj
+                        );
+                        self.log_error(atom.range(), atom.start_line_number(), err_message);
                         return Type::new_with_unknown();
                     }
                 }
@@ -598,6 +666,21 @@ impl TypeChecker {
             JarvilErrorKind::SEMANTIC_ERROR,
         );
         self.errors.push(err);
+    }
+
+    pub fn log_params_type_and_count_check_error(&mut self, result: &ParamsTypeNCountResult) {
+        match result {
+            ParamsTypeNCountResult::OK => unreachable!("ok case should be handled in the caller"),
+            ParamsTypeNCountResult::LESS_PARAMS((expected_params_num, received_params_num)) => {
+                // TODO - raise error `expected number of arguments {}, got {}`
+            }
+            ParamsTypeNCountResult::MORE_PARAMS(expected_params_num) => {
+                // TODO - raise error `expected number of arguments {}, got more than that`
+            }
+            ParamsTypeNCountResult::MISMATCHED_TYPE(mismatch_type_vec) => {
+                // TODO - raise error `mismatched types\nargument {} expected type {}, got {}`
+            }
+        }
     }
 
     /*
