@@ -81,12 +81,21 @@ impl Resolver {
         match symbol_data {
             Ok(symbol_data) => bind_fn(identifier, &symbol_data),
             Err(previous_decl_line_number) => {
-                self.log_identifier_already_declared_in_current_scope_error(
-                    &name,
+                let err_message = if is_type {
+                    format!(
+                        "type `{}` is already declared in the scope on line {}",
+                        name, previous_decl_line_number
+                    )
+                } else {
+                    format!(
+                        "identifier `{}` is already declared in the current block on line {}",
+                        name, previous_decl_line_number
+                    )
+                };
+                self.log_error(
                     identifier.range(),
-                    previous_decl_line_number,
                     identifier.start_line_number(),
-                    is_type,
+                    err_message,
                 );
             }
         }
@@ -107,11 +116,14 @@ impl Resolver {
             Some(symbol_data) => {
                 bind_fn(identifier, &symbol_data.0, symbol_data.1);
             }
-            None => self.log_undefined_identifier_in_scope_error(
-                &name,
-                identifier.range(),
-                identifier.start_line_number(),
-            ),
+            None => {
+                let err_message = format!("identifier `{}` is not declared in the scope", name);
+                self.log_error(
+                    identifier.range(),
+                    identifier.start_line_number(),
+                    err_message,
+                )
+            }
         }
     }
 
@@ -153,13 +165,17 @@ impl Resolver {
                         .declare_variable(&name, ok_identifier.start_line_number())
                     {
                         Ok(symbol_data) => ok_identifier.bind_variable_decl(&symbol_data, 0),
-                        Err(previous_decl_line_number) => self
-                            .log_param_with_same_name_already_exist_error(
-                                &name,
+                        Err(previous_decl_line_number) => {
+                            let err_message = format!(
+                                "param with name `{}` already exist on line {}",
+                                name, previous_decl_line_number
+                            );
+                            self.log_error(
                                 ok_identifier.range(),
                                 ok_identifier.start_line_number(),
-                                previous_decl_line_number,
-                            ),
+                                err_message,
+                            )
+                        }
                     }
                 }
             }
@@ -229,10 +245,11 @@ impl Resolver {
             TypeResolveKind::RESOLVED(type_obj) => type_obj,
             TypeResolveKind::UNRESOLVED(identifier) => {
                 let name = Rc::new(identifier.token_value(&self.code));
-                self.log_undefined_identifier_in_scope_error(
-                    &name,
+                let err_message = format!("identifier `{}` is not declared in the scope", name);
+                self.log_error(
                     identifier.range(),
                     identifier.start_line_number(),
+                    err_message,
                 );
                 return Type::new_with_unknown();
             }
@@ -335,8 +352,11 @@ impl Resolver {
                         );
                         match fields_map.get(&field_name) {
                             Some(type_obj) => {
-                                self.log_struct_field_with_same_name_exist_error(
-                                    &field_name, ok_identifier.range(), ok_identifier.start_line_number(), type_obj
+                                let err_message = format!("field `{}` already exists with type `{}`", field_name, type_obj);
+                                self.log_error(
+                                    ok_identifier.range(),
+                                    ok_identifier.start_line_number(),
+                                    err_message,
                                 );
                             },
                             None => {
@@ -400,6 +420,26 @@ impl Resolver {
         }
     }
 
+    pub fn log_error(
+        &mut self,
+        error_range: TextRange,
+        start_line_number: usize,
+        err_message: String,
+    ) {
+        let start_err_index: usize = error_range.start().into();
+        let end_err_index: usize = error_range.end().into();
+        let err = JarvilError::form_error(
+            start_err_index,
+            end_err_index,
+            start_line_number,
+            &self.code,
+            err_message,
+            JarvilErrorKind::SEMANTIC_ERROR,
+        );
+        self.errors.push(err);
+    }
+
+    /*
     pub fn log_undefined_identifier_in_scope_error(
         &mut self,
         name: &Rc<String>,
@@ -509,6 +549,7 @@ impl Resolver {
         );
         self.errors.push(err);
     }
+     */
 }
 impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {

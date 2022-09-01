@@ -393,7 +393,7 @@ impl TypeChecker {
                     self.log_error(
                         unary_expr.range(),
                         unary_expr.start_line_number(),
-                        err_message
+                        err_message,
                     );
                     return Type::new_with_unknown();
                 }
@@ -407,7 +407,7 @@ impl TypeChecker {
                     self.log_error(
                         unary_expr.range(),
                         unary_expr.start_line_number(),
-                        err_message
+                        err_message,
                     );
                     return operand_type;
                 } else {
@@ -471,13 +471,12 @@ impl TypeChecker {
         if !l_type.is_eq(&r_type) {
             let err_message = format!(
                 "mismatched types\nleft side has type `{}`, right side has type `{}`",
-                l_type, 
-                r_type
+                l_type, r_type
             );
             self.log_error(
                 assignment.range(),
                 assignment.start_line_number(),
-                err_message
+                err_message,
             )
         }
     }
@@ -529,7 +528,7 @@ impl TypeChecker {
                 self.log_error(
                     return_type_node.range(),
                     return_type_node.start_line_number(),
-                    err_message
+                    err_message,
                 );
             }
             self.close_scope();
@@ -545,7 +544,7 @@ impl TypeChecker {
             self.log_error(
                 return_stmt.range(),
                 return_stmt.start_line_number(),
-                err_message
+                err_message,
             );
         }
         let expr = &core_return_stmt.expr;
@@ -554,14 +553,9 @@ impl TypeChecker {
         if !expr_type_obj.is_eq(&expected_type_obj) {
             let err_message = format!(
                 "mismatched types\nexpected return value type `{}`, got `{}`",
-                expected_type_obj, 
-                expr_type_obj
+                expected_type_obj, expr_type_obj
             );
-            self.log_error(
-                expr.range(),
-                expr.start_line_number(),
-                err_message
-            );
+            self.log_error(expr.range(), expr.start_line_number(), err_message);
         }
     }
 
@@ -587,7 +581,12 @@ impl TypeChecker {
         }
     }
 
-    pub fn log_error(&mut self, error_range: TextRange, start_line_number: usize, err_message: String) {
+    pub fn log_error(
+        &mut self,
+        error_range: TextRange,
+        start_line_number: usize,
+        err_message: String,
+    ) {
         let start_err_index: usize = error_range.start().into();
         let end_err_index: usize = error_range.end().into();
         let err = JarvilError::form_error(
