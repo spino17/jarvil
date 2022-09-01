@@ -51,17 +51,17 @@ impl UserDefinedTypeData {
 
 #[derive(Debug, Clone, Default)]
 pub struct StructData {
-    pub fields: Rc<FxHashMap<Rc<String>, Type>>,
+    pub fields: Rc<FxHashMap<String, Type>>,
     pub constructor: FunctionData,
     pub methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
     pub class_methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
 }
 impl StructData {
-    pub fn set_fields(&mut self, fields: FxHashMap<Rc<String>, Type>) {
+    pub fn set_fields(&mut self, fields: FxHashMap<String, Type>) {
         self.fields = Rc::new(fields);
     }
 
-    pub fn try_field(&self, field_name: &Rc<String>) -> Option<Type> {
+    pub fn try_field(&self, field_name: &String) -> Option<Type> {
         match self.fields.as_ref().get(field_name) {
             Some(type_obj) => return Some(type_obj.clone()),
             None => None,

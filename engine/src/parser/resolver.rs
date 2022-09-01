@@ -331,7 +331,7 @@ impl Resolver {
 
     pub fn resolve_struct(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
-        let mut fields_map: FxHashMap<Rc<String>, Type> = FxHashMap::default();
+        let mut fields_map: FxHashMap<String, Type> = FxHashMap::default();
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
             let stmt = match stmt.core_ref() {
@@ -346,7 +346,7 @@ impl Resolver {
                     let core_struct_stmt = struct_stmt.core_ref();
                     let name = &core_struct_stmt.name_type_spec.core_ref().name;
                     if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                        let field_name = Rc::new(ok_identifier.token_value(&self.code));
+                        let field_name = ok_identifier.token_value(&self.code);
                         let type_obj = self.type_obj_from_expression(
                             &core_struct_stmt.name_type_spec.core_ref().data_type
                         );
@@ -360,7 +360,7 @@ impl Resolver {
                                 );
                             },
                             None => {
-                                fields_map.insert(field_name.clone(), type_obj);
+                                fields_map.insert(field_name, type_obj);
                             }
                         }
                     }
