@@ -140,9 +140,12 @@ impl TypeChecker {
     pub fn is_callable(&mut self, atom: &AtomNode) -> Option<FunctionData> {
         let atom_type_obj = self.check_atom(atom);
         match atom_type_obj.0.as_ref() {
-            CoreType::LAMBDA(lambda) => match &*lambda.symbol_data.0.as_ref().borrow() {
-                UserDefinedTypeData::LAMBDA(lambda) => return Some(lambda.func_data.clone()),
-                _ => unreachable!(),
+            CoreType::LAMBDA(lambda) => {
+                Some(
+                    lambda.symbol_data.0.as_ref().borrow().lambda_data("
+                        lambda type name should be binded with `LambdaTypeData` variant of `SymbolData<UserDefinedTypeData>`
+                    ").func_data.clone()
+                )
             },
             _ => None,
         }
@@ -230,18 +233,14 @@ impl TypeChecker {
                     let property_name = Rc::new(ok_identifier.token_value(&self.code));
                     match atom_type_obj.0.as_ref() {
                         CoreType::STRUCT(struct_type) => {
-                            let symbol_data = &struct_type.symbol_data;
-                            match &*symbol_data.0.as_ref().borrow() {
-                                UserDefinedTypeData::STRUCT(struct_symbol_data) => {
-                                    match struct_symbol_data.fields.as_ref().get(&property_name) {
-                                        Some(type_obj) => return type_obj.clone(),
-                                        None => {
-                                            // TODO - raise error `no property named `{}` exist for expression with type `{}``
-                                            return Type::new_with_unknown();
-                                        }
-                                    }
+                            match struct_type.symbol_data.0.as_ref().borrow().struct_data("
+                                struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`
+                            ").try_field(&property_name) {
+                                Some(type_obj) => return type_obj,
+                                None => {
+                                    // TODO - raise error `no property named `{}` exist for expression with type `{}``
+                                    return Type::new_with_unknown();
                                 }
-                                _ => unreachable!(),
                             }
                         }
                         _ => {
@@ -262,31 +261,22 @@ impl TypeChecker {
                     let method_name = ok_identifier.token_value(&self.code);
                     match atom_type_obj.0.as_ref() {
                         CoreType::STRUCT(struct_type) => {
-                            let symbol_data = &struct_type.symbol_data;
-                            match &*symbol_data.0.as_ref().borrow() {
-                                UserDefinedTypeData::STRUCT(struct_symbol_data) => {
-                                    match struct_symbol_data
-                                        .methods
-                                        .as_ref()
-                                        .borrow()
-                                        .get(&method_name)
-                                    {
-                                        Some(func_data) => {
-                                            let expected_params = &func_data.params;
-                                            let return_type = &func_data.return_type;
-                                            self.check_params_type_and_count(
-                                                expected_params,
-                                                params,
-                                            );
-                                            return return_type.clone();
-                                        }
-                                        None => {
-                                            // TODO - raise error `no method named `{}` exist for expression with type `{}``
-                                            return Type::new_with_unknown();
-                                        }
-                                    }
+                            match struct_type.symbol_data.0.as_ref().borrow().struct_data("
+                                struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`
+                            ").try_method(&method_name) {
+                                Some(func_data) => {
+                                    let expected_params = &func_data.params;
+                                    let return_type = &func_data.return_type;
+                                    self.check_params_type_and_count(
+                                        expected_params,
+                                        params,
+                                    );
+                                    return return_type.clone();
+                                },
+                                None => {
+                                    // TODO - raise error `no method named `{}` exist for expression with type `{}``
+                                    return Type::new_with_unknown();
                                 }
-                                _ => unreachable!(),
                             }
                         }
                         _ => {

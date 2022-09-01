@@ -19,18 +19,60 @@ impl UserDefinedTypeData {
     pub fn default_with_lambda() -> Self {
         UserDefinedTypeData::LAMBDA(LambdaTypeData::default())
     }
+
+    pub fn lambda_data(&self, panic_message: &'static str) -> &LambdaTypeData {
+        match self {
+            UserDefinedTypeData::LAMBDA(data) => data,
+            _ => panic!(panic_message),
+        }
+    }
+
+    pub fn struct_data(&self, panic_message: &'static str) -> &StructData {
+        match self {
+            UserDefinedTypeData::STRUCT(data) => data,
+            _ => panic!(panic_message),
+        }
+    }
+
+    pub fn lambda_data_mut(&mut self, panic_message: &'static str) -> &mut LambdaTypeData {
+        match self {
+            UserDefinedTypeData::LAMBDA(data) => data,
+            _ => panic!(panic_message),
+        }
+    }
+
+    pub fn struct_data_mut(&mut self, panic_message: &'static str) -> &mut StructData {
+        match self {
+            UserDefinedTypeData::STRUCT(data) => data,
+            _ => panic!(panic_message),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct StructData {
     pub fields: Rc<FxHashMap<Rc<String>, Type>>,
-    constructor: FunctionData,
+    pub constructor: FunctionData,
     pub methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
-    class_methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
+    pub class_methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
 }
 impl StructData {
     pub fn set_fields(&mut self, fields: FxHashMap<Rc<String>, Type>) {
         self.fields = Rc::new(fields);
+    }
+
+    pub fn try_field(&self, field_name: &Rc<String>) -> Option<Type> {
+        match self.fields.as_ref().get(field_name) {
+            Some(type_obj) => return Some(type_obj.clone()),
+            None => None,
+        }
+    }
+
+    pub fn try_method(&self, method_name: &String) -> Option<FunctionData> {
+        match self.methods.as_ref().borrow().get(method_name) {
+            Some(func_data) => Some(func_data.clone()),
+            None => None,
+        }
     }
 }
 

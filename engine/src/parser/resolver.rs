@@ -348,12 +348,9 @@ impl Resolver {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "struct name should be resolved to `SymbolData<UserDefinedTypeData>`",
             ) {
-                match &mut *symbol_data.0.as_ref().borrow_mut() {
-                    UserDefinedTypeData::STRUCT(struct_data) => {
-                        struct_data.set_fields(fields_map);
-                    },
-                    _ => unreachable!("struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`")
-                }
+                symbol_data.0.as_ref().borrow_mut().struct_data_mut(
+                    "struct name should be binded with `StructData` variant of `SymbolData<UserDefinedTypeData>`"
+                ).set_fields(fields_map);
             }
         }
     }
@@ -386,14 +383,9 @@ impl Resolver {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "lambda type name should be resolved to `SymbolData<UserDefinedTypeData>`",
             ) {
-                match &mut *symbol_data.0.as_ref().borrow_mut() {
-                    UserDefinedTypeData::LAMBDA(lambda_data) => {
-                        lambda_data.set_params_and_return_type(params_vec, return_type);
-                    },
-                    _ => unreachable!(
-                        "lambda type name should be binded with `LambdaTypeData` variant of `SymbolData<UserDefinedTypeData>`"
-                    )
-                }
+                symbol_data.0.as_ref().borrow_mut().lambda_data_mut(
+                    "lambda type name should be binded with `LambdaTypeData` variant of `SymbolData<UserDefinedTypeData>`"
+                ).set_params_and_return_type(params_vec, return_type)
             }
         }
     }
