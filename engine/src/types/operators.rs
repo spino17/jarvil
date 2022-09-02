@@ -3,7 +3,6 @@ use crate::lexer::token::BinaryOperatorKind;
 
 pub trait Operator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type>;
-    fn kind(&self) -> BinaryOperatorKind;
 }
 
 pub fn operator_factory(kind: &BinaryOperatorKind) -> Box<dyn Operator> {
@@ -48,10 +47,6 @@ impl Operator for AddOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
     }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::PLUS;
-    }
 }
 
 pub struct SubtractOperator(CoreOperator);
@@ -67,10 +62,6 @@ impl SubtractOperator {
 impl Operator for SubtractOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
-    }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::MINUS;
     }
 }
 
@@ -88,10 +79,6 @@ impl Operator for MultiplyOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
     }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::MULTIPLY;
-    }
 }
 
 pub struct DivideOperator(CoreOperator);
@@ -103,10 +90,6 @@ impl DivideOperator {
 impl Operator for DivideOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
-    }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::DIVIDE;
     }
 }
 
@@ -120,10 +103,6 @@ impl Operator for AndOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
     }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::AND;
-    }
 }
 
 pub struct OrOperator(CoreOperator);
@@ -135,10 +114,6 @@ impl OrOperator {
 impl Operator for OrOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
-    }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::OR;
     }
 }
 
@@ -156,10 +131,6 @@ impl Operator for GreaterOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
     }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::GREATER;
-    }
 }
 
 pub struct LessOperator(CoreOperator);
@@ -171,10 +142,6 @@ impl LessOperator {
 impl Operator for LessOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
-    }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::LESS;
     }
 }
 
@@ -192,10 +159,6 @@ impl Operator for GreaterEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
     }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::GREATER_EQUAL;
-    }
 }
 
 pub struct LessEqualOperator(CoreOperator);
@@ -211,10 +174,6 @@ impl LessEqualOperator {
 impl Operator for LessEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
-    }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::LESS_EQUAL;
     }
 }
 
@@ -232,10 +191,6 @@ impl Operator for DoubleEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
     }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::DOUBLE_EQUAL;
-    }
 }
 
 pub struct NotEqualOperator(CoreOperator);
@@ -251,9 +206,5 @@ impl NotEqualOperator {
 impl Operator for NotEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         todo!()
-    }
-
-    fn kind(&self) -> BinaryOperatorKind {
-        return BinaryOperatorKind::NOT_EQUAL;
     }
 }
