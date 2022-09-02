@@ -40,6 +40,7 @@ use crate::{
 use std::rc::Rc;
 use text_size::TextRange;
 
+#[derive(Debug)]
 struct Context {
     func_stack: Vec<Type>,
 }
@@ -571,8 +572,7 @@ impl TypeChecker {
                 let core_lambda = lambda.core_ref();
                 match core_lambda {
                     CoreFunctionDeclarationNode::OK(ok_func_decl) => {
-                        let core_ok_func_decl = ok_func_decl.core_ref();
-                        self.walk_block(&core_ok_func_decl.block);
+                        self.check_func_decl(ok_func_decl);
                         return self.type_of_lambda(ok_func_decl);
                     }
                     _ => Type::new_with_unknown(),
@@ -784,44 +784,42 @@ impl TypeChecker {
         };
     }
 
-    pub fn check_func_decl(&mut self, func_decl: &FunctionDeclarationNode) {
-        if let CoreFunctionDeclarationNode::OK(ok_func_decl) = func_decl.core_ref() {
-            let core_ok_func_decl = ok_func_decl.core_ref();
-            let return_type_node = &core_ok_func_decl.return_type;
-            let return_type_obj = match return_type_node {
-                Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),
-                None => Type::new_with_void(),
-            };
-            self.open_scope(&core_ok_func_decl.block);
-            self.context.func_stack.push(return_type_obj.clone());
-            let mut has_return_stmt = false;
-            for stmt in &core_ok_func_decl.block.0.as_ref().borrow().stmts {
-                let stmt = match stmt.core_ref() {
-                    CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
-                    CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
-                        let core_stmt = stmt.core_ref();
-                        core_stmt.stmt.clone()
-                    }
-                    _ => continue,
-                };
-                self.walk_stmt(&stmt);
-                if let CoreStatementNode::RETURN(_) = stmt.core_ref() {
-                    has_return_stmt = true;
-                    // TODO - we can break here as any statement following return statement is dead code
+    pub fn check_func_decl(&mut self, ok_func_decl: &OkFunctionDeclarationNode) {
+        let core_ok_func_decl = ok_func_decl.core_ref();
+        let return_type_node = &core_ok_func_decl.return_type;
+        let return_type_obj = match return_type_node {
+            Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),
+            None => Type::new_with_void(),
+        };
+        self.open_scope(&core_ok_func_decl.block);
+        self.context.func_stack.push(return_type_obj.clone());
+        let mut has_return_stmt = false;
+        for stmt in &core_ok_func_decl.block.0.as_ref().borrow().stmts {
+            let stmt = match stmt.core_ref() {
+                CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
+                CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
+                    let core_stmt = stmt.core_ref();
+                    core_stmt.stmt.clone()
                 }
+                _ => continue,
+            };
+            self.walk_stmt(&stmt);
+            if let CoreStatementNode::RETURN(_) = stmt.core_ref() {
+                has_return_stmt = true;
+                // TODO - we can break here as any statement following return statement is dead code
             }
-            if !has_return_stmt && !return_type_obj.is_void() {
-                let return_type_node = return_type_node.as_ref().unwrap();
-                let err_message = format!("function body has no `return` statement");
-                self.log_error(
-                    return_type_node.range(),
-                    return_type_node.start_line_number(),
-                    err_message,
-                );
-            }
-            self.close_scope();
-            self.context.func_stack.pop();
         }
+        if !has_return_stmt && !return_type_obj.is_void() {
+            let return_type_node = return_type_node.as_ref().unwrap();
+            let err_message = format!("function body has no `return` statement");
+            self.log_error(
+                return_type_node.range(),
+                return_type_node.start_line_number(),
+                err_message,
+            );
+        }
+        self.close_scope();
+        self.context.func_stack.pop();
     }
 
     pub fn check_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {
@@ -860,7 +858,9 @@ impl TypeChecker {
                 self.check_variable_decl(variable_decl);
             }
             CoreStatementNode::FUNCTION_DECLARATION(func_decl) => {
-                self.check_func_decl(func_decl);
+                if let CoreFunctionDeclarationNode::OK(ok_func_decl) = func_decl.core_ref() {
+                    self.check_func_decl(ok_func_decl);
+                }
             }
             CoreStatementNode::RETURN(return_stmt) => {
                 self.check_return_stmt(return_stmt);
