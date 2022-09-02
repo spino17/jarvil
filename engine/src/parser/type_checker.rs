@@ -167,6 +167,7 @@ impl TypeChecker {
     }
 
     pub fn is_indexable_with_type(&mut self, base_type: &Type, index_type: &Type) -> Option<Type> {
+        // TODO - type can be (array, int), (hashmap, any type given in the definition)
         todo!()
     }
 

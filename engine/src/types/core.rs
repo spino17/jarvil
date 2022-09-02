@@ -68,6 +68,13 @@ impl Type {
         }
     }
 
+    pub fn is_string(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::ATOMIC(atomic) => atomic.is_string(),
+            _ => false,
+        }
+    }
+
     pub fn is_bool(&self) -> bool {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic) => atomic.is_bool(),

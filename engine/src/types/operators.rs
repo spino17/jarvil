@@ -1,5 +1,8 @@
 use super::core::Type;
-use crate::lexer::token::BinaryOperatorKind;
+use crate::{
+    constants::common::{BOOL, FLOAT, INT, STRING},
+    lexer::token::BinaryOperatorKind,
+};
 
 pub trait Operator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type>;
@@ -45,7 +48,18 @@ impl AddOperator {
 }
 impl Operator for AddOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        if l_type.is_numeric() && r_type.is_numeric() {
+            if l_type.is_float() || r_type.is_float() {
+                return Some(Type::new_with_atomic(FLOAT));
+            } else {
+                return Some(Type::new_with_atomic(INT));
+            }
+        } else if l_type.is_string() && r_type.is_string() {
+            return Some(Type::new_with_atomic(STRING));
+        } else {
+            // TODO - check whether l_type and r_type is equal and implement `Add` interface
+        }
+        None
     }
 }
 
@@ -61,7 +75,17 @@ impl SubtractOperator {
 }
 impl Operator for SubtractOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        // TODO - check if type is numeric => int - float = float, int - int = ints
+        if l_type.is_numeric() && r_type.is_numeric() {
+            if l_type.is_float() || r_type.is_float() {
+                return Some(Type::new_with_atomic(FLOAT));
+            } else {
+                return Some(Type::new_with_atomic(INT));
+            }
+        } else {
+            // TODO - check whether l_type and r_type is equal and implement `Subtract` interface
+        }
+        None
     }
 }
 
@@ -77,7 +101,16 @@ impl MultiplyOperator {
 }
 impl Operator for MultiplyOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        if l_type.is_numeric() && r_type.is_numeric() {
+            if l_type.is_float() || r_type.is_float() {
+                return Some(Type::new_with_atomic(FLOAT));
+            } else {
+                return Some(Type::new_with_atomic(INT));
+            }
+        } else {
+            // TODO - check whether l_type and r_type is equal and implement `Multiply` interface
+        }
+        None
     }
 }
 
@@ -89,7 +122,16 @@ impl DivideOperator {
 }
 impl Operator for DivideOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        if l_type.is_numeric() && r_type.is_numeric() {
+            if l_type.is_float() || r_type.is_float() {
+                return Some(Type::new_with_atomic(FLOAT));
+            } else {
+                return Some(Type::new_with_atomic(INT));
+            }
+        } else {
+            // TODO - check whether l_type and r_type is equal and implement `Subtract` interface
+        }
+        None
     }
 }
 
@@ -101,7 +143,11 @@ impl AndOperator {
 }
 impl Operator for AndOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        if l_type.is_bool() && r_type.is_bool() {
+            return Some(Type::new_with_atomic(BOOL));
+        } else {
+            return None;
+        }
     }
 }
 
@@ -113,7 +159,11 @@ impl OrOperator {
 }
 impl Operator for OrOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        if l_type.is_bool() && r_type.is_bool() {
+            return Some(Type::new_with_atomic(BOOL));
+        } else {
+            return None;
+        }
     }
 }
 
@@ -129,7 +179,16 @@ impl GreaterOperator {
 }
 impl Operator for GreaterOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
+            true
+        } else {
+            // TODO - check whether l_type and r_type is equal and implement `Greater` interface
+            false
+        };
+        if is_ok {
+            return Some(Type::new_with_atomic(BOOL));
+        }
+        None
     }
 }
 
@@ -141,7 +200,16 @@ impl LessOperator {
 }
 impl Operator for LessOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
+            true
+        } else {
+            // TODO - check whether l_type and r_type is equal and implement `Less` interface
+            false
+        };
+        if is_ok {
+            return Some(Type::new_with_atomic(BOOL));
+        }
+        None
     }
 }
 
@@ -157,7 +225,16 @@ impl GreaterEqualOperator {
 }
 impl Operator for GreaterEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
+            true
+        } else {
+            // TODO - check whether l_type and r_type is equal and implement `GreaterEqual` interface
+            false
+        };
+        if is_ok {
+            return Some(Type::new_with_atomic(BOOL));
+        }
+        None
     }
 }
 
@@ -173,7 +250,16 @@ impl LessEqualOperator {
 }
 impl Operator for LessEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
+            true
+        } else {
+            // TODO - check whether l_type and r_type is equal and implement `LessEqual` interface
+            false
+        };
+        if is_ok {
+            return Some(Type::new_with_atomic(BOOL));
+        }
+        None
     }
 }
 
@@ -189,7 +275,18 @@ impl DoubleEqualOperator {
 }
 impl Operator for DoubleEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
+            true
+        } else if l_type.is_string() && r_type.is_string() {
+            true
+        } else {
+            // TODO - check whether l_type and r_type is equal and implement `DoubleEqual` interface
+            false
+        };
+        if is_ok {
+            return Some(Type::new_with_atomic(BOOL));
+        }
+        None
     }
 }
 
@@ -205,6 +302,17 @@ impl NotEqualOperator {
 }
 impl Operator for NotEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
-        todo!()
+        let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
+            true
+        } else if l_type.is_string() && r_type.is_string() {
+            true
+        } else {
+            // TODO - check whether l_type and r_type is equal and implement `NotEqual` interface
+            false
+        };
+        if is_ok {
+            return Some(Type::new_with_atomic(BOOL));
+        }
+        None
     }
 }
