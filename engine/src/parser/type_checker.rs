@@ -1,8 +1,6 @@
 // See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to
 // cover and the representation of type expressions in terms of type objects.
 
-use std::{fmt::format, rc::Rc};
-
 use crate::{
     ast::{
         ast::{
@@ -36,8 +34,10 @@ use crate::{
     types::{
         atomic,
         core::{AbstractType, CoreType, Type},
+        operators::{self, operator_factory},
     },
 };
+use std::rc::Rc;
 use text_size::TextRange;
 
 struct Context {
@@ -175,8 +175,13 @@ impl TypeChecker {
         l_type: &Type,
         r_type: &Type,
         operator_kind: &BinaryOperatorKind,
-    ) -> Type {
-        todo!()
+    ) -> Option<Type> {
+        if l_type.is_unknown() || r_type.is_unknown() {
+            return Some(Type::new_with_unknown());
+        }
+        let operator_obj = operator_factory(operator_kind);
+        let result = operator_obj.check_operation(l_type, r_type);
+        result
     }
 
     pub fn check_params_type_and_count(
@@ -655,9 +660,21 @@ impl TypeChecker {
     pub fn check_binary_expr(&mut self, binary_expr: &BinaryExpressionNode) -> Type {
         let core_binary_expr = binary_expr.core_ref();
         let l_type = self.check_expr(&core_binary_expr.left_expr);
+        let operator = &core_binary_expr.operator;
         let operator_kind = &core_binary_expr.operator_kind;
         let r_type = self.check_expr(&core_binary_expr.right_expr);
-        self.is_binary_operation_valid(&l_type, &r_type, operator_kind)
+        let result = self.is_binary_operation_valid(&l_type, &r_type, operator_kind);
+        match result {
+            Some(type_obj) => return type_obj,
+            None => {
+                let err_message = format!(
+                    "binary operator `{}` cannot be applied on left and right operand with types `{}` and `{}` respectively",
+                    operator_kind, l_type, r_type
+                );
+                self.log_error(operator.range(), operator.start_line_number(), err_message);
+                return Type::new_with_unknown();
+            }
+        }
     }
 
     pub fn check_comp_expr(&mut self, comp_expr: &ComparisonNode) -> Type {
@@ -675,14 +692,25 @@ impl TypeChecker {
                 operator_kind.is_comparison(),
                 "all the operators in `ComparisonNode` should be comparison operators"
             );
-            match self
-                .is_binary_operation_valid(&l_type, &r_type, &operator_kind)
-                .0
-                .as_ref()
-            {
-                CoreType::ATOMIC(atomic) => assert!(atomic.is_bool()),
-                CoreType::UNKNOWN => return Type::new_with_unknown(),
-                _ => unreachable!("comparison operator always result into `bool` type"),
+            let result = self.is_binary_operation_valid(&l_type, &r_type, &operator_kind);
+            match result {
+                Some(type_obj) => match type_obj.0.as_ref() {
+                    CoreType::ATOMIC(atomic) => assert!(atomic.is_bool()),
+                    CoreType::UNKNOWN => return Type::new_with_unknown(),
+                    _ => unreachable!("comparison operator always result into `bool` type"),
+                },
+                None => {
+                    let err_message = format!(
+                        "binary operator `{}` cannot be applied on left and right operand with types `{}` and `{}` respectively",
+                        operator_kind, l_type, r_type
+                    );
+                    self.log_error(
+                        operators[index - 1].range(),
+                        operators[index - 1].start_line_number(),
+                        err_message,
+                    );
+                    return Type::new_with_unknown();
+                }
             }
         }
         Type::new_with_atomic(BOOL)

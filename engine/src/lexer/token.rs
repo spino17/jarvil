@@ -9,6 +9,7 @@ use crate::constants::common::{
     NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN, RSQUARE,
     SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, TRUE, TYPE_KEYWORD, WHILE,
 };
+use std::fmt::Display;
 use std::rc::Rc;
 use text_size::TextRange;
 
@@ -126,6 +127,25 @@ impl BinaryOperatorKind {
             | BinaryOperatorKind::NOT_EQUAL => true,
             _ => false,
         }
+    }
+}
+impl Display for BinaryOperatorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            BinaryOperatorKind::NOT_EQUAL => NOT_EQUAL,
+            BinaryOperatorKind::DOUBLE_EQUAL => DOUBLE_EQUAL,
+            BinaryOperatorKind::GREATER => RBRACKET,
+            BinaryOperatorKind::GREATER_EQUAL => GREATER_EQUAL,
+            BinaryOperatorKind::LESS => LBRACKET,
+            BinaryOperatorKind::LESS_EQUAL => LESS_EQUAL,
+            BinaryOperatorKind::MINUS => DASH,
+            BinaryOperatorKind::PLUS => PLUS,
+            BinaryOperatorKind::DIVIDE => SLASH,
+            BinaryOperatorKind::MULTIPLY => STAR,
+            BinaryOperatorKind::AND => AND,
+            BinaryOperatorKind::OR => OR,
+        };
+        write!(f, "{}", str)
     }
 }
 
