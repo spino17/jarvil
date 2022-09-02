@@ -42,7 +42,9 @@ impl Code {
 
     pub fn token_value(&self, start_index: usize, end_index: Option<usize>) -> String {
         match end_index {
-            Some(end_index) => self.code_vec[start_index..end_index].iter().collect(),
+            Some(end_index) => {
+                self.code_vec[start_index..end_index].iter().collect()
+            },
             None => self.code_vec[start_index..].iter().collect(),
         }
     }
@@ -104,6 +106,10 @@ impl Code {
         let code_lines = self.extract_code_lines();
         let mut curr_line_number = start_line_number;
         loop {
+            if curr_line_number - 1 >= code_lines.len() {
+                curr_line_number = code_lines.len() + 1;
+                break;
+            }
             let curr_start_index = code_lines[curr_line_number - 1];
             if end_index < curr_start_index {
                 break;

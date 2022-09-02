@@ -82,6 +82,14 @@ impl TypeChecker {
         self.namespace.close_scope();
     }
 
+    pub fn check_ast(&mut self, ast: &BlockNode) -> Vec<JarvilError> {
+        let core_block = ast.0.as_ref().borrow();
+        for stmt in &core_block.stmts {
+            self.walk_stmt_indent_wrapper(stmt);
+        }
+        std::mem::take(&mut self.errors)
+    }
+
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj(&self.namespace, &self.code) {
             TypeResolveKind::RESOLVED(type_obj) => type_obj,
@@ -168,7 +176,16 @@ impl TypeChecker {
 
     pub fn is_indexable_with_type(&mut self, base_type: &Type, index_type: &Type) -> Option<Type> {
         // TODO - type can be (array, int), (hashmap, any type given in the definition)
-        todo!()
+        match base_type.0.as_ref() {
+            CoreType::ARRAY(array) => {
+                if index_type.is_int() {
+                    return Some(array.element_type.clone())
+                } else {
+                    return None
+                }
+            },
+            _ => return None
+        }
     }
 
     pub fn is_binary_operation_valid(
@@ -196,7 +213,7 @@ impl TypeChecker {
                 let expected_params = expected_params.as_ref();
                 let received_params_iter = received_params.iter();
                 let mut index = 0;
-                let mut mismatch_types_vec: Vec<(Type, Type, usize)> = vec![]; // (expected_type, received_type, index_of_param)
+                let mut mismatch_types_vec: Vec<(Type, Type, usize)> = vec![];  // (expected_type, received_type, index_of_param)
                 for received_param in received_params_iter {
                     let param_type_obj = self.check_expr(&received_param);
                     if index >= expected_params_len {
@@ -228,14 +245,6 @@ impl TypeChecker {
                 }
             }
         }
-    }
-
-    pub fn check_ast(&mut self, ast: &BlockNode) -> Vec<JarvilError> {
-        let core_block = ast.0.as_ref().borrow();
-        for stmt in &core_block.stmts {
-            self.walk_stmt_indent_wrapper(stmt);
-        }
-        std::mem::take(&mut self.errors)
     }
 
     pub fn check_atom_start(&mut self, atom_start: &AtomStartNode) -> Type {
