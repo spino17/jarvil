@@ -27,6 +27,7 @@ use crate::{
         },
         core::{JarvilError, JarvilErrorKind},
     },
+    lexer::token::BinaryOperatorKind,
     scope::{
         core::{IdentifierKind, Namespace, SymbolData},
         function::FunctionData,
@@ -166,6 +167,15 @@ impl TypeChecker {
     }
 
     pub fn is_indexable_with_type(&mut self, base_type: &Type, index_type: &Type) -> Option<Type> {
+        todo!()
+    }
+
+    pub fn is_binary_operation_valid(
+        &mut self,
+        l_type: &Type,
+        r_type: &Type,
+        operator_kind: &BinaryOperatorKind,
+    ) -> Type {
         todo!()
     }
 
@@ -645,13 +655,37 @@ impl TypeChecker {
     pub fn check_binary_expr(&mut self, binary_expr: &BinaryExpressionNode) -> Type {
         let core_binary_expr = binary_expr.core_ref();
         let l_type = self.check_expr(&core_binary_expr.left_expr);
-        // TODO - check the operator and depending on the operator check whether binary operation is valid for l_type and r_type
+        let operator_kind = &core_binary_expr.operator_kind;
         let r_type = self.check_expr(&core_binary_expr.right_expr);
-        todo!()
+        self.is_binary_operation_valid(&l_type, &r_type, operator_kind)
     }
 
     pub fn check_comp_expr(&mut self, comp_expr: &ComparisonNode) -> Type {
-        todo!()
+        let core_comp_expr = comp_expr.core_ref();
+        let operands = &core_comp_expr.operands;
+        let operators = &core_comp_expr.operators;
+        let operands_len = operands.len();
+        for index in 1..operands_len {
+            let l_type = self.check_expr(&operands[index - 1]);
+            let r_type = self.check_expr(&operands[index]);
+            let operator_kind = operators[index - 1]
+                .is_binary_operator()
+                .expect("operator token is always valid");
+            assert!(
+                operator_kind.is_comparison(),
+                "all the operators in `ComparisonNode` should be comparison operators"
+            );
+            match self
+                .is_binary_operation_valid(&l_type, &r_type, &operator_kind)
+                .0
+                .as_ref()
+            {
+                CoreType::ATOMIC(atomic) => assert!(atomic.is_bool()),
+                CoreType::UNKNOWN => return Type::new_with_unknown(),
+                _ => unreachable!("comparison operator always result into `bool` type"),
+            }
+        }
+        Type::new_with_atomic(BOOL)
     }
 
     pub fn check_expr(&mut self, expr: &ExpressionNode) -> Type {

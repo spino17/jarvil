@@ -115,6 +115,19 @@ pub enum BinaryOperatorKind {
     AND,
     OR,
 }
+impl BinaryOperatorKind {
+    pub fn is_comparison(&self) -> bool {
+        match self {
+            BinaryOperatorKind::LESS
+            | BinaryOperatorKind::LESS_EQUAL
+            | BinaryOperatorKind::GREATER
+            | BinaryOperatorKind::GREATER_EQUAL
+            | BinaryOperatorKind::DOUBLE_EQUAL
+            | BinaryOperatorKind::NOT_EQUAL => true,
+            _ => false,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LexicalErrorKind {

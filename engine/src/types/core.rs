@@ -103,6 +103,13 @@ impl Type {
             _ => false,
         }
     }
+
+    pub fn is_unknown(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::UNKNOWN => true,
+            _ => false,
+        }
+    }
 }
 impl AbstractType for Type {
     fn is_eq(&self, base_type: &Type) -> bool {
