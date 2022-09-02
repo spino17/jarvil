@@ -400,6 +400,7 @@ impl Resolver {
                 let core_param = param.core_ref();
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                    // TODO - check here that params in lambda type definition does not repeat
                     let variable_name = ok_identifier.token_value(&self.code);
                     let type_obj = self.type_obj_from_expression(&core_param.data_type);
                     params_vec.push((variable_name, type_obj));
@@ -487,6 +488,9 @@ impl Visitor for Resolver {
                                     ok_identifier.bind_variable_decl(&symbol_data.0, symbol_data.1);
                                 }
                             }
+                            if let Some(params) = &core_func_call.params {
+                                self.walk_params(params)
+                            }
                         }
                         _ => {}
                     }
@@ -528,6 +532,9 @@ impl Visitor for Resolver {
                                     self.try_resolving(ok_identifier, lookup_fn, bind_fn);
                                 }
                             }
+                            if let Some(params) = &core_func_call.params {
+                                self.walk_params(params)
+                            }
                         }
                         CoreAtomStartNode::CLASS_METHOD_CALL(class_method_call) => {
                             let core_class_method_call = class_method_call.core_ref();
@@ -544,6 +551,9 @@ impl Visitor for Resolver {
                                         identifier.bind_user_defined_type_decl(symbol_data, depth)
                                     };
                                 self.try_resolving(ok_identifier, lookup_fn, bind_fn);
+                            }
+                            if let Some(params) = &core_class_method_call.params {
+                                self.walk_params(params);
                             }
                         }
                         _ => {}
