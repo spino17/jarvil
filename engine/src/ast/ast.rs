@@ -356,7 +356,7 @@ impl ExpressionStatementNode {
 }
 impl Node for ExpressionStatementNode {
     fn range(&self) -> TextRange {
-        impl_range!(self.0.as_ref().expr, self.0.as_ref().newline)
+        impl_range!(self.0.as_ref().expr, self.0.as_ref().expr)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().expr.start_line_number()

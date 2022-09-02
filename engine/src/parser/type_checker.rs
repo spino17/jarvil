@@ -179,12 +179,12 @@ impl TypeChecker {
         match base_type.0.as_ref() {
             CoreType::ARRAY(array) => {
                 if index_type.is_int() {
-                    return Some(array.element_type.clone())
+                    return Some(array.element_type.clone());
                 } else {
-                    return None
+                    return None;
                 }
-            },
-            _ => return None
+            }
+            _ => return None,
         }
     }
 
@@ -213,7 +213,7 @@ impl TypeChecker {
                 let expected_params = expected_params.as_ref();
                 let received_params_iter = received_params.iter();
                 let mut index = 0;
-                let mut mismatch_types_vec: Vec<(Type, Type, usize)> = vec![];  // (expected_type, received_type, index_of_param)
+                let mut mismatch_types_vec: Vec<(Type, Type, usize)> = vec![]; // (expected_type, received_type, index_of_param)
                 for received_param in received_params_iter {
                     let param_type_obj = self.check_expr(&received_param);
                     if index >= expected_params_len {
@@ -641,6 +641,8 @@ impl TypeChecker {
             }
             UnaryOperatorKind::NOT => {
                 if operand_type.is_bool() {
+                    return operand_type;
+                } else {
                     let err_message = format!(
                         "unary expression with operator `not` is valid only for boolean operand, got operand with type `{}`", 
                         operand_type
@@ -650,8 +652,6 @@ impl TypeChecker {
                         unary_expr.start_line_number(),
                         err_message,
                     );
-                    return operand_type;
-                } else {
                     return Type::new_with_unknown();
                 }
             }
