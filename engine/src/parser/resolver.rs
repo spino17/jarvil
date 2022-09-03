@@ -166,10 +166,8 @@ impl Resolver {
                     {
                         Ok(symbol_data) => ok_identifier.bind_variable_decl(&symbol_data, 0),
                         Err(previous_decl_line_number) => {
-                            let err_message = format!(
-                                "param with name `{}` already exist on line {}",
-                                name, previous_decl_line_number
-                            );
+                            let err_message =
+                                format!("argument with name `{}` already exist", name);
                             self.log_error(
                                 ok_identifier.range(),
                                 ok_identifier.start_line_number(),
@@ -263,7 +261,7 @@ impl Resolver {
         let params = &core_func_decl.params;
         let return_type = &core_func_decl.return_type;
         let func_body = &core_func_decl.block;
-        let mut params_vec: Vec<(String, Type)> = vec![];
+        let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -280,7 +278,7 @@ impl Resolver {
                     if let Some(symbol_data) = ok_identifier.variable_symbol_data(
                         "param name should be resolved to `SymbolData<VariableData>`",
                     ) {
-                        let variable_name = ok_identifier.token_value(&self.code);
+                        let variable_name = Rc::new(ok_identifier.token_value(&self.code));
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         symbol_data.0.as_ref().borrow_mut().set_data_type(&type_obj);
                         params_vec.push((variable_name, type_obj));
@@ -352,7 +350,7 @@ impl Resolver {
                         );
                         match fields_map.get(&field_name) {
                             Some(type_obj) => {
-                                let err_message = format!("field `{}` already exists with type `{}`", field_name, type_obj);
+                                let err_message = format!("field with name `{}` already exists with type `{}`", field_name, type_obj);
                                 self.log_error(
                                     ok_identifier.range(),
                                     ok_identifier.start_line_number(),
@@ -384,7 +382,7 @@ impl Resolver {
 
     pub fn resolve_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
-        let mut params_vec: Vec<(String, Type)> = vec![];
+        let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
         let params = &core_lambda_type_decl.params;
         let return_type = &core_lambda_type_decl.return_type;
         let return_type: Type = match return_type {
@@ -396,13 +394,24 @@ impl Resolver {
         };
         if let Some(params) = params {
             let params_iter = params.iter();
+            let mut params_map: FxHashMap<Rc<String>, ()> = FxHashMap::default();
             for param in params_iter {
                 let core_param = param.core_ref();
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                    // TODO - check here that params in lambda type definition does not repeat
-                    let variable_name = ok_identifier.token_value(&self.code);
+                    let variable_name = Rc::new(ok_identifier.token_value(&self.code));
+                    if let Some(_) = params_map.get(&variable_name) {
+                        let err_message =
+                            format!("argument with name `{}` already exist", variable_name);
+                        self.log_error(
+                            ok_identifier.range(),
+                            ok_identifier.start_line_number(),
+                            err_message,
+                        );
+                        continue;
+                    }
                     let type_obj = self.type_obj_from_expression(&core_param.data_type);
+                    params_map.insert(variable_name.clone(), ());
                     params_vec.push((variable_name, type_obj));
                 }
             }

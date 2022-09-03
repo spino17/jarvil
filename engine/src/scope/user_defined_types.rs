@@ -81,7 +81,7 @@ pub struct LambdaTypeData {
     pub func_data: FunctionData,
 }
 impl LambdaTypeData {
-    pub fn new(params: Vec<(String, Type)>, return_type: Type) -> Self {
+    pub fn new(params: Vec<(Rc<String>, Type)>, return_type: Type) -> Self {
         LambdaTypeData {
             func_data: FunctionData {
                 params: Rc::new(params),
@@ -90,7 +90,11 @@ impl LambdaTypeData {
         }
     }
 
-    pub fn set_params_and_return_type(&mut self, params: Vec<(String, Type)>, return_type: Type) {
+    pub fn set_params_and_return_type(
+        &mut self,
+        params: Vec<(Rc<String>, Type)>,
+        return_type: Type,
+    ) {
         self.func_data.set_data(params, return_type);
     }
 }

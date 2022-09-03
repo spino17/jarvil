@@ -103,8 +103,8 @@ impl TypeChecker {
         &self,
         return_type: &Option<TypeExpressionNode>,
         params: &Option<NameTypeSpecsNode>,
-    ) -> (Vec<(String, Type)>, Type) {
-        let mut params_vec: Vec<(String, Type)> = vec![];
+    ) -> (Vec<(Rc<String>, Type)>, Type) {
+        let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -119,7 +119,7 @@ impl TypeChecker {
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
                     if ok_identifier.is_resolved() {
-                        let variable_name = ok_identifier.token_value(&self.code);
+                        let variable_name = Rc::new(ok_identifier.token_value(&self.code));
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         params_vec.push((variable_name, type_obj));
                     }
@@ -205,7 +205,7 @@ impl TypeChecker {
 
     pub fn check_params_type_and_count(
         &mut self,
-        expected_params: &Rc<Vec<(String, Type)>>,
+        expected_params: &Rc<Vec<(Rc<String>, Type)>>,
         received_params: &Option<ParamsNode>,
     ) -> ParamsTypeNCountResult {
         let expected_params_len = expected_params.len();
@@ -480,7 +480,7 @@ impl TypeChecker {
                 Type::new_with_unknown()
             }
             CoreAtomNode::METHOD_ACCESS(method_access) => {
-                // TODO - check for possiblitiy of a field access with type lambda which will have similar node
+                // TODO - check for possiblitiy of a field access with type lambda which will have similar syntax
                 let core_method_access = method_access.core_ref();
                 let atom_type_obj = self.check_atom(&core_method_access.atom);
                 let method = &core_method_access.method_name;

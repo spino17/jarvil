@@ -3,11 +3,11 @@ use std::{rc::Rc, vec};
 
 #[derive(Debug)]
 pub struct FunctionData {
-    pub params: Rc<Vec<(String, Type)>>,
+    pub params: Rc<Vec<(Rc<String>, Type)>>,
     pub return_type: Type,
 }
 impl FunctionData {
-    pub fn set_data(&mut self, params: Vec<(String, Type)>, return_type: Type) {
+    pub fn set_data(&mut self, params: Vec<(Rc<String>, Type)>, return_type: Type) {
         self.params = Rc::new(params);
         self.return_type = return_type;
     }
