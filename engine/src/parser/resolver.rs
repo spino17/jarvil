@@ -207,15 +207,7 @@ impl Resolver {
             return;
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            let declare_fn =
-                |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
-                    namespace.declare_variable(name, start_line_number)
-                };
-            let bind_fn = |identifier: &OkIdentifierNode,
-                           symbol_data: &SymbolData<VariableData>| {
-                identifier.bind_variable_decl(symbol_data, 0)
-            };
-            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn, false);
+            self.try_declare_and_bind_variable(ok_identifier);
         }
     }
 
@@ -257,25 +249,9 @@ impl Resolver {
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 if is_lambda {
-                    let declare_fn =
-                        |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
-                            namespace.declare_variable(name, start_line_number)
-                        };
-                    let bind_fn =
-                        |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
-                            identifier.bind_variable_decl(symbol_data, 0)
-                        };
-                    self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn, false);
+                    self.try_declare_and_bind_variable(ok_identifier);
                 } else {
-                    let declare_fn =
-                        |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
-                            namespace.declare_function(name, start_line_number)
-                        };
-                    let bind_fn =
-                        |identifier: &OkIdentifierNode, symbol_data: &SymbolData<FunctionData>| {
-                            identifier.bind_function_decl(symbol_data, 0)
-                        };
-                    self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn, false);
+                    self.try_declare_and_bind_function(ok_identifier);
                 }
             }
         }
@@ -284,30 +260,14 @@ impl Resolver {
     pub fn declare_struct(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
-            let declare_fn =
-                |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
-                    namespace.declare_struct_type(name, start_line_number)
-                };
-            let bind_fn =
-                |identifier: &OkIdentifierNode, symbol_data: &SymbolData<UserDefinedTypeData>| {
-                    identifier.bind_user_defined_type_decl(symbol_data, 0)
-                };
-            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn, true);
+            self.try_declare_and_bind_struct_type(ok_identifier);
         }
     }
 
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
-            let declare_fn =
-                |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
-                    namespace.declare_lambda_type(name, start_line_number)
-                };
-            let bind_fn =
-                |identifier: &OkIdentifierNode, symbol_data: &SymbolData<UserDefinedTypeData>| {
-                    identifier.bind_user_defined_type_decl(symbol_data, 0)
-                };
-            self.try_declare_and_bind(ok_identifier, declare_fn, bind_fn, true);
+            self.try_declare_and_bind_lambda_type(ok_identifier);
         }
     }
 
@@ -546,16 +506,7 @@ impl Visitor for Resolver {
                     match atom_start.core_ref() {
                         CoreAtomStartNode::IDENTIFIER(identifier) => {
                             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                                let lookup_fn = |namespace: &Namespace, key: &Rc<String>| {
-                                    namespace.lookup_in_variables_namespace(key)
-                                };
-                                let bind_fn =
-                                    |identifier: &OkIdentifierNode,
-                                     symbol_data: &SymbolData<VariableData>,
-                                     depth: usize| {
-                                        identifier.bind_variable_decl(symbol_data, depth)
-                                    };
-                                self.try_resolving(ok_identifier, lookup_fn, bind_fn);
+                                self.try_resolving_variable(ok_identifier);
                             }
                         }
                         CoreAtomStartNode::CALL(func_call) => {
@@ -602,16 +553,7 @@ impl Visitor for Resolver {
                                 core_func_call.function_name.core_ref()
                             {
                                 if !ok_identifier.is_resolved() {
-                                    let lookup_fn = |namespace: &Namespace, key: &Rc<String>| {
-                                        namespace.lookup_in_functions_namespace(key)
-                                    };
-                                    let bind_fn =
-                                        |identifier: &OkIdentifierNode,
-                                         symbol_data: &SymbolData<FunctionData>,
-                                         depth: usize| {
-                                            identifier.bind_function_decl(symbol_data, depth)
-                                        };
-                                    self.try_resolving(ok_identifier, lookup_fn, bind_fn);
+                                    self.try_resolving_function(ok_identifier);
                                 }
                             }
                             if let Some(params) = &core_func_call.params {
@@ -623,16 +565,7 @@ impl Visitor for Resolver {
                             if let CoreIdentifierNode::OK(ok_identifier) =
                                 core_class_method_call.class_name.core_ref()
                             {
-                                let lookup_fn = |namespace: &Namespace, key: &Rc<String>| {
-                                    namespace.lookup_in_types_namespace(key)
-                                };
-                                let bind_fn =
-                                    |identifier: &OkIdentifierNode,
-                                     symbol_data: &SymbolData<UserDefinedTypeData>,
-                                     depth: usize| {
-                                        identifier.bind_user_defined_type_decl(symbol_data, depth)
-                                    };
-                                self.try_resolving(ok_identifier, lookup_fn, bind_fn);
+                                self.try_resolving_user_defined_type(ok_identifier);
                             }
                             if let Some(params) = &core_class_method_call.params {
                                 self.walk_params(params);
