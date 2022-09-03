@@ -298,7 +298,7 @@ impl TypeChecker {
                                         return Type::new_with_unknown()
                                     }
                                 }
-                            },
+                            },  // TODO - handle case when the call is constructor call
                             _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`")
                         };
                         let result = self.check_params_type_and_count(&expected_params, params);

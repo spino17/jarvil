@@ -127,6 +127,79 @@ impl Resolver {
         }
     }
 
+    pub fn try_resolving_variable(&mut self, identifier: &OkIdentifierNode) {
+        let lookup_fn =
+            |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_variables_namespace(key);
+        let bind_fn =
+            |identifier: &OkIdentifierNode,
+             symbol_data: &SymbolData<VariableData>,
+             depth: usize| { identifier.bind_variable_decl(symbol_data, depth) };
+        self.try_resolving(identifier, lookup_fn, bind_fn);
+    }
+
+    pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) {
+        let lookup_fn =
+            |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_functions_namespace(key);
+        let bind_fn =
+            |identifier: &OkIdentifierNode,
+             symbol_data: &SymbolData<FunctionData>,
+             depth: usize| { identifier.bind_function_decl(symbol_data, depth) };
+        self.try_resolving(identifier, lookup_fn, bind_fn);
+    }
+
+    pub fn try_resolving_user_defined_type(&mut self, identifier: &OkIdentifierNode) {
+        let lookup_fn =
+            |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_types_namespace(key);
+        let bind_fn = |identifier: &OkIdentifierNode,
+                       symbol_data: &SymbolData<UserDefinedTypeData>,
+                       depth: usize| {
+            identifier.bind_user_defined_type_decl(symbol_data, depth)
+        };
+        self.try_resolving(identifier, lookup_fn, bind_fn);
+    }
+
+    pub fn try_declare_and_bind_variable(&mut self, identifier: &OkIdentifierNode) {
+        let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
+            namespace.declare_variable(name, start_line_number)
+        };
+        let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
+            identifier.bind_variable_decl(symbol_data, 0)
+        };
+        self.try_declare_and_bind(identifier, declare_fn, bind_fn, false);
+    }
+
+    pub fn try_declare_and_bind_function(&mut self, identifier: &OkIdentifierNode) {
+        let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
+            namespace.declare_function(name, start_line_number)
+        };
+        let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<FunctionData>| {
+            identifier.bind_function_decl(symbol_data, 0)
+        };
+        self.try_declare_and_bind(identifier, declare_fn, bind_fn, false);
+    }
+
+    pub fn try_declare_and_bind_struct_type(&mut self, identifier: &OkIdentifierNode) {
+        let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
+            namespace.declare_struct_type(name, start_line_number)
+        };
+        let bind_fn = |identifier: &OkIdentifierNode,
+                       symbol_data: &SymbolData<UserDefinedTypeData>| {
+            identifier.bind_user_defined_type_decl(symbol_data, 0)
+        };
+        self.try_declare_and_bind(identifier, declare_fn, bind_fn, true);
+    }
+
+    pub fn try_declare_and_bind_lambda_type(&mut self, identifier: &OkIdentifierNode) {
+        let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
+            namespace.declare_lambda_type(name, start_line_number)
+        };
+        let bind_fn = |identifier: &OkIdentifierNode,
+                       symbol_data: &SymbolData<UserDefinedTypeData>| {
+            identifier.bind_user_defined_type_decl(symbol_data, 0)
+        };
+        self.try_declare_and_bind(identifier, declare_fn, bind_fn, true);
+    }
+
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         self.walk_r_assignment(&core_variable_decl.r_assign);
