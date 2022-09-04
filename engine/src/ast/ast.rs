@@ -134,11 +134,32 @@ impl BlockNode {
 }
 impl Node for BlockNode {
     fn range(&self) -> TextRange {
-        let stmts_len = self.0.as_ref().borrow().stmts.len();
-        impl_range!(
-            self.0.as_ref().borrow().newline,
-            self.0.as_ref().borrow().stmts[stmts_len - 1]
-        )
+        let core_block = self.0.as_ref().borrow();
+        let stmts_len = core_block.stmts.len();
+        let mut index = stmts_len - 1;
+        let mut is_empty = false;
+        loop {
+            match core_block.stmts[index].core_ref() {
+                CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(_) => {}
+                _ => break,
+            }
+            if index == 0 {
+                is_empty = true;
+                break;
+            }
+            index = index - 1;
+        }
+        if is_empty {
+            impl_range!(
+                self.0.as_ref().borrow().newline,
+                self.0.as_ref().borrow().newline
+            )
+        } else {
+            impl_range!(
+                self.0.as_ref().borrow().newline,
+                self.0.as_ref().borrow().stmts[index]
+            )
+        }
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().borrow().newline.start_line_number()
@@ -479,7 +500,10 @@ impl StructStatementNode {
 }
 impl Node for StructStatementNode {
     fn range(&self) -> TextRange {
-        impl_range!(self.0.as_ref().name_type_spec, self.0.as_ref().newline)
+        impl_range!(
+            self.0.as_ref().name_type_spec,
+            self.0.as_ref().name_type_spec
+        )
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().name_type_spec.start_line_number()
@@ -642,7 +666,10 @@ impl OkLambdaTypeDeclarationNode {
 }
 impl Node for OkLambdaTypeDeclarationNode {
     fn range(&self) -> TextRange {
-        impl_range!(self.0.as_ref().type_keyword, self.0.as_ref().newline)
+        match &self.core_ref().return_type {
+            Some(return_type) => impl_range!(self.0.as_ref().type_keyword, return_type),
+            None => impl_range!(self.0.as_ref().type_keyword, self.0.as_ref().rparen),
+        }
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().type_keyword.start_line_number()
