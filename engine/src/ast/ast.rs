@@ -668,7 +668,7 @@ impl FunctionDeclarationNode {
         rparen: &TokenNode,
         right_arrow: Option<&TokenNode>,
         colon: &TokenNode,
-        is_lambda: bool,
+        kind: FunctionKind,
     ) -> Self {
         let node = Rc::new(CoreFunctionDeclarationNode::OK(
             OkFunctionDeclarationNode::new(
@@ -681,7 +681,7 @@ impl FunctionDeclarationNode {
                 rparen,
                 right_arrow,
                 colon,
-                is_lambda,
+                kind,
             ),
         ));
         FunctionDeclarationNode(node)
@@ -702,7 +702,14 @@ pub struct CoreOkFunctionDeclarationNode {
     pub params: Option<NameTypeSpecsNode>,
     pub return_type: Option<TypeExpressionNode>,
     pub block: BlockNode,
-    pub is_lambda: bool,
+    pub kind: FunctionKind,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum FunctionKind {
+    FUNC,
+    METHOD,
+    LAMBDA,
 }
 
 #[derive(Debug, Clone)]
@@ -724,7 +731,7 @@ impl OkFunctionDeclarationNode {
         rparen: &TokenNode,
         right_arrow: Option<&TokenNode>,
         colon: &TokenNode,
-        is_lambda: bool,
+        kind: FunctionKind,
     ) -> Self {
         let node = Rc::new(CoreOkFunctionDeclarationNode {
             func_keyword: func_keyword.clone(),
@@ -736,7 +743,7 @@ impl OkFunctionDeclarationNode {
             params: extract_from_option!(params),
             return_type: extract_from_option!(return_type),
             block: block.clone(),
-            is_lambda,
+            kind,
         });
         OkFunctionDeclarationNode(node)
     }

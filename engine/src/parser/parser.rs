@@ -6,9 +6,9 @@
 use super::helper::format_symbol;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
-    FunctionDeclarationNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, ParamsNode,
-    RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
-    TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
+    FunctionDeclarationNode, FunctionKind, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
+    Node, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
+    TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::ast::ast::{BlockKind, ErrornousNode};
 use crate::code::Code;
@@ -643,9 +643,9 @@ impl PackratParser {
         &mut self,
         name: Option<&IdentifierNode>,
         func_keyword: &FuncKeywordKind,
-        is_lambda: bool,
+        kind: FunctionKind,
     ) -> FunctionDeclarationNode {
-        components::function_declaration::function_decl(self, name, func_keyword, is_lambda)
+        components::function_declaration::function_decl(self, name, func_keyword, kind)
     }
 
     pub fn struct_stmt(&mut self) -> StatementNode {

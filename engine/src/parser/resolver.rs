@@ -3,9 +3,9 @@ use crate::{
         ast::{
             ASTNode, BlockNode, CoreAtomStartNode, CoreIdentifierNode, CoreNameTypeSpecsNode,
             CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
-            FunctionDeclarationNode, LambdaDeclarationNode, Node, OkFunctionDeclarationNode,
-            OkIdentifierNode, OkLambdaTypeDeclarationNode, StructDeclarationNode,
-            TypeExpressionNode, TypeResolveKind, VariableDeclarationNode,
+            FunctionDeclarationNode, FunctionKind, LambdaDeclarationNode, Node,
+            OkFunctionDeclarationNode, OkIdentifierNode, OkLambdaTypeDeclarationNode,
+            StructDeclarationNode, TypeExpressionNode, TypeResolveKind, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -222,7 +222,7 @@ impl Resolver {
         let func_name = &core_func_decl.name;
         let params = &core_func_decl.params;
         let func_body = &core_func_decl.block;
-        let is_lambda = core_func_decl.is_lambda;
+        let kind = &core_func_decl.kind;
         self.namespace.open_scope();
         if let Some(params) = params {
             let params_iter = params.iter();
@@ -254,34 +254,38 @@ impl Resolver {
         self.namespace.close_scope();
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                if is_lambda {
-                    if let Some((name, previous_decl_line)) =
-                        self.try_declare_and_bind_variable(ok_identifier)
-                    {
-                        let err_message = format!(
-                            "variable `{}` is already declared in the current block on line {}",
-                            name, previous_decl_line
-                        );
-                        self.log_error(
-                            ok_identifier.range(),
-                            ok_identifier.start_line_number(),
-                            err_message,
-                        );
+                match kind {
+                    FunctionKind::FUNC => {
+                        if let Some((name, previous_decl_line)) =
+                            self.try_declare_and_bind_function(ok_identifier)
+                        {
+                            let err_message = format!(
+                                "function `{}` is already declared in the current block on line {}",
+                                name, previous_decl_line
+                            );
+                            self.log_error(
+                                ok_identifier.range(),
+                                ok_identifier.start_line_number(),
+                                err_message,
+                            );
+                        }
                     }
-                } else {
-                    if let Some((name, previous_decl_line)) =
-                        self.try_declare_and_bind_function(ok_identifier)
-                    {
-                        let err_message = format!(
-                            "function `{}` is already declared in the current block on line {}",
-                            name, previous_decl_line
-                        );
-                        self.log_error(
-                            ok_identifier.range(),
-                            ok_identifier.start_line_number(),
-                            err_message,
-                        );
+                    FunctionKind::LAMBDA => {
+                        if let Some((name, previous_decl_line)) =
+                            self.try_declare_and_bind_variable(ok_identifier)
+                        {
+                            let err_message = format!(
+                                "variable `{}` is already declared in the current block on line {}",
+                                name, previous_decl_line
+                            );
+                            self.log_error(
+                                ok_identifier.range(),
+                                ok_identifier.start_line_number(),
+                                err_message,
+                            );
+                        }
                     }
+                    FunctionKind::METHOD => todo!(),
                 }
             }
         }
@@ -376,13 +380,13 @@ impl Resolver {
         self.namespace = func_body.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
         self.walk_block(func_body);
         self.namespace.close_scope();
-        let is_lambda = core_func_decl.is_lambda;
+        let kind = &core_func_decl.kind;
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 if let Some(symbol_data) = ok_identifier.symbol_data() {
                     match symbol_data.0 {
                         IdentifierKind::FUNCTION(func_symbol_data) => {
-                            assert!(is_lambda == false);
+                            assert!(kind.clone() == FunctionKind::FUNC);
                             func_symbol_data
                                 .0
                                 .as_ref()
@@ -390,7 +394,7 @@ impl Resolver {
                                 .set_data(params_vec, return_type);
                         }
                         IdentifierKind::VARIABLE(variable_symbol_data) => {
-                            assert!(is_lambda == true);
+                            assert!(kind.clone() == FunctionKind::LAMBDA);
                             let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(
                                 params_vec,
                                 return_type,

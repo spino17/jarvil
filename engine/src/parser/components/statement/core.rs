@@ -1,4 +1,6 @@
-use crate::ast::ast::{FuncKeywordKind, ReturnStatementNode, StatementNode, StructStatementNode};
+use crate::ast::ast::{
+    FuncKeywordKind, FunctionKind, ReturnStatementNode, StatementNode, StructStatementNode,
+};
 use crate::constants::common::IDENTIFIER;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
@@ -57,7 +59,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
             let function_decl_node = parser.function_decl(
                 Some(&function_name),
                 &FuncKeywordKind::DEF(def_keyword),
-                false,
+                FunctionKind::FUNC,
             );
             StatementNode::new_with_function_declaration(&function_decl_node)
         }

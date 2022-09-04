@@ -9,10 +9,11 @@ use crate::{
             CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
             CoreFunctionDeclarationNode, CoreIdentifierNode, CoreRAssignmentNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, NameTypeSpecsNode,
-            Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode,
-            ReturnStatementNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-            TypeResolveKind, UnaryExpressionNode, UnaryOperatorKind, VariableDeclarationNode,
+            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, FunctionKind,
+            NameTypeSpecsNode, Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode,
+            ParamsNode, RAssignmentNode, ReturnStatementNode, StatementNode, TokenNode,
+            TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
+            UnaryOperatorKind, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -132,7 +133,7 @@ impl TypeChecker {
     pub fn type_of_lambda(&self, func_decl: &OkFunctionDeclarationNode) -> Type {
         let core_func_decl = func_decl.core_ref();
         assert!(
-            core_func_decl.is_lambda,
+            core_func_decl.kind == FunctionKind::LAMBDA,
             "construction of type is only valid for lambda declaration"
         );
         let func_name = &core_func_decl.name;
