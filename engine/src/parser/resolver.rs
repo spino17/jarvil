@@ -64,24 +64,6 @@ impl Resolver {
             std::mem::take(&mut self.errors),
         )
     }
-    /*
-    let err_message = if is_type {
-                    format!(
-                        "type `{}` is already declared in the scope on line {}",
-                        name, previous_decl_line_number
-                    )
-                } else {
-                    format!(
-                        "identifier `{}` is already declared in the current block on line {}",
-                        name, previous_decl_line_number
-                    )
-                };
-                self.log_error(
-                    identifier.range(),
-                    identifier.start_line_number(),
-                    err_message,
-                );
-     */
 
     pub fn try_declare_and_bind<
         T,
@@ -104,14 +86,6 @@ impl Resolver {
         }
     }
 
-    /*
-    let err_message = format!("identifier `{}` is not declared in the scope", name);
-    self.log_error(
-        identifier.range(),
-        identifier.start_line_number(),
-        err_message,
-    )
-     */
     pub fn try_resolving<
         T,
         U: Fn(&Namespace, &Rc<String>) -> Option<(SymbolData<T>, usize)>,
