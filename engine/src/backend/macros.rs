@@ -9,7 +9,7 @@ macro_rules! decode_op {
                     Data::FLOAT(l_val) => {
                         $u.stack.push(Data::FLOAT(l_val $t r_val as f32));
                     },
-                    _ => return InterpretResult::RUNTIME_ERROR,
+                    _ => return InterpretResult::COMPILE_ERROR,
                 }
             },
             Data::FLOAT(r_val) => {
@@ -20,10 +20,10 @@ macro_rules! decode_op {
                     Data::FLOAT(l_val) => {
                         $u.stack.push(Data::FLOAT(l_val $t r_val));
                     },
-                    _ => return InterpretResult::RUNTIME_ERROR,
+                    _ => return InterpretResult::COMPILE_ERROR,
                 }
             },
-            _ => return InterpretResult::RUNTIME_ERROR
+            _ => return InterpretResult::COMPILE_ERROR
         }
     };
 }

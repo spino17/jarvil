@@ -42,4 +42,8 @@ impl Stack {
         self.top = self.top - 1;
         self.stack[self.top].clone()
     }
+
+    pub fn top(&self) -> &Data {
+        &self.stack[self.top - 1]
+    }
 }

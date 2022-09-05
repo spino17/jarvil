@@ -10,6 +10,9 @@ pub enum OpCode {
     OP_SUBTRACT, // 4
     OP_MULTIPLY, // 5
     OP_DIVIDE,   // 6
+    OP_TRUE,     // 7
+    OP_FALSE,    // 8
+    OP_NOT,      // 9
 }
 impl OpCode {
     pub fn to_byte(&self) -> u8 {
@@ -21,11 +24,14 @@ impl OpCode {
             OpCode::OP_SUBTRACT => 4,
             OpCode::OP_MULTIPLY => 5,
             OpCode::OP_DIVIDE => 6,
+            OpCode::OP_TRUE => 7,
+            OpCode::OP_FALSE => 8,
+            OpCode::OP_NOT => 9,
         }
     }
 }
 
-pub const OP_CODES_MAP: [OpCode; 7] = [
+pub const OP_CODES_MAP: [OpCode; 10] = [
     OpCode::OP_RETURN,
     OpCode::OP_CONSTANT,
     OpCode::OP_NEGATE,
@@ -33,6 +39,9 @@ pub const OP_CODES_MAP: [OpCode; 7] = [
     OpCode::OP_SUBTRACT,
     OpCode::OP_MULTIPLY,
     OpCode::OP_DIVIDE,
+    OpCode::OP_TRUE,
+    OpCode::OP_FALSE,
+    OpCode::OP_NOT,
 ];
 
 #[derive(Clone)]
@@ -41,6 +50,40 @@ pub enum Data {
     FLOAT(f32),
     LITERAL(Rc<String>),
     BOOL(bool),
+}
+impl Data {
+    fn new_with_int(val: i32) -> Self {
+        Data::INT(val)
+    }
+
+    fn new_with_float(val: f32) -> Self {
+        Data::FLOAT(val)
+    }
+
+    fn new_with_bool(val: bool) -> Self {
+        Data::BOOL(val)
+    }
+
+    fn is_int(&self) -> Option<i32> {
+        match self {
+            Data::INT(val) => Some(val.clone()),
+            _ => None,
+        }
+    }
+
+    fn is_float(&self) -> Option<f32> {
+        match self {
+            Data::FLOAT(val) => Some(val.clone()),
+            _ => None,
+        }
+    }
+
+    fn is_bool(&self) -> Option<bool> {
+        match self {
+            Data::BOOL(val) => Some(val.clone()),
+            _ => None,
+        }
+    }
 }
 impl Display for Data {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -106,6 +149,9 @@ impl Chunk {
             OpCode::OP_SUBTRACT => ("SUBTRACT".to_string(), offset + 1),
             OpCode::OP_MULTIPLY => ("MULTIPLY".to_string(), offset + 1),
             OpCode::OP_DIVIDE => ("DIVIDE".to_string(), offset + 1),
+            OpCode::OP_TRUE => ("TRUE".to_string(), offset + 1),
+            OpCode::OP_FALSE => ("FALSE".to_string(), offset + 1),
+            OpCode::OP_NOT => ("NOT".to_string(), offset + 1),
         }
     }
 }

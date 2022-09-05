@@ -60,7 +60,7 @@ impl VM {
                     match self.stack.pop() {
                         Data::INT(val) => self.stack.push(Data::INT(-val)),
                         Data::FLOAT(val) => self.stack.push(Data::FLOAT(-val)),
-                        _ => return InterpretResult::RUNTIME_ERROR,
+                        _ => return InterpretResult::COMPILE_ERROR,
                     }
                 }
                 OpCode::OP_ADD => {
@@ -80,14 +80,29 @@ impl VM {
                     let r_val = match self.stack.pop() {
                         Data::INT(val) => val as f32,
                         Data::FLOAT(val) => val,
-                        _ => return InterpretResult::RUNTIME_ERROR,
+                        _ => return InterpretResult::COMPILE_ERROR,
                     };
                     let l_val = match self.stack.pop() {
                         Data::INT(val) => val as f32,
                         Data::FLOAT(val) => val,
-                        _ => return InterpretResult::RUNTIME_ERROR,
+                        _ => return InterpretResult::COMPILE_ERROR,
                     };
                     self.stack.push(Data::FLOAT(l_val / r_val));
+                }
+                OpCode::OP_TRUE => {
+                    self.advance_ip();
+                    self.stack.push(Data::BOOL(true));
+                }
+                OpCode::OP_FALSE => {
+                    self.advance_ip();
+                    self.stack.push(Data::BOOL(false));
+                }
+                OpCode::OP_NOT => {
+                    self.advance_ip();
+                    match self.stack.pop() {
+                        Data::BOOL(val) => self.stack.push(Data::BOOL(!val)),
+                        _ => return InterpretResult::COMPILE_ERROR,
+                    }
                 }
             }
         }
