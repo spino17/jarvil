@@ -6,12 +6,12 @@ use crate::{
     backend::chunk::Chunk,
 };
 
-pub struct CodeGenerator {
+pub struct ByteCodeGenerator {
     chunk: Chunk,
 }
-impl CodeGenerator {
+impl ByteCodeGenerator {
     fn new() -> Self {
-        CodeGenerator {
+        ByteCodeGenerator {
             chunk: Chunk::default(),
         }
     }
@@ -20,7 +20,7 @@ impl CodeGenerator {
         std::mem::take(&mut self.chunk)
     }
 }
-impl Visitor for CodeGenerator {
+impl Visitor for ByteCodeGenerator {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         todo!()
     }

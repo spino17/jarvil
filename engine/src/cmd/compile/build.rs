@@ -5,6 +5,7 @@ use crate::parser::type_checker::TypeChecker;
 use crate::utils::common::build_ast;
 
 pub fn build(code_vec: Vec<char>) -> Result<(), JarvilError> {
+    // TODO - change this to Result<Chunk, JarvilError>
     let mut code = Code::new(code_vec);
     let (ast, mut errors) = build_ast(&mut code);
     let mut resolver = Resolver::new(&code);
