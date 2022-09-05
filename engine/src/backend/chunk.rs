@@ -1,8 +1,8 @@
-use std::{vec, convert::TryInto, fmt::Display};
 use super::helper::get_machine_byte_multiple;
+use std::{convert::TryInto, fmt::Display, vec};
 
 pub enum OpCode {
-    OP_RETURN, // 0
+    OP_RETURN,   // 0
     OP_CONSTANT, // 1
 }
 impl OpCode {
@@ -18,15 +18,15 @@ pub enum Data {
     INT(i32),
     FLOAT(f32),
     LITERAL(String),
-    BOOL(bool)
+    BOOL(bool),
 }
 impl Display for Data {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Data::INT(val)          => write!(f, "{}", val),
-            Data::FLOAT(val)        => write!(f, "{}", val),
-            Data::LITERAL(val)   => write!(f, "{}", val),
-            Data::BOOL(val)        => write!(f, "{}", val),
+            Data::INT(val) => write!(f, "{}", val),
+            Data::FLOAT(val) => write!(f, "{}", val),
+            Data::LITERAL(val) => write!(f, "{}", val),
+            Data::BOOL(val) => write!(f, "{}", val),
         }
     }
 }
@@ -56,7 +56,7 @@ impl Chunk {
         self.code.extend_from_slice(&const_index.to_be_bytes());
     }
 
-    pub fn disassemble(&self) ->  Vec<String> {
+    pub fn disassemble(&self) -> Vec<String> {
         let mut offset = 0;
         let mut parsed_instructions: Vec<String> = vec![];
         while offset < self.code.len() {
@@ -69,15 +69,18 @@ impl Chunk {
 
     pub fn disassemble_instruction(&self, offset: usize) -> (String, usize) {
         match OP_CODES_MAP[usize::from(self.code[offset])] {
-            OpCode::OP_RETURN => {
-                ("RETURN".to_string(), offset + 1)
-            },
+            OpCode::OP_RETURN => ("RETURN".to_string(), offset + 1),
             OpCode::OP_CONSTANT => {
                 let byte_multiple = get_machine_byte_multiple();
-                let v = self.code[offset + 1..offset + (byte_multiple + 1)].try_into().unwrap();
+                let v = self.code[offset + 1..offset + (byte_multiple + 1)]
+                    .try_into()
+                    .unwrap();
                 let const_value = &self.constants[usize::from_be_bytes(v)];
-                (format!("CONSTANT {}", const_value), offset + (byte_multiple + 1))
-            },
+                (
+                    format!("CONSTANT {}", const_value),
+                    offset + (byte_multiple + 1),
+                )
+            }
         }
     }
 }
@@ -92,4 +95,3 @@ impl Display for Chunk {
         write!(f, "{}", display_str)
     }
 }
-

@@ -1,4 +1,4 @@
 pub mod chunk;
-pub mod vm;
-pub mod stack;
 pub mod helper;
+pub mod stack;
+pub mod vm;

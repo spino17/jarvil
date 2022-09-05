@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod backend;
 pub mod cmd;
 pub mod code;
 pub mod constants;
@@ -9,7 +10,6 @@ pub mod parser;
 pub mod reader;
 pub mod scope;
 pub mod server;
-pub mod backend;
 #[cfg(test)]
 pub mod tests;
 pub mod types;

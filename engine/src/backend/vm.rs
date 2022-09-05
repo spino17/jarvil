@@ -12,10 +12,7 @@ pub struct VM {
 }
 impl VM {
     pub fn new(chunk: Chunk) -> Self {
-        VM {
-            chunk,
-            ip: 0,
-        }
+        VM { chunk, ip: 0 }
     }
 
     pub fn run(&self) -> InterpretResult {

@@ -934,4 +934,3 @@ impl Visitor for TypeChecker {
         }
     }
 }
-
