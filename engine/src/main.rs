@@ -16,6 +16,7 @@ mod utils;
 
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
+use std::convert::TryInto;
 use std::env::args;
 
 fn start_compiler(args: Vec<String>) {
@@ -29,4 +30,9 @@ fn start_compiler(args: Vec<String>) {
 fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
+    let x: usize = 10;
+    let v = x.to_be_bytes().to_vec();
+    let v_array = v[..].try_into().unwrap();
+    let y = usize::from_be_bytes(v_array);
+    assert!(x == y);
 }
