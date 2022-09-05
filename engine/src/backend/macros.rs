@@ -1,4 +1,4 @@
-macro_rules! insert_op {
+macro_rules! decode_op {
     ($t: tt, $u: expr) => {
         match $u.stack.pop() {
             Data::INT(r_val) => {

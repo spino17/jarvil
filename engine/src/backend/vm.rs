@@ -67,15 +67,15 @@ impl VM {
                 }
                 OpCode::OP_ADD => {
                     self.advance_ip();
-                    insert_op!(+, self);
+                    decode_op!(+, self);
                 }
                 OpCode::OP_SUBTRACT => {
                     self.advance_ip();
-                    insert_op!(-, self);
+                    decode_op!(-, self);
                 }
                 OpCode::OP_MULTIPLY => {
                     self.advance_ip();
-                    insert_op!(*, self);
+                    decode_op!(*, self);
                 }
                 OpCode::OP_DIVIDE => {
                     self.advance_ip();
