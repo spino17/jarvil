@@ -1,35 +1,38 @@
-mod errors;
+#[macro_use]
+extern crate jarvil_macros;
+mod ast;
+mod cmd;
+mod code;
+mod constants;
+mod context;
+mod error;
 mod lexer;
 mod parser;
-mod env;
-mod context;
-mod constants;
 mod reader;
+mod scope;
+mod server;
+mod types;
+mod utils;
 
-use errors::CompilationError;
+use crate::cmd::compile::build::build;
 use crate::reader::read_file;
-use crate::lexer::lexer::{CoreLexer, Lexer};
+use std::convert::TryInto;
 use std::env::args;
-use crate::parser::packrat::PackratParser;
-use crate::parser::core::Parser;
 
-fn start_compiler() -> Result<(), CompilationError> {
-    let args: Vec<String> = args().collect();
-    let char_vec: Vec<char> = read_file("/Users/bhavyabhatt/Desktop/main.jv")?;
-    let mut core_lexer = CoreLexer::new();
-    let token_vec = core_lexer.tokenize(char_vec)?;
-    let mut parser = PackratParser::new();
-    if token_vec.len() > 0 {
-        let ast = parser.parse(token_vec)?;  // TODO - do bytecode generation using this ast object
+fn start_compiler(args: Vec<String>) {
+    let code_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
+    let result = build(code_vec);
+    if let Err(err) = result {
+        println!("{}", err)
     }
-    Ok(())
 }
 
 fn main() {
-    match start_compiler() {
-        Ok(()) => {},
-        Err(err) => {
-            println!("{}", err);
-        }
-    }
+    let args: Vec<String> = args().collect();
+    start_compiler(args);
+    let x: usize = 10;
+    let v = x.to_be_bytes().to_vec();
+    let v_array = v[..].try_into().unwrap();
+    let y = usize::from_be_bytes(v_array);
+    assert!(x == y);
 }

@@ -6,3 +6,7 @@ authors = ["Bhavya Bhatt bhavyabhatt17@gmail.com"]
 
 [dependencies]
 rustc-hash = { version = "1.1" }
+colored = "2.0.0"
+jarvil-macros = { path = "jarvil-macros" }
+text-size = "1.1.0"
+convert_case = "0.5.0"

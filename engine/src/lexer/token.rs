@@ -1,251 +1,240 @@
-use crate::errors::{LexicalError, SemanticError};
+#[macro_use]
+use jarvil_macros::Tokenify;
+use crate::code::Code;
+use crate::constants::common::{
+    AND, ATOMIC_TYPE, BLANK, BLOCK_COMMENT, BREAK, COLON, COMMA, CONTINUE, DASH, DEF, DOT,
+    DOUBLE_COLON, DOUBLE_EQUAL, DOUBLE_STAR, ELIF, ELSE, ENDMARKER, EQUAL, FALSE,
+    FLOATING_POINT_NUMBER, FOR, FUNC, GREATER_EQUAL, IDENTIFIER, IF, IMPL, IN, INTEGER,
+    INTERFACE_KEYWORD, LBRACE, LBRACKET, LESS_EQUAL, LET, LEXICAL_ERROR, LITERAL, LPAREN, LSQUARE,
+    NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN, RSQUARE,
+    SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, TRUE, TYPE_KEYWORD, WHILE,
+};
+use std::fmt::Display;
 use std::rc::Rc;
-use crate::env::{Env,SymbolData};
-use crate::lexer::helper;
-use crate::context;
+use text_size::TextRange;
 
-use super::lexer::Lexer;
-
-#[derive(Debug)]
-pub struct TokenValue(pub Rc<String>);
-
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Tokenify)]
 pub enum CoreToken {
-
     // conditionals
-    IF,                 // 'if'
-    ELSE,               // 'else'
-    ELIF,               // 'elif'
+    IF,   // 'if'
+    ELSE, // 'else'
+    ELIF, // 'elif'
 
     // loops
-    FOR,                // 'for'
-    WHILE,              // 'while'
-    CONTINUE,           // 'continue'
-    BREAK,              // 'break'
+    FOR,      // 'for'
+    WHILE,    // 'while'
+    CONTINUE, // 'continue'
+    BREAK,    // 'break'
 
     // functions
-    DEF,                // 'def'
-    RETURN,             // 'return'
+    DEF,    // 'def'
+    RETURN, // 'return'
+    FUNC,   // 'func'
 
     // types
-    STRUCT,             // 'struct'
-    TYPE(TokenValue),
-    NEW,                // 'new'
+    TYPE_KEYWORD, // 'type'
+    ATOMIC_TYPE,
+    LET,               // 'let'
+    SELF,              // 'self'
+    IMPL,              // 'impl'
+    INTERFACE_KEYWORD, // 'interface'
 
-    // bitwise operators
-    AND,                // 'and'
-    NOT,                // 'not'
-    OR,                 // 'or'
-    IS,                 // 'is'
-    IN,                 // 'in'
-
-    // operators
-    PLUS,               // '+'
-    DOUBLE_PLUS,        // '++'
-    MINUS,              // '-'
-    DOUBLE_MINUS,       // '--'
-    RIGHT_ARROW,        // '->'
-    STAR,               // '*'
-    DOUBLE_STAR,        // '**'
-    SLASH,              // '/'
-
-    // wrappers
-    LPAREN,             // '('
-    RPAREN,             // ')'
-    LBRACE,             // '{'
-    RBRACE,             // '}'
-    LSQUARE,            // '['
-    RSQUARE,            // ']'
-
-    // delimiters
-    SEMICOLON,          // ';'
-    COLON,              // ':'
-    COMMA,              // ','
-    DOT,                // '.'
-    BLANK,              // ' '
-    TAB,                // '\t'
-    NEWLINE,            // '\n'
-
-    // comparison
-    EQUAL,              // '='
-    DOUBLE_EQUAL,       // '=='
-    GREATER_EQUAL,      // '>='
-    GREATER,            // '>'
-    LESS_EQUAL,         // '<='
-    LESS,               // '<'
-
-    // others
-    // NUMBER(TokenValue),
-    INTEGER(TokenValue),
-    FLOAT(TokenValue),
-    IDENTIFIER(TokenValue),
-    LITERAL(TokenValue),
+    // logical operators
+    AND, // 'and'
+    NOT, // 'not'
+    OR,  // 'or'
+    IN,  // 'in'
 
     // booleans
-    TRUE,               // 'True'
-    FALSE,              // 'False'
+    TRUE,  // 'True'
+    FALSE, // 'False'
+
+    // operators
+    PLUS,        // '+'
+    DASH,        // '-'
+    RIGHT_ARROW, // '->'
+    STAR,        // '*'
+    DOUBLE_STAR, // '**'
+    SLASH,       // '/'
+
+    // wrappers
+    LPAREN,  // '('
+    RPAREN,  // ')'
+    LBRACE,  // '{'
+    RBRACE,  // '}'
+    LSQUARE, // '['
+    RSQUARE, // ']'
+
+    // delimiters
+    SEMICOLON,    // ';'
+    COLON,        // ':'
+    DOUBLE_COLON, // '::'
+    COMMA,        // ','
+    DOT,          // '.'
+    BLANK,        // ' '
+    // TAB,                             // '\t'
+    NEWLINE, // '\n'
+
+    // comparison
+    EQUAL,         // '='
+    DOUBLE_EQUAL,  // '=='
+    LBRACKET,      // '<'
+    RBRACKET,      // '>'
+    LESS_EQUAL,    // '<='
+    GREATER_EQUAL, // '>='
+    NOT_EQUAL,     // '!='
+
+    // expression terminals
+    INTEGER,
+    FLOATING_POINT_NUMBER,
+    IDENTIFIER,
+    LITERAL,
 
     // ignored by parser
-    SINGLE_LINE_COMMENT,// '//......\n' or '#.........\n'
-    BLOCK_COMMENT,      // '/* ..... */'
+    SINGLE_LINE_COMMENT, // '//...\n' or '#...\n'
+    BLOCK_COMMENT,       // '/* ... */'
 
-    // corner cases
+    // termination
     ENDMARKER,
-    NONE,
+
+    // error
+    LEXICAL_ERROR((LexicalErrorKind, Rc<String>)),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub enum BinaryOperatorKind {
+    NOT_EQUAL,
+    DOUBLE_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
+    LESS,
+    LESS_EQUAL,
+    MINUS,
+    PLUS,
+    DIVIDE,
+    MULTIPLY,
+    AND,
+    OR,
+}
+impl BinaryOperatorKind {
+    pub fn is_comparison(&self) -> bool {
+        match self {
+            BinaryOperatorKind::LESS
+            | BinaryOperatorKind::LESS_EQUAL
+            | BinaryOperatorKind::GREATER
+            | BinaryOperatorKind::GREATER_EQUAL
+            | BinaryOperatorKind::DOUBLE_EQUAL
+            | BinaryOperatorKind::NOT_EQUAL => true,
+            _ => false,
+        }
+    }
+}
+impl Display for BinaryOperatorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            BinaryOperatorKind::NOT_EQUAL => NOT_EQUAL,
+            BinaryOperatorKind::DOUBLE_EQUAL => DOUBLE_EQUAL,
+            BinaryOperatorKind::GREATER => RBRACKET,
+            BinaryOperatorKind::GREATER_EQUAL => GREATER_EQUAL,
+            BinaryOperatorKind::LESS => LBRACKET,
+            BinaryOperatorKind::LESS_EQUAL => LESS_EQUAL,
+            BinaryOperatorKind::MINUS => DASH,
+            BinaryOperatorKind::PLUS => PLUS,
+            BinaryOperatorKind::DIVIDE => SLASH,
+            BinaryOperatorKind::MULTIPLY => STAR,
+            BinaryOperatorKind::AND => AND,
+            BinaryOperatorKind::OR => OR,
+        };
+        write!(f, "{}", str)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum LexicalErrorKind {
+    INVALID_CHAR,
+    NO_CLOSING_SYMBOLS,
+}
+
+#[derive(Debug, Clone)]
+pub struct MissingToken {
+    pub expected_symbols: Rc<Vec<&'static str>>,
+    pub received_token: Token,
+}
+
+#[derive(Debug, Clone)]
 pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
-    pub name: Rc<String>,
+    pub range: TextRange,
+    pub trivia: Option<Rc<Vec<Token>>>,
 }
 
 impl Token {
-    // This method tokenize the code in O(|code|)
-    pub fn extract_lexeme(begin_lexeme: &mut usize, line_number: &mut usize, code: &Vec<char>) -> Result<Token, LexicalError> {
-        let critical_char = code[*begin_lexeme];
-        let (core_token, name) = match critical_char {
-            '('         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::LPAREN, String::from("("))
-            },
-            ')'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::RPAREN, String::from(")"))
-            },
-            '{'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::LBRACE, String::from("{"))
-            },
-            '}'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::RBRACE, String::from("}"))
-            },
-            '['         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::LSQUARE, String::from("["))
-            },
-            ']'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::RSQUARE, String::from("]"))
-            },
-            ';'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::SEMICOLON, String::from(";"))
-            },
-            ':'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::COLON, String::from(":"))
-            },
-            ','         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::COMMA, String::from(","))
-            },
-            '.'         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::DOT, String::from("."))
-            },
-            ' '         =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::BLANK, String::from(" "))
-            },
-            '\t'        =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                (CoreToken::TAB, String::from("\t"))
-            },
-            '\n'        =>      {
-                *begin_lexeme = *begin_lexeme + 1;
-                *line_number = *line_number + 1;
-                (CoreToken::NEWLINE, String::from("\n"))
-            },
-            '+'         =>      {
-                helper::extract_plus_prefix_lexeme(begin_lexeme, code)?
-            },
-            '-'         =>      {
-                helper::extract_minus_prefix_lexeme(begin_lexeme, code)?
-            }
-            '*'         =>      {
-                helper::extract_star_prefix_lexeme(begin_lexeme, code)?
-            },
-            '/'         =>      {
-                helper::extract_slash_prefix_lexeme(begin_lexeme, line_number, code)?
-            },
-            '#'         =>      {
-                helper::extract_hash_prefix_lexeme(begin_lexeme, line_number, code)?
-            }
-            '='         =>      {
-                helper::extract_equal_prefix_lexeme(begin_lexeme, code)?
-            },
-            '>'         =>      {
-                helper::extract_greater_prefix_lexeme(begin_lexeme, code)?
-            },
-            '<'         =>      {
-                helper::extract_less_prefix_lexeme(begin_lexeme, code)?
-            },
-            '"'         =>      {
-                helper::extract_literal_prefix_lexeme(begin_lexeme, line_number, code)?
-            },
-            c     =>      {
-                let token: CoreToken;
-                let name: String;
-                if context::is_letter(&c) {
-                    (token, name) = helper::extract_letter_prefix_lexeme(begin_lexeme, code)?;
-                } else if context::is_digit(&c) {
-                    (token, name) = helper::extract_digit_prefix_lexeme(begin_lexeme, line_number, code)?;
-                } else {
-                    return Err(LexicalError::new(*line_number, format!("invalid character '{}' found", c)))
-                }
-                (token, name)
-            }
-        };
-        Ok(Token {
-            line_number: *line_number,
-            core_token,
-            name: Rc::new(name),
-        })
+    pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
+        self.trivia = Some(Rc::new(trivia_vec));
     }
 
-    pub fn get_value(&self) -> Option<TokenValue> {
-        match &self.core_token {
-            CoreToken::TYPE(value)          =>      {
-                Some(TokenValue(value.0.clone()))
-            },
-            CoreToken::INTEGER(value)       =>      {
-                Some(TokenValue(value.0.clone()))
-            },
-            CoreToken::FLOAT(value)         =>      {
-                Some(TokenValue(value.0.clone()))
-            },
-            CoreToken::IDENTIFIER(value)    =>      {
-                Some(TokenValue(value.0.clone()))
-            }
-            CoreToken::LITERAL(value)       =>      {
-                Some(TokenValue(value.0.clone()))
-            },
-            _ => {
-                None
-            }
-        }
+    pub fn index(&self) -> usize {
+        let r: usize = (self.range.start() + self.range.end()).into();
+        r / 2
     }
 
-    pub fn check_declaration(&self, env: &Env, lookahead_index: usize) -> Result<SymbolData, SemanticError> {
-        let line_number = self.line_number;
-        match &self.core_token {
-            CoreToken::IDENTIFIER(token_value) => {
-                match env.get(token_value) {
-                    Some(symbol_data) => Ok(symbol_data),
-                    None => {
-                        let err_message = format!("identifier '{}' is not declared in the current scope", token_value.0);
-                        Err(SemanticError::new(line_number, lookahead_index, err_message))
-                    }
-                }
-            },
-            _ => unreachable!("check_declaration cannot be used for tokens other than type identifier")
-        }
+    pub fn start_index(&self) -> usize {
+        self.range.start().into()
+    }
+
+    pub fn end_index(&self) -> usize {
+        self.range.end().into()
+    }
+
+    pub fn name(&self) -> String {
+        String::from(self.core_token.to_string())
+    }
+
+    pub fn token_value(&self, code: &Code) -> String {
+        code.token_from_range(self.range)
     }
 
     pub fn is_eq(&self, symbol: &str) -> bool {
-        self.name.as_ref().eq(symbol)
+        self.core_token.is_eq(symbol)
+    }
+
+    pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
+        match self.core_token {
+            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NOT_EQUAL),
+            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DOUBLE_EQUAL),
+            CoreToken::RBRACKET => Some(BinaryOperatorKind::GREATER),
+            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GREATER_EQUAL),
+            CoreToken::LBRACKET => Some(BinaryOperatorKind::LESS),
+            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LESS_EQUAL),
+            CoreToken::DASH => Some(BinaryOperatorKind::MINUS),
+            CoreToken::PLUS => Some(BinaryOperatorKind::PLUS),
+            CoreToken::SLASH => Some(BinaryOperatorKind::DIVIDE),
+            CoreToken::STAR => Some(BinaryOperatorKind::MULTIPLY),
+            CoreToken::AND => Some(BinaryOperatorKind::AND),
+            CoreToken::OR => Some(BinaryOperatorKind::OR),
+            _ => None,
+        }
+    }
+
+    pub fn is_identifier(&self) -> bool {
+        self.core_token.IDENTIFIER()
+    }
+
+    pub fn get_precedence(&self) -> u8 {
+        let precedence = match self.core_token {
+            CoreToken::OR => 1,
+            CoreToken::AND => 2,
+            CoreToken::LBRACKET
+            | CoreToken::LESS_EQUAL
+            | CoreToken::RBRACKET
+            | CoreToken::GREATER_EQUAL
+            | CoreToken::DOUBLE_EQUAL
+            | CoreToken::NOT_EQUAL => 3,
+            CoreToken::PLUS | CoreToken::DASH => 4,
+            CoreToken::STAR | CoreToken::SLASH => 5,
+            _ => 0,
+        };
+        precedence
     }
 }

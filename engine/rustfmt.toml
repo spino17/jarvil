@@ -1,0 +1,4 @@
+ignore = [
+    "src/constants/common.rs",
+]
+unstable_features = true

@@ -1,14 +1,9 @@
 Jarvil 0.1.0
 ============
 
-Just A Rather Very Idiotic Language (JARVIL) is a programming language made purely out of fun! I just wanted to learn the answer 
-of "How a prgramming language is made ?". This repo contains all my learnings on language design and writing a compiler. 
-The patterns used in the implementation is heavily inspired by the famous dragon book on compilers 
-(``Compilers: Principles, Techniques, and Tools, Second Edition. Alfred V. Aho, Monica S. Lam, Ravi Sethi, Jeffrey D. Ullman``). 
-Because of the descriptive nature of this repo, it can be used by anyone who wishes to learn how to write a compiler for a 
-simple language. All the stages for building the front-end of the compiler is implemented from scratch like lexical analyzer, 
-parser, environments, type-checker, code-generator, semantic actions etc. For the backend, I have used llvm using the crate 
-inkwell (safe wrapper on llvm-sys crate).
+Jarvil is a statically-typed programming language with syntactic resemblance to python. 
+Virtually, Jarvil code is just Python code with types sprinkled all over. These types enable an 
+extra layer of type-check system which checks for type related semantic errors at compile time.
 
 .. contents::
 
@@ -25,4 +20,48 @@ This will install the latest version of ``jarvil``.
 
 Formal Description
 ------------------
+Below is the complete grammer of the language with a custom (mostly copied from Python and PEG) expression language::
 
+    # This is full specification of jarvil grammer. The style is PEG type where
+    # |    ->  ordered choice
+    # []   ->  optional
+    # +    ->  at least one occurence
+    # ()   ->  empty string
+    # This grammer is by no means exhaustive for all programming constructs generally found in production grade languages. However
+    # it surely contains enough so that anyone who wishes to learn language grammer can benefit from it.
+
+
+
+    code: block ENDMARKER
+
+    block: NEWLINE (INDENT stmt)*
+
+    expr: expr bin_op expr | un_op expr | factor
+
+    bin_op: 'or', 'and', '>', '>=', '<', '<=', '==', '!=', '+', '-', '*', '/'
+
+    un_op: '+', '-', 'not'
+
+    factor: <INT>, <FLOAT>, <LITERAL>, 'True', 'False', id, '(' expr ')'
+
+    params: expr (, expr)*
+
+    atom: (id | id '(' [params] ')' | id::id '(' [params] ')' ) atom_factor
+
+    atom_factor: ('.' id ['(' [params] ')'] | '[' expr ']' | '(' [params] ')') atom_factor
+
+    type_expr: 'int' | 'float' | 'string' | 'bool' | id | '[' type_expr; <INT> ']'
+
+    name_type_spec: id ':' type_expr
+
+    name_type_specs: name_type_spec (, name_type_spec)*
+
+    r_assign: expr NEWLINE | 'func' '(' [name_type_specs] ')' ':' block
+
+    'let' id '=' r_assign
+
+    atom '=' r_assign
+
+    'def' id '(' [name_type_specs] ')' ['->' type_expr] ':' block
+
+    'type' id ':' NEWLINE (INDENT name_type_spec NEWLINE)* | '(' [name_type_specs] ')' ['->' type_expr]

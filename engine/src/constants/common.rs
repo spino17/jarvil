@@ -1,28 +1,68 @@
-use crate::lexer::token::{CoreToken, TokenValue};
-use crate::context;
-use std::rc::Rc;
+pub const PLUS: &'static str                    = "+";
+pub const DASH: &'static str                    = "-";
+pub const RIGHT_ARROW: &'static str             = "->";
+pub const STAR: &'static str                    = "*";
+pub const DOUBLE_STAR: &'static str             = "**";
+pub const SLASH: &'static str                   = "/";
+pub const LPAREN: &'static str                  = "(";
+pub const RPAREN: &'static str                  = ")";
+pub const LBRACE: &'static str                  = "{";
+pub const RBRACE: &'static str                  = "}";
+pub const LSQUARE: &'static str                 = "[";
+pub const RSQUARE: &'static str                 = "]";
+pub const SEMICOLON: &'static str               = ";";
+pub const COLON: &'static str                   = ":";
+pub const DOUBLE_COLON: &'static str            = "::";
+pub const COMMA: &'static str                   = ",";
+pub const DOT: &'static str                     = ".";
+pub const NEWLINE: &'static str                 = "newline";
+pub const EQUAL: &'static str                   = "=";
+pub const DOUBLE_EQUAL: &'static str            = "==";
+pub const LBRACKET: &'static str                = "<";
+pub const RBRACKET: &'static str                = ">";
+pub const LESS_EQUAL: &'static str              = "<=";
+pub const GREATER_EQUAL: &'static str           = ">=";
+pub const NOT_EQUAL: &'static str               = "!=";
+pub const FOR: &'static str                     = "for";
+pub const WHILE: &'static str                   = "while";
+pub const CONTINUE: &'static str                = "continue";
+pub const BREAK: &'static str                   = "break";
+pub const IF: &'static str                      = "if";
+pub const ELIF: &'static str                    = "elif";
+pub const ELSE: &'static str                    = "else";
+pub const TYPE_KEYWORD: &'static str            = "type";
+pub const INTERFACE_KEYWORD: &'static str       = "interface";
+pub const DEF: &'static str                     = "def";
+pub const LET: &'static str                     = "let";
+pub const SELF: &'static str                    = "self";
+pub const IMPL: &'static str                    = "impl";
+pub const AND: &'static str                     = "and";
+pub const NOT: &'static str                     = "not";
+pub const OR: &'static str                      = "or";
+pub const IN: &'static str                      = "in";
+pub const TRUE: &'static str                    = "True";
+pub const FALSE: &'static str                   = "False";
+pub const FUNC: &'static str                    = "func";
+pub const RETURN: &'static str                  = "return";
+pub const INT: &'static str                     = "int";
+pub const INTEGER: &'static str                 = "<integer>";
+pub const FLOAT: &'static str                   = "float";
+pub const FLOATING_POINT_NUMBER: &'static str   = "<floating-point-number>";
+pub const STRING: &'static str                  = "string";
+pub const BOOL: &'static str                    = "bool";
+pub const LITERAL: &'static str                 = "<literal>";
+pub const IDENTIFIER: &'static str              = "<identifier>";
+pub const ATOMIC_TYPE: &'static str             = "<atomic-type>";
+pub const ENDMARKER: &'static str               = "<endmarker>";
+pub const LEXICAL_ERROR: &'static str           = "<lexical-error>";
+pub const SINGLE_LINE_COMMENT: &'static str     = "<single-line-comment>";
+pub const BLOCK_COMMENT: &'static str           = "<block-comment>";
+pub const BLANK: &'static str                   = "<blank>";
+pub const NON_TYPED: &'static str               = "<non-typed>";
+pub const UNKNOWN: &'static str                 = "<unknown>";
 
-const FOR:          &'static str = "for";
-const WHILE:        &'static str = "while";
-const CONTINUE:     &'static str = "continue";
-const BREAK:        &'static str = "break";
-const IF:           &'static str = "if";
-const ELIF:         &'static str = "elif";
-const ELSE:         &'static str = "else";
-const STRUCT:       &'static str = "struct";
-const DEF:          &'static str = "def";
-const AND:          &'static str = "and";
-const NOT:          &'static str = "not";
-const OR:           &'static str = "or";
-const IS:           &'static str = "is";
-const IN:           &'static str = "in";
-const NEW:          &'static str = "new";
-const TRUE:         &'static str = "True";
-const FALSE:        &'static str = "False";
-const NONE:         &'static str = "None";
-const RETURN:       &'static str = "return";
-
-pub const KEYWORDS: [&'static str; 19] = [
+// KEYWORDS + ATOMIC_TYPES => RESERVED_WORDS
+pub const KEYWORDS: [&'static str; 21] = [
     FOR,
     WHILE,
     CONTINUE,
@@ -30,144 +70,20 @@ pub const KEYWORDS: [&'static str; 19] = [
     IF,
     ELIF,
     ELSE,
-    STRUCT,
+    TYPE_KEYWORD,
+    INTERFACE_KEYWORD,
     DEF,
+    LET,
+    SELF,
+    IMPL,
     AND,
     NOT,
     OR,
-    IS,
     IN,
-    NEW,
     TRUE,
     FALSE,
-    NONE,
+    FUNC,
     RETURN,
 ];
 
-pub const TYPES: [&'static str; 4] = [
-    "int",
-    "float",
-    "string",
-    "bool",
-];
-
-pub const LETTERS: [char; 53] = [
-    'a',
-    'b',
-    'c',
-    'd',
-    'e',
-    'f',
-    'g',
-    'h',
-    'i',
-    'j',
-    'k',
-    'l',
-    'm',
-    'n',
-    'o',
-    'p',
-    'q',
-    'r',
-    's',
-    't',
-    'u',
-    'v',
-    'w',
-    'x',
-    'y',
-    'z',
-    'A',
-    'B',
-    'C',
-    'D',
-    'E',
-    'F',
-    'G',
-    'H',
-    'I',
-    'J',
-    'K',
-    'L',
-    'M',
-    'N',
-    'O',
-    'P',
-    'Q',
-    'R',
-    'S',
-    'T',
-    'U',
-    'V',
-    'W',
-    'X',
-    'Y',
-    'Z',
-    '_',
-];
-
-pub const DIGITS: [char; 10] = [
-    '0',
-    '1',
-    '2',
-    '3',
-    '4',
-    '5',
-    '6',
-    '7',
-    '8',
-    '9',
-];
-
-// everytime there is an addition in keyword, add here also!
-pub fn get_token_for_identifier(value: String) -> (CoreToken, String) {
-    // TODO - try to keep in the same map
-    if context::is_keyword(&value) {
-        if value.eq(FOR) {
-            (CoreToken::FOR, String::from(FOR))
-        } else if value.eq(WHILE) {
-            (CoreToken::WHILE, String::from(WHILE))
-        } else if value.eq(CONTINUE) {
-            (CoreToken::CONTINUE, String::from(CONTINUE))
-        } else if value.eq(BREAK) {
-            (CoreToken::BREAK, String::from(BREAK))
-        } else if value.eq(IF) {
-            (CoreToken::IF, String::from(IF))
-        } else if value.eq(ELIF) {
-            (CoreToken::ELIF, String::from(ELIF))
-        } else if value.eq(ELSE) {
-            (CoreToken::ELSE, String::from(ELSE))
-        }  else if value.eq(STRUCT) {
-            (CoreToken::STRUCT, String::from(STRUCT))
-        } else if value.eq(DEF) {
-            (CoreToken::DEF, String::from(DEF))
-        } else if value.eq(AND) {
-            (CoreToken::AND, String::from(AND))
-        } else if value.eq(NOT) {
-            (CoreToken::NOT, String::from(NOT))
-        } else if value.eq(OR) {
-            (CoreToken::OR, String::from(OR))
-        } else if value.eq(IS) {
-            (CoreToken::IS, String::from(IS))
-        } else if value.eq(IN) {
-            (CoreToken::IN, String::from(IN))
-        } else if value.eq(NEW) {
-            (CoreToken::NEW, String::from(NEW))
-        } else if value.eq(TRUE) {
-            (CoreToken::TRUE, String::from(TRUE))
-        } else if value.eq(FALSE) {
-            (CoreToken::FALSE, String::from(FALSE))
-        } else if value.eq(NONE) {
-            (CoreToken::NONE, String::from(NONE))
-        } else if value.eq(RETURN) {
-            (CoreToken::RETURN, String::from(RETURN))
-        } else {
-            unreachable!("keyword missing in the matching arms")
-        }
-    } else if context::is_type(&value) {
-        (CoreToken::TYPE(TokenValue(Rc::new(value))), String::from("type"))
-    } else {
-        (CoreToken::IDENTIFIER(TokenValue(Rc::new(value))), String::from("identifier"))
-    }
-}
+pub const ATOMIC_TYPES: [&'static str; 4] = [INT, FLOAT, STRING, BOOL];
