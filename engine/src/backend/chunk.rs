@@ -1,23 +1,45 @@
 use super::helper::get_machine_byte_multiple;
+use std::rc::Rc;
 use std::{convert::TryInto, fmt::Display, vec};
 
 pub enum OpCode {
     OP_RETURN,   // 0
     OP_CONSTANT, // 1
+    OP_NEGATE,   // 2
+    OP_ADD,      // 3
+    OP_SUBTRACT, // 4
+    OP_MULTIPLY, // 5
+    OP_DIVIDE,   // 6
 }
 impl OpCode {
     pub fn to_byte(&self) -> u8 {
         match self {
             OpCode::OP_RETURN => 0,
             OpCode::OP_CONSTANT => 1,
+            OpCode::OP_NEGATE => 2,
+            OpCode::OP_ADD => 3,
+            OpCode::OP_SUBTRACT => 4,
+            OpCode::OP_MULTIPLY => 5,
+            OpCode::OP_DIVIDE => 6,
         }
     }
 }
 
+pub const OP_CODES_MAP: [OpCode; 7] = [
+    OpCode::OP_RETURN,
+    OpCode::OP_CONSTANT,
+    OpCode::OP_NEGATE,
+    OpCode::OP_ADD,
+    OpCode::OP_SUBTRACT,
+    OpCode::OP_MULTIPLY,
+    OpCode::OP_DIVIDE,
+];
+
+#[derive(Clone)]
 pub enum Data {
     INT(i32),
     FLOAT(f32),
-    LITERAL(String),
+    LITERAL(Rc<String>),
     BOOL(bool),
 }
 impl Display for Data {
@@ -31,12 +53,10 @@ impl Display for Data {
     }
 }
 
-const OP_CODES_MAP: [OpCode; 2] = [OpCode::OP_RETURN, OpCode::OP_CONSTANT];
-
 pub struct Chunk {
-    code: Vec<u8>,
-    constants: Vec<Data>,
-    line_numbers: Vec<usize>,
+    pub code: Vec<u8>,
+    pub constants: Vec<Data>,
+    pub line_numbers: Vec<usize>,
 }
 impl Chunk {
     pub fn new() -> Self {
@@ -65,9 +85,10 @@ impl Chunk {
         let mut parsed_instructions: Vec<String> = vec![];
         let mut inst_index = 0;
         while offset < self.code.len() {
-            let (mut str_rep, new_offset) = self.disassemble_instruction(offset);
-            str_rep.push_str(&format!("{}", self.line_numbers[inst_index]));
-            parsed_instructions.push(str_rep);
+            let (str_rep, new_offset) = self.disassemble_instruction(offset);
+            let mut inst_str = format!("{}: ", self.line_numbers[inst_index]);
+            inst_str.push_str(&str_rep);
+            parsed_instructions.push(inst_str);
             offset = new_offset;
             inst_index = inst_index + 1;
         }
@@ -88,6 +109,11 @@ impl Chunk {
                     offset + (byte_multiple + 1),
                 )
             }
+            OpCode::OP_NEGATE => ("NEGATE".to_string(), offset + 1),
+            OpCode::OP_ADD => ("ADD".to_string(), offset + 1),
+            OpCode::OP_SUBTRACT => ("SUBTRACT".to_string(), offset + 1),
+            OpCode::OP_MULTIPLY => ("MULTIPLY".to_string(), offset + 1),
+            OpCode::OP_DIVIDE => ("DIVIDE".to_string(), offset + 1),
         }
     }
 }

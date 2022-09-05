@@ -14,9 +14,11 @@ mod server;
 mod types;
 mod utils;
 
+use jarvil::backend::chunk::{Chunk, Data, OpCode};
+use jarvil::backend::vm::VM;
+
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
-use std::convert::TryInto;
 use std::env::args;
 
 fn start_compiler(args: Vec<String>) {
@@ -30,4 +32,14 @@ fn start_compiler(args: Vec<String>) {
 fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
+    let mut chunk = Chunk::new();
+    chunk.write_constant(Data::INT(12), 1);
+    chunk.write_constant(Data::FLOAT(13.2), 2);
+    chunk.write_constant(Data::FLOAT(-2.0), 3);
+    chunk.write_byte(OpCode::OP_DIVIDE.to_byte(), 4);
+    chunk.write_byte(OpCode::OP_ADD.to_byte(), 5);
+    chunk.write_byte(OpCode::OP_NEGATE.to_byte(), 6);
+    chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
+    let mut vm = VM::new(chunk);
+    vm.run();
 }
