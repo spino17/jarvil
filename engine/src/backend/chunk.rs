@@ -36,33 +36,40 @@ const OP_CODES_MAP: [OpCode; 2] = [OpCode::OP_RETURN, OpCode::OP_CONSTANT];
 pub struct Chunk {
     code: Vec<u8>,
     constants: Vec<Data>,
+    line_numbers: Vec<usize>,
 }
 impl Chunk {
     pub fn new() -> Self {
         Chunk {
             code: vec![],
             constants: vec![],
+            line_numbers: vec![],
         }
     }
 
-    pub fn write_byte(&mut self, byte: u8) {
+    pub fn write_byte(&mut self, byte: u8, line_number: usize) {
         self.code.push(byte);
+        self.line_numbers.push(line_number);
     }
 
-    pub fn write_constant(&mut self, const_value: Data) {
+    pub fn write_constant(&mut self, const_value: Data, line_number: usize) {
         let const_index = self.constants.len();
         self.constants.push(const_value);
         self.code.push(OpCode::OP_CONSTANT.to_byte());
         self.code.extend_from_slice(&const_index.to_be_bytes());
+        self.line_numbers.push(line_number);
     }
 
     pub fn disassemble(&self) -> Vec<String> {
         let mut offset = 0;
         let mut parsed_instructions: Vec<String> = vec![];
+        let mut inst_index = 0;
         while offset < self.code.len() {
-            let (str_rep, new_offset) = self.disassemble_instruction(offset);
+            let (mut str_rep, new_offset) = self.disassemble_instruction(offset);
+            str_rep.push_str(&format!("{}", self.line_numbers[inst_index]));
             parsed_instructions.push(str_rep);
             offset = new_offset;
+            inst_index = inst_index + 1;
         }
         parsed_instructions
     }
