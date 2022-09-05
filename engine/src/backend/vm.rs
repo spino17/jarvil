@@ -15,7 +15,6 @@ pub struct VM {
     chunk: Chunk,
     ip: usize, // `ip` points to the instruction about to be executed
     stack: Stack,
-    is_debug: bool,
 }
 impl VM {
     pub fn new(chunk: Chunk) -> Self {
@@ -23,7 +22,6 @@ impl VM {
             chunk,
             ip: 0,
             stack: Stack::new(),
-            is_debug: false,
         }
     }
 

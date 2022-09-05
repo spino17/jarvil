@@ -32,7 +32,7 @@ fn start_compiler(args: Vec<String>) {
 fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
-    let mut chunk = Chunk::new();
+    let mut chunk = Chunk::default();
     chunk.write_constant(Data::INT(12), 1);
     chunk.write_constant(Data::FLOAT(13.2), 2);
     chunk.write_constant(Data::FLOAT(-2.0), 3);

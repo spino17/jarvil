@@ -59,14 +59,6 @@ pub struct Chunk {
     pub line_numbers: Vec<usize>,
 }
 impl Chunk {
-    pub fn new() -> Self {
-        Chunk {
-            code: vec![],
-            constants: vec![],
-            line_numbers: vec![],
-        }
-    }
-
     pub fn write_byte(&mut self, byte: u8, line_number: usize) {
         self.code.push(byte);
         self.line_numbers.push(line_number);
@@ -126,5 +118,14 @@ impl Display for Chunk {
             display_str.push_str(&inst);
         }
         write!(f, "{}", display_str)
+    }
+}
+impl Default for Chunk {
+    fn default() -> Self {
+        Chunk {
+            code: vec![],
+            constants: vec![],
+            line_numbers: vec![],
+        }
     }
 }
