@@ -46,6 +46,4 @@ fn main() {
     chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     let mut vm = VM::new(chunk);
     vm.run();
-    let s = "bhavya";
-    println!("{:?}", s.as_bytes());
 }

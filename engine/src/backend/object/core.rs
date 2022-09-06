@@ -5,7 +5,7 @@ pub enum Data {
     INT(i32),
     FLOAT(f32),
     // LITERAL(Rc<String>),
-    // OBJ(Rc<RefCell<Object>>),
+    // OBJ(Rc<RefCell<Object>>),  // TODO - need a raw pointer to heap allocated objects Raw<T>
     BOOL(bool),
 }
 impl Data {}
@@ -18,4 +18,17 @@ impl Display for Data {
             Data::BOOL(val) => write!(f, "{}", val),
         }
     }
+}
+
+pub struct Raw<T> {
+    ref_ptr: *mut T,
+}
+
+pub enum Object { // Heap-allocated data
+    STRING(StringObject),
+}
+
+pub struct StringObject {
+    len: usize,
+    bytes: *mut u8, // an array of bytes
 }
