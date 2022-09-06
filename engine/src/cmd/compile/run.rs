@@ -1,6 +1,9 @@
-use crate::backend::{chunk::Chunk, vm::VM};
+use super::build::build;
+use crate::{backend::vm::VM, error::core::JarvilError};
 
-pub fn run(chunk: Chunk) {
+pub fn run(code_vec: Vec<char>) -> Result<(), JarvilError> {
+    let chunk = build(code_vec)?;
     let mut vm = VM::new(chunk);
-    vm.run();
+    vm.run(); // TODO - check for runtime errors here
+    Ok(())
 }

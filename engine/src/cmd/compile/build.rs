@@ -1,10 +1,11 @@
+use crate::backend::chunk::Chunk;
 use crate::code::Code;
 use crate::error::core::JarvilError;
 use crate::parser::resolver::Resolver;
 use crate::parser::type_checker::TypeChecker;
 use crate::utils::common::build_ast;
 
-pub fn build(code_vec: Vec<char>) -> Result<(), JarvilError> {
+pub fn build(code_vec: Vec<char>) -> Result<Chunk, JarvilError> {
     // TODO - change this to Result<Chunk, JarvilError>
     let mut code = Code::new(code_vec);
     let (ast, mut errors) = build_ast(&mut code);
@@ -18,5 +19,5 @@ pub fn build(code_vec: Vec<char>) -> Result<(), JarvilError> {
     if errors.len() > 0 {
         return Err(errors[0].clone());
     }
-    Ok(())
+    Ok(Chunk::default())
 }
