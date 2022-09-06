@@ -18,7 +18,6 @@ mod utils;
 
 use jarvil::backend::chunk::{Chunk, Data, OpCode};
 use jarvil::backend::vm::VM;
-
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use std::env::args;
