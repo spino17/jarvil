@@ -1,6 +1,7 @@
 use super::{
-    chunk::{Chunk, Data, OpCode, OP_CODES_MAP},
+    chunk::{Chunk, OpCode, OP_CODES_MAP},
     helper::get_machine_byte_multiple,
+    object::core::Data,
     stack::Stack,
 };
 use std::convert::TryInto;

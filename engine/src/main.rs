@@ -18,7 +18,8 @@ mod utils;
 
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
-use jarvil::backend::chunk::{Chunk, Data, OpCode};
+use jarvil::backend::chunk::{Chunk, OpCode};
+use jarvil::backend::object::core::Data;
 use jarvil::backend::vm::VM;
 use std::env::args;
 
@@ -45,4 +46,6 @@ fn main() {
     chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     let mut vm = VM::new(chunk);
     vm.run();
+    let s = "bhavya";
+    println!("{:?}", s.as_bytes());
 }

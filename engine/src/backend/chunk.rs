@@ -1,5 +1,6 @@
 use super::helper::get_machine_byte_multiple;
-use std::{convert::TryInto, fmt::Display, vec};
+use crate::backend::object::core::Data;
+use std::{convert::TryInto, fmt::Display};
 
 pub enum OpCode {
     OP_RETURN,        // 0
@@ -60,58 +61,6 @@ pub const OP_CODES_MAP: [OpCode; 16] = [
     OpCode::OP_LESS,
     OpCode::OP_LESS_EQUAL,
 ];
-
-#[derive(Clone)]
-pub enum Data {
-    INT(i32),
-    FLOAT(f32),
-    // LITERAL(Rc<String>),
-    BOOL(bool),
-}
-impl Data {
-    fn new_with_int(val: i32) -> Self {
-        Data::INT(val)
-    }
-
-    fn new_with_float(val: f32) -> Self {
-        Data::FLOAT(val)
-    }
-
-    fn new_with_bool(val: bool) -> Self {
-        Data::BOOL(val)
-    }
-
-    fn is_int(&self) -> Option<i32> {
-        match self {
-            Data::INT(val) => Some(val.clone()),
-            _ => None,
-        }
-    }
-
-    fn is_float(&self) -> Option<f32> {
-        match self {
-            Data::FLOAT(val) => Some(val.clone()),
-            _ => None,
-        }
-    }
-
-    fn is_bool(&self) -> Option<bool> {
-        match self {
-            Data::BOOL(val) => Some(val.clone()),
-            _ => None,
-        }
-    }
-}
-impl Display for Data {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Data::INT(val) => write!(f, "{}", val),
-            Data::FLOAT(val) => write!(f, "{}", val),
-            // Data::LITERAL(val) => write!(f, "{}", val),
-            Data::BOOL(val) => write!(f, "{}", val),
-        }
-    }
-}
 
 pub struct Chunk {
     pub code: Vec<u8>,

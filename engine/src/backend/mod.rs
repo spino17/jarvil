@@ -2,5 +2,6 @@
 pub mod macros;
 pub mod chunk;
 pub mod helper;
+pub mod object;
 pub mod stack;
 pub mod vm;
