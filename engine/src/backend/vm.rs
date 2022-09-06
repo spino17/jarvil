@@ -65,15 +65,15 @@ impl VM {
                 }
                 OpCode::OP_ADD => {
                     self.advance_ip();
-                    decode_op!(+, self);
+                    decode_arithmetic_op!(+, self);
                 }
                 OpCode::OP_SUBTRACT => {
                     self.advance_ip();
-                    decode_op!(-, self);
+                    decode_arithmetic_op!(-, self);
                 }
                 OpCode::OP_MULTIPLY => {
                     self.advance_ip();
-                    decode_op!(*, self);
+                    decode_arithmetic_op!(*, self);
                 }
                 OpCode::OP_DIVIDE => {
                     self.advance_ip();
@@ -103,6 +103,30 @@ impl VM {
                         Data::BOOL(val) => self.stack.push(Data::BOOL(!val)),
                         _ => return InterpretResult::COMPILE_ERROR,
                     }
+                }
+                OpCode::OP_EQUAL => {
+                    self.advance_ip();
+                    decode_equality_op!(==, self);
+                }
+                OpCode::OP_NOT_EQUAL => {
+                    self.advance_ip();
+                    decode_equality_op!(!=, self);
+                }
+                OpCode::OP_GREATER => {
+                    self.advance_ip();
+                    decode_comparison_op!(>, self);
+                }
+                OpCode::OP_GREATER_EQUAL => {
+                    self.advance_ip();
+                    decode_comparison_op!(>=, self);
+                }
+                OpCode::OP_LESS => {
+                    self.advance_ip();
+                    decode_comparison_op!(<, self);
+                }
+                OpCode::OP_LESS_EQUAL => {
+                    self.advance_ip();
+                    decode_comparison_op!(<=, self);
                 }
             }
         }

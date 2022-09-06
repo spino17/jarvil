@@ -1,18 +1,23 @@
 use super::helper::get_machine_byte_multiple;
-use std::rc::Rc;
 use std::{convert::TryInto, fmt::Display, vec};
 
 pub enum OpCode {
-    OP_RETURN,   // 0
-    OP_CONSTANT, // 1
-    OP_NEGATE,   // 2
-    OP_ADD,      // 3
-    OP_SUBTRACT, // 4
-    OP_MULTIPLY, // 5
-    OP_DIVIDE,   // 6
-    OP_TRUE,     // 7
-    OP_FALSE,    // 8
-    OP_NOT,      // 9
+    OP_RETURN,        // 0
+    OP_CONSTANT,      // 1
+    OP_NEGATE,        // 2
+    OP_ADD,           // 3
+    OP_SUBTRACT,      // 4
+    OP_MULTIPLY,      // 5
+    OP_DIVIDE,        // 6
+    OP_TRUE,          // 7
+    OP_FALSE,         // 8
+    OP_NOT,           // 9
+    OP_EQUAL,         // 10
+    OP_NOT_EQUAL,     // 11
+    OP_GREATER,       // 12
+    OP_GREATER_EQUAL, // 13
+    OP_LESS,          // 14
+    OP_LESS_EQUAL,    // 15
 }
 impl OpCode {
     pub fn to_byte(&self) -> u8 {
@@ -27,11 +32,17 @@ impl OpCode {
             OpCode::OP_TRUE => 7,
             OpCode::OP_FALSE => 8,
             OpCode::OP_NOT => 9,
+            OpCode::OP_EQUAL => 10,
+            OpCode::OP_NOT_EQUAL => 11,
+            OpCode::OP_GREATER => 12,
+            OpCode::OP_GREATER_EQUAL => 13,
+            OpCode::OP_LESS => 14,
+            OpCode::OP_LESS_EQUAL => 15,
         }
     }
 }
 
-pub const OP_CODES_MAP: [OpCode; 10] = [
+pub const OP_CODES_MAP: [OpCode; 16] = [
     OpCode::OP_RETURN,
     OpCode::OP_CONSTANT,
     OpCode::OP_NEGATE,
@@ -42,13 +53,19 @@ pub const OP_CODES_MAP: [OpCode; 10] = [
     OpCode::OP_TRUE,
     OpCode::OP_FALSE,
     OpCode::OP_NOT,
+    OpCode::OP_EQUAL,
+    OpCode::OP_NOT_EQUAL,
+    OpCode::OP_GREATER,
+    OpCode::OP_GREATER_EQUAL,
+    OpCode::OP_LESS,
+    OpCode::OP_LESS_EQUAL,
 ];
 
 #[derive(Clone)]
 pub enum Data {
     INT(i32),
     FLOAT(f32),
-    LITERAL(Rc<String>),
+    // LITERAL(Rc<String>),
     BOOL(bool),
 }
 impl Data {
@@ -90,7 +107,7 @@ impl Display for Data {
         match self {
             Data::INT(val) => write!(f, "{}", val),
             Data::FLOAT(val) => write!(f, "{}", val),
-            Data::LITERAL(val) => write!(f, "{}", val),
+            // Data::LITERAL(val) => write!(f, "{}", val),
             Data::BOOL(val) => write!(f, "{}", val),
         }
     }
@@ -152,6 +169,12 @@ impl Chunk {
             OpCode::OP_TRUE => ("TRUE".to_string(), offset + 1),
             OpCode::OP_FALSE => ("FALSE".to_string(), offset + 1),
             OpCode::OP_NOT => ("NOT".to_string(), offset + 1),
+            OpCode::OP_EQUAL => ("EQUAL".to_string(), offset + 1),
+            OpCode::OP_NOT_EQUAL => ("NOT_EQUAL".to_string(), offset + 1),
+            OpCode::OP_GREATER => ("GREATER".to_string(), offset + 1),
+            OpCode::OP_GREATER_EQUAL => ("GREATER_EQUAL".to_string(), offset + 1),
+            OpCode::OP_LESS => ("LESS".to_string(), offset + 1),
+            OpCode::OP_LESS_EQUAL => ("LESS_EQUAL".to_string(), offset + 1),
         }
     }
 }
