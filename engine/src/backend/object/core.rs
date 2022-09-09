@@ -1,3 +1,4 @@
+use super::string::StringObject;
 use std::fmt::Display;
 
 #[derive(Clone)]
@@ -24,11 +25,7 @@ pub struct Raw<T> {
     ref_ptr: *mut T,
 }
 
-pub enum Object { // Heap-allocated data
+pub enum Object {
+    // Heap-allocated data
     STRING(StringObject),
-}
-
-pub struct StringObject {
-    len: usize,
-    bytes: *mut u8, // an array of bytes
 }

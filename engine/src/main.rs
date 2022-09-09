@@ -21,7 +21,9 @@ use crate::reader::read_file;
 use jarvil::backend::chunk::{Chunk, OpCode};
 use jarvil::backend::object::core::Data;
 use jarvil::backend::vm::VM;
+use std::alloc::{alloc, dealloc, Layout};
 use std::env::args;
+use std::panic;
 
 fn start_compiler(args: Vec<String>) {
     let code_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
@@ -46,4 +48,32 @@ fn main() {
     chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     let mut vm = VM::new(chunk);
     vm.run();
+    panic::set_hook(Box::new(|_info| {
+        // do nothing
+    }));
+
+    let result = panic::catch_unwind(|| {
+        panic!("test panic");
+    });
+
+    match result {
+        Ok(res) => res,
+        Err(_) => println!("caught panic!"),
+    }
+
+    let size = "bhavya_bhatt";
+    let len = size.len();
+    let bytes_str = size.as_bytes();
+
+    unsafe {
+        let layout = Layout::array::<u8>(len).unwrap();
+        let ptr = alloc(layout);
+        for i in 0..len {
+            *ptr.offset(i as isize) = bytes_str[i];
+        }
+        for i in 0..len {
+            println!("{}-{}", *ptr.offset(i as isize), bytes_str[i]);
+        }
+        dealloc(ptr, layout);
+    }
 }

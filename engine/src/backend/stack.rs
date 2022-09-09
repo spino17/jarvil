@@ -34,7 +34,7 @@ impl Stack {
     }
 
     pub fn push(&mut self, value: Data) {
-        self.stack[self.top] = value;
+        self.stack[self.top] = value; // TODO - add a catch to out-of-bound index error as runtime error `stack overflow`
         self.top = self.top + 1;
     }
 

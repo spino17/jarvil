@@ -42,6 +42,7 @@ impl VM {
     }
 
     pub fn run(&mut self) -> InterpretResult {
+        // TODO - add a catch panic wrapper to encounter runtime errors
         // this loop mimicks the CPU cycle of `decode -> execute -> store -> fetch`
         loop {
             // println!("{}", self.chunk.disassemble_instruction(self.ip).0); // for debugging purposes
