@@ -137,14 +137,14 @@ pub fn extract_slash_prefix_lexeme(
         2 => {
             *begin_lexeme = forward_lexeme;
             let err_str = Rc::new(String::from(
-                "missing trailing symbol `*/` for block comment",
+                "no closing `*/` found for block comment",
             ));
             return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str));
         }
         3 => {
             *begin_lexeme = forward_lexeme;
             let err_str = Rc::new(String::from(
-                "missing trailing symbol `*/` for block comment",
+                "no closing `*/` found for block comment",
             ));
             return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str));
         }

@@ -40,20 +40,19 @@ impl fmt::Display for Diagnostics {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("invalid character found during lexing")]
+#[error("invalid character `{}` found during lexing", self.invalid_char)]
 #[diagnostic(code("lexical error"))]
 pub struct InvalidCharError {
+    pub invalid_char: char,
     #[label = "invalid char"]
-    pub char: SourceSpan,
+    pub span: SourceSpan,
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("closing symbol not found")]
+#[error(r#"opening symbols `/*`, `'` and `"` should have closing parts `*/`, `'` and `"` respectively"#)]
 #[diagnostic(code("lexical error"))]
 pub struct NoClosingSymbolError {
     pub expected_symbol: char,
     #[label("closing `{}` not found", self.expected_symbol)]
     pub unclosed_span: SourceSpan,
-    #[help]
-    pub help: Option<String>,
 }
