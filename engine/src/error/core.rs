@@ -117,7 +117,7 @@ pub struct JarvilError {
     start_line_number: usize,
 }
 impl JarvilError {
-    fn new(
+    pub fn new(
         start_index: usize,
         end_index: usize,
         err_message: String,
@@ -136,8 +136,20 @@ impl JarvilError {
         }
     }
 
-    fn line_number(&self) -> usize {
+    pub fn line_number(&self) -> usize {
         self.start_line_number
+    }
+
+    pub fn length(&self) -> usize {
+        (self.range.end() - self.range.start()).into()
+    }
+
+    pub fn start_index(&self) -> usize {
+        self.range.start().into()
+    }
+
+    pub fn message(&self) -> &str {
+        &self.err_message
     }
 
     pub fn form_single_line_error(

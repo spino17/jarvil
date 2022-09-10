@@ -21,19 +21,60 @@ use crate::reader::read_file;
 use jarvil::backend::chunk::{Chunk, OpCode};
 use jarvil::backend::object::core::Data;
 use jarvil::backend::vm::VM;
+use miette::{
+    Diagnostic, GraphicalReportHandler, GraphicalTheme, NamedSource, Report, ReportHandler,
+    SourceSpan, ThemeStyles,
+};
+use owo_colors::{OwoColorize, Style};
 use std::alloc::{alloc, dealloc, Layout};
 use std::env::args;
 use std::panic;
+use std::{fs, path::Path};
+use thiserror::Error;
 
-fn start_compiler(args: Vec<String>) {
-    let code_vec = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
-    let result = build(code_vec);
-    if let Err(err) = result {
-        println!("{}", err)
+fn attach_source_code(err: Report, source: String) -> Report {
+    let result: miette::Result<()> = Err(err);
+    match result.map_err(|error| error.with_source_code(source)).err() {
+        Some(err) => return err,
+        None => unreachable!("the result should always unwrap to an error"),
     }
 }
 
+fn start_compiler(args: Vec<String>) {
+    let (code_vec, code_str) = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
+    let result = build(code_vec);
+    if let Err(err) = result {
+        // let err = err.report();
+        // let err = attach_source_code(err, code_str);
+        println!("{}", err)
+    }
+    let err = Report::new(NoClosingSymbolError {
+        expected_symbol: '/',
+        unclosed_span: (8, 100).into(),
+        help: Some("Yo this is great".to_string().yellow().to_string()),
+    });
+    let err = attach_source_code(err, code_str);
+    println!("{:?}", err);
+}
+
+#[derive(Diagnostic, Debug, Error)]
+#[error("closing symbol not found")]
+#[diagnostic(code("lexical error"))]
+pub struct NoClosingSymbolError {
+    pub expected_symbol: char,
+    #[label("was originally defined here `{}`", self.expected_symbol)]
+    pub unclosed_span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
 fn main() {
+    miette::set_hook(Box::new(|err| {
+        let mut my_theme = GraphicalTheme::default();
+        my_theme.styles.linum = Style::new().bright_blue();
+        my_theme.styles.error = Style::new().red();
+        Box::new(GraphicalReportHandler::new_themed(my_theme))
+    }));
     let args: Vec<String> = args().collect();
     start_compiler(args);
     let mut chunk = Chunk::default();
@@ -48,6 +89,7 @@ fn main() {
     chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     let mut vm = VM::new(chunk);
     vm.run();
+    /*
     panic::set_hook(Box::new(|_info| {
         // do nothing
     }));
@@ -76,4 +118,5 @@ fn main() {
         }
         dealloc(ptr, layout);
     }
+     */
 }
