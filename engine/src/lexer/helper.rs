@@ -1,6 +1,5 @@
 use super::token::LexicalErrorKind;
 use crate::{code::Code, lexer::token::CoreToken};
-use std::rc::Rc;
 
 pub fn is_letter(c: &char) -> bool {
     if c.is_ascii_alphabetic() || (*c == '_') {
@@ -136,13 +135,11 @@ pub fn extract_slash_prefix_lexeme(
         }
         2 => {
             *begin_lexeme = forward_lexeme;
-            let err_str = Rc::new(String::from("no closing `*/` found for block comment"));
-            return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str));
+            return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS("*/"));
         }
         3 => {
             *begin_lexeme = forward_lexeme;
-            let err_str = Rc::new(String::from("no closing `*/` found for block comment"));
-            return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str));
+            return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS("*/"));
         }
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable"),
     }
@@ -240,15 +237,13 @@ pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Code)
                 return CoreToken::NOT_EQUAL;
             }
             _ => {
-                let error_str = Rc::new(String::from("invalid character `!` found"));
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone()))
+                CoreToken::LEXICAL_ERROR(LexicalErrorKind::INVALID_CHAR)
             }
         }
     } else {
-        let error_str = Rc::new(String::from("invalid character `!` found"));
         *begin_lexeme = *begin_lexeme + 1;
-        CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone()))
+        CoreToken::LEXICAL_ERROR(LexicalErrorKind::INVALID_CHAR)
     }
 }
 
@@ -278,8 +273,7 @@ pub fn extract_single_quote_prefix_lexeme(
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
-    let err_str = Rc::new(String::from(r#"no closing `'` found for literal"#));
-    return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str));
+    return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS("'"));
 }
 
 // " -> "..."
@@ -308,8 +302,7 @@ pub fn extract_double_quote_prefix_lexeme(
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
-    let err_str = Rc::new(String::from(r#"no closing `"` found for literal"#));
-    return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str));
+    return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS(r#"""#));
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type

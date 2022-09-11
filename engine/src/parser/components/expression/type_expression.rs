@@ -20,10 +20,7 @@ pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 3] =
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
     let token = &parser.curr_token();
     if !is_type_expression_starting_with(token) {
-        parser.log_missing_token_error_for_multiple_expected_symbols(
-            &TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS,
-            &token,
-        );
+        parser.log_missing_token_error(&TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS, &token);
         return TypeExpressionNode::new_with_missing_tokens(
             &Rc::new(TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
             &token,

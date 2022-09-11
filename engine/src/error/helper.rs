@@ -1,3 +1,5 @@
+use text_size::TextRange;
+
 use crate::lexer::token::Token;
 use std::fmt::{self};
 use std::{fmt::Display, rc::Rc};
@@ -7,6 +9,8 @@ pub enum IdentifierKind {
     VARIABLE,
     FUNCTION,
     TYPE,
+    ARGUMENT,
+    FIELD,
 }
 impl Display for IdentifierKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -14,6 +18,8 @@ impl Display for IdentifierKind {
             IdentifierKind::VARIABLE => write!(f, "variable"),
             IdentifierKind::FUNCTION => write!(f, "function"),
             IdentifierKind::TYPE => write!(f, "type"),
+            IdentifierKind::ARGUMENT => write!(f, "argument"),
+            IdentifierKind::FIELD => write!(f, "field"),
         }
     }
 }
@@ -30,6 +36,13 @@ impl Display for PropertyKind {
             PropertyKind::METHOD => write!(f, "method"),
         }
     }
+}
+
+pub fn range_to_span(range: TextRange) -> (usize, usize) {
+    let start_index = range.start();
+    let end_index = range.end();
+    let len = end_index - start_index;
+    (start_index.into(), len.into())
 }
 
 pub fn int_length(n: usize) -> usize {

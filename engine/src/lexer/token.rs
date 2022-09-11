@@ -98,7 +98,7 @@ pub enum CoreToken {
     ENDMARKER,
 
     // error
-    LEXICAL_ERROR((LexicalErrorKind, Rc<String>)),
+    LEXICAL_ERROR(LexicalErrorKind),
 }
 
 #[derive(Debug, Clone)]
@@ -152,7 +152,7 @@ impl Display for BinaryOperatorKind {
 #[derive(Debug, Clone, PartialEq)]
 pub enum LexicalErrorKind {
     INVALID_CHAR,
-    NO_CLOSING_SYMBOLS,
+    NO_CLOSING_SYMBOLS(&'static str),
 }
 
 #[derive(Debug, Clone)]
@@ -185,6 +185,10 @@ impl Token {
 
     pub fn end_index(&self) -> usize {
         self.range.end().into()
+    }
+
+    pub fn len(&self) -> usize {
+        self.end_index() - self.start_index()
     }
 
     pub fn name(&self) -> String {

@@ -3,7 +3,6 @@
 // linear time parsing!
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
-use super::helper::format_symbol;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
     FunctionDeclarationNode, FunctionKind, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
@@ -14,38 +13,19 @@ use crate::ast::ast::{BlockKind, ErrornousNode};
 use crate::code::Code;
 use crate::constants::common::{ENDMARKER, IDENTIFIER};
 use crate::context;
-use crate::error::core::{JarvilError, JarvilErrorKind};
+use crate::error::diagnostics::{
+    Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
+    MissingTokenError,
+};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
-use crate::types::core::Type;
-use rustc_hash::FxHashMap;
-use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
 use text_size::{TextRange, TextSize};
 
 pub trait Parser {
-    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<JarvilError>);
-}
-
-#[derive(Debug)]
-pub enum RoutineCache {
-    // currently only two routine (atom, expr) results are cached by the parser
-    ATOM(
-        Rc<
-            RefCell<
-                FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>>,
-            >,
-        >,
-    ),
-    EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), JarvilError>>>>),
-}
-
-#[derive(Debug)]
-pub struct ParseSuccess {
-    pub lookahead: usize,
-    pub possible_err: Option<JarvilError>,
+    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>);
 }
 
 pub struct PackratParser {
@@ -53,29 +33,18 @@ pub struct PackratParser {
     lookahead: usize,
     indent_level: i64,
     code: Code,
-    cache: Vec<Rc<RoutineCache>>,
     ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
-    errors: Vec<JarvilError>,
+    errors: Vec<Diagnostics>,
 }
 
 impl PackratParser {
     pub fn new(code: &Code) -> Self {
-        let atom_cache_map: FxHashMap<
-            usize,
-            Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>,
-        > = FxHashMap::default();
-        let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), JarvilError>> =
-            FxHashMap::default();
         PackratParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
             code: code.clone(),
-            cache: vec![
-                Rc::new(RoutineCache::ATOM(Rc::new(RefCell::new(atom_cache_map)))),
-                Rc::new(RoutineCache::EXPR(Rc::new(RefCell::new(expr_cache_map)))),
-            ],
             ignore_all_errors: false,
             correction_indent: 0,
             errors: vec![],
@@ -84,7 +53,7 @@ impl PackratParser {
 }
 
 impl Parser for PackratParser {
-    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<JarvilError>) {
+    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>) {
         let code_node = self.code(token_vec);
         (code_node, std::mem::take(&mut self.errors))
     }
@@ -215,80 +184,17 @@ impl PackratParser {
     }
 
     // ------------------- error logging utilities for terminal-based compilation -------------------
-    pub fn log_missing_token_error_for_single_expected_symbol(
-        &mut self,
-        expected_symbol: &str,
-        recevied_token: &Token,
-    ) {
-        // This type of error handling is inspired from Golang programming language
-        // See /src/go/parser/parser.go -> `func (p *parser) error(pos token.Pos, msg string) {...}`
-        if self.ignore_all_errors {
-            return;
-        }
-        let (code_line, line_start_index, line_number, err_index) = self
-            .code
-            .line_data(recevied_token.line_number, recevied_token.index());
-        // -> TODO - check whether error on same line already exists
-        let err_str = format!(
-            "expected `{}`, got `{}`",
-            format_symbol(expected_symbol),
-            recevied_token.name()
-        );
-        let err = JarvilError::form_single_line_error(
-            err_index,
-            err_index + 1,
-            line_number,
-            line_start_index,
-            code_line,
-            err_str,
-            JarvilErrorKind::SYNTAX_ERROR,
-        );
-        self.errors.push(err)
-    }
-
-    pub fn log_missing_token_error_for_multiple_expected_symbols(
+    pub fn log_missing_token_error(
         &mut self,
         expected_symbols: &[&'static str],
-        recevied_token: &Token,
+        received_token: &Token,
     ) {
         if self.ignore_all_errors {
             return;
         }
-        let (code_line, line_start_index, line_number, err_index) = self
-            .code
-            .line_data(recevied_token.line_number, recevied_token.index());
         // -> TODO - check whether error on same line already exists
-        if expected_symbols.len() == 1 {
-            return self.log_missing_token_error_for_single_expected_symbol(
-                expected_symbols[0],
-                recevied_token,
-            );
-        }
-        let mut err_str = String::from("expected ");
-        let mut flag = false;
-        let symbols_len = expected_symbols.len();
-        for index in 0..symbols_len - 1 {
-            if flag {
-                err_str.push_str(", ");
-            }
-            err_str.push_str(&format!("`{}`", format_symbol(expected_symbols[index])));
-            flag = true;
-        }
-        err_str.push_str(&format!(
-            " or `{}`, got `{}`",
-            format_symbol(expected_symbols[symbols_len - 1]),
-            recevied_token.name()
-        ));
-        let err = JarvilError::form_single_line_error(
-            err_index,
-            err_index + 1,
-            line_number,
-            line_start_index,
-            code_line,
-            err_str,
-            JarvilErrorKind::SYNTAX_ERROR,
-        );
-        self.errors.push(err)
+        let err = MissingTokenError::new(expected_symbols, received_token);
+        self.errors.push(Diagnostics::MissingToken(err));
     }
 
     pub fn log_trailing_skipped_tokens_error(&mut self, skipped_tokens: &Vec<SkippedTokenNode>) {
@@ -296,29 +202,19 @@ impl PackratParser {
             return;
         }
         // -> TODO - check whether error on same line already exists
-        let skipped_tokens_len = skipped_tokens.len();
-        let (code_line, line_start_index, line_number, start_err_index) = self.code.line_data(
-            skipped_tokens[0].start_line_number(),
+        let err = InvalidTrailingTokensError::new(
             skipped_tokens[0].range().start().into(),
+            skipped_tokens[skipped_tokens.len() - 1]
+                .range()
+                .end()
+                .into(),
         );
-        let err_str = String::from("invalid sequence of tokens found at the trail of the line");
-        let end_err_index = skipped_tokens[skipped_tokens_len - 1].range().end().into();
-        let err = JarvilError::form_single_line_error(
-            start_err_index,
-            end_err_index,
-            line_number,
-            line_start_index,
-            code_line,
-            err_str,
-            JarvilErrorKind::SYNTAX_ERROR,
-        );
-        self.errors.push(err)
+        self.errors.push(Diagnostics::InvalidTrailingTokens(err));
     }
 
     pub fn log_incorrectly_indented_block_error(
         &mut self,
-        start_line_number: usize,
-        end_line_number: usize,
+        range: TextRange,
         expected_indent: i64,
         received_indent: i64,
     ) {
@@ -326,40 +222,17 @@ impl PackratParser {
             return;
         }
         // -> TODO - check whether error on same line already exists
-        let err_str = format!(
-            "expected an indented block with `{}` spaces, got `{}` spaces",
-            expected_indent, received_indent
-        );
-        let err = JarvilError::form_multi_line_error(
-            start_line_number,
-            end_line_number,
-            &self.code,
-            err_str,
-            JarvilErrorKind::SYNTAX_ERROR,
-        );
-        self.errors.push(err)
+        let err = IncorrectlyIndentedBlockError::new(expected_indent, received_indent, range);
+        self.errors.push(Diagnostics::IncorrectlyIndentedBlock(err));
     }
 
-    pub fn log_invalid_l_value_error(
-        &mut self,
-        start_index: usize,
-        end_index: usize,
-        start_line_number: usize,
-    ) {
+    pub fn log_invalid_l_value_error(&mut self, range: TextRange) {
         if self.ignore_all_errors {
             return;
         }
         // -> TODO - check whether error on same line already exists
-        let err_str = "expression cannot be assigned a value".to_string();
-        let err = JarvilError::form_error(
-            start_index,
-            end_index,
-            start_line_number,
-            &self.code,
-            err_str,
-            JarvilErrorKind::SYNTAX_ERROR,
-        );
-        self.errors.push(err)
+        let err = InvalidLValueError::new(range);
+        self.errors.push(Diagnostics::InvalidLValue(err));
     }
 
     // ------------------- parsing routines for terminals and block indentation -------------------
@@ -372,7 +245,7 @@ impl PackratParser {
             self.scan_next_token();
             TokenNode::new_with_ok(&token)
         } else {
-            self.log_missing_token_error_for_single_expected_symbol(symbol, &token);
+            self.log_missing_token_error(&[symbol], &token);
             TokenNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
         }
     }
@@ -384,7 +257,7 @@ impl PackratParser {
             self.scan_next_token();
             IdentifierNode::new_with_ok(&token)
         } else {
-            self.log_missing_token_error_for_single_expected_symbol(symbol, &token);
+            self.log_missing_token_error(&[symbol], &token);
             IdentifierNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
         }
     }
@@ -397,7 +270,7 @@ impl PackratParser {
                 return TokenNode::new_with_ok(&token);
             }
         }
-        self.log_missing_token_error_for_multiple_expected_symbols(symbols, &token);
+        self.log_missing_token_error(symbols, &token);
         TokenNode::new_with_missing_tokens(&Rc::new(symbols.to_vec()), &token)
     }
 
@@ -461,6 +334,7 @@ impl PackratParser {
     }
 
     // ------------------- packrat parser caching utilities -------------------
+    /*
     pub fn get_or_set_cache<
         T: std::fmt::Debug,
         F: FnOnce(&mut PackratParser) -> Result<T, JarvilError>,
@@ -494,6 +368,7 @@ impl PackratParser {
         cache_map.borrow_mut().insert(curr_lookahead, result_entry);
         result
     }
+     */
 
     // ------------------- production rule matching function for terminals and non-terminals -------------------
     // code

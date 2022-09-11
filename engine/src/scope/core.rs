@@ -4,6 +4,7 @@ use crate::scope::variables::VariableData;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
+use text_size::TextRange;
 
 #[derive(Debug, Clone)]
 pub enum IdentifierKind {
@@ -13,10 +14,10 @@ pub enum IdentifierKind {
 }
 
 #[derive(Debug)]
-pub struct SymbolData<T>(pub Rc<RefCell<T>>, usize); // (identifier_meta_data, decl_line_number)
+pub struct SymbolData<T>(pub Rc<RefCell<T>>, TextRange); // (identifier_meta_data, decl_line_number)
 impl<T> SymbolData<T> {
-    pub fn new(core_data: T, decl_line_number: usize) -> Self {
-        SymbolData(Rc::new(RefCell::new(core_data)), decl_line_number)
+    pub fn new(core_data: T, decl_range: TextRange) -> Self {
+        SymbolData(Rc::new(RefCell::new(core_data)), decl_range)
     }
 }
 impl<T> Clone for SymbolData<T> {
@@ -32,8 +33,8 @@ pub struct CoreScope<T> {
 }
 
 impl<T> CoreScope<T> {
-    fn set(&mut self, name: &Rc<String>, meta_data: T, line_number: usize) -> SymbolData<T> {
-        let symbol_data = SymbolData(Rc::new(RefCell::new(meta_data)), line_number);
+    fn set(&mut self, name: &Rc<String>, meta_data: T, decl_range: TextRange) -> SymbolData<T> {
+        let symbol_data = SymbolData(Rc::new(RefCell::new(meta_data)), decl_range);
         self.symbol_table.insert(name.clone(), symbol_data.clone());
         symbol_data
     }
@@ -66,14 +67,14 @@ impl<T> Scope<T> {
         &self,
         key: &Rc<String>,
         meta_data: T,
-        line_number: usize,
+        decl_range: TextRange,
         lookup_fn: U,
-    ) -> Result<SymbolData<T>, usize> {
+    ) -> Result<SymbolData<T>, TextRange> {
         let scope = Scope(self.0.clone());
         if let Some(symbol_data) = lookup_fn(scope, key.clone()) {
             return Err(symbol_data.1);
         }
-        let symbol_data = self.0.borrow_mut().set(key, meta_data, line_number);
+        let symbol_data = self.0.borrow_mut().set(key, meta_data, decl_range);
         Ok(symbol_data)
     }
 
@@ -152,8 +153,8 @@ impl Namespace {
     pub fn declare_variable(
         &self,
         name: &Rc<String>,
-        line_number: usize,
-    ) -> Result<SymbolData<VariableData>, usize> {
+        decl_range: TextRange,
+    ) -> Result<SymbolData<VariableData>, TextRange> {
         let lookup_func =
             |scope: Scope<VariableData>, key: Rc<String>| match scope.0.as_ref().borrow().get(&key)
             {
@@ -161,14 +162,14 @@ impl Namespace {
                 None => None,
             };
         self.variables
-            .insert(name, VariableData::default(), line_number, lookup_func)
+            .insert(name, VariableData::default(), decl_range, lookup_func)
     }
 
     pub fn declare_function(
         &self,
         name: &Rc<String>,
-        line_number: usize,
-    ) -> Result<SymbolData<FunctionData>, usize> {
+        decl_range: TextRange,
+    ) -> Result<SymbolData<FunctionData>, TextRange> {
         let lookup_func =
             |scope: Scope<FunctionData>, key: Rc<String>| match scope.0.as_ref().borrow().get(&key)
             {
@@ -176,14 +177,14 @@ impl Namespace {
                 None => None,
             };
         self.functions
-            .insert(name, FunctionData::default(), line_number, lookup_func)
+            .insert(name, FunctionData::default(), decl_range, lookup_func)
     }
 
     pub fn declare_struct_type(
         &self,
         name: &Rc<String>,
-        line_number: usize,
-    ) -> Result<SymbolData<UserDefinedTypeData>, usize> {
+        decl_range: TextRange,
+    ) -> Result<SymbolData<UserDefinedTypeData>, TextRange> {
         let lookup_func =
             |scope: Scope<UserDefinedTypeData>, key: Rc<String>| match scope.lookup(&key) {
                 Some((symbol_data, _)) => Some(symbol_data),
@@ -192,7 +193,7 @@ impl Namespace {
         self.types.insert(
             name,
             UserDefinedTypeData::default_with_struct(),
-            line_number,
+            decl_range,
             lookup_func,
         )
     }
@@ -200,8 +201,8 @@ impl Namespace {
     pub fn declare_lambda_type(
         &self,
         name: &Rc<String>,
-        line_number: usize,
-    ) -> Result<SymbolData<UserDefinedTypeData>, usize> {
+        decl_range: TextRange,
+    ) -> Result<SymbolData<UserDefinedTypeData>, TextRange> {
         let lookup_func =
             |scope: Scope<UserDefinedTypeData>, key: Rc<String>| match scope.lookup(&key) {
                 Some((symbol_data, _)) => Some(symbol_data),
@@ -210,7 +211,7 @@ impl Namespace {
         self.types.insert(
             name,
             UserDefinedTypeData::default_with_lambda(),
-            line_number,
+            decl_range,
             lookup_func,
         )
     }

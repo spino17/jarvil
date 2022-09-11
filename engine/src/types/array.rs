@@ -28,8 +28,8 @@ impl AbstractType for Array {
         }
     }
 }
-impl std::fmt::Display for Array {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "[{}; {}]", self.element_type.to_string(), self.size)
+impl ToString for Array {
+    fn to_string(&self) -> String {
+        format!("[{}; {}]", self.element_type.to_string(), self.size)
     }
 }

@@ -8,6 +8,7 @@
 
 // block_kind: statement, struct, interface, implementation of struct, function
 
+use crate::ast::ast::Node;
 use crate::ast::ast::{
     BlockKind, BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode,
     StatementNode,
@@ -54,7 +55,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
         while !is_starting_with_fn(&parser.curr_token()) {
             let token = &parser.curr_token();
             leading_skipped_tokens.push(SkippedTokenNode::new(token));
-            parser.log_missing_token_error_for_multiple_expected_symbols(expected_symbols, token);
+            parser.log_missing_token_error(expected_symbols, token);
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
                 break;
             }
@@ -97,8 +98,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                         after_line_number = after_line_number - 1;
                     }
                     parser.log_incorrectly_indented_block_error(
-                        before_line_number,
-                        after_line_number,
+                        stmt_node.range(),
                         indent_data.0,
                         indent_data.1,
                     );
