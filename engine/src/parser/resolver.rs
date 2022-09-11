@@ -336,7 +336,7 @@ impl Resolver {
             TypeResolveKind::RESOLVED(type_obj) => type_obj,
             TypeResolveKind::UNRESOLVED(identifier) => {
                 let name = Rc::new(identifier.token_value(&self.code));
-                let err_message = format!("identifier `{}` is not declared in the scope", name);
+                let err_message = format!("type `{}` is not declared in the scope", name);
                 self.log_error(
                     identifier.range(),
                     identifier.start_line_number(),

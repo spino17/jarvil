@@ -1,5 +1,36 @@
 use crate::lexer::token::Token;
-use std::rc::Rc;
+use std::fmt::{self};
+use std::{fmt::Display, rc::Rc};
+
+#[derive(Clone, Debug)]
+pub enum IdentifierKind {
+    VARIABLE,
+    FUNCTION,
+    TYPE,
+}
+impl Display for IdentifierKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IdentifierKind::VARIABLE => write!(f, "variable"),
+            IdentifierKind::FUNCTION => write!(f, "function"),
+            IdentifierKind::TYPE => write!(f, "type"),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum PropertyKind {
+    FIELD,
+    METHOD,
+}
+impl Display for PropertyKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PropertyKind::FIELD => write!(f, "field"),
+            PropertyKind::METHOD => write!(f, "method"),
+        }
+    }
+}
 
 pub fn int_length(n: usize) -> usize {
     let base = 10;
