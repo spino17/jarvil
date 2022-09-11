@@ -1,4 +1,4 @@
-use super::helper::{IdentifierKind, PropertyKind};
+use super::helper::{IdentifierKind, PropertyKind, range_to_span};
 use crate::{lexer::token::Token, parser::helper::format_symbol, types::core::Type};
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use std::fmt::{self, Display};
@@ -6,10 +6,10 @@ use text_size::TextRange;
 use thiserror::Error;
 
 #[derive(Clone, Debug)]
-pub enum Diagnostics<'a> {
+pub enum Diagnostics {
     InvalidChar(InvalidCharError),
     NoClosingSymbol(NoClosingSymbolError),
-    MissingToken(MissingTokenError<'a>),
+    MissingToken(MissingTokenError),
     InvalidTrailingTokens(InvalidTrailingTokensError),
     IncorrectlyIndentedBlock(IncorrectlyIndentedBlockError),
     InvalidLValue(InvalidLValueError),
@@ -31,13 +31,36 @@ pub enum Diagnostics<'a> {
     MismatchedReturnType(MismatchedReturnTypeError),
 }
 
-impl<'a> Diagnostics<'a> {
+impl Diagnostics {
     pub fn report(&self) -> Report {
-        todo!()
+        match self {
+            Diagnostics::InvalidChar(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NoClosingSymbol(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::MissingToken(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::InvalidTrailingTokens(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::IncorrectlyIndentedBlock(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::InvalidLValue(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::IdentifierAlreadyDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::MoreParamsCount(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::LessParamsCount(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::MismatchedParamType(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::IdentifierNotCallable(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::PropertyDoesNotExist(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::PropertyNotSupported(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::ExpressionNotCallable(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::ExpressionIndexingNotValid(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::UnaryOperatorInvalidUse(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::BinaryOperatorInvalidOperands(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::MismatchedTypesOnLeftRight(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NoReturnStatementInFunction(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::InvalidReturnStatement(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::MismatchedReturnType(diagnostic) => Report::new(diagnostic.clone()),
+        }
     }
 }
 
-impl<'a> fmt::Display for Diagnostics<'a> {
+impl fmt::Display for Diagnostics {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "{:?}", self.report())
     }
@@ -51,6 +74,14 @@ pub struct InvalidCharError {
     #[label("invalid char")]
     pub span: SourceSpan,
 }
+impl InvalidCharError {
+    pub fn new(invalid_char: char, range: TextRange) -> Self {
+        InvalidCharError {
+            invalid_char,
+            span: range_to_span(range).into()
+        }
+    }
+}
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error(
@@ -62,16 +93,35 @@ pub struct NoClosingSymbolError {
     #[label("closing `{}` not found", self.expected_symbol)]
     pub unclosed_span: SourceSpan,
 }
+impl NoClosingSymbolError {
+    pub fn new(expected_symbol: char, range: TextRange) -> Self {
+        NoClosingSymbolError {
+            expected_symbol,
+            unclosed_span: range_to_span(range).into()
+        }
+    }
+}
 
 #[derive(Debug, Error, Clone)]
 #[error("expected token missing")]
-pub struct MissingTokenError<'a> {
-    pub expected_symbols: &'a [&'static str],
-    pub received_token: Token,
-    pub message: String,
+pub struct MissingTokenError {
+    pub expected_symbols: Vec<&'static str>,
+    pub received_token: String,
+    pub start_index: usize,
+    pub len: usize,
 }
-impl<'a> Diagnostic for MissingTokenError<'a> {
-    fn code<'b>(&'b self) -> Option<Box<dyn Display + 'b>> {
+impl MissingTokenError {
+    pub fn new(expected_symbols: &[&'static str], received_token: &Token) -> Self {
+        MissingTokenError {
+            expected_symbols: expected_symbols.to_vec(),
+            received_token: received_token.name(),
+            start_index: received_token.start_index(),
+            len: received_token.len(),
+        }
+    }
+}
+impl Diagnostic for MissingTokenError {
+    fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
         return Some(Box::new("syntax error"));
     }
 
@@ -80,7 +130,7 @@ impl<'a> Diagnostic for MissingTokenError<'a> {
             format!(
                 "expected `{}`, got `{}`",
                 format_symbol(self.expected_symbols[0]),
-                self.received_token.name()
+                self.received_token
             )
         } else {
             let mut err_str = String::from("expected ");
@@ -99,14 +149,11 @@ impl<'a> Diagnostic for MissingTokenError<'a> {
             err_str.push_str(&format!(
                 " or `{}`, got `{}`",
                 format_symbol(self.expected_symbols[symbols_len - 1]),
-                self.received_token.name()
+                self.received_token
             ));
             err_str
         };
-        let start_index = self.received_token.start_index();
-        let end_index = self.received_token.end_index();
-        let len = end_index - start_index;
-        let span_vec = vec![LabeledSpan::new(Some(err_message), start_index, len)];
+        let span_vec = vec![LabeledSpan::new(Some(err_message), self.start_index, self.len)];
         return Some(Box::new(span_vec.into_iter()));
     }
 }
@@ -118,6 +165,13 @@ pub struct InvalidTrailingTokensError {
     #[label("tokens will be skipped for any further analysis")]
     pub span: SourceSpan,
 }
+impl InvalidTrailingTokensError {
+    pub fn new(range: TextRange) -> Self {
+        InvalidTrailingTokensError {
+            span: range_to_span(range).into(),
+        }
+    }
+}
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("incorrectly indented block")]
@@ -127,6 +181,15 @@ pub struct IncorrectlyIndentedBlockError {
     pub received_indent: i64,
     #[label("expected an indented block with `{}` spaces, got `{}` spaces", self.expected_indent, self.received_indent)]
     pub span: SourceSpan,
+}
+impl IncorrectlyIndentedBlockError {
+    pub fn new(expected_indent: i64, received_indent: i64, range: TextRange) -> Self {
+        IncorrectlyIndentedBlockError {
+            expected_indent,
+            received_indent,
+            span: range_to_span(range).into(),
+        }
+    }
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
@@ -188,7 +251,7 @@ pub struct LessParamsCountError {
 #[derive(Debug, Error, Clone)]
 #[error("mismatched types")]
 pub struct MismatchedParamTypeError {
-    params_vec: Vec<(Type, Type, usize, TextRange)>, // (expected_type, received_type, index_of_param, span)
+    params_vec: Vec<(String, String, usize, TextRange)>, // (expected_type, received_type, index_of_param, span)
 }
 impl Diagnostic for MismatchedParamTypeError {
     fn labels(&self) -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
@@ -216,7 +279,7 @@ impl Diagnostic for MismatchedParamTypeError {
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct IdentifierNotCallableError {
     pub name: String,
-    pub ty: Type,
+    pub ty: String,
     #[label("variable `{}` with type `{}` is not callable", self.name, self.ty)]
     pub span: SourceSpan,
     #[help]
@@ -229,7 +292,7 @@ pub struct IdentifierNotCallableError {
 pub struct PropertyDoesNotExistError {
     pub property_kind: PropertyKind,
     pub property_name: String,
-    pub ty: Type,
+    pub ty: String,
     #[label("no {} named `{}` exist for expression with type `{}`", self.property_kind, self.property_name, self.ty)]
     pub property_span: SourceSpan,
     #[label("expression has type `{}`", self.ty)]
@@ -257,8 +320,8 @@ pub struct ExpressionNotCallableError {
 #[error("invalid indexing")]
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct ExpressionIndexingNotValidError {
-    pub expr_type: Type,
-    pub index_type: Type,
+    pub expr_type: String,
+    pub index_type: String,
     #[label("expression has type `{}`", self.expr_type)]
     pub expr_span: SourceSpan,
     #[label("expression with type `{}` is not indexable with value of type `{}`", self.expr_type, self.index_type)]
@@ -269,7 +332,7 @@ pub struct ExpressionIndexingNotValidError {
 #[error("invalid unary operand")]
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct UnaryOperatorInvalidUseError {
-    pub ty: Type,
+    pub ty: String,
     pub valid_operand_type: String,
     #[label("operand has type `{}`", self.ty)]
     pub operand_span: SourceSpan,
@@ -283,8 +346,8 @@ pub struct UnaryOperatorInvalidUseError {
 #[error("invalid binary operands")]
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct BinaryOperatorInvalidOperandsError {
-    pub left_type: Type,
-    pub right_type: Type,
+    pub left_type: String,
+    pub right_type: String,
     #[label("operand has type `{}`", self.left_type)]
     pub left_expr_span: SourceSpan,
     #[label("operand has type `{}`", self.right_type)]
@@ -299,8 +362,8 @@ pub struct BinaryOperatorInvalidOperandsError {
 #[error("mismatched types")]
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct MismatchedTypesOnLeftRightError {
-    pub left_type: Type,
-    pub right_type: Type,
+    pub left_type: String,
+    pub right_type: String,
     #[label("has type `{}`", self.left_type)]
     pub left_span: SourceSpan,
     #[label("has type `{}`", self.right_type)]
@@ -333,8 +396,8 @@ pub struct InvalidReturnStatementError {
 #[error("mismatched types")]
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct MismatchedReturnTypeError {
-    pub expected_type: Type,
-    pub received_type: Type,
+    pub expected_type: String,
+    pub received_type: String,
     #[label("expected return value type `{}`, got `{}`", self.expected_type, self.received_type)]
     pub span: SourceSpan,
 }

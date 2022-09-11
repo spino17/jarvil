@@ -187,6 +187,10 @@ impl Token {
         self.range.end().into()
     }
 
+    pub fn len(&self) -> usize {
+        self.end_index() - self.start_index()
+    }
+
     pub fn name(&self) -> String {
         String::from(self.core_token.to_string())
     }

@@ -1,3 +1,5 @@
+use text_size::TextRange;
+
 use crate::lexer::token::Token;
 use std::fmt::{self};
 use std::{fmt::Display, rc::Rc};
@@ -30,6 +32,13 @@ impl Display for PropertyKind {
             PropertyKind::METHOD => write!(f, "method"),
         }
     }
+}
+
+pub fn range_to_span(range: TextRange) -> (usize, usize) {
+    let start_index = range.start();
+    let end_index = range.end();
+    let len = end_index - start_index;
+    (start_index.into(), len.into())
 }
 
 pub fn int_length(n: usize) -> usize {
