@@ -211,7 +211,10 @@ impl InvalidLValueError {
     pub fn new(range: TextRange) -> Self {
         InvalidLValueError {
             span: range_to_span(range).into(),
-            help: Some("any value derived from a function call is not assignable".to_string()),
+            help: Some(
+                "any value derived from the output of a function call is not assignable"
+                    .to_string(),
+            ),
         }
     }
 }
@@ -238,11 +241,16 @@ impl IdentifierAlreadyDeclaredError {
     ) -> Self {
         let help_str = match identifier_kind {
             IdentifierKind::VARIABLE | IdentifierKind::FUNCTION => {
-                "variables and functions are not allowed to be redeclared inside the same block"
-                    .to_string()
+                format!(
+                    "{}s are not allowed to be redeclared inside the same block",
+                    identifier_kind
+                )
             }
             IdentifierKind::TYPE => {
-                "types are not allowed to be redeclared inside the complete scope".to_string()
+                format!(
+                    "{}s are not allowed to be redeclared inside the complete scope",
+                    identifier_kind
+                )
             }
         };
         IdentifierAlreadyDeclaredError {
@@ -260,17 +268,15 @@ impl IdentifierAlreadyDeclaredError {
 #[diagnostic(code("semantic error (resolving phase)"))]
 pub struct IdentifierNotDeclaredError {
     pub identifier_kind: IdentifierKind,
-    pub name: String,
-    #[label("`{}` not found in the scope", self.name)]
+    #[label("not found in the scope")]
     pub span: SourceSpan,
     #[help]
     help: Option<String>,
 }
 impl IdentifierNotDeclaredError {
-    pub fn new(identifier_kind: IdentifierKind, name: String, range: TextRange) -> Self {
+    pub fn new(identifier_kind: IdentifierKind, range: TextRange) -> Self {
         IdentifierNotDeclaredError {
             identifier_kind,
-            name,
             span: range_to_span(range).into(),
             help: Some("identifiers are declared in one of the three namespaces: variables, functions and types".to_string())
         }
@@ -282,7 +288,7 @@ impl IdentifierNotDeclaredError {
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct MoreParamsCountError {
     expected_params_count: usize,
-    #[label("expected `{}` arguments, got more than that", self.expected_params_count)]
+    #[label("expected {} parameters, got more than that", self.expected_params_count)]
     pub span: SourceSpan,
 }
 impl MoreParamsCountError {
@@ -300,7 +306,7 @@ impl MoreParamsCountError {
 pub struct LessParamsCountError {
     expected_params_count: usize,
     received_params_count: usize,
-    #[label("expected {} arguments, got {}", self.expected_params_count, self.received_params_count)]
+    #[label("expected {} parameters, got {}", self.expected_params_count, self.received_params_count)]
     pub span: SourceSpan,
 }
 impl LessParamsCountError {
@@ -352,20 +358,18 @@ impl Diagnostic for MismatchedParamTypeError {
 #[error("calling an uncallable")]
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct IdentifierNotCallableError {
-    pub name: String,
     pub ty: String,
-    #[label("variable `{}` with type `{}` is not callable", self.name, self.ty)]
+    #[label("variable with type `{}` is not callable", self.ty)]
     pub span: SourceSpan,
     #[help]
     pub help: Option<String>,
 }
 impl IdentifierNotCallableError {
-    pub fn new(name: String, ty: Type, range: TextRange) -> Self {
+    pub fn new(ty: Type, range: TextRange) -> Self {
         IdentifierNotCallableError {
-            name,
             ty: ty.to_string(),
             span: range_to_span(range).into(),
-            help: Some("only variables with lambda types are callable".to_string()),
+            help: Some("only variables with `lambda` types are callable".to_string()),
         }
     }
 }
@@ -375,9 +379,8 @@ impl IdentifierNotCallableError {
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct PropertyDoesNotExistError {
     pub property_kind: PropertyKind,
-    pub property_name: String,
     pub ty: String,
-    #[label("no {} named `{}` exist for expression with type `{}`", self.property_kind, self.property_name, self.ty)]
+    #[label("no {} with this name exist for the expression", self.property_kind)]
     pub property_span: SourceSpan,
     #[label("expression has type `{}`", self.ty)]
     pub expr_span: SourceSpan,
@@ -385,14 +388,12 @@ pub struct PropertyDoesNotExistError {
 impl PropertyDoesNotExistError {
     pub fn new(
         property_kind: PropertyKind,
-        property_name: String,
         ty: Type,
         property_range: TextRange,
         expr_range: TextRange,
     ) -> Self {
         PropertyDoesNotExistError {
             property_kind,
-            property_name,
             ty: ty.to_string(),
             property_span: range_to_span(property_range).into(),
             expr_span: range_to_span(expr_range).into(),
@@ -440,7 +441,7 @@ pub struct ExpressionIndexingNotValidError {
     pub index_type: String,
     #[label("expression has type `{}`", self.expr_type)]
     pub expr_span: SourceSpan,
-    #[label("expression with type `{}` is not indexable with value of type `{}`", self.expr_type, self.index_type)]
+    #[label("expression is not indexable with value of type `{}`", self.index_type)]
     pub index_span: SourceSpan,
 }
 impl ExpressionIndexingNotValidError {

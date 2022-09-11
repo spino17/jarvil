@@ -57,7 +57,7 @@ pub enum ParamsTypeNCountResult {
     OK,
     MORE_PARAMS(usize),
     LESS_PARAMS((usize, usize)), // (expected_params_num, received_params_num)
-    MISMATCHED_TYPE(Vec<(Type, Type, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
+    MISMATCHED_TYPE(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
 }
 
 pub struct TypeChecker {
@@ -215,7 +215,7 @@ impl TypeChecker {
                 let expected_params = expected_params.as_ref();
                 let received_params_iter = received_params.iter();
                 let mut index = 0;
-                let mut mismatch_types_vec: Vec<(Type, Type, usize, TextRange)> = vec![]; // (expected_type, received_type, index_of_param)
+                let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![]; // (expected_type, received_type, index_of_param)
                 for received_param in received_params_iter {
                     let param_type_obj = self.check_expr(&received_param);
                     if index >= expected_params_len {
@@ -224,8 +224,8 @@ impl TypeChecker {
                     let expected_params_type_obj = &expected_params[index].1;
                     if !param_type_obj.is_eq(expected_params_type_obj) {
                         mismatch_types_vec.push((
-                            expected_params_type_obj.clone(),
-                            param_type_obj.clone(),
+                            expected_params_type_obj.to_string(),
+                            param_type_obj.clone().to_string(),
                             index + 1,
                             received_param.range(),
                         ));
