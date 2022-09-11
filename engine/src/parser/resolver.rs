@@ -434,7 +434,10 @@ impl Resolver {
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
-                                    IdentKind::FIELD, field_name, *previous_decl_range, ok_identifier.range()
+                                    IdentKind::FIELD,
+                                    field_name,
+                                    *previous_decl_range,
+                                    ok_identifier.range()
                                 );
                                 self.errors.push(Diagnostics::IdentifierAlreadyDeclared(err));
                             },

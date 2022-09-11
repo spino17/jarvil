@@ -299,7 +299,9 @@ impl TypeChecker {
                                         (expected_params, return_type)
                                     },
                                     _ => {
-                                        let err = IdentifierNotCallableError::new(lambda_type, func_name.range());
+                                        let err = IdentifierNotCallableError::new(
+                                            lambda_type, func_name.range()
+                                        );
                                         self.errors.push(Diagnostics::IdentifierNotCallable(err));
                                         return Type::new_with_unknown()
                                     }
