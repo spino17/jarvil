@@ -1,3 +1,4 @@
+use crate::error::helper::IdentifierKind as IdentKind;
 use crate::{
     ast::{
         ast::{
@@ -15,7 +16,8 @@ use crate::{
             LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG, SCOPE_NOT_SET_TO_BLOCK_MSG,
             STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
         },
-        core::{JarvilError, JarvilErrorKind},
+        core::JarvilError,
+        diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
     },
     scope::{
         core::{IdentifierKind, Namespace, SymbolData},
@@ -39,7 +41,7 @@ pub enum ResolverMode {
 pub struct Resolver {
     namespace: Namespace,
     pub code: Code,
-    errors: Vec<JarvilError>,
+    errors: Vec<Diagnostics>,
     mode: ResolverMode,
 }
 impl Resolver {
@@ -52,7 +54,7 @@ impl Resolver {
         }
     }
 
-    pub fn resolve_ast(&mut self, ast: &BlockNode) -> (Namespace, Vec<JarvilError>) {
+    pub fn resolve_ast(&mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
         let code_block = ast.0.as_ref().borrow();
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
@@ -69,22 +71,22 @@ impl Resolver {
 
     pub fn try_declare_and_bind<
         T,
-        U: Fn(&Namespace, &Rc<String>, usize) -> Result<SymbolData<T>, usize>,
+        U: Fn(&Namespace, &Rc<String>, TextRange) -> Result<SymbolData<T>, TextRange>,
         V: Fn(&OkIdentifierNode, &SymbolData<T>),
     >(
         &mut self,
         identifier: &OkIdentifierNode,
         declare_fn: U,
         bind_fn: V,
-    ) -> Option<(Rc<String>, usize)> {
+    ) -> Option<(Rc<String>, TextRange)> {
         let name = Rc::new(identifier.token_value(&self.code));
-        let symbol_data = declare_fn(&self.namespace, &name, identifier.start_line_number());
+        let symbol_data = declare_fn(&self.namespace, &name, identifier.range());
         match symbol_data {
             Ok(symbol_data) => {
                 bind_fn(identifier, &symbol_data);
                 None
             }
-            Err(previous_decl_line_number) => Some((name, previous_decl_line_number)),
+            Err(previous_decl_range) => Some((name, previous_decl_range)),
         }
     }
 
@@ -145,9 +147,9 @@ impl Resolver {
     pub fn try_declare_and_bind_variable(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(Rc<String>, usize)> {
-        let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
-            namespace.declare_variable(name, start_line_number)
+    ) -> Option<(Rc<String>, TextRange)> {
+        let declare_fn = |namespace: &Namespace, name: &Rc<String>, decl_range: TextRange| {
+            namespace.declare_variable(name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
             identifier.bind_variable_decl(symbol_data, 0)
@@ -158,9 +160,9 @@ impl Resolver {
     pub fn try_declare_and_bind_function(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(Rc<String>, usize)> {
-        let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
-            namespace.declare_function(name, start_line_number)
+    ) -> Option<(Rc<String>, TextRange)> {
+        let declare_fn = |namespace: &Namespace, name: &Rc<String>, decl_range: TextRange| {
+            namespace.declare_function(name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<FunctionData>| {
             identifier.bind_function_decl(symbol_data, 0)
@@ -171,9 +173,9 @@ impl Resolver {
     pub fn try_declare_and_bind_struct_type(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(Rc<String>, usize)> {
-        let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
-            namespace.declare_struct_type(name, start_line_number)
+    ) -> Option<(Rc<String>, TextRange)> {
+        let declare_fn = |namespace: &Namespace, name: &Rc<String>, decl_range: TextRange| {
+            namespace.declare_struct_type(name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode,
                        symbol_data: &SymbolData<UserDefinedTypeData>| {
@@ -185,9 +187,9 @@ impl Resolver {
     pub fn try_declare_and_bind_lambda_type(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(Rc<String>, usize)> {
-        let declare_fn = |namespace: &Namespace, name: &Rc<String>, start_line_number: usize| {
-            namespace.declare_lambda_type(name, start_line_number)
+    ) -> Option<(Rc<String>, TextRange)> {
+        let declare_fn = |namespace: &Namespace, name: &Rc<String>, decl_range: TextRange| {
+            namespace.declare_lambda_type(name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode,
                        symbol_data: &SymbolData<UserDefinedTypeData>| {
@@ -203,18 +205,17 @@ impl Resolver {
             return;
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            if let Some((name, previous_decl_line)) =
+            if let Some((name, previous_decl_range)) =
                 self.try_declare_and_bind_variable(ok_identifier)
             {
-                let err_message = format!(
-                    "variable `{}` is already declared in the current block on line {}",
-                    name, previous_decl_line
-                );
-                self.log_error(
+                let err = IdentifierAlreadyDeclaredError::new(
+                    IdentKind::VARIABLE,
+                    name.to_string(),
+                    previous_decl_range,
                     ok_identifier.range(),
-                    ok_identifier.start_line_number(),
-                    err_message,
                 );
+                self.errors
+                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
             }
         }
     }
@@ -233,19 +234,18 @@ impl Resolver {
                 let param_name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = param_name.core_ref() {
                     let name = Rc::new(ok_identifier.token_value(&self.code));
-                    match self
-                        .namespace
-                        .declare_variable(&name, ok_identifier.start_line_number())
-                    {
+                    let range = ok_identifier.range();
+                    match self.namespace.declare_variable(&name, range) {
                         Ok(symbol_data) => ok_identifier.bind_variable_decl(&symbol_data, 0),
-                        Err(_) => {
-                            let err_message =
-                                format!("argument with name `{}` already exist", name);
-                            self.log_error(
-                                ok_identifier.range(),
-                                ok_identifier.start_line_number(),
-                                err_message,
-                            )
+                        Err(previous_decl_range) => {
+                            let err = IdentifierAlreadyDeclaredError::new(
+                                IdentKind::VARIABLE,
+                                name.to_string(),
+                                previous_decl_range,
+                                range,
+                            );
+                            self.errors
+                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
                         }
                     }
                 }
@@ -258,36 +258,34 @@ impl Resolver {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 match kind {
                     FunctionKind::FUNC => {
-                        if let Some((name, previous_decl_line)) =
+                        if let Some((name, previous_decl_range)) =
                             self.try_declare_and_bind_function(ok_identifier)
                         {
-                            let err_message = format!(
-                                "function `{}` is already declared in the current block on line {}",
-                                name, previous_decl_line
-                            );
-                            self.log_error(
+                            let err = IdentifierAlreadyDeclaredError::new(
+                                IdentKind::FUNCTION,
+                                name.to_string(),
+                                previous_decl_range,
                                 ok_identifier.range(),
-                                ok_identifier.start_line_number(),
-                                err_message,
                             );
+                            self.errors
+                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
                         }
                     }
                     FunctionKind::LAMBDA => {
-                        if let Some((name, previous_decl_line)) =
+                        if let Some((name, previous_decl_range)) =
                             self.try_declare_and_bind_variable(ok_identifier)
                         {
-                            let err_message = format!(
-                                "variable `{}` is already declared in the current block on line {}",
-                                name, previous_decl_line
-                            );
-                            self.log_error(
+                            let err = IdentifierAlreadyDeclaredError::new(
+                                IdentKind::VARIABLE,
+                                name.to_string(),
+                                previous_decl_range,
                                 ok_identifier.range(),
-                                ok_identifier.start_line_number(),
-                                err_message,
                             );
+                            self.errors
+                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
                         }
                     }
-                    FunctionKind::METHOD => todo!(),
+                    FunctionKind::METHOD => unimplemented!(),
                 }
             }
         }
@@ -296,18 +294,17 @@ impl Resolver {
     pub fn declare_struct(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
-            if let Some((name, previous_decl_line)) =
+            if let Some((name, previous_decl_range)) =
                 self.try_declare_and_bind_struct_type(ok_identifier)
             {
-                let err_message = format!(
-                    "type `{}` is already declared in the scope on line {}",
-                    name, previous_decl_line
-                );
-                self.log_error(
+                let err = IdentifierAlreadyDeclaredError::new(
+                    IdentKind::TYPE,
+                    name.to_string(),
+                    previous_decl_range,
                     ok_identifier.range(),
-                    ok_identifier.start_line_number(),
-                    err_message,
                 );
+                self.errors
+                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
             }
         }
     }
@@ -315,18 +312,17 @@ impl Resolver {
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
-            if let Some((name, previous_decl_line)) =
+            if let Some((name, previous_decl_range)) =
                 self.try_declare_and_bind_lambda_type(ok_identifier)
             {
-                let err_message = format!(
-                    "type `{}` is already declared in the scope on line {}",
-                    name, previous_decl_line
-                );
-                self.log_error(
+                let err = IdentifierAlreadyDeclaredError::new(
+                    IdentKind::TYPE,
+                    name.to_string(),
+                    previous_decl_range,
                     ok_identifier.range(),
-                    ok_identifier.start_line_number(),
-                    err_message,
                 );
+                self.errors
+                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
             }
         }
     }
@@ -337,11 +333,8 @@ impl Resolver {
             TypeResolveKind::UNRESOLVED(identifier) => {
                 let name = Rc::new(identifier.token_value(&self.code));
                 let err_message = format!("type `{}` is not declared in the scope", name);
-                self.log_error(
-                    identifier.range(),
-                    identifier.start_line_number(),
-                    err_message,
-                );
+                let err = IdentifierNotDeclaredError::new(IdentKind::TYPE, identifier.range());
+                self.errors.push(Diagnostics::IdentifierNotDeclared(err));
                 return Type::new_with_unknown();
             }
             TypeResolveKind::INVALID => Type::new_with_unknown(),
@@ -403,7 +396,7 @@ impl Resolver {
                             ));
                             let lambda_type_obj = Type::new_with_lambda(
                                 None,
-                                &SymbolData::new(symbol_data, ok_identifier.start_line_number()),
+                                &SymbolData::new(symbol_data, ok_identifier.range()),
                             );
                             variable_symbol_data
                                 .0
@@ -422,7 +415,7 @@ impl Resolver {
 
     pub fn resolve_struct(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
-        let mut fields_map: FxHashMap<String, Type> = FxHashMap::default();
+        let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
             let stmt = match stmt.core_ref() {
@@ -442,16 +435,13 @@ impl Resolver {
                             &core_struct_stmt.name_type_spec.core_ref().data_type
                         );
                         match fields_map.get(&field_name) {
-                            Some(type_obj) => {
+                            Some((type_obj, previous_decl_range)) => {
                                 let err_message = format!("field with name `{}` already exists with type `{}`", field_name, type_obj);
-                                self.log_error(
-                                    ok_identifier.range(),
-                                    ok_identifier.start_line_number(),
-                                    err_message,
-                                );
+                                let err = IdentifierAlreadyDeclaredError::new(IdentKind::FIELD, field_name, *previous_decl_range, ok_identifier.range());
+                                self.errors.push(Diagnostics::IdentifierAlreadyDeclared(err));
                             },
                             None => {
-                                fields_map.insert(field_name, type_obj);
+                                fields_map.insert(field_name, (type_obj, ok_identifier.range()));
                             }
                         }
                     }
@@ -487,25 +477,26 @@ impl Resolver {
         };
         if let Some(params) = params {
             let params_iter = params.iter();
-            // let mut params_map: FxHashMap<Rc<String>, ()> = FxHashMap::default();
-            let mut params_map: Set<Rc<String>> = Set::default();
+            let mut params_map: FxHashMap<Rc<String>, TextRange> = FxHashMap::default();
             for param in params_iter {
                 let core_param = param.core_ref();
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
                     let variable_name = Rc::new(ok_identifier.token_value(&self.code));
-                    if let Some(_) = params_map.get(&variable_name) {
-                        let err_message =
-                            format!("argument with name `{}` already exist", variable_name);
-                        self.log_error(
-                            ok_identifier.range(),
-                            ok_identifier.start_line_number(),
-                            err_message,
+                    let range = ok_identifier.range();
+                    if let Some(previous_decl_range) = params_map.get(&variable_name) {
+                        let err = IdentifierAlreadyDeclaredError::new(
+                            IdentKind::VARIABLE,
+                            variable_name.to_string(),
+                            *previous_decl_range,
+                            range,
                         );
+                        self.errors
+                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
                         continue;
                     }
                     let type_obj = self.type_obj_from_expression(&core_param.data_type);
-                    params_map.insert(variable_name.clone(), ());
+                    params_map.insert(variable_name.clone(), range);
                     params_vec.push((variable_name, type_obj));
                 }
             }
@@ -523,7 +514,7 @@ impl Resolver {
             }
         }
     }
-
+    /*
     pub fn log_error(
         &mut self,
         error_range: TextRange,
@@ -542,6 +533,7 @@ impl Resolver {
         );
         self.errors.push(err);
     }
+     */
 }
 impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
@@ -568,13 +560,11 @@ impl Visitor for Resolver {
                         CoreAtomStartNode::IDENTIFIER(identifier) => {
                             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                                 if let Some(name) = self.try_resolving_variable(ok_identifier) {
-                                    let err_message =
-                                        format!("variable `{}` is not declared in the scope", name);
-                                    self.log_error(
+                                    let err = IdentifierNotDeclaredError::new(
+                                        IdentKind::VARIABLE,
                                         ok_identifier.range(),
-                                        ok_identifier.start_line_number(),
-                                        err_message,
-                                    )
+                                    );
+                                    self.errors.push(Diagnostics::IdentifierNotDeclared(err));
                                 }
                             }
                         }
@@ -622,15 +612,11 @@ impl Visitor for Resolver {
                             {
                                 if !ok_identifier.is_resolved() {
                                     if let Some(name) = self.try_resolving_function(ok_identifier) {
-                                        let err_message = format!(
-                                            "function `{}` is not declared in the scope",
-                                            name
-                                        );
-                                        self.log_error(
+                                        let err = IdentifierNotDeclaredError::new(
+                                            IdentKind::FUNCTION,
                                             ok_identifier.range(),
-                                            ok_identifier.start_line_number(),
-                                            err_message,
-                                        )
+                                        );
+                                        self.errors.push(Diagnostics::IdentifierNotDeclared(err));
                                     }
                                     // TODO - check in type namespace for constructor
                                 }
@@ -647,13 +633,11 @@ impl Visitor for Resolver {
                                 if let Some(name) =
                                     self.try_resolving_user_defined_type(ok_identifier)
                                 {
-                                    let err_message =
-                                        format!("type `{}` is not declared in the scope", name);
-                                    self.log_error(
+                                    let err = IdentifierNotDeclaredError::new(
+                                        IdentKind::TYPE,
                                         ok_identifier.range(),
-                                        ok_identifier.start_line_number(),
-                                        err_message,
-                                    )
+                                    );
+                                    self.errors.push(Diagnostics::IdentifierNotDeclared(err));
                                 }
                             }
                             if let Some(params) = &core_class_method_call.params {

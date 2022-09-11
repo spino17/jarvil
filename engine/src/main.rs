@@ -21,10 +21,7 @@ use crate::reader::read_file;
 use jarvil::backend::chunk::{Chunk, OpCode};
 use jarvil::backend::object::core::Data;
 use jarvil::backend::vm::VM;
-use miette::{
-    Diagnostic, GraphicalReportHandler, GraphicalTheme, NamedSource, Report, ReportHandler,
-    SourceSpan, ThemeStyles,
-};
+use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::{OwoColorize, Style};
 use std::alloc::{alloc, dealloc, Layout};
 use std::env::args;
@@ -44,46 +41,8 @@ fn start_compiler(args: Vec<String>) {
     let (code_vec, code_str) = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     let result = build(code_vec);
     if let Err(err) = result {
-        // let err = err.report();
-        // let err = attach_source_code(err, code_str);
+        let err = attach_source_code(err.report(), code_str);
         println!("{}", err)
-    }
-    let err = Report::new(NoClosingSymbolError {
-        expected_symbol: '/',
-        unclosed_span: (8, 100).into(),
-        factor_vec: vec![(2, 3), (10, 2), (13, 2)],
-        help: Some("Yo this is great".to_string().yellow().to_string()),
-    });
-    let err = attach_source_code(err, code_str);
-    println!("{:?}", err);
-}
-
-#[derive(Debug, Error)]
-#[error("closing symbol not found")]
-// #[diagnostic(code("lexical error"))]
-pub struct NoClosingSymbolError {
-    pub expected_symbol: char,
-    // #[label("was originally defined here `{}`", self.expected_symbol)]
-    pub unclosed_span: SourceSpan,
-    pub factor_vec: Vec<(usize, usize)>,
-    // #[help]
-    pub help: Option<String>,
-}
-impl Diagnostic for NoClosingSymbolError {
-    fn labels(&self) -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
-        let mut span_vec = vec![];
-        for factor in &self.factor_vec {
-            span_vec.push(miette::LabeledSpan::new(
-                Some("this is my lable".to_string()),
-                factor.0,
-                factor.1,
-            ));
-        }
-        return Some(Box::new(span_vec.into_iter()));
-    }
-
-    fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
-        return Some(Box::new("lexical error !"));
     }
 }
 

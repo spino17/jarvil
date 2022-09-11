@@ -152,6 +152,7 @@ impl JarvilError {
         &self.err_message
     }
 
+    /*
     pub fn form_single_line_error(
         start_err_index: usize,
         end_err_index: usize,
@@ -284,6 +285,7 @@ impl JarvilError {
         };
         err
     }
+     */
 }
 
 impl Display for JarvilError {

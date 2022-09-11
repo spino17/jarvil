@@ -21,10 +21,7 @@ pub fn r_assign(
 ) -> RAssignmentNode {
     let token = &parser.curr_token();
     if !is_r_assign_starting_with(token) {
-        parser.log_missing_token_error_for_multiple_expected_symbols(
-            &R_ASSIGNMENT_STARTING_SYMBOLS,
-            token,
-        );
+        parser.log_missing_token_error(&R_ASSIGNMENT_STARTING_SYMBOLS, token);
         return RAssignmentNode::new_with_missing_tokens(
             &Rc::new(R_ASSIGNMENT_STARTING_SYMBOLS.to_vec()),
             token,

@@ -28,10 +28,7 @@ pub const EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 10] =
 pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
     let token = &parser.curr_token();
     if !is_expression_starting_with(token) {
-        parser.log_missing_token_error_for_multiple_expected_symbols(
-            &EXPRESSION_EXPECTED_STARTING_SYMBOLS,
-            token,
-        );
+        parser.log_missing_token_error(&EXPRESSION_EXPECTED_STARTING_SYMBOLS, token);
         return ExpressionNode::new_with_missing_tokens(
             &Rc::new(EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
             token,
@@ -137,10 +134,7 @@ pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10] = [
 pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
     let token = &parser.curr_token();
     if !is_unary_expression_starting_with(token) {
-        parser.log_missing_token_error_for_multiple_expected_symbols(
-            &UNARY_EXPRESSION_STARTING_SYMBOLS,
-            token,
-        );
+        parser.log_missing_token_error(&UNARY_EXPRESSION_STARTING_SYMBOLS, token);
         return UnaryExpressionNode::new_with_missing_tokens(
             &Rc::new(UNARY_EXPRESSION_STARTING_SYMBOLS.to_vec()),
             token,
@@ -204,10 +198,7 @@ pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 7] = [
 pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
     let token = &parser.curr_token();
     if !is_atomic_expression_starting_with(token) {
-        parser.log_missing_token_error_for_multiple_expected_symbols(
-            &ATOMIC_EXPRESSION_STARTING_SYMBOLS,
-            token,
-        );
+        parser.log_missing_token_error(&ATOMIC_EXPRESSION_STARTING_SYMBOLS, token);
         return AtomicExpressionNode::new_with_missing_tokens(
             &Rc::new(ATOMIC_EXPRESSION_STARTING_SYMBOLS.to_vec()),
             token,

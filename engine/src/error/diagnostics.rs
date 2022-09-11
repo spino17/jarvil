@@ -19,6 +19,7 @@ pub enum Diagnostics {
     LessParamsCount(LessParamsCountError),
     MismatchedParamType(MismatchedParamTypeError),
     IdentifierNotCallable(IdentifierNotCallableError),
+    ClassmethodDoesNotExist(ClassmethodDoesNotExistError),
     PropertyDoesNotExist(PropertyDoesNotExistError),
     PropertyNotSupported(PropertyNotSupportedError),
     ExpressionNotCallable(ExpressionNotCallableError),
@@ -46,6 +47,7 @@ impl Diagnostics {
             Diagnostics::LessParamsCount(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MismatchedParamType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierNotCallable(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::ClassmethodDoesNotExist(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::PropertyDoesNotExist(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::PropertyNotSupported(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::ExpressionNotCallable(diagnostic) => Report::new(diagnostic.clone()),
@@ -69,18 +71,16 @@ impl fmt::Display for Diagnostics {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("invalid character `{}` found during lexing", self.invalid_char)]
+#[error("invalid character found")]
 #[diagnostic(code("lexical error"))]
 pub struct InvalidCharError {
-    pub invalid_char: char,
     #[label("invalid char")]
     pub span: SourceSpan,
 }
 impl InvalidCharError {
-    pub fn new(invalid_char: char, range: TextRange) -> Self {
+    pub fn new(invalid_token: &Token) -> Self {
         InvalidCharError {
-            invalid_char,
-            span: range_to_span(range).into(),
+            span: (invalid_token.start_index(), invalid_token.len()).into(),
         }
     }
 }
@@ -91,15 +91,15 @@ impl InvalidCharError {
 )]
 #[diagnostic(code("lexical error"))]
 pub struct NoClosingSymbolError {
-    pub expected_symbol: char,
+    pub expected_symbol: String,
     #[label("closing `{}` not found", self.expected_symbol)]
     pub unclosed_span: SourceSpan,
 }
 impl NoClosingSymbolError {
-    pub fn new(expected_symbol: char, range: TextRange) -> Self {
+    pub fn new(expected_symbol: String, token: &Token) -> Self {
         NoClosingSymbolError {
             expected_symbol,
-            unclosed_span: range_to_span(range).into(),
+            unclosed_span: (token.start_index(), token.len()).into(),
         }
     }
 }
@@ -172,9 +172,9 @@ pub struct InvalidTrailingTokensError {
     pub span: SourceSpan,
 }
 impl InvalidTrailingTokensError {
-    pub fn new(range: TextRange) -> Self {
+    pub fn new(start_index: usize, end_index: usize) -> Self {
         InvalidTrailingTokensError {
-            span: range_to_span(range).into(),
+            span: (start_index, end_index - start_index).into(),
         }
     }
 }
@@ -189,11 +189,16 @@ pub struct IncorrectlyIndentedBlockError {
     pub span: SourceSpan,
 }
 impl IncorrectlyIndentedBlockError {
-    pub fn new(expected_indent: i64, received_indent: i64, range: TextRange) -> Self {
+    pub fn new(
+        expected_indent: i64,
+        received_indent: i64,
+        start_index: usize,
+        end_index: usize,
+    ) -> Self {
         IncorrectlyIndentedBlockError {
             expected_indent,
             received_indent,
-            span: range_to_span(range).into(),
+            span: (start_index, end_index - start_index).into(),
         }
     }
 }
@@ -240,11 +245,14 @@ impl IdentifierAlreadyDeclaredError {
         redecl_range: TextRange,
     ) -> Self {
         let help_str = match identifier_kind {
-            IdentifierKind::VARIABLE | IdentifierKind::FUNCTION => {
+            IdentifierKind::VARIABLE | IdentifierKind::FUNCTION | IdentifierKind::ARGUMENT => {
                 format!(
                     "{}s are not allowed to be redeclared inside the same block",
                     identifier_kind
                 )
+            }
+            IdentifierKind::FIELD => {
+                format!("all fields of struct should have distinct names")
             }
             IdentifierKind::TYPE => {
                 format!(
@@ -377,6 +385,23 @@ impl IdentifierNotCallableError {
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("property does not exist")]
 #[diagnostic(code("semantic error (type-checking phase)"))]
+pub struct ClassmethodDoesNotExistError {
+    pub struct_name: String,
+    #[label("no classmethod with this name exist for struct `{}`", self.struct_name)]
+    pub span: SourceSpan,
+}
+impl ClassmethodDoesNotExistError {
+    pub fn new(struct_name: String, range: TextRange) -> Self {
+        ClassmethodDoesNotExistError {
+            struct_name,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("property does not exist")]
+#[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct PropertyDoesNotExistError {
     pub property_kind: PropertyKind,
     pub ty: String,
@@ -477,8 +502,8 @@ pub struct UnaryOperatorInvalidUseError {
 impl UnaryOperatorInvalidUseError {
     pub fn new(
         ty: Type,
-        valid_operand_type: String,
-        operator: String,
+        valid_operand_type: &'static str,
+        operator: &'static str,
         operand_range: TextRange,
         operator_range: TextRange,
     ) -> Self {
@@ -488,8 +513,8 @@ impl UnaryOperatorInvalidUseError {
         );
         UnaryOperatorInvalidUseError {
             ty: ty.to_string(),
-            valid_operand_type,
-            operator,
+            valid_operand_type: valid_operand_type.to_string(),
+            operator: operator.to_string(),
             operand_span: range_to_span(operand_range).into(),
             operator_span: range_to_span(operator_range).into(),
             help: Some(help_str),

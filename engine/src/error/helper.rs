@@ -9,6 +9,8 @@ pub enum IdentifierKind {
     VARIABLE,
     FUNCTION,
     TYPE,
+    ARGUMENT,
+    FIELD,
 }
 impl Display for IdentifierKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -16,6 +18,8 @@ impl Display for IdentifierKind {
             IdentifierKind::VARIABLE => write!(f, "variable"),
             IdentifierKind::FUNCTION => write!(f, "function"),
             IdentifierKind::TYPE => write!(f, "type"),
+            IdentifierKind::ARGUMENT => write!(f, "argument"),
+            IdentifierKind::FIELD => write!(f, "field"),
         }
     }
 }
