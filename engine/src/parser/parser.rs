@@ -13,7 +13,6 @@ use crate::ast::ast::{BlockKind, ErrornousNode};
 use crate::code::Code;
 use crate::constants::common::{ENDMARKER, IDENTIFIER};
 use crate::context;
-use crate::error::core::JarvilError;
 use crate::error::diagnostics::{
     Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
     MissingTokenError,
@@ -21,9 +20,6 @@ use crate::error::diagnostics::{
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
-use crate::types::core::Type;
-use rustc_hash::FxHashMap;
-use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
 use text_size::{TextRange, TextSize};
@@ -32,31 +28,11 @@ pub trait Parser {
     fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>);
 }
 
-#[derive(Debug)]
-pub enum RoutineCache {
-    // currently only two routine (atom, expr) results are cached by the parser
-    ATOM(
-        Rc<
-            RefCell<
-                FxHashMap<usize, Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>>,
-            >,
-        >,
-    ),
-    EXPR(Rc<RefCell<FxHashMap<usize, Result<(ParseSuccess, bool), JarvilError>>>>),
-}
-
-#[derive(Debug)]
-pub struct ParseSuccess {
-    pub lookahead: usize,
-    pub possible_err: Option<JarvilError>,
-}
-
 pub struct PackratParser {
     token_vec: Vec<Token>,
     lookahead: usize,
     indent_level: i64,
     code: Code,
-    cache: Vec<Rc<RoutineCache>>,
     ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
     errors: Vec<Diagnostics>,
@@ -64,21 +40,11 @@ pub struct PackratParser {
 
 impl PackratParser {
     pub fn new(code: &Code) -> Self {
-        let atom_cache_map: FxHashMap<
-            usize,
-            Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>,
-        > = FxHashMap::default();
-        let expr_cache_map: FxHashMap<usize, Result<(ParseSuccess, bool), JarvilError>> =
-            FxHashMap::default();
         PackratParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
             code: code.clone(),
-            cache: vec![
-                Rc::new(RoutineCache::ATOM(Rc::new(RefCell::new(atom_cache_map)))),
-                Rc::new(RoutineCache::EXPR(Rc::new(RefCell::new(expr_cache_map)))),
-            ],
             ignore_all_errors: false,
             correction_indent: 0,
             errors: vec![],
@@ -218,7 +184,6 @@ impl PackratParser {
     }
 
     // ------------------- error logging utilities for terminal-based compilation -------------------
-
     pub fn log_missing_token_error(
         &mut self,
         expected_symbols: &[&'static str],
@@ -369,6 +334,7 @@ impl PackratParser {
     }
 
     // ------------------- packrat parser caching utilities -------------------
+    /*
     pub fn get_or_set_cache<
         T: std::fmt::Debug,
         F: FnOnce(&mut PackratParser) -> Result<T, JarvilError>,
@@ -402,6 +368,7 @@ impl PackratParser {
         cache_map.borrow_mut().insert(curr_lookahead, result_entry);
         result
     }
+     */
 
     // ------------------- production rule matching function for terminals and non-terminals -------------------
     // code

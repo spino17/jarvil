@@ -1,6 +1,5 @@
 use super::token::LexicalErrorKind;
 use crate::{code::Code, lexer::token::CoreToken};
-use std::rc::Rc;
 
 pub fn is_letter(c: &char) -> bool {
     if c.is_ascii_alphabetic() || (*c == '_') {

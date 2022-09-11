@@ -1,7 +1,6 @@
 use crate::ast::ast::SkippedTokenNode;
 use crate::constants::common::NEWLINE;
 use crate::error::core::JarvilError;
-use crate::parser::parser::ParseSuccess;
 use crate::types::core::Type;
 
 pub enum IndentResultKind {
@@ -16,6 +15,7 @@ pub struct IndentResult {
     pub extra_newlines: Vec<SkippedTokenNode>,
 }
 
+/*
 pub fn clone_atom_result(
     result: &Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError>,
 ) -> Result<(ParseSuccess, Option<Type>, bool, bool), JarvilError> {
@@ -57,6 +57,7 @@ pub fn clone_expr_result(
         Err(err) => Err(err.clone()),
     }
 }
+ */
 
 pub fn format_symbol(symbol: &str) -> &str {
     if symbol == "\n" {

@@ -331,8 +331,6 @@ impl Resolver {
         match type_expr.type_obj(&self.namespace, &self.code) {
             TypeResolveKind::RESOLVED(type_obj) => type_obj,
             TypeResolveKind::UNRESOLVED(identifier) => {
-                let name = Rc::new(identifier.token_value(&self.code));
-                let err_message = format!("type `{}` is not declared in the scope", name);
                 let err = IdentifierNotDeclaredError::new(IdentKind::TYPE, identifier.range());
                 self.errors.push(Diagnostics::IdentifierNotDeclared(err));
                 return Type::new_with_unknown();
@@ -515,26 +513,6 @@ impl Resolver {
             }
         }
     }
-    /*
-    pub fn log_error(
-        &mut self,
-        error_range: TextRange,
-        start_line_number: usize,
-        err_message: String,
-    ) {
-        let start_err_index: usize = error_range.start().into();
-        let end_err_index: usize = error_range.end().into();
-        let err = JarvilError::form_error(
-            start_err_index,
-            end_err_index,
-            start_line_number,
-            &self.code,
-            err_message,
-            JarvilErrorKind::SEMANTIC_ERROR,
-        );
-        self.errors.push(err);
-    }
-     */
 }
 impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
@@ -560,7 +538,7 @@ impl Visitor for Resolver {
                     match atom_start.core_ref() {
                         CoreAtomStartNode::IDENTIFIER(identifier) => {
                             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                                if let Some(name) = self.try_resolving_variable(ok_identifier) {
+                                if let Some(_) = self.try_resolving_variable(ok_identifier) {
                                     let err = IdentifierNotDeclaredError::new(
                                         IdentKind::VARIABLE,
                                         ok_identifier.range(),

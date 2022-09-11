@@ -24,7 +24,6 @@ use crate::{
             LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG, SCOPE_NOT_SET_TO_BLOCK_MSG,
             STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
         },
-        core::{JarvilError, JarvilErrorKind},
         diagnostics::{
             BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError, Diagnostics,
             ExpressionIndexingNotValidError, ExpressionNotCallableError,
@@ -300,11 +299,6 @@ impl TypeChecker {
                                         (expected_params, return_type)
                                     },
                                     _ => {
-                                        let err_message = format!(
-                                            "variable `{}` with type `{}` is not callable",
-                                            ok_identifier.token_value(&self.code),
-                                            lambda_type
-                                        );
                                         let err = IdentifierNotCallableError::new(lambda_type, func_name.range());
                                         self.errors.push(Diagnostics::IdentifierNotCallable(err));
                                         return Type::new_with_unknown()
@@ -636,14 +630,10 @@ impl TypeChecker {
                 if operand_type.is_bool() {
                     return operand_type;
                 } else {
-                    let err_message = format!(
-                        "unary expression with operator `not` is valid only for boolean operand, got operand with type `{}`", 
-                        operand_type
-                    );
                     let err = UnaryOperatorInvalidUseError::new(
                         operand_type,
                         "boolean",
-                        "not",
+                        "`not`",
                         unary_expr.range(),
                         operator.range(),
                     );
@@ -815,7 +805,6 @@ impl TypeChecker {
         }
         if !has_return_stmt && !return_type_obj.is_void() {
             let return_type_node = return_type_node.as_ref().unwrap();
-            let err_message = format!("function body has no `return` statement");
             let err = NoReturnStatementInFunctionError::new(return_type_node.range());
             self.errors
                 .push(Diagnostics::NoReturnStatementInFunction(err));
@@ -828,7 +817,6 @@ impl TypeChecker {
         let core_return_stmt = return_stmt.core_ref();
         let func_stack_len = self.context.func_stack.len();
         if func_stack_len == 0 {
-            let err_message = format!("invalid `return` statement");
             let err = InvalidReturnStatementError::new(return_stmt.range());
             self.errors.push(Diagnostics::InvalidReturnStatement(err));
         }
@@ -836,10 +824,6 @@ impl TypeChecker {
         let expr_type_obj = self.check_expr(expr);
         let expected_type_obj = self.context.func_stack[func_stack_len - 1].clone();
         if !expr_type_obj.is_eq(&expected_type_obj) {
-            let err_message = format!(
-                "mismatched types\nexpected return value type `{}`, got `{}`",
-                expected_type_obj, expr_type_obj
-            );
             let err =
                 MismatchedReturnTypeError::new(expected_type_obj, expr_type_obj, expr.range());
             self.errors.push(Diagnostics::MismatchedReturnType(err));
@@ -892,59 +876,6 @@ impl TypeChecker {
             }
         }
     }
-
-    /*
-    pub fn log_error(
-        &mut self,
-        error_range: TextRange,
-        start_line_number: usize,
-        err_message: String,
-    ) {
-        let start_err_index: usize = error_range.start().into();
-        let end_err_index: usize = error_range.end().into();
-        let err = JarvilError::form_error(
-            start_err_index,
-            end_err_index,
-            start_line_number,
-            &self.code,
-            err_message,
-            JarvilErrorKind::SEMANTIC_ERROR,
-        );
-        self.errors.push(err);
-    }
-     */
-    /*
-    pub fn log_params_type_and_count_check_error(
-        &mut self,
-        error_range: TextRange,
-        start_line_number: usize,
-        result: &ParamsTypeNCountResult,
-    ) {
-        let err_message = match result {
-            ParamsTypeNCountResult::OK => return,
-            ParamsTypeNCountResult::LESS_PARAMS((expected_params_num, received_params_num)) => {
-                let err = LessParamsCountError::new(*expected_params_num, *received_params_num, range);
-            }
-            ParamsTypeNCountResult::MORE_PARAMS(expected_params_num) => {
-                format!(
-                    "expected {} arguments, got more than that",
-                    expected_params_num
-                )
-            }
-            ParamsTypeNCountResult::MISMATCHED_TYPE(mismatch_type_vec) => {
-                let mut err_message = "mismatched types".to_string();
-                for entry in mismatch_type_vec {
-                    err_message.push_str(&format!(
-                        "\nargument {} expected type `{}`, got `{}`",
-                        entry.2, entry.0, entry.1
-                    ));
-                }
-                err_message
-            }
-        };
-        self.log_error(error_range, start_line_number, err_message);
-    }
-     */
 }
 impl Visitor for TypeChecker {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
