@@ -42,7 +42,6 @@ pub const OR: &'static str                      = "or";
 pub const IN: &'static str                      = "in";
 pub const TRUE: &'static str                    = "True";
 pub const FALSE: &'static str                   = "False";
-pub const FUNC: &'static str                    = "func";
 pub const LAMBDA_KEYWORD: &'static str          = "lambda";
 pub const RETURN: &'static str                  = "return";
 pub const INT: &'static str                     = "int";

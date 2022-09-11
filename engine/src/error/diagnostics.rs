@@ -1,6 +1,7 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
 use crate::{lexer::token::Token, parser::helper::format_symbol, types::core::Type};
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
+use owo_colors::{OwoColorize, Style};
 use std::fmt::{self, Display};
 use text_size::TextRange;
 use thiserror::Error;
@@ -213,6 +214,8 @@ impl InvalidLValueError {
             span: range_to_span(range).into(),
             help: Some(
                 "any value derived from the output of a function call is not assignable"
+                    .to_string()
+                    .style(Style::new().yellow())
                     .to_string(),
             ),
         }
@@ -267,7 +270,7 @@ impl IdentifierAlreadyDeclaredError {
             name,
             previous_decl_span: range_to_span(previous_decl_range).into(),
             redecl_span: range_to_span(redecl_range).into(),
-            help: Some(help_str),
+            help: Some(help_str.style(Style::new().yellow()).to_string()),
         }
     }
 }
@@ -287,7 +290,12 @@ impl IdentifierNotDeclaredError {
         IdentifierNotDeclaredError {
             identifier_kind,
             span: range_to_span(range).into(),
-            help: Some("identifiers are declared in one of the three namespaces: variables, functions and types".to_string())
+            help: Some(
+                "identifiers are declared in one of the three namespaces: variables, functions and types"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
         }
     }
 }
@@ -378,7 +386,12 @@ impl IdentifierNotCallableError {
         IdentifierNotCallableError {
             ty: ty.to_string(),
             span: range_to_span(range).into(),
-            help: Some("only variables with `lambda` types are callable".to_string()),
+            help: Some(
+                "only variables with `lambda` types are callable"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }
@@ -518,7 +531,7 @@ impl UnaryOperatorInvalidUseError {
             operator: operator.to_string(),
             operand_span: range_to_span(operand_range).into(),
             operator_span: range_to_span(operator_range).into(),
-            help: Some(help_str),
+            help: Some(help_str.style(Style::new().yellow()).to_string()),
         }
     }
 }
@@ -583,7 +596,12 @@ impl MismatchedTypesOnLeftRightError {
             right_type: right_type.to_string(),
             left_span: range_to_span(left_range).into(),
             right_span: range_to_span(right_range).into(),
-            help: Some("types on both sides should be same".to_string()),
+            help: Some(
+                "types on both sides should be same"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }
@@ -601,7 +619,12 @@ impl NoReturnStatementInFunctionError {
     pub fn new(range: TextRange) -> Self {
         NoReturnStatementInFunctionError {
             span: range_to_span(range).into(),
-            help: Some("function with a return value should have atleast one `return` statement inside the top-level block".to_string())
+            help: Some(
+                "function with a return value should have atleast one `return` statement inside the top-level block"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
         }
     }
 }
@@ -619,7 +642,12 @@ impl InvalidReturnStatementError {
     pub fn new(range: TextRange) -> Self {
         InvalidReturnStatementError {
             span: range_to_span(range).into(),
-            help: Some("`return` statement should be used inside function body".to_string()),
+            help: Some(
+                "`return` statement should be used inside function body"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }
