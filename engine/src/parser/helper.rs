@@ -1,6 +1,5 @@
 use crate::ast::ast::SkippedTokenNode;
 use crate::constants::common::NEWLINE;
-use crate::error::core::JarvilError;
 use crate::types::core::Type;
 
 pub enum IndentResultKind {

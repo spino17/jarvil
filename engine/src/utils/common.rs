@@ -1,8 +1,5 @@
-use miette::Diagnostic;
-
 use crate::ast::ast::BlockNode;
 use crate::code::Code;
-use crate::error::core::JarvilError;
 use crate::error::diagnostics::Diagnostics;
 use crate::lexer::lexer::{CoreLexer, Lexer};
 use crate::parser::parser::{PackratParser, Parser};

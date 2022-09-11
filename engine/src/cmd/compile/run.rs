@@ -1,8 +1,5 @@
 use super::build::build;
-use crate::{
-    backend::vm::VM,
-    error::{core::JarvilError, diagnostics::Diagnostics},
-};
+use crate::{backend::vm::VM, error::diagnostics::Diagnostics};
 
 pub fn run(code_vec: Vec<char>) -> Result<(), Diagnostics> {
     let chunk = build(code_vec)?;
