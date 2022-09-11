@@ -249,8 +249,7 @@ impl PackratParser {
 
     pub fn log_incorrectly_indented_block_error(
         &mut self,
-        start_line_number: usize,
-        end_line_number: usize,
+        range: TextRange,
         expected_indent: i64,
         received_indent: i64,
     ) {
@@ -258,14 +257,7 @@ impl PackratParser {
             return;
         }
         // -> TODO - check whether error on same line already exists
-        let start_index = self.code.get_line_start_index(start_line_number);
-        let end_index = self.code.get_line_start_index(end_line_number);
-        let err = IncorrectlyIndentedBlockError::new(
-            expected_indent,
-            received_indent,
-            start_index,
-            end_index,
-        );
+        let err = IncorrectlyIndentedBlockError::new(expected_indent, received_indent, range);
         self.errors.push(Diagnostics::IncorrectlyIndentedBlock(err));
     }
 

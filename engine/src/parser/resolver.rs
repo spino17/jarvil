@@ -239,7 +239,7 @@ impl Resolver {
                         Ok(symbol_data) => ok_identifier.bind_variable_decl(&symbol_data, 0),
                         Err(previous_decl_range) => {
                             let err = IdentifierAlreadyDeclaredError::new(
-                                IdentKind::VARIABLE,
+                                IdentKind::ARGUMENT,
                                 name.to_string(),
                                 previous_decl_range,
                                 range,
@@ -435,9 +435,10 @@ impl Resolver {
                             &core_struct_stmt.name_type_spec.core_ref().data_type
                         );
                         match fields_map.get(&field_name) {
-                            Some((type_obj, previous_decl_range)) => {
-                                let err_message = format!("field with name `{}` already exists with type `{}`", field_name, type_obj);
-                                let err = IdentifierAlreadyDeclaredError::new(IdentKind::FIELD, field_name, *previous_decl_range, ok_identifier.range());
+                            Some((_, previous_decl_range)) => {
+                                let err = IdentifierAlreadyDeclaredError::new(
+                                    IdentKind::FIELD, field_name, *previous_decl_range, ok_identifier.range()
+                                );
                                 self.errors.push(Diagnostics::IdentifierAlreadyDeclared(err));
                             },
                             None => {
@@ -486,7 +487,7 @@ impl Resolver {
                     let range = ok_identifier.range();
                     if let Some(previous_decl_range) = params_map.get(&variable_name) {
                         let err = IdentifierAlreadyDeclaredError::new(
-                            IdentKind::VARIABLE,
+                            IdentKind::ARGUMENT,
                             variable_name.to_string(),
                             *previous_decl_range,
                             range,
@@ -611,7 +612,7 @@ impl Visitor for Resolver {
                                 core_func_call.function_name.core_ref()
                             {
                                 if !ok_identifier.is_resolved() {
-                                    if let Some(name) = self.try_resolving_function(ok_identifier) {
+                                    if let Some(_) = self.try_resolving_function(ok_identifier) {
                                         let err = IdentifierNotDeclaredError::new(
                                             IdentKind::FUNCTION,
                                             ok_identifier.range(),
@@ -630,8 +631,7 @@ impl Visitor for Resolver {
                             if let CoreIdentifierNode::OK(ok_identifier) =
                                 core_class_method_call.class_name.core_ref()
                             {
-                                if let Some(name) =
-                                    self.try_resolving_user_defined_type(ok_identifier)
+                                if let Some(_) = self.try_resolving_user_defined_type(ok_identifier)
                                 {
                                     let err = IdentifierNotDeclaredError::new(
                                         IdentKind::TYPE,

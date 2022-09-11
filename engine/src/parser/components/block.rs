@@ -8,6 +8,7 @@
 
 // block_kind: statement, struct, interface, implementation of struct, function
 
+use crate::ast::ast::Node;
 use crate::ast::ast::{
     BlockKind, BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode,
     StatementNode,
@@ -97,8 +98,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
                         after_line_number = after_line_number - 1;
                     }
                     parser.log_incorrectly_indented_block_error(
-                        before_line_number,
-                        after_line_number,
+                        stmt_node.range(),
                         indent_data.0,
                         indent_data.1,
                     );

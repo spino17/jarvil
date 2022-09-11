@@ -92,7 +92,7 @@ impl InvalidCharError {
 #[diagnostic(code("lexical error"))]
 pub struct NoClosingSymbolError {
     pub expected_symbol: String,
-    #[label("closing `{}` not found", self.expected_symbol)]
+    #[label("no closing `{}` found", self.expected_symbol)]
     pub unclosed_span: SourceSpan,
 }
 impl NoClosingSymbolError {
@@ -189,16 +189,11 @@ pub struct IncorrectlyIndentedBlockError {
     pub span: SourceSpan,
 }
 impl IncorrectlyIndentedBlockError {
-    pub fn new(
-        expected_indent: i64,
-        received_indent: i64,
-        start_index: usize,
-        end_index: usize,
-    ) -> Self {
+    pub fn new(expected_indent: i64, received_indent: i64, range: TextRange) -> Self {
         IncorrectlyIndentedBlockError {
             expected_indent,
             received_indent,
-            span: (start_index, end_index - start_index).into(),
+            span: range_to_span(range).into(),
         }
     }
 }
@@ -245,9 +240,15 @@ impl IdentifierAlreadyDeclaredError {
         redecl_range: TextRange,
     ) -> Self {
         let help_str = match identifier_kind {
-            IdentifierKind::VARIABLE | IdentifierKind::FUNCTION | IdentifierKind::ARGUMENT => {
+            IdentifierKind::VARIABLE | IdentifierKind::FUNCTION => {
                 format!(
                     "{}s are not allowed to be redeclared inside the same block",
+                    identifier_kind
+                )
+            }
+            IdentifierKind::ARGUMENT => {
+                format!(
+                    "{}s are not allowed to be redeclared in the same function defintion",
                     identifier_kind
                 )
             }

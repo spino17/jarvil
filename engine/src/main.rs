@@ -42,7 +42,7 @@ fn start_compiler(args: Vec<String>) {
     let result = build(code_vec);
     if let Err(err) = result {
         let err = attach_source_code(err.report(), code_str);
-        println!("{}", err)
+        println!("{:?}", err)
     }
 }
 
