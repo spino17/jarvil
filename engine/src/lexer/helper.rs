@@ -425,13 +425,12 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                     match next_c {
                         Some(next_c) => match next_c {
                             'o' => check_keyword("r", value_iter, CoreToken::FOR),
-                            'u' => check_keyword("nc", value_iter, CoreToken::FUNC),
                             'l' => check_keyword("oat", value_iter, CoreToken::ATOMIC_TYPE),
                             _ => return CoreToken::IDENTIFIER,
                         },
                         None => return CoreToken::IDENTIFIER,
                     }
-                } // for, func, float
+                } // for, float
                 'w' => check_keyword("hile", value_iter, CoreToken::WHILE), // while
                 'c' => check_keyword("ontinue", value_iter, CoreToken::CONTINUE), // continue
                 'b' => {
@@ -501,7 +500,17 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                 } // else, elif
                 't' => check_keyword("ype", value_iter, CoreToken::TYPE_KEYWORD), // type
                 'd' => check_keyword("ef", value_iter, CoreToken::DEF),     // def
-                'l' => check_keyword("et", value_iter, CoreToken::LET),     // let
+                'l' => {
+                    let next_c = value_iter.next();
+                    match next_c {
+                        Some(next_c) => match next_c {
+                            'e' => check_keyword("t", value_iter, CoreToken::LET),
+                            'a' => check_keyword("mbda", value_iter, CoreToken::LAMBDA_KEYWORD),
+                            _ => return CoreToken::IDENTIFIER,
+                        },
+                        None => return CoreToken::IDENTIFIER,
+                    }
+                } // let, lambda
                 's' => {
                     let next_c = value_iter.next();
                     match next_c {

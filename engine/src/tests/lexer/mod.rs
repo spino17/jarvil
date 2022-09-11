@@ -100,6 +100,12 @@ fn test_let() {
 }
 
 #[test]
+fn test_lambda() {
+    let alt_vec = vec!["l", "lam", "lamba", "lambda", "lambdas"];
+    assert_token_for_identifier(alt_vec, "lambda", CoreToken::LAMBDA_KEYWORD)
+}
+
+#[test]
 fn test_self() {
     let alt_vec = vec!["s", "sage", "self", "selfish", "sell"];
     assert_token_for_identifier(alt_vec, "self", CoreToken::SELF)
@@ -145,12 +151,6 @@ fn test_true() {
 fn test_false() {
     let alt_vec = vec!["F", "Face", "False", "Falsify", "Factor", "Falsy"];
     assert_token_for_identifier(alt_vec, "False", CoreToken::FALSE)
-}
-
-#[test]
-fn test_func() {
-    let alt_vec = vec!["f", "fun", "func", "function", "fact"];
-    assert_token_for_identifier(alt_vec, "func", CoreToken::FUNC)
 }
 
 #[test]

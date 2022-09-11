@@ -2,18 +2,19 @@ use super::expression::core::is_expression_starting_with;
 use crate::ast::ast::{
     ErrornousNode, FuncKeywordKind, FunctionKind, IdentifierNode, RAssignmentNode,
 };
+use crate::constants::common::LAMBDA_KEYWORD;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::parser::PackratParser;
 use std::rc::Rc;
 
 pub fn is_r_assign_starting_with(token: &Token) -> bool {
     match token.core_token {
-        CoreToken::FUNC => true,
+        CoreToken::LAMBDA_KEYWORD => true,
         _ => is_expression_starting_with(token),
     }
 }
 
-pub const R_ASSIGNMENT_STARTING_SYMBOLS: [&'static str; 2] = ["<expression>", "func"];
+pub const R_ASSIGNMENT_STARTING_SYMBOLS: [&'static str; 2] = ["<expression>", "lambda"];
 
 pub fn r_assign(
     parser: &mut PackratParser,
@@ -28,8 +29,8 @@ pub fn r_assign(
         );
     }
     match token.core_token {
-        CoreToken::FUNC => {
-            let func_keyword_node = parser.expect("func");
+        CoreToken::LAMBDA_KEYWORD => {
+            let func_keyword_node = parser.expect(LAMBDA_KEYWORD);
             let func_decl_node = parser.function_decl(
                 identifier_name,
                 &FuncKeywordKind::FUNC(func_keyword_node),

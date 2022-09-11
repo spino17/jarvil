@@ -630,7 +630,7 @@ impl InvalidReturnStatementError {
 pub struct MismatchedReturnTypeError {
     pub expected_type: String,
     pub received_type: String,
-    #[label("expected return value type `{}`, got `{}`", self.expected_type, self.received_type)]
+    #[label("expected return value with type `{}`, got `{}`", self.expected_type, self.received_type)]
     pub span: SourceSpan,
 }
 impl MismatchedReturnTypeError {

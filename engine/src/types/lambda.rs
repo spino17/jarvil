@@ -79,7 +79,7 @@ impl ToString for Lambda {
                     params_str.push_str(&format!("{}", param.1.to_string()));
                     flag = true;
                 }
-                format!("func({}) -> {}", params_str, self_func_data.return_type)
+                format!("lambda({}) -> {}", params_str, self_func_data.return_type)
             }
         }
     }
