@@ -5,8 +5,7 @@ use std::fmt::Display;
 pub enum Data {
     INT(i32),
     FLOAT(f32),
-    // LITERAL(Rc<String>),
-    // OBJ(Rc<RefCell<Object>>),  // TODO - need a raw pointer to heap allocated objects Raw<T>
+    // OBJ(Rc<RefCell<Object>>),
     BOOL(bool),
 }
 impl Data {}
@@ -21,11 +20,7 @@ impl Display for Data {
     }
 }
 
-pub struct Raw<T> {
-    ref_ptr: *mut T,
-}
-
+// Heap-allocated datatypes
 pub enum Object {
-    // Heap-allocated data
     STRING(StringObject),
 }
