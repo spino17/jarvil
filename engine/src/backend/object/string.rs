@@ -26,7 +26,7 @@ impl StringObject {
             _marker: PhantomData,
         }
     }
-    
+
     fn layout(len: usize) -> Layout {
         Layout::array::<u8>(len).unwrap()
     }
@@ -48,15 +48,14 @@ impl StringObject {
 
     fn byte(&self, index: usize) -> u8 {
         assert!(index < self.len);
-        unsafe {
-            *self.ptr.as_ptr().add(index)
-        }
+        unsafe { *self.ptr.as_ptr().add(index) }
     }
 
     pub fn add(s1: &StringObject, s2: &StringObject) -> StringObject {
         let len1 = s1.len();
         let len2 = s2.len();
         let new_ptr = StringObject::allocate(len1 + len2);
+        /*
         unsafe {
             for i in 0..len1 {
                 ptr::write(new_ptr.as_ptr().add(i), s1.byte(i));
@@ -66,13 +65,18 @@ impl StringObject {
                 ptr::write(new_ptr.as_ptr().add(i), s2.byte(i - len1));
             }
         }
+         */
+        unsafe {
+            ptr::copy_nonoverlapping(s1.ptr.as_ptr(), new_ptr.as_ptr(), s1.len);
+            ptr::copy_nonoverlapping(s2.ptr.as_ptr(), new_ptr.as_ptr().add(s1.len), s2.len);
+        }
         StringObject {
             ptr: new_ptr,
             len: len1 + len2,
-            _marker: PhantomData
+            _marker: PhantomData,
         }
     }
-    // TODO - some helper functions can be -> copy (given a string, make another string pointing to same location), print
+    // TODO - some helper functions can be -> copy (given a string, make another string pointing to same location)
 }
 
 impl Drop for StringObject {
@@ -86,11 +90,14 @@ impl Drop for StringObject {
 
 impl Display for StringObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut v = vec![];
-        for i in 0..self.len {
-            v.push(self.byte(i));
-        }
+        let mut v: Vec<u8> = Vec::with_capacity(self.len);
+        //for i in 0..self.len {
+        //    v.push(self.byte(i));
+        //}
+        let v_ptr = v.as_mut_ptr();
         let s = unsafe {
+            ptr::copy_nonoverlapping(self.ptr.as_ptr(), v_ptr, self.len);
+            v.set_len(self.len);
             std::str::from_utf8_unchecked(&v)
         };
         write!(f, "{}", s)

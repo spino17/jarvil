@@ -1,5 +1,5 @@
 use super::string::StringObject;
-use std::{fmt::Display, ptr::NonNull, alloc::Layout};
+use std::{alloc::Layout, fmt::Display, ptr::NonNull};
 
 #[derive(Clone)]
 pub enum Data {
