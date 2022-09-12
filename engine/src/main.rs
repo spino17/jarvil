@@ -101,9 +101,9 @@ fn main() {
         dealloc(ptr, layout);
     }
      */
-    //let s = StringObject::new_with_bytes("This is bhava".to_string());
-    //println!("{}", s);
-    let v = StringObject::new();
+    let s = StringObject::new_with_bytes("This is bhavya".to_string());
+    println!("{}", s);
+    let v = StringObject::new_with_bytes(" and she is varima".to_string());
     println!("{}", v);
-    //println!("{}", StringObject::add(&s, &v));
+    println!("{}", StringObject::add(&s, &v));
 }

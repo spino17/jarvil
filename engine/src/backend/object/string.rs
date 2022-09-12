@@ -11,22 +11,11 @@ pub struct StringObject {
 }
 
 impl StringObject {
-    pub fn new() -> Self {
-        StringObject {
-            ptr: NonNull::dangling(),
-            len: 0,
-            _marker: PhantomData,
-        }
-    }
-
     fn layout(len: usize) -> Layout {
         Layout::array::<u8>(len).unwrap()
     }
 
     fn allocate(len: usize) -> NonNull<u8> {
-        if len == 0 {
-            return NonNull::dangling()
-        }
         let layout = StringObject::layout(len);
         assert!(layout.size() <= isize::MAX as usize, "Allocation too large");
         let ptr = unsafe { alloc::alloc(layout) };
@@ -58,9 +47,7 @@ impl StringObject {
     }
 
     fn byte(&self, index: usize) -> u8 {
-        if index >= self.len {
-            panic!("accessing index beyond allocated memory for `string`")
-        }
+        assert!(index < self.len);
         unsafe {
             *self.ptr.as_ptr().add(index)
         }
@@ -69,9 +56,6 @@ impl StringObject {
     pub fn add(s1: &StringObject, s2: &StringObject) -> StringObject {
         let len1 = s1.len();
         let len2 = s2.len();
-        if len1 == 0 && len2 == 0 {
-            return StringObject::new()
-        }
         let new_ptr = StringObject::allocate(len1 + len2);
         unsafe {
             for i in 0..len1 {
@@ -102,9 +86,6 @@ impl Drop for StringObject {
 
 impl Display for StringObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.len == 0 {
-            return write!(f, "")
-        }
         let mut v = vec![];
         for i in 0..self.len {
             v.push(self.byte(i));
