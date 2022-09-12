@@ -51,6 +51,9 @@ fn main() {
         let mut my_theme = GraphicalTheme::default();
         my_theme.styles.linum = Style::new().bright_blue();
         my_theme.styles.error = Style::new().red();
+        my_theme.styles.warning = Style::new().yellow();
+        my_theme.styles.advice = Style::new().yellow();
+        my_theme.styles.help = Style::new().white();
         Box::new(GraphicalReportHandler::new_themed(my_theme))
     }));
     let args: Vec<String> = args().collect();
