@@ -20,6 +20,7 @@ use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use jarvil::backend::chunk::{Chunk, OpCode};
 use jarvil::backend::object::core::Data;
+use jarvil::backend::object::string::StringObject;
 use jarvil::backend::vm::VM;
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::{OwoColorize, Style};
@@ -100,4 +101,9 @@ fn main() {
         dealloc(ptr, layout);
     }
      */
+    //let s = StringObject::new_with_bytes("This is bhava".to_string());
+    //println!("{}", s);
+    let v = StringObject::new();
+    println!("{}", v);
+    //println!("{}", StringObject::add(&s, &v));
 }

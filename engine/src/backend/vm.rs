@@ -95,12 +95,12 @@ impl VM {
                 OpCode::OP_DIVIDE => {
                     self.advance_ip();
                     let r_val = match self.stack.pop() {
-                        Data::INT(val) => val as f32,
+                        Data::INT(val) => val as f64,
                         Data::FLOAT(val) => val,
                         _ => return InterpretResult::COMPILE_ERROR,
                     };
                     let l_val = match self.stack.pop() {
-                        Data::INT(val) => val as f32,
+                        Data::INT(val) => val as f64,
                         Data::FLOAT(val) => val,
                         _ => return InterpretResult::COMPILE_ERROR,
                     };

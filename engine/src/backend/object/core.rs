@@ -1,10 +1,10 @@
 use super::string::StringObject;
-use std::fmt::Display;
+use std::{fmt::Display, ptr::NonNull, alloc::Layout};
 
 #[derive(Clone)]
 pub enum Data {
     INT(i32),
-    FLOAT(f32),
+    FLOAT(f64),
     // OBJ(Rc<RefCell<Object>>),
     BOOL(bool),
 }
@@ -18,6 +18,12 @@ impl Display for Data {
             Data::BOOL(val) => write!(f, "{}", val),
         }
     }
+}
+
+pub trait HeapObject {
+    type Data;
+    fn layout(len: usize) -> Layout;
+    fn allocate(len: usize) -> NonNull<Self::Data>;
 }
 
 // Heap-allocated datatypes
