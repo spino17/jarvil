@@ -11,21 +11,6 @@ pub struct StringObject {
 }
 
 impl StringObject {
-    fn layout(len: usize) -> Layout {
-        Layout::array::<u8>(len).unwrap()
-    }
-
-    fn allocate(len: usize) -> NonNull<u8> {
-        let layout = StringObject::layout(len);
-        assert!(layout.size() <= isize::MAX as usize, "Allocation too large");
-        let ptr = unsafe { alloc::alloc(layout) };
-        let new_ptr = match NonNull::new(ptr as *mut u8) {
-            Some(p) => p,
-            None => alloc::handle_alloc_error(layout),
-        };
-        new_ptr
-    }
-
     pub fn new_with_bytes(bytes: String) -> Self {
         let len = bytes.len();
         let bytes_arr = bytes.as_bytes();
@@ -40,6 +25,21 @@ impl StringObject {
             len,
             _marker: PhantomData,
         }
+    }
+    
+    fn layout(len: usize) -> Layout {
+        Layout::array::<u8>(len).unwrap()
+    }
+
+    fn allocate(len: usize) -> NonNull<u8> {
+        let layout = StringObject::layout(len);
+        assert!(layout.size() <= isize::MAX as usize, "allocation too large");
+        let ptr = unsafe { alloc::alloc(layout) };
+        let new_ptr = match NonNull::new(ptr as *mut u8) {
+            Some(p) => p,
+            None => alloc::handle_alloc_error(layout),
+        };
+        new_ptr
     }
 
     pub fn len(&self) -> usize {
