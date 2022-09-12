@@ -43,7 +43,8 @@ impl Stack {
         self.stack[self.top].clone()
     }
 
-    pub fn top(&self) -> &Data {
-        &self.stack[self.top - 1]
+    pub fn from_top(&self, depth: usize) -> &Data {
+        assert!(self.top - 1 - depth >= 0);
+        &self.stack[self.top - 1 - depth]
     }
 }

@@ -1,9 +1,11 @@
 use std::alloc::{self, Layout};
 use std::fmt::Display;
 use std::marker::PhantomData;
+use std::ops::Add;
 use std::ptr;
 use std::ptr::NonNull;
 
+#[derive(Clone)]
 pub struct StringObject {
     ptr: NonNull<u8>,
     len: usize,
@@ -55,17 +57,6 @@ impl StringObject {
         let len1 = s1.len();
         let len2 = s2.len();
         let new_ptr = StringObject::allocate(len1 + len2);
-        /*
-        unsafe {
-            for i in 0..len1 {
-                ptr::write(new_ptr.as_ptr().add(i), s1.byte(i));
-            }
-
-            for i in len1..len1 + len2 {
-                ptr::write(new_ptr.as_ptr().add(i), s2.byte(i - len1));
-            }
-        }
-         */
         unsafe {
             ptr::copy_nonoverlapping(s1.ptr.as_ptr(), new_ptr.as_ptr(), s1.len);
             ptr::copy_nonoverlapping(s2.ptr.as_ptr(), new_ptr.as_ptr().add(s1.len), s2.len);
@@ -75,6 +66,23 @@ impl StringObject {
             len: len1 + len2,
             _marker: PhantomData,
         }
+    }
+
+    pub fn is_equal(s1: &StringObject, s2: &StringObject) -> bool {
+        let len1 = s1.len;
+        let len2 = s2.len;
+        if len1 != len2 {
+            return false;
+        }
+        unsafe {
+            for i in 0..len1 {
+                // TODO - use in-built ptr comparison
+                if s1.byte(i) != s2.byte(i) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
     // TODO - some helper functions can be -> copy (given a string, make another string pointing to same location)
 }
@@ -91,9 +99,6 @@ impl Drop for StringObject {
 impl Display for StringObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut v: Vec<u8> = Vec::with_capacity(self.len);
-        //for i in 0..self.len {
-        //    v.push(self.byte(i));
-        //}
         let v_ptr = v.as_mut_ptr();
         let s = unsafe {
             ptr::copy_nonoverlapping(self.ptr.as_ptr(), v_ptr, self.len);

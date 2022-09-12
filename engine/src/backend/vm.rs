@@ -1,10 +1,11 @@
 use super::{
     chunk::{Chunk, OpCode, OP_CODES_MAP},
     helper::get_machine_byte_multiple,
-    object::core::Data,
+    object::core::{Data, Object},
+    object::string::StringObject,
     stack::Stack,
 };
-use std::convert::TryInto;
+use std::{convert::TryInto, mem::ManuallyDrop};
 
 pub enum InterpretResult {
     OK,
@@ -82,7 +83,42 @@ impl VM {
                 }
                 OpCode::OP_ADD => {
                     self.advance_ip();
-                    decode_arithmetic_op!(+, self);
+                    // decode_arithmetic_op!(+, self);
+                    match self.stack.pop() {
+                        Data::INT(r_val) => match self.stack.pop() {
+                            Data::INT(l_val) => {
+                                self.stack.push(Data::INT(l_val + r_val));
+                            }
+                            Data::FLOAT(l_val) => {
+                                self.stack.push(Data::FLOAT(l_val + r_val as f64));
+                            }
+                            _ => return InterpretResult::COMPILE_ERROR,
+                        },
+                        Data::FLOAT(r_val) => match self.stack.pop() {
+                            Data::INT(l_val) => {
+                                self.stack.push(Data::FLOAT(l_val as f64 + r_val));
+                            }
+                            Data::FLOAT(l_val) => {
+                                self.stack.push(Data::FLOAT(l_val + r_val));
+                            }
+                            _ => return InterpretResult::COMPILE_ERROR,
+                        },
+                        Data::OBJ(r_obj) => match self.stack.pop() {
+                            Data::OBJ(l_obj) => match r_obj {
+                                Object::STRING(r_str_obj) => match l_obj {
+                                    Object::STRING(l_str_obj) => {
+                                        self.stack.push(Data::OBJ(Object::STRING(
+                                            ManuallyDrop::new(StringObject::add(
+                                                &l_str_obj, &r_str_obj,
+                                            )),
+                                        )));
+                                    }
+                                },
+                            },
+                            _ => return InterpretResult::COMPILE_ERROR,
+                        },
+                        _ => return InterpretResult::COMPILE_ERROR,
+                    }
                 }
                 OpCode::OP_SUBTRACT => {
                     self.advance_ip();

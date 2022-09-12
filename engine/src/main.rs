@@ -19,13 +19,14 @@ mod utils;
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use jarvil::backend::chunk::{Chunk, OpCode};
-use jarvil::backend::object::core::Data;
+use jarvil::backend::object::core::{Data, Object};
 use jarvil::backend::object::string::StringObject;
 use jarvil::backend::vm::VM;
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::{OwoColorize, Style};
 use std::alloc::{alloc, dealloc, Layout};
 use std::env::args;
+use std::mem::ManuallyDrop;
 use std::panic;
 use std::{fs, path::Path};
 use thiserror::Error;
@@ -60,14 +61,19 @@ fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
     let mut chunk = Chunk::default();
+    let s = StringObject::new_with_bytes("fdsf     ".to_string());
+    let mut s = ManuallyDrop::new(s);
+    let v = ManuallyDrop::new(StringObject::new_with_bytes("v".to_string()));
     chunk.write_constant(Data::INT(13), 1);
     chunk.write_constant(Data::INT(12), 2);
+    chunk.write_constant(Data::OBJ(Object::STRING(s.clone())), 5);
+    chunk.write_constant(Data::OBJ(Object::STRING(v.clone())), 5);
     // chunk.write_byte(OpCode::OP_FALSE.to_byte(), 10);
     // chunk.write_byte(OpCode::OP_FALSE.to_byte(), 10);
     // chunk.write_byte(OpCode::OP_DIVIDE.to_byte(), 4);
     // chunk.write_byte(OpCode::OP_ADD.to_byte(), 5);
     // chunk.write_byte(OpCode::OP_EQUAL.to_byte(), 6);
-    chunk.write_byte(OpCode::OP_GREATER_EQUAL.to_byte(), 8);
+    chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     let mut vm = VM::new(chunk);
     vm.run();
@@ -101,10 +107,7 @@ fn main() {
         dealloc(ptr, layout);
     }
      */
-    let s = StringObject::new_with_bytes("Bhavya".to_string());
-    println!("{}", s);
-    let v = StringObject::new_with_bytes("!and she is varima".to_string());
-    println!("{}", v);
-    println!("{}", StringObject::add(&s, &v));
-    println!("{}", s);
+    unsafe {
+        std::mem::ManuallyDrop::drop(&mut s);
+    }
 }
