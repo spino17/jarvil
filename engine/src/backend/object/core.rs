@@ -90,7 +90,7 @@ pub trait HeapObject {
 // Also we don't have to worry about rust freeing up the memory as that task will be taken up by our garbage collector.
 #[derive(Clone)]
 pub enum Object {
-    STRING(ManuallyDrop<StringObject>),
+    STRING(ManuallyDrop<StringObject>),  // UTF-8 encoded string
 }
 
 impl Object {

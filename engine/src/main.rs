@@ -63,51 +63,17 @@ fn main() {
     let mut chunk = Chunk::default();
     let s = StringObject::new_with_bytes("bhavya".to_string());
     let mut s = ManuallyDrop::new(s);
-    let v = ManuallyDrop::new(StringObject::new_with_bytes("v".to_string()));
+    let mut v = ManuallyDrop::new(StringObject::new_with_bytes("varima".to_string()));
     chunk.write_constant(Data::INT(13), 1);
     chunk.write_constant(Data::INT(12), 2);
     chunk.write_constant(Data::OBJ(Object::STRING(s.clone())), 5);
     chunk.write_constant(Data::OBJ(Object::STRING(v.clone())), 5);
-    // chunk.write_byte(OpCode::OP_FALSE.to_byte(), 10);
-    // chunk.write_byte(OpCode::OP_FALSE.to_byte(), 10);
-    // chunk.write_byte(OpCode::OP_DIVIDE.to_byte(), 4);
-    // chunk.write_byte(OpCode::OP_ADD.to_byte(), 5);
-    // chunk.write_byte(OpCode::OP_EQUAL.to_byte(), 6);
     chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     let mut vm = VM::new(chunk);
     vm.run();
-    /*
-    panic::set_hook(Box::new(|_info| {
-        // do nothing
-    }));
-
-    let result = panic::catch_unwind(|| {
-        panic!("test panic");
-    });
-
-    match result {
-        Ok(res) => res,
-        Err(_) => println!("caught panic!"),
-    }
-
-    let size = "bhavya_bhatt";
-    let len = size.len();
-    let bytes_str = size.as_bytes();
-
-    unsafe {
-        let layout = Layout::array::<u8>(len).unwrap();
-        let ptr = alloc(layout);
-        for i in 0..len {
-            *ptr.offset(i as isize) = bytes_str[i];
-        }
-        for i in 0..len {
-            println!("{}-{}", *ptr.offset(i as isize), bytes_str[i]);
-        }
-        dealloc(ptr, layout);
-    }
-     */
     unsafe {
         std::mem::ManuallyDrop::drop(&mut s);
+        std::mem::ManuallyDrop::drop(&mut v);
     }
 }
