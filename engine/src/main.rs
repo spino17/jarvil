@@ -61,7 +61,7 @@ fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
     let mut chunk = Chunk::default();
-    let s = StringObject::new_with_bytes("fdsf     ".to_string());
+    let s = StringObject::new_with_bytes("bhavya".to_string());
     let mut s = ManuallyDrop::new(s);
     let v = ManuallyDrop::new(StringObject::new_with_bytes("v".to_string()));
     chunk.write_constant(Data::INT(13), 1);

@@ -1,7 +1,6 @@
 use std::alloc::{self, Layout};
 use std::fmt::Display;
 use std::marker::PhantomData;
-use std::ops::Add;
 use std::ptr;
 use std::ptr::NonNull;
 
@@ -16,11 +15,10 @@ impl StringObject {
     pub fn new_with_bytes(bytes: String) -> Self {
         let len = bytes.len();
         let bytes_arr = bytes.as_bytes();
+        let bytes_arr_ptr = bytes_arr.as_ptr();
         let new_ptr = StringObject::allocate(len);
         unsafe {
-            for i in 0..len {
-                ptr::write(new_ptr.as_ptr().add(i), bytes_arr[i]);
-            }
+            ptr::copy_nonoverlapping(bytes_arr_ptr, new_ptr.as_ptr(), len);
         }
         StringObject {
             ptr: new_ptr,
@@ -84,7 +82,6 @@ impl StringObject {
         }
         return true;
     }
-    // TODO - some helper functions can be -> copy (given a string, make another string pointing to same location)
 }
 
 impl Drop for StringObject {
