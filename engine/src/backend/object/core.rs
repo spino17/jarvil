@@ -77,9 +77,7 @@ impl Display for Data {
 }
 
 pub trait HeapObject {
-    type Data;
-    fn layout(len: usize) -> Layout;
-    fn allocate(len: usize) -> NonNull<Self::Data>;
+    // layout, allocate and free methods
 }
 
 // Heap-allocated datatypes
@@ -90,7 +88,7 @@ pub trait HeapObject {
 // Also we don't have to worry about rust freeing up the memory as that task will be taken up by our garbage collector.
 #[derive(Clone)]
 pub enum Object {
-    STRING(ManuallyDrop<StringObject>),  // UTF-8 encoded string
+    STRING(StringObject), // UTF-8 encoded string
 }
 
 impl Object {

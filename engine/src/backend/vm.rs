@@ -108,9 +108,7 @@ impl VM {
                                 Object::STRING(r_str_obj) => match l_obj {
                                     Object::STRING(l_str_obj) => {
                                         self.stack.push(Data::OBJ(Object::STRING(
-                                            ManuallyDrop::new(StringObject::add(
-                                                &l_str_obj, &r_str_obj,
-                                            )),
+                                            StringObject::add(&l_str_obj, &r_str_obj),
                                         )));
                                     }
                                 },

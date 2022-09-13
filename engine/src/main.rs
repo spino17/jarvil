@@ -61,22 +61,23 @@ fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
     let mut chunk = Chunk::default();
-    let s = StringObject::new_with_bytes("bro ");
-    let mut s = ManuallyDrop::new(s);
-    let mut v = ManuallyDrop::new(StringObject::new_with_bytes("varima"));
-    let mut u = ManuallyDrop::new(StringObject::new_with_bytes("bhatt"));
+    let mut s = StringObject::new_with_bytes("bro ");
+    let mut v = StringObject::new_with_bytes("varima");
+    let mut u = StringObject::new_with_bytes("bro varima");
     chunk.write_constant(Data::INT(13), 1);
     chunk.write_constant(Data::INT(12), 2);
     chunk.write_constant(Data::OBJ(Object::STRING(s.clone())), 5);
     chunk.write_constant(Data::OBJ(Object::STRING(v.clone())), 5);
     chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     chunk.write_constant(Data::OBJ(Object::STRING(u.clone())), 5);
-    chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
+    chunk.write_byte(OpCode::OP_EQUAL.to_byte(), 8);
     chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     let mut vm = VM::new(chunk);
     vm.run();
+    /*
     unsafe {
-        std::mem::ManuallyDrop::drop(&mut s);
-        std::mem::ManuallyDrop::drop(&mut v);
+        std::mem::ManuallyDrop::drop(&mut s.0);
+        std::mem::ManuallyDrop::drop(&mut v.0);
     }
+     */
 }
