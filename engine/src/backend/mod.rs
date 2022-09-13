@@ -5,3 +5,4 @@ pub mod helper;
 pub mod object;
 pub mod stack;
 pub mod vm;
+pub mod allocator;

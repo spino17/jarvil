@@ -12,7 +12,7 @@ pub struct StringObject {
 }
 
 impl StringObject {
-    pub fn new_with_bytes(bytes: String) -> Self {
+    pub fn new_with_bytes(bytes: &str) -> Self {
         let len = bytes.len();
         let bytes_arr = bytes.as_bytes();
         let bytes_arr_ptr = bytes_arr.as_ptr();
@@ -49,6 +49,16 @@ impl StringObject {
     fn byte(&self, index: usize) -> u8 {
         assert!(index < self.len);
         unsafe { *self.ptr.as_ptr().add(index) }
+    }
+
+    pub fn vector(&self) -> Vec<u8> {
+        let mut v: Vec<u8> = Vec::with_capacity(self.len);
+        let v_ptr = v.as_mut_ptr();
+        unsafe {
+            ptr::copy_nonoverlapping(self.ptr.as_ptr(), v_ptr, self.len);
+            v.set_len(self.len);
+        };
+        v
     }
 
     pub fn add(s1: &StringObject, s2: &StringObject) -> StringObject {
