@@ -7,6 +7,7 @@ pub struct Stack {
     stack: [Data; STACK_MAX_SIZE],
     top: usize,
 }
+
 impl Stack {
     pub fn new() -> Self {
         Stack {

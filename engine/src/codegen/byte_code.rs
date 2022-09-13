@@ -9,6 +9,7 @@ use crate::{
 pub struct ByteCodeGenerator {
     chunk: Chunk,
 }
+
 impl ByteCodeGenerator {
     fn new() -> Self {
         ByteCodeGenerator {
@@ -20,6 +21,7 @@ impl ByteCodeGenerator {
         std::mem::take(&mut self.chunk)
     }
 }
+
 impl Visitor for ByteCodeGenerator {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         todo!()

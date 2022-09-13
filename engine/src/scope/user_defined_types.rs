@@ -1,10 +1,9 @@
+use super::function::FunctionData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 use text_size::TextRange;
-
-use super::function::FunctionData;
 
 #[derive(Debug, Clone)]
 pub enum UserDefinedTypeData {
@@ -12,6 +11,7 @@ pub enum UserDefinedTypeData {
     LAMBDA(LambdaTypeData),
     // GENERIC(GenericType),
 }
+
 impl UserDefinedTypeData {
     pub fn default_with_struct() -> Self {
         UserDefinedTypeData::STRUCT(StructData::default())
@@ -57,6 +57,7 @@ pub struct StructData {
     pub methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
     pub class_methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
 }
+
 impl StructData {
     pub fn set_fields(&mut self, fields: FxHashMap<String, (Type, TextRange)>) {
         self.fields = Rc::new(fields);
@@ -81,6 +82,7 @@ impl StructData {
 pub struct LambdaTypeData {
     pub func_data: FunctionData,
 }
+
 impl LambdaTypeData {
     pub fn new(params: Vec<(Rc<String>, Type)>, return_type: Type) -> Self {
         LambdaTypeData {

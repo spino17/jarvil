@@ -116,6 +116,7 @@ pub enum BinaryOperatorKind {
     AND,
     OR,
 }
+
 impl BinaryOperatorKind {
     pub fn is_comparison(&self) -> bool {
         match self {
@@ -129,6 +130,7 @@ impl BinaryOperatorKind {
         }
     }
 }
+
 impl Display for BinaryOperatorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {

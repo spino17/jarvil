@@ -7,6 +7,7 @@ pub struct Lambda {
     pub name: Option<String>,
     pub symbol_data: SymbolData<UserDefinedTypeData>,
 }
+
 impl Lambda {
     pub fn new(name: Option<String>, symbol_data: &SymbolData<UserDefinedTypeData>) -> Lambda {
         Lambda {
@@ -15,6 +16,7 @@ impl Lambda {
         }
     }
 }
+
 impl AbstractType for Lambda {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
@@ -59,6 +61,7 @@ impl AbstractType for Lambda {
         }
     }
 }
+
 impl ToString for Lambda {
     fn to_string(&self) -> String {
         match &self.name {

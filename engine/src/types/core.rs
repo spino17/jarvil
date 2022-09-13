@@ -33,6 +33,7 @@ pub enum CoreType {
 
 #[derive(Debug, Clone)]
 pub struct Type(pub Rc<CoreType>);
+
 impl Type {
     pub fn new_with_atomic(name: &str) -> Type {
         Type(Rc::new(CoreType::ATOMIC(Atomic::new(name))))
@@ -118,6 +119,7 @@ impl Type {
         }
     }
 }
+
 impl AbstractType for Type {
     fn is_eq(&self, base_type: &Type) -> bool {
         match self.0.as_ref() {
@@ -140,6 +142,7 @@ impl AbstractType for Type {
         }
     }
 }
+
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self.0.as_ref() {

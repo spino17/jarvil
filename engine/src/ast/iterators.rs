@@ -6,6 +6,7 @@ use super::ast::{
 pub struct NameTypeSpecsIterator {
     node: Option<NameTypeSpecsNode>,
 }
+
 impl NameTypeSpecsIterator {
     pub fn new(node: &NameTypeSpecsNode) -> Self {
         NameTypeSpecsIterator {
@@ -13,6 +14,7 @@ impl NameTypeSpecsIterator {
         }
     }
 }
+
 impl Iterator for NameTypeSpecsIterator {
     type Item = NameTypeSpecNode;
     fn next(&mut self) -> Option<Self::Item> {
@@ -34,6 +36,7 @@ impl Iterator for NameTypeSpecsIterator {
 pub struct ParamsIterator {
     node: Option<ParamsNode>,
 }
+
 impl ParamsIterator {
     pub fn new(node: &ParamsNode) -> Self {
         ParamsIterator {
@@ -41,6 +44,7 @@ impl ParamsIterator {
         }
     }
 }
+
 impl Iterator for ParamsIterator {
     type Item = ExpressionNode;
     fn next(&mut self) -> Option<Self::Item> {

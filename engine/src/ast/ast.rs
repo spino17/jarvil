@@ -105,6 +105,7 @@ pub enum BlockKind {
 
 #[derive(Debug, Clone)]
 pub struct BlockNode(pub Rc<RefCell<CoreBlockNode>>);
+
 impl BlockNode {
     pub fn new(
         stmts: Vec<StatemenIndentWrapperNode>,
@@ -132,6 +133,7 @@ impl BlockNode {
         self.0.as_ref().borrow().kind.clone()
     }
 }
+
 impl Node for BlockNode {
     fn range(&self) -> TextRange {
         let core_block = self.0.as_ref().borrow();
@@ -177,6 +179,7 @@ pub enum CoreStatemenIndentWrapperNode {
 
 #[derive(Debug, Clone)]
 pub struct StatemenIndentWrapperNode(Rc<CoreStatemenIndentWrapperNode>);
+
 impl StatemenIndentWrapperNode {
     pub fn new_with_correctly_indented(stmt: &StatementNode) -> Self {
         let node = Rc::new(CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(
@@ -227,6 +230,7 @@ pub struct CoreSkippedTokensNode {
 
 #[derive(Debug, Clone)]
 pub struct SkippedTokensNode(Rc<CoreSkippedTokensNode>);
+
 impl SkippedTokensNode {
     pub fn new_with_leading_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
         let node = Rc::new(CoreSkippedTokensNode { skipped_tokens });
@@ -245,6 +249,7 @@ impl SkippedTokensNode {
 
     impl_core_ref!(CoreSkippedTokensNode);
 }
+
 impl Node for SkippedTokensNode {
     fn range(&self) -> TextRange {
         let core_skipped_tokens = &self.0.as_ref().skipped_tokens;
@@ -272,6 +277,7 @@ pub enum CoreStatementNode {
 
 #[derive(Debug, Clone)]
 pub struct StatementNode(Rc<CoreStatementNode>);
+
 impl StatementNode {
     pub fn new_with_expression(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(CoreStatementNode::EXPRESSION(ExpressionStatementNode::new(
@@ -335,6 +341,7 @@ pub struct CoreIncorrectlyIndentedStatementNode {
 
 #[derive(Debug, Clone)]
 pub struct IncorrectlyIndentedStatementNode(Rc<CoreIncorrectlyIndentedStatementNode>);
+
 impl IncorrectlyIndentedStatementNode {
     fn new(stmt: &StatementNode, expected_indent: i64, received_indent: i64) -> Self {
         let node = Rc::new(CoreIncorrectlyIndentedStatementNode {
@@ -347,6 +354,7 @@ impl IncorrectlyIndentedStatementNode {
 
     impl_core_ref!(CoreIncorrectlyIndentedStatementNode);
 }
+
 impl Node for IncorrectlyIndentedStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().stmt, self.0.as_ref().stmt)
@@ -364,6 +372,7 @@ pub struct CoreExpressionStatementNode {
 
 #[derive(Debug, Clone)]
 pub struct ExpressionStatementNode(Rc<CoreExpressionStatementNode>);
+
 impl ExpressionStatementNode {
     fn new(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(CoreExpressionStatementNode {
@@ -375,6 +384,7 @@ impl ExpressionStatementNode {
 
     impl_core_ref!(CoreExpressionStatementNode);
 }
+
 impl Node for ExpressionStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().expr, self.0.as_ref().expr)
@@ -392,6 +402,7 @@ pub enum CoreAssignmentNode {
 
 #[derive(Debug, Clone)]
 pub struct AssignmentNode(Rc<CoreAssignmentNode>);
+
 impl AssignmentNode {
     pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
         let node = Rc::new(CoreAssignmentNode::OK(OkAssignmentNode::new(
@@ -423,6 +434,7 @@ pub struct CoreOkAssignmentNode {
 
 #[derive(Debug, Clone)]
 pub struct OkAssignmentNode(Rc<CoreOkAssignmentNode>);
+
 impl OkAssignmentNode {
     pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
         let node = Rc::new(CoreOkAssignmentNode {
@@ -435,6 +447,7 @@ impl OkAssignmentNode {
 
     impl_core_ref!(CoreOkAssignmentNode);
 }
+
 impl Node for OkAssignmentNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().l_atom, self.0.as_ref().r_assign)
@@ -453,6 +466,7 @@ pub struct CoreInvalidLValueNode {
 
 #[derive(Debug, Clone)]
 pub struct InvalidLValueNode(Rc<CoreInvalidLValueNode>);
+
 impl InvalidLValueNode {
     pub fn new(l_expr: &ExpressionNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
         let node = Rc::new(CoreInvalidLValueNode {
@@ -465,6 +479,7 @@ impl InvalidLValueNode {
 
     impl_core_ref!(CoreInvalidLValueNode);
 }
+
 impl Node for InvalidLValueNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().l_expr, self.0.as_ref().r_assign)
@@ -482,6 +497,7 @@ pub struct CoreStructStatementNode {
 
 #[derive(Debug, Clone)]
 pub struct StructStatementNode(Rc<CoreStructStatementNode>);
+
 impl StructStatementNode {
     pub fn new(
         param_name: &IdentifierNode,
@@ -498,6 +514,7 @@ impl StructStatementNode {
 
     impl_core_ref!(CoreStructStatementNode);
 }
+
 impl Node for StructStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(
@@ -519,6 +536,7 @@ pub enum CoreTypeDeclarationNode {
 
 #[derive(Debug, Clone)]
 pub struct TypeDeclarationNode(Rc<CoreTypeDeclarationNode>);
+
 impl TypeDeclarationNode {
     pub fn new_with_struct(
         name: &IdentifierNode,
@@ -554,6 +572,7 @@ pub struct CoreStructDeclarationNode {
 
 #[derive(Debug, Clone)]
 pub struct StructDeclarationNode(Rc<CoreStructDeclarationNode>);
+
 impl StructDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
@@ -572,6 +591,7 @@ impl StructDeclarationNode {
 
     impl_core_ref!(CoreStructDeclarationNode);
 }
+
 impl Node for StructDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().type_keyword, self.0.as_ref().block)
@@ -589,6 +609,7 @@ pub enum CoreLambdaDeclarationNode {
 
 #[derive(Debug, Clone)]
 pub struct LambdaDeclarationNode(Rc<CoreLambdaDeclarationNode>);
+
 impl LambdaDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
@@ -636,6 +657,7 @@ pub struct CoreOkLambdaTypeDeclarationNode {
 
 #[derive(Debug, Clone)]
 pub struct OkLambdaTypeDeclarationNode(Rc<CoreOkLambdaTypeDeclarationNode>);
+
 impl OkLambdaTypeDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
@@ -664,6 +686,7 @@ impl OkLambdaTypeDeclarationNode {
 
     impl_core_ref!(CoreOkLambdaTypeDeclarationNode);
 }
+
 impl Node for OkLambdaTypeDeclarationNode {
     fn range(&self) -> TextRange {
         match &self.core_ref().return_type {
@@ -684,6 +707,7 @@ pub enum CoreFunctionDeclarationNode {
 
 #[derive(Debug, Clone)]
 pub struct FunctionDeclarationNode(Rc<CoreFunctionDeclarationNode>);
+
 impl FunctionDeclarationNode {
     pub fn new(
         name: Option<&IdentifierNode>,
@@ -747,6 +771,7 @@ pub enum FuncKeywordKind {
 
 #[derive(Debug, Clone)]
 pub struct OkFunctionDeclarationNode(Rc<CoreOkFunctionDeclarationNode>);
+
 impl OkFunctionDeclarationNode {
     pub fn new(
         name: Option<&IdentifierNode>,
@@ -777,6 +802,7 @@ impl OkFunctionDeclarationNode {
 
     impl_core_ref!(CoreOkFunctionDeclarationNode);
 }
+
 impl Node for OkFunctionDeclarationNode {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().func_keyword {
@@ -802,6 +828,7 @@ pub struct CoreVariableDeclarationNode {
 
 #[derive(Debug, Clone)]
 pub struct VariableDeclarationNode(Rc<CoreVariableDeclarationNode>);
+
 impl VariableDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
@@ -820,6 +847,7 @@ impl VariableDeclarationNode {
 
     impl_core_ref!(CoreVariableDeclarationNode);
 }
+
 impl Node for VariableDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().let_keyword, self.0.as_ref().r_assign)
@@ -838,6 +866,7 @@ pub struct CoreReturnStatementNode {
 
 #[derive(Debug, Clone)]
 pub struct ReturnStatementNode(Rc<CoreReturnStatementNode>);
+
 impl ReturnStatementNode {
     fn new(return_keyword: &TokenNode, expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(CoreReturnStatementNode {
@@ -850,6 +879,7 @@ impl ReturnStatementNode {
 
     impl_core_ref!(CoreReturnStatementNode);
 }
+
 impl Node for ReturnStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().return_keyword, self.core_ref().newline)
@@ -867,6 +897,7 @@ pub enum CoreNameTypeSpecsNode {
 
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecsNode(Rc<CoreNameTypeSpecsNode>);
+
 impl NameTypeSpecsNode {
     pub fn new(ok_name_type_specs: &OkNameTypeSpecsNode) -> Self {
         let node = Rc::new(CoreNameTypeSpecsNode::OK(ok_name_type_specs.clone()));
@@ -890,6 +921,7 @@ pub struct CoreOkNameTypeSpecsNode {
 
 #[derive(Debug, Clone)]
 pub struct OkNameTypeSpecsNode(Rc<CoreOkNameTypeSpecsNode>);
+
 impl OkNameTypeSpecsNode {
     pub fn new_with_args(
         arg: &NameTypeSpecNode,
@@ -915,6 +947,7 @@ impl OkNameTypeSpecsNode {
 
     impl_core_ref!(CoreOkNameTypeSpecsNode);
 }
+
 impl Node for OkNameTypeSpecsNode {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_args {
@@ -936,6 +969,7 @@ pub struct CoreNameTypeSpecNode {
 
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(Rc<CoreNameTypeSpecNode>);
+
 impl NameTypeSpecNode {
     pub fn new(
         param_name: &IdentifierNode,
@@ -952,6 +986,7 @@ impl NameTypeSpecNode {
 
     impl_core_ref!(CoreNameTypeSpecNode);
 }
+
 impl Node for NameTypeSpecNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().name, self.0.as_ref().data_type)
@@ -977,6 +1012,7 @@ pub enum TypeResolveKind {
 
 #[derive(Debug, Clone)]
 pub struct TypeExpressionNode(Rc<CoreTypeExpressionNode>);
+
 impl TypeExpressionNode {
     pub fn new_with_atomic_type(atomic_type: &TokenNode) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::ATOMIC(AtomicTypeNode::new(
@@ -1027,6 +1063,7 @@ pub struct CoreAtomicTypeNode {
 
 #[derive(Debug, Clone)]
 pub struct AtomicTypeNode(Rc<CoreAtomicTypeNode>);
+
 impl AtomicTypeNode {
     pub fn new(token: &TokenNode) -> Self {
         let node = Rc::new(CoreAtomicTypeNode {
@@ -1048,6 +1085,7 @@ impl AtomicTypeNode {
 
     impl_core_ref!(CoreAtomicTypeNode);
 }
+
 impl Node for AtomicTypeNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().kind, self.0.as_ref().kind)
@@ -1068,6 +1106,7 @@ pub struct CoreArrayTypeNode {
 
 #[derive(Debug, Clone)]
 pub struct ArrayTypeNode(Rc<CoreArrayTypeNode>);
+
 impl ArrayTypeNode {
     pub fn new(
         size: &TokenNode,
@@ -1107,6 +1146,7 @@ impl ArrayTypeNode {
 
     impl_core_ref!(CoreArrayTypeNode);
 }
+
 impl Node for ArrayTypeNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().lsquare, self.0.as_ref().rsquare)
@@ -1123,6 +1163,7 @@ pub struct CoreUserDefinedTypeNode {
 
 #[derive(Debug, Clone)]
 pub struct UserDefinedTypeNode(Rc<CoreUserDefinedTypeNode>);
+
 impl UserDefinedTypeNode {
     pub fn new(identifier: &IdentifierNode) -> Self {
         let node = Rc::new(CoreUserDefinedTypeNode {
@@ -1162,6 +1203,7 @@ impl UserDefinedTypeNode {
 
     impl_core_ref!(CoreUserDefinedTypeNode);
 }
+
 impl Node for UserDefinedTypeNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().name, self.0.as_ref().name)
@@ -1180,6 +1222,7 @@ pub enum CoreIdentifierNode {
 
 #[derive(Debug, Clone)]
 pub struct IdentifierNode(Rc<CoreIdentifierNode>);
+
 impl IdentifierNode {
     pub fn new_with_ok(token: &Token) -> Self {
         let node = Rc::new(CoreIdentifierNode::OK(OkIdentifierNode::new(token)));
@@ -1212,6 +1255,7 @@ pub struct CoreOkIdentifierNode {
 
 #[derive(Debug, Clone)]
 pub struct OkIdentifierNode(Rc<RefCell<CoreOkIdentifierNode>>);
+
 impl OkIdentifierNode {
     fn new(token: &Token) -> Self {
         let node = Rc::new(RefCell::new(CoreOkIdentifierNode {
@@ -1296,6 +1340,7 @@ impl OkIdentifierNode {
         self.0.as_ref().borrow().decl.is_some()
     }
 }
+
 impl Node for OkIdentifierNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().borrow().token.range
@@ -1314,6 +1359,7 @@ pub enum CoreTokenNode {
 
 #[derive(Debug, Clone)]
 pub struct TokenNode(Rc<CoreTokenNode>);
+
 impl TokenNode {
     pub fn new_with_ok(token: &Token) -> Self {
         let node = Rc::new(CoreTokenNode::OK(OkTokenNode::new(token)));
@@ -1360,6 +1406,7 @@ pub struct CoreOkTokenNode {
 
 #[derive(Debug, Clone)]
 pub struct OkTokenNode(Rc<CoreOkTokenNode>);
+
 impl OkTokenNode {
     pub fn new(token: &Token) -> Self {
         OkTokenNode(Rc::new(CoreOkTokenNode {
@@ -1381,6 +1428,7 @@ impl OkTokenNode {
 
     impl_core_ref!(CoreOkTokenNode);
 }
+
 impl Node for OkTokenNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().token.range
@@ -1398,6 +1446,7 @@ pub struct CoreMissingTokenNode {
 
 #[derive(Debug, Clone)]
 pub struct MissingTokenNode(Rc<CoreMissingTokenNode>);
+
 impl MissingTokenNode {
     pub fn new(expected_symbols: &Rc<Vec<&'static str>>, received_token: &Token) -> Self {
         let node = Rc::new(CoreMissingTokenNode {
@@ -1409,6 +1458,7 @@ impl MissingTokenNode {
 
     impl_core_ref!(CoreMissingTokenNode);
 }
+
 impl Node for MissingTokenNode {
     fn range(&self) -> TextRange {
         let received_token = &self.0.as_ref().received_token;
@@ -1426,6 +1476,7 @@ pub struct CoreSkippedTokenNode {
 
 #[derive(Debug, Clone)]
 pub struct SkippedTokenNode(Rc<CoreSkippedTokenNode>);
+
 impl SkippedTokenNode {
     pub fn new(skipped_token: &Token) -> Self {
         let node = Rc::new(CoreSkippedTokenNode {
@@ -1444,6 +1495,7 @@ impl SkippedTokenNode {
 
     impl_core_ref!(CoreSkippedTokenNode);
 }
+
 impl Node for SkippedTokenNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().skipped_token.range
@@ -1463,6 +1515,7 @@ pub enum CoreExpressionNode {
 
 #[derive(Debug, Clone)]
 pub struct ExpressionNode(Rc<CoreExpressionNode>);
+
 impl ExpressionNode {
     pub fn new_with_unary(unary_expr: &UnaryExpressionNode) -> Self {
         let node = Rc::new(CoreExpressionNode::UNARY(unary_expr.clone()));
@@ -1529,6 +1582,7 @@ pub struct CoreComparisonNode {
 
 #[derive(Debug, Clone)]
 pub struct ComparisonNode(Rc<CoreComparisonNode>);
+
 impl ComparisonNode {
     pub fn new(operands: Vec<ExpressionNode>, operators: Vec<TokenNode>) -> Self {
         let node = Rc::new(CoreComparisonNode {
@@ -1540,6 +1594,7 @@ impl ComparisonNode {
 
     impl_core_ref!(CoreComparisonNode);
 }
+
 impl Node for ComparisonNode {
     fn range(&self) -> TextRange {
         let core_node = self.0.as_ref();
@@ -1566,6 +1621,7 @@ pub enum CoreAtomicExpressionNode {
 
 #[derive(Debug, Clone)]
 pub struct AtomicExpressionNode(Rc<CoreAtomicExpressionNode>);
+
 impl AtomicExpressionNode {
     pub fn new_with_bool(bool_value: &TokenNode) -> Self {
         let node = Rc::new(CoreAtomicExpressionNode::BOOL_VALUE(bool_value.clone()));
@@ -1618,6 +1674,7 @@ pub struct CoreParenthesisedExpressionNode {
 
 #[derive(Debug, Clone)]
 pub struct ParenthesisedExpressionNode(Rc<CoreParenthesisedExpressionNode>);
+
 impl ParenthesisedExpressionNode {
     pub fn new(expr: &ExpressionNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
         let node = Rc::new(CoreParenthesisedExpressionNode {
@@ -1630,6 +1687,7 @@ impl ParenthesisedExpressionNode {
 
     impl_core_ref!(CoreParenthesisedExpressionNode);
 }
+
 impl Node for ParenthesisedExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen)
@@ -1655,6 +1713,7 @@ pub enum UnaryOperatorKind {
 
 #[derive(Debug, Clone)]
 pub struct UnaryExpressionNode(Rc<CoreUnaryExpressionNode>);
+
 impl UnaryExpressionNode {
     pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
         let node = Rc::new(CoreUnaryExpressionNode::ATOMIC(atomic_expr.clone()));
@@ -1685,6 +1744,7 @@ pub struct CoreOnlyUnaryExpressionNode {
 
 #[derive(Debug, Clone)]
 pub struct OnlyUnaryExpressionNode(Rc<CoreOnlyUnaryExpressionNode>);
+
 impl OnlyUnaryExpressionNode {
     pub fn new(
         operator: &TokenNode,
@@ -1701,6 +1761,7 @@ impl OnlyUnaryExpressionNode {
 
     impl_core_ref!(CoreOnlyUnaryExpressionNode);
 }
+
 impl Node for OnlyUnaryExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().operator, self.0.as_ref().unary_expr)
@@ -1720,6 +1781,7 @@ pub struct CoreBinaryExpressionNode {
 
 #[derive(Debug, Clone)]
 pub struct BinaryExpressionNode(Rc<CoreBinaryExpressionNode>);
+
 impl BinaryExpressionNode {
     pub fn new(
         operator_kind: BinaryOperatorKind,
@@ -1738,6 +1800,7 @@ impl BinaryExpressionNode {
 
     impl_core_ref!(CoreBinaryExpressionNode);
 }
+
 impl Node for BinaryExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().left_expr, self.0.as_ref().right_expr)
@@ -1755,6 +1818,7 @@ pub enum CoreParamsNode {
 
 #[derive(Debug, Clone)]
 pub struct ParamsNode(Rc<CoreParamsNode>);
+
 impl ParamsNode {
     pub fn new(ok_params_node: &OkParamsNode) -> Self {
         let node = Rc::new(CoreParamsNode::OK(ok_params_node.clone()));
@@ -1778,6 +1842,7 @@ pub struct CoreOkParamsNode {
 
 #[derive(Debug, Clone)]
 pub struct OkParamsNode(Rc<CoreOkParamsNode>);
+
 impl OkParamsNode {
     pub fn new_with_single_param(param: &ExpressionNode) -> Self {
         let node = Rc::new(CoreOkParamsNode {
@@ -1803,6 +1868,7 @@ impl OkParamsNode {
 
     impl_core_ref!(CoreOkParamsNode);
 }
+
 impl Node for OkParamsNode {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_params {
@@ -1825,6 +1891,7 @@ pub struct CoreCallExpressionNode {
 
 #[derive(Debug, Clone)]
 pub struct CallExpressionNode(Rc<CoreCallExpressionNode>);
+
 impl CallExpressionNode {
     pub fn new(
         function_name: &IdentifierNode,
@@ -1843,6 +1910,7 @@ impl CallExpressionNode {
 
     impl_core_ref!(CoreCallExpressionNode);
 }
+
 impl Node for CallExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().function_name, self.0.as_ref().rparen)
@@ -1864,6 +1932,7 @@ pub struct CoreClassMethodCallNode {
 
 #[derive(Debug, Clone)]
 pub struct ClassMethodCallNode(Rc<CoreClassMethodCallNode>);
+
 impl ClassMethodCallNode {
     pub fn new(
         class_name: &IdentifierNode,
@@ -1886,6 +1955,7 @@ impl ClassMethodCallNode {
 
     impl_core_ref!(CoreClassMethodCallNode);
 }
+
 impl Node for ClassMethodCallNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().class_name, self.0.as_ref().rparen)
@@ -1906,6 +1976,7 @@ pub enum CoreAtomNode {
 
 #[derive(Debug, Clone)]
 pub struct AtomNode(Rc<CoreAtomNode>);
+
 impl AtomNode {
     pub fn new_with_atom_start(atom_start: &AtomStartNode) -> Self {
         let node = Rc::new(CoreAtomNode::ATOM_START(atom_start.clone()));
@@ -1994,6 +2065,7 @@ pub enum CoreAtomStartNode {
 
 #[derive(Debug, Clone)]
 pub struct AtomStartNode(Rc<CoreAtomStartNode>);
+
 impl AtomStartNode {
     pub fn new_with_identifier(token: &IdentifierNode) -> Self {
         let node = Rc::new(CoreAtomStartNode::IDENTIFIER(token.clone()));
@@ -2046,6 +2118,7 @@ pub struct CoreCallNode {
 
 #[derive(Debug, Clone)]
 pub struct CallNode(Rc<CoreCallNode>);
+
 impl CallNode {
     fn new(
         atom: &AtomNode,
@@ -2064,6 +2137,7 @@ impl CallNode {
 
     impl_core_ref!(CoreCallNode);
 }
+
 impl Node for CallNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().atom, self.0.as_ref().rparen)
@@ -2082,6 +2156,7 @@ pub struct CorePropertyAccessNode {
 
 #[derive(Debug, Clone)]
 pub struct PropertyAccessNode(Rc<CorePropertyAccessNode>);
+
 impl PropertyAccessNode {
     fn new(atom: &AtomNode, propertry: &IdentifierNode, dot: &TokenNode) -> Self {
         let node = Rc::new(CorePropertyAccessNode {
@@ -2094,6 +2169,7 @@ impl PropertyAccessNode {
 
     impl_core_ref!(CorePropertyAccessNode);
 }
+
 impl Node for PropertyAccessNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().atom, self.0.as_ref().propertry)
@@ -2115,6 +2191,7 @@ pub struct CoreMethodAccessNode {
 
 #[derive(Debug, Clone)]
 pub struct MethodAccessNode(Rc<CoreMethodAccessNode>);
+
 impl MethodAccessNode {
     pub fn new(
         atom: &AtomNode,
@@ -2137,6 +2214,7 @@ impl MethodAccessNode {
 
     impl_core_ref!(CoreMethodAccessNode);
 }
+
 impl Node for MethodAccessNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().atom, self.0.as_ref().rparen)
@@ -2156,6 +2234,7 @@ pub struct CoreIndexAccessNode {
 
 #[derive(Debug, Clone)]
 pub struct IndexAccessNode(Rc<CoreIndexAccessNode>);
+
 impl IndexAccessNode {
     pub fn new(
         atom: &AtomNode,
@@ -2174,6 +2253,7 @@ impl IndexAccessNode {
 
     impl_core_ref!(CoreIndexAccessNode);
 }
+
 impl Node for IndexAccessNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().atom, self.0.as_ref().rsquare)
@@ -2192,6 +2272,7 @@ pub enum CoreRAssignmentNode {
 
 #[derive(Debug, Clone)]
 pub struct RAssignmentNode(Rc<CoreRAssignmentNode>);
+
 impl RAssignmentNode {
     pub fn new_with_lambda(lambda_decl: &FunctionDeclarationNode) -> Self {
         let node = Rc::new(CoreRAssignmentNode::LAMBDA(lambda_decl.clone()));

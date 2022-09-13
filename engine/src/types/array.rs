@@ -6,6 +6,7 @@ pub struct Array {
     pub size: usize,
     pub element_type: Type,
 }
+
 impl Array {
     pub fn new(element_type: &Type, size: usize) -> Array {
         Array {
@@ -14,6 +15,7 @@ impl Array {
         }
     }
 }
+
 impl AbstractType for Array {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
@@ -28,6 +30,7 @@ impl AbstractType for Array {
         }
     }
 }
+
 impl ToString for Array {
     fn to_string(&self) -> String {
         format!("[{}; {}]", self.element_type.to_string(), self.size)

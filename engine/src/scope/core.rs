@@ -15,11 +15,13 @@ pub enum IdentifierKind {
 
 #[derive(Debug)]
 pub struct SymbolData<T>(pub Rc<RefCell<T>>, TextRange); // (identifier_meta_data, decl_line_number)
+
 impl<T> SymbolData<T> {
     pub fn new(core_data: T, decl_range: TextRange) -> Self {
         SymbolData(Rc::new(RefCell::new(core_data)), decl_range)
     }
 }
+
 impl<T> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone(), self.1)
@@ -108,6 +110,7 @@ pub struct Namespace {
     types: Scope<UserDefinedTypeData>,
     functions: Scope<FunctionData>,
 }
+
 impl Namespace {
     pub fn new() -> Self {
         Namespace {
@@ -216,6 +219,7 @@ impl Namespace {
         )
     }
 }
+
 impl Clone for Namespace {
     fn clone(&self) -> Self {
         Namespace {
@@ -225,6 +229,7 @@ impl Clone for Namespace {
         }
     }
 }
+
 impl Default for Namespace {
     fn default() -> Self {
         Namespace::new()

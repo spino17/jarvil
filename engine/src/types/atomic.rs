@@ -8,6 +8,7 @@ pub enum Atomic {
     STRING,
     BOOL,
 }
+
 impl Atomic {
     pub fn new(name: &str) -> Atomic {
         match name {
@@ -50,6 +51,7 @@ impl Atomic {
         }
     }
 }
+
 impl AbstractType for Atomic {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
@@ -63,6 +65,7 @@ impl AbstractType for Atomic {
         }
     }
 }
+
 impl ToString for Atomic {
     fn to_string(&self) -> String {
         match self {

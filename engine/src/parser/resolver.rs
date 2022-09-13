@@ -43,6 +43,7 @@ pub struct Resolver {
     errors: Vec<Diagnostics>,
     mode: ResolverMode,
 }
+
 impl Resolver {
     pub fn new(code: &Code) -> Self {
         Resolver {
@@ -516,6 +517,7 @@ impl Resolver {
         }
     }
 }
+
 impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match self.mode {

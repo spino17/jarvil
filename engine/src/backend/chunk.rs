@@ -20,6 +20,7 @@ pub enum OpCode {
     OP_LESS,          // 14
     OP_LESS_EQUAL,    // 15
 }
+
 impl OpCode {
     pub fn to_byte(&self) -> u8 {
         match self {
@@ -67,6 +68,7 @@ pub struct Chunk {
     pub constants: Vec<Data>,
     pub line_numbers: Vec<usize>,
 }
+
 impl Chunk {
     pub fn write_byte(&mut self, byte: u8, line_number: usize) {
         self.code.push(byte);
@@ -127,6 +129,7 @@ impl Chunk {
         }
     }
 }
+
 impl Display for Chunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut display_str = "".to_string();
@@ -138,6 +141,7 @@ impl Display for Chunk {
         write!(f, "{}", display_str)
     }
 }
+
 impl Default for Chunk {
     fn default() -> Self {
         Chunk {

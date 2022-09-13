@@ -74,6 +74,7 @@ pub struct TypeChecker {
     errors: Vec<Diagnostics>,
     context: Context,
 }
+
 impl TypeChecker {
     pub fn new(code: &Code, scope: &Namespace) -> Self {
         TypeChecker {
@@ -879,6 +880,7 @@ impl TypeChecker {
         }
     }
 }
+
 impl Visitor for TypeChecker {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {

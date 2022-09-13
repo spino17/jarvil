@@ -8,6 +8,7 @@ pub enum Data {
     OBJ(Object),
     BOOL(bool),
 }
+
 impl Data {
     pub fn eq_type(&self, data: &Data) -> bool {
         match self {
@@ -65,6 +66,7 @@ impl Data {
         }
     }
 }
+
 impl Display for Data {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -81,7 +83,7 @@ pub trait HeapObject {
 }
 
 // Heap-allocated datatypes
-// NOTE: All the objects are wrapped inside ManuallyDrop in order to avoid automatic calling of drop.
+// NOTE: All the objects are wrapped inside ManuallyDrop<T> in order to avoid automatic calling of drop.
 // We need to avoid automatic calling of drop as our language does not have the concept of move and so
 // when we clone a string, the raw pointer is cloned but points to the same heap memory. So when rust call
 // drop on both of these pointers, the later drop will throw an error saying `drop is called on unallocated memory`!
@@ -92,6 +94,10 @@ pub enum Object {
 }
 
 impl Object {
+    pub fn new_with_string(bytes: &str) -> Object {
+        Object::STRING(StringObject::new_with_bytes(bytes))
+    }
+
     pub fn eq_type(&self, obj: &Object) -> bool {
         match self {
             Object::STRING(_) => match obj {

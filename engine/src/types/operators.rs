@@ -30,6 +30,7 @@ struct CoreOperator {
     symbol: &'static str,
     interface: &'static str,
 }
+
 impl CoreOperator {
     pub fn new(kind: BinaryOperatorKind, symbol: &'static str, interface: &'static str) -> Self {
         CoreOperator {
@@ -41,11 +42,13 @@ impl CoreOperator {
 }
 
 pub struct AddOperator(CoreOperator);
+
 impl AddOperator {
     pub fn new() -> Self {
         AddOperator(CoreOperator::new(BinaryOperatorKind::PLUS, "+", "Add"))
     }
 }
+
 impl Operator for AddOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         if l_type.is_numeric() && r_type.is_numeric() {
@@ -64,6 +67,7 @@ impl Operator for AddOperator {
 }
 
 pub struct SubtractOperator(CoreOperator);
+
 impl SubtractOperator {
     pub fn new() -> Self {
         SubtractOperator(CoreOperator::new(
@@ -73,6 +77,7 @@ impl SubtractOperator {
         ))
     }
 }
+
 impl Operator for SubtractOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         // TODO - check if type is numeric => int - float = float, int - int = ints
@@ -90,6 +95,7 @@ impl Operator for SubtractOperator {
 }
 
 pub struct MultiplyOperator(CoreOperator);
+
 impl MultiplyOperator {
     pub fn new() -> Self {
         MultiplyOperator(CoreOperator::new(
@@ -99,6 +105,7 @@ impl MultiplyOperator {
         ))
     }
 }
+
 impl Operator for MultiplyOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         if l_type.is_numeric() && r_type.is_numeric() {
@@ -115,11 +122,13 @@ impl Operator for MultiplyOperator {
 }
 
 pub struct DivideOperator(CoreOperator);
+
 impl DivideOperator {
     pub fn new() -> Self {
         DivideOperator(CoreOperator::new(BinaryOperatorKind::DIVIDE, "/", "Divide"))
     }
 }
+
 impl Operator for DivideOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         if l_type.is_numeric() && r_type.is_numeric() {
@@ -136,11 +145,13 @@ impl Operator for DivideOperator {
 }
 
 pub struct AndOperator(CoreOperator);
+
 impl AndOperator {
     pub fn new() -> Self {
         AndOperator(CoreOperator::new(BinaryOperatorKind::AND, "and", "And"))
     }
 }
+
 impl Operator for AndOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         if l_type.is_bool() && r_type.is_bool() {
@@ -152,11 +163,13 @@ impl Operator for AndOperator {
 }
 
 pub struct OrOperator(CoreOperator);
+
 impl OrOperator {
     pub fn new() -> Self {
         OrOperator(CoreOperator::new(BinaryOperatorKind::OR, "or", "Or"))
     }
 }
+
 impl Operator for OrOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         if l_type.is_bool() && r_type.is_bool() {
@@ -168,6 +181,7 @@ impl Operator for OrOperator {
 }
 
 pub struct GreaterOperator(CoreOperator);
+
 impl GreaterOperator {
     pub fn new() -> Self {
         GreaterOperator(CoreOperator::new(
@@ -177,6 +191,7 @@ impl GreaterOperator {
         ))
     }
 }
+
 impl Operator for GreaterOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
@@ -193,11 +208,13 @@ impl Operator for GreaterOperator {
 }
 
 pub struct LessOperator(CoreOperator);
+
 impl LessOperator {
     pub fn new() -> Self {
         LessOperator(CoreOperator::new(BinaryOperatorKind::LESS, "<", "Less"))
     }
 }
+
 impl Operator for LessOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
@@ -214,6 +231,7 @@ impl Operator for LessOperator {
 }
 
 pub struct GreaterEqualOperator(CoreOperator);
+
 impl GreaterEqualOperator {
     pub fn new() -> Self {
         GreaterEqualOperator(CoreOperator::new(
@@ -223,6 +241,7 @@ impl GreaterEqualOperator {
         ))
     }
 }
+
 impl Operator for GreaterEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
@@ -239,6 +258,7 @@ impl Operator for GreaterEqualOperator {
 }
 
 pub struct LessEqualOperator(CoreOperator);
+
 impl LessEqualOperator {
     pub fn new() -> Self {
         LessEqualOperator(CoreOperator::new(
@@ -248,6 +268,7 @@ impl LessEqualOperator {
         ))
     }
 }
+
 impl Operator for LessEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
@@ -264,6 +285,7 @@ impl Operator for LessEqualOperator {
 }
 
 pub struct DoubleEqualOperator(CoreOperator);
+
 impl DoubleEqualOperator {
     pub fn new() -> Self {
         DoubleEqualOperator(CoreOperator::new(
@@ -273,6 +295,7 @@ impl DoubleEqualOperator {
         ))
     }
 }
+
 impl Operator for DoubleEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
@@ -291,6 +314,7 @@ impl Operator for DoubleEqualOperator {
 }
 
 pub struct NotEqualOperator(CoreOperator);
+
 impl NotEqualOperator {
     pub fn new() -> Self {
         NotEqualOperator(CoreOperator::new(
@@ -300,6 +324,7 @@ impl NotEqualOperator {
         ))
     }
 }
+
 impl Operator for NotEqualOperator {
     fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type> {
         let is_ok = if l_type.is_numeric() && r_type.is_numeric() {
