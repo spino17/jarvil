@@ -1,4 +1,4 @@
-use crate::backend::object::core::Data;
+use crate::backend::object::data::Data;
 use std::mem::{self, MaybeUninit};
 
 const STACK_MAX_SIZE: usize = 256;

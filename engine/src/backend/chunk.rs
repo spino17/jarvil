@@ -1,5 +1,5 @@
 use super::helper::get_machine_byte_multiple;
-use crate::backend::object::core::Data;
+use crate::backend::object::data::Data;
 use std::{convert::TryInto, fmt::Display};
 
 pub enum OpCode {
