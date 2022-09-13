@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, ptr::NonNull};
 
 use super::core::Object;
 

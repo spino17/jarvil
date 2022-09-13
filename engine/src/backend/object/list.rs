@@ -1,5 +1,7 @@
 use super::data::Data;
 use std::alloc::{self, Layout};
+use std::fmt::Display;
+use std::marker::PhantomData;
 use std::ptr;
 use std::{mem::ManuallyDrop, ptr::NonNull};
 
@@ -11,6 +13,7 @@ pub struct CoreListObject {
     ptr: NonNull<Data>,
     len: usize,
     cap: usize,
+    _marker: PhantomData<Data>,
 }
 
 impl CoreListObject {
@@ -28,6 +31,15 @@ impl CoreListObject {
 pub struct ListObject(ManuallyDrop<CoreListObject>);
 
 impl ListObject {
+    pub fn new() -> Self {
+        ListObject(ManuallyDrop::new(CoreListObject{
+            ptr: NonNull::dangling(),
+            len: 0,
+            cap: 0,
+            _marker: PhantomData,
+        }))
+    }
+
     pub fn layout(len: usize) -> Layout {
         Layout::array::<Data>(len).unwrap()
     }
@@ -60,6 +72,7 @@ impl ListObject {
 
     pub fn push(&mut self, elem: Data) {
         if self.0.len == self.0.cap {
+            println!("capacity full!");
             self.grow();
         }
         unsafe {
@@ -94,5 +107,19 @@ impl Drop for CoreListObject {
                 alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
             }
         }
+    }
+}
+
+impl Display for ListObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = "[".to_string();
+        unsafe {
+            s.push_str(&format!("{}", *self.0.ptr.as_ptr().add(0)));
+            for i in 1..self.0.len {
+                s.push_str(&format!(", {}", *self.0.ptr.as_ptr().add(i)));
+            }
+        }
+        s.push_str("]");
+        write!(f, "{}", s)
     }
 }

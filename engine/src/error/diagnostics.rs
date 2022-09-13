@@ -181,12 +181,12 @@ impl InvalidTrailingTokensError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("incorrectly indented block")]
+#[error("incorrectly indented statement")]
 #[diagnostic(code("syntax error"))]
 pub struct IncorrectlyIndentedBlockError {
     pub expected_indent: i64,
     pub received_indent: i64,
-    #[label("expected an indented block with `{}` spaces, got `{}` spaces", self.expected_indent, self.received_indent)]
+    #[label("expected an indented statement with `{}` spaces, got `{}` spaces", self.expected_indent, self.received_indent)]
     pub span: SourceSpan,
 }
 impl IncorrectlyIndentedBlockError {
