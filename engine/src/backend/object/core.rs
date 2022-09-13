@@ -1,10 +1,6 @@
 use super::string::StringObject;
 use std::{alloc::Layout, fmt::Display, mem::ManuallyDrop, ptr::NonNull};
 
-pub trait HeapObject {
-    // layout, allocate and free methods
-}
-
 // Heap-allocated datatypes
 // NOTE: All the objects are wrapped inside ManuallyDrop<T> in order to avoid automatic calling of drop.
 // We need to avoid automatic calling of drop as our language does not have the concept of move and so
