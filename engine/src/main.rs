@@ -24,13 +24,10 @@ use jarvil::backend::object::string::StringObject;
 use jarvil::backend::object::{core::Object, data::Data};
 use jarvil::backend::vm::VM;
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
-use owo_colors::{OwoColorize, Style};
-use std::alloc::{alloc, dealloc, Layout};
+use owo_colors::Style;
 use std::env::args;
 use std::mem::ManuallyDrop;
-use std::panic;
-use std::{fs, path::Path};
-use thiserror::Error;
+use std::ptr::NonNull;
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -46,6 +43,45 @@ fn start_compiler(args: Vec<String>) {
     if let Err(err) = result {
         let err = attach_source_code(err.report(), code_str);
         println!("{:?}", err)
+    }
+}
+
+#[derive(Clone, Debug)]
+struct Nod {
+    name: String,
+}
+impl Nod {
+    fn set_name(&mut self, name: &str) {
+        self.name = name.to_string();
+    }
+}
+
+#[derive(Clone)]
+// struct Ptr(NonNull<ManuallyDrop<Nod>>);
+struct Ptr {
+    ptr: NonNull<ManuallyDrop<Nod>>,
+}
+impl Ptr {
+    fn new(name: &str) -> Self {
+        let x = Box::new(ManuallyDrop::new(Nod {
+            name: name.to_string()
+        }));
+        let x_ptr = Box::into_raw(x);
+        let ptr = unsafe {
+            match NonNull::new(x_ptr) {
+                Some(p) => p,
+                None => unreachable!("x_ptr has successful allocation")
+            }
+        };
+        Ptr {
+            ptr,
+        }
+    }
+
+    fn set_name(&self, name: &str) {
+        unsafe {
+            (&mut *self.ptr.as_ptr()).set_name(name);
+        }
     }
 }
 
@@ -78,11 +114,23 @@ fn main() {
     let mut v1 = ListObject::new();
     v1.push(Data::OBJ(Object::STRING(s.clone())));
     v1.push(Data::OBJ(Object::STRING(v.clone())));
-    println!("{}", v1);
-    let mut v2 = v1.clone();
-    v2.push(Data::OBJ(Object::STRING(u.clone())));
-    println!("v2: {}", v2);
-    println!("v1: {}", v1);
+    //println!("{}", v1);
+    //let mut v2 = v1.clone();
+    //v2.push(Data::OBJ(Object::STRING(u.clone())));
+    //println!("v2: {}", v2);
+    //println!("v1: {}", v1);
+
+    let x = Ptr::new("BHavys");
+    let y = x.clone();  // clones the pointer!
+    unsafe {
+        println!("x: {:?}", *(x.ptr.as_ptr()));
+        println!("x: {:?}", *(y.ptr.as_ptr()));
+    }
+    x.set_name("other_name");
+    unsafe {
+        println!("x: {:?}", *(x.ptr.as_ptr()));
+        println!("x: {:?}", *(y.ptr.as_ptr()));
+    }
     /*
     unsafe {
         std::mem::ManuallyDrop::drop(&mut s.0);
