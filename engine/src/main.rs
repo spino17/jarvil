@@ -26,8 +26,6 @@ use jarvil::backend::{data::Data, object::core::Object};
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
 use std::env::args;
-use std::mem::ManuallyDrop;
-use std::ptr::NonNull;
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -110,34 +108,31 @@ fn main() {
     }));
     let args: Vec<String> = args().collect();
     start_compiler(args);
-    let mut chunk = Chunk::default();
     let s = StringObject::new_with_bytes("bro ");
-    let v = StringObject::new_with_bytes("varima");
+    let v = StringObject::new_with_bytes("varimas");
     let u = StringObject::new_with_bytes("bro varima");
-    chunk.write_constant(Data::INT(13), 1);
-    chunk.write_constant(Data::INT(12), 2);
-    chunk.write_constant(Data::OBJ(Object::STRING(s.clone())), 5);
-    chunk.write_constant(Data::OBJ(Object::STRING(v.clone())), 5);
-    chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
-    chunk.write_constant(Data::OBJ(Object::STRING(u.clone())), 5);
-    chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
-    chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
-    let mut vm = VM::new(chunk);
+    let mut vm = VM::new();
+    let obj1 = Object::new_with_string(s.clone(), &mut vm);
+    let obj2 = Object::new_with_string(v.clone(), &mut vm);
+    let obj3 = Object::new_with_string(u.clone(), &mut vm);
+    vm.chunk.write_constant(Data::INT(13), 1);
+    vm.chunk.write_constant(Data::INT(12), 2);
+    vm.chunk.write_constant(Data::OBJ(obj1), 5);
+    vm.chunk.write_constant(Data::OBJ(obj2), 5);
+    vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
+    vm.chunk.write_constant(Data::OBJ(obj3), 5);
+    vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
+    vm.chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     vm.run();
-    let mut v1 = ListObject::new();
-    //v1.push(Data::OBJ(Object::STRING(s.clone())));
-    //v1.push(Data::OBJ(Object::STRING(v.clone())));
-    println!("{}", v1);
-    let mut v2 = v1.clone();
-    //v2.push(Data::OBJ(Object::STRING(u.clone())));
-    println!("v2: {}", v2);
-    println!("v1: {}", v1);
-    v1.push(Data::OBJ(Object::STRING(s.clone())));
-    println!("v2: {}", v2);
-    println!("v1: {}", v1);
-    v1.manual_drop();
-    s.manual_drop();
+    println!("{}", vm);
 
+    let v = ListObject::new();
+    v.push(Data::INT(10));
+    v.push(Data::FLOAT(11.9));
+    let u = v.clone();
+    u.push(Data::BOOL(false));
+    //println!("v: {}", v);
+    //println!("u: {}", u);
     /*
     let x = Ptr::new("BHavys");
     let y = x.clone();  // clones the pointer!

@@ -1,12 +1,14 @@
+use crate::{ast::ast::BlockNode, codegen::byte_code::ByteCodeGenerator};
+
 use super::{
     chunk::{Chunk, OpCode, OP_CODES_MAP},
     data::Data,
     helper::get_machine_byte_multiple,
-    object::core::Object,
+    object::core::{CoreObject, Object},
     object::string::StringObject,
     stack::Stack,
 };
-use std::{convert::TryInto, mem::ManuallyDrop};
+use std::{convert::TryInto, fmt::Display, ptr::NonNull};
 
 pub enum InterpretResult {
     OK,
@@ -15,17 +17,44 @@ pub enum InterpretResult {
 }
 
 pub struct VM {
-    chunk: Chunk,
-    ip: usize, // `ip` points to the instruction about to be executed
+    code_generator: ByteCodeGenerator,
+    // TODO - add allocator also to be used to allocate and deallocate all the memory.
+    objects: NonNull<Object>,
+    objects_len: usize,
+    pub chunk: Chunk, // will remove this once `ByteCodeGenerator` is in place
+    ip: usize,        // `ip` points to the instruction about to be executed
     stack: Stack,
 }
+
 impl VM {
-    pub fn new(chunk: Chunk) -> Self {
+    pub fn new() -> Self {
         VM {
-            chunk,
+            code_generator: ByteCodeGenerator::default(),
+            objects: NonNull::dangling(),
+            objects_len: 0,
+            chunk: Chunk::default(),
             ip: 0,
             stack: Stack::new(),
         }
+    }
+
+    pub fn set_object(&mut self, core_object: CoreObject) -> Object {
+        let obj = if self.objects_len == 0 {
+            Object {
+                core: core_object,
+                next: None,
+            }
+        } else {
+            let ptr = self.objects.clone();
+            Object {
+                core: core_object,
+                next: Some(ptr),
+            }
+        };
+        self.objects = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(obj.clone()))) };
+        self.objects_len = self.objects_len + 1;
+        println!("allocated: {}", obj);
+        obj
     }
 
     pub fn advance_ip(&mut self) {
@@ -41,6 +70,10 @@ impl VM {
         let const_value = &self.chunk.constants[usize::from_be_bytes(v)];
         self.ip = offset + byte_multiple;
         const_value.clone()
+    }
+
+    pub fn generate_code(&mut self, ast: &BlockNode) {
+        self.code_generator.emit_byte_code(ast);
     }
 
     pub fn run(&mut self) -> InterpretResult {
@@ -105,12 +138,14 @@ impl VM {
                             _ => return InterpretResult::COMPILE_ERROR,
                         },
                         Data::OBJ(r_obj) => match self.stack.pop() {
-                            Data::OBJ(l_obj) => match r_obj {
-                                Object::STRING(r_str_obj) => match l_obj {
-                                    Object::STRING(l_str_obj) => {
-                                        self.stack.push(Data::OBJ(Object::STRING(
+                            Data::OBJ(l_obj) => match r_obj.core {
+                                CoreObject::STRING(r_str_obj) => match l_obj.core {
+                                    CoreObject::STRING(l_str_obj) => {
+                                        let obj = Object::new_with_string(
                                             StringObject::add(&l_str_obj, &r_str_obj),
-                                        )));
+                                            self,
+                                        );
+                                        self.stack.push(Data::OBJ(obj))
                                     }
                                 },
                             },
@@ -165,6 +200,39 @@ impl VM {
                     self.advance_ip();
                     decode_comparison_op!(<=, self);
                 }
+            }
+        }
+    }
+}
+
+impl Display for VM {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = "".to_string();
+        unsafe {
+            let mut next = Some(self.objects.clone());
+            let mut flag = false;
+            while let Some(ptr) = next {
+                next = (*ptr.as_ptr()).next;
+                if flag {
+                    s.push_str(" -> ");
+                }
+                s.push_str(&(*ptr.as_ptr()).to_string());
+                flag = true;
+            }
+        }
+        write!(f, "{}", s)
+    }
+}
+
+impl Drop for VM {
+    fn drop(&mut self) {
+        // TODO - perform objects cleanup here!
+        unsafe {
+            let mut next = Some(self.objects.clone());
+            while let Some(ptr) = next {
+                next = (*ptr.as_ptr()).next;
+                (&*ptr.as_ptr()).inner_drop();
+                let _x = Box::from_raw(ptr.as_ptr());
             }
         }
     }

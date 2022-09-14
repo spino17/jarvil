@@ -6,6 +6,7 @@ use crate::{
     backend::chunk::Chunk,
 };
 
+#[derive(Default)]
 pub struct ByteCodeGenerator {
     chunk: Chunk,
 }
@@ -17,8 +18,8 @@ impl ByteCodeGenerator {
         }
     }
 
-    fn generate_byte_code(&mut self, ast: &BlockNode) -> Chunk {
-        std::mem::take(&mut self.chunk)
+    pub fn emit_byte_code(&mut self, ast: &BlockNode) {
+        todo!()
     }
 }
 

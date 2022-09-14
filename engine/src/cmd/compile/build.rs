@@ -5,7 +5,7 @@ use crate::parser::resolver::Resolver;
 use crate::parser::type_checker::TypeChecker;
 use crate::utils::common::build_ast;
 
-pub fn build(code_vec: Vec<char>) -> Result<Chunk, Diagnostics> {
+pub fn build(code_vec: Vec<char>) -> Result<(), Diagnostics> {
     let mut code = Code::new(code_vec);
     let (ast, mut errors) = build_ast(&mut code);
     let mut resolver = Resolver::new(&code);
@@ -18,5 +18,5 @@ pub fn build(code_vec: Vec<char>) -> Result<Chunk, Diagnostics> {
     if errors.len() > 0 {
         return Err(errors[0].clone());
     }
-    Ok(Chunk::default())
+    Ok(())
 }

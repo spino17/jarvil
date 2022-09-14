@@ -142,6 +142,7 @@ impl StringObject {
     }
 
     pub fn manual_drop(&self) {
+        println!("{} dropping!", self);
         unsafe {
             Box::from_raw(self.0.as_ptr());
         }

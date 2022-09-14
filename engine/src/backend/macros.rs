@@ -92,10 +92,10 @@ macro_rules! decode_equality_op {
             Data::OBJ(r_obj) => {
                 match $u.stack.pop() {
                     Data::OBJ(l_obj) => {
-                        match r_obj {
-                            Object::STRING(r_str_obj) => {
-                                match l_obj {
-                                    Object::STRING(l_str_obj) => {
+                        match r_obj.core {
+                            CoreObject::STRING(r_str_obj) => {
+                                match l_obj.core {
+                                    CoreObject::STRING(l_str_obj) => {
                                         let s = stringify!($t);
                                         let val = if s.eq("==") {
                                             StringObject::is_equal(&l_str_obj, &r_str_obj)

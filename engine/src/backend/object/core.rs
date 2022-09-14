@@ -1,5 +1,7 @@
+use crate::backend::vm::VM;
+
 use super::string::StringObject;
-use std::fmt::Display;
+use std::{fmt::Display, ptr::NonNull};
 
 // Heap-allocated datatypes
 // NOTE: All the objects are wrapped inside NonNull<T> in order to avoid automatic calling of drop.
@@ -8,41 +10,55 @@ use std::fmt::Display;
 // drop on both of these pointers, the later drop will throw an error saying `drop is called on unallocated memory`!
 // Also we don't have to worry about rust freeing up the memory as that task will be taken up by our garbage collector
 // by calling respective `manual_drop` on objects.
+
 #[derive(Clone)]
-pub enum Object {
+pub struct Object {
+    pub core: CoreObject,
+    pub next: Option<NonNull<Object>>,
+}
+
+#[derive(Clone)]
+pub enum CoreObject {
     STRING(StringObject), // UTF-8 encoded string
 }
 
 impl Object {
-    pub fn new_with_string(bytes: &str) -> Object {
-        Object::STRING(StringObject::new_with_bytes(bytes))
+    pub fn new_with_string(str_obj: StringObject, vm: &mut VM) -> Object {
+        let core_object = CoreObject::STRING(str_obj);
+        /*
+        Object {
+            core: CoreObject::STRING(str_obj),
+            next: None
+        }
+         */
+        vm.set_object(core_object)
     }
 
     pub fn eq_type(&self, obj: &Object) -> bool {
-        match self {
-            Object::STRING(_) => match obj {
-                Object::STRING(_) => return true,
+        match self.core {
+            CoreObject::STRING(_) => match obj.core {
+                CoreObject::STRING(_) => return true,
             },
         }
     }
 
     pub fn is_string(&self) -> bool {
-        match self {
-            Object::STRING(_) => true,
+        match self.core {
+            CoreObject::STRING(_) => true,
         }
     }
 
-    pub fn manual_drop(&self) {
-        match self {
-            Object::STRING(str_obj) => str_obj.manual_drop(),
+    pub fn inner_drop(&self) {
+        match &self.core {
+            CoreObject::STRING(str_obj) => str_obj.manual_drop(),
         }
     }
 }
 
 impl Display for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Object::STRING(str_obj) => str_obj.to_string(),
+        let s = match &self.core {
+            CoreObject::STRING(str_obj) => str_obj.to_string(),
         };
         write!(f, "{}", s)
     }

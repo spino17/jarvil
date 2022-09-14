@@ -9,7 +9,7 @@ pub struct Allocator {
 }
 
 impl Allocator {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Allocator {
             total_allocated_size: 0,
             mallocs: 0,
