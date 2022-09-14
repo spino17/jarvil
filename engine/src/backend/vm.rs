@@ -210,16 +210,18 @@ impl VM {
 impl Display for VM {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = "".to_string();
-        unsafe {
-            let mut next = Some(self.objects.clone());
-            let mut flag = false;
-            while let Some(ptr) = next {
-                next = (*ptr.as_ptr()).next;
-                if flag {
-                    s.push_str(" -> ");
+        if self.objects_len != 0 {
+            unsafe {
+                let mut next = Some(self.objects.clone());
+                let mut flag = false;
+                while let Some(ptr) = next {
+                    next = (*ptr.as_ptr()).next;
+                    if flag {
+                        s.push_str(" -> ");
+                    }
+                    s.push_str(&(*ptr.as_ptr()).to_string());
+                    flag = true;
                 }
-                s.push_str(&(*ptr.as_ptr()).to_string());
-                flag = true;
             }
         }
         write!(f, "{}", s)
@@ -229,12 +231,14 @@ impl Display for VM {
 impl Drop for VM {
     fn drop(&mut self) {
         // TODO - perform objects cleanup here!
-        unsafe {
-            let mut next = Some(self.objects.clone());
-            while let Some(ptr) = next {
-                next = (*ptr.as_ptr()).next;
-                (&*ptr.as_ptr()).inner_drop();
-                let _x = Box::from_raw(ptr.as_ptr());
+        if self.objects_len != 0 {
+            unsafe {
+                let mut next = Some(self.objects.clone());
+                while let Some(ptr) = next {
+                    next = (*ptr.as_ptr()).next;
+                    (&*ptr.as_ptr()).inner_drop();
+                    let _x = Box::from_raw(ptr.as_ptr());
+                }
             }
         }
     }
