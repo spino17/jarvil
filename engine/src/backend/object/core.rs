@@ -1,9 +1,5 @@
+use super::{list::ListObject, string::StringObject};
 use crate::backend::vm::VM;
-
-use super::{
-    list::{self, ListObject},
-    string::StringObject,
-};
 use std::{fmt::Display, ptr::NonNull};
 
 // Heap-allocated datatypes
@@ -35,6 +31,20 @@ impl Object {
     pub fn new_with_list(list_obj: ListObject, vm: &mut VM) -> Object {
         let core_object = CoreObject::LIST(list_obj);
         vm.set_object(core_object)
+    }
+
+    pub fn string(&self) -> Option<StringObject> {
+        match &self.core {
+            CoreObject::STRING(str_obj) => Some(str_obj.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn list(&self) -> Option<ListObject> {
+        match &self.core {
+            CoreObject::LIST(list_obj) => Some(list_obj.clone()),
+            _ => None,
+        }
     }
 
     pub fn eq_type(&self, obj: &Object) -> bool {
