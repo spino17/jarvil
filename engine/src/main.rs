@@ -132,7 +132,7 @@ fn main() {
     //v2.push(Data::OBJ(Object::STRING(u.clone())));
     println!("v2: {}", v2);
     println!("v1: {}", v1);
-    //v1.push(Data::OBJ(Object::STRING(s.clone())));
+    v1.push(Data::OBJ(Object::STRING(s.clone())));
     println!("v2: {}", v2);
     println!("v1: {}", v1);
     v1.manual_drop();

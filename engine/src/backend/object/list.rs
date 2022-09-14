@@ -8,7 +8,6 @@ use std::ptr::NonNull;
 // This unsafe code is heavily taken from the `Rustonomicon` book.
 // See Implementing Vec section in `https://github.com/rust-lang/nomicon` and `https://doc.rust-lang.org/nomicon/` for more information.
 
-#[derive(Clone)]
 pub struct CoreListObject {
     ptr: NonNull<Data>,
     len: usize,

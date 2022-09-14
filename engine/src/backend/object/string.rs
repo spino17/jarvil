@@ -4,10 +4,6 @@ use std::marker::PhantomData;
 use std::ptr;
 use std::ptr::NonNull;
 
-#[derive(Clone)]
-pub struct StringObject(NonNull<CoreStringObject>);
-
-#[derive(Clone)]
 struct CoreStringObject {
     ptr: NonNull<u8>,
     len: usize,
@@ -103,6 +99,9 @@ impl Drop for CoreStringObject {
         }
     }
 }
+
+#[derive(Clone)]
+pub struct StringObject(NonNull<CoreStringObject>);
 
 impl StringObject {
     pub fn new_with_bytes(bytes: &str) -> Self {

@@ -2,11 +2,12 @@ use super::string::StringObject;
 use std::fmt::Display;
 
 // Heap-allocated datatypes
-// NOTE: All the objects are wrapped inside ManuallyDrop<T> in order to avoid automatic calling of drop.
+// NOTE: All the objects are wrapped inside NonNull<T> in order to avoid automatic calling of drop.
 // We need to avoid automatic calling of drop as our language does not have the concept of move and so
 // when we clone a string, the raw pointer is cloned but points to the same heap memory. So when rust call
 // drop on both of these pointers, the later drop will throw an error saying `drop is called on unallocated memory`!
-// Also we don't have to worry about rust freeing up the memory as that task will be taken up by our garbage collector.
+// Also we don't have to worry about rust freeing up the memory as that task will be taken up by our garbage collector
+// by calling respective `manual_drop` on objects.
 #[derive(Clone)]
 pub enum Object {
     STRING(StringObject), // UTF-8 encoded string
