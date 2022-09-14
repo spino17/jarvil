@@ -32,7 +32,9 @@ impl Object {
     }
 
     pub fn manual_drop(&self) {
-        todo!()
+        match self {
+            Object::STRING(str_obj) => str_obj.manual_drop(),
+        }
     }
 }
 

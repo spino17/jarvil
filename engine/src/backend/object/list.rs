@@ -1,4 +1,4 @@
-use super::data::Data;
+use crate::backend::data::Data;
 use std::alloc::{self, Layout};
 use std::fmt::Display;
 use std::marker::PhantomData;
@@ -60,7 +60,7 @@ impl CoreListObject {
         self.cap = new_cap;
     }
 
-    pub fn push(&mut self, elem: Data) {
+    fn push(&mut self, elem: Data) {
         if self.len == self.cap {
             self.grow();
         }
@@ -129,11 +129,11 @@ impl ListObject {
         unsafe { (&mut *self.0.as_ptr()).pop() }
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         unsafe { (&*self.0.as_ptr()).len() }
     }
 
-    fn cap(&self) -> usize {
+    pub fn cap(&self) -> usize {
         unsafe { (&*self.0.as_ptr()).cap() }
     }
 

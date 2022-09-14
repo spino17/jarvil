@@ -1,6 +1,5 @@
+use crate::backend::object::core::Object;
 use std::{fmt::Display, ptr::NonNull};
-
-use super::core::Object;
 
 #[derive(Clone)]
 pub enum Data {

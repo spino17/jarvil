@@ -21,13 +21,11 @@ use crate::reader::read_file;
 use jarvil::backend::chunk::{Chunk, OpCode};
 use jarvil::backend::object::list::ListObject;
 use jarvil::backend::object::string::StringObject;
-use jarvil::backend::object::{core::Object, data::Data};
 use jarvil::backend::vm::VM;
+use jarvil::backend::{data::Data, object::core::Object};
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
 use std::env::args;
-use std::mem::ManuallyDrop;
-use std::ptr::NonNull;
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -46,52 +44,10 @@ fn start_compiler(args: Vec<String>) {
     }
 }
 
-#[derive(Clone, Debug)]
-struct Nod {
-    name: String,
-}
-impl Nod {
-    fn set_name(&mut self, name: &str) {
-        self.name = name.to_string();
-    }
-}
-
-impl Drop for Nod {
-    fn drop(&mut self) {
-        println!("being dropped!");
-    }
-}
-
-#[derive(Clone)]
-// struct Ptr(NonNull<ManuallyDrop<Nod>>);
-struct Ptr {
-    ptr: NonNull<ManuallyDrop<Nod>>,
-}
-
-impl Ptr {
-    fn new(name: &str) -> Self {
-        let x = Box::new(ManuallyDrop::new(Nod {
-            name: name.to_string(),
-        }));
-        let x_ptr = Box::into_raw(x);
-        let ptr = unsafe {
-            match NonNull::new(x_ptr) {
-                Some(p) => p,
-                None => unreachable!("x_ptr has successful allocation"),
-            }
-        };
-        Ptr { ptr }
-    }
-
-    fn set_name(&self, name: &str) {
-        unsafe {
-            (&mut *self.ptr.as_ptr()).set_name(name);
-        }
-    }
-
-    fn manual_drop(&self) {
-        unsafe { ManuallyDrop::drop(&mut (*self.ptr.as_ptr())) }
-    }
+enum Nod {
+    FIRST(usize),
+    SECOND(usize),
+    THIRD(usize),
 }
 
 fn main() {
@@ -160,4 +116,10 @@ fn main() {
         std::mem::ManuallyDrop::drop(&mut v.0);
     }
      */
+
+    let x = Nod::FIRST(2);
+    let y = Nod::FIRST(0);
+    if matches!(x, Nod::FIRST(_)) && matches!(y, Nod::FIRST(_)) {
+        println!("hurray!");
+    }
 }

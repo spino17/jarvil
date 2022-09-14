@@ -40,7 +40,7 @@ impl CoreStringObject {
         unsafe { *self.ptr.as_ptr().add(index) }
     }
 
-    pub fn vector(&self) -> Vec<u8> {
+    fn vector(&self) -> Vec<u8> {
         let mut v: Vec<u8> = Vec::with_capacity(self.len());
         let v_ptr = v.as_mut_ptr();
         unsafe {
@@ -50,7 +50,7 @@ impl CoreStringObject {
         v
     }
 
-    pub fn add(s1: &CoreStringObject, s2: &CoreStringObject) -> CoreStringObject {
+    fn add(s1: &CoreStringObject, s2: &CoreStringObject) -> CoreStringObject {
         let len1 = s1.len();
         let len2 = s2.len();
         let new_ptr = CoreStringObject::allocate(len1 + len2);
@@ -65,7 +65,7 @@ impl CoreStringObject {
         }
     }
 
-    pub fn is_equal(s1: &CoreStringObject, s2: &CoreStringObject) -> bool {
+    fn is_equal(s1: &CoreStringObject, s2: &CoreStringObject) -> bool {
         let len1 = s1.len();
         let len2 = s2.len();
         if len1 != len2 {
@@ -124,7 +124,7 @@ impl StringObject {
         StringObject(ptr)
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         unsafe { (&mut *self.0.as_ptr()).len() }
     }
 

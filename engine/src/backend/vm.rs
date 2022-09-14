@@ -1,8 +1,8 @@
 use super::{
     chunk::{Chunk, OpCode, OP_CODES_MAP},
+    data::Data,
     helper::get_machine_byte_multiple,
     object::core::Object,
-    object::data::Data,
     object::string::StringObject,
     stack::Stack,
 };
