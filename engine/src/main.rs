@@ -116,18 +116,22 @@ fn main() {
     chunk.write_constant(Data::OBJ(Object::STRING(v.clone())), 5);
     chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     chunk.write_constant(Data::OBJ(Object::STRING(u.clone())), 5);
-    chunk.write_byte(OpCode::OP_EQUAL.to_byte(), 8);
+    chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     let mut vm = VM::new(chunk);
     vm.run();
     let mut v1 = ListObject::new();
-    //v1.push(Data::OBJ(Object::STRING(s.clone())));
-    //v1.push(Data::OBJ(Object::STRING(v.clone())));
+    v1.push(Data::OBJ(Object::STRING(s.clone())));
+    v1.push(Data::OBJ(Object::STRING(v.clone())));
     println!("{}", v1);
     let mut v2 = v1.clone();
     //v2.push(Data::OBJ(Object::STRING(u.clone())));
     println!("v2: {}", v2);
     println!("v1: {}", v1);
+    v1.push(Data::OBJ(Object::STRING(s.clone())));
+    println!("v2: {}", v2);
+    println!("v1: {}", v1);
+    v1.manual_drop();
 
     /*
     let x = Ptr::new("BHavys");

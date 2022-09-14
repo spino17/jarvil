@@ -89,6 +89,7 @@ impl Display for CoreListObject {
 
 impl Drop for CoreListObject {
     fn drop(&mut self) {
+        println!("being dropped");
         if self.cap != 0 {
             while let Some(_) = self.pop() {}
             let layout = Layout::array::<Data>(self.cap).unwrap();
@@ -136,7 +137,7 @@ impl ListObject {
         unsafe { (&mut *self.0.as_ptr()).cap() }
     }
 
-    fn manual_drop(&self) {
+    pub fn manual_drop(&self) {
         unsafe { ManuallyDrop::drop(&mut (*self.0.as_ptr())) }
     }
 }

@@ -30,6 +30,10 @@ impl Object {
             Object::STRING(_) => true,
         }
     }
+
+    pub fn manual_drop(&self) {
+        todo!()
+    }
 }
 
 impl Display for Object {
