@@ -137,6 +137,7 @@ impl ListObject {
 
     // This method will be called by the garbage collector
     pub fn manual_drop(&self) {
+        println!("{} dropping!", self);
         unsafe {
             // We are converting back to `Box` here so that rust will propertly drop the owned structures.
             // See `https://doc.rust-lang.org/stable/std/boxed/struct.Box.html#method.into_raw` for more information.

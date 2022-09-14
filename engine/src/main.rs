@@ -18,7 +18,7 @@ mod utils;
 
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
-use jarvil::backend::chunk::{Chunk, OpCode};
+use jarvil::backend::chunk::OpCode;
 use jarvil::backend::object::list::ListObject;
 use jarvil::backend::object::string::StringObject;
 use jarvil::backend::vm::VM;
@@ -111,10 +111,14 @@ fn main() {
     let s = StringObject::new_with_bytes("bro ");
     let v = StringObject::new_with_bytes("varimas");
     let u = StringObject::new_with_bytes("bro varima");
+    let vec = ListObject::new();
+    vec.push(Data::INT(43));
+    vec.push(Data::FLOAT(12.3));
     let mut vm = VM::new();
     let obj1 = Object::new_with_string(s.clone(), &mut vm);
     let obj2 = Object::new_with_string(v.clone(), &mut vm);
     let obj3 = Object::new_with_string(u.clone(), &mut vm);
+    let obj4 = Object::new_with_list(vec.clone(), &mut vm);
     vm.chunk.write_constant(Data::INT(13), 1);
     vm.chunk.write_constant(Data::INT(12), 2);
     vm.chunk.write_constant(Data::OBJ(obj1), 5);
@@ -122,15 +126,10 @@ fn main() {
     vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     vm.chunk.write_constant(Data::OBJ(obj3), 5);
     vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
+    vm.chunk.write_constant(Data::OBJ(obj4), 1);
     vm.chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     vm.run();
     println!("{}", vm);
-
-    let v = ListObject::new();
-    v.push(Data::INT(10));
-    v.push(Data::FLOAT(11.9));
-    let u = v.clone();
-    u.push(Data::BOOL(false));
     //println!("v: {}", v);
     //println!("u: {}", u);
     /*

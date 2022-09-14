@@ -32,6 +32,11 @@ impl Object {
         vm.set_object(core_object)
     }
 
+    pub fn new_with_list(list_obj: ListObject, vm: &mut VM) -> Object {
+        let core_object = CoreObject::LIST(list_obj);
+        vm.set_object(core_object)
+    }
+
     pub fn eq_type(&self, obj: &Object) -> bool {
         match self.core {
             CoreObject::STRING(_) => match obj.core {
