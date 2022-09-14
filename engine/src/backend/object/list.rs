@@ -112,7 +112,7 @@ impl ListObject {
             _marker: PhantomData,
         }));
         // below we are using `Box` instead of directly doing `let x_ptr = &mut x as *mut ManuallyDrop<CoreListObject>`
-        // because ManuallyDrop<T> is not heap-allocated (it's a local stack variable) and so reference we obtain directly 
+        // because ManuallyDrop<T> is not heap-allocated (it's a local stack variable) and so reference we obtain directly
         // to it would be valid only to this function. So beyond this function ListObject would carry a reference to unallocated memory!
         // `Box` makes sure that `ManuallyDrop<CoreListObject>` is heap-allocated and any reference to it survive even
         // beyond this function.
@@ -121,20 +121,20 @@ impl ListObject {
         ListObject(ptr)
     }
 
-    pub fn push(&mut self, elem: Data) {
+    pub fn push(&self, elem: Data) {
         unsafe { (&mut *self.0.as_ptr()).push(elem) }
     }
 
-    pub fn pop(&mut self) -> Option<Data> {
+    pub fn pop(&self) -> Option<Data> {
         unsafe { (&mut *self.0.as_ptr()).pop() }
     }
 
     fn len(&self) -> usize {
-        unsafe { (&mut *self.0.as_ptr()).len() }
+        unsafe { (&*self.0.as_ptr()).len() }
     }
 
     fn cap(&self) -> usize {
-        unsafe { (&mut *self.0.as_ptr()).cap() }
+        unsafe { (&*self.0.as_ptr()).cap() }
     }
 
     pub fn manual_drop(&self) {

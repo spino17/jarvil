@@ -132,6 +132,7 @@ fn main() {
     println!("v2: {}", v2);
     println!("v1: {}", v1);
     v1.manual_drop();
+    s.manual_drop();
 
     /*
     let x = Ptr::new("BHavys");
