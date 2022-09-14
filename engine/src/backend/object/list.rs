@@ -3,7 +3,7 @@ use std::alloc::{self, Layout};
 use std::fmt::Display;
 use std::marker::PhantomData;
 use std::ptr;
-use std::{mem::ManuallyDrop, ptr::NonNull};
+use std::ptr::NonNull;
 
 // This unsafe code is heavily taken from the `Rustonomicon` book.
 // See Implementing Vec section in `https://github.com/rust-lang/nomicon` and `https://doc.rust-lang.org/nomicon/` for more information.
@@ -89,7 +89,6 @@ impl Display for CoreListObject {
 
 impl Drop for CoreListObject {
     fn drop(&mut self) {
-        println!("being dropped");
         if self.cap != 0 {
             while let Some(_) = self.pop() {}
             let layout = Layout::array::<Data>(self.cap).unwrap();
@@ -101,17 +100,17 @@ impl Drop for CoreListObject {
 }
 
 #[derive(Clone)]
-pub struct ListObject(NonNull<ManuallyDrop<CoreListObject>>);
+pub struct ListObject(NonNull<CoreListObject>);
 
 impl ListObject {
     pub fn new() -> Self {
-        let x = Box::new(ManuallyDrop::new(CoreListObject {
+        let x = Box::new(CoreListObject {
             ptr: NonNull::dangling(),
             len: 0,
             cap: 0,
             _marker: PhantomData,
-        }));
-        // below we are using `Box` instead of directly doing `let x_ptr = &mut x as *mut ManuallyDrop<CoreListObject>`
+        });
+        // Below we are using `Box` instead of directly doing `let x_ptr = &mut x as *mut ManuallyDrop<CoreListObject>`
         // because ManuallyDrop<T> is not heap-allocated (it's a local stack variable) and so reference we obtain directly
         // to it would be valid only to this function. So beyond this function ListObject would carry a reference to unallocated memory!
         // `Box` makes sure that `ManuallyDrop<CoreListObject>` is heap-allocated and any reference to it survive even
@@ -137,8 +136,14 @@ impl ListObject {
         unsafe { (&*self.0.as_ptr()).cap() }
     }
 
+    // This method will be called by the garbage collector
     pub fn manual_drop(&self) {
-        unsafe { ManuallyDrop::drop(&mut (*self.0.as_ptr())) }
+        unsafe {
+            // We are converting back to `Box` here so that rust will propertly drop the owned structures.
+            // See `https://doc.rust-lang.org/stable/std/boxed/struct.Box.html#method.into_raw` for more information.
+            Box::from_raw(self.0.as_ptr());
+        }
+        // value will be dropped here!
     }
 }
 

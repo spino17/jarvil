@@ -26,6 +26,8 @@ use jarvil::backend::{data::Data, object::core::Object};
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
 use std::env::args;
+use std::mem::ManuallyDrop;
+use std::ptr::NonNull;
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -44,11 +46,57 @@ fn start_compiler(args: Vec<String>) {
     }
 }
 
-enum Nod {
-    FIRST(usize),
-    SECOND(usize),
-    THIRD(usize),
+/*
+#[derive(Clone, Debug)]
+struct Nod {
+    name: String,
 }
+impl Nod {
+    fn set_name(&mut self, name: &str) {
+        self.name = name.to_string();
+    }
+}
+
+impl Drop for Nod {
+    fn drop(&mut self) {
+        println!("being dropped!");
+    }
+}
+
+#[derive(Clone, Debug)]
+// struct Ptr(NonNull<ManuallyDrop<Nod>>);
+struct Ptr {
+    ptr: NonNull<Nod>,
+}
+
+impl Ptr {
+    fn new(name: &str) -> Self {
+        let x = Box::new(Nod {
+            name: name.to_string(),
+        });
+        let x_ptr = Box::into_raw(x);
+        let ptr = unsafe {
+            match NonNull::new(x_ptr) {
+                Some(p) => p,
+                None => unreachable!("x_ptr has successful allocation"),
+            }
+        };
+        Ptr { ptr }
+    }
+
+    fn set_name(&self, name: &str) {
+        unsafe {
+            (&mut *self.ptr.as_ptr()).set_name(name);
+        }
+    }
+
+    fn manual_drop(&self) {
+        unsafe {
+            Box::from_raw(self.ptr.as_ptr());
+        }
+    }
+}
+ */
 
 fn main() {
     miette::set_hook(Box::new(|err| {
@@ -77,14 +125,14 @@ fn main() {
     let mut vm = VM::new(chunk);
     vm.run();
     let mut v1 = ListObject::new();
-    v1.push(Data::OBJ(Object::STRING(s.clone())));
-    v1.push(Data::OBJ(Object::STRING(v.clone())));
+    //v1.push(Data::OBJ(Object::STRING(s.clone())));
+    //v1.push(Data::OBJ(Object::STRING(v.clone())));
     println!("{}", v1);
     let mut v2 = v1.clone();
     //v2.push(Data::OBJ(Object::STRING(u.clone())));
     println!("v2: {}", v2);
     println!("v1: {}", v1);
-    v1.push(Data::OBJ(Object::STRING(s.clone())));
+    //v1.push(Data::OBJ(Object::STRING(s.clone())));
     println!("v2: {}", v2);
     println!("v1: {}", v1);
     v1.manual_drop();
@@ -116,10 +164,4 @@ fn main() {
         std::mem::ManuallyDrop::drop(&mut v.0);
     }
      */
-
-    let x = Nod::FIRST(2);
-    let y = Nod::FIRST(0);
-    if matches!(x, Nod::FIRST(_)) && matches!(y, Nod::FIRST(_)) {
-        println!("hurray!");
-    }
 }

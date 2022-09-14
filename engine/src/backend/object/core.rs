@@ -1,5 +1,5 @@
 use super::string::StringObject;
-use std::{alloc::Layout, fmt::Display, mem::ManuallyDrop, ptr::NonNull};
+use std::fmt::Display;
 
 // Heap-allocated datatypes
 // NOTE: All the objects are wrapped inside ManuallyDrop<T> in order to avoid automatic calling of drop.

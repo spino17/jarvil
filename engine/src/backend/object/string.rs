@@ -1,12 +1,11 @@
 use std::alloc::{self, Layout};
 use std::fmt::Display;
 use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
 use std::ptr;
 use std::ptr::NonNull;
 
 #[derive(Clone)]
-pub struct StringObject(NonNull<ManuallyDrop<CoreStringObject>>);
+pub struct StringObject(NonNull<CoreStringObject>);
 
 #[derive(Clone)]
 struct CoreStringObject {
@@ -115,11 +114,12 @@ impl StringObject {
         unsafe {
             ptr::copy_nonoverlapping(bytes_arr_ptr, new_ptr.as_ptr(), len);
         }
-        let x = Box::new(ManuallyDrop::new(CoreStringObject {
+        // see `/list.rs` for reason behind using `Box` here
+        let x = Box::new(CoreStringObject {
             ptr: new_ptr,
             len,
             _marker: PhantomData,
-        }));
+        });
         let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(x)) };
         StringObject(ptr)
     }
@@ -134,8 +134,7 @@ impl StringObject {
 
     pub fn add(s1: &StringObject, s2: &StringObject) -> StringObject {
         let core_str = unsafe { CoreStringObject::add(&*s1.0.as_ptr(), &*s2.0.as_ptr()) };
-        let x = Box::new(ManuallyDrop::new(core_str));
-        let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(x)) };
+        let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(core_str))) };
         StringObject(ptr)
     }
 
@@ -143,9 +142,10 @@ impl StringObject {
         unsafe { CoreStringObject::is_equal(&*s1.0.as_ptr(), &*s2.0.as_ptr()) }
     }
 
-    // This method will be called by the garbage collector
     pub fn manual_drop(&self) {
-        unsafe { ManuallyDrop::drop(&mut *self.0.as_ptr()) }
+        unsafe {
+            Box::from_raw(self.0.as_ptr());
+        }
     }
 }
 
