@@ -147,7 +147,9 @@ impl VM {
                                         );
                                         self.stack.push(Data::OBJ(obj))
                                     }
+                                    _ => return InterpretResult::COMPILE_ERROR,
                                 },
+                                _ => return InterpretResult::COMPILE_ERROR,
                             },
                             _ => return InterpretResult::COMPILE_ERROR,
                         },

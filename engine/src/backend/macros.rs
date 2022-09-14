@@ -103,9 +103,11 @@ macro_rules! decode_equality_op {
                                             !StringObject::is_equal(&l_str_obj, &r_str_obj)
                                         };
                                         $u.stack.push(Data::BOOL(val));
-                                    }
+                                    },
+                                    _ => return InterpretResult::COMPILE_ERROR
                                 }
-                            }
+                            },
+                            _ => return InterpretResult::COMPILE_ERROR
                         }
                     },
                     _ => return InterpretResult::COMPILE_ERROR

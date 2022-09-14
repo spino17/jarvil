@@ -1,6 +1,9 @@
 use crate::backend::vm::VM;
 
-use super::string::StringObject;
+use super::{
+    list::{self, ListObject},
+    string::StringObject,
+};
 use std::{fmt::Display, ptr::NonNull};
 
 // Heap-allocated datatypes
@@ -20,24 +23,24 @@ pub struct Object {
 #[derive(Clone)]
 pub enum CoreObject {
     STRING(StringObject), // UTF-8 encoded string
+    LIST(ListObject),
 }
 
 impl Object {
     pub fn new_with_string(str_obj: StringObject, vm: &mut VM) -> Object {
         let core_object = CoreObject::STRING(str_obj);
-        /*
-        Object {
-            core: CoreObject::STRING(str_obj),
-            next: None
-        }
-         */
         vm.set_object(core_object)
     }
 
     pub fn eq_type(&self, obj: &Object) -> bool {
         match self.core {
             CoreObject::STRING(_) => match obj.core {
-                CoreObject::STRING(_) => return true,
+                CoreObject::STRING(_) => true,
+                _ => false,
+            },
+            CoreObject::LIST(_) => match obj.core {
+                CoreObject::LIST(_) => true,
+                _ => false,
             },
         }
     }
@@ -45,12 +48,14 @@ impl Object {
     pub fn is_string(&self) -> bool {
         match self.core {
             CoreObject::STRING(_) => true,
+            _ => false,
         }
     }
 
     pub fn inner_drop(&self) {
         match &self.core {
             CoreObject::STRING(str_obj) => str_obj.manual_drop(),
+            CoreObject::LIST(list_obj) => list_obj.manual_drop(),
         }
     }
 }
@@ -59,6 +64,7 @@ impl Display for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match &self.core {
             CoreObject::STRING(str_obj) => str_obj.to_string(),
+            CoreObject::LIST(list_obj) => list_obj.to_string(),
         };
         write!(f, "{}", s)
     }
