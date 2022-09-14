@@ -56,32 +56,41 @@ impl Nod {
     }
 }
 
+impl Drop for Nod {
+    fn drop(&mut self) {
+        println!("being dropped!");
+    }
+}
+
 #[derive(Clone)]
 // struct Ptr(NonNull<ManuallyDrop<Nod>>);
 struct Ptr {
     ptr: NonNull<ManuallyDrop<Nod>>,
 }
+
 impl Ptr {
     fn new(name: &str) -> Self {
         let x = Box::new(ManuallyDrop::new(Nod {
-            name: name.to_string()
+            name: name.to_string(),
         }));
         let x_ptr = Box::into_raw(x);
         let ptr = unsafe {
             match NonNull::new(x_ptr) {
                 Some(p) => p,
-                None => unreachable!("x_ptr has successful allocation")
+                None => unreachable!("x_ptr has successful allocation"),
             }
         };
-        Ptr {
-            ptr,
-        }
+        Ptr { ptr }
     }
 
     fn set_name(&self, name: &str) {
         unsafe {
             (&mut *self.ptr.as_ptr()).set_name(name);
         }
+    }
+
+    fn manual_drop(&self) {
+        unsafe { ManuallyDrop::drop(&mut (*self.ptr.as_ptr())) }
     }
 }
 
@@ -98,9 +107,9 @@ fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
     let mut chunk = Chunk::default();
-    let mut s = StringObject::new_with_bytes("bro ");
-    let mut v = StringObject::new_with_bytes("varima");
-    let mut u = StringObject::new_with_bytes("bro varima");
+    let s = StringObject::new_with_bytes("bro ");
+    let v = StringObject::new_with_bytes("varima");
+    let u = StringObject::new_with_bytes("bro varima");
     chunk.write_constant(Data::INT(13), 1);
     chunk.write_constant(Data::INT(12), 2);
     chunk.write_constant(Data::OBJ(Object::STRING(s.clone())), 5);
@@ -112,25 +121,34 @@ fn main() {
     let mut vm = VM::new(chunk);
     vm.run();
     let mut v1 = ListObject::new();
-    v1.push(Data::OBJ(Object::STRING(s.clone())));
-    v1.push(Data::OBJ(Object::STRING(v.clone())));
-    //println!("{}", v1);
-    //let mut v2 = v1.clone();
+    //v1.push(Data::OBJ(Object::STRING(s.clone())));
+    //v1.push(Data::OBJ(Object::STRING(v.clone())));
+    println!("{}", v1);
+    let mut v2 = v1.clone();
     //v2.push(Data::OBJ(Object::STRING(u.clone())));
-    //println!("v2: {}", v2);
-    //println!("v1: {}", v1);
+    println!("v2: {}", v2);
+    println!("v1: {}", v1);
 
+    /*
     let x = Ptr::new("BHavys");
     let y = x.clone();  // clones the pointer!
     unsafe {
         println!("x: {:?}", *(x.ptr.as_ptr()));
-        println!("x: {:?}", *(y.ptr.as_ptr()));
+        println!("y: {:?}", *(y.ptr.as_ptr()));
     }
     x.set_name("other_name");
     unsafe {
         println!("x: {:?}", *(x.ptr.as_ptr()));
-        println!("x: {:?}", *(y.ptr.as_ptr()));
+        println!("y: {:?}", *(y.ptr.as_ptr()));
     }
+    unsafe {
+        println!("x: {:?}", *(x.ptr.as_ptr()));
+    }
+    println!("{:?}", x.ptr.as_ptr());
+    println!("{:?}", y.ptr.as_ptr());
+    x.manual_drop();
+     */
+    // y.manual_drop();
     /*
     unsafe {
         std::mem::ManuallyDrop::drop(&mut s.0);

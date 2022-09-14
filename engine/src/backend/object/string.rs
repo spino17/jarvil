@@ -9,7 +9,7 @@ use std::ptr::NonNull;
 pub struct StringObject(ManuallyDrop<CoreStringObject>);
 
 #[derive(Clone)]
-pub struct CoreStringObject {
+struct CoreStringObject {
     ptr: NonNull<u8>,
     len: usize,
     _marker: PhantomData<u8>,
