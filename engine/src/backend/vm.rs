@@ -230,7 +230,6 @@ impl Display for VM {
 
 impl Drop for VM {
     fn drop(&mut self) {
-        // TODO - perform objects cleanup here!
         if self.objects_len != 0 {
             unsafe {
                 let mut next = Some(self.objects.clone());

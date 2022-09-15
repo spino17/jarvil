@@ -93,6 +93,7 @@ impl Display for CoreStringObject {
 
 impl Drop for CoreStringObject {
     fn drop(&mut self) {
+        println!("{} dropping!", self);
         let layout = CoreStringObject::layout(self.len);
         unsafe {
             alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
@@ -142,7 +143,6 @@ impl StringObject {
     }
 
     pub fn manual_drop(&self) {
-        println!("{} dropping!", self);
         unsafe {
             Box::from_raw(self.0.as_ptr());
         }

@@ -8,7 +8,7 @@ use std::ptr::NonNull;
 // This unsafe code is heavily taken from the `Rustonomicon` book.
 // See Implementing Vec section in `https://github.com/rust-lang/nomicon` and `https://doc.rust-lang.org/nomicon/` for more information.
 
-pub struct CoreListObject {
+struct CoreListObject {
     ptr: NonNull<Data>,
     len: usize,
     cap: usize,
@@ -88,6 +88,7 @@ impl Display for CoreListObject {
 
 impl Drop for CoreListObject {
     fn drop(&mut self) {
+        println!("{} dropping!", self);
         if self.cap != 0 {
             while let Some(_) = self.pop() {}
             let layout = Layout::array::<Data>(self.cap).unwrap();
@@ -111,7 +112,7 @@ impl ListObject {
         });
         // Below we are using `Box` instead of directly doing `let x_ptr = &mut x as *mut ManuallyDrop<CoreListObject>`
         // because ManuallyDrop<T> is not heap-allocated (it's a local stack variable) and so reference we obtain directly
-        // to it would be valid only to this function. So beyond this function ListObject would carry a reference to unallocated memory!
+        // to it would be valid only to this function. So beyond this function `ListObject` would carry a reference to unallocated memory!
         // `Box` makes sure that `ManuallyDrop<CoreListObject>` is heap-allocated and any reference to it survive even
         // beyond this function.
         let x_ptr = Box::into_raw(x);
@@ -137,10 +138,10 @@ impl ListObject {
 
     // This method will be called by the garbage collector
     pub fn manual_drop(&self) {
-        println!("{} dropping!", self);
         unsafe {
             // We are converting back to `Box` here so that rust will propertly drop the owned structures.
             // See `https://doc.rust-lang.org/stable/std/boxed/struct.Box.html#method.into_raw` for more information.
+            // We could have done this manually but it's buggy to get it right (which was with previous implementation).
             Box::from_raw(self.0.as_ptr());
         }
         // value will be dropped here!

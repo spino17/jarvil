@@ -19,7 +19,7 @@ pub struct Object {
 #[derive(Clone)]
 pub enum CoreObject {
     STRING(StringObject), // UTF-8 encoded string
-    LIST(ListObject),
+    LIST(ListObject),     // dynamic arrays
 }
 
 impl Object {

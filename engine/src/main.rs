@@ -18,7 +18,7 @@ mod utils;
 
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
-use jarvil::backend::chunk::{OpCode};
+use jarvil::backend::chunk::OpCode;
 use jarvil::backend::object::list::ListObject;
 use jarvil::backend::object::string::StringObject;
 use jarvil::backend::vm::VM;
@@ -108,17 +108,28 @@ fn main() {
     }));
     let args: Vec<String> = args().collect();
     start_compiler(args);
+    let mut vm = VM::new();
     let s = StringObject::new_with_bytes("bro ");
     let v = StringObject::new_with_bytes("varimas");
     let u = StringObject::new_with_bytes("bro varima");
+    let obj1 = Object::new_with_string(s, &mut vm);
+    let obj2 = Object::new_with_string(v, &mut vm);
+    let obj3 = Object::new_with_string(u, &mut vm);
     let vec = ListObject::new();
-    vec.push(Data::INT(43));
+    vec.push(Data::OBJ(obj1.clone()));
+    vec.push(Data::OBJ(obj2.clone()));
     vec.push(Data::FLOAT(12.3));
-    let mut vm = VM::new();
-    let obj1 = Object::new_with_string(s.clone(), &mut vm);
-    let obj2 = Object::new_with_string(v.clone(), &mut vm);
-    let obj3 = Object::new_with_string(u.clone(), &mut vm);
+
+    let ve = ListObject::new();
+    ve.push(Data::OBJ(obj3.clone()));
+    ve.push(Data::OBJ(obj3.clone()));
+    ve.push(Data::FLOAT(12.3));
     let obj4 = Object::new_with_list(vec.clone(), &mut vm);
+    let obj6 = Object::new_with_list(ve.clone(), &mut vm);
+    let vf = ListObject::new();
+    vf.push(Data::OBJ(obj4.clone()));
+    vf.push(Data::OBJ(obj6.clone()));
+    let obj5 = Object::new_with_list(vf, &mut vm);
     vm.chunk.write_constant(Data::INT(13), 1);
     vm.chunk.write_constant(Data::INT(12), 2);
     vm.chunk.write_constant(Data::OBJ(obj1), 5);
@@ -130,6 +141,9 @@ fn main() {
     vm.chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     vm.run();
     println!("{}", vm);
+    //let vf = ListObject::new();
+    //vf.push(Data::OBJ(Object::new_with_list(vec.clone(), &mut vm)));
+    //println!("{}", vf);
     //println!("v: {}", v);
     //println!("u: {}", u);
     /*
