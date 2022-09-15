@@ -430,7 +430,6 @@ pub trait Visitor {
             ASTNode::ARRAY_TYPE(array_type_node) => {
                 let core_array_type = array_type_node.core_ref();
                 self.walk_type_expression(&core_array_type.sub_type);
-                self.walk_token(&core_array_type.size);
             }
             ASTNode::USER_DEFINED_TYPE(user_defined_type) => {
                 let core_user_defined_type = user_defined_type.core_ref();

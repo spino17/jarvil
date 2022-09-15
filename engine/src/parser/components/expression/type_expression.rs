@@ -38,11 +38,9 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
         CoreToken::LSQUARE      => {
             let lsquare_node = parser.expect("[");
             let sub_type_node = parser.type_expr();
-            let semicolon_node = parser.expect(";");
-            let array_size_node = parser.expect(INTEGER);
             let rsquare_node = parser.expect("]");
             TypeExpressionNode::new_with_array_type(
-                &array_size_node, &sub_type_node, &lsquare_node, &rsquare_node, &semicolon_node
+                &sub_type_node, &lsquare_node, &rsquare_node
             )
         },
         _ => unreachable!("tokens not matching `starting_with_symbols` for type expression would already be eliminated")

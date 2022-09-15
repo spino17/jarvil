@@ -12,7 +12,7 @@ use std::{convert::TryInto, fmt::Display, ptr::NonNull};
 
 pub enum InterpretResult {
     OK,
-    COMPILE_ERROR,
+    COMPILE_ERROR, // receiving compiler error is a bug in the frontend!
     RUNTIME_ERROR,
 }
 

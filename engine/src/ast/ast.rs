@@ -1029,14 +1029,12 @@ impl TypeExpressionNode {
     }
 
     pub fn new_with_array_type(
-        array_size: &TokenNode,
         sub_type: &TypeExpressionNode,
         lsquare: &TokenNode,
         rsquare: &TokenNode,
-        semicolon: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::ARRAY(ArrayTypeNode::new(
-            array_size, sub_type, lsquare, rsquare, semicolon,
+            sub_type, lsquare, rsquare,
         )));
         TypeExpressionNode(node)
     }
@@ -1099,49 +1097,24 @@ impl Node for AtomicTypeNode {
 pub struct CoreArrayTypeNode {
     pub lsquare: TokenNode,
     pub rsquare: TokenNode,
-    pub semicolon: TokenNode,
     pub sub_type: TypeExpressionNode,
-    pub size: TokenNode,
 }
 
 #[derive(Debug, Clone)]
 pub struct ArrayTypeNode(Rc<CoreArrayTypeNode>);
 
 impl ArrayTypeNode {
-    pub fn new(
-        size: &TokenNode,
-        sub_type: &TypeExpressionNode,
-        lsquare: &TokenNode,
-        rsquare: &TokenNode,
-        semicolon: &TokenNode,
-    ) -> Self {
+    pub fn new(sub_type: &TypeExpressionNode, lsquare: &TokenNode, rsquare: &TokenNode) -> Self {
         let node = Rc::new(CoreArrayTypeNode {
             lsquare: lsquare.clone(),
             rsquare: rsquare.clone(),
-            semicolon: semicolon.clone(),
             sub_type: sub_type.clone(),
-            size: size.clone(),
         });
         ArrayTypeNode(node)
     }
 
     pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
-        let element_type = match self.core_ref().sub_type.type_obj(scope, code) {
-            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
-            TypeResolveKind::UNRESOLVED(identifier_node) => {
-                return TypeResolveKind::UNRESOLVED(identifier_node)
-            }
-            TypeResolveKind::RESOLVED(type_obj) => type_obj,
-        };
-        match self.core_ref().size.core_ref() {
-            CoreTokenNode::OK(ok_token) => match ok_token.token_value(code).parse::<usize>() {
-                Ok(size) => {
-                    return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type, size))
-                }
-                _ => TypeResolveKind::INVALID,
-            },
-            _ => return TypeResolveKind::INVALID,
-        }
+        return self.core_ref().sub_type.type_obj(scope, code);
     }
 
     impl_core_ref!(CoreArrayTypeNode);
