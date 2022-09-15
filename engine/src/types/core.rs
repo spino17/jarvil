@@ -1,11 +1,10 @@
 use super::lambda::Lambda;
 use super::r#struct::Struct;
 use crate::constants::common::{NON_TYPED, UNKNOWN};
-use crate::parser::components::expression::atom;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
-use std::fmt::{write, Debug, Formatter};
+use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
 // Type is data structure for type object. Type objects are more desirable than type expressions as the later contains a lot of information
@@ -50,8 +49,8 @@ impl Type {
         Type(Rc::new(CoreType::LAMBDA(Lambda::new(name, symbol_data))))
     }
 
-    pub fn new_with_array(element_type: &Type, size: usize) -> Type {
-        Type(Rc::new(CoreType::ARRAY(Array::new(element_type, size))))
+    pub fn new_with_array(element_type: &Type) -> Type {
+        Type(Rc::new(CoreType::ARRAY(Array::new(element_type))))
     }
 
     pub fn new_with_unknown() -> Type {

@@ -1114,7 +1114,15 @@ impl ArrayTypeNode {
     }
 
     pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
-        return self.core_ref().sub_type.type_obj(scope, code);
+        match self.core_ref().sub_type.type_obj(scope, code) {
+            TypeResolveKind::RESOLVED(element_type) => {
+                return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
+            }
+            TypeResolveKind::UNRESOLVED(identifier_node) => {
+                return TypeResolveKind::UNRESOLVED(identifier_node)
+            }
+            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+        }
     }
 
     impl_core_ref!(CoreArrayTypeNode);
