@@ -47,7 +47,7 @@ impl Entry {
 
 #[derive(Debug)]
 pub struct CoreDictObject {
-    count: usize,
+    count: usize, // count here is = active entries + deleted entries (TOMBSTONE)
     cap: usize,
     pub ptr: NonNull<Entry>,
 }
@@ -56,7 +56,7 @@ impl CoreDictObject {
     pub fn new() -> Self {
         let new_ptr = CoreDictObject::allocate(INIT_CAPACITY);
         unsafe {
-            // initialize the dictionary with NULL slots
+            // initialize the dictionary with `NULL` slots
             for i in 0..INIT_CAPACITY {
                 ptr::write(new_ptr.as_ptr().add(i), Entry::NULL);
             }
@@ -86,13 +86,19 @@ impl CoreDictObject {
     pub fn grow(&mut self) {
         let new_cap = 2 * self.cap;
         let new_ptr = CoreDictObject::allocate(new_cap);
+        let mut new_count = 0;
         unsafe {
+            // initialize new array with `NULL` slots
             for i in 0..new_cap {
                 ptr::write(new_ptr.as_ptr().add(i), Entry::NULL);
             }
+            // take entries from old array, compute the new hash and insert into the new array
             for i in 0..self.cap {
                 let (key, value) = match &*self.ptr.as_ptr().add(i) {
-                    Entry::OK(ok_entry) => (&ok_entry.key, &ok_entry.value),
+                    Entry::OK(ok_entry) => {
+                        new_count = new_count + 1;
+                        (&ok_entry.key, &ok_entry.value)
+                    }
                     _ => continue,
                 };
                 let (entry_index, hash) = self.find_entry(new_ptr.clone(), new_cap, key);
@@ -102,11 +108,13 @@ impl CoreDictObject {
                     value: value.clone(),
                 });
             }
+            // free up the old array allocation
             alloc::dealloc(
                 self.ptr.as_ptr() as *mut u8,
                 CoreDictObject::layout(self.cap),
             );
         }
+        self.count = new_count;
         self.cap = new_cap;
         self.ptr = new_ptr;
     }
@@ -134,22 +142,46 @@ impl CoreDictObject {
         unsafe {
             let old_value = match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => Some(ok_entry.value.clone()),
-                _ => {
+                Entry::NULL => {
                     self.count = self.count + 1;
                     None
                 }
+                Entry::TOMBSTONE => None,
             };
             *self.ptr.as_ptr().add(entry_index) = Entry::OK(OkEntry { hash, key, value });
             return old_value;
         }
     }
 
-    fn delete(&self, key: Data) -> Data {
-        // returns the deleted value
-        todo!()
+    fn lookup(&self, key: &Data) -> Option<Data> {
+        if self.count == 0 {
+            return None;
+        }
+        let (entry_index, _) = self.find_entry(self.ptr.clone(), self.cap, key);
+        unsafe {
+            match &*self.ptr.as_ptr().add(entry_index) {
+                Entry::OK(ok_entry) => return Some(ok_entry.value.clone()),
+                _ => return None,
+            }
+        }
     }
 
-    fn has_key(&self, key: Data) -> bool {
+    fn delete(&self, key: &Data) -> Option<Data> {
+        if self.count == 0 {
+            return None;
+        }
+        let (entry_index, _) = self.find_entry(self.ptr.clone(), self.cap, key);
+        unsafe {
+            let entry = match &*self.ptr.as_ptr().add(entry_index) {
+                Entry::OK(ok_entry) => &ok_entry.value,
+                _ => return None,
+            };
+            *self.ptr.as_ptr().add(entry_index) = Entry::TOMBSTONE;
+            Some(entry.clone())
+        }
+    }
+
+    fn has_key(&self, key: &Data) -> bool {
         todo!()
     }
 }
