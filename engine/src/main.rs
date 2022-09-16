@@ -19,6 +19,7 @@ mod utils;
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use jarvil::backend::chunk::OpCode;
+use jarvil::backend::object::dict::CoreDictObject;
 use jarvil::backend::object::list::ListObject;
 use jarvil::backend::object::string::StringObject;
 use jarvil::backend::vm::VM;
@@ -140,7 +141,12 @@ fn main() {
     //vm.chunk.write_constant(Data::OBJ(obj4), 1);
     vm.chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     vm.run();
-    println!("{}", vm);
+    //println!("{}", vm);
+
+    let dict = CoreDictObject::new();
+    unsafe {
+        println!("{:?}", *dict.ptr.as_ptr().add(0));
+    }
     //let vf = ListObject::new();
     //vf.push(Data::OBJ(Object::new_with_list(vec.clone(), &mut vm)));
     //println!("{}", vf);

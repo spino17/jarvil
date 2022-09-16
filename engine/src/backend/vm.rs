@@ -53,7 +53,7 @@ impl VM {
         };
         self.objects = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(obj.clone()))) };
         self.objects_len = self.objects_len + 1;
-        println!("allocated: {}", obj);
+        //println!("allocated: {}", obj);
         obj
     }
 

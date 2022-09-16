@@ -88,7 +88,7 @@ impl Display for CoreListObject {
 
 impl Drop for CoreListObject {
     fn drop(&mut self) {
-        println!("{} dropping!", self);
+        //println!("{} dropping!", self);
         if self.cap != 0 {
             while let Some(_) = self.pop() {}
             let layout = Layout::array::<Data>(self.cap).unwrap();
@@ -99,7 +99,7 @@ impl Drop for CoreListObject {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ListObject(NonNull<CoreListObject>);
 
 impl ListObject {

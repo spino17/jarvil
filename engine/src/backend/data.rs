@@ -1,7 +1,7 @@
 use crate::backend::object::core::Object;
 use std::{fmt::Display, ptr::NonNull};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Data {
     INT(i32),
     FLOAT(f64),
