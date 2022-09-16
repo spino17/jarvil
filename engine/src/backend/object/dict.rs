@@ -197,12 +197,12 @@ impl CoreDictObject {
         }
         let (entry_index, _) = CoreDictObject::find_entry(self.ptr.clone(), self.cap, key);
         unsafe {
-            let entry = match &*self.ptr.as_ptr().add(entry_index) {
+            let value = match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => &ok_entry.value,
                 _ => return None,
             };
             *self.ptr.as_ptr().add(entry_index) = Entry::TOMBSTONE;
-            Some(entry.clone())
+            Some(value.clone())
         }
     }
 
