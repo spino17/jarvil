@@ -16,12 +16,12 @@ struct CoreListObject {
 }
 
 impl CoreListObject {
-    fn pop(&mut self) -> Option<Data> {
-        if self.len == 0 {
-            None
-        } else {
-            self.len -= 1;
-            unsafe { Some(ptr::read(self.ptr.as_ptr().add(self.len))) }
+    fn new() -> Self {
+        CoreListObject {
+            ptr: NonNull::dangling(),
+            len: 0,
+            cap: 0,
+            _marker: PhantomData,
         }
     }
 
@@ -68,6 +68,15 @@ impl CoreListObject {
         }
         self.len += 1;
     }
+
+    fn pop(&mut self) -> Option<Data> {
+        if self.len == 0 {
+            None
+        } else {
+            self.len -= 1;
+            unsafe { Some(ptr::read(self.ptr.as_ptr().add(self.len))) }
+        }
+    }
 }
 
 impl Display for CoreListObject {
@@ -104,12 +113,7 @@ pub struct ListObject(NonNull<CoreListObject>);
 
 impl ListObject {
     pub fn new() -> Self {
-        let x = Box::new(CoreListObject {
-            ptr: NonNull::dangling(),
-            len: 0,
-            cap: 0,
-            _marker: PhantomData,
-        });
+        let x = Box::new(CoreListObject::new());
         // Below we are using `Box` instead of directly doing `let x_ptr = &mut x as *mut ManuallyDrop<CoreListObject>`
         // because ManuallyDrop<T> is not heap-allocated (it's a local stack variable) and so reference we obtain directly
         // to it would be valid only to this function. So beyond this function `ListObject` would carry a reference to unallocated memory!
@@ -151,5 +155,11 @@ impl ListObject {
 impl Display for ListObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unsafe { write!(f, "{}", (*self.0.as_ptr()).to_string()) }
+    }
+}
+
+impl PartialEq for ListObject {
+    fn eq(&self, other: &Self) -> bool {
+        todo!()
     }
 }

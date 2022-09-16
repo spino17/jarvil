@@ -1,6 +1,7 @@
 use crate::backend::data::Data;
 use std::alloc;
 use std::fmt::Display;
+use std::marker::PhantomData;
 use std::ptr;
 use std::{alloc::Layout, ptr::NonNull};
 
@@ -9,14 +10,14 @@ const LOAD_FACTOR: f64 = 2.0 / 3.0;
 // const SEED: byte = ...
 
 #[derive(Debug, Clone)]
-pub struct OkEntry {
+struct OkEntry {
     hash: usize,
     key: Data,
     value: Data,
 }
 
 #[derive(Debug, Clone)]
-pub enum Entry {
+enum Entry {
     OK(OkEntry), // active entries
     TOMBSTONE,   // soft-deleted entries
     NULL,        // empty slots
@@ -49,11 +50,12 @@ impl Entry {
 pub struct CoreDictObject {
     count: usize, // count here is = active entries + deleted entries (TOMBSTONE)
     cap: usize,
-    pub ptr: NonNull<Entry>,
+    ptr: NonNull<Entry>,
+    _marker: PhantomData<Entry>,
 }
 
 impl CoreDictObject {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let new_ptr = CoreDictObject::allocate(INIT_CAPACITY);
         unsafe {
             // initialize the dictionary with `NULL` slots
@@ -65,6 +67,7 @@ impl CoreDictObject {
             count: 0,
             cap: INIT_CAPACITY,
             ptr: new_ptr,
+            _marker: PhantomData,
         }
     }
 
@@ -83,7 +86,36 @@ impl CoreDictObject {
         new_ptr
     }
 
-    pub fn grow(&mut self) {
+    fn find_entry(ptr: NonNull<Entry>, cap: usize, key: &Data) -> (usize, usize) {
+        let mut tombstone_index: Option<usize> = None;
+        let hash = key.hash();
+        let mut index = hash % cap;
+        unsafe {
+            loop {
+                let entry = &*ptr.as_ptr().add(index);
+                match entry {
+                    Entry::OK(ok_entry) => {
+                        let curr_key = &ok_entry.key;
+                        if curr_key == key {
+                            return (index, hash);
+                        }
+                    }
+                    Entry::NULL => match tombstone_index {
+                        Some(tombstone_index) => return (tombstone_index, hash),
+                        None => return (index, hash),
+                    },
+                    Entry::TOMBSTONE => {
+                        if let None = tombstone_index {
+                            tombstone_index = Some(index);
+                        }
+                    }
+                }
+                index = (index + 1) % cap;
+            }
+        }
+    }
+
+    fn grow(&mut self) {
         let new_cap = 2 * self.cap;
         let new_ptr = CoreDictObject::allocate(new_cap);
         let mut new_count = 0;
@@ -101,7 +133,7 @@ impl CoreDictObject {
                     }
                     _ => continue,
                 };
-                let (entry_index, hash) = self.find_entry(new_ptr.clone(), new_cap, key);
+                let (entry_index, hash) = CoreDictObject::find_entry(new_ptr.clone(), new_cap, key);
                 *new_ptr.as_ptr().add(entry_index) = Entry::OK(OkEntry {
                     hash,
                     key: key.clone(),
@@ -127,18 +159,11 @@ impl CoreDictObject {
         self.cap
     }
 
-    fn find_entry(&self, ptr: NonNull<Entry>, cap: usize, key: &Data) -> (usize, usize) {
-        // (entry_index, hash)
-        // finds entry with key `key` for capacity `cap` in the array pointed by `ptr`
-        // either finds the index where it matches the key or if slot is empty
-        todo!()
-    }
-
     fn insert(&mut self, key: Data, value: Data) -> Option<Data> {
         if self.count as f64 > (self.cap as f64 * LOAD_FACTOR) {
             self.grow();
         }
-        let (entry_index, hash) = self.find_entry(self.ptr.clone(), self.cap, &key);
+        let (entry_index, hash) = CoreDictObject::find_entry(self.ptr.clone(), self.cap, &key);
         unsafe {
             let old_value = match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => Some(ok_entry.value.clone()),
@@ -157,7 +182,7 @@ impl CoreDictObject {
         if self.count == 0 {
             return None;
         }
-        let (entry_index, _) = self.find_entry(self.ptr.clone(), self.cap, key);
+        let (entry_index, _) = CoreDictObject::find_entry(self.ptr.clone(), self.cap, key);
         unsafe {
             match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => return Some(ok_entry.value.clone()),
@@ -170,7 +195,7 @@ impl CoreDictObject {
         if self.count == 0 {
             return None;
         }
-        let (entry_index, _) = self.find_entry(self.ptr.clone(), self.cap, key);
+        let (entry_index, _) = CoreDictObject::find_entry(self.ptr.clone(), self.cap, key);
         unsafe {
             let entry = match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => &ok_entry.value,
@@ -182,7 +207,13 @@ impl CoreDictObject {
     }
 
     fn has_key(&self, key: &Data) -> bool {
-        todo!()
+        let (entry_index, _) = CoreDictObject::find_entry(self.ptr.clone(), self.cap, key);
+        unsafe {
+            match &*self.ptr.as_ptr().add(entry_index) {
+                Entry::OK(_) => return true,
+                _ => return false,
+            }
+        }
     }
 }
 
@@ -222,4 +253,48 @@ impl Display for CoreDictObject {
 }
 
 #[derive(Clone)]
-pub struct ListObject(NonNull<CoreDictObject>);
+pub struct DictObject(NonNull<CoreDictObject>);
+
+impl DictObject {
+    fn new() -> Self {
+        let x_ptr = Box::into_raw(Box::new(CoreDictObject::new()));
+        let ptr = unsafe { NonNull::new_unchecked(x_ptr) };
+        DictObject(ptr)
+    }
+
+    fn len(&self) -> usize {
+        unsafe { (&*self.0.as_ptr()).len() }
+    }
+
+    fn cap(&self) -> usize {
+        unsafe { (&*self.0.as_ptr()).cap() }
+    }
+
+    fn insert(&self, key: Data, value: Data) -> Option<Data> {
+        unsafe { (&mut *self.0.as_ptr()).insert(key, value) }
+    }
+
+    fn lookup(&self, key: &Data) -> Option<Data> {
+        unsafe { (&*self.0.as_ptr()).lookup(key) }
+    }
+
+    fn delete(&self, key: &Data) -> Option<Data> {
+        unsafe { (&*self.0.as_ptr()).delete(key) }
+    }
+
+    fn has_key(&self, key: &Data) -> bool {
+        unsafe { (&*self.0.as_ptr()).has_key(key) }
+    }
+
+    fn manual_drop(&self) {
+        unsafe {
+            Box::from_raw(self.0.as_ptr());
+        }
+    }
+}
+
+impl Display for DictObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        unsafe { write!(f, "{}", (*self.0.as_ptr()).to_string()) }
+    }
+}

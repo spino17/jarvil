@@ -11,8 +11,19 @@ struct CoreStringObject {
 }
 
 impl CoreStringObject {
-    fn len(&self) -> usize {
-        self.len
+    fn new(bytes: &str) -> Self {
+        let len = bytes.len();
+        let bytes_arr = bytes.as_bytes();
+        let bytes_arr_ptr = bytes_arr.as_ptr();
+        let new_ptr = CoreStringObject::allocate(len);
+        unsafe {
+            ptr::copy_nonoverlapping(bytes_arr_ptr, new_ptr.as_ptr(), len);
+        }
+        CoreStringObject {
+            ptr: new_ptr,
+            len,
+            _marker: PhantomData,
+        }
     }
 
     fn layout(len: usize) -> Layout {
@@ -43,6 +54,10 @@ impl CoreStringObject {
             v.set_len(self.len());
         };
         v
+    }
+
+    fn len(&self) -> usize {
+        self.len
     }
 
     fn add(s1: &CoreStringObject, s2: &CoreStringObject) -> CoreStringObject {
@@ -107,19 +122,8 @@ pub struct StringObject(NonNull<CoreStringObject>);
 impl StringObject {
     pub fn new_with_bytes(bytes: &str) -> Self {
         // TODO - construct hash for the string
-        let len = bytes.len();
-        let bytes_arr = bytes.as_bytes();
-        let bytes_arr_ptr = bytes_arr.as_ptr();
-        let new_ptr = CoreStringObject::allocate(len);
-        unsafe {
-            ptr::copy_nonoverlapping(bytes_arr_ptr, new_ptr.as_ptr(), len);
-        }
         // see `/list.rs` for reason behind using `Box` here
-        let x = Box::new(CoreStringObject {
-            ptr: new_ptr,
-            len,
-            _marker: PhantomData,
-        });
+        let x = Box::new(CoreStringObject::new(bytes));
         let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(x)) };
         StringObject(ptr)
     }
@@ -152,5 +156,11 @@ impl StringObject {
 impl Display for StringObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unsafe { write!(f, "{}", (*self.0.as_ptr()).to_string()) }
+    }
+}
+
+impl PartialEq for StringObject {
+    fn eq(&self, other: &Self) -> bool {
+        todo!()
     }
 }
