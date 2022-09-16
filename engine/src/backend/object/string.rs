@@ -161,6 +161,6 @@ impl Display for StringObject {
 
 impl PartialEq for StringObject {
     fn eq(&self, other: &Self) -> bool {
-        todo!()
+        StringObject::is_equal(self, other)
     }
 }

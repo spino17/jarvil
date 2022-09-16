@@ -1,5 +1,5 @@
 use crate::backend::object::core::Object;
-use std::{fmt::Display, ptr::NonNull};
+use std::fmt::Display;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Data {
@@ -67,6 +67,8 @@ impl Data {
     }
 
     pub fn hash(&self) -> usize {
+        // TODO - add `seed + byte[] -> usize` functionality in hash module
+        // TODO - `Data` -> byte[], get byte representation of the data
         todo!()
     }
 }

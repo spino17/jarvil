@@ -111,7 +111,7 @@ fn main() {
     start_compiler(args);
     let mut vm = VM::new();
     let s = StringObject::new_with_bytes("bro ");
-    let v = StringObject::new_with_bytes("varimas");
+    let v = StringObject::new_with_bytes("bro ");
     let u = StringObject::new_with_bytes("bro varima");
     let obj1 = Object::new_with_string(s, &mut vm);
     let obj2 = Object::new_with_string(v, &mut vm);
@@ -133,9 +133,9 @@ fn main() {
     let obj5 = Object::new_with_list(vf, &mut vm);
     vm.chunk.write_constant(Data::OBJ(obj1), 5);
     vm.chunk.write_constant(Data::OBJ(obj2), 5);
-    vm.chunk.write_constant(Data::FLOAT(13.0), 1);
-    vm.chunk.write_constant(Data::FLOAT(2.90), 2);
-    vm.chunk.write_byte(OpCode::OP_SUBTRACT.to_byte(), 8);
+    //vm.chunk.write_constant(Data::FLOAT(13.0), 1);
+    //vm.chunk.write_constant(Data::FLOAT(2.90), 2);
+    vm.chunk.write_byte(OpCode::OP_EQUAL.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj3), 5);
     //vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj4), 1);
