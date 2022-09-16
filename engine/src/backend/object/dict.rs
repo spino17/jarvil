@@ -1,5 +1,6 @@
 use crate::backend::data::Data;
 use std::alloc;
+use std::fmt::Display;
 use std::ptr;
 use std::{alloc::Layout, ptr::NonNull};
 
@@ -82,7 +83,7 @@ impl CoreDictObject {
         new_ptr
     }
 
-    fn grow(&mut self) {
+    pub fn grow(&mut self) {
         let new_cap = 2 * self.cap;
         let new_ptr = CoreDictObject::allocate(new_cap);
         unsafe {
@@ -101,9 +102,21 @@ impl CoreDictObject {
                     value: value.clone(),
                 });
             }
+            alloc::dealloc(
+                self.ptr.as_ptr() as *mut u8,
+                CoreDictObject::layout(self.cap),
+            );
         }
         self.cap = new_cap;
         self.ptr = new_ptr;
+    }
+
+    fn len(&self) -> usize {
+        self.count
+    }
+
+    fn cap(&self) -> usize {
+        self.cap
     }
 
     fn find_entry(&self, ptr: NonNull<Entry>, cap: usize, key: &Data) -> (usize, usize) {
@@ -147,6 +160,32 @@ impl Drop for CoreDictObject {
         unsafe {
             alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
         }
+    }
+}
+
+impl Display for CoreDictObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = "{ ".to_string();
+        if self.count != 0 {
+            unsafe {
+                let mut flag = false;
+                for i in 0..self.cap {
+                    if flag {
+                        s.push_str(", ");
+                    } else {
+                        flag = true;
+                    }
+                    match &*self.ptr.as_ptr().add(i) {
+                        Entry::OK(ok_entry) => {
+                            s.push_str(&format!("{}: {}", ok_entry.key, ok_entry.value))
+                        }
+                        _ => continue,
+                    }
+                }
+            }
+        }
+        s.push_str(" }");
+        write!(f, "{}", s)
     }
 }
 

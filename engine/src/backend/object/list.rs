@@ -72,7 +72,7 @@ impl CoreListObject {
 
 impl Display for CoreListObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut s = "[".to_string();
+        let mut s = "[ ".to_string();
         if self.len != 0 {
             unsafe {
                 s.push_str(&format!("{}", *self.ptr.as_ptr().add(0)));
@@ -81,7 +81,7 @@ impl Display for CoreListObject {
                 }
             }
         }
-        s.push_str("]");
+        s.push_str(" ]");
         write!(f, "{}", s)
     }
 }

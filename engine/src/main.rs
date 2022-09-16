@@ -143,9 +143,9 @@ fn main() {
     vm.run();
     //println!("{}", vm);
 
-    let dict = CoreDictObject::new();
+    let mut dict = CoreDictObject::new();
     unsafe {
-        println!("{:?}", *dict.ptr.as_ptr().add(0));
+        println!("{}", dict);
     }
     //let vf = ListObject::new();
     //vf.push(Data::OBJ(Object::new_with_list(vec.clone(), &mut vm)));
