@@ -708,10 +708,6 @@ impl TypeChecker {
                     _ => unreachable!("comparison operator always result into `bool` type"),
                 },
                 None => {
-                    let err_message = format!(
-                        "binary operator `{}` cannot be applied on left and right operand with types `{}` and `{}` respectively",
-                        operator_kind, l_type, r_type
-                    );
                     let err = BinaryOperatorInvalidOperandsError::new(
                         l_type,
                         r_type,
