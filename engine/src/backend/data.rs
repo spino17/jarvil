@@ -1,7 +1,7 @@
 use crate::backend::object::core::Object;
 use std::fmt::Display;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Data {
     INT(i32),
     FLOAT(f64),
@@ -64,12 +64,6 @@ impl Data {
             Data::INT(_) | Data::FLOAT(_) => true,
             _ => false,
         }
-    }
-
-    pub fn hash(&self) -> usize {
-        // TODO - add `seed + byte[] -> usize` functionality in hash module
-        // TODO - `Data` -> byte[], get byte representation of the data
-        todo!()
     }
 }
 

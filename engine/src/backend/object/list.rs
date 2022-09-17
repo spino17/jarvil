@@ -77,6 +77,10 @@ impl CoreListObject {
             unsafe { Some(ptr::read(self.ptr.as_ptr().add(self.len))) }
         }
     }
+
+    fn clear(&mut self) {
+        todo!()
+    }
 }
 
 impl Display for CoreListObject {
@@ -155,11 +159,5 @@ impl ListObject {
 impl Display for ListObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unsafe { write!(f, "{}", (*self.0.as_ptr()).to_string()) }
-    }
-}
-
-impl PartialEq for ListObject {
-    fn eq(&self, other: &Self) -> bool {
-        todo!()
     }
 }

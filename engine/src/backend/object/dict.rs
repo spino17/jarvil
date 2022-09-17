@@ -1,6 +1,7 @@
 use crate::backend::data::Data;
 use std::alloc;
 use std::fmt::Display;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::ptr;
 use std::{alloc::Layout, ptr::NonNull};
@@ -86,9 +87,8 @@ impl CoreDictObject {
         new_ptr
     }
 
-    fn find_entry(ptr: NonNull<Entry>, cap: usize, key: &Data) -> (usize, usize) {
+    fn find_entry(ptr: NonNull<Entry>, hash: usize, cap: usize, key: &Data) -> usize {
         let mut tombstone_index: Option<usize> = None;
-        let hash = key.hash();
         let mut index = hash % cap;
         unsafe {
             loop {
@@ -96,13 +96,17 @@ impl CoreDictObject {
                 match entry {
                     Entry::OK(ok_entry) => {
                         let curr_key = &ok_entry.key;
-                        if curr_key == key {
-                            return (index, hash);
+                        let curr_hash = ok_entry.hash;
+                        // TODO - complete this function
+                        /*
+                        if curr_hash == hash && curr_key == key {
+                            return index
                         }
+                         */
                     }
                     Entry::NULL => match tombstone_index {
-                        Some(tombstone_index) => return (tombstone_index, hash),
-                        None => return (index, hash),
+                        Some(tombstone_index) => return tombstone_index,
+                        None => return index,
                     },
                     Entry::TOMBSTONE => {
                         if let None = tombstone_index {
@@ -126,14 +130,14 @@ impl CoreDictObject {
             }
             // take entries from old array, compute the new hash and insert into the new array
             for i in 0..self.cap {
-                let (key, value) = match &*self.ptr.as_ptr().add(i) {
+                let (key, value, hash) = match &*self.ptr.as_ptr().add(i) {
                     Entry::OK(ok_entry) => {
                         new_count = new_count + 1;
-                        (&ok_entry.key, &ok_entry.value)
+                        (&ok_entry.key, &ok_entry.value, ok_entry.hash)
                     }
                     _ => continue,
                 };
-                let (entry_index, hash) = CoreDictObject::find_entry(new_ptr.clone(), new_cap, key);
+                let entry_index = CoreDictObject::find_entry(new_ptr.clone(), hash, new_cap, key);
                 *new_ptr.as_ptr().add(entry_index) = Entry::OK(OkEntry {
                     hash,
                     key: key.clone(),
@@ -159,11 +163,11 @@ impl CoreDictObject {
         self.cap
     }
 
-    fn insert(&mut self, key: Data, value: Data) -> Option<Data> {
+    fn insert(&mut self, key: Data, hash: usize, value: Data) -> Option<Data> {
         if self.count as f64 > (self.cap as f64 * LOAD_FACTOR) {
             self.grow();
         }
-        let (entry_index, hash) = CoreDictObject::find_entry(self.ptr.clone(), self.cap, &key);
+        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, &key);
         unsafe {
             let old_value = match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => Some(ok_entry.value.clone()),
@@ -178,11 +182,11 @@ impl CoreDictObject {
         }
     }
 
-    fn lookup(&self, key: &Data) -> Option<Data> {
+    fn lookup(&self, key: &Data, hash: usize) -> Option<Data> {
         if self.count == 0 {
             return None;
         }
-        let (entry_index, _) = CoreDictObject::find_entry(self.ptr.clone(), self.cap, key);
+        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, key);
         unsafe {
             match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => return Some(ok_entry.value.clone()),
@@ -191,11 +195,11 @@ impl CoreDictObject {
         }
     }
 
-    fn delete(&self, key: &Data) -> Option<Data> {
+    fn delete(&self, key: &Data, hash: usize) -> Option<Data> {
         if self.count == 0 {
             return None;
         }
-        let (entry_index, _) = CoreDictObject::find_entry(self.ptr.clone(), self.cap, key);
+        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, key);
         unsafe {
             let value = match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => &ok_entry.value,
@@ -206,14 +210,18 @@ impl CoreDictObject {
         }
     }
 
-    fn has_key(&self, key: &Data) -> bool {
-        let (entry_index, _) = CoreDictObject::find_entry(self.ptr.clone(), self.cap, key);
+    fn has_key(&self, key: &Data, hash: usize) -> bool {
+        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, key);
         unsafe {
             match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(_) => return true,
                 _ => return false,
             }
         }
+    }
+
+    fn clear(&mut self) {
+        todo!()
     }
 }
 
@@ -270,20 +278,20 @@ impl DictObject {
         unsafe { (&*self.0.as_ptr()).cap() }
     }
 
-    fn insert(&self, key: Data, value: Data) -> Option<Data> {
-        unsafe { (&mut *self.0.as_ptr()).insert(key, value) }
+    fn insert(&self, key: Data, value: Data, hash: usize) -> Option<Data> {
+        unsafe { (&mut *self.0.as_ptr()).insert(key, hash, value) }
     }
 
-    fn lookup(&self, key: &Data) -> Option<Data> {
-        unsafe { (&*self.0.as_ptr()).lookup(key) }
+    fn lookup(&self, key: &Data, hash: usize) -> Option<Data> {
+        unsafe { (&*self.0.as_ptr()).lookup(key, hash) }
     }
 
-    fn delete(&self, key: &Data) -> Option<Data> {
-        unsafe { (&*self.0.as_ptr()).delete(key) }
+    fn delete(&self, key: &Data, hash: usize) -> Option<Data> {
+        unsafe { (&*self.0.as_ptr()).delete(key, hash) }
     }
 
-    fn has_key(&self, key: &Data) -> bool {
-        unsafe { (&*self.0.as_ptr()).has_key(key) }
+    fn has_key(&self, key: &Data, hash: usize) -> bool {
+        unsafe { (&*self.0.as_ptr()).has_key(key, hash) }
     }
 
     fn manual_drop(&self) {

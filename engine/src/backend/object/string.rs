@@ -1,8 +1,8 @@
 use std::alloc::{self, Layout};
 use std::fmt::Display;
 use std::marker::PhantomData;
-use std::ptr;
 use std::ptr::NonNull;
+use std::ptr::{self};
 
 struct CoreStringObject {
     ptr: NonNull<u8>,
@@ -156,11 +156,5 @@ impl StringObject {
 impl Display for StringObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unsafe { write!(f, "{}", (*self.0.as_ptr()).to_string()) }
-    }
-}
-
-impl PartialEq for StringObject {
-    fn eq(&self, other: &Self) -> bool {
-        StringObject::is_equal(self, other)
     }
 }

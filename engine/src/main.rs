@@ -26,7 +26,9 @@ use jarvil::backend::vm::VM;
 use jarvil::backend::{data::Data, object::core::Object};
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
+use std::collections::HashMap;
 use std::env::args;
+use std::hash::Hash;
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -111,7 +113,7 @@ fn main() {
     start_compiler(args);
     let mut vm = VM::new();
     let s = StringObject::new_with_bytes("bro ");
-    let v = StringObject::new_with_bytes("bro ");
+    let v = StringObject::new_with_bytes("bro s");
     let u = StringObject::new_with_bytes("bro varima");
     let obj1 = Object::new_with_string(s, &mut vm);
     let obj2 = Object::new_with_string(v, &mut vm);
