@@ -96,6 +96,7 @@ macro_rules! decode_equality_op {
                             CoreObject::STRING(r_str_obj) => {
                                 match l_obj.core {
                                     CoreObject::STRING(l_str_obj) => {
+                                        /*
                                         let s = stringify!($t);
                                         let val = if s.eq("==") {
                                             StringObject::is_equal(&l_str_obj, &r_str_obj)
@@ -103,7 +104,8 @@ macro_rules! decode_equality_op {
                                             !StringObject::is_equal(&l_str_obj, &r_str_obj)
                                         };
                                         $u.stack.push(Data::BOOL(val));
-                                        // $u.stack.push(Data::BOOL(l_str_obj $t r_str_obj));
+                                         */
+                                        $u.stack.push(Data::BOOL(l_str_obj $t r_str_obj));
                                     },
                                     _ => return InterpretResult::COMPILE_ERROR
                                 }

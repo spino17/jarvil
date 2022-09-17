@@ -137,13 +137,13 @@ fn main() {
     vm.chunk.write_constant(Data::OBJ(obj2), 5);
     //vm.chunk.write_constant(Data::FLOAT(13.0), 1);
     //vm.chunk.write_constant(Data::FLOAT(2.90), 2);
-    vm.chunk.write_byte(OpCode::OP_EQUAL.to_byte(), 8);
+    vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj3), 5);
     //vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj4), 1);
     vm.chunk.write_byte(OpCode::OP_RETURN.to_byte(), 7);
     vm.run();
-    //println!("{}", vm);
+    println!("{}", vm);
 
     //let vf = ListObject::new();
     //vf.push(Data::OBJ(Object::new_with_list(vec.clone(), &mut vm)));

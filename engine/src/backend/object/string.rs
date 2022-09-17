@@ -1,6 +1,7 @@
 use std::alloc::{self, Layout};
 use std::fmt::Display;
 use std::marker::PhantomData;
+use std::ops::Add;
 use std::ptr::NonNull;
 use std::ptr::{self};
 
@@ -76,6 +77,7 @@ impl CoreStringObject {
     }
 
     fn is_equal(s1: &CoreStringObject, s2: &CoreStringObject) -> bool {
+        // This is byte-wise comparison of strings - O(|s|)
         let len1 = s1.len();
         let len2 = s2.len();
         if len1 != len2 {
@@ -108,7 +110,7 @@ impl Display for CoreStringObject {
 
 impl Drop for CoreStringObject {
     fn drop(&mut self) {
-        //println!("{} dropping!", self);
+        println!("{} dropping!", self);
         let layout = CoreStringObject::layout(self.len);
         unsafe {
             alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
@@ -156,5 +158,19 @@ impl StringObject {
 impl Display for StringObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unsafe { write!(f, "{}", (*self.0.as_ptr()).to_string()) }
+    }
+}
+
+impl PartialEq for StringObject {
+    fn eq(&self, other: &Self) -> bool {
+        // This would be cheap once we implement string interning!
+        StringObject::is_equal(self, other)
+    }
+}
+
+impl Add for StringObject {
+    type Output = StringObject;
+    fn add(self, rhs: Self) -> Self::Output {
+        StringObject::add(&self, &rhs)
     }
 }

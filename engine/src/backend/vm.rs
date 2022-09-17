@@ -141,10 +141,8 @@ impl VM {
                             Data::OBJ(l_obj) => match r_obj.core {
                                 CoreObject::STRING(r_str_obj) => match l_obj.core {
                                     CoreObject::STRING(l_str_obj) => {
-                                        let obj = Object::new_with_string(
-                                            StringObject::add(&l_str_obj, &r_str_obj),
-                                            self,
-                                        );
+                                        let obj =
+                                            Object::new_with_string(l_str_obj + r_str_obj, self);
                                         self.stack.push(Data::OBJ(obj))
                                     }
                                     _ => return InterpretResult::COMPILE_ERROR,
