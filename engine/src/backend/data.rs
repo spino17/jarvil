@@ -10,6 +10,34 @@ pub enum Data {
 }
 
 impl Data {
+    pub fn int(&self) -> Option<i32> {
+        match self {
+            Data::INT(val) => Some(*val),
+            _ => None,
+        }
+    }
+
+    pub fn float(&self) -> Option<f64> {
+        match self {
+            Data::FLOAT(val) => Some(*val),
+            _ => None,
+        }
+    }
+
+    pub fn bool(&self) -> Option<bool> {
+        match self {
+            Data::BOOL(val) => Some(*val),
+            _ => None,
+        }
+    }
+
+    pub fn object(&self) -> Option<Object> {
+        match self {
+            Data::OBJ(obj) => Some(obj.clone()),
+            _ => None,
+        }
+    }
+
     pub fn eq_type(&self, data: &Data) -> bool {
         match self {
             Data::INT(_) => match data {

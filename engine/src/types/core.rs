@@ -7,9 +7,6 @@ use crate::types::{array::Array, atomic::Atomic};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
-// Type is data structure for type object. Type objects are more desirable than type expressions as the later contains a lot of information
-// not really useful for doing type-analysis.
-
 pub trait AbstractType {
     fn is_eq(&self, base_type: &Type) -> bool;
 }
@@ -24,6 +21,7 @@ pub enum CoreType {
     UNKNOWN,
     VOID,
     // TODO - add below types also
+    // ANY // this type can be used to denote that any variable with this type can have any valid datatypes, will be useful in things like print(...)
     // ENUMERATION,
     // TUPLES,
     // REFERENCE,

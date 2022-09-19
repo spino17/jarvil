@@ -30,8 +30,6 @@ use rustc_hash::FxHashMap;
 use std::{rc::Rc, vec};
 use text_size::TextRange;
 
-type Set<K> = FxHashMap<K, ()>;
-
 pub enum ResolverMode {
     DECLARE, // first pass
     RESOLVE, // second pass
@@ -355,6 +353,8 @@ impl Resolver {
         };
         if let Some(params) = params {
             let params_iter = params.iter();
+            // TODO - check that number of arguments of the function is bounded within
+            // some range (maybe 256 - so that num_of_args fit in 1 byte)
             for param in params_iter {
                 let core_param = param.core_ref();
                 let name = &core_param.name;

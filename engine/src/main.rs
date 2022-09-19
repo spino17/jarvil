@@ -43,6 +43,7 @@ fn start_compiler(args: Vec<String>) {
     let result = build(code_vec);
     if let Err(err) = result {
         let err = attach_source_code(err.report(), code_str);
+        // TODO - later give option to the user to display all errors
         println!("{:?}", err)
     }
 }

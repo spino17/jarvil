@@ -5,7 +5,7 @@ const STACK_MAX_SIZE: usize = 256;
 
 pub struct Stack {
     stack: [Data; STACK_MAX_SIZE],
-    top: usize,
+    top: usize, // change this to u8 as stack can have maximum of 256 elements in it, after which we throw stack overflow
 }
 
 impl Stack {

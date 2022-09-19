@@ -5,7 +5,6 @@ use super::{
     data::Data,
     helper::get_machine_byte_multiple,
     object::core::{CoreObject, Object},
-    object::string::StringObject,
     stack::Stack,
 };
 use std::{convert::TryInto, fmt::Display, ptr::NonNull};

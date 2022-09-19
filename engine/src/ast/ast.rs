@@ -15,7 +15,6 @@ use crate::scope::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::{code::Code, lexer::token::Token, scope::core::Namespace, types::core::Type};
-use std::borrow::Borrow;
 use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
 use text_size::{TextRange, TextSize};
