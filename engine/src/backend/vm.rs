@@ -193,6 +193,22 @@ impl VM {
     }
 }
 
+impl Drop for VM {
+    fn drop(&mut self) {
+        // free all the remaining objects
+        if self.objects_len != 0 {
+            unsafe {
+                let mut next = Some(self.objects.clone());
+                while let Some(ptr) = next {
+                    next = (*ptr.as_ptr()).next;
+                    (&*ptr.as_ptr()).inner_drop();
+                    let _x = Box::from_raw(ptr.as_ptr());
+                }
+            }
+        }
+    }
+}
+
 impl Display for VM {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = "".to_string();
@@ -211,21 +227,5 @@ impl Display for VM {
             }
         }
         write!(f, "{}", s)
-    }
-}
-
-impl Drop for VM {
-    fn drop(&mut self) {
-        // free all the remaining objects
-        if self.objects_len != 0 {
-            unsafe {
-                let mut next = Some(self.objects.clone());
-                while let Some(ptr) = next {
-                    next = (*ptr.as_ptr()).next;
-                    (&*ptr.as_ptr()).inner_drop();
-                    let _x = Box::from_raw(ptr.as_ptr());
-                }
-            }
-        }
     }
 }

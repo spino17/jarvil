@@ -117,8 +117,8 @@ impl CoreListObject {
         unsafe {
             for i in 0..len1 {
                 if !eval_binary_op(
-                    &*l1.ptr.as_ptr().add(i),
-                    &*l2.ptr.as_ptr().add(i),
+                    (&*l1.ptr.as_ptr().add(i)).clone(),
+                    (&*l2.ptr.as_ptr().add(i)).clone(),
                     BinaryOperatorKind::DoubleEqual,
                     vm,
                 )
