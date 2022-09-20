@@ -41,7 +41,7 @@ impl Data {
         }
     }
 
-    pub fn eq_type(&self, data: &Data) -> bool {
+    pub fn has_eq_type(&self, data: &Data) -> bool {
         match self {
             Data::INT(_) => match data {
                 Data::INT(_) => return true,
@@ -102,10 +102,6 @@ impl Data {
             Data::INT(_) | Data::FLOAT(_) => true,
             _ => false,
         }
-    }
-
-    pub fn try_equal(&self, other: &Data) -> bool {
-        todo!()
     }
 }
 
