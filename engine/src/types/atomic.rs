@@ -182,7 +182,7 @@ impl OperatorCompatiblity for Atomic {
                     _ => return None,
                 },
             },
-            _ => None,
+            _ => return None,
         }
     }
 

@@ -1,4 +1,7 @@
 use crate::backend::data::Data;
+use crate::backend::operators::eval_binary_op;
+use crate::backend::vm::VM;
+use crate::lexer::token::BinaryOperatorKind;
 use std::alloc::{self, Layout};
 use std::fmt::Display;
 use std::marker::PhantomData;
@@ -105,9 +108,7 @@ impl CoreListObject {
         }
     }
 
-    /*
-    fn is_equal(l1: &CoreListObject, l2: &CoreListObject) -> bool {
-        // This is byte-wise comparison of strings - O(|s|)
+    fn is_equal(l1: &CoreListObject, l2: &CoreListObject, vm: &mut VM) -> bool {
         let len1 = l1.len();
         let len2 = l2.len();
         if len1 != len2 {
@@ -115,15 +116,20 @@ impl CoreListObject {
         }
         unsafe {
             for i in 0..len1 {
-                // TODO - use in-built ptr comparison
-                if *l1.ptr.as_ptr().add(i) != *l2.ptr.as_ptr().add(i) {
+                if !eval_binary_op(
+                    &*l1.ptr.as_ptr().add(i),
+                    &*l2.ptr.as_ptr().add(i),
+                    BinaryOperatorKind::DoubleEqual,
+                    vm,
+                )
+                .as_bool()
+                {
                     return false;
                 }
             }
         }
         return true;
     }
-     */
 
     fn clear(&mut self) {
         todo!()
@@ -197,11 +203,9 @@ impl ListObject {
         ListObject(ptr)
     }
 
-    /*
-    pub fn is_equal(l1: &ListObject, l2: &ListObject) -> bool {
-        unsafe { CoreListObject::is_equal(&*l1.0.as_ptr(), &*l2.0.as_ptr()) }
+    pub fn is_equal(l1: &ListObject, l2: &ListObject, vm: &mut VM) -> bool {
+        unsafe { CoreListObject::is_equal(&*l1.0.as_ptr(), &*l2.0.as_ptr(), vm) }
     }
-     */
 
     // This method will be called by the garbage collector
     pub fn manual_drop(&self) {
@@ -220,14 +224,6 @@ impl Display for ListObject {
         unsafe { write!(f, "{}", (*self.0.as_ptr()).to_string()) }
     }
 }
-
-/*
-impl PartialEq for ListObject {
-    fn eq(&self, other: &Self) -> bool {
-        ListObject::is_equal(self, other)
-    }
-}
- */
 
 impl Add for ListObject {
     type Output = ListObject;

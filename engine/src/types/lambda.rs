@@ -108,11 +108,8 @@ impl OperatorCompatiblity for Lambda {
         None
     }
 
-    fn check_double_equal(&self, other: &Type) -> Option<Type> {
-        match other.0.as_ref() {
-            CoreType::LAMBDA(_) => return Some(Type::new_with_atomic(BOOL)),
-            _ => None,
-        }
+    fn check_double_equal(&self, _other: &Type) -> Option<Type> {
+        None
     }
 
     fn check_greater(&self, _other: &Type) -> Option<Type> {
