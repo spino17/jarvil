@@ -212,7 +212,11 @@ impl Token {
         self.core_token.is_eq(symbol)
     }
 
-    pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
+    pub fn is_identifier(&self) -> bool {
+        self.core_token.IDENTIFIER()
+    }
+
+    pub fn try_as_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match self.core_token {
             CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NotEqual),
             CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DoubleEqual),
@@ -228,10 +232,6 @@ impl Token {
             CoreToken::OR => Some(BinaryOperatorKind::Or),
             _ => None,
         }
-    }
-
-    pub fn is_identifier(&self) -> bool {
-        self.core_token.IDENTIFIER()
     }
 
     pub fn get_precedence(&self) -> u8 {

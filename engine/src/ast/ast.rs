@@ -1396,7 +1396,7 @@ impl OkTokenNode {
     }
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
-        self.core_ref().token.is_binary_operator()
+        self.core_ref().token.try_as_binary_operator()
     }
 
     pub fn token_value(&self, code: &Code) -> String {

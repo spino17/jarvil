@@ -4,7 +4,7 @@ use crate::{
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
 };
 
-pub fn binary_op(data_1: Data, data_2: Data, op_index: BinaryOperatorKind) -> Data {
+pub fn binary_op(l_data: Data, r_data: Data, op_index: BinaryOperatorKind) -> Data {
     match op_index {
         BinaryOperatorKind::Add => todo!(),
         BinaryOperatorKind::Subtract => todo!(),
