@@ -73,6 +73,13 @@ impl Type {
         }
     }
 
+    pub fn is_array(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::ARRAY(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_bool(&self) -> bool {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic) => atomic.is_bool(),

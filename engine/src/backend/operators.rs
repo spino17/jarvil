@@ -1,24 +1,72 @@
-use super::data::Data;
+use super::{data::Data, vm::VM};
 use crate::{
     error::constants::TYPE_CHECK_BUG_ERROR_MSG,
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
 };
 
-pub fn binary_op(l_data: Data, r_data: Data, op_index: BinaryOperatorKind) -> Data {
+pub fn binary_op(l_data: Data, r_data: Data, op_index: BinaryOperatorKind, vm: &mut VM) -> Data {
     match op_index {
-        BinaryOperatorKind::Add => todo!(),
-        BinaryOperatorKind::Subtract => todo!(),
-        BinaryOperatorKind::Multiply => todo!(),
-        BinaryOperatorKind::Divide => todo!(),
-        BinaryOperatorKind::NotEqual => todo!(),
-        BinaryOperatorKind::DoubleEqual => todo!(),
-        BinaryOperatorKind::Greater => todo!(),
-        BinaryOperatorKind::Less => todo!(),
-        BinaryOperatorKind::GreaterEqual => todo!(),
-        BinaryOperatorKind::LessEqual => todo!(),
-        BinaryOperatorKind::And => todo!(),
-        BinaryOperatorKind::Or => todo!(),
+        BinaryOperatorKind::Add => binary_add(l_data, r_data, vm),
+        BinaryOperatorKind::Subtract => binary_subtract(l_data, r_data, vm),
+        BinaryOperatorKind::Multiply => binary_multiply(l_data, r_data, vm),
+        BinaryOperatorKind::Divide => binary_divide(l_data, r_data, vm),
+        BinaryOperatorKind::NotEqual => binary_not_equal(l_data, r_data, vm),
+        BinaryOperatorKind::DoubleEqual => binary_double_equal(l_data, r_data, vm),
+        BinaryOperatorKind::Greater => binary_greater(l_data, r_data, vm),
+        BinaryOperatorKind::Less => binary_less(l_data, r_data, vm),
+        BinaryOperatorKind::GreaterEqual => binary_greater_equal(l_data, r_data, vm),
+        BinaryOperatorKind::LessEqual => binary_less_equal(l_data, r_data, vm),
+        BinaryOperatorKind::And => binary_and(l_data, r_data, vm),
+        BinaryOperatorKind::Or => binary_or(l_data, r_data, vm),
     }
+}
+
+pub fn binary_add(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_subtract(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_multiply(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_divide(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_double_equal(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_not_equal(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_greater(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_greater_equal(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_less(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_less_equal(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_and(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
+}
+
+pub fn binary_or(l_data: Data, r_data: Data, vm: &mut VM) -> Data {
+    todo!()
 }
 
 pub fn unary_op(data: Data, op_index: UnaryOperatorKind) -> Data {
@@ -46,8 +94,5 @@ pub fn unary_minus(data: Data) -> Data {
 }
 
 pub fn unary_not(data: Data) -> Data {
-    match data {
-        Data::BOOL(val) => Data::BOOL(!val),
-        _ => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG),
-    }
+    Data::BOOL(!data.as_bool())
 }

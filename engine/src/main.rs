@@ -146,8 +146,18 @@ fn main() {
     vm.run();
     println!("{}", vm);
 
-    //let vf = ListObject::new();
-    //vf.push(Data::OBJ(Object::new_with_list(vec.clone(), &mut vm)));
+    let vf = ListObject::new();
+    // vf.push(Data::INT(2));
+
+    let vd = ListObject::new();
+    // vd.push(Data::INT(2));
+
+    let v = vf.clone() + vd.clone();
+    v.push(Data::FLOAT(23.4));
+    println!("addition of vectors: {}", v);
+    vf.push(Data::BOOL(true));
+    println!("v1: {}", vf);
+    println!("v2: {}", vd);
     //println!("{}", vf);
     //println!("v: {}", v);
     //println!("u: {}", u);

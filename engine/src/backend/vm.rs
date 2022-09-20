@@ -1,12 +1,12 @@
-use crate::{ast::ast::BlockNode, codegen::byte_code::ByteCodeGenerator};
-
 use super::{
     chunk::{Chunk, OpCode, OP_CODES_MAP},
     data::Data,
     helper::get_machine_byte_multiple,
     object::core::{CoreObject, Object},
+    operators::unary_op,
     stack::Stack,
 };
+use crate::lexer::token::UnaryOperatorKind;
 use std::{convert::TryInto, fmt::Display, ptr::NonNull};
 
 pub enum InterpretResult {
@@ -16,7 +16,6 @@ pub enum InterpretResult {
 }
 
 pub struct VM {
-    code_generator: ByteCodeGenerator,
     // TODO - add allocator also to be used to allocate and deallocate all the memory.
     objects: NonNull<Object>,
     objects_len: usize,
@@ -28,7 +27,6 @@ pub struct VM {
 impl VM {
     pub fn new() -> Self {
         VM {
-            code_generator: ByteCodeGenerator::default(),
             objects: NonNull::dangling(),
             objects_len: 0,
             chunk: Chunk::default(),
@@ -71,10 +69,6 @@ impl VM {
         const_value.clone()
     }
 
-    pub fn generate_code(&mut self, ast: &BlockNode) {
-        self.code_generator.emit_byte_code(ast);
-    }
-
     pub fn run(&mut self) -> InterpretResult {
         // TODO - add a catch panic wrapper to encounter runtime errors
         // this loop mimicks the CPU cycle of `decode -> execute -> store -> fetch`
@@ -101,18 +95,13 @@ impl VM {
                 }
                 OpCode::UNARY_OP_MINUS => {
                     self.advance_ip();
-                    match self.stack.pop() {
-                        Data::INT(val) => self.stack.push(Data::INT(-val)),
-                        Data::FLOAT(val) => self.stack.push(Data::FLOAT(-val)),
-                        _ => return InterpretResult::COMPILE_ERROR,
-                    }
+                    let result = unary_op(self.stack.pop(), UnaryOperatorKind::Minus);
+                    self.stack.push(result)
                 }
                 OpCode::UNARY_OP_NOT => {
                     self.advance_ip();
-                    match self.stack.pop() {
-                        Data::BOOL(val) => self.stack.push(Data::BOOL(!val)),
-                        _ => return InterpretResult::COMPILE_ERROR,
-                    }
+                    let result = unary_op(self.stack.pop(), UnaryOperatorKind::Not);
+                    self.stack.push(result)
                 }
                 OpCode::BINARY_OP_ADD => {
                     self.advance_ip();

@@ -2,6 +2,7 @@ use crate::backend::data::Data;
 use std::alloc::{self, Layout};
 use std::fmt::Display;
 use std::marker::PhantomData;
+use std::ops::Add;
 use std::ptr;
 use std::ptr::NonNull;
 
@@ -78,6 +79,32 @@ impl CoreListObject {
         }
     }
 
+    fn add(l1: &CoreListObject, l2: &CoreListObject) -> CoreListObject {
+        let len1 = l1.len();
+        let len2 = l1.len();
+        if len1 == 0 && len2 == 0 {
+            return CoreListObject::new();
+        }
+        let cap = 2 * (len1 + len2);
+        let layout = Layout::array::<Data>(cap).unwrap();
+        assert!(layout.size() <= isize::MAX as usize, "allocation too large");
+        let ptr = unsafe { alloc::alloc(layout) };
+        let new_ptr = match NonNull::new(ptr as *mut Data) {
+            Some(p) => p,
+            None => alloc::handle_alloc_error(layout),
+        };
+        unsafe {
+            ptr::copy_nonoverlapping(l1.ptr.as_ptr(), new_ptr.as_ptr(), l1.len());
+            ptr::copy_nonoverlapping(l2.ptr.as_ptr(), new_ptr.as_ptr().add(l1.len()), l2.len());
+        }
+        CoreListObject {
+            ptr: new_ptr,
+            len: len1 + len2,
+            cap,
+            _marker: PhantomData,
+        }
+    }
+
     fn clear(&mut self) {
         todo!()
     }
@@ -144,6 +171,12 @@ impl ListObject {
         unsafe { (&*self.0.as_ptr()).cap() }
     }
 
+    pub fn add(l1: &ListObject, l2: &ListObject) -> ListObject {
+        let core_str = unsafe { CoreListObject::add(&*l1.0.as_ptr(), &*l2.0.as_ptr()) };
+        let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(core_str))) };
+        ListObject(ptr)
+    }
+
     // This method will be called by the garbage collector
     pub fn manual_drop(&self) {
         unsafe {
@@ -159,5 +192,12 @@ impl ListObject {
 impl Display for ListObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unsafe { write!(f, "{}", (*self.0.as_ptr()).to_string()) }
+    }
+}
+
+impl Add for ListObject {
+    type Output = ListObject;
+    fn add(self, rhs: Self) -> Self::Output {
+        ListObject::add(&self, &rhs)
     }
 }

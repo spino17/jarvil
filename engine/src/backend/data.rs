@@ -11,6 +11,8 @@ pub enum Data {
 }
 
 impl Data {
+    // NOTE: Below casting functions panics instead of safe returning Option<...> to have runtime performance.
+    // If there is a panic that means there is a bug in type-checker!
     pub fn as_int(&self) -> i32 {
         match self {
             Data::INT(val) => *val,

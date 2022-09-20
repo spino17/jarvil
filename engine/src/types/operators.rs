@@ -4,10 +4,6 @@ use crate::{
     lexer::token::BinaryOperatorKind,
 };
 
-pub trait Operator {
-    fn check_operation(&self, l_type: &Type, r_type: &Type) -> Option<Type>;
-}
-
 pub fn check_operator(l_type: &Type, r_type: &Type, op_kind: &BinaryOperatorKind) -> Option<Type> {
     match op_kind {
         BinaryOperatorKind::Add => check_add(l_type, r_type),
