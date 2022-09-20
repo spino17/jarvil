@@ -6,5 +6,6 @@ pub mod data;
 pub mod hash;
 pub mod helper;
 pub mod object;
+pub mod operators;
 pub mod stack;
 pub mod vm;

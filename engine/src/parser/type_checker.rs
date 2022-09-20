@@ -13,7 +13,7 @@ use crate::{
             NameTypeSpecsNode, Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode,
             ParamsNode, RAssignmentNode, ReturnStatementNode, StatementNode, TokenNode,
             TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-            UnaryOperatorKind, VariableDeclarationNode,
+            VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -34,7 +34,7 @@ use crate::{
         },
         helper::PropertyKind,
     },
-    lexer::token::BinaryOperatorKind,
+    lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
         core::{IdentifierKind, Namespace, SymbolData},
         function::FunctionData,
@@ -43,7 +43,7 @@ use crate::{
     types::{
         atomic,
         core::{AbstractType, CoreType, Type},
-        operators::{self, operator_factory},
+        operators::{self, check_operator},
     },
 };
 use std::rc::Rc;
@@ -208,8 +208,7 @@ impl TypeChecker {
         if l_type.is_unknown() || r_type.is_unknown() {
             return Some(Type::new_with_unknown());
         }
-        let operator_obj = operator_factory(operator_kind);
-        let result = operator_obj.check_operation(l_type, r_type);
+        let result = check_operator(l_type, r_type, operator_kind);
         result
     }
 
@@ -614,7 +613,7 @@ impl TypeChecker {
         let operator = &core_only_unary_expr.operator;
         let operator_kind = &core_only_unary_expr.operator_kind;
         match operator_kind {
-            UnaryOperatorKind::PLUS | UnaryOperatorKind::MINUS => {
+            UnaryOperatorKind::Plus | UnaryOperatorKind::Minus => {
                 if operand_type.is_numeric() {
                     return operand_type;
                 } else {
@@ -629,7 +628,7 @@ impl TypeChecker {
                     return Type::new_with_unknown();
                 }
             }
-            UnaryOperatorKind::NOT => {
+            UnaryOperatorKind::Not => {
                 if operand_type.is_bool() {
                     return operand_type;
                 } else {

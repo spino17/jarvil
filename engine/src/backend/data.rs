@@ -1,4 +1,5 @@
-use crate::backend::object::core::Object;
+use crate::{backend::object::core::Object, error::constants::CASTING_DATA_ERROR_MSG};
+use core::panic;
 use std::fmt::Display;
 
 #[derive(Clone, Debug)]
@@ -10,31 +11,31 @@ pub enum Data {
 }
 
 impl Data {
-    pub fn int(&self) -> Option<i32> {
+    pub fn as_int(&self) -> i32 {
         match self {
-            Data::INT(val) => Some(*val),
-            _ => None,
+            Data::INT(val) => *val,
+            _ => panic!("{}", CASTING_DATA_ERROR_MSG),
         }
     }
 
-    pub fn float(&self) -> Option<f64> {
+    pub fn as_float(&self) -> f64 {
         match self {
-            Data::FLOAT(val) => Some(*val),
-            _ => None,
+            Data::FLOAT(val) => *val,
+            _ => panic!("{}", CASTING_DATA_ERROR_MSG),
         }
     }
 
-    pub fn bool(&self) -> Option<bool> {
+    pub fn as_bool(&self) -> bool {
         match self {
-            Data::BOOL(val) => Some(*val),
-            _ => None,
+            Data::BOOL(val) => *val,
+            _ => panic!("{}", CASTING_DATA_ERROR_MSG),
         }
     }
 
-    pub fn object(&self) -> Option<Object> {
+    pub fn as_object(&self) -> Object {
         match self {
-            Data::OBJ(obj) => Some(obj.clone()),
-            _ => None,
+            Data::OBJ(obj) => obj.clone(),
+            _ => panic!("{}", CASTING_DATA_ERROR_MSG),
         }
     }
 
@@ -83,6 +84,13 @@ impl Data {
     pub fn is_string(&self) -> bool {
         match self {
             Data::OBJ(obj) => obj.is_string(),
+            _ => false,
+        }
+    }
+
+    pub fn is_list(&self) -> bool {
+        match self {
+            Data::OBJ(obj) => obj.is_list(),
             _ => false,
         }
     }

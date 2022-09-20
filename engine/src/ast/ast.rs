@@ -9,6 +9,7 @@ use jarvil_macros::Nodify;
 use jarvil_macros::Node;
 
 use crate::lexer::token::BinaryOperatorKind;
+use crate::lexer::token::UnaryOperatorKind;
 use crate::scope::core::IdentifierKind;
 use crate::scope::core::SymbolData;
 use crate::scope::function::FunctionData;
@@ -1682,13 +1683,6 @@ pub enum CoreUnaryExpressionNode {
     ATOMIC(AtomicExpressionNode),
     UNARY(OnlyUnaryExpressionNode),
     MISSING_TOKENS(MissingTokenNode),
-}
-
-#[derive(Debug, Clone)]
-pub enum UnaryOperatorKind {
-    PLUS,
-    MINUS,
-    NOT,
 }
 
 #[derive(Debug, Clone)]

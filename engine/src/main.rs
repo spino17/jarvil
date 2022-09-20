@@ -138,7 +138,7 @@ fn main() {
     vm.chunk.write_constant(Data::OBJ(obj2), 5);
     vm.chunk.write_constant(Data::FLOAT(13.0), 1);
     vm.chunk.write_constant(Data::FLOAT(2.90), 2);
-    vm.chunk.write_byte(OpCode::ADD.to_byte(), 8);
+    vm.chunk.write_byte(OpCode::UNARY_OP_MINUS.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj3), 5);
     //vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj4), 1);

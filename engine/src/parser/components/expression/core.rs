@@ -1,7 +1,8 @@
 use crate::ast::ast::{ErrornousNode, TokenNode};
 use crate::{
-    ast::ast::{AtomicExpressionNode, ExpressionNode, UnaryExpressionNode, UnaryOperatorKind},
+    ast::ast::{AtomicExpressionNode, ExpressionNode, UnaryExpressionNode},
     constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, NOT, TRUE},
+    lexer::token::UnaryOperatorKind,
     lexer::token::{CoreToken, Token},
     parser::parser::PackratParser,
 };
@@ -147,7 +148,7 @@ pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
             UnaryExpressionNode::new_with_unary(
                 &unary_expr_node,
                 &plus_node,
-                UnaryOperatorKind::PLUS,
+                UnaryOperatorKind::Plus,
             )
         }
         CoreToken::DASH => {
@@ -156,13 +157,13 @@ pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
             UnaryExpressionNode::new_with_unary(
                 &unary_expr_node,
                 &dash_node,
-                UnaryOperatorKind::MINUS,
+                UnaryOperatorKind::Minus,
             )
         }
         CoreToken::NOT => {
             let not_node = parser.expect("not");
             let unary_expr_node = parser.unary_expr();
-            UnaryExpressionNode::new_with_unary(&unary_expr_node, &not_node, UnaryOperatorKind::NOT)
+            UnaryExpressionNode::new_with_unary(&unary_expr_node, &not_node, UnaryOperatorKind::Not)
         }
         _ => {
             let atomic_expr_node = parser.atomic_expr();

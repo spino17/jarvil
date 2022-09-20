@@ -1,5 +1,5 @@
 use super::{list::ListObject, string::StringObject};
-use crate::backend::vm::VM;
+use crate::{backend::vm::VM, error::constants::CASTING_OBJECT_ERROR_MSG};
 use std::{fmt::Display, ptr::NonNull};
 
 // Heap-allocated datatypes
@@ -33,17 +33,17 @@ impl Object {
         vm.set_object(core_object)
     }
 
-    pub fn string(&self) -> Option<StringObject> {
+    pub fn as_string(&self) -> StringObject {
         match &self.core {
-            CoreObject::STRING(str_obj) => Some(str_obj.clone()),
-            _ => None,
+            CoreObject::STRING(str_obj) => str_obj.clone(),
+            _ => panic!("{}", CASTING_OBJECT_ERROR_MSG),
         }
     }
 
-    pub fn list(&self) -> Option<ListObject> {
+    pub fn as_list(&self) -> ListObject {
         match &self.core {
-            CoreObject::LIST(list_obj) => Some(list_obj.clone()),
-            _ => None,
+            CoreObject::LIST(list_obj) => list_obj.clone(),
+            _ => panic!("{}", CASTING_OBJECT_ERROR_MSG),
         }
     }
 

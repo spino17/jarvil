@@ -91,15 +91,15 @@ impl VM {
                     let const_value = self.read_constant();
                     self.stack.push(const_value);
                 }
-                OpCode::TRUE => {
+                OpCode::PUSH_TRUE => {
                     self.advance_ip();
                     self.stack.push(Data::BOOL(true));
                 }
-                OpCode::FALSE => {
+                OpCode::PUSH_FALSE => {
                     self.advance_ip();
                     self.stack.push(Data::BOOL(false));
                 }
-                OpCode::NEGATE => {
+                OpCode::UNARY_OP_MINUS => {
                     self.advance_ip();
                     match self.stack.pop() {
                         Data::INT(val) => self.stack.push(Data::INT(-val)),
@@ -107,14 +107,14 @@ impl VM {
                         _ => return InterpretResult::COMPILE_ERROR,
                     }
                 }
-                OpCode::NOT => {
+                OpCode::UNARY_OP_NOT => {
                     self.advance_ip();
                     match self.stack.pop() {
                         Data::BOOL(val) => self.stack.push(Data::BOOL(!val)),
                         _ => return InterpretResult::COMPILE_ERROR,
                     }
                 }
-                OpCode::ADD => {
+                OpCode::BINARY_OP_ADD => {
                     self.advance_ip();
                     // decode_arithmetic_op!(+, self);
                     match self.stack.pop() {
@@ -153,15 +153,15 @@ impl VM {
                         _ => return InterpretResult::COMPILE_ERROR,
                     }
                 }
-                OpCode::SUBTRACT => {
+                OpCode::BINARY_OP_SUBTRACT => {
                     self.advance_ip();
                     decode_arithmetic_op!(-, self);
                 }
-                OpCode::MULTIPLY => {
+                OpCode::BINARY_OP_MULTIPLY => {
                     self.advance_ip();
                     decode_arithmetic_op!(*, self);
                 }
-                OpCode::DIVIDE => {
+                OpCode::BINARY_OP_DIVIDE => {
                     self.advance_ip();
                     let r_val = match self.stack.pop() {
                         Data::INT(val) => val as f64,
@@ -175,27 +175,27 @@ impl VM {
                     };
                     self.stack.push(Data::FLOAT(l_val / r_val));
                 }
-                OpCode::EQUAL => {
+                OpCode::BINARY_OP_EQUAL => {
                     self.advance_ip();
                     decode_equality_op!(==, self);
                 }
-                OpCode::NOT_EQUAL => {
+                OpCode::BINARY_OP_NOT_EQUAL => {
                     self.advance_ip();
                     decode_equality_op!(!=, self);
                 }
-                OpCode::GREATER => {
+                OpCode::BINARY_OP_GREATER => {
                     self.advance_ip();
                     decode_comparison_op!(>, self);
                 }
-                OpCode::GREATER_EQUAL => {
+                OpCode::BINARY_OP_GREATER_EQUAL => {
                     self.advance_ip();
                     decode_comparison_op!(>=, self);
                 }
-                OpCode::LESS => {
+                OpCode::BINARY_OP_LESS => {
                     self.advance_ip();
                     decode_comparison_op!(<, self);
                 }
-                OpCode::LESS_EQUAL => {
+                OpCode::BINARY_OP_LESS_EQUAL => {
                     self.advance_ip();
                     decode_comparison_op!(<=, self);
                 }
@@ -227,6 +227,7 @@ impl Display for VM {
 
 impl Drop for VM {
     fn drop(&mut self) {
+        // free all the remaining objects
         if self.objects_len != 0 {
             unsafe {
                 let mut next = Some(self.objects.clone());

@@ -102,30 +102,37 @@ pub enum CoreToken {
 }
 
 #[derive(Debug, Clone)]
+pub enum UnaryOperatorKind {
+    Plus,
+    Minus,
+    Not,
+}
+
+#[derive(Debug, Clone)]
 pub enum BinaryOperatorKind {
-    NOT_EQUAL,
-    DOUBLE_EQUAL,
-    GREATER,
-    GREATER_EQUAL,
-    LESS,
-    LESS_EQUAL,
-    MINUS,
-    PLUS,
-    DIVIDE,
-    MULTIPLY,
-    AND,
-    OR,
+    NotEqual,
+    DoubleEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+    Subtract,
+    Add,
+    Divide,
+    Multiply,
+    And,
+    Or,
 }
 
 impl BinaryOperatorKind {
     pub fn is_comparison(&self) -> bool {
         match self {
-            BinaryOperatorKind::LESS
-            | BinaryOperatorKind::LESS_EQUAL
-            | BinaryOperatorKind::GREATER
-            | BinaryOperatorKind::GREATER_EQUAL
-            | BinaryOperatorKind::DOUBLE_EQUAL
-            | BinaryOperatorKind::NOT_EQUAL => true,
+            BinaryOperatorKind::Less
+            | BinaryOperatorKind::LessEqual
+            | BinaryOperatorKind::Greater
+            | BinaryOperatorKind::GreaterEqual
+            | BinaryOperatorKind::DoubleEqual
+            | BinaryOperatorKind::NotEqual => true,
             _ => false,
         }
     }
@@ -134,18 +141,18 @@ impl BinaryOperatorKind {
 impl Display for BinaryOperatorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            BinaryOperatorKind::NOT_EQUAL => NOT_EQUAL,
-            BinaryOperatorKind::DOUBLE_EQUAL => DOUBLE_EQUAL,
-            BinaryOperatorKind::GREATER => RBRACKET,
-            BinaryOperatorKind::GREATER_EQUAL => GREATER_EQUAL,
-            BinaryOperatorKind::LESS => LBRACKET,
-            BinaryOperatorKind::LESS_EQUAL => LESS_EQUAL,
-            BinaryOperatorKind::MINUS => DASH,
-            BinaryOperatorKind::PLUS => PLUS,
-            BinaryOperatorKind::DIVIDE => SLASH,
-            BinaryOperatorKind::MULTIPLY => STAR,
-            BinaryOperatorKind::AND => AND,
-            BinaryOperatorKind::OR => OR,
+            BinaryOperatorKind::NotEqual => NOT_EQUAL,
+            BinaryOperatorKind::DoubleEqual => DOUBLE_EQUAL,
+            BinaryOperatorKind::Greater => RBRACKET,
+            BinaryOperatorKind::GreaterEqual => GREATER_EQUAL,
+            BinaryOperatorKind::Less => LBRACKET,
+            BinaryOperatorKind::LessEqual => LESS_EQUAL,
+            BinaryOperatorKind::Subtract => DASH,
+            BinaryOperatorKind::Add => PLUS,
+            BinaryOperatorKind::Divide => SLASH,
+            BinaryOperatorKind::Multiply => STAR,
+            BinaryOperatorKind::And => AND,
+            BinaryOperatorKind::Or => OR,
         };
         write!(f, "{}", str)
     }
@@ -207,18 +214,18 @@ impl Token {
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match self.core_token {
-            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NOT_EQUAL),
-            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DOUBLE_EQUAL),
-            CoreToken::RBRACKET => Some(BinaryOperatorKind::GREATER),
-            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GREATER_EQUAL),
-            CoreToken::LBRACKET => Some(BinaryOperatorKind::LESS),
-            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LESS_EQUAL),
-            CoreToken::DASH => Some(BinaryOperatorKind::MINUS),
-            CoreToken::PLUS => Some(BinaryOperatorKind::PLUS),
-            CoreToken::SLASH => Some(BinaryOperatorKind::DIVIDE),
-            CoreToken::STAR => Some(BinaryOperatorKind::MULTIPLY),
-            CoreToken::AND => Some(BinaryOperatorKind::AND),
-            CoreToken::OR => Some(BinaryOperatorKind::OR),
+            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NotEqual),
+            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DoubleEqual),
+            CoreToken::RBRACKET => Some(BinaryOperatorKind::Greater),
+            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GreaterEqual),
+            CoreToken::LBRACKET => Some(BinaryOperatorKind::Less),
+            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LessEqual),
+            CoreToken::DASH => Some(BinaryOperatorKind::Subtract),
+            CoreToken::PLUS => Some(BinaryOperatorKind::Add),
+            CoreToken::SLASH => Some(BinaryOperatorKind::Divide),
+            CoreToken::STAR => Some(BinaryOperatorKind::Multiply),
+            CoreToken::AND => Some(BinaryOperatorKind::And),
+            CoreToken::OR => Some(BinaryOperatorKind::Or),
             _ => None,
         }
     }
