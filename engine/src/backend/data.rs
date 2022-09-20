@@ -2,7 +2,7 @@ use crate::{backend::object::core::Object, error::constants::CASTING_DATA_ERROR_
 use core::panic;
 use std::fmt::Display;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Data {
     INT(i32),
     FLOAT(f64),

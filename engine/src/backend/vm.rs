@@ -3,7 +3,7 @@ use super::{
     data::Data,
     helper::get_machine_byte_multiple,
     object::core::{CoreObject, Object},
-    operators::unary_op,
+    operators::eval_unary_op,
     stack::Stack,
 };
 use crate::lexer::token::UnaryOperatorKind;
@@ -95,12 +95,12 @@ impl VM {
                 }
                 OpCode::UNARY_OP_MINUS => {
                     self.advance_ip();
-                    let result = unary_op(self.stack.pop(), UnaryOperatorKind::Minus);
+                    let result = eval_unary_op(self.stack.pop(), UnaryOperatorKind::Minus);
                     self.stack.push(result)
                 }
                 OpCode::UNARY_OP_NOT => {
                     self.advance_ip();
-                    let result = unary_op(self.stack.pop(), UnaryOperatorKind::Not);
+                    let result = eval_unary_op(self.stack.pop(), UnaryOperatorKind::Not);
                     self.stack.push(result)
                 }
                 OpCode::BINARY_OP_ADD => {

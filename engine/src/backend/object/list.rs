@@ -81,7 +81,7 @@ impl CoreListObject {
 
     fn add(l1: &CoreListObject, l2: &CoreListObject) -> CoreListObject {
         let len1 = l1.len();
-        let len2 = l1.len();
+        let len2 = l2.len();
         if len1 == 0 && len2 == 0 {
             return CoreListObject::new();
         }
@@ -103,6 +103,24 @@ impl CoreListObject {
             cap,
             _marker: PhantomData,
         }
+    }
+
+    fn is_equal(l1: &CoreListObject, l2: &CoreListObject) -> bool {
+        // This is byte-wise comparison of strings - O(|s|)
+        let len1 = l1.len();
+        let len2 = l2.len();
+        if len1 != len2 {
+            return false;
+        }
+        unsafe {
+            for i in 0..len1 {
+                // TODO - use in-built ptr comparison
+                if *l1.ptr.as_ptr().add(i) != *l2.ptr.as_ptr().add(i) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     fn clear(&mut self) {
@@ -177,6 +195,10 @@ impl ListObject {
         ListObject(ptr)
     }
 
+    pub fn is_equal(l1: &ListObject, l2: &ListObject) -> bool {
+        unsafe { CoreListObject::is_equal(&*l1.0.as_ptr(), &*l2.0.as_ptr()) }
+    }
+
     // This method will be called by the garbage collector
     pub fn manual_drop(&self) {
         unsafe {
@@ -192,6 +214,12 @@ impl ListObject {
 impl Display for ListObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unsafe { write!(f, "{}", (*self.0.as_ptr()).to_string()) }
+    }
+}
+
+impl PartialEq for ListObject {
+    fn eq(&self, other: &Self) -> bool {
+        ListObject::is_equal(self, other)
     }
 }
 
