@@ -123,7 +123,6 @@ fn main() {
     vec.push(Data::OBJ(obj1.clone()));
     vec.push(Data::OBJ(obj2.clone()));
     vec.push(Data::FLOAT(12.3));
-
     let ve = ListObject::new();
     ve.push(Data::OBJ(obj3.clone()));
     ve.push(Data::OBJ(obj3.clone()));
@@ -136,9 +135,9 @@ fn main() {
     let obj5 = Object::new_with_list(vf, &mut vm);
     vm.chunk.write_constant(Data::OBJ(obj1), 5);
     vm.chunk.write_constant(Data::OBJ(obj2), 5);
-    vm.chunk.write_constant(Data::FLOAT(13.0), 1);
+    //vm.chunk.write_constant(Data::FLOAT(13.0), 1);
     vm.chunk.write_constant(Data::FLOAT(2.90), 2);
-    vm.chunk.write_byte(OpCode::UNARY_OP_MINUS.to_byte(), 8);
+    vm.chunk.write_byte(OpCode::BINARY_OP_EQUAL.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj3), 5);
     //vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj4), 1);
@@ -161,8 +160,6 @@ fn main() {
     //vf.push(Data::BOOL(true));
     println!("v1: {}", vol);
     println!("v2: {}", vd);
-
-    println!("{}", vol == vd);
     //println!("{}", vf);
     //println!("v: {}", v);
     //println!("u: {}", u);

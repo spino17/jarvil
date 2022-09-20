@@ -105,6 +105,7 @@ impl CoreListObject {
         }
     }
 
+    /*
     fn is_equal(l1: &CoreListObject, l2: &CoreListObject) -> bool {
         // This is byte-wise comparison of strings - O(|s|)
         let len1 = l1.len();
@@ -122,6 +123,7 @@ impl CoreListObject {
         }
         return true;
     }
+     */
 
     fn clear(&mut self) {
         todo!()
@@ -195,9 +197,11 @@ impl ListObject {
         ListObject(ptr)
     }
 
+    /*
     pub fn is_equal(l1: &ListObject, l2: &ListObject) -> bool {
         unsafe { CoreListObject::is_equal(&*l1.0.as_ptr(), &*l2.0.as_ptr()) }
     }
+     */
 
     // This method will be called by the garbage collector
     pub fn manual_drop(&self) {
@@ -217,11 +221,13 @@ impl Display for ListObject {
     }
 }
 
+/*
 impl PartialEq for ListObject {
     fn eq(&self, other: &Self) -> bool {
         ListObject::is_equal(self, other)
     }
 }
+ */
 
 impl Add for ListObject {
     type Output = ListObject;

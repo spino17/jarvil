@@ -43,7 +43,6 @@ use crate::{
     types::{
         atomic,
         core::{AbstractType, CoreType, Type},
-        operators::{self, check_operator},
     },
 };
 use std::rc::Rc;
@@ -208,7 +207,7 @@ impl TypeChecker {
         if l_type.is_unknown() || r_type.is_unknown() {
             return Some(Type::new_with_unknown());
         }
-        let result = check_operator(l_type, r_type, operator_kind);
+        let result = l_type.check_operator(r_type, operator_kind);
         result
     }
 

@@ -2,7 +2,7 @@ use crate::{backend::object::core::Object, error::constants::CASTING_DATA_ERROR_
 use core::panic;
 use std::fmt::Display;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Data {
     INT(i32),
     FLOAT(f64),
@@ -102,6 +102,10 @@ impl Data {
             Data::INT(_) | Data::FLOAT(_) => true,
             _ => false,
         }
+    }
+
+    pub fn try_equal(&self, other: &Data) -> bool {
+        todo!()
     }
 }
 

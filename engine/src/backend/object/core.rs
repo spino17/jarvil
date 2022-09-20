@@ -10,13 +10,13 @@ use std::{fmt::Display, ptr::NonNull};
 // Also we don't have to worry about rust freeing up the memory as that task will be taken up by our garbage collector
 // by calling respective `manual_drop` on objects.
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Object {
     pub core: CoreObject,
     pub next: Option<NonNull<Object>>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum CoreObject {
     STRING(StringObject), // UTF-8 encoded string
     LIST(ListObject),     // dynamic arrays

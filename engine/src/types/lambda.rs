@@ -1,6 +1,9 @@
+use crate::constants::common::BOOL;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};
+
+use super::core::OperatorCompatiblity;
 
 #[derive(Debug)]
 pub struct Lambda {
@@ -85,5 +88,46 @@ impl ToString for Lambda {
                 format!("lambda({}) -> {}", params_str, self_func_data.return_type)
             }
         }
+    }
+}
+
+impl OperatorCompatiblity for Lambda {
+    fn check_add(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_subtract(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_multiply(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_divide(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_double_equal(&self, other: &Type) -> Option<Type> {
+        match other.0.as_ref() {
+            CoreType::LAMBDA(_) => return Some(Type::new_with_atomic(BOOL)),
+            _ => None,
+        }
+    }
+
+    fn check_greater(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_less(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_and(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_or(&self, _other: &Type) -> Option<Type> {
+        None
     }
 }
