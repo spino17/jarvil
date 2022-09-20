@@ -119,3 +119,27 @@ macro_rules! decode_equality_op {
         }
     }
 }
+
+macro_rules! impl_opcode {
+    ($(($t: ident, $v: tt)),*) => {
+        impl OpCode {
+            pub fn to_byte(&self) -> u8 {
+                match self {
+                    $(
+                        OpCode::$t => $v,
+                    )*
+                }
+            }
+        }
+    };
+}
+
+macro_rules! impl_opcode_map {
+    (($($t: ident),*), $v: tt) => {
+        pub const OP_CODES_MAP: [OpCode; $v] = [
+            $(
+                OpCode::$t,
+            )*
+        ];
+    };
+}

@@ -81,25 +81,25 @@ impl VM {
         loop {
             // println!("{}", self.chunk.disassemble_instruction(self.ip).0); // for debugging purposes
             match OP_CODES_MAP[usize::from(self.chunk.code[self.ip])] {
-                OpCode::OP_RETURN => {
+                OpCode::RETURN => {
                     self.advance_ip();
                     println!("{}", self.stack.pop());
                     return InterpretResult::OK;
                 }
-                OpCode::OP_CONSTANT => {
+                OpCode::PUSH_CONSTANT => {
                     self.advance_ip();
                     let const_value = self.read_constant();
                     self.stack.push(const_value);
                 }
-                OpCode::OP_TRUE => {
+                OpCode::TRUE => {
                     self.advance_ip();
                     self.stack.push(Data::BOOL(true));
                 }
-                OpCode::OP_FALSE => {
+                OpCode::FALSE => {
                     self.advance_ip();
                     self.stack.push(Data::BOOL(false));
                 }
-                OpCode::OP_NEGATE => {
+                OpCode::NEGATE => {
                     self.advance_ip();
                     match self.stack.pop() {
                         Data::INT(val) => self.stack.push(Data::INT(-val)),
@@ -107,14 +107,14 @@ impl VM {
                         _ => return InterpretResult::COMPILE_ERROR,
                     }
                 }
-                OpCode::OP_NOT => {
+                OpCode::NOT => {
                     self.advance_ip();
                     match self.stack.pop() {
                         Data::BOOL(val) => self.stack.push(Data::BOOL(!val)),
                         _ => return InterpretResult::COMPILE_ERROR,
                     }
                 }
-                OpCode::OP_ADD => {
+                OpCode::ADD => {
                     self.advance_ip();
                     // decode_arithmetic_op!(+, self);
                     match self.stack.pop() {
@@ -153,15 +153,15 @@ impl VM {
                         _ => return InterpretResult::COMPILE_ERROR,
                     }
                 }
-                OpCode::OP_SUBTRACT => {
+                OpCode::SUBTRACT => {
                     self.advance_ip();
                     decode_arithmetic_op!(-, self);
                 }
-                OpCode::OP_MULTIPLY => {
+                OpCode::MULTIPLY => {
                     self.advance_ip();
                     decode_arithmetic_op!(*, self);
                 }
-                OpCode::OP_DIVIDE => {
+                OpCode::DIVIDE => {
                     self.advance_ip();
                     let r_val = match self.stack.pop() {
                         Data::INT(val) => val as f64,
@@ -175,27 +175,27 @@ impl VM {
                     };
                     self.stack.push(Data::FLOAT(l_val / r_val));
                 }
-                OpCode::OP_EQUAL => {
+                OpCode::EQUAL => {
                     self.advance_ip();
                     decode_equality_op!(==, self);
                 }
-                OpCode::OP_NOT_EQUAL => {
+                OpCode::NOT_EQUAL => {
                     self.advance_ip();
                     decode_equality_op!(!=, self);
                 }
-                OpCode::OP_GREATER => {
+                OpCode::GREATER => {
                     self.advance_ip();
                     decode_comparison_op!(>, self);
                 }
-                OpCode::OP_GREATER_EQUAL => {
+                OpCode::GREATER_EQUAL => {
                     self.advance_ip();
                     decode_comparison_op!(>=, self);
                 }
-                OpCode::OP_LESS => {
+                OpCode::LESS => {
                     self.advance_ip();
                     decode_comparison_op!(<, self);
                 }
-                OpCode::OP_LESS_EQUAL => {
+                OpCode::LESS_EQUAL => {
                     self.advance_ip();
                     decode_comparison_op!(<=, self);
                 }

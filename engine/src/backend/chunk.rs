@@ -1,67 +1,29 @@
+#[macro_use]
+use jarvil_macros::OpCodeUtil;
+
 use super::helper::get_machine_byte_multiple;
 use crate::backend::data::Data;
 use std::{convert::TryInto, fmt::Display};
 
+#[derive(OpCodeUtil)]
 pub enum OpCode {
-    OP_RETURN,        // 0
-    OP_CONSTANT,      // 1
-    OP_NEGATE,        // 2
-    OP_ADD,           // 3
-    OP_SUBTRACT,      // 4
-    OP_MULTIPLY,      // 5
-    OP_DIVIDE,        // 6
-    OP_TRUE,          // 7
-    OP_FALSE,         // 8
-    OP_NOT,           // 9
-    OP_EQUAL,         // 10
-    OP_NOT_EQUAL,     // 11
-    OP_GREATER,       // 12
-    OP_GREATER_EQUAL, // 13
-    OP_LESS,          // 14
-    OP_LESS_EQUAL,    // 15
+    RETURN,        // 0
+    PUSH_CONSTANT, // 1
+    NEGATE,        // 2
+    ADD,           // 3
+    SUBTRACT,      // 4
+    MULTIPLY,      // 5
+    DIVIDE,        // 6
+    TRUE,          // 7
+    FALSE,         // 8
+    NOT,           // 9
+    EQUAL,         // 10
+    NOT_EQUAL,     // 11
+    GREATER,       // 12
+    GREATER_EQUAL, // 13
+    LESS,          // 14
+    LESS_EQUAL,    // 15
 }
-
-impl OpCode {
-    pub fn to_byte(&self) -> u8 {
-        match self {
-            OpCode::OP_RETURN => 0,
-            OpCode::OP_CONSTANT => 1,
-            OpCode::OP_NEGATE => 2,
-            OpCode::OP_ADD => 3,
-            OpCode::OP_SUBTRACT => 4,
-            OpCode::OP_MULTIPLY => 5,
-            OpCode::OP_DIVIDE => 6,
-            OpCode::OP_TRUE => 7,
-            OpCode::OP_FALSE => 8,
-            OpCode::OP_NOT => 9,
-            OpCode::OP_EQUAL => 10,
-            OpCode::OP_NOT_EQUAL => 11,
-            OpCode::OP_GREATER => 12,
-            OpCode::OP_GREATER_EQUAL => 13,
-            OpCode::OP_LESS => 14,
-            OpCode::OP_LESS_EQUAL => 15,
-        }
-    }
-}
-
-pub const OP_CODES_MAP: [OpCode; 16] = [
-    OpCode::OP_RETURN,
-    OpCode::OP_CONSTANT,
-    OpCode::OP_NEGATE,
-    OpCode::OP_ADD,
-    OpCode::OP_SUBTRACT,
-    OpCode::OP_MULTIPLY,
-    OpCode::OP_DIVIDE,
-    OpCode::OP_TRUE,
-    OpCode::OP_FALSE,
-    OpCode::OP_NOT,
-    OpCode::OP_EQUAL,
-    OpCode::OP_NOT_EQUAL,
-    OpCode::OP_GREATER,
-    OpCode::OP_GREATER_EQUAL,
-    OpCode::OP_LESS,
-    OpCode::OP_LESS_EQUAL,
-];
 
 pub struct Chunk {
     pub code: Vec<u8>,
@@ -78,7 +40,7 @@ impl Chunk {
     pub fn write_constant(&mut self, const_value: Data, line_number: usize) {
         let const_index = self.constants.len();
         self.constants.push(const_value);
-        self.code.push(OpCode::OP_CONSTANT.to_byte());
+        self.code.push(OpCode::PUSH_CONSTANT.to_byte());
         self.code.extend_from_slice(&const_index.to_be_bytes());
         self.line_numbers.push(line_number);
     }
@@ -100,8 +62,8 @@ impl Chunk {
 
     pub fn disassemble_instruction(&self, offset: usize) -> (String, usize) {
         match OP_CODES_MAP[usize::from(self.code[offset])] {
-            OpCode::OP_RETURN => ("RETURN".to_string(), offset + 1),
-            OpCode::OP_CONSTANT => {
+            OpCode::RETURN => ("RETURN".to_string(), offset + 1),
+            OpCode::PUSH_CONSTANT => {
                 let byte_multiple = get_machine_byte_multiple();
                 let v = self.code[offset + 1..offset + (byte_multiple + 1)]
                     .try_into()
@@ -112,20 +74,20 @@ impl Chunk {
                     offset + (byte_multiple + 1),
                 )
             }
-            OpCode::OP_NEGATE => ("NEGATE".to_string(), offset + 1),
-            OpCode::OP_ADD => ("ADD".to_string(), offset + 1),
-            OpCode::OP_SUBTRACT => ("SUBTRACT".to_string(), offset + 1),
-            OpCode::OP_MULTIPLY => ("MULTIPLY".to_string(), offset + 1),
-            OpCode::OP_DIVIDE => ("DIVIDE".to_string(), offset + 1),
-            OpCode::OP_TRUE => ("TRUE".to_string(), offset + 1),
-            OpCode::OP_FALSE => ("FALSE".to_string(), offset + 1),
-            OpCode::OP_NOT => ("NOT".to_string(), offset + 1),
-            OpCode::OP_EQUAL => ("EQUAL".to_string(), offset + 1),
-            OpCode::OP_NOT_EQUAL => ("NOT_EQUAL".to_string(), offset + 1),
-            OpCode::OP_GREATER => ("GREATER".to_string(), offset + 1),
-            OpCode::OP_GREATER_EQUAL => ("GREATER_EQUAL".to_string(), offset + 1),
-            OpCode::OP_LESS => ("LESS".to_string(), offset + 1),
-            OpCode::OP_LESS_EQUAL => ("LESS_EQUAL".to_string(), offset + 1),
+            OpCode::NEGATE => ("NEGATE".to_string(), offset + 1),
+            OpCode::ADD => ("ADD".to_string(), offset + 1),
+            OpCode::SUBTRACT => ("SUBTRACT".to_string(), offset + 1),
+            OpCode::MULTIPLY => ("MULTIPLY".to_string(), offset + 1),
+            OpCode::DIVIDE => ("DIVIDE".to_string(), offset + 1),
+            OpCode::TRUE => ("TRUE".to_string(), offset + 1),
+            OpCode::FALSE => ("FALSE".to_string(), offset + 1),
+            OpCode::NOT => ("NOT".to_string(), offset + 1),
+            OpCode::EQUAL => ("EQUAL".to_string(), offset + 1),
+            OpCode::NOT_EQUAL => ("NOT_EQUAL".to_string(), offset + 1),
+            OpCode::GREATER => ("GREATER".to_string(), offset + 1),
+            OpCode::GREATER_EQUAL => ("GREATER_EQUAL".to_string(), offset + 1),
+            OpCode::LESS => ("LESS".to_string(), offset + 1),
+            OpCode::LESS_EQUAL => ("LESS_EQUAL".to_string(), offset + 1),
         }
     }
 }
