@@ -33,20 +33,6 @@ impl Object {
         vm.set_object(core_object)
     }
 
-    pub fn as_string(&self) -> StringObject {
-        match &self.core {
-            CoreObject::STRING(str_obj) => str_obj.clone(),
-            _ => panic!("{}", CASTING_OBJECT_ERROR_MSG),
-        }
-    }
-
-    pub fn as_list(&self) -> ListObject {
-        match &self.core {
-            CoreObject::LIST(list_obj) => list_obj.clone(),
-            _ => panic!("{}", CASTING_OBJECT_ERROR_MSG),
-        }
-    }
-
     pub fn eq_type(&self, obj: &Object) -> bool {
         match self.core {
             CoreObject::STRING(_) => match obj.core {
@@ -78,6 +64,22 @@ impl Object {
         match &self.core {
             CoreObject::STRING(str_obj) => str_obj.manual_drop(),
             CoreObject::LIST(list_obj) => list_obj.manual_drop(),
+        }
+    }
+
+    // NOTE: Below casting functions panics instead of safe returning Option<...> to have runtime performance.
+    // If there is a panic that means there is a bug in type-checker!
+    pub fn as_string(&self) -> StringObject {
+        match &self.core {
+            CoreObject::STRING(str_obj) => str_obj.clone(),
+            _ => panic!("{}", CASTING_OBJECT_ERROR_MSG),
+        }
+    }
+
+    pub fn as_list(&self) -> ListObject {
+        match &self.core {
+            CoreObject::LIST(list_obj) => list_obj.clone(),
+            _ => panic!("{}", CASTING_OBJECT_ERROR_MSG),
         }
     }
 }

@@ -120,12 +120,12 @@ fn main() {
     let obj2 = Object::new_with_string(v, &mut vm);
     let obj3 = Object::new_with_string(u, &mut vm);
     let vec = ListObject::new();
-    //vec.push(Data::OBJ(obj1.clone()));
-    //vec.push(Data::OBJ(obj2.clone()));
+    vec.push(Data::OBJ(obj1.clone()));
+    vec.push(Data::OBJ(obj2.clone()));
     //vec.push(Data::FLOAT(12.3));
     let ve = ListObject::new();
-    //ve.push(Data::OBJ(obj3.clone()));
-    //ve.push(Data::OBJ(obj3.clone()));
+    ve.push(Data::OBJ(obj3.clone()));
+    ve.push(Data::OBJ(obj3.clone()));
     //ve.push(Data::INT(12));
     let obj4 = Object::new_with_list(vec.clone(), &mut vm);
     let obj6 = Object::new_with_list(ve.clone(), &mut vm);
@@ -137,9 +137,10 @@ fn main() {
     vm.chunk.write_constant(Data::OBJ(obj2), 5);
     vm.chunk.write_constant(Data::OBJ(obj4), 5);
     vm.chunk.write_constant(Data::OBJ(obj6), 5);
+    //vm.chunk.write_constant(Data::OBJ(obj5), 10);
     //vm.chunk.write_constant(Data::FLOAT(13.0), 1);
     //vm.chunk.write_constant(Data::INT(13), 2);
-    vm.chunk.write_byte(OpCode::BINARY_OP_ADD.to_byte(), 8);
+    vm.chunk.write_byte(OpCode::BINARY_OP_EQUAL.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj3), 5);
     //vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj4), 1);

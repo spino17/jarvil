@@ -15,7 +15,7 @@ use std::rc::Rc;
 // ">", ">=", "<", "<=", "==", "!="
 // "-", "+"
 // "/", "*"
-// +, -, not, ()
+// "+", "-", "not", (...)
 
 pub fn is_expression_starting_with(token: &Token) -> bool {
     match token.core_token {
@@ -39,6 +39,7 @@ pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
     parser.pratt_expr(0)
 }
 
+// NOTE - Below parsing routines are deprecate in favour of pratt-parsing for expressions
 pub fn logical_or(parser: &mut PackratParser) -> ExpressionNode {
     let mut leading_logical_and_expr_node = parser.logical_and();
     while let Some(node) = parser.expects(&["or"]).is_ok() {
