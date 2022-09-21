@@ -3,10 +3,10 @@ use super::{
     data::Data,
     helper::get_machine_byte_multiple,
     object::core::{CoreObject, Object},
-    operators::eval_unary_op,
+    operators::{eval_binary_op, eval_unary_op},
     stack::Stack,
 };
-use crate::lexer::token::UnaryOperatorKind;
+use crate::lexer::token::{BinaryOperatorKind, UnaryOperatorKind};
 use std::{convert::TryInto, fmt::Display, ptr::NonNull};
 
 pub enum InterpretResult {
@@ -105,88 +105,76 @@ impl VM {
                 }
                 OpCode::BINARY_OP_ADD => {
                     self.advance_ip();
-                    // decode_arithmetic_op!(+, self);
-                    match self.stack.pop() {
-                        Data::INT(r_val) => match self.stack.pop() {
-                            Data::INT(l_val) => {
-                                self.stack.push(Data::INT(l_val + r_val));
-                            }
-                            Data::FLOAT(l_val) => {
-                                self.stack.push(Data::FLOAT(l_val + r_val as f64));
-                            }
-                            _ => return InterpretResult::COMPILE_ERROR,
-                        },
-                        Data::FLOAT(r_val) => match self.stack.pop() {
-                            Data::INT(l_val) => {
-                                self.stack.push(Data::FLOAT(l_val as f64 + r_val));
-                            }
-                            Data::FLOAT(l_val) => {
-                                self.stack.push(Data::FLOAT(l_val + r_val));
-                            }
-                            _ => return InterpretResult::COMPILE_ERROR,
-                        },
-                        Data::OBJ(r_obj) => match self.stack.pop() {
-                            Data::OBJ(l_obj) => match r_obj.core {
-                                CoreObject::STRING(r_str_obj) => match l_obj.core {
-                                    CoreObject::STRING(l_str_obj) => {
-                                        let obj =
-                                            Object::new_with_string(l_str_obj + r_str_obj, self);
-                                        self.stack.push(Data::OBJ(obj))
-                                    }
-                                    _ => return InterpretResult::COMPILE_ERROR,
-                                },
-                                _ => return InterpretResult::COMPILE_ERROR,
-                            },
-                            _ => return InterpretResult::COMPILE_ERROR,
-                        },
-                        _ => return InterpretResult::COMPILE_ERROR,
-                    }
+                    let r_data = self.stack.pop();
+                    let l_data = self.stack.pop();
+                    let result = eval_binary_op(l_data, r_data, BinaryOperatorKind::Add, self);
+                    self.stack.push(result);
                 }
                 OpCode::BINARY_OP_SUBTRACT => {
                     self.advance_ip();
-                    decode_arithmetic_op!(-, self);
+                    let r_data = self.stack.pop();
+                    let l_data = self.stack.pop();
+                    let result = eval_binary_op(l_data, r_data, BinaryOperatorKind::Subtract, self);
+                    self.stack.push(result);
                 }
                 OpCode::BINARY_OP_MULTIPLY => {
                     self.advance_ip();
-                    decode_arithmetic_op!(*, self);
+                    let r_data = self.stack.pop();
+                    let l_data = self.stack.pop();
+                    let result = eval_binary_op(l_data, r_data, BinaryOperatorKind::Multiply, self);
+                    self.stack.push(result);
                 }
                 OpCode::BINARY_OP_DIVIDE => {
                     self.advance_ip();
-                    let r_val = match self.stack.pop() {
-                        Data::INT(val) => val as f64,
-                        Data::FLOAT(val) => val,
-                        _ => return InterpretResult::COMPILE_ERROR,
-                    };
-                    let l_val = match self.stack.pop() {
-                        Data::INT(val) => val as f64,
-                        Data::FLOAT(val) => val,
-                        _ => return InterpretResult::COMPILE_ERROR,
-                    };
-                    self.stack.push(Data::FLOAT(l_val / r_val));
+                    let r_data = self.stack.pop();
+                    let l_data = self.stack.pop();
+                    let result = eval_binary_op(l_data, r_data, BinaryOperatorKind::Divide, self);
+                    self.stack.push(result);
                 }
                 OpCode::BINARY_OP_EQUAL => {
                     self.advance_ip();
-                    decode_equality_op!(==, self);
+                    let r_data = self.stack.pop();
+                    let l_data = self.stack.pop();
+                    let result =
+                        eval_binary_op(l_data, r_data, BinaryOperatorKind::DoubleEqual, self);
+                    self.stack.push(result);
                 }
                 OpCode::BINARY_OP_NOT_EQUAL => {
                     self.advance_ip();
-                    decode_equality_op!(!=, self);
+                    let r_data = self.stack.pop();
+                    let l_data = self.stack.pop();
+                    let result = eval_binary_op(l_data, r_data, BinaryOperatorKind::NotEqual, self);
+                    self.stack.push(result);
                 }
                 OpCode::BINARY_OP_GREATER => {
                     self.advance_ip();
-                    decode_comparison_op!(>, self);
+                    let r_data = self.stack.pop();
+                    let l_data = self.stack.pop();
+                    let result = eval_binary_op(l_data, r_data, BinaryOperatorKind::Greater, self);
+                    self.stack.push(result);
                 }
                 OpCode::BINARY_OP_GREATER_EQUAL => {
                     self.advance_ip();
-                    decode_comparison_op!(>=, self);
+                    let r_data = self.stack.pop();
+                    let l_data = self.stack.pop();
+                    let result =
+                        eval_binary_op(l_data, r_data, BinaryOperatorKind::GreaterEqual, self);
+                    self.stack.push(result);
                 }
                 OpCode::BINARY_OP_LESS => {
                     self.advance_ip();
-                    decode_comparison_op!(<, self);
+                    let r_data = self.stack.pop();
+                    let l_data = self.stack.pop();
+                    let result = eval_binary_op(l_data, r_data, BinaryOperatorKind::Less, self);
+                    self.stack.push(result);
                 }
                 OpCode::BINARY_OP_LESS_EQUAL => {
                     self.advance_ip();
-                    decode_comparison_op!(<=, self);
+                    let r_data = self.stack.pop();
+                    let l_data = self.stack.pop();
+                    let result =
+                        eval_binary_op(l_data, r_data, BinaryOperatorKind::LessEqual, self);
+                    self.stack.push(result);
                 }
             }
         }
