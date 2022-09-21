@@ -17,7 +17,7 @@ pub enum OpCode {
     BINARY_OP_SUBTRACT,
     BINARY_OP_MULTIPLY,
     BINARY_OP_DIVIDE,
-    BINARY_OP_EQUAL,
+    BINARY_OP_DOUBLE_EQUAL,
     BINARY_OP_NOT_EQUAL,
     BINARY_OP_GREATER,
     BINARY_OP_GREATER_EQUAL,
@@ -70,24 +70,24 @@ impl Chunk {
                     .unwrap();
                 let const_value = &self.constants[usize::from_be_bytes(v)];
                 (
-                    format!("CONSTANT {}", const_value),
+                    format!("PUSH CONSTANT `{}`", const_value),
                     offset + (byte_multiple + 1),
                 )
             }
-            OpCode::UNARY_OP_MINUS => ("NEGATE".to_string(), offset + 1),
-            OpCode::BINARY_OP_ADD => ("ADD".to_string(), offset + 1),
-            OpCode::BINARY_OP_SUBTRACT => ("SUBTRACT".to_string(), offset + 1),
-            OpCode::BINARY_OP_MULTIPLY => ("MULTIPLY".to_string(), offset + 1),
-            OpCode::BINARY_OP_DIVIDE => ("DIVIDE".to_string(), offset + 1),
-            OpCode::PUSH_TRUE => ("TRUE".to_string(), offset + 1),
-            OpCode::PUSH_FALSE => ("FALSE".to_string(), offset + 1),
-            OpCode::UNARY_OP_NOT => ("NOT".to_string(), offset + 1),
-            OpCode::BINARY_OP_EQUAL => ("EQUAL".to_string(), offset + 1),
-            OpCode::BINARY_OP_NOT_EQUAL => ("NOT_EQUAL".to_string(), offset + 1),
-            OpCode::BINARY_OP_GREATER => ("GREATER".to_string(), offset + 1),
-            OpCode::BINARY_OP_GREATER_EQUAL => ("GREATER_EQUAL".to_string(), offset + 1),
-            OpCode::BINARY_OP_LESS => ("LESS".to_string(), offset + 1),
-            OpCode::BINARY_OP_LESS_EQUAL => ("LESS_EQUAL".to_string(), offset + 1),
+            OpCode::UNARY_OP_MINUS => ("UNARY_OP_MINUS".to_string(), offset + 1),
+            OpCode::BINARY_OP_ADD => ("BINARY_OP_ADD".to_string(), offset + 1),
+            OpCode::BINARY_OP_SUBTRACT => ("BINARY_OP_SUBTRACT".to_string(), offset + 1),
+            OpCode::BINARY_OP_MULTIPLY => ("BINARY_OP_MULTIPLY".to_string(), offset + 1),
+            OpCode::BINARY_OP_DIVIDE => ("BINARY_OP_DIVIDE".to_string(), offset + 1),
+            OpCode::PUSH_TRUE => ("PUSH `True`".to_string(), offset + 1),
+            OpCode::PUSH_FALSE => ("PUSH `False`".to_string(), offset + 1),
+            OpCode::UNARY_OP_NOT => ("UNARY_NOT".to_string(), offset + 1),
+            OpCode::BINARY_OP_DOUBLE_EQUAL => ("BINARY_OP_DOUBLE_EQUAL".to_string(), offset + 1),
+            OpCode::BINARY_OP_NOT_EQUAL => ("BINARY_OP_NOT_EQUAL".to_string(), offset + 1),
+            OpCode::BINARY_OP_GREATER => ("BINARY_OP_GREATER".to_string(), offset + 1),
+            OpCode::BINARY_OP_GREATER_EQUAL => ("BINARY_OP_GREATER_EQUAL".to_string(), offset + 1),
+            OpCode::BINARY_OP_LESS => ("BINARY_OP_LESS".to_string(), offset + 1),
+            OpCode::BINARY_OP_LESS_EQUAL => ("BINARY_OP_LESS_EQUAL".to_string(), offset + 1),
         }
     }
 }

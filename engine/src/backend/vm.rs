@@ -131,7 +131,7 @@ impl VM {
                     let result = eval_binary_op(l_data, r_data, BinaryOperatorKind::Divide, self);
                     self.stack.push(result);
                 }
-                OpCode::BINARY_OP_EQUAL => {
+                OpCode::BINARY_OP_DOUBLE_EQUAL => {
                     self.advance_ip();
                     let r_data = self.stack.pop();
                     let l_data = self.stack.pop();
