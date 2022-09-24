@@ -49,6 +49,29 @@ impl ByteCodeGenerator {
         self.compiler = parent_compiler;
         chunk
     }
+
+    fn variable_decl_callback(&self) {
+        self.compiler
+            .0
+            .as_ref()
+            .borrow_mut()
+            .variable_decl_callback();
+    }
+
+    fn open_block(&self) {
+        // TODO curr_depth++,
+        // if stack_simulated.len() >= curr_depth => then first push a new entry with value zero
+        // in else case just set it to zero
+        // as variable decl node is encounted, curr_index is assigned to symbol entry and is incremented the counter also
+        // increment the stack_simulated[curr_depth] ++
+        self.compiler.0.as_ref().borrow_mut().open_block();
+    }
+
+    fn close_block(&mut self) {
+        // TODO - let val = stack_simulated[curr_depth] and update the curr_local_var_index = curr_local_var_index - val
+        // curr_depth --
+        self.compiler.0.as_ref().borrow_mut().close_block();
+    }
 }
 
 impl Visitor for ByteCodeGenerator {
