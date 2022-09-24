@@ -1,10 +1,8 @@
-use crate::backend::{chunk::Chunk, object::core::ObjectTracker};
+use crate::backend::chunk::Chunk;
 use std::{cell::RefCell, rc::Rc};
-
 use super::chunk::OpCode;
 
 pub struct CoreCompiler {
-    object_tracker: ObjectTracker,
     pub chunk: Chunk,
     pub parent: Option<Compiler>,
 }
@@ -19,17 +17,15 @@ impl CoreCompiler {
 pub struct Compiler(pub Rc<RefCell<CoreCompiler>>);
 
 impl Compiler {
-    pub fn new(tracker: &ObjectTracker) -> Self {
+    pub fn new() -> Self {
         Compiler(Rc::new(RefCell::new(CoreCompiler {
-            object_tracker: tracker.clone(),
             chunk: Chunk::default(),
             parent: None,
         })))
     }
 
-    pub fn new_with_parent(tracker: &ObjectTracker, parent: &Compiler) -> Self {
+    pub fn new_with_parent(parent: &Compiler) -> Self {
         Compiler(Rc::new(RefCell::new(CoreCompiler {
-            object_tracker: tracker.clone(),
             chunk: Chunk::default(),
             parent: Some(parent.clone()),
         })))

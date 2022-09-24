@@ -19,7 +19,7 @@ impl ByteCodeGenerator {
     fn new() -> Self {
         let object_tracker = ObjectTracker::default();
         ByteCodeGenerator {
-            compiler: Compiler::new(&object_tracker),
+            compiler: Compiler::new(),
             object_tracker,
         }
     }
@@ -34,8 +34,7 @@ impl ByteCodeGenerator {
     }
 
     fn open_compiler(&mut self) {
-        // TODO - add new compiler and set the previous one as parent
-        self.compiler = Compiler::new_with_parent(&self.object_tracker, &self.compiler);
+        self.compiler = Compiler::new_with_parent(&self.compiler);
     }
 
     fn close_compiler(&mut self) -> Chunk {
