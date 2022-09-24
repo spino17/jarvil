@@ -116,9 +116,9 @@ fn main() {
     let s = StringObject::new_with_bytes("bro ");
     let v = StringObject::new_with_bytes("bro s");
     let u = StringObject::new_with_bytes("bro varima");
-    let obj1 = Object::new_with_string(s, &mut vm);
-    let obj2 = Object::new_with_string(v, &mut vm);
-    let obj3 = Object::new_with_string(u, &mut vm);
+    let obj1 = Object::new_with_string(s, &mut vm.object_tracker);
+    let obj2 = Object::new_with_string(v, &mut vm.object_tracker);
+    let obj3 = Object::new_with_string(u, &mut vm.object_tracker);
     let vec = ListObject::new();
     vec.push(Data::OBJ(obj1.clone()));
     vec.push(Data::OBJ(obj2.clone()));
@@ -127,12 +127,12 @@ fn main() {
     ve.push(Data::OBJ(obj3.clone()));
     ve.push(Data::OBJ(obj3.clone()));
     //ve.push(Data::INT(12));
-    let obj4 = Object::new_with_list(vec.clone(), &mut vm);
-    let obj6 = Object::new_with_list(ve.clone(), &mut vm);
+    let obj4 = Object::new_with_list(vec.clone(), &mut vm.object_tracker);
+    let obj6 = Object::new_with_list(ve.clone(), &mut vm.object_tracker);
     let vf = ListObject::new();
     vf.push(Data::OBJ(obj4.clone()));
     vf.push(Data::OBJ(obj6.clone()));
-    let obj5 = Object::new_with_list(vf, &mut vm);
+    let obj5 = Object::new_with_list(vf, &mut vm.object_tracker);
     vm.chunk.write_constant(Data::OBJ(obj1), 5);
     vm.chunk.write_constant(Data::OBJ(obj2), 5);
     vm.chunk.write_constant(Data::OBJ(obj4), 5);

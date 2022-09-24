@@ -9,6 +9,8 @@ use std::ops::Add;
 use std::ptr;
 use std::ptr::NonNull;
 
+use super::core::ObjectTracker;
+
 // This unsafe code is heavily taken from the `Rustonomicon` book.
 // See Implementing Vec section in `https://github.com/rust-lang/nomicon` and `https://doc.rust-lang.org/nomicon/` for more information.
 
@@ -108,7 +110,7 @@ impl CoreListObject {
         }
     }
 
-    fn is_equal(l1: &CoreListObject, l2: &CoreListObject, vm: &mut VM) -> bool {
+    fn is_equal(l1: &CoreListObject, l2: &CoreListObject, tracker: &mut ObjectTracker) -> bool {
         let len1 = l1.len();
         let len2 = l2.len();
         if len1 != len2 {
@@ -120,7 +122,7 @@ impl CoreListObject {
                     (&*l1.ptr.as_ptr().add(i)).clone(),
                     (&*l2.ptr.as_ptr().add(i)).clone(),
                     BinaryOperatorKind::DoubleEqual,
-                    vm,
+                    tracker,
                 )
                 .as_bool()
                 {
@@ -203,8 +205,8 @@ impl ListObject {
         ListObject(ptr)
     }
 
-    pub fn is_equal(l1: &ListObject, l2: &ListObject, vm: &mut VM) -> bool {
-        unsafe { CoreListObject::is_equal(&*l1.0.as_ptr(), &*l2.0.as_ptr(), vm) }
+    pub fn is_equal(l1: &ListObject, l2: &ListObject, tracker: &mut ObjectTracker) -> bool {
+        unsafe { CoreListObject::is_equal(&*l1.0.as_ptr(), &*l2.0.as_ptr(), tracker) }
     }
 
     // This method will be called by the garbage collector
