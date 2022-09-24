@@ -55,7 +55,7 @@ impl PackratParser {
 impl Parser for PackratParser {
     fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>) {
         let code_node = self.code(token_vec);
-        (code_node, std::mem::take(&mut self.errors))
+        (code_node, self.errors)
     }
 }
 

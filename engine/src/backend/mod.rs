@@ -1,6 +1,7 @@
 #[macro_use]
 pub mod macros;
 pub mod chunk;
+pub mod compiler;
 pub mod data;
 pub mod hash;
 pub mod helper;

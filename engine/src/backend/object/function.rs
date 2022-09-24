@@ -4,14 +4,14 @@ use std::{fmt::Display, ptr::NonNull};
 struct CoreFunctionObject {
     code: Chunk,
     arity: u8, // number of parameters of a function would always be less than 255
-    name: String,
+    name: Option<String>,
 }
 
 #[derive(Clone, Debug)]
 pub struct FunctionObject(NonNull<CoreFunctionObject>);
 
 impl FunctionObject {
-    fn new(code: Chunk, arity: u8, name: String) -> Self {
+    pub fn new(code: Chunk, arity: u8, name: Option<String>) -> Self {
         let ptr = unsafe {
             NonNull::new_unchecked(Box::into_raw(Box::new(CoreFunctionObject {
                 code,

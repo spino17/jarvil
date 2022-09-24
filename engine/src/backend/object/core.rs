@@ -1,6 +1,6 @@
 use super::{function::FunctionObject, list::ListObject, string::StringObject};
 use crate::{backend::vm::VM, error::constants::CASTING_OBJECT_ERROR_MSG};
-use std::{fmt::Display, ptr::NonNull};
+use std::{borrow::Borrow, cell::RefCell, fmt::Display, ptr::NonNull, rc::Rc};
 
 // Heap-allocated datatypes
 // NOTE: All the objects are wrapped inside NonNull<T> in order to avoid automatic calling of drop.
@@ -11,55 +11,20 @@ use std::{fmt::Display, ptr::NonNull};
 // by calling respective `manual_drop` on objects.
 
 // This trackes all the heap-allocated objects during the whole course of program compilation as well as runtime.
-pub struct ObjectTracker {
+#[derive(Debug)]
+pub struct CoreObjectTracker {
     objects: NonNull<Object>,
     len: usize,
 }
 
-impl ObjectTracker {
-    pub fn new() -> Self {
-        ObjectTracker {
-            objects: NonNull::dangling(),
-            len: 0,
-        }
-    }
-
-    pub fn add_object(&mut self, core_object: CoreObject) -> Object {
-        let obj = if self.len == 0 {
-            Object {
-                core: core_object,
-                next: None,
-            }
-        } else {
-            let ptr = self.objects.clone();
-            Object {
-                core: core_object,
-                next: Some(ptr),
-            }
-        };
-        self.objects = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(obj.clone()))) };
-        self.len = self.len + 1;
-        obj
+impl CoreObjectTracker {
+    fn set_objects(&mut self, objects: NonNull<Object>, len: usize) {
+        self.objects = objects;
+        self.len = len
     }
 }
 
-impl Drop for ObjectTracker {
-    fn drop(&mut self) {
-        println!("hfkdhfksjje hahahahahhaha");
-        if self.len != 0 {
-            unsafe {
-                let mut next = Some(self.objects.clone());
-                while let Some(ptr) = next {
-                    next = (*ptr.as_ptr()).next;
-                    (&*ptr.as_ptr()).inner_drop(); // free the underlying heap-allocated memory
-                    let _x = Box::from_raw(ptr.as_ptr()); // then free the pointer to the memory
-                }
-            }
-        }
-    }
-}
-
-impl Display for ObjectTracker {
+impl Display for CoreObjectTracker {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = "".to_string();
         if self.len != 0 {
@@ -77,6 +42,72 @@ impl Display for ObjectTracker {
             }
         }
         write!(f, "{}", s)
+    }
+}
+
+impl Drop for CoreObjectTracker {
+    fn drop(&mut self) {
+        if self.len != 0 {
+            unsafe {
+                let mut next = Some(self.objects.clone());
+                while let Some(ptr) = next {
+                    next = (*ptr.as_ptr()).next;
+                    (&*ptr.as_ptr()).inner_drop(); // free the underlying heap-allocated memory
+                    let _x = Box::from_raw(ptr.as_ptr()); // then free the pointer to the memory
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ObjectTracker(Rc<RefCell<CoreObjectTracker>>);
+
+impl Default for ObjectTracker {
+    fn default() -> Self {
+        ObjectTracker(Rc::new(RefCell::new(CoreObjectTracker {
+            objects: NonNull::dangling(),
+            len: 0,
+        })))
+    }
+}
+
+impl ObjectTracker {
+    pub fn set_objects(&self, objects: NonNull<Object>, len: usize) {
+        self.0.as_ref().borrow_mut().set_objects(objects, len);
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.as_ref().borrow().len
+    }
+
+    pub fn objects(&self) -> NonNull<Object> {
+        self.0.as_ref().borrow().objects.clone()
+    }
+
+    pub fn add_object(&self, core_object: CoreObject) -> Object {
+        let obj = if self.len() == 0 {
+            Object {
+                core: core_object,
+                next: None,
+            }
+        } else {
+            let ptr = self.objects();
+            Object {
+                core: core_object,
+                next: Some(ptr),
+            }
+        };
+        let new_ptr = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(obj.clone()))) };
+        let new_len = self.len() + 1;
+        self.set_objects(new_ptr, new_len);
+        obj
+    }
+}
+
+impl Display for ObjectTracker {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.as_ref().borrow().to_string())
     }
 }
 

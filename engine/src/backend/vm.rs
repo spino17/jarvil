@@ -30,7 +30,7 @@ impl VM {
         VM {
             // objects: NonNull::dangling(),
             // objects_len: 0,
-            object_tracker: ObjectTracker::new(), // TODO - take this from compiler unit
+            object_tracker: ObjectTracker::default(), // TODO - take this from compiler unit
             chunk: Chunk::default(),
             ip: 0,
             stack: Stack::new(),

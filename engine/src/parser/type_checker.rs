@@ -92,12 +92,12 @@ impl TypeChecker {
         self.namespace.close_scope();
     }
 
-    pub fn check_ast(&mut self, ast: &BlockNode) -> Vec<Diagnostics> {
+    pub fn check_ast(mut self, ast: &BlockNode) -> Vec<Diagnostics> {
         let core_block = ast.0.as_ref().borrow();
         for stmt in &core_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        std::mem::take(&mut self.errors)
+        self.errors
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {

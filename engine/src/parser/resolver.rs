@@ -52,7 +52,7 @@ impl Resolver {
         }
     }
 
-    pub fn resolve_ast(&mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
+    pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
         let code_block = ast.0.as_ref().borrow();
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
@@ -61,10 +61,7 @@ impl Resolver {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        (
-            std::mem::take(&mut self.namespace),
-            std::mem::take(&mut self.errors),
-        )
+        (self.namespace, self.errors)
     }
 
     pub fn try_declare_and_bind<
