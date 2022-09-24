@@ -1,6 +1,6 @@
+use super::chunk::OpCode;
 use crate::backend::chunk::Chunk;
 use std::{cell::RefCell, rc::Rc};
-use super::chunk::OpCode;
 
 pub struct CoreCompiler {
     pub chunk: Chunk,

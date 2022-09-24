@@ -25,7 +25,10 @@ impl ByteCodeGenerator {
     }
 
     fn compile(mut self, ast: &BlockNode) -> (Chunk, ObjectTracker) {
-        self.walk_block(ast);
+        let code_block = ast.0.as_ref().borrow();
+        for stmt in &code_block.stmts {
+            self.walk_stmt_indent_wrapper(stmt);
+        }
         (self.compiler.chunk(), self.object_tracker)
     }
 
@@ -53,6 +56,11 @@ impl Visitor for ByteCodeGenerator {
         // TODO - catch all statements here.
         // TODO - catch `OkFunctionDeclarationNode` node here and surround that with open_compiler and close_compiler and call walk on block
         // TODO - for block keep track of how many local variables are there and decrement them as soon as block gets over.
-        todo!()
+        match node {
+            ASTNode::STATEMENT(stmt) => return None,
+            ASTNode::BLOCK(block) => return None,
+            ASTNode::OK_FUNCTION_DECLARATION(func_decl) => return None,
+            _ => Some(()),
+        }
     }
 }

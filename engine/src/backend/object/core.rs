@@ -2,7 +2,7 @@ use super::{function::FunctionObject, list::ListObject, string::StringObject};
 use crate::{backend::vm::VM, error::constants::CASTING_OBJECT_ERROR_MSG};
 use std::{borrow::Borrow, cell::RefCell, fmt::Display, ptr::NonNull, rc::Rc};
 
-// Heap-allocated datatypes
+// Objects are Heap-allocated datatypes
 // NOTE: All the objects are wrapped inside NonNull<T> in order to avoid automatic calling of drop.
 // We need to avoid automatic calling of drop as our language does not have the concept of move and so
 // when we clone a string, the raw pointer is cloned but points to the same heap memory. So when rust call
@@ -23,17 +23,17 @@ pub enum CoreObject {
 }
 
 impl Object {
-    pub fn new_with_string(str_obj: StringObject, tracker: &ObjectTracker) -> Object {
+    pub fn new_with_string(str_obj: StringObject, tracker: &mut ObjectTracker) -> Object {
         let core_object = CoreObject::STRING(str_obj);
         tracker.add_object(core_object)
     }
 
-    pub fn new_with_list(list_obj: ListObject, tracker: &ObjectTracker) -> Object {
+    pub fn new_with_list(list_obj: ListObject, tracker: &mut ObjectTracker) -> Object {
         let core_object = CoreObject::LIST(list_obj);
         tracker.add_object(core_object)
     }
 
-    pub fn new_with_function(func_obj: FunctionObject, tracker: &ObjectTracker) -> Object {
+    pub fn new_with_function(func_obj: FunctionObject, tracker: &mut ObjectTracker) -> Object {
         let core_object = CoreObject::FUNCTION(func_obj);
         tracker.add_object(core_object)
     }
@@ -121,12 +121,21 @@ impl Display for Object {
 
 // This trackes all the heap-allocated objects during the whole course of program compilation as well as runtime.
 #[derive(Debug)]
-pub struct CoreObjectTracker {
+pub struct ObjectTracker {
     objects: NonNull<Object>,
     len: usize,
 }
 
-impl CoreObjectTracker {
+impl Default for ObjectTracker {
+    fn default() -> Self {
+        ObjectTracker {
+            objects: NonNull::dangling(),
+            len: 0,
+        }
+    }
+}
+
+impl ObjectTracker {
     fn add_object(&mut self, core_obj: CoreObject) -> Object {
         let obj = if self.len == 0 {
             Object {
@@ -146,7 +155,7 @@ impl CoreObjectTracker {
     }
 }
 
-impl Display for CoreObjectTracker {
+impl Display for ObjectTracker {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = "".to_string();
         if self.len != 0 {
@@ -167,7 +176,7 @@ impl Display for CoreObjectTracker {
     }
 }
 
-impl Drop for CoreObjectTracker {
+impl Drop for ObjectTracker {
     fn drop(&mut self) {
         if self.len != 0 {
             unsafe {
@@ -182,6 +191,7 @@ impl Drop for CoreObjectTracker {
     }
 }
 
+/*
 #[derive(Debug, Clone)]
 pub struct ObjectTracker(Rc<RefCell<CoreObjectTracker>>);
 
@@ -205,3 +215,4 @@ impl Display for ObjectTracker {
         write!(f, "{}", self.0.as_ref().borrow().to_string())
     }
 }
+ */
