@@ -1,6 +1,6 @@
 use crate::{
     ast::{
-        ast::{ASTNode, BlockNode},
+        ast::{ASTNode, BlockNode, OkFunctionDeclarationNode, StatementNode},
         walk::Visitor,
     },
     backend::{
@@ -65,6 +65,31 @@ impl ByteCodeGenerator {
     fn close_block(&mut self) {
         self.compiler.0.as_ref().borrow_mut().close_block();
     }
+
+    fn compile_block(&mut self, block: &BlockNode) {
+        self.open_block();
+        for stmt in &block.0.as_ref().borrow().stmts {
+            self.walk_stmt_indent_wrapper(stmt);
+        }
+        self.close_block();
+    }
+
+    fn compile_stmt(&mut self, stmt: &StatementNode) {
+        // TODO - make cases for all the stmts and compile them
+        todo!()
+    }
+
+    fn compile_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode) {
+        let core_func_decl = func_decl.core_ref();
+        // TODO - open_compiler() => iterate over params and call variable_decl_callback and set the returned
+        // index to symbol entry binded with params
+        // iterate over stmts in the block
+        // close_compiler
+        // make function object out of the chunk we get => if name is available then set the func_obj to symbol entry of the
+        // function and if there is no name (in case of lambda assignment), just emit a bytecode to push the object on stack
+        // and add it to the constant array in curr chunk
+        todo!()
+    }
 }
 
 impl Visitor for ByteCodeGenerator {
@@ -72,10 +97,20 @@ impl Visitor for ByteCodeGenerator {
         // TODO - catch all statements here.
         // TODO - catch `OkFunctionDeclarationNode` node here and surround that with open_compiler and close_compiler and call walk on block
         // TODO - for block keep track of how many local variables are there and decrement them as soon as block gets over.
+        // TODO - for `VariableDeclarationNode` call variable_decl_callback and set the index returned from it to the symbol entry
         match node {
-            ASTNode::STATEMENT(stmt) => return None,
-            ASTNode::BLOCK(block) => return None,
-            ASTNode::OK_FUNCTION_DECLARATION(func_decl) => return None,
+            ASTNode::STATEMENT(stmt) => {
+                self.compile_stmt(stmt);
+                return None;
+            }
+            ASTNode::BLOCK(block) => {
+                self.compile_block(block);
+                return None;
+            }
+            ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
+                self.compile_func_decl(func_decl);
+                return None;
+            }
             _ => Some(()),
         }
     }

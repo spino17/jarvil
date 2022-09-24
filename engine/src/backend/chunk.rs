@@ -5,24 +5,26 @@ use super::helper::get_machine_byte_multiple;
 use crate::backend::data::Data;
 use std::{convert::TryInto, fmt::Display};
 
+// TOS: Top of Stack
+// TOi: (i + 1)th entry from top of stack
 #[derive(OpCodeUtil)]
 pub enum OpCode {
     RETURN,
-    PUSH_CONSTANT,
-    PUSH_TRUE,
-    PUSH_FALSE,
-    UNARY_OP_MINUS,
-    UNARY_OP_NOT,
-    BINARY_OP_ADD,
-    BINARY_OP_SUBTRACT,
-    BINARY_OP_MULTIPLY,
-    BINARY_OP_DIVIDE,
-    BINARY_OP_DOUBLE_EQUAL,
-    BINARY_OP_NOT_EQUAL,
-    BINARY_OP_GREATER,
-    BINARY_OP_GREATER_EQUAL,
-    BINARY_OP_LESS,
-    BINARY_OP_LESS_EQUAL,
+    PUSH_CONSTANT, // TOS = constants[index], where `index` is operand in the instruction => PUSH_CONSTANT index
+    PUSH_TRUE,     // => TOS = True
+    PUSH_FALSE,    // TOS = False
+    UNARY_OP_MINUS, // TOS = -TOS
+    UNARY_OP_NOT,  // TOS = not TOS
+    BINARY_OP_ADD, // TOS = TO1 + TOS
+    BINARY_OP_SUBTRACT, // TOS = TO1 - TOS
+    BINARY_OP_MULTIPLY, // TOS = TO1 * TOS
+    BINARY_OP_DIVIDE, // TOS = TO1 / TOS
+    BINARY_OP_DOUBLE_EQUAL, // TOS = (TO1 == TOS)
+    BINARY_OP_NOT_EQUAL, // TOS = (TO1 != TOS)
+    BINARY_OP_GREATER, // TOS = (TO1 > TOS)
+    BINARY_OP_GREATER_EQUAL, // TOS = (TO1 >= TOS)
+    BINARY_OP_LESS, // TOS = (TO1 < TOS)
+    BINARY_OP_LESS_EQUAL, // TOS = (TO1 <= TOS)
 }
 
 pub struct Chunk {

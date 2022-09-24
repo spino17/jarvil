@@ -15,6 +15,7 @@ impl CoreCompiler {
         std::mem::take(&mut self.chunk)
     }
 
+    // below methods simulate the stack during runtime
     pub fn variable_decl_callback(&mut self) -> usize {
         self.stack_simulated[self.curr_depth] += 1;
         self.curr_local_var_index += 1;
