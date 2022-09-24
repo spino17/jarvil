@@ -37,6 +37,10 @@ impl Chunk {
         self.line_numbers.push(line_number);
     }
 
+    pub fn write_instruction(&mut self, op_code: OpCode, line_number: usize) {
+        self.write_byte(op_code.to_byte(), line_number);
+    }
+
     pub fn write_constant(&mut self, const_value: Data, line_number: usize) {
         let const_index = self.constants.len();
         self.constants.push(const_value);

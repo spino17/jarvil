@@ -140,12 +140,13 @@ fn main() {
     //vm.chunk.write_constant(Data::OBJ(obj5), 10);
     //vm.chunk.write_constant(Data::FLOAT(13.0), 1);
     //vm.chunk.write_constant(Data::INT(13), 2);
-    vm.chunk.write_byte(OpCode::BINARY_OP_DOUBLE_EQUAL.to_byte(), 8);
+    vm.chunk.write_byte(OpCode::BINARY_OP_ADD.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj3), 5);
     //vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
     //vm.chunk.write_constant(Data::OBJ(obj4), 1);
     vm.chunk.write_byte(OpCode::RETURN.to_byte(), 7);
     vm.run();
+    println!("{}", vm.chunk);
     println!("{}", vm);
 
     let vol = ListObject::new();

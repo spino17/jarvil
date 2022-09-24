@@ -1,277 +1,168 @@
-pub mod core {
-    use super::lambda::Lambda;
-    use super::r#struct::Struct;
-    use crate::constants::common::{NON_TYPED, UNKNOWN};
-    use crate::lexer::token::BinaryOperatorKind;
-    use crate::scope::core::SymbolData;
-    use crate::scope::user_defined_types::UserDefinedTypeData;
-    use crate::types::{array::Array, atomic::Atomic};
-    use std::fmt::{Debug, Formatter};
-    use std::rc::Rc;
-    pub trait AbstractType {
-        fn is_eq(&self, base_type: &Type) -> bool;
+pub mod chunk {
+    #[macro_use]
+    use jarvil_macros::OpCodeUtil;
+    use super::helper::get_machine_byte_multiple;
+    use crate::backend::data::Data;
+    use std::{convert::TryInto, fmt::Display};
+    pub enum OpCode {
+        RETURN,
+        PUSH_CONSTANT,
+        PUSH_TRUE,
+        PUSH_FALSE,
+        UNARY_OP_MINUS,
+        UNARY_OP_NOT,
+        BINARY_OP_ADD,
+        BINARY_OP_SUBTRACT,
+        BINARY_OP_MULTIPLY,
+        BINARY_OP_DIVIDE,
+        BINARY_OP_DOUBLE_EQUAL,
+        BINARY_OP_NOT_EQUAL,
+        BINARY_OP_GREATER,
+        BINARY_OP_GREATER_EQUAL,
+        BINARY_OP_LESS,
+        BINARY_OP_LESS_EQUAL,
     }
-    pub trait OperatorCompatiblity {
-        fn check_add(&self, other: &Type) -> Option<Type>;
-        fn check_subtract(&self, other: &Type) -> Option<Type>;
-        fn check_multiply(&self, other: &Type) -> Option<Type>;
-        fn check_divide(&self, other: &Type) -> Option<Type>;
-        fn check_double_equal(&self, other: &Type) -> Option<()>;
-        fn check_not_equal(&self, other: &Type) -> Option<()>;
-        fn check_greater(&self, other: &Type) -> Option<()>;
-        fn check_greater_equal(&self, other: &Type) -> Option<()>;
-        fn check_less(&self, other: &Type) -> Option<()>;
-        fn check_less_equal(&self, other: &Type) -> Option<()>;
-    }
-    pub enum CoreType {
-        ATOMIC(Atomic),
-        STRUCT(Struct),
-        LAMBDA(Lambda),
-        ARRAY(Array),
-        NON_TYPED,
-        UNKNOWN,
-        VOID,
-    }
-    #[automatically_derived]
-    impl ::core::fmt::Debug for CoreType {
-        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+    impl OpCode {
+        pub fn to_byte(&self) -> u8 {
             match self {
-                CoreType::ATOMIC(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ATOMIC", &__self_0)
+                OpCode::RETURN => 0,
+                OpCode::PUSH_CONSTANT => 1,
+                OpCode::PUSH_TRUE => 2,
+                OpCode::PUSH_FALSE => 3,
+                OpCode::UNARY_OP_MINUS => 4,
+                OpCode::UNARY_OP_NOT => 5,
+                OpCode::BINARY_OP_ADD => 6,
+                OpCode::BINARY_OP_SUBTRACT => 7,
+                OpCode::BINARY_OP_MULTIPLY => 8,
+                OpCode::BINARY_OP_DIVIDE => 9,
+                OpCode::BINARY_OP_DOUBLE_EQUAL => 10,
+                OpCode::BINARY_OP_NOT_EQUAL => 11,
+                OpCode::BINARY_OP_GREATER => 12,
+                OpCode::BINARY_OP_GREATER_EQUAL => 13,
+                OpCode::BINARY_OP_LESS => 14,
+                OpCode::BINARY_OP_LESS_EQUAL => 15,
+            }
+        }
+    }
+    pub const OP_CODES_MAP: [OpCode; 16] = [
+        OpCode::RETURN,
+        OpCode::PUSH_CONSTANT,
+        OpCode::PUSH_TRUE,
+        OpCode::PUSH_FALSE,
+        OpCode::UNARY_OP_MINUS,
+        OpCode::UNARY_OP_NOT,
+        OpCode::BINARY_OP_ADD,
+        OpCode::BINARY_OP_SUBTRACT,
+        OpCode::BINARY_OP_MULTIPLY,
+        OpCode::BINARY_OP_DIVIDE,
+        OpCode::BINARY_OP_DOUBLE_EQUAL,
+        OpCode::BINARY_OP_NOT_EQUAL,
+        OpCode::BINARY_OP_GREATER,
+        OpCode::BINARY_OP_GREATER_EQUAL,
+        OpCode::BINARY_OP_LESS,
+        OpCode::BINARY_OP_LESS_EQUAL,
+    ];
+    pub struct Chunk {
+        pub code: Vec<u8>,
+        pub constants: Vec<Data>,
+        pub line_numbers: Vec<usize>,
+    }
+    impl Chunk {
+        pub fn write_byte(&mut self, byte: u8, line_number: usize) {
+            self.code.push(byte);
+            self.line_numbers.push(line_number);
+        }
+        pub fn write_constant(&mut self, const_value: Data, line_number: usize) {
+            let const_index = self.constants.len();
+            self.constants.push(const_value);
+            self.code.push(OpCode::PUSH_CONSTANT.to_byte());
+            self.code.extend_from_slice(&const_index.to_be_bytes());
+            self.line_numbers.push(line_number);
+        }
+        pub fn disassemble(&self) -> Vec<String> {
+            let mut offset = 0;
+            let mut parsed_instructions: Vec<String> = ::alloc::vec::Vec::new();
+            let mut inst_index = 0;
+            while offset < self.code.len() {
+                let (str_rep, new_offset) = self.disassemble_instruction(offset);
+                let mut inst_str = {
+                    let res = ::alloc::fmt::format(::core::fmt::Arguments::new_v1(
+                        &["", ": "],
+                        &[::core::fmt::ArgumentV1::new_display(
+                            &self.line_numbers[inst_index],
+                        )],
+                    ));
+                    res
+                };
+                inst_str.push_str(&str_rep);
+                parsed_instructions.push(inst_str);
+                offset = new_offset;
+                inst_index = inst_index + 1;
+            }
+            parsed_instructions
+        }
+        pub fn disassemble_instruction(&self, offset: usize) -> (String, usize) {
+            match OP_CODES_MAP[usize::from(self.code[offset])] {
+                OpCode::RETURN => ("RETURN".to_string(), offset + 1),
+                OpCode::PUSH_CONSTANT => {
+                    let byte_multiple = get_machine_byte_multiple();
+                    let v = self.code[offset + 1..offset + (byte_multiple + 1)]
+                        .try_into()
+                        .unwrap();
+                    let const_value = &self.constants[usize::from_be_bytes(v)];
+                    (
+                        {
+                            let res = ::alloc::fmt::format(::core::fmt::Arguments::new_v1(
+                                &["PUSH CONSTANT `", "`"],
+                                &[::core::fmt::ArgumentV1::new_display(&const_value)],
+                            ));
+                            res
+                        },
+                        offset + (byte_multiple + 1),
+                    )
                 }
-                CoreType::STRUCT(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "STRUCT", &__self_0)
+                OpCode::UNARY_OP_MINUS => ("UNARY_OP_MINUS".to_string(), offset + 1),
+                OpCode::BINARY_OP_ADD => ("BINARY_OP_ADD".to_string(), offset + 1),
+                OpCode::BINARY_OP_SUBTRACT => ("BINARY_OP_SUBTRACT".to_string(), offset + 1),
+                OpCode::BINARY_OP_MULTIPLY => ("BINARY_OP_MULTIPLY".to_string(), offset + 1),
+                OpCode::BINARY_OP_DIVIDE => ("BINARY_OP_DIVIDE".to_string(), offset + 1),
+                OpCode::PUSH_TRUE => ("PUSH `True`".to_string(), offset + 1),
+                OpCode::PUSH_FALSE => ("PUSH `False`".to_string(), offset + 1),
+                OpCode::UNARY_OP_NOT => ("UNARY_NOT".to_string(), offset + 1),
+                OpCode::BINARY_OP_DOUBLE_EQUAL => {
+                    ("BINARY_OP_DOUBLE_EQUAL".to_string(), offset + 1)
                 }
-                CoreType::LAMBDA(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "LAMBDA", &__self_0)
+                OpCode::BINARY_OP_NOT_EQUAL => ("BINARY_OP_NOT_EQUAL".to_string(), offset + 1),
+                OpCode::BINARY_OP_GREATER => ("BINARY_OP_GREATER".to_string(), offset + 1),
+                OpCode::BINARY_OP_GREATER_EQUAL => {
+                    ("BINARY_OP_GREATER_EQUAL".to_string(), offset + 1)
                 }
-                CoreType::ARRAY(__self_0) => {
-                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "ARRAY", &__self_0)
-                }
-                CoreType::NON_TYPED => ::core::fmt::Formatter::write_str(f, "NON_TYPED"),
-                CoreType::UNKNOWN => ::core::fmt::Formatter::write_str(f, "UNKNOWN"),
-                CoreType::VOID => ::core::fmt::Formatter::write_str(f, "VOID"),
+                OpCode::BINARY_OP_LESS => ("BINARY_OP_LESS".to_string(), offset + 1),
+                OpCode::BINARY_OP_LESS_EQUAL => ("BINARY_OP_LESS_EQUAL".to_string(), offset + 1),
             }
         }
     }
-    pub struct Type(pub Rc<CoreType>);
-    #[automatically_derived]
-    impl ::core::fmt::Debug for Type {
-        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Type", &&self.0)
+    impl Display for Chunk {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let mut display_str = "".to_string();
+            let inst_vec = self.disassemble();
+            for inst in inst_vec {
+                display_str.push_str("\n");
+                display_str.push_str(&inst);
+            }
+            f.write_fmt(::core::fmt::Arguments::new_v1(
+                &[""],
+                &[::core::fmt::ArgumentV1::new_display(&display_str)],
+            ))
         }
     }
-    #[automatically_derived]
-    impl ::core::clone::Clone for Type {
-        #[inline]
-        fn clone(&self) -> Type {
-            Type(::core::clone::Clone::clone(&self.0))
-        }
-    }
-    impl Type {
-        pub fn new_with_atomic(name: &str) -> Type {
-            Type(Rc::new(CoreType::ATOMIC(Atomic::new(name))))
-        }
-        pub fn new_with_struct(
-            name: String,
-            symbol_data: &SymbolData<UserDefinedTypeData>,
-        ) -> Type {
-            Type(Rc::new(CoreType::STRUCT(Struct::new(name, symbol_data))))
-        }
-        pub fn new_with_lambda(
-            name: Option<String>,
-            symbol_data: &SymbolData<UserDefinedTypeData>,
-        ) -> Type {
-            Type(Rc::new(CoreType::LAMBDA(Lambda::new(name, symbol_data))))
-        }
-        pub fn new_with_array(element_type: &Type) -> Type {
-            Type(Rc::new(CoreType::ARRAY(Array::new(element_type))))
-        }
-        pub fn new_with_unknown() -> Type {
-            Type(Rc::new(CoreType::UNKNOWN))
-        }
-        pub fn new_with_void() -> Type {
-            Type(Rc::new(CoreType::VOID))
-        }
-        pub fn is_void(&self) -> bool {
-            match self.0.as_ref() {
-                CoreType::VOID => true,
-                _ => false,
+    impl Default for Chunk {
+        fn default() -> Self {
+            Chunk {
+                code: ::alloc::vec::Vec::new(),
+                constants: ::alloc::vec::Vec::new(),
+                line_numbers: ::alloc::vec::Vec::new(),
             }
-        }
-        pub fn is_string(&self) -> bool {
-            match self.0.as_ref() {
-                CoreType::ATOMIC(atomic) => atomic.is_string(),
-                _ => false,
-            }
-        }
-        pub fn is_array(&self) -> bool {
-            match self.0.as_ref() {
-                CoreType::ARRAY(_) => true,
-                _ => false,
-            }
-        }
-        pub fn is_bool(&self) -> bool {
-            match self.0.as_ref() {
-                CoreType::ATOMIC(atomic) => atomic.is_bool(),
-                _ => false,
-            }
-        }
-        pub fn is_int(&self) -> bool {
-            match self.0.as_ref() {
-                CoreType::ATOMIC(atomic) => atomic.is_int(),
-                _ => false,
-            }
-        }
-        pub fn is_float(&self) -> bool {
-            match self.0.as_ref() {
-                CoreType::ATOMIC(atomic) => atomic.is_float(),
-                _ => false,
-            }
-        }
-        pub fn is_numeric(&self) -> bool {
-            if self.is_int() || self.is_float() {
-                true
-            } else {
-                false
-            }
-        }
-        pub fn is_lambda(&self) -> bool {
-            match self.0.as_ref() {
-                CoreType::LAMBDA(_) => true,
-                _ => false,
-            }
-        }
-        pub fn is_unknown(&self) -> bool {
-            match self.0.as_ref() {
-                CoreType::UNKNOWN => true,
-                _ => false,
-            }
-        }
-        pub fn check_operator(&self, other: &Type, op_kind: BinaryOperatorKind) -> Option<Type> {
-            match op_kind {
-                BinaryOperatorKind::Add => match self.0.as_ref() {
-                    CoreType::ATOMIC(atomic_type) => atomic_type.check_add(other),
-                    CoreType::ARRAY(array_type) => array_type.check_add(other),
-                    CoreType::STRUCT(struct_type) => struct_type.check_add(other),
-                    CoreType::LAMBDA(lambda_type) => lambda_type.check_add(other),
-                    CoreType::UNKNOWN => return None,
-                    CoreType::NON_TYPED => return None,
-                    CoreType::VOID => return None,
-                },
-                BinaryOperatorKind::Subtract => ::core::panicking::panic("not yet implemented"),
-                BinaryOperatorKind::Multiply => ::core::panicking::panic("not yet implemented"),
-                BinaryOperatorKind::Divide => ::core::panicking::panic("not yet implemented"),
-                BinaryOperatorKind::Less => ::core::panicking::panic("not yet implemented"),
-                BinaryOperatorKind::LessEqual => ::core::panicking::panic("not yet implemented"),
-                BinaryOperatorKind::Greater => ::core::panicking::panic("not yet implemented"),
-                BinaryOperatorKind::GreaterEqual => ::core::panicking::panic("not yet implemented"),
-                BinaryOperatorKind::DoubleEqual => ::core::panicking::panic("not yet implemented"),
-                BinaryOperatorKind::NotEqual => ::core::panicking::panic("not yet implemented"),
-                BinaryOperatorKind::And => ::core::panicking::panic("not yet implemented"),
-                BinaryOperatorKind::Or => ::core::panicking::panic("not yet implemented"),
-            }
-        }
-    }
-    impl AbstractType for Type {
-        fn is_eq(&self, base_type: &Type) -> bool {
-            match self.0.as_ref() {
-                CoreType::ATOMIC(atomic_type) => atomic_type.is_eq(base_type),
-                CoreType::STRUCT(struct_type) => struct_type.is_eq(base_type),
-                CoreType::LAMBDA(lambda_type) => lambda_type.is_eq(base_type),
-                CoreType::ARRAY(array_type) => array_type.is_eq(base_type),
-                CoreType::UNKNOWN => match base_type.0.as_ref() {
-                    CoreType::UNKNOWN => true,
-                    _ => false,
-                },
-                CoreType::NON_TYPED => match base_type.0.as_ref() {
-                    CoreType::NON_TYPED => true,
-                    _ => false,
-                },
-                CoreType::VOID => match base_type.0.as_ref() {
-                    CoreType::VOID => true,
-                    _ => false,
-                },
-            }
-        }
-    }
-    impl std::fmt::Display for Type {
-        fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-            match self.0.as_ref() {
-                CoreType::ATOMIC(atomic_type) => f.write_fmt(::core::fmt::Arguments::new_v1(
-                    &[""],
-                    &[::core::fmt::ArgumentV1::new_display(
-                        &atomic_type.to_string(),
-                    )],
-                )),
-                CoreType::STRUCT(struct_type) => f.write_fmt(::core::fmt::Arguments::new_v1(
-                    &[""],
-                    &[::core::fmt::ArgumentV1::new_display(
-                        &struct_type.to_string(),
-                    )],
-                )),
-                CoreType::LAMBDA(lambda_type) => f.write_fmt(::core::fmt::Arguments::new_v1(
-                    &[""],
-                    &[::core::fmt::ArgumentV1::new_display(
-                        &lambda_type.to_string(),
-                    )],
-                )),
-                CoreType::ARRAY(array_type) => f.write_fmt(::core::fmt::Arguments::new_v1(
-                    &[""],
-                    &[::core::fmt::ArgumentV1::new_display(
-                        &array_type.to_string(),
-                    )],
-                )),
-                CoreType::UNKNOWN => f.write_fmt(::core::fmt::Arguments::new_v1(
-                    &[""],
-                    &[::core::fmt::ArgumentV1::new_display(&UNKNOWN)],
-                )),
-                CoreType::NON_TYPED => f.write_fmt(::core::fmt::Arguments::new_v1(
-                    &[""],
-                    &[::core::fmt::ArgumentV1::new_display(&NON_TYPED)],
-                )),
-                CoreType::VOID => f.write_fmt(::core::fmt::Arguments::new_v1(&["()"], &[])),
-            }
-        }
-    }
-    impl OperatorCompatiblity for Type {
-        fn check_add(&self, other: &Type) -> Option<Type> {
-            match self.0.as_ref() {
-                CoreType::ATOMIC(atomic_type) => ::core::panicking::panic("not yet implemented"),
-                CoreType::ARRAY(array_type) => ::core::panicking::panic("not yet implemented"),
-                CoreType::STRUCT(struct_type) => ::core::panicking::panic("not yet implemented"),
-                CoreType::LAMBDA(lambda_type) => ::core::panicking::panic("not yet implemented"),
-                CoreType::UNKNOWN => ::core::panicking::panic("not yet implemented"),
-                CoreType::NON_TYPED => ::core::panicking::panic("not yet implemented"),
-                CoreType::VOID => ::core::panicking::panic("not yet implemented"),
-            }
-        }
-        fn check_subtract(&self, other: &Type) -> Option<Type> {
-            ::core::panicking::panic("not yet implemented")
-        }
-        fn check_multiply(&self, other: &Type) -> Option<Type> {
-            ::core::panicking::panic("not yet implemented")
-        }
-        fn check_divide(&self, other: &Type) -> Option<Type> {
-            ::core::panicking::panic("not yet implemented")
-        }
-        fn check_not_equal(&self, other: &Type) -> Option<()> {
-            ::core::panicking::panic("not yet implemented")
-        }
-        fn check_double_equal(&self, other: &Type) -> Option<()> {
-            ::core::panicking::panic("not yet implemented")
-        }
-        fn check_greater(&self, other: &Type) -> Option<()> {
-            ::core::panicking::panic("not yet implemented")
-        }
-        fn check_greater_equal(&self, other: &Type) -> Option<()> {
-            ::core::panicking::panic("not yet implemented")
-        }
-        fn check_less(&self, other: &Type) -> Option<()> {
-            ::core::panicking::panic("not yet implemented")
-        }
-        fn check_less_equal(&self, other: &Type) -> Option<()> {
-            ::core::panicking::panic("not yet implemented")
         }
     }
 }
