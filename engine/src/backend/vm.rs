@@ -115,7 +115,7 @@ impl VM {
                         l_data,
                         r_data,
                         BinaryOperatorKind::Add,
-                        &mut self.object_tracker,
+                        &self.object_tracker,
                     );
                     self.stack.push(result);
                 }
@@ -127,7 +127,7 @@ impl VM {
                         l_data,
                         r_data,
                         BinaryOperatorKind::Subtract,
-                        &mut self.object_tracker,
+                        &self.object_tracker,
                     );
                     self.stack.push(result);
                 }
@@ -139,7 +139,7 @@ impl VM {
                         l_data,
                         r_data,
                         BinaryOperatorKind::Multiply,
-                        &mut self.object_tracker,
+                        &self.object_tracker,
                     );
                     self.stack.push(result);
                 }
@@ -151,7 +151,7 @@ impl VM {
                         l_data,
                         r_data,
                         BinaryOperatorKind::Divide,
-                        &mut self.object_tracker,
+                        &self.object_tracker,
                     );
                     self.stack.push(result);
                 }
@@ -163,7 +163,7 @@ impl VM {
                         l_data,
                         r_data,
                         BinaryOperatorKind::DoubleEqual,
-                        &mut self.object_tracker,
+                        &self.object_tracker,
                     );
                     self.stack.push(result);
                 }
@@ -175,7 +175,7 @@ impl VM {
                         l_data,
                         r_data,
                         BinaryOperatorKind::NotEqual,
-                        &mut self.object_tracker,
+                        &self.object_tracker,
                     );
                     self.stack.push(result);
                 }
@@ -187,7 +187,7 @@ impl VM {
                         l_data,
                         r_data,
                         BinaryOperatorKind::Greater,
-                        &mut self.object_tracker,
+                        &self.object_tracker,
                     );
                     self.stack.push(result);
                 }
@@ -199,7 +199,7 @@ impl VM {
                         l_data,
                         r_data,
                         BinaryOperatorKind::GreaterEqual,
-                        &mut self.object_tracker,
+                        &self.object_tracker,
                     );
                     self.stack.push(result);
                 }
@@ -211,7 +211,7 @@ impl VM {
                         l_data,
                         r_data,
                         BinaryOperatorKind::Less,
-                        &mut self.object_tracker,
+                        &self.object_tracker,
                     );
                     self.stack.push(result);
                 }
@@ -223,7 +223,7 @@ impl VM {
                         l_data,
                         r_data,
                         BinaryOperatorKind::LessEqual,
-                        &mut self.object_tracker,
+                        &self.object_tracker,
                     );
                     self.stack.push(result);
                 }

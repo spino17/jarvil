@@ -110,7 +110,7 @@ impl CoreListObject {
         }
     }
 
-    fn is_equal(l1: &CoreListObject, l2: &CoreListObject, tracker: &mut ObjectTracker) -> bool {
+    fn is_equal(l1: &CoreListObject, l2: &CoreListObject, tracker: &ObjectTracker) -> bool {
         let len1 = l1.len();
         let len2 = l2.len();
         if len1 != len2 {
@@ -205,7 +205,7 @@ impl ListObject {
         ListObject(ptr)
     }
 
-    pub fn is_equal(l1: &ListObject, l2: &ListObject, tracker: &mut ObjectTracker) -> bool {
+    pub fn is_equal(l1: &ListObject, l2: &ListObject, tracker: &ObjectTracker) -> bool {
         unsafe { CoreListObject::is_equal(&*l1.0.as_ptr(), &*l2.0.as_ptr(), tracker) }
     }
 

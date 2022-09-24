@@ -12,7 +12,7 @@ pub fn eval_obj_binary_op(
     l_obj: Object,
     r_obj: Object,
     op_kind: BinaryOperatorKind,
-    tracker: &mut ObjectTracker,
+    tracker: &ObjectTracker,
 ) -> Data {
     match op_kind {
         BinaryOperatorKind::Add => eval_obj_add(l_obj, r_obj, tracker),
@@ -30,7 +30,7 @@ pub fn eval_obj_binary_op(
     }
 }
 
-pub fn eval_obj_add(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_add(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     match l_obj.core {
         CoreObject::STRING(l_str) => {
             let r_str = r_obj.as_string();
@@ -44,43 +44,43 @@ pub fn eval_obj_add(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -
     }
 }
 
-pub fn eval_obj_subtract(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_subtract(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     todo!()
 }
 
-pub fn eval_obj_multiply(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_multiply(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     todo!()
 }
 
-pub fn eval_obj_divide(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_divide(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     todo!()
 }
 
-pub fn eval_obj_greater(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_greater(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     todo!()
 }
 
-pub fn eval_obj_greater_equal(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_greater_equal(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     todo!()
 }
 
-pub fn eval_obj_less(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_less(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     todo!()
 }
 
-pub fn eval_obj_less_equal(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_less_equal(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     todo!()
 }
 
-pub fn eval_obj_and(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_and(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     todo!()
 }
 
-pub fn eval_obj_or(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_or(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     todo!()
 }
 
-pub fn eval_obj_double_equal(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_double_equal(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     match l_obj.core {
         CoreObject::STRING(l_str) => {
             let r_str = r_obj.as_string();
@@ -94,7 +94,7 @@ pub fn eval_obj_double_equal(l_obj: Object, r_obj: Object, tracker: &mut ObjectT
     }
 }
 
-pub fn eval_obj_not_equal(l_obj: Object, r_obj: Object, tracker: &mut ObjectTracker) -> Data {
+pub fn eval_obj_not_equal(l_obj: Object, r_obj: Object, tracker: &ObjectTracker) -> Data {
     match l_obj.core {
         CoreObject::STRING(l_str) => {
             let r_str = r_obj.as_string();
