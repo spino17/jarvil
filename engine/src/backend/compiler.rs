@@ -4,9 +4,9 @@ use std::{cell::RefCell, rc::Rc};
 
 pub struct CoreCompiler {
     pub chunk: Chunk,
-    pub stack_simulated: Vec<usize>,
-    pub curr_depth: usize,
-    pub curr_local_var_index: usize,
+    pub stack_simulated: Vec<usize>, // simulation of runtime snapshots of stack
+    pub curr_depth: usize,           // curr depth in blocks starting with 0
+    pub curr_local_var_index: usize, // relative index of the local variable
     pub parent: Option<Compiler>,
 }
 
