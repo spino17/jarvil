@@ -18,6 +18,7 @@ pub enum Diagnostics {
     IdentifierNotDeclared(IdentifierNotDeclaredError),
     MoreParamsCount(MoreParamsCountError),
     LessParamsCount(LessParamsCountError),
+    MoreThanMaxLimitParamsPassed(MoreThanMaxLimitParamsPassedError),
     MismatchedParamType(MismatchedParamTypeError),
     IdentifierNotCallable(IdentifierNotCallableError),
     ClassmethodDoesNotExist(ClassmethodDoesNotExistError),
@@ -46,6 +47,9 @@ impl Diagnostics {
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MoreParamsCount(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::LessParamsCount(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::MoreThanMaxLimitParamsPassed(diagonstic) => {
+                Report::new(diagonstic.clone())
+            }
             Diagnostics::MismatchedParamType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierNotCallable(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::ClassmethodDoesNotExist(diagonstic) => Report::new(diagonstic.clone()),
@@ -335,6 +339,26 @@ impl LessParamsCountError {
         LessParamsCountError {
             expected_params_count,
             received_params_count,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("more than {} parameters passed in the function", self.max_limit)]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct MoreThanMaxLimitParamsPassedError {
+    params_count: usize,
+    max_limit: usize,
+    #[label("max. limit for parameters to a function is {}, got {}", self.max_limit, self.params_count)]
+    pub span: SourceSpan,
+}
+
+impl MoreThanMaxLimitParamsPassedError {
+    pub fn new(params_count: usize, max_limit: usize, range: TextRange) -> Self {
+        MoreThanMaxLimitParamsPassedError {
+            params_count,
+            max_limit,
             span: range_to_span(range).into(),
         }
     }

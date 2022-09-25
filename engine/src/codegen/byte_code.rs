@@ -33,7 +33,12 @@ impl ByteCodeGenerator {
     }
 
     fn emit_bytecode(&mut self, op_code: OpCode, line_number: usize) {
-        self.compiler.emit_bytecode(op_code, line_number);
+        self.compiler
+            .0
+            .as_ref()
+            .borrow_mut()
+            .chunk
+            .write_instruction(op_code, line_number);
     }
 
     fn open_compiler(&mut self) {
@@ -62,8 +67,8 @@ impl ByteCodeGenerator {
         self.compiler.0.as_ref().borrow_mut().open_block();
     }
 
-    fn close_block(&mut self) {
-        self.compiler.0.as_ref().borrow_mut().close_block();
+    fn close_block(&mut self) -> usize {
+        self.compiler.0.as_ref().borrow_mut().close_block()
     }
 
     fn compile_block(&mut self, block: &BlockNode) {
@@ -71,7 +76,8 @@ impl ByteCodeGenerator {
         for stmt in &block.0.as_ref().borrow().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        self.close_block();
+        let num_of_popped_elements = self.close_block();
+        // emit_bytecode POPN to pop all the local variables from the block.
     }
 
     fn compile_stmt(&mut self, stmt: &StatementNode) {
@@ -81,14 +87,15 @@ impl ByteCodeGenerator {
 
     fn compile_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode) {
         let core_func_decl = func_decl.core_ref();
+        self.open_compiler();
         // TODO - open_compiler() => iterate over params and call variable_decl_callback and set the returned
         // index to symbol entry binded with params
         // iterate over stmts in the block
+        let code = self.close_compiler();
         // close_compiler
         // make function object out of the chunk we get => if name is available then set the func_obj to symbol entry of the
         // function and if there is no name (in case of lambda assignment), just emit a bytecode to push the object on stack
         // and add it to the constant array in curr chunk
-        todo!()
     }
 }
 

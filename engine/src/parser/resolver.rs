@@ -1,3 +1,5 @@
+use crate::constants::common::EIGHT_BIT_MAX_VALUE;
+use crate::error::diagnostics::MoreThanMaxLimitParamsPassedError;
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::{
     ast::{
@@ -340,6 +342,7 @@ impl Resolver {
         let params = &core_func_decl.params;
         let return_type = &core_func_decl.return_type;
         let func_body = &core_func_decl.block;
+        let rparen = &core_func_decl.rparen;
         let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
@@ -348,6 +351,7 @@ impl Resolver {
             }
             None => Type::new_with_void(),
         };
+        let mut params_count: usize = 0;
         if let Some(params) = params {
             let params_iter = params.iter();
             // TODO - check that number of arguments of the function is bounded within
@@ -363,9 +367,19 @@ impl Resolver {
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         symbol_data.0.as_ref().borrow_mut().set_data_type(&type_obj);
                         params_vec.push((variable_name, type_obj));
+                        params_count += 1;
                     }
                 }
             }
+        }
+        if params_count > EIGHT_BIT_MAX_VALUE {
+            let err = MoreThanMaxLimitParamsPassedError::new(
+                params_count,
+                EIGHT_BIT_MAX_VALUE,
+                rparen.range(),
+            );
+            self.errors
+                .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
         self.namespace = func_body.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
         self.walk_block(func_body);
@@ -467,6 +481,7 @@ impl Resolver {
         let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
         let params = &core_lambda_type_decl.params;
         let return_type = &core_lambda_type_decl.return_type;
+        let rparen = &core_lambda_type_decl.rparen;
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -474,6 +489,7 @@ impl Resolver {
             }
             None => Type::new_with_void(),
         };
+        let mut params_count = 0;
         if let Some(params) = params {
             let params_iter = params.iter();
             let mut params_map: FxHashMap<Rc<String>, TextRange> = FxHashMap::default();
@@ -497,8 +513,18 @@ impl Resolver {
                     let type_obj = self.type_obj_from_expression(&core_param.data_type);
                     params_map.insert(variable_name.clone(), range);
                     params_vec.push((variable_name, type_obj));
+                    params_count += 1;
                 }
             }
+        }
+        if params_count > EIGHT_BIT_MAX_VALUE {
+            let err = MoreThanMaxLimitParamsPassedError::new(
+                params_count,
+                EIGHT_BIT_MAX_VALUE,
+                rparen.range(),
+            );
+            self.errors
+                .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(

@@ -1,4 +1,3 @@
-use super::chunk::OpCode;
 use crate::backend::chunk::Chunk;
 use std::{cell::RefCell, rc::Rc};
 
@@ -15,7 +14,7 @@ impl CoreCompiler {
         std::mem::take(&mut self.chunk)
     }
 
-    // below methods simulate the stack during runtime
+    // below methods simulate the `stack during runtime`
     pub fn variable_decl_callback(&mut self) -> usize {
         self.stack_simulated[self.curr_depth] += 1;
         self.curr_local_var_index += 1;
@@ -31,10 +30,12 @@ impl CoreCompiler {
         }
     }
 
-    pub fn close_block(&mut self) {
+    pub fn close_block(&mut self) -> usize {
+        let num_of_popped_elements = self.stack_simulated[self.curr_depth];
         self.curr_local_var_index =
             self.curr_local_var_index - self.stack_simulated[self.curr_depth];
         self.curr_depth -= 1;
+        num_of_popped_elements
     }
 }
 
@@ -64,13 +65,5 @@ impl Compiler {
 
     pub fn chunk(&self) -> Chunk {
         self.0.as_ref().borrow_mut().chunk()
-    }
-
-    pub fn emit_bytecode(&mut self, op_code: OpCode, line_number: usize) {
-        self.0
-            .as_ref()
-            .borrow_mut()
-            .chunk
-            .write_instruction(op_code, line_number);
     }
 }

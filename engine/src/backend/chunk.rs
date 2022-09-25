@@ -25,6 +25,7 @@ pub enum OpCode {
     BINARY_OP_GREATER_EQUAL, // TOS = (TO1 >= TOS)
     BINARY_OP_LESS, // TOS = (TO1 < TOS)
     BINARY_OP_LESS_EQUAL, // TOS = (TO1 <= TOS)
+                   //POPN,  // pop n elements from the stack
 }
 
 pub struct Chunk {
@@ -94,6 +95,7 @@ impl Chunk {
             OpCode::BINARY_OP_GREATER_EQUAL => ("BINARY_OP_GREATER_EQUAL".to_string(), offset + 1),
             OpCode::BINARY_OP_LESS => ("BINARY_OP_LESS".to_string(), offset + 1),
             OpCode::BINARY_OP_LESS_EQUAL => ("BINARY_OP_LESS_EQUAL".to_string(), offset + 1),
+            //OpCode::POPN => ("POPN".to_string(), offset + 1),
         }
     }
 }
