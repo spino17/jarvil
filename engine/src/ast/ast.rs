@@ -1039,12 +1039,23 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
-    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
         match self.core_ref() {
-            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj(scope, code),
-            CoreTypeExpressionNode::ARRAY(array) => array.type_obj(scope, code),
+            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_before_resolved(scope, code),
+            CoreTypeExpressionNode::ARRAY(array) => array.type_obj_before_resolved(scope, code),
             CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
-                user_defined.type_obj(scope, code)
+                user_defined.type_obj_before_resolved(scope, code)
+            }
+            CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID,
+        }
+    }
+
+    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+        match self.core_ref() {
+            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_after_resolved(code),
+            CoreTypeExpressionNode::ARRAY(array) => array.type_obj_after_resolved(code),
+            CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
+                user_defined.type_obj_after_resolved(code)
             }
             CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID,
         }
@@ -1070,7 +1081,11 @@ impl AtomicTypeNode {
         AtomicTypeNode(node)
     }
 
-    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(&self, _scope: &Namespace, code: &Code) -> TypeResolveKind {
+        self.type_obj_after_resolved(code)
+    }
+
+    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
         match self.core_ref().kind.core_ref() {
             CoreTokenNode::OK(ok_token) => {
                 return TypeResolveKind::RESOLVED(Type::new_with_atomic(
@@ -1113,8 +1128,24 @@ impl ArrayTypeNode {
         ArrayTypeNode(node)
     }
 
-    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
-        match self.core_ref().sub_type.type_obj(scope, code) {
+    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+        match self
+            .core_ref()
+            .sub_type
+            .type_obj_before_resolved(scope, code)
+        {
+            TypeResolveKind::RESOLVED(element_type) => {
+                return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
+            }
+            TypeResolveKind::UNRESOLVED(identifier_node) => {
+                return TypeResolveKind::UNRESOLVED(identifier_node)
+            }
+            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+        }
+    }
+
+    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+        match self.core_ref().sub_type.type_obj_after_resolved(code) {
             TypeResolveKind::RESOLVED(element_type) => {
                 return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
             }
@@ -1153,22 +1184,23 @@ impl UserDefinedTypeNode {
         UserDefinedTypeNode(node)
     }
 
-    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(code));
             match scope.lookup_in_types_namespace(&name) {
                 Some((symbol_data, depth)) => {
                     let temp_symbol_data = symbol_data.clone();
+                    ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
                     match &*symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::STRUCT(_) => {
-                            ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
+                            //ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
                             return TypeResolveKind::RESOLVED(Type::new_with_struct(
                                 name.to_string(),
                                 &temp_symbol_data,
                             ));
                         }
                         UserDefinedTypeData::LAMBDA(_) => {
-                            ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
+                            //ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
                             return TypeResolveKind::RESOLVED(Type::new_with_lambda(
                                 Some(name.to_string()),
                                 &temp_symbol_data,
@@ -1178,6 +1210,32 @@ impl UserDefinedTypeNode {
                 }
                 None => return TypeResolveKind::UNRESOLVED(ok_identifier.clone()),
             };
+        }
+        return TypeResolveKind::INVALID;
+    }
+
+    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+        if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
+            let name = Rc::new(ok_identifier.token_value(code));
+            match ok_identifier.user_defined_type_symbol_data(
+                "identifier should be resolved to `SymbolData<UserDefinedTypeData>`",
+            ) {
+                Some(symbol_data) => match &*symbol_data.0.as_ref().borrow() {
+                    UserDefinedTypeData::STRUCT(_) => {
+                        return TypeResolveKind::RESOLVED(Type::new_with_struct(
+                            name.to_string(),
+                            &symbol_data,
+                        ));
+                    }
+                    UserDefinedTypeData::LAMBDA(_) => {
+                        return TypeResolveKind::RESOLVED(Type::new_with_lambda(
+                            Some(name.to_string()),
+                            &symbol_data,
+                        ));
+                    }
+                },
+                None => return TypeResolveKind::UNRESOLVED(ok_identifier.clone()),
+            }
         }
         return TypeResolveKind::INVALID;
     }

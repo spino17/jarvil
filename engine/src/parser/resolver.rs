@@ -325,7 +325,7 @@ impl Resolver {
     }
 
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
-        match type_expr.type_obj(&self.namespace, &self.code) {
+        match type_expr.type_obj_before_resolved(&self.namespace, &self.code) {
             TypeResolveKind::RESOLVED(type_obj) => type_obj,
             TypeResolveKind::UNRESOLVED(identifier) => {
                 let err = IdentifierNotDeclaredError::new(IdentKind::TYPE, identifier.range());

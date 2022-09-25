@@ -68,7 +68,7 @@ pub enum ParamsTypeNCountResult {
 }
 
 pub struct TypeChecker {
-    namespace: Namespace,
+    // namespace: Namespace,
     code: Code,
     errors: Vec<Diagnostics>,
     context: Context,
@@ -77,20 +77,20 @@ pub struct TypeChecker {
 impl TypeChecker {
     pub fn new(code: &Code, scope: &Namespace) -> Self {
         TypeChecker {
-            namespace: scope.clone(),
+            // namespace: scope.clone(),
             code: code.clone(),
             errors: vec![],
             context: Context { func_stack: vec![] },
         }
     }
 
-    pub fn open_scope(&mut self, block: &BlockNode) {
-        self.namespace = block.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
-    }
+    //pub fn open_scope(&mut self, block: &BlockNode) {
+    //    self.namespace = block.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
+    //}
 
-    pub fn close_scope(&mut self) {
-        self.namespace.close_scope();
-    }
+    //pub fn close_scope(&mut self) {
+    //    self.namespace.close_scope();
+    //}
 
     pub fn check_ast(mut self, ast: &BlockNode) -> Vec<Diagnostics> {
         let core_block = ast.0.as_ref().borrow();
@@ -101,11 +101,18 @@ impl TypeChecker {
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
-        match type_expr.type_obj(&self.namespace, &self.code) {
+        match type_expr.type_obj_after_resolved(&self.code) {
             TypeResolveKind::RESOLVED(type_obj) => type_obj,
             TypeResolveKind::UNRESOLVED(_) => return Type::new_with_unknown(),
             TypeResolveKind::INVALID => Type::new_with_unknown(),
         }
+        /*
+        match type_expr.type_obj_before_resolved(&self.namespace, &self.code) {
+            TypeResolveKind::RESOLVED(type_obj) => type_obj,
+            TypeResolveKind::UNRESOLVED(_) => return Type::new_with_unknown(),
+            TypeResolveKind::INVALID => Type::new_with_unknown(),
+        }
+         */
     }
 
     pub fn params_and_return_type_obj_from_expr(
@@ -782,7 +789,7 @@ impl TypeChecker {
             Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),
             None => Type::new_with_void(),
         };
-        self.open_scope(&core_ok_func_decl.block);
+        //self.open_scope(&core_ok_func_decl.block);
         self.context.func_stack.push(return_type_obj.clone());
         let mut has_return_stmt = false;
         for stmt in &core_ok_func_decl.block.0.as_ref().borrow().stmts {
@@ -806,7 +813,7 @@ impl TypeChecker {
             self.errors
                 .push(Diagnostics::NoReturnStatementInFunction(err));
         }
-        self.close_scope();
+        //self.close_scope();
         self.context.func_stack.pop();
     }
 
