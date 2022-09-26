@@ -354,8 +354,6 @@ impl Resolver {
         let mut params_count: usize = 0;
         if let Some(params) = params {
             let params_iter = params.iter();
-            // TODO - check that number of arguments of the function is bounded within
-            // some range (maybe 256 - so that num_of_args fit in 1 byte)
             for param in params_iter {
                 let core_param = param.core_ref();
                 let name = &core_param.name;

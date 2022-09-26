@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use crate::{
     ast::{
         ast::{ASTNode, BlockNode, OkFunctionDeclarationNode, StatementNode},
@@ -29,6 +31,7 @@ impl ByteCodeGenerator {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
+        // TODO - emit `POPN` instruction for popping local variables in the top level block
         (self.compiler.chunk(), self.object_tracker)
     }
 
@@ -76,8 +79,11 @@ impl ByteCodeGenerator {
         for stmt in &block.0.as_ref().borrow().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        let num_of_popped_elements = self.close_block();
-        // emit_bytecode POPN to pop all the local variables from the block.
+        let num_of_popped_elements: u8 = match self.close_block().try_into() {
+            Ok(val) => val,
+            Err(err) => todo!(),
+        };
+        // emit_bytecode `POPN` to pop all the local variables from the block.
     }
 
     fn compile_stmt(&mut self, stmt: &StatementNode) {

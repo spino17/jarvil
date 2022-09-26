@@ -80,6 +80,7 @@ impl<T> Scope<T> {
         Ok(symbol_data)
     }
 
+    // returns symbol table entry and depth of the scope starting from local scope up to parents
     fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData<T>, usize)> {
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
