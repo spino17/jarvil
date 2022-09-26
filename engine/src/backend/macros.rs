@@ -22,6 +22,21 @@ macro_rules! impl_opcode_map {
     };
 }
 
+macro_rules! impl_opcode_display {
+    ($($t: ident),*) => {
+        impl Display for OpCode {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let str = match self {
+                    $(
+                        OpCode::$t => stringify!($t),
+                    )*
+                };
+                write!(f, "{}", str)
+            }
+        }
+    };
+}
+
 macro_rules! impl_eval_arithmetic_op {
     ($s: tt, $t: ident, $u: ident, $v: ident, $r: ident) => {
         match $t {

@@ -28,6 +28,34 @@ pub enum OpCode {
                    //POPN,  // pop n elements from the stack
 }
 
+// impl_opcode_display!(RETURN, PUSH_CONSTANT);
+
+/*
+impl Display for OpCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            OpCode::RETURN => "RETURN",
+            OpCode::PUSH_CONSTANT => "PUSH_CONSTANT",
+            OpCode::UNARY_OP_MINUS => "UNARY_OP_MINUS",
+            OpCode::BINARY_OP_ADD => "BINARY_OP_ADD",
+            OpCode::BINARY_OP_SUBTRACT => "BINARY_OP_SUBTRACT",
+            OpCode::BINARY_OP_MULTIPLY => "BINARY_OP_MULTIPLY",
+            OpCode::BINARY_OP_DIVIDE => "BINARY_OP_DIVIDE",
+            OpCode::PUSH_TRUE => "PUSH_TRUE",
+            OpCode::PUSH_FALSE => "PUSH_FALSE",
+            OpCode::UNARY_OP_NOT => "UNARY_OP_NOT",
+            OpCode::BINARY_OP_DOUBLE_EQUAL => "BINARY_OP_DOUBLE_EQUAL",
+            OpCode::BINARY_OP_NOT_EQUAL => "BINARY_OP_NOT_EQUAL",
+            OpCode::BINARY_OP_GREATER => "BINARY_OP_GREATER",
+            OpCode::BINARY_OP_GREATER_EQUAL => "BINARY_OP_GREATER_EQUAL",
+            OpCode::BINARY_OP_LESS => "BINARY_OP_LESS",
+            OpCode::BINARY_OP_LESS_EQUAL => "BINARY_OP_LESS_EQUAL",
+        };
+        write!(f, "{}", str)
+    }
+}
+ */
+
 pub struct Chunk {
     pub code: Vec<u8>,
     pub constants: Vec<Data>,
@@ -68,8 +96,10 @@ impl Chunk {
     }
 
     pub fn disassemble_instruction(&self, offset: usize) -> (String, usize) {
-        match OP_CODES_MAP[usize::from(self.code[offset])] {
-            OpCode::RETURN => ("RETURN".to_string(), offset + 1),
+        let op_code = &OP_CODES_MAP[usize::from(self.code[offset])];
+        let op_code_str = op_code.to_string();
+        match op_code {
+            OpCode::RETURN => (op_code_str, offset + 1),
             OpCode::PUSH_CONSTANT => {
                 let byte_multiple = get_machine_byte_multiple();
                 let v = self.code[offset + 1..offset + (byte_multiple + 1)]
@@ -77,24 +107,24 @@ impl Chunk {
                     .unwrap();
                 let const_value = &self.constants[usize::from_be_bytes(v)];
                 (
-                    format!("PUSH CONSTANT `{}`", const_value),
+                    format!("{} {}", op_code_str, const_value),
                     offset + (byte_multiple + 1),
                 )
             }
-            OpCode::UNARY_OP_MINUS => ("UNARY_OP_MINUS".to_string(), offset + 1),
-            OpCode::BINARY_OP_ADD => ("BINARY_OP_ADD".to_string(), offset + 1),
-            OpCode::BINARY_OP_SUBTRACT => ("BINARY_OP_SUBTRACT".to_string(), offset + 1),
-            OpCode::BINARY_OP_MULTIPLY => ("BINARY_OP_MULTIPLY".to_string(), offset + 1),
-            OpCode::BINARY_OP_DIVIDE => ("BINARY_OP_DIVIDE".to_string(), offset + 1),
-            OpCode::PUSH_TRUE => ("PUSH `True`".to_string(), offset + 1),
-            OpCode::PUSH_FALSE => ("PUSH `False`".to_string(), offset + 1),
-            OpCode::UNARY_OP_NOT => ("UNARY_NOT".to_string(), offset + 1),
-            OpCode::BINARY_OP_DOUBLE_EQUAL => ("BINARY_OP_DOUBLE_EQUAL".to_string(), offset + 1),
-            OpCode::BINARY_OP_NOT_EQUAL => ("BINARY_OP_NOT_EQUAL".to_string(), offset + 1),
-            OpCode::BINARY_OP_GREATER => ("BINARY_OP_GREATER".to_string(), offset + 1),
-            OpCode::BINARY_OP_GREATER_EQUAL => ("BINARY_OP_GREATER_EQUAL".to_string(), offset + 1),
-            OpCode::BINARY_OP_LESS => ("BINARY_OP_LESS".to_string(), offset + 1),
-            OpCode::BINARY_OP_LESS_EQUAL => ("BINARY_OP_LESS_EQUAL".to_string(), offset + 1),
+            OpCode::UNARY_OP_MINUS => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_ADD => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_SUBTRACT => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_MULTIPLY => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_DIVIDE => (op_code_str, offset + 1),
+            OpCode::PUSH_TRUE => (op_code_str, offset + 1),
+            OpCode::PUSH_FALSE => (op_code_str, offset + 1),
+            OpCode::UNARY_OP_NOT => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_DOUBLE_EQUAL => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_NOT_EQUAL => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_GREATER => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_GREATER_EQUAL => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_LESS => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_LESS_EQUAL => (op_code_str, offset + 1),
             //OpCode::POPN => ("POPN".to_string(), offset + 1),
         }
     }

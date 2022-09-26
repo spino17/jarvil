@@ -15,15 +15,18 @@ pub fn impl_opcode_util_macro(ast: &syn::DeriveInput) -> TokenStream {
     let variant_iter = &mut enum_data.variants.iter();
     let mut count: usize = 0;
     let mut impl_opcode_str = "".to_string();
+    let mut impl_opcode_display = "".to_string();
     let mut impl_opcode_map_str = "(".to_string();
     let mut flag = false;
     while let Some(variant) = variant_iter.next() {
         let variant_name = &variant.ident.to_string();
         if flag {
             impl_opcode_str.push_str(", ");
+            impl_opcode_display.push_str(", ");
             impl_opcode_map_str.push_str(", ");
         }
         impl_opcode_str.push_str(&format!("({}, {})", variant_name, count));
+        impl_opcode_display.push_str(variant_name);
         impl_opcode_map_str.push_str(&format!("{}", variant_name));
         flag = true;
         count = count + 1;
@@ -31,9 +34,11 @@ pub fn impl_opcode_util_macro(ast: &syn::DeriveInput) -> TokenStream {
     impl_opcode_map_str.push_str(")");
     impl_opcode_map_str.push_str(&format!(", {}", count));
     let impl_opcode_macro = get_macro_expr_stmt("impl_opcode", &impl_opcode_str);
+    let impl_opcode_display_macro = get_macro_expr_stmt("impl_opcode_display", &impl_opcode_display);
     let impl_opcode_map_macro = get_macro_expr_stmt("impl_opcode_map", &impl_opcode_map_str);
     let gen = quote! {
         #impl_opcode_macro;
+        #impl_opcode_display_macro;
         #impl_opcode_map_macro;
     };
     gen.into()

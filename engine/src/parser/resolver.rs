@@ -540,6 +540,7 @@ impl Resolver {
 }
 
 impl Visitor for Resolver {
+    // TODO - add node to handle block also. (opening and closing scope)
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match self.mode {
             ResolverMode::DECLARE => match node {
