@@ -29,6 +29,7 @@ use owo_colors::Style;
 use std::collections::HashMap;
 use std::env::args;
 use std::hash::Hash;
+use std::ptr::NonNull;
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -193,4 +194,6 @@ fn main() {
         std::mem::ManuallyDrop::drop(&mut v.0);
     }
      */
+    let v = vec![1, 2, 3, 4];
+    let v_ptr = v.as_ptr();
 }

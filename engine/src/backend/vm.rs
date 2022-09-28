@@ -7,7 +7,7 @@ use super::{
     stack::Stack,
 };
 use crate::lexer::token::{BinaryOperatorKind, UnaryOperatorKind};
-use std::{convert::TryInto, fmt::Display, ptr::NonNull};
+use std::{convert::TryInto, fmt::Display};
 
 pub enum InterpretResult {
     OK,

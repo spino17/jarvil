@@ -28,34 +28,6 @@ pub enum OpCode {
                    //POPN,  // pop n elements from the stack
 }
 
-// impl_opcode_display!(RETURN, PUSH_CONSTANT);
-
-/*
-impl Display for OpCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
-            OpCode::RETURN => "RETURN",
-            OpCode::PUSH_CONSTANT => "PUSH_CONSTANT",
-            OpCode::UNARY_OP_MINUS => "UNARY_OP_MINUS",
-            OpCode::BINARY_OP_ADD => "BINARY_OP_ADD",
-            OpCode::BINARY_OP_SUBTRACT => "BINARY_OP_SUBTRACT",
-            OpCode::BINARY_OP_MULTIPLY => "BINARY_OP_MULTIPLY",
-            OpCode::BINARY_OP_DIVIDE => "BINARY_OP_DIVIDE",
-            OpCode::PUSH_TRUE => "PUSH_TRUE",
-            OpCode::PUSH_FALSE => "PUSH_FALSE",
-            OpCode::UNARY_OP_NOT => "UNARY_OP_NOT",
-            OpCode::BINARY_OP_DOUBLE_EQUAL => "BINARY_OP_DOUBLE_EQUAL",
-            OpCode::BINARY_OP_NOT_EQUAL => "BINARY_OP_NOT_EQUAL",
-            OpCode::BINARY_OP_GREATER => "BINARY_OP_GREATER",
-            OpCode::BINARY_OP_GREATER_EQUAL => "BINARY_OP_GREATER_EQUAL",
-            OpCode::BINARY_OP_LESS => "BINARY_OP_LESS",
-            OpCode::BINARY_OP_LESS_EQUAL => "BINARY_OP_LESS_EQUAL",
-        };
-        write!(f, "{}", str)
-    }
-}
- */
-
 pub struct Chunk {
     pub code: Vec<u8>,
     pub constants: Vec<Data>,

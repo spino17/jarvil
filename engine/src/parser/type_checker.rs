@@ -756,6 +756,7 @@ impl TypeChecker {
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
             if !r_type.is_lambda() {
                 // variable with lambda type is already set in resolving phase => see `resolve_function` method
+                // TODO - add check that r_type should not be void! variable declaration is not allowed for void r_assign
                 if let Some(symbol_data) = ok_identifier.variable_symbol_data(
                     "variable name should be resolved to `SymbolData<VariableData>`",
                 ) {
