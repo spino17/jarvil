@@ -90,7 +90,7 @@ impl RuntimeStackSimulator {
 }
 
 struct UpValue {
-    index: usize,
+    index: usize, // if is_local is `true` then this would be relative stack_index of the captured local variable
     is_local: bool,
 }
 
@@ -136,16 +136,19 @@ impl Resolver {
         }
     }
 
+    pub fn func_context(&mut self) -> &mut FunctionContext {
+        let len = self.func_context.len();
+        &mut self.func_context[len - 1]
+    }
+
     pub fn open_block(&mut self) {
         self.namespace.open_scope();
-        let len = self.func_context.len();
-        self.func_context[len - 1].frame_stack.open_block();
+        self.func_context().frame_stack.open_block();
     }
 
     pub fn close_block(&mut self) {
         self.namespace.close_scope();
-        let len = self.func_context.len();
-        self.func_context[len - 1].frame_stack.close_block();
+        self.func_context().frame_stack.close_block();
     }
 
     pub fn variable_decl_callback(&mut self) -> usize {
@@ -169,10 +172,7 @@ impl Resolver {
     }
 
     pub fn rollback_variable_decl(&mut self) {
-        let len = self.func_context.len();
-        self.func_context[len - 1]
-            .frame_stack
-            .rollback_variable_decl();
+        self.func_context().frame_stack.rollback_variable_decl();
     }
 
     pub fn open_func(&mut self, node: &OkFunctionDeclarationNode) {
@@ -758,6 +758,7 @@ impl Visitor for Resolver {
                 }
                 _ => return Some(()),
             },
+            // TODO - add here all nodes having block
             ResolverMode::RESOLVE => match node {
                 ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
                     self.resolve_function(func_decl);
