@@ -1,5 +1,8 @@
+use crate::backend::stack;
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
-use crate::error::diagnostics::MoreThanMaxLimitParamsPassedError;
+use crate::error::diagnostics::{
+    LocalVariableDeclarationLimitReachedError, MoreThanMaxLimitParamsPassedError,
+};
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::{
     ast::{
@@ -37,11 +40,89 @@ pub enum ResolverMode {
     RESOLVE, // second pass
 }
 
+pub struct RuntimeStackSimulator {
+    local_indexes: Vec<usize>,   // simulation of runtime snapshots of stack
+    curr_depth: usize,           // curr depth in blocks starting with 0
+    curr_local_var_index: usize, // relative index of the local variable
+}
+
+impl Default for RuntimeStackSimulator {
+    fn default() -> Self {
+        RuntimeStackSimulator {
+            local_indexes: vec![0],
+            curr_depth: 0,
+            curr_local_var_index: 0,
+        }
+    }
+}
+
+impl RuntimeStackSimulator {
+    pub fn variable_decl_callback(&mut self) -> Result<usize, usize> {
+        self.local_indexes[self.curr_depth] += 1;
+        let curr_index = self.curr_local_var_index;
+        self.curr_local_var_index += 1;
+        if self.curr_local_var_index > EIGHT_BIT_MAX_VALUE {
+            return Err(curr_index);
+        }
+        Ok(curr_index)
+    }
+
+    pub fn rollback_variable_decl(&mut self) {
+        self.local_indexes[self.curr_depth] -= 1;
+        self.curr_local_var_index -= 1;
+    }
+
+    pub fn open_block(&mut self) {
+        self.curr_depth += 1;
+        if self.curr_depth >= self.local_indexes.len() {
+            self.local_indexes.push(0);
+        } else {
+            self.local_indexes[self.curr_depth] = 0;
+        }
+    }
+
+    pub fn close_block(&mut self) -> usize {
+        let num_of_popped_elements = self.local_indexes[self.curr_depth];
+        self.curr_local_var_index = self.curr_local_var_index - self.local_indexes[self.curr_depth];
+        self.curr_depth -= 1;
+        num_of_popped_elements
+    }
+}
+
+struct UpValue {
+    index: usize,
+    is_local: bool,
+}
+
+pub struct FunctionContext {
+    upvalues: Vec<UpValue>,
+    frame_stack: RuntimeStackSimulator,
+    is_local_var_limit_overflow: bool,
+    range: TextRange,
+}
+
+impl FunctionContext {
+    fn new(range: TextRange) -> Self {
+        FunctionContext {
+            upvalues: vec![],
+            frame_stack: RuntimeStackSimulator::default(),
+            is_local_var_limit_overflow: false,
+            range,
+        }
+    }
+
+    fn add_upvalue(&mut self, index: usize, is_local: bool) {
+        let value = UpValue { index, is_local };
+        self.upvalues.push(value);
+    }
+}
+
 pub struct Resolver {
     namespace: Namespace,
     pub code: Code,
     errors: Vec<Diagnostics>,
     mode: ResolverMode,
+    func_context: Vec<FunctionContext>,
 }
 
 impl Resolver {
@@ -51,10 +132,63 @@ impl Resolver {
             code: code.clone(),
             errors: vec![],
             mode: ResolverMode::DECLARE,
+            func_context: vec![],
         }
     }
 
+    pub fn open_block(&mut self) {
+        self.namespace.open_scope();
+        let len = self.func_context.len();
+        self.func_context[len - 1].frame_stack.open_block();
+    }
+
+    pub fn close_block(&mut self) {
+        self.namespace.close_scope();
+        let len = self.func_context.len();
+        self.func_context[len - 1].frame_stack.close_block();
+    }
+
+    pub fn variable_decl_callback(&mut self) -> usize {
+        let len = self.func_context.len();
+        let curr_func_context = &mut self.func_context[len - 1];
+        match curr_func_context.frame_stack.variable_decl_callback() {
+            Ok(stack_index) => stack_index,
+            Err(stack_index) => {
+                if !curr_func_context.is_local_var_limit_overflow {
+                    let err = LocalVariableDeclarationLimitReachedError::new(
+                        EIGHT_BIT_MAX_VALUE,
+                        curr_func_context.range,
+                    );
+                    self.errors
+                        .push(Diagnostics::LocalVariableDeclarationLimitReached(err));
+                    curr_func_context.is_local_var_limit_overflow = true;
+                }
+                return stack_index;
+            }
+        }
+    }
+
+    pub fn rollback_variable_decl(&mut self) {
+        let len = self.func_context.len();
+        self.func_context[len - 1]
+            .frame_stack
+            .rollback_variable_decl();
+    }
+
+    pub fn open_func(&mut self, node: &OkFunctionDeclarationNode) {
+        self.namespace.open_scope();
+        self.func_context.push(FunctionContext::new(node.range()));
+    }
+
+    pub fn close_func(&mut self) -> FunctionContext {
+        self.namespace.close_scope();
+        self.func_context
+            .pop()
+            .expect("`func_context` will never be empty")
+    }
+
     pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
+        self.func_context.push(FunctionContext::new(ast.range()));
         let code_block = ast.0.as_ref().borrow();
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
@@ -144,14 +278,26 @@ impl Resolver {
     pub fn try_declare_and_bind_variable(
         &mut self,
         identifier: &OkIdentifierNode,
+        stack_index: usize,
     ) -> Option<(Rc<String>, TextRange)> {
-        let declare_fn = |namespace: &Namespace, name: &Rc<String>, decl_range: TextRange| {
-            namespace.declare_variable(name, decl_range)
+        let declare_fn = |namespace: &Namespace,
+                          name: &Rc<String>,
+                          stack_index: usize,
+                          decl_range: TextRange| {
+            namespace.declare_variable(name, stack_index, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
             identifier.bind_variable_decl(symbol_data, 0)
         };
-        self.try_declare_and_bind(identifier, declare_fn, bind_fn)
+        let name = Rc::new(identifier.token_value(&self.code));
+        let symbol_data = declare_fn(&self.namespace, &name, stack_index, identifier.range());
+        match symbol_data {
+            Ok(symbol_data) => {
+                bind_fn(identifier, &symbol_data);
+                return None;
+            }
+            Err(previous_decl_range) => return Some((name, previous_decl_range)),
+        }
     }
 
     pub fn try_declare_and_bind_function(
@@ -202,9 +348,11 @@ impl Resolver {
             return;
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+            let stack_index = self.variable_decl_callback();
             if let Some((name, previous_decl_range)) =
-                self.try_declare_and_bind_variable(ok_identifier)
+                self.try_declare_and_bind_variable(ok_identifier, stack_index)
             {
+                self.rollback_variable_decl();
                 let err = IdentifierAlreadyDeclaredError::new(
                     IdentKind::VARIABLE,
                     name.to_string(),
@@ -223,7 +371,7 @@ impl Resolver {
         let params = &core_func_decl.params;
         let func_body = &core_func_decl.block;
         let kind = &core_func_decl.kind;
-        self.namespace.open_scope();
+        self.open_func(func_decl);
         if let Some(params) = params {
             let params_iter = params.iter();
             for param in params_iter {
@@ -232,9 +380,13 @@ impl Resolver {
                 if let CoreIdentifierNode::OK(ok_identifier) = param_name.core_ref() {
                     let name = Rc::new(ok_identifier.token_value(&self.code));
                     let range = ok_identifier.range();
-                    match self.namespace.declare_variable(&name, range) {
-                        Ok(symbol_data) => ok_identifier.bind_variable_decl(&symbol_data, 0),
+                    let stack_index = self.variable_decl_callback();
+                    match self.namespace.declare_variable(&name, stack_index, range) {
+                        Ok(symbol_data) => {
+                            ok_identifier.bind_variable_decl(&symbol_data, 0);
+                        }
                         Err(previous_decl_range) => {
+                            self.rollback_variable_decl();
                             let err = IdentifierAlreadyDeclaredError::new(
                                 IdentKind::ARGUMENT,
                                 name.to_string(),
@@ -250,7 +402,8 @@ impl Resolver {
         }
         self.walk_block(func_body);
         func_body.set_scope(&self.namespace);
-        self.namespace.close_scope();
+        let func_context = self.close_func();
+        // TODO - add this func_contex to argument `OkFunctionDeclarationNode` node
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 match kind {
@@ -269,9 +422,11 @@ impl Resolver {
                         }
                     }
                     FunctionKind::LAMBDA => {
+                        let stack_index = self.variable_decl_callback();
                         if let Some((name, previous_decl_range)) =
-                            self.try_declare_and_bind_variable(ok_identifier)
+                            self.try_declare_and_bind_variable(ok_identifier, stack_index)
                         {
+                            self.rollback_variable_decl();
                             let err = IdentifierAlreadyDeclaredError::new(
                                 IdentKind::VARIABLE,
                                 name.to_string(),
@@ -540,7 +695,6 @@ impl Resolver {
 }
 
 impl Visitor for Resolver {
-    // TODO - add node to handle block also. (opening and closing scope)
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match self.mode {
             ResolverMode::DECLARE => match node {
@@ -591,6 +745,15 @@ impl Visitor for Resolver {
                         }
                         _ => {}
                     }
+                    return None;
+                }
+                ASTNode::BLOCK(block) => {
+                    self.open_block();
+                    let core_block = block.0.as_ref().borrow();
+                    for stmt in &core_block.stmts {
+                        self.walk_stmt_indent_wrapper(stmt);
+                    }
+                    self.close_block();
                     return None;
                 }
                 _ => return Some(()),

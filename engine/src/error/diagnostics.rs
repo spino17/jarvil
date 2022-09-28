@@ -11,6 +11,7 @@ pub enum Diagnostics {
     InvalidChar(InvalidCharError),
     NoClosingSymbol(NoClosingSymbolError),
     MissingToken(MissingTokenError),
+    LocalVariableDeclarationLimitReached(LocalVariableDeclarationLimitReachedError),
     InvalidTrailingTokens(InvalidTrailingTokensError),
     IncorrectlyIndentedBlock(IncorrectlyIndentedBlockError),
     InvalidLValue(InvalidLValueError),
@@ -40,6 +41,9 @@ impl Diagnostics {
             Diagnostics::InvalidChar(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::NoClosingSymbol(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MissingToken(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::LocalVariableDeclarationLimitReached(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
             Diagnostics::InvalidTrailingTokens(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IncorrectlyIndentedBlock(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InvalidLValue(diagnostic) => Report::new(diagnostic.clone()),
@@ -222,6 +226,24 @@ impl InvalidLValueError {
                     .style(Style::new().yellow())
                     .to_string(),
             ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("local variables declarations limit reached")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct LocalVariableDeclarationLimitReachedError {
+    pub max_limit: usize,
+    #[label("max. limit for local variable declarations in a single function block is {}, got more than that", self.max_limit)]
+    pub span: SourceSpan,
+}
+
+impl LocalVariableDeclarationLimitReachedError {
+    pub fn new(max_limit: usize, range: TextRange) -> Self {
+        LocalVariableDeclarationLimitReachedError {
+            max_limit,
+            span: range_to_span(range).into(),
         }
     }
 }
