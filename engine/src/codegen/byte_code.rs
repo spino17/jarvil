@@ -10,6 +10,7 @@ use crate::{
         compiler::Compiler,
         object::core::ObjectTracker,
     },
+    error::constants::RESOLVE_PHASE_BUG_ERROR_MSQ,
 };
 
 struct ByteCodeGenerator {
@@ -81,7 +82,7 @@ impl ByteCodeGenerator {
         }
         let num_of_popped_elements: u8 = match self.close_block().try_into() {
             Ok(val) => val,
-            Err(err) => todo!(),
+            Err(_) => unreachable!("{}", RESOLVE_PHASE_BUG_ERROR_MSQ),
         };
         // emit_bytecode `POPN` to pop all the local variables from the block.
     }

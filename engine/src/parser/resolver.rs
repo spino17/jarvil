@@ -197,6 +197,7 @@ impl Resolver {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
+        assert!(self.func_context().upvalues.len() == 0);
         (self.namespace, self.errors)
     }
 
@@ -378,24 +379,19 @@ impl Resolver {
                 let core_param = param.core_ref();
                 let param_name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = param_name.core_ref() {
-                    let name = Rc::new(ok_identifier.token_value(&self.code));
-                    let range = ok_identifier.range();
                     let stack_index = self.variable_decl_callback();
-                    match self.namespace.declare_variable(&name, stack_index, range) {
-                        Ok(symbol_data) => {
-                            ok_identifier.bind_variable_decl(&symbol_data, 0);
-                        }
-                        Err(previous_decl_range) => {
-                            self.rollback_variable_decl();
-                            let err = IdentifierAlreadyDeclaredError::new(
-                                IdentKind::ARGUMENT,
-                                name.to_string(),
-                                previous_decl_range,
-                                range,
-                            );
-                            self.errors
-                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                        }
+                    if let Some((name, previous_decl_range)) =
+                        self.try_declare_and_bind_variable(ok_identifier, stack_index)
+                    {
+                        self.rollback_variable_decl();
+                        let err = IdentifierAlreadyDeclaredError::new(
+                            IdentKind::VARIABLE,
+                            name.to_string(),
+                            previous_decl_range,
+                            ok_identifier.range(),
+                        );
+                        self.errors
+                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
                     }
                 }
             }
