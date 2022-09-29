@@ -1,4 +1,3 @@
-use crate::backend::stack;
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
     LocalVariableDeclarationLimitReachedError, MoreThanMaxLimitParamsPassedError,
@@ -111,9 +110,10 @@ impl FunctionContext {
         }
     }
 
-    fn add_upvalue(&mut self, index: usize, is_local: bool) {
+    fn add_upvalue(&mut self, index: usize, is_local: bool) -> usize {
         let value = UpValue { index, is_local };
         self.upvalues.push(value);
+        self.upvalues.len()
     }
 }
 
@@ -139,6 +139,15 @@ impl Resolver {
     pub fn func_context(&mut self) -> &mut FunctionContext {
         let len = self.func_context.len();
         &mut self.func_context[len - 1]
+    }
+
+    pub fn add_upvalue_to_func(
+        &mut self,
+        func_index: usize,
+        index: usize,
+        is_local: bool,
+    ) -> usize {
+        self.func_context[func_index].add_upvalue(index, is_local)
     }
 
     pub fn open_block(&mut self) {
@@ -175,9 +184,9 @@ impl Resolver {
         self.func_context().frame_stack.rollback_variable_decl();
     }
 
-    pub fn open_func(&mut self, node: &OkFunctionDeclarationNode) {
+    pub fn open_func(&mut self, range: TextRange) {
         self.namespace.open_scope();
-        self.func_context.push(FunctionContext::new(node.range()));
+        self.func_context.push(FunctionContext::new(range));
     }
 
     pub fn close_func(&mut self) -> FunctionContext {
@@ -197,7 +206,7 @@ impl Resolver {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        assert!(self.func_context().upvalues.len() == 0);
+        assert!(self.func_context().upvalues.len() == 0); // top-level block cannot have upvalues
         (self.namespace, self.errors)
     }
 
@@ -372,7 +381,7 @@ impl Resolver {
         let params = &core_func_decl.params;
         let func_body = &core_func_decl.block;
         let kind = &core_func_decl.kind;
-        self.open_func(func_decl);
+        self.open_func(func_decl.range());
         if let Some(params) = params {
             let params_iter = params.iter();
             for param in params_iter {
