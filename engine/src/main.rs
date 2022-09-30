@@ -24,6 +24,7 @@ use jarvil::backend::object::list::ListObject;
 use jarvil::backend::object::string::StringObject;
 use jarvil::backend::vm::VM;
 use jarvil::backend::{data::Data, object::core::Object};
+use jarvil::types::array;
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
 use std::collections::HashMap;
@@ -196,4 +197,11 @@ fn main() {
      */
     let v = vec![1, 2, 3, 4];
     let v_ptr = v.as_ptr();
+
+    let mut u = [1, 2, 3];
+    let u_ptr = u.as_mut_ptr();
+    unsafe {
+        *u_ptr.add(1) = 10;
+    }
+    println!("{:?}", u);
 }

@@ -190,29 +190,3 @@ impl Drop for ObjectTracker {
         }
     }
 }
-
-/*
-#[derive(Debug, Clone)]
-pub struct ObjectTracker(Rc<RefCell<CoreObjectTracker>>);
-
-impl Default for ObjectTracker {
-    fn default() -> Self {
-        ObjectTracker(Rc::new(RefCell::new(CoreObjectTracker {
-            objects: NonNull::dangling(),
-            len: 0,
-        })))
-    }
-}
-
-impl ObjectTracker {
-    pub fn add_object(&self, core_obj: CoreObject) -> Object {
-        self.0.as_ref().borrow_mut().add_object(core_obj)
-    }
-}
-
-impl Display for ObjectTracker {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.as_ref().borrow().to_string())
-    }
-}
- */

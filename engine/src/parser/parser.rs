@@ -333,43 +333,6 @@ impl PackratParser {
         }
     }
 
-    // ------------------- packrat parser caching utilities -------------------
-    /*
-    pub fn get_or_set_cache<
-        T: std::fmt::Debug,
-        F: FnOnce(&mut PackratParser) -> Result<T, JarvilError>,
-        G: FnOnce(&Result<T, JarvilError>) -> Result<T, JarvilError>,
-        H: FnOnce(&T) -> usize,
-    >(
-        &mut self,
-        cache_map: &Rc<RefCell<FxHashMap<usize, Result<T, JarvilError>>>>,
-        routine_fn: F,
-        clone_result_fn: G,
-        get_lookahead_fn: H,
-        curr_lookahead: usize,
-        message: &str,
-    ) -> Result<T, JarvilError> {
-        match cache_map.borrow().get(&curr_lookahead) {
-            Some(result) => {
-                let result = clone_result_fn(result);
-                match result {
-                    Ok(response) => {
-                        self.set_lookahead(get_lookahead_fn(&response));
-                        return Ok(response);
-                    }
-                    Err(err) => return Err(err),
-                }
-            }
-            _ => {}
-        }
-        let result = routine_fn(self);
-        let result_entry = clone_result_fn(&result);
-        // println!("cache missed: pushing the entry = {:?} in map of {}", result_entry, message);
-        cache_map.borrow_mut().insert(curr_lookahead, result_entry);
-        result
-    }
-     */
-
     // ------------------- production rule matching function for terminals and non-terminals -------------------
     // code
     pub fn code(&mut self, token_vec: Vec<Token>) -> BlockNode {

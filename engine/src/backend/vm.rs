@@ -17,8 +17,6 @@ pub enum InterpretResult {
 
 pub struct VM {
     // TODO - add allocator also to be used to allocate and deallocate all the memory.
-    //objects: NonNull<Object>,
-    //objects_len: usize,
     pub object_tracker: ObjectTracker,
     pub chunk: Chunk, // will remove this once `ByteCodeGenerator` is in place
     ip: usize,        // `ip` points to the instruction about to be executed
@@ -28,35 +26,12 @@ pub struct VM {
 impl VM {
     pub fn new() -> Self {
         VM {
-            // objects: NonNull::dangling(),
-            // objects_len: 0,
             object_tracker: ObjectTracker::default(), // TODO - take this from compiler unit
             chunk: Chunk::default(),
             ip: 0,
             stack: Stack::new(),
         }
     }
-
-    /*
-    pub fn set_object(&mut self, core_object: CoreObject) -> Object {
-        let obj = if self.objects_len == 0 {
-            Object {
-                core: core_object,
-                next: None,
-            }
-        } else {
-            let ptr = self.objects.clone();
-            Object {
-                core: core_object,
-                next: Some(ptr),
-            }
-        };
-        self.objects = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(obj.clone()))) };
-        self.objects_len = self.objects_len + 1;
-        //println!("allocated: {}", obj);
-        obj
-    }
-     */
 
     pub fn advance_ip(&mut self) {
         self.ip = self.ip + 1;
