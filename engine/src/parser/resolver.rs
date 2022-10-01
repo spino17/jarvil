@@ -263,11 +263,10 @@ impl Resolver {
         self.try_resolving(identifier, lookup_fn, bind_fn)
     }
 
-    pub fn try_resolving_variable_with_upvalues(
+    pub fn lookup_in_variables_namespace_with_upvalues(
         &mut self,
-        identifier: &OkIdentifierNode,
-    ) -> Option<Rc<String>> {
-        let name = Rc::new(identifier.token_value(&self.code));
+        key: &Rc<String>,
+    ) -> Option<(SymbolData<VariableData>, usize, VariableCaptureKind)> {
         let mut curr_func_context_index = self.func_context.len() - 1;
         let mut total_resolved_depth = 0;
         let mut curr_scope = self.namespace.variable_scope().clone();
@@ -278,19 +277,12 @@ impl Resolver {
                 + 1;
             let mut curr_scope_depth = 1;
             while curr_depth >= curr_scope_depth {
-                // TODO - lookup into the curr_scope, if not found update the scope to parent and continue
-                // if found, get the index from symbol entry
-                match curr_scope.get(&name) {
+                match curr_scope.get(&key) {
                     Some(symbol_data) => {
-                        // TODO - set func_context[curr_func_context_index + 1] to symbol entry index.
-                        // Check if it's with the same function, then variable is local to function and if not
-                        // set the index to next func_context to upvalue
-                        // bind to the identifier node
                         let capture_kind = if curr_func_context_index == self.func_context.len() - 1
                         {
                             VariableCaptureKind::LOCAL
                         } else {
-                            // resolved outside the function
                             symbol_data.0.as_ref().borrow_mut().set_is_captured();
                             self.add_upvalue_to_func(
                                 curr_func_context_index + 1,
@@ -307,22 +299,18 @@ impl Resolver {
                                     .index,
                             )
                         };
-                        // TODO - pass capture_kind into this function
-                        identifier.bind_variable_decl(&symbol_data, total_resolved_depth);
-                        return None;
+                        return Some((symbol_data, total_resolved_depth, capture_kind));
                     }
                     None => match &curr_scope.parent() {
                         Some(parent_scope) => {
                             curr_scope = parent_scope.clone();
                         }
-                        None => return Some(name),
+                        None => return None,
                     },
                 };
                 curr_scope_depth += 1;
                 total_resolved_depth += 1;
             }
-            // if it did not find in the above function then next func_context should have entry to upvalues as the index of this
-            // function upvalue.
             if curr_func_context_index < self.func_context.len() - 1 {
                 self.add_upvalue_to_func(
                     curr_func_context_index + 1,
@@ -332,7 +320,7 @@ impl Resolver {
             }
             curr_func_context_index -= 1;
         }
-        Some(name)
+        None
     }
 
     pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
