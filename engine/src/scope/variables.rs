@@ -25,4 +25,8 @@ impl VariableData {
     pub fn set_is_captured(&mut self) {
         self.is_captured = true;
     }
+
+    pub fn stack_index(&self) -> usize {
+        self.stack_index
+    }
 }

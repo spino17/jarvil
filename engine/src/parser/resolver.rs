@@ -88,6 +88,7 @@ impl RuntimeStackSimulator {
     }
 }
 
+#[derive(Clone)]
 struct UpValue {
     index: usize, // if is_local is `true` then this would be relative stack_index of the captured local variable
     is_local: bool,
@@ -268,7 +269,6 @@ impl Resolver {
         let name = Rc::new(identifier.token_value(&self.code));
         let mut curr_func_context_index = self.func_context.len() - 1;
         let mut total_resolved_depth = 0;
-        let slot_index: Option<usize> = None;
         let mut curr_scope = self.namespace.variable_scope().clone();
         while curr_func_context_index >= 0 {
             let curr_depth = self.func_context[curr_func_context_index]
@@ -279,23 +279,44 @@ impl Resolver {
             while curr_depth >= curr_scope_depth {
                 // TODO - lookup into the curr_scope, if not found update the scope to parent and continue
                 // if found, get the index from symbol entry
-                let parent_scope = match curr_scope.get(&name) {
-                    Some(value) => {
-                        todo!();
-                    }
-                    None => {
-                        match &curr_scope.parent() {
-                            Some(parent_env) => parent_env.clone(),
-                            None => todo!(), // unreachable ?
+                match curr_scope.get(&name) {
+                    Some(symbol_data) => {
+                        // TODO - set func_context[curr_func_context_index + 1] to symbol entry index.
+                        // Check if it's with the same function, then variable is local to function and if not
+                        // set the index to next func_context to upvalue
+                        // bind to the identifier node
+                        if curr_func_context_index == self.func_context.len() - 1 {
+                            todo!()
+                        } else {
+                            // resolved outside the function
+                            self.add_upvalue_to_func(
+                                curr_func_context_index + 1,
+                                symbol_data.0.as_ref().borrow().stack_index(),
+                                true,
+                            );
                         }
+                        // send self.func_context.last().upvalues.last().clone() also in below function if it is outside the function
+                        identifier.bind_variable_decl(&symbol_data, total_resolved_depth);
                     }
+                    None => match &curr_scope.parent() {
+                        Some(parent_scope) => {
+                            curr_scope = parent_scope.clone();
+                        }
+                        None => return Some(name),
+                    },
                 };
-                curr_scope = parent_scope;
                 curr_scope_depth += 1;
                 total_resolved_depth += 1;
             }
-            // TODO - add the upvalue.len() + 1 of previous func_context to the upvalues of curr function context
-            // if slot_index is None set it to curr upvalue.len()
+            // if it did not find in the above function then next func_context should have entry to upvalues as the index of this
+            // function upvalue.
+            if curr_func_context_index < self.func_context.len() - 1 {
+                self.add_upvalue_to_func(
+                    curr_func_context_index + 1,
+                    self.func_context[curr_func_context_index].upvalues.len() + 1,
+                    false,
+                );
+            }
             curr_func_context_index -= 1;
         }
         Some(name)

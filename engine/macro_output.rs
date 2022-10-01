@@ -1,7 +1,7 @@
 pub mod chunk {
     #[macro_use]
     use jarvil_macros::OpCodeUtil;
-    use super::helper::get_machine_byte_multiple;
+    use super::helper::get_machine_byte_factor;
     use crate::backend::data::Data;
     use std::{convert::TryInto, fmt::Display};
     pub enum OpCode {
@@ -136,7 +136,7 @@ pub mod chunk {
             match op_code {
                 OpCode::RETURN => (op_code_str, offset + 1),
                 OpCode::PUSH_CONSTANT => {
-                    let byte_multiple = get_machine_byte_multiple();
+                    let byte_multiple = get_machine_byte_factor();
                     let v = self.code[offset + 1..offset + (byte_multiple + 1)]
                         .try_into()
                         .unwrap();
