@@ -261,6 +261,46 @@ impl Resolver {
         self.try_resolving(identifier, lookup_fn, bind_fn)
     }
 
+    pub fn try_resolving_variable_with_upvalues(
+        &mut self,
+        identifier: &OkIdentifierNode,
+    ) -> Option<Rc<String>> {
+        let name = Rc::new(identifier.token_value(&self.code));
+        let mut curr_func_context_index = self.func_context.len() - 1;
+        let mut total_resolved_depth = 0;
+        let slot_index: Option<usize> = None;
+        let mut curr_scope = self.namespace.variable_scope().clone();
+        while curr_func_context_index >= 0 {
+            let curr_depth = self.func_context[curr_func_context_index]
+                .frame_stack
+                .curr_depth
+                + 1;
+            let mut curr_scope_depth = 1;
+            while curr_depth >= curr_scope_depth {
+                // TODO - lookup into the curr_scope, if not found update the scope to parent and continue
+                // if found, get the index from symbol entry
+                let parent_scope = match curr_scope.get(&name) {
+                    Some(value) => {
+                        todo!();
+                    }
+                    None => {
+                        match &curr_scope.parent() {
+                            Some(parent_env) => parent_env.clone(),
+                            None => todo!(), // unreachable ?
+                        }
+                    }
+                };
+                curr_scope = parent_scope;
+                curr_scope_depth += 1;
+                total_resolved_depth += 1;
+            }
+            // TODO - add the upvalue.len() + 1 of previous func_context to the upvalues of curr function context
+            // if slot_index is None set it to curr upvalue.len()
+            curr_func_context_index -= 1;
+        }
+        Some(name)
+    }
+
     pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
         let lookup_fn =
             |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_functions_namespace(key);

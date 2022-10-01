@@ -41,7 +41,7 @@ impl<T> CoreScope<T> {
         symbol_data
     }
 
-    fn get(&self, name: &Rc<String>) -> Option<&SymbolData<T>> {
+    pub fn get(&self, name: &Rc<String>) -> Option<&SymbolData<T>> {
         self.symbol_table.get(name)
     }
 }
@@ -65,6 +65,13 @@ impl<T> Scope<T> {
         })))
     }
 
+    pub fn parent(&self) -> Option<Scope<T>> {
+        match &self.0.as_ref().borrow().parent_scope {
+            Some(parent_scope) => Some(Scope(parent_scope.0.clone())),
+            None => None,
+        }
+    }
+
     fn insert<U: Fn(Scope<T>, Rc<String>) -> Option<SymbolData<T>>>(
         &self,
         key: &Rc<String>,
@@ -78,6 +85,13 @@ impl<T> Scope<T> {
         }
         let symbol_data = self.0.borrow_mut().set(key, meta_data, decl_range);
         Ok(symbol_data)
+    }
+
+    pub fn get(&self, key: &Rc<String>) -> Option<SymbolData<T>> {
+        match self.0.as_ref().borrow().get(key) {
+            Some(symbol_data) => Some(symbol_data.clone()),
+            None => None,
+        }
     }
 
     // returns symbol table entry and depth of the scope starting from local scope up to parents
@@ -131,6 +145,18 @@ impl Namespace {
         set_to_parent_scope!(variables, self);
         set_to_parent_scope!(types, self);
         set_to_parent_scope!(functions, self);
+    }
+
+    pub fn variable_scope(&self) -> &Scope<VariableData> {
+        &self.variables
+    }
+
+    pub fn type_scope(&self) -> &Scope<UserDefinedTypeData> {
+        &self.types
+    }
+
+    pub fn function_scope(&self) -> &Scope<FunctionData> {
+        &self.functions
     }
 
     pub fn lookup_in_variables_namespace(
