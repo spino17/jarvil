@@ -277,7 +277,7 @@ impl TypeChecker {
                                 (expected_params, return_type)
                             },
                             IdentifierKind::VARIABLE(variable_symbol_data) => {
-                                let lambda_type = variable_symbol_data.0.as_ref().borrow().data_type.clone();
+                                let lambda_type = variable_symbol_data.0.0.as_ref().borrow().data_type.clone();
                                 match lambda_type.0.as_ref() {
                                     CoreType::LAMBDA(lambda_data) => {
                                         let func_data = lambda_data.symbol_data.0.as_ref().borrow().lambda_data(

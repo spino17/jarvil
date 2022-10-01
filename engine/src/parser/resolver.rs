@@ -313,6 +313,7 @@ impl Resolver {
         }
     }
 
+    /*
     pub fn try_resolving_variable(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
         let lookup_fn =
             |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_variables_namespace(key);
@@ -321,6 +322,21 @@ impl Resolver {
              symbol_data: &SymbolData<VariableData>,
              depth: usize| { identifier.bind_variable_decl(symbol_data, depth) };
         self.try_resolving(identifier, lookup_fn, bind_fn)
+    }
+     */
+
+    pub fn try_resolving_variable_with_upvalues(
+        &mut self,
+        identifier: &OkIdentifierNode,
+    ) -> Option<Rc<String>> {
+        let name = Rc::new(identifier.token_value(&self.code));
+        match self.lookup_in_variables_namespace_with_upvalues(&name) {
+            Some((symbol_data, depth, capture_kind)) => {
+                identifier.bind_variable_decl(&symbol_data, depth, capture_kind);
+                None
+            }
+            None => Some(name),
+        }
     }
 
     pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
@@ -359,7 +375,7 @@ impl Resolver {
             namespace.declare_variable(name, stack_index, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
-            identifier.bind_variable_decl(symbol_data, 0)
+            identifier.bind_variable_decl(symbol_data, 0, VariableCaptureKind::LOCAL)
         };
         let name = Rc::new(identifier.token_value(&self.code));
         let symbol_data = declare_fn(&self.namespace, &name, stack_index, identifier.range());
@@ -627,7 +643,7 @@ impl Resolver {
                                 None,
                                 &SymbolData::new(symbol_data, ok_identifier.range()),
                             );
-                            variable_symbol_data
+                            variable_symbol_data.0
                                 .0
                                 .as_ref()
                                 .borrow_mut()
@@ -785,7 +801,9 @@ impl Visitor for Resolver {
                     match atom_start.core_ref() {
                         CoreAtomStartNode::IDENTIFIER(identifier) => {
                             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                                if let Some(_) = self.try_resolving_variable(ok_identifier) {
+                                if let Some(_) =
+                                    self.try_resolving_variable_with_upvalues(ok_identifier)
+                                {
                                     let err = IdentifierNotDeclaredError::new(
                                         IdentKind::VARIABLE,
                                         ok_identifier.range(),
@@ -801,9 +819,13 @@ impl Visitor for Resolver {
                             {
                                 let lambda_name = Rc::new(ok_identifier.token_value(&self.code));
                                 if let Some(symbol_data) =
-                                    self.namespace.lookup_in_variables_namespace(&lambda_name)
+                                    self.lookup_in_variables_namespace_with_upvalues(&lambda_name)
                                 {
-                                    ok_identifier.bind_variable_decl(&symbol_data.0, symbol_data.1);
+                                    ok_identifier.bind_variable_decl(
+                                        &symbol_data.0,
+                                        symbol_data.1,
+                                        symbol_data.2,
+                                    );
                                 }
                             }
                             if let Some(params) = &core_func_call.params {

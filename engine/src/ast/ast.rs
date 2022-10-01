@@ -12,6 +12,7 @@ use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
 use crate::scope::core::IdentifierKind;
 use crate::scope::core::SymbolData;
+use crate::scope::core::VariableCaptureKind;
 use crate::scope::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
@@ -1308,9 +1309,14 @@ impl OkIdentifierNode {
         self.0.as_ref().borrow().token.token_value(code)
     }
 
-    pub fn bind_variable_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
+    pub fn bind_variable_decl(
+        &self,
+        symbol_data: &SymbolData<VariableData>,
+        depth: usize,
+        kind: VariableCaptureKind,
+    ) {
         self.0.as_ref().borrow_mut().decl =
-            Some((IdentifierKind::VARIABLE(symbol_data.clone()), depth));
+            Some((IdentifierKind::VARIABLE((symbol_data.clone(), kind)), depth));
     }
 
     pub fn bind_user_defined_type_decl(
@@ -1342,7 +1348,7 @@ impl OkIdentifierNode {
     ) -> Option<SymbolData<VariableData>> {
         match &self.0.as_ref().borrow().decl {
             Some(symbol_data) => match &symbol_data.0 {
-                IdentifierKind::VARIABLE(x) => return Some(x.clone()),
+                IdentifierKind::VARIABLE(x) => return Some(x.0.clone()),
                 _ => panic!("{}", panic_message),
             },
             None => None,

@@ -6,6 +6,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use text_size::TextRange;
 
+#[derive(Debug, Clone)]
 pub enum VariableCaptureKind {
     LOCAL,
     UPVALUE(usize), // index in the function upvalues containing the usage of the variable
@@ -13,7 +14,7 @@ pub enum VariableCaptureKind {
 
 #[derive(Debug, Clone)]
 pub enum IdentifierKind {
-    VARIABLE(SymbolData<VariableData>),
+    VARIABLE((SymbolData<VariableData>, VariableCaptureKind)),
     USER_DEFINED_TYPE(SymbolData<UserDefinedTypeData>),
     FUNCTION(SymbolData<FunctionData>),
 }
