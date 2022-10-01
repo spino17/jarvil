@@ -3,6 +3,7 @@ use crate::error::diagnostics::{
     LocalVariableDeclarationLimitReachedError, MoreThanMaxLimitParamsPassedError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
+use crate::scope::core::VariableCaptureKind;
 use crate::{
     ast::{
         ast::{
@@ -285,18 +286,30 @@ impl Resolver {
                         // Check if it's with the same function, then variable is local to function and if not
                         // set the index to next func_context to upvalue
                         // bind to the identifier node
-                        if curr_func_context_index == self.func_context.len() - 1 {
-                            todo!()
+                        let capture_kind = if curr_func_context_index == self.func_context.len() - 1
+                        {
+                            VariableCaptureKind::LOCAL
                         } else {
                             // resolved outside the function
+                            symbol_data.0.as_ref().borrow_mut().set_is_captured();
                             self.add_upvalue_to_func(
                                 curr_func_context_index + 1,
                                 symbol_data.0.as_ref().borrow().stack_index(),
                                 true,
                             );
-                        }
-                        // send self.func_context.last().upvalues.last().clone() also in below function if it is outside the function
+                            VariableCaptureKind::UPVALUE(
+                                self.func_context
+                                    .last()
+                                    .expect("`func_context` will never be empty")
+                                    .upvalues
+                                    .last()
+                                    .expect("`upvalues` at this point cannot be empty")
+                                    .index,
+                            )
+                        };
+                        // TODO - pass capture_kind into this function
                         identifier.bind_variable_decl(&symbol_data, total_resolved_depth);
+                        return None;
                     }
                     None => match &curr_scope.parent() {
                         Some(parent_scope) => {
@@ -313,7 +326,7 @@ impl Resolver {
             if curr_func_context_index < self.func_context.len() - 1 {
                 self.add_upvalue_to_func(
                     curr_func_context_index + 1,
-                    self.func_context[curr_func_context_index].upvalues.len() + 1,
+                    self.func_context[curr_func_context_index].upvalues.len(),
                     false,
                 );
             }
