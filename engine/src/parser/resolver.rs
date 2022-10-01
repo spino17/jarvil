@@ -212,57 +212,6 @@ impl Resolver {
         (self.namespace, self.errors)
     }
 
-    pub fn try_declare_and_bind<
-        T,
-        U: Fn(&Namespace, &Rc<String>, TextRange) -> Result<SymbolData<T>, TextRange>,
-        V: Fn(&OkIdentifierNode, &SymbolData<T>),
-    >(
-        &mut self,
-        identifier: &OkIdentifierNode,
-        declare_fn: U,
-        bind_fn: V,
-    ) -> Option<(Rc<String>, TextRange)> {
-        let name = Rc::new(identifier.token_value(&self.code));
-        let symbol_data = declare_fn(&self.namespace, &name, identifier.range());
-        match symbol_data {
-            Ok(symbol_data) => {
-                bind_fn(identifier, &symbol_data);
-                None
-            }
-            Err(previous_decl_range) => Some((name, previous_decl_range)),
-        }
-    }
-
-    pub fn try_resolving<
-        T,
-        U: Fn(&Namespace, &Rc<String>) -> Option<(SymbolData<T>, usize)>,
-        V: Fn(&OkIdentifierNode, &SymbolData<T>, usize),
-    >(
-        &mut self,
-        identifier: &OkIdentifierNode,
-        lookup_fn: U,
-        bind_fn: V,
-    ) -> Option<Rc<String>> {
-        let name = Rc::new(identifier.token_value(&self.code));
-        match lookup_fn(&self.namespace, &name) {
-            Some(symbol_data) => {
-                bind_fn(identifier, &symbol_data.0, symbol_data.1);
-                None
-            }
-            None => Some(name),
-        }
-    }
-
-    pub fn try_resolving_variable(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
-        let lookup_fn =
-            |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_variables_namespace(key);
-        let bind_fn =
-            |identifier: &OkIdentifierNode,
-             symbol_data: &SymbolData<VariableData>,
-             depth: usize| { identifier.bind_variable_decl(symbol_data, depth) };
-        self.try_resolving(identifier, lookup_fn, bind_fn)
-    }
-
     pub fn lookup_in_variables_namespace_with_upvalues(
         &mut self,
         key: &Rc<String>,
@@ -321,6 +270,57 @@ impl Resolver {
             curr_func_context_index -= 1;
         }
         None
+    }
+
+    pub fn try_declare_and_bind<
+        T,
+        U: Fn(&Namespace, &Rc<String>, TextRange) -> Result<SymbolData<T>, TextRange>,
+        V: Fn(&OkIdentifierNode, &SymbolData<T>),
+    >(
+        &mut self,
+        identifier: &OkIdentifierNode,
+        declare_fn: U,
+        bind_fn: V,
+    ) -> Option<(Rc<String>, TextRange)> {
+        let name = Rc::new(identifier.token_value(&self.code));
+        let symbol_data = declare_fn(&self.namespace, &name, identifier.range());
+        match symbol_data {
+            Ok(symbol_data) => {
+                bind_fn(identifier, &symbol_data);
+                None
+            }
+            Err(previous_decl_range) => Some((name, previous_decl_range)),
+        }
+    }
+
+    pub fn try_resolving<
+        T,
+        U: Fn(&Namespace, &Rc<String>) -> Option<(SymbolData<T>, usize)>,
+        V: Fn(&OkIdentifierNode, &SymbolData<T>, usize),
+    >(
+        &mut self,
+        identifier: &OkIdentifierNode,
+        lookup_fn: U,
+        bind_fn: V,
+    ) -> Option<Rc<String>> {
+        let name = Rc::new(identifier.token_value(&self.code));
+        match lookup_fn(&self.namespace, &name) {
+            Some(symbol_data) => {
+                bind_fn(identifier, &symbol_data.0, symbol_data.1);
+                None
+            }
+            None => Some(name),
+        }
+    }
+
+    pub fn try_resolving_variable(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
+        let lookup_fn =
+            |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_variables_namespace(key);
+        let bind_fn =
+            |identifier: &OkIdentifierNode,
+             symbol_data: &SymbolData<VariableData>,
+             depth: usize| { identifier.bind_variable_decl(symbol_data, depth) };
+        self.try_resolving(identifier, lookup_fn, bind_fn)
     }
 
     pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
