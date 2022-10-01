@@ -1,7 +1,7 @@
 use super::{
     chunk::{Chunk, OpCode, OP_CODES_MAP},
     data::Data,
-    helper::get_machine_byte_multiple,
+    helper::get_machine_byte_factor,
     object::core::ObjectTracker,
     operators::{eval_binary_op, eval_unary_op},
     stack::Stack,
@@ -38,7 +38,7 @@ impl VM {
     }
 
     pub fn read_constant(&mut self) -> Data {
-        let byte_multiple = get_machine_byte_multiple();
+        let byte_multiple = get_machine_byte_factor();
         let offset = self.ip;
         let v = self.chunk.code[offset..offset + byte_multiple]
             .try_into()

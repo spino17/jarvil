@@ -21,4 +21,8 @@ impl VariableData {
     pub fn set_data_type(&mut self, data_type: &Type) {
         self.data_type = data_type.clone();
     }
+
+    pub fn set_is_captured(&mut self) {
+        self.is_captured = true;
+    }
 }
