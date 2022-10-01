@@ -93,7 +93,7 @@ impl ByteCodeGenerator {
     }
 
     fn compile_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode) {
-        let core_func_decl = func_decl.core_ref();
+        let core_func_decl = func_decl.0.as_ref().borrow();
         self.open_compiler();
         // TODO - open_compiler() => iterate over params and call variable_decl_callback and set the returned
         // index to symbol entry binded with params

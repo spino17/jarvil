@@ -32,6 +32,7 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::FxHashMap;
+use std::cell::RefCell;
 use std::{rc::Rc, vec};
 use text_size::TextRange;
 
@@ -40,16 +41,17 @@ pub enum ResolverMode {
     RESOLVE, // second pass
 }
 
+#[derive(Debug, Clone)]
 pub struct RuntimeStackSimulator {
-    local_indexes: Vec<usize>,   // simulation of runtime snapshots of stack
-    curr_depth: usize,           // curr depth in blocks starting with 0
-    curr_local_var_index: usize, // relative index of the local variable
+    local_indexes: Rc<RefCell<Vec<usize>>>, // simulation of runtime snapshots of stack
+    curr_depth: usize,                      // curr depth in blocks starting with 0
+    curr_local_var_index: usize,            // relative index of the local variable
 }
 
 impl Default for RuntimeStackSimulator {
     fn default() -> Self {
         RuntimeStackSimulator {
-            local_indexes: vec![0],
+            local_indexes: Rc::new(RefCell::new(vec![0])),
             curr_depth: 0,
             curr_local_var_index: 0,
         }
@@ -58,7 +60,7 @@ impl Default for RuntimeStackSimulator {
 
 impl RuntimeStackSimulator {
     pub fn variable_decl_callback(&mut self) -> Result<usize, usize> {
-        self.local_indexes[self.curr_depth] += 1;
+        self.local_indexes.as_ref().borrow_mut()[self.curr_depth] += 1;
         let curr_index = self.curr_local_var_index;
         self.curr_local_var_index += 1;
         if self.curr_local_var_index > EIGHT_BIT_MAX_VALUE {
@@ -68,35 +70,37 @@ impl RuntimeStackSimulator {
     }
 
     pub fn rollback_variable_decl(&mut self) {
-        self.local_indexes[self.curr_depth] -= 1;
+        self.local_indexes.as_ref().borrow_mut()[self.curr_depth] -= 1;
         self.curr_local_var_index -= 1;
     }
 
     pub fn open_block(&mut self) {
         self.curr_depth += 1;
-        if self.curr_depth >= self.local_indexes.len() {
-            self.local_indexes.push(0);
+        if self.curr_depth >= self.local_indexes.as_ref().borrow().len() {
+            self.local_indexes.as_ref().borrow_mut().push(0);
         } else {
-            self.local_indexes[self.curr_depth] = 0;
+            self.local_indexes.as_ref().borrow_mut()[self.curr_depth] = 0;
         }
     }
 
     pub fn close_block(&mut self) -> usize {
-        let num_of_popped_elements = self.local_indexes[self.curr_depth];
-        self.curr_local_var_index = self.curr_local_var_index - self.local_indexes[self.curr_depth];
+        let num_of_popped_elements = self.local_indexes.as_ref().borrow()[self.curr_depth];
+        self.curr_local_var_index =
+            self.curr_local_var_index - self.local_indexes.as_ref().borrow()[self.curr_depth];
         self.curr_depth -= 1;
         num_of_popped_elements
     }
 }
 
-#[derive(Clone)]
-struct UpValue {
+#[derive(Debug, Clone)]
+pub struct UpValue {
     index: usize, // if is_local is `true` then this would be relative stack_index of the captured local variable
     is_local: bool,
 }
 
+#[derive(Debug, Clone)]
 pub struct FunctionContext {
-    upvalues: Vec<UpValue>,
+    pub upvalues: Rc<RefCell<Vec<UpValue>>>,
     frame_stack: RuntimeStackSimulator,
     is_local_var_limit_overflow: bool,
     range: TextRange,
@@ -105,7 +109,7 @@ pub struct FunctionContext {
 impl FunctionContext {
     fn new(range: TextRange) -> Self {
         FunctionContext {
-            upvalues: vec![],
+            upvalues: Rc::new(RefCell::new(vec![])),
             frame_stack: RuntimeStackSimulator::default(),
             is_local_var_limit_overflow: false,
             range,
@@ -114,8 +118,8 @@ impl FunctionContext {
 
     fn add_upvalue(&mut self, index: usize, is_local: bool) -> usize {
         let value = UpValue { index, is_local };
-        self.upvalues.push(value);
-        self.upvalues.len()
+        self.upvalues.as_ref().borrow_mut().push(value);
+        self.upvalues.as_ref().borrow().len()
     }
 }
 
@@ -149,6 +153,10 @@ impl Resolver {
         index: usize,
         is_local: bool,
     ) -> usize {
+        println!(
+            "adding upvalue in func context `{}` with index `{}` and is_local: `{}`",
+            func_index, index, is_local
+        );
         self.func_context[func_index].add_upvalue(index, is_local)
     }
 
@@ -208,7 +216,7 @@ impl Resolver {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        assert!(self.func_context().upvalues.len() == 0); // top-level block cannot have upvalues
+        assert!(self.func_context().upvalues.as_ref().borrow().len() == 0); // top-level block cannot have upvalues
         (self.namespace, self.errors)
     }
 
@@ -233,6 +241,7 @@ impl Resolver {
                             VariableCaptureKind::LOCAL
                         } else {
                             symbol_data.0.as_ref().borrow_mut().set_is_captured();
+                            println!("variable `{}` is captured", key);
                             self.add_upvalue_to_func(
                                 curr_func_context_index + 1,
                                 symbol_data.0.as_ref().borrow().stack_index(),
@@ -243,6 +252,8 @@ impl Resolver {
                                     .last()
                                     .expect("`func_context` will never be empty")
                                     .upvalues
+                                    .as_ref()
+                                    .borrow()
                                     .last()
                                     .expect("`upvalues` at this point cannot be empty")
                                     .index,
@@ -261,11 +272,12 @@ impl Resolver {
                 total_resolved_depth += 1;
             }
             if curr_func_context_index < self.func_context.len() - 1 {
-                self.add_upvalue_to_func(
-                    curr_func_context_index + 1,
-                    self.func_context[curr_func_context_index].upvalues.len(),
-                    false,
-                );
+                let index = self.func_context[curr_func_context_index]
+                    .upvalues
+                    .as_ref()
+                    .borrow()
+                    .len();
+                self.add_upvalue_to_func(curr_func_context_index + 1, index, false);
             }
             curr_func_context_index -= 1;
         }
@@ -453,8 +465,8 @@ impl Resolver {
         }
     }
 
-    pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
-        let core_func_decl = func_decl.core_ref();
+    pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) -> FunctionContext {
+        let core_func_decl = func_decl.0.as_ref().borrow();
         let func_name = &core_func_decl.name;
         let params = &core_func_decl.params;
         let func_body = &core_func_decl.block;
@@ -485,8 +497,8 @@ impl Resolver {
         }
         self.walk_block(func_body);
         func_body.set_scope(&self.namespace);
-        let func_context = self.close_func();
-        // TODO - add this func_contex to argument `OkFunctionDeclarationNode` node
+        let context = self.close_func();
+        // func_decl.set_context();
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 match kind {
@@ -524,6 +536,7 @@ impl Resolver {
                 }
             }
         }
+        context
     }
 
     pub fn declare_struct(&mut self, struct_decl: &StructDeclarationNode) {
@@ -575,7 +588,7 @@ impl Resolver {
     }
 
     pub fn resolve_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
-        let core_func_decl = func_decl.core_ref();
+        let core_func_decl = func_decl.0.as_ref().borrow();
         let func_name = &core_func_decl.name;
         let params = &core_func_decl.params;
         let return_type = &core_func_decl.return_type;
@@ -786,7 +799,8 @@ impl Visitor for Resolver {
                     return None;
                 }
                 ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
-                    self.declare_function(func_decl);
+                    let context = self.declare_function(func_decl);
+                    func_decl.set_context(context);
                     return None;
                 }
                 ASTNode::STRUCT_DECLARATION(struct_decl) => {

@@ -10,6 +10,8 @@ use jarvil_macros::Node;
 
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
+use crate::parser::resolver::FunctionContext;
+use crate::parser::resolver::UpValue;
 use crate::scope::core::IdentifierKind;
 use crate::scope::core::SymbolData;
 use crate::scope::core::VariableCaptureKind;
@@ -755,6 +757,7 @@ pub struct CoreOkFunctionDeclarationNode {
     pub return_type: Option<TypeExpressionNode>,
     pub block: BlockNode,
     pub kind: FunctionKind,
+    pub context: Option<Rc<RefCell<Vec<UpValue>>>>, // will be used while code-generation for closures
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -771,7 +774,7 @@ pub enum FuncKeywordKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct OkFunctionDeclarationNode(Rc<CoreOkFunctionDeclarationNode>);
+pub struct OkFunctionDeclarationNode(pub Rc<RefCell<CoreOkFunctionDeclarationNode>>);
 
 impl OkFunctionDeclarationNode {
     pub fn new(
@@ -786,7 +789,7 @@ impl OkFunctionDeclarationNode {
         colon: &TokenNode,
         kind: FunctionKind,
     ) -> Self {
-        let node = Rc::new(CoreOkFunctionDeclarationNode {
+        let node = Rc::new(RefCell::new(CoreOkFunctionDeclarationNode {
             func_keyword: func_keyword.clone(),
             lparen: lparen.clone(),
             rparen: rparen.clone(),
@@ -797,22 +800,27 @@ impl OkFunctionDeclarationNode {
             return_type: extract_from_option!(return_type),
             block: block.clone(),
             kind,
-        });
+            context: None,
+        }));
         OkFunctionDeclarationNode(node)
     }
 
-    impl_core_ref!(CoreOkFunctionDeclarationNode);
+    pub fn set_context(&self, context: FunctionContext) {
+        self.0.as_ref().borrow_mut().context = Some(context.upvalues);
+    }
+
+    // impl_core_ref!(CoreOkFunctionDeclarationNode);
 }
 
 impl Node for OkFunctionDeclarationNode {
     fn range(&self) -> TextRange {
-        match &self.0.as_ref().func_keyword {
-            FuncKeywordKind::DEF(token) => impl_range!(token, self.0.as_ref().block),
-            FuncKeywordKind::FUNC(token) => impl_range!(token, self.0.as_ref().block),
+        match &self.0.as_ref().borrow().func_keyword {
+            FuncKeywordKind::DEF(token) => impl_range!(token, self.0.as_ref().borrow().block),
+            FuncKeywordKind::FUNC(token) => impl_range!(token, self.0.as_ref().borrow().block),
         }
     }
     fn start_line_number(&self) -> usize {
-        match &self.0.as_ref().func_keyword {
+        match &self.0.as_ref().borrow().func_keyword {
             FuncKeywordKind::DEF(token) => token.start_line_number(),
             FuncKeywordKind::FUNC(token) => token.start_line_number(),
         }

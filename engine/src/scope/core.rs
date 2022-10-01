@@ -198,7 +198,7 @@ impl Namespace {
                 Some(symbol_data) => Some(symbol_data.clone()),
                 None => None,
             };
-        println!("variable `{}` has index `{}`", name, stack_index);
+        // println!("variable `{}` has index `{}`", name, stack_index);
         self.variables.insert(
             name,
             VariableData::new(stack_index),
