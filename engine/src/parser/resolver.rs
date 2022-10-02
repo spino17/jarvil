@@ -498,7 +498,6 @@ impl Resolver {
         self.walk_block(func_body);
         func_body.set_scope(&self.namespace);
         let context = self.close_func();
-        // func_decl.set_context();
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 match kind {

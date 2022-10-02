@@ -809,7 +809,9 @@ impl OkFunctionDeclarationNode {
         self.0.as_ref().borrow_mut().context = Some(context.upvalues);
     }
 
-    // impl_core_ref!(CoreOkFunctionDeclarationNode);
+    pub fn context(&self) -> Option<Rc<RefCell<Vec<UpValue>>>> {
+        std::mem::take(&mut self.0.as_ref().borrow_mut().context)
+    }
 }
 
 impl Node for OkFunctionDeclarationNode {

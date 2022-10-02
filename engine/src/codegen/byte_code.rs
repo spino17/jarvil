@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::{cell::RefCell, convert::TryInto, rc::Rc};
 
 use crate::{
     ast::{
@@ -11,6 +11,7 @@ use crate::{
         object::core::ObjectTracker,
     },
     error::constants::RESOLVE_PHASE_BUG_ERROR_MSQ,
+    parser::resolver::UpValue,
 };
 
 struct ByteCodeGenerator {
@@ -45,8 +46,8 @@ impl ByteCodeGenerator {
             .write_instruction(op_code, line_number);
     }
 
-    fn open_compiler(&mut self) {
-        self.compiler = Compiler::new_with_parent(&self.compiler);
+    fn open_compiler(&mut self, upvalues: Rc<RefCell<Vec<UpValue>>>) {
+        self.compiler = Compiler::new_with_parent(&self.compiler, upvalues);
     }
 
     fn close_compiler(&mut self) -> Chunk {
@@ -93,8 +94,13 @@ impl ByteCodeGenerator {
     }
 
     fn compile_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode) {
+        let upvalues = func_decl
+                                                    .context()
+                                                    .expect(
+                                                        "`context` in `CoreOkFunctionDeclarationNode` should be set after resolving first phase"
+                                                    );
         let core_func_decl = func_decl.0.as_ref().borrow();
-        self.open_compiler();
+        self.open_compiler(upvalues);
         // TODO - open_compiler() => iterate over params and call variable_decl_callback and set the returned
         // index to symbol entry binded with params
         // iterate over stmts in the block

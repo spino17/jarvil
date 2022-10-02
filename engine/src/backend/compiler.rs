@@ -1,4 +1,4 @@
-use crate::backend::chunk::Chunk;
+use crate::{backend::chunk::Chunk, parser::resolver::UpValue};
 use std::{cell::RefCell, rc::Rc};
 
 pub struct CoreCompiler {
@@ -6,6 +6,7 @@ pub struct CoreCompiler {
     pub stack_simulated: Vec<usize>, // simulation of runtime snapshots of stack
     pub curr_depth: usize,           // curr depth in blocks starting with 0
     pub curr_local_var_index: usize, // relative index of the local variable
+    pub upvalues: Rc<RefCell<Vec<UpValue>>>,
     pub parent: Option<Compiler>,
 }
 
@@ -49,16 +50,18 @@ impl Compiler {
             stack_simulated: vec![],
             curr_depth: 0,
             curr_local_var_index: 0,
+            upvalues: Rc::new(RefCell::new(vec![])),
             parent: None,
         })))
     }
 
-    pub fn new_with_parent(parent: &Compiler) -> Self {
+    pub fn new_with_parent(parent: &Compiler, upvalues: Rc<RefCell<Vec<UpValue>>>) -> Self {
         Compiler(Rc::new(RefCell::new(CoreCompiler {
             chunk: Chunk::default(),
             stack_simulated: vec![],
             curr_depth: 0,
             curr_local_var_index: 0,
+            upvalues,
             parent: Some(parent.clone()),
         })))
     }
