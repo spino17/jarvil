@@ -117,9 +117,17 @@ impl FunctionContext {
     }
 
     fn add_upvalue(&mut self, index: usize, is_local: bool) -> usize {
+        let mut counter = 0;
+        for upvalue in &*self.upvalues.as_ref().borrow() {
+            if upvalue.index == index && upvalue.is_local == is_local {
+                println!("found matching upvalue! at index `{}`", counter);
+                return counter;
+            }
+            counter += 1;
+        }
         let value = UpValue { index, is_local };
         self.upvalues.as_ref().borrow_mut().push(value);
-        self.upvalues.as_ref().borrow().len()
+        self.upvalues.as_ref().borrow().len() - 1
     }
 }
 
@@ -242,22 +250,15 @@ impl Resolver {
                         } else {
                             symbol_data.0.as_ref().borrow_mut().set_is_captured();
                             println!("variable `{}` is captured", key);
-                            self.add_upvalue_to_func(
+                            let mut index = self.add_upvalue_to_func(
                                 curr_func_context_index + 1,
                                 symbol_data.0.as_ref().borrow().stack_index(),
                                 true,
                             );
-                            VariableCaptureKind::UPVALUE(
-                                self.func_context
-                                    .last()
-                                    .expect("`func_context` will never be empty")
-                                    .upvalues
-                                    .as_ref()
-                                    .borrow()
-                                    .last()
-                                    .expect("`upvalues` at this point cannot be empty")
-                                    .index,
-                            )
+                            for i in curr_func_context_index + 2..self.func_context.len() {
+                                index = self.add_upvalue_to_func(i, index, false);
+                            }
+                            VariableCaptureKind::UPVALUE(index)
                         };
                         return Some((symbol_data, total_resolved_depth, capture_kind));
                     }
@@ -270,14 +271,6 @@ impl Resolver {
                 };
                 curr_scope_depth += 1;
                 total_resolved_depth += 1;
-            }
-            if curr_func_context_index < self.func_context.len() - 1 {
-                let index = self.func_context[curr_func_context_index]
-                    .upvalues
-                    .as_ref()
-                    .borrow()
-                    .len();
-                self.add_upvalue_to_func(curr_func_context_index + 1, index, false);
             }
             curr_func_context_index -= 1;
         }
