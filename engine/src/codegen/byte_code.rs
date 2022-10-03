@@ -62,29 +62,6 @@ impl ByteCodeGenerator {
         self.compiler.0.as_ref().borrow_mut().open_block();
     }
 
-    fn emit_pop_bytecode(&mut self) -> usize {
-        let compiler = self.compiler.0.as_ref().borrow();
-        let len = compiler.locals.len();
-        let curr_depth = compiler.depth();
-        let num_of_popped_elements = 0;
-        if len > 0 {
-            let index = len - 1;
-            while compiler.locals[index].depth == curr_depth {
-                // TODO - check local at the index
-                // generate OP_POP according to whether it's captured or not
-                // override depth
-                if compiler.locals[index].is_captured {
-                    todo!()
-                } else {
-                    todo!()
-                }
-                num_of_popped_elements += 1;
-                index -= 1;
-            }
-        }
-        num_of_popped_elements
-    }
-
     fn close_block(&mut self) {
         let num_of_popped_elements = self.emit_pop_bytecode();
         self.compiler
@@ -101,6 +78,29 @@ impl ByteCodeGenerator {
             .borrow_mut()
             .chunk
             .write_instruction(op_code, line_number);
+    }
+
+    fn emit_pop_bytecode(&mut self) -> usize {
+        let compiler = self.compiler.0.as_ref().borrow();
+        let len = compiler.locals.len();
+        let curr_depth = compiler.depth();
+        let mut num_of_popped_elements = 0;
+        if len > 0 {
+            let index = len - 1;
+            while compiler.locals[index].depth == curr_depth {
+                // TODO - check local at the index
+                // generate OP_POP according to whether it's captured or not
+                // override depth
+                if compiler.locals[index].is_captured {
+                    todo!()
+                } else {
+                    todo!()
+                }
+                num_of_popped_elements += 1;
+                index -= 1;
+            }
+        }
+        num_of_popped_elements
     }
 
     fn compile_block(&mut self, block: &BlockNode) {
