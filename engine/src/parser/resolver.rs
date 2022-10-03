@@ -1,6 +1,7 @@
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
-    LocalVariableDeclarationLimitReachedError, MoreThanMaxLimitParamsPassedError,
+    CapturedVariablesCountLimitReachedError, LocalVariableDeclarationLimitReachedError,
+    MoreThanMaxLimitParamsPassedError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::core::VariableCaptureKind;
@@ -116,18 +117,28 @@ impl FunctionContext {
         }
     }
 
-    fn add_upvalue(&mut self, index: usize, is_local: bool) -> usize {
+    fn add_upvalue(&mut self, index: Result<usize, usize>, is_local: bool) -> Result<usize, usize> {
+        let index = match index {
+            Ok(val) => val,
+            Err(val) => val,
+        };
         let mut counter = 0;
         for upvalue in &*self.upvalues.as_ref().borrow() {
             if upvalue.index == index && upvalue.is_local == is_local {
                 println!("found matching upvalue! at index `{}`", counter);
-                return counter;
+                return Ok(counter);
             }
             counter += 1;
         }
+        // TODO - add check that index should be bounded by EIGHT_MAX_..
         let value = UpValue { index, is_local };
         self.upvalues.as_ref().borrow_mut().push(value);
-        self.upvalues.as_ref().borrow().len() - 1
+        let next_index = self.upvalues.as_ref().borrow().len() - 1;
+        if index >= EIGHT_BIT_MAX_VALUE {
+            Err(next_index)
+        } else {
+            Ok(next_index)
+        }
     }
 }
 
@@ -158,11 +169,11 @@ impl Resolver {
     pub fn add_upvalue_to_func(
         &mut self,
         func_index: usize,
-        index: usize,
+        index: Result<usize, usize>,
         is_local: bool,
-    ) -> usize {
+    ) -> Result<usize, usize> {
         println!(
-            "adding upvalue in func context `{}` with index `{}` and is_local: `{}`",
+            "adding upvalue in func context `{}` with index `{:?}` and is_local: `{}`",
             func_index, index, is_local
         );
         self.func_context[func_index].add_upvalue(index, is_local)
@@ -252,13 +263,32 @@ impl Resolver {
                             println!("variable `{}` is captured", key);
                             let mut index = self.add_upvalue_to_func(
                                 curr_func_context_index + 1,
-                                symbol_data.0.as_ref().borrow().stack_index(),
+                                Ok(symbol_data.0.as_ref().borrow().stack_index()),
                                 true,
                             );
+                            if index.is_err() {
+                                let err = CapturedVariablesCountLimitReachedError::new(
+                                    1,
+                                    self.func_context[curr_func_context_index + 1].range,
+                                );
+                                self.errors
+                                    .push(Diagnostics::CapturedVariablesCountLimitReached(err));
+                            };
                             for i in curr_func_context_index + 2..self.func_context.len() {
                                 index = self.add_upvalue_to_func(i, index, false);
+                                if index.is_err() {
+                                    let err = CapturedVariablesCountLimitReachedError::new(
+                                        EIGHT_BIT_MAX_VALUE,
+                                        self.func_context[curr_func_context_index + 1].range,
+                                    );
+                                    self.errors
+                                        .push(Diagnostics::CapturedVariablesCountLimitReached(err));
+                                };
                             }
-                            VariableCaptureKind::UPVALUE(index)
+                            VariableCaptureKind::UPVALUE(match index {
+                                Ok(val) => val,
+                                Err(val) => val,
+                            })
                         };
                         return Some((symbol_data, total_resolved_depth, capture_kind));
                     }

@@ -12,6 +12,7 @@ pub enum Diagnostics {
     NoClosingSymbol(NoClosingSymbolError),
     MissingToken(MissingTokenError),
     LocalVariableDeclarationLimitReached(LocalVariableDeclarationLimitReachedError),
+    CapturedVariablesCountLimitReached(CapturedVariablesCountLimitReachedError),
     InvalidTrailingTokens(InvalidTrailingTokensError),
     IncorrectlyIndentedBlock(IncorrectlyIndentedBlockError),
     InvalidLValue(InvalidLValueError),
@@ -42,6 +43,9 @@ impl Diagnostics {
             Diagnostics::NoClosingSymbol(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MissingToken(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::LocalVariableDeclarationLimitReached(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::CapturedVariablesCountLimitReached(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::InvalidTrailingTokens(diagnostic) => Report::new(diagnostic.clone()),
@@ -249,6 +253,24 @@ pub struct LocalVariableDeclarationLimitReachedError {
 impl LocalVariableDeclarationLimitReachedError {
     pub fn new(max_limit: usize, range: TextRange) -> Self {
         LocalVariableDeclarationLimitReachedError {
+            max_limit,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("too many variables captured by the closure")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct CapturedVariablesCountLimitReachedError {
+    pub max_limit: usize,
+    #[label("max. limit for number of variables that can be captured by the closure is {}, captured more than that", self.max_limit)]
+    pub span: SourceSpan,
+}
+
+impl CapturedVariablesCountLimitReachedError {
+    pub fn new(max_limit: usize, range: TextRange) -> Self {
+        CapturedVariablesCountLimitReachedError {
             max_limit,
             span: range_to_span(range).into(),
         }
