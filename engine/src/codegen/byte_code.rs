@@ -1,3 +1,4 @@
+use core::num;
 use std::{cell::RefCell, convert::TryInto, rc::Rc};
 
 use crate::{
@@ -61,10 +62,11 @@ impl ByteCodeGenerator {
         self.compiler.0.as_ref().borrow_mut().open_block();
     }
 
-    fn close_block(&mut self) {
+    fn emit_pop_bytecode(&mut self) -> usize {
         let compiler = self.compiler.0.as_ref().borrow();
         let len = compiler.locals.len();
         let curr_depth = compiler.depth();
+        let num_of_popped_elements = 0;
         if len > 0 {
             let index = len - 1;
             while compiler.locals[index].depth == curr_depth {
@@ -76,10 +78,20 @@ impl ByteCodeGenerator {
                 } else {
                     todo!()
                 }
+                num_of_popped_elements += 1;
                 index -= 1;
             }
         }
-        self.compiler.0.as_ref().borrow_mut().close_block()
+        num_of_popped_elements
+    }
+
+    fn close_block(&mut self) {
+        let num_of_popped_elements = self.emit_pop_bytecode();
+        self.compiler
+            .0
+            .as_ref()
+            .borrow_mut()
+            .close_block(num_of_popped_elements);
     }
 
     fn emit_bytecode(&mut self, op_code: OpCode, line_number: usize) {

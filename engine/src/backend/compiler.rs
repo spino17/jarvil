@@ -1,4 +1,5 @@
 use crate::{backend::chunk::Chunk, parser::resolver::UpValue};
+use core::num;
 use std::{cell::RefCell, rc::Rc};
 
 pub struct Local {
@@ -34,7 +35,9 @@ impl CoreCompiler {
         self.curr_depth += 1;
     }
 
-    pub fn close_block(&mut self) {
+    pub fn close_block(&mut self, num_of_popped_elements: usize) {
+        let len = self.locals.len();
+        self.locals.truncate(len - num_of_popped_elements);
         self.curr_depth -= 1;
     }
 }
