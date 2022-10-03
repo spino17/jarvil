@@ -104,6 +104,7 @@ pub struct FunctionContext {
     pub upvalues: Rc<RefCell<Vec<UpValue>>>,
     frame_stack: RuntimeStackSimulator,
     is_local_var_limit_overflow: bool,
+    is_capture_var_limit_overflow: bool,
     range: TextRange,
 }
 
@@ -113,6 +114,7 @@ impl FunctionContext {
             upvalues: Rc::new(RefCell::new(vec![])),
             frame_stack: RuntimeStackSimulator::default(),
             is_local_var_limit_overflow: false,
+            is_capture_var_limit_overflow: false,
             range,
         }
     }
@@ -134,7 +136,7 @@ impl FunctionContext {
         let value = UpValue { index, is_local };
         self.upvalues.as_ref().borrow_mut().push(value);
         let next_index = self.upvalues.as_ref().borrow().len() - 1;
-        if index >= EIGHT_BIT_MAX_VALUE {
+        if next_index >= EIGHT_BIT_MAX_VALUE {
             Err(next_index)
         } else {
             Ok(next_index)
@@ -176,7 +178,17 @@ impl Resolver {
             "adding upvalue in func context `{}` with index `{:?}` and is_local: `{}`",
             func_index, index, is_local
         );
-        self.func_context[func_index].add_upvalue(index, is_local)
+        let func_context = &mut self.func_context[func_index];
+        let index = func_context.add_upvalue(index, is_local);
+        if index.is_err() && !func_context.is_capture_var_limit_overflow {
+            let err = CapturedVariablesCountLimitReachedError::new(
+                EIGHT_BIT_MAX_VALUE,
+                self.func_context[func_index].range,
+            );
+            self.errors
+                .push(Diagnostics::CapturedVariablesCountLimitReached(err));
+        };
+        index
     }
 
     pub fn open_block(&mut self) {
@@ -266,24 +278,8 @@ impl Resolver {
                                 Ok(symbol_data.0.as_ref().borrow().stack_index()),
                                 true,
                             );
-                            if index.is_err() {
-                                let err = CapturedVariablesCountLimitReachedError::new(
-                                    1,
-                                    self.func_context[curr_func_context_index + 1].range,
-                                );
-                                self.errors
-                                    .push(Diagnostics::CapturedVariablesCountLimitReached(err));
-                            };
                             for i in curr_func_context_index + 2..self.func_context.len() {
                                 index = self.add_upvalue_to_func(i, index, false);
-                                if index.is_err() {
-                                    let err = CapturedVariablesCountLimitReachedError::new(
-                                        EIGHT_BIT_MAX_VALUE,
-                                        self.func_context[curr_func_context_index + 1].range,
-                                    );
-                                    self.errors
-                                        .push(Diagnostics::CapturedVariablesCountLimitReached(err));
-                                };
                             }
                             VariableCaptureKind::UPVALUE(match index {
                                 Ok(val) => val,
