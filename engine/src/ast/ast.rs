@@ -141,28 +141,35 @@ impl Node for BlockNode {
     fn range(&self) -> TextRange {
         let core_block = self.0.as_ref().borrow();
         let stmts_len = core_block.stmts.len();
-        let mut index = stmts_len - 1;
-        let mut is_empty = false;
-        loop {
-            match core_block.stmts[index].core_ref() {
-                CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(_) => {}
-                _ => break,
+        if stmts_len > 0 {
+            let mut index = stmts_len - 1;
+            let mut is_empty = false;
+            loop {
+                match core_block.stmts[index].core_ref() {
+                    CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(_) => {}
+                    _ => break,
+                }
+                if index == 0 {
+                    is_empty = true;
+                    break;
+                }
+                index = index - 1;
             }
-            if index == 0 {
-                is_empty = true;
-                break;
+            if is_empty {
+                impl_range!(
+                    self.0.as_ref().borrow().newline,
+                    self.0.as_ref().borrow().newline
+                )
+            } else {
+                impl_range!(
+                    self.0.as_ref().borrow().newline,
+                    self.0.as_ref().borrow().stmts[index]
+                )
             }
-            index = index - 1;
-        }
-        if is_empty {
-            impl_range!(
-                self.0.as_ref().borrow().newline,
-                self.0.as_ref().borrow().newline
-            )
         } else {
             impl_range!(
                 self.0.as_ref().borrow().newline,
-                self.0.as_ref().borrow().stmts[index]
+                self.0.as_ref().borrow().newline
             )
         }
     }

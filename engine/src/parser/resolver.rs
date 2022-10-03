@@ -149,7 +149,7 @@ pub struct Resolver {
     pub code: Code,
     errors: Vec<Diagnostics>,
     mode: ResolverMode,
-    func_context: Vec<FunctionContext>,
+    func_contexts: Vec<FunctionContext>,
 }
 
 impl Resolver {
@@ -159,13 +159,13 @@ impl Resolver {
             code: code.clone(),
             errors: vec![],
             mode: ResolverMode::DECLARE,
-            func_context: vec![],
+            func_contexts: vec![],
         }
     }
 
     pub fn func_context(&mut self) -> &mut FunctionContext {
-        let len = self.func_context.len();
-        &mut self.func_context[len - 1]
+        let len = self.func_contexts.len();
+        &mut self.func_contexts[len - 1]
     }
 
     pub fn add_upvalue_to_func(
@@ -178,12 +178,12 @@ impl Resolver {
             "adding upvalue in func context `{}` with index `{:?}` and is_local: `{}`",
             func_index, index, is_local
         );
-        let func_context = &mut self.func_context[func_index];
+        let func_context = &mut self.func_contexts[func_index];
         let index = func_context.add_upvalue(index, is_local);
         if index.is_err() && !func_context.is_capture_var_limit_overflow {
             let err = CapturedVariablesCountLimitReachedError::new(
                 EIGHT_BIT_MAX_VALUE,
-                self.func_context[func_index].range,
+                self.func_contexts[func_index].range,
             );
             self.errors
                 .push(Diagnostics::CapturedVariablesCountLimitReached(err));
@@ -202,8 +202,8 @@ impl Resolver {
     }
 
     pub fn variable_decl_callback(&mut self) -> usize {
-        let len = self.func_context.len();
-        let curr_func_context = &mut self.func_context[len - 1];
+        let len = self.func_contexts.len();
+        let curr_func_context = &mut self.func_contexts[len - 1];
         match curr_func_context.frame_stack.variable_decl_callback() {
             Ok(stack_index) => stack_index,
             Err(stack_index) => {
@@ -227,18 +227,18 @@ impl Resolver {
 
     pub fn open_func(&mut self, range: TextRange) {
         self.namespace.open_scope();
-        self.func_context.push(FunctionContext::new(range));
+        self.func_contexts.push(FunctionContext::new(range));
     }
 
     pub fn close_func(&mut self) -> FunctionContext {
         self.namespace.close_scope();
-        self.func_context
+        self.func_contexts
             .pop()
             .expect("`func_context` will never be empty")
     }
 
     pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
-        self.func_context.push(FunctionContext::new(ast.range()));
+        self.func_contexts.push(FunctionContext::new(ast.range()));
         let code_block = ast.0.as_ref().borrow();
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
@@ -255,11 +255,11 @@ impl Resolver {
         &mut self,
         key: &Rc<String>,
     ) -> Option<(SymbolData<VariableData>, usize, VariableCaptureKind)> {
-        let mut curr_func_context_index = self.func_context.len() - 1;
+        let mut curr_func_context_index = self.func_contexts.len() - 1;
         let mut total_resolved_depth = 0;
         let mut curr_scope = self.namespace.variable_scope().clone();
         while curr_func_context_index >= 0 {
-            let curr_depth = self.func_context[curr_func_context_index]
+            let curr_depth = self.func_contexts[curr_func_context_index]
                 .frame_stack
                 .curr_depth
                 + 1;
@@ -267,25 +267,25 @@ impl Resolver {
             while curr_depth >= curr_scope_depth {
                 match curr_scope.get(&key) {
                     Some(symbol_data) => {
-                        let capture_kind = if curr_func_context_index == self.func_context.len() - 1
-                        {
-                            VariableCaptureKind::LOCAL
-                        } else {
-                            symbol_data.0.as_ref().borrow_mut().set_is_captured();
-                            println!("variable `{}` is captured", key);
-                            let mut index = self.add_upvalue_to_func(
-                                curr_func_context_index + 1,
-                                Ok(symbol_data.0.as_ref().borrow().stack_index()),
-                                true,
-                            );
-                            for i in curr_func_context_index + 2..self.func_context.len() {
-                                index = self.add_upvalue_to_func(i, index, false);
-                            }
-                            VariableCaptureKind::UPVALUE(match index {
-                                Ok(val) => val,
-                                Err(val) => val,
-                            })
-                        };
+                        let capture_kind =
+                            if curr_func_context_index == self.func_contexts.len() - 1 {
+                                VariableCaptureKind::LOCAL
+                            } else {
+                                symbol_data.0.as_ref().borrow_mut().set_is_captured();
+                                println!("variable `{}` is captured", key);
+                                let mut index = self.add_upvalue_to_func(
+                                    curr_func_context_index + 1,
+                                    Ok(symbol_data.0.as_ref().borrow().stack_index()),
+                                    true,
+                                );
+                                for i in curr_func_context_index + 2..self.func_contexts.len() {
+                                    index = self.add_upvalue_to_func(i, index, false);
+                                }
+                                VariableCaptureKind::UPVALUE(match index {
+                                    Ok(val) => val,
+                                    Err(val) => val,
+                                })
+                            };
                         return Some((symbol_data, total_resolved_depth, capture_kind));
                     }
                     None => match &curr_scope.parent() {

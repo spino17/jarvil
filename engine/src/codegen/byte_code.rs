@@ -10,7 +10,6 @@ use crate::{
         compiler::Compiler,
         object::core::ObjectTracker,
     },
-    error::constants::RESOLVE_PHASE_BUG_ERROR_MSQ,
     parser::resolver::UpValue,
 };
 
@@ -33,17 +32,7 @@ impl ByteCodeGenerator {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        // TODO - emit `POPN` instruction for popping local variables in the top level block
         (self.compiler.chunk(), self.object_tracker)
-    }
-
-    fn emit_bytecode(&mut self, op_code: OpCode, line_number: usize) {
-        self.compiler
-            .0
-            .as_ref()
-            .borrow_mut()
-            .chunk
-            .write_instruction(op_code, line_number);
     }
 
     fn open_compiler(&mut self, upvalues: Rc<RefCell<Vec<UpValue>>>) {
@@ -60,20 +49,46 @@ impl ByteCodeGenerator {
         chunk
     }
 
-    fn variable_decl_callback(&self) -> usize {
+    fn variable_decl_callback(&self, is_captured: bool) {
         self.compiler
             .0
             .as_ref()
             .borrow_mut()
-            .variable_decl_callback()
+            .variable_decl_callback(is_captured);
     }
 
     fn open_block(&self) {
         self.compiler.0.as_ref().borrow_mut().open_block();
     }
 
-    fn close_block(&mut self) -> usize {
+    fn close_block(&mut self) {
+        let compiler = self.compiler.0.as_ref().borrow();
+        let len = compiler.locals.len();
+        let curr_depth = compiler.depth();
+        if len > 0 {
+            let index = len - 1;
+            while compiler.locals[index].depth == curr_depth {
+                // TODO - check local at the index
+                // generate OP_POP according to whether it's captured or not
+                // override depth
+                if compiler.locals[index].is_captured {
+                    todo!()
+                } else {
+                    todo!()
+                }
+                index -= 1;
+            }
+        }
         self.compiler.0.as_ref().borrow_mut().close_block()
+    }
+
+    fn emit_bytecode(&mut self, op_code: OpCode, line_number: usize) {
+        self.compiler
+            .0
+            .as_ref()
+            .borrow_mut()
+            .chunk
+            .write_instruction(op_code, line_number);
     }
 
     fn compile_block(&mut self, block: &BlockNode) {
@@ -81,15 +96,13 @@ impl ByteCodeGenerator {
         for stmt in &block.0.as_ref().borrow().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        let num_of_popped_elements: u8 = match self.close_block().try_into() {
-            Ok(val) => val,
-            Err(_) => unreachable!("{}", RESOLVE_PHASE_BUG_ERROR_MSQ),
-        };
-        // emit_bytecode `POPN` to pop all the local variables from the block.
+        self.close_block();
     }
 
     fn compile_stmt(&mut self, stmt: &StatementNode) {
         // TODO - make cases for all the stmts and compile them
+        // TODO - as soon as we encounter a variable usage we check whether it's a local variable or an upvalue
+        // depending on that we generate the LOAD/STORE instruction with appropiate index
         todo!()
     }
 
@@ -101,9 +114,7 @@ impl ByteCodeGenerator {
                                                     );
         let core_func_decl = func_decl.0.as_ref().borrow();
         self.open_compiler(upvalues);
-        // TODO - open_compiler() => iterate over params and call variable_decl_callback and set the returned
-        // index to symbol entry binded with params
-        // iterate over stmts in the block
+        // TODO - walk on the statements
         let code = self.close_compiler();
         // close_compiler
         // make function object out of the chunk we get => if name is available then set the func_obj to symbol entry of the
