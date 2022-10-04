@@ -246,7 +246,7 @@ impl InvalidLValueError {
 #[diagnostic(code("semantic error (resolving phase)"))]
 pub struct LocalVariableDeclarationLimitReachedError {
     pub max_limit: usize,
-    #[label("max. limit for local variable declarations in a single function block is {}, got more than that", self.max_limit)]
+    #[label("max. limit for active local variables on stack in single call-frame is {}, got more than that", self.max_limit)]
     pub span: SourceSpan,
 }
 

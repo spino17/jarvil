@@ -77,11 +77,14 @@ impl RuntimeStackSimulator {
 
     pub fn open_block(&mut self) {
         self.curr_depth += 1;
+        /*
         if self.curr_depth >= self.local_indexes.as_ref().borrow().len() {
             self.local_indexes.as_ref().borrow_mut().push(0);
         } else {
             self.local_indexes.as_ref().borrow_mut()[self.curr_depth] = 0;
         }
+         */
+        self.local_indexes.as_ref().borrow_mut().push(0);
     }
 
     pub fn close_block(&mut self) -> usize {
@@ -89,6 +92,7 @@ impl RuntimeStackSimulator {
         self.curr_local_var_index =
             self.curr_local_var_index - self.local_indexes.as_ref().borrow()[self.curr_depth];
         self.curr_depth -= 1;
+        self.local_indexes.as_ref().borrow_mut().pop();
         num_of_popped_elements
     }
 }
@@ -409,6 +413,7 @@ impl Resolver {
             identifier.bind_variable_decl(symbol_data, 0, VariableCaptureKind::LOCAL)
         };
         let name = Rc::new(identifier.token_value(&self.code));
+        println!("variable `{}` has index `{}`", name, stack_index);
         let symbol_data = declare_fn(&self.namespace, &name, stack_index, identifier.range());
         match symbol_data {
             Ok(symbol_data) => {

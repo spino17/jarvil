@@ -3,7 +3,7 @@ use std::{cell::RefCell, convert::TryInto, rc::Rc};
 
 use crate::{
     ast::{
-        ast::{ASTNode, BlockNode, OkFunctionDeclarationNode, StatementNode},
+        ast::{ASTNode, BlockNode, Node, OkFunctionDeclarationNode, StatementNode},
         walk::Visitor,
     },
     backend::{
@@ -62,13 +62,13 @@ impl ByteCodeGenerator {
         self.compiler.0.as_ref().borrow_mut().open_block();
     }
 
-    fn close_block(&mut self) {
-        let num_of_popped_elements = self.emit_pop_bytecode();
+    fn close_block(&mut self, line_number: usize) {
+        let num_of_popped_elements = self.emit_pop_bytecode(line_number); // emit bytecode for popping all the local variables declared in the block
         self.compiler
             .0
             .as_ref()
             .borrow_mut()
-            .close_block(num_of_popped_elements);
+            .close_block(num_of_popped_elements); // then decrement the depth and drop all the elements belonging to the above variables
     }
 
     fn emit_bytecode(&mut self, op_code: OpCode, line_number: usize) {
@@ -80,7 +80,7 @@ impl ByteCodeGenerator {
             .write_instruction(op_code, line_number);
     }
 
-    fn emit_pop_bytecode(&mut self) -> usize {
+    fn emit_pop_bytecode(&mut self, line_number: usize) -> usize {
         let compiler = self.compiler.0.as_ref().borrow();
         let len = compiler.locals.len();
         let curr_depth = compiler.depth();
@@ -108,7 +108,7 @@ impl ByteCodeGenerator {
         for stmt in &block.0.as_ref().borrow().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        self.close_block();
+        self.close_block(block.start_line_number());
     }
 
     fn compile_stmt(&mut self, stmt: &StatementNode) {
