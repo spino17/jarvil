@@ -135,6 +135,16 @@ impl BlockNode {
     pub fn kind(&self) -> BlockKind {
         self.0.as_ref().borrow().kind.clone()
     }
+
+    pub fn end_class_line_number(&self) -> usize {
+        let core_block = self.0.as_ref().borrow();
+        let stmts_len = core_block.stmts.len();
+        if stmts_len > 0 {
+            return core_block.stmts[stmts_len - 1].start_line_number();
+        } else {
+            return self.start_line_number();
+        }
+    }
 }
 
 impl Node for BlockNode {

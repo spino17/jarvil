@@ -108,7 +108,7 @@ impl ByteCodeGenerator {
         for stmt in &block.0.as_ref().borrow().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        self.close_block(block.start_line_number());
+        self.close_block(block.end_class_line_number());
     }
 
     fn compile_stmt(&mut self, stmt: &StatementNode) {
