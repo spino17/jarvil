@@ -3,7 +3,11 @@ use std::{cell::RefCell, convert::TryInto, rc::Rc};
 
 use crate::{
     ast::{
-        ast::{ASTNode, BlockNode, Node, OkFunctionDeclarationNode, StatementNode},
+        ast::{
+            ASTNode, AssignmentNode, BlockNode, CoreFunctionDeclarationNode, CoreStatementNode,
+            ExpressionStatementNode, Node, OkFunctionDeclarationNode, ReturnStatementNode,
+            StatementNode, TypeDeclarationNode, VariableDeclarationNode,
+        },
         walk::Visitor,
     },
     backend::{
@@ -63,7 +67,7 @@ impl ByteCodeGenerator {
     }
 
     fn close_block(&mut self, line_number: usize) {
-        let num_of_popped_elements = self.emit_pop_bytecode(line_number); // emit bytecode for popping all the local variables declared in the block
+        let num_of_popped_elements = self.emit_block_close_bytecode(line_number); // emit bytecode for popping all the local variables declared in the block
         self.compiler
             .0
             .as_ref()
@@ -80,7 +84,7 @@ impl ByteCodeGenerator {
             .write_instruction(op_code, line_number);
     }
 
-    fn emit_pop_bytecode(&mut self, line_number: usize) -> usize {
+    fn emit_block_close_bytecode(&mut self, line_number: usize) -> usize {
         let compiler = self.compiler.0.as_ref().borrow();
         let len = compiler.locals.len();
         let curr_depth = compiler.depth();
@@ -115,6 +119,38 @@ impl ByteCodeGenerator {
         // TODO - make cases for all the stmts and compile them
         // TODO - as soon as we encounter a variable usage we check whether it's a local variable or an upvalue
         // depending on that we generate the LOAD/STORE instruction with appropiate index
+        match stmt.core_ref() {
+            CoreStatementNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt),
+            CoreStatementNode::ASSIGNMENT(assignment) => self.compile_assignment(assignment),
+            CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
+                self.compile_variable_decl(variable_decl)
+            }
+            CoreStatementNode::FUNCTION_DECLARATION(func_decl) => match func_decl.core_ref() {
+                CoreFunctionDeclarationNode::OK(ok_func_decl) => {
+                    self.compile_func_decl(ok_func_decl)
+                }
+                CoreFunctionDeclarationNode::MISSING_TOKENS(_) => {
+                    unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
+                }
+            },
+            CoreStatementNode::TYPE_DECLARATION(type_decl) => self.compile_type_decl(type_decl),
+            CoreStatementNode::STRUCT_STATEMENT(_) => return,
+            CoreStatementNode::RETURN(return_stmt) => self.compile_return_stmt(return_stmt),
+            CoreStatementNode::MISSING_TOKENS(_) => {
+                unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
+            }
+        }
+    }
+
+    fn compile_expression(&mut self, expr: &ExpressionStatementNode) {
+        todo!()
+    }
+
+    fn compile_assignment(&mut self, assignment: &AssignmentNode) {
+        todo!()
+    }
+
+    fn compile_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         todo!()
     }
 
@@ -132,6 +168,14 @@ impl ByteCodeGenerator {
         // make function object out of the chunk we get => if name is available then set the func_obj to symbol entry of the
         // function and if there is no name (in case of lambda assignment), just emit a bytecode to push the object on stack
         // and add it to the constant array in curr chunk
+    }
+
+    fn compile_type_decl(&mut self, type_decl: &TypeDeclarationNode) {
+        todo!()
+    }
+
+    fn compile_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {
+        todo!()
     }
 }
 
