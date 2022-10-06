@@ -4,9 +4,10 @@ use std::{cell::RefCell, convert::TryInto, rc::Rc};
 use crate::{
     ast::{
         ast::{
-            ASTNode, AssignmentNode, BlockNode, CoreFunctionDeclarationNode, CoreStatementNode,
-            ExpressionStatementNode, Node, OkFunctionDeclarationNode, RAssignmentNode,
-            ReturnStatementNode, StatementNode, TypeDeclarationNode, VariableDeclarationNode,
+            ASTNode, AssignmentNode, BlockNode, CoreFunctionDeclarationNode, CoreIdentifierNode,
+            CoreStatementNode, ExpressionStatementNode, Node, OkFunctionDeclarationNode,
+            RAssignmentNode, ReturnStatementNode, StatementNode, TypeDeclarationNode,
+            VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -154,6 +155,20 @@ impl ByteCodeGenerator {
     }
 
     fn compile_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
+        let is_captured = match variable_decl.core_ref().name.core_ref() {
+            CoreIdentifierNode::OK(ok_identifier) => {
+                match ok_identifier.variable_symbol_data(
+                    "param name should be resolved to `SymbolData<VariableData>`",
+                ) {
+                    Some(symbol_data) => symbol_data.0.as_ref().borrow().is_captured,
+                    None => unreachable!("each identifier should already be resolved"),
+                }
+            }
+            _ => unreachable!(
+                "`MISSING_TOKENS` and `SKIPPED` variant is not allowed uptill compiling phase"
+            ),
+        };
+        self.variable_decl_callback(is_captured);
         self.compile_r_assign(&variable_decl.core_ref().r_assign);
     }
 

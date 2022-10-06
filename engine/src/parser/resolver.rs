@@ -89,8 +89,7 @@ impl RuntimeStackSimulator {
 
     pub fn close_block(&mut self) -> usize {
         let num_of_popped_elements = self.local_indexes.as_ref().borrow()[self.curr_depth];
-        self.curr_local_var_index =
-            self.curr_local_var_index - self.local_indexes.as_ref().borrow()[self.curr_depth];
+        self.curr_local_var_index = self.curr_local_var_index - num_of_popped_elements;
         self.curr_depth -= 1;
         self.local_indexes.as_ref().borrow_mut().pop();
         num_of_popped_elements
