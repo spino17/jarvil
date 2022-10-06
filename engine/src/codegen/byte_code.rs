@@ -136,7 +136,9 @@ impl ByteCodeGenerator {
                 }
             },
             CoreStatementNode::TYPE_DECLARATION(type_decl) => self.compile_type_decl(type_decl),
-            CoreStatementNode::STRUCT_STATEMENT(_) => return,
+            CoreStatementNode::STRUCT_STATEMENT(_) => unreachable!(
+                "`STRUCT_STATEMENT` variant should be handled in `TYPE_DECLARATION` variant"
+            ),
             CoreStatementNode::RETURN(return_stmt) => self.compile_return_stmt(return_stmt),
             CoreStatementNode::MISSING_TOKENS(_) => {
                 unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
