@@ -140,7 +140,7 @@ impl FunctionContext {
         let value = UpValue { index, is_local };
         self.upvalues.as_ref().borrow_mut().push(value);
         let next_index = self.upvalues.as_ref().borrow().len() - 1;
-        if next_index >= EIGHT_BIT_MAX_VALUE {
+        if next_index > EIGHT_BIT_MAX_VALUE {
             Err(next_index)
         } else {
             Ok(next_index)

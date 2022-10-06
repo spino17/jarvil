@@ -5,8 +5,8 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, BlockNode, CoreFunctionDeclarationNode, CoreStatementNode,
-            ExpressionStatementNode, Node, OkFunctionDeclarationNode, ReturnStatementNode,
-            StatementNode, TypeDeclarationNode, VariableDeclarationNode,
+            ExpressionStatementNode, Node, OkFunctionDeclarationNode, RAssignmentNode,
+            ReturnStatementNode, StatementNode, TypeDeclarationNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -147,10 +147,18 @@ impl ByteCodeGenerator {
     }
 
     fn compile_assignment(&mut self, assignment: &AssignmentNode) {
+        // TODO - get the symbol entry from left side starting identifier
+        // check whether it's a local variable or an upvalue and generate the bytecode accordingly using the index information.
+        // set the value equal to the top of stack
         todo!()
     }
 
     fn compile_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
+        self.compile_r_assign(&variable_decl.core_ref().r_assign);
+    }
+
+    fn compile_r_assign(&mut self, r_assign: &RAssignmentNode) {
+        // either compile expression or compile closure
         todo!()
     }
 
@@ -181,10 +189,6 @@ impl ByteCodeGenerator {
 
 impl Visitor for ByteCodeGenerator {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
-        // TODO - catch all statements here.
-        // TODO - catch `OkFunctionDeclarationNode` node here and surround that with open_compiler and close_compiler and call walk on block
-        // TODO - for block keep track of how many local variables are there and decrement them as soon as block gets over.
-        // TODO - for `VariableDeclarationNode` call variable_decl_callback and set the index returned from it to the symbol entry
         match node {
             ASTNode::STATEMENT(stmt) => {
                 self.compile_stmt(stmt);
