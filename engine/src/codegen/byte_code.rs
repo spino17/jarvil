@@ -5,7 +5,8 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, BlockNode, CoreFunctionDeclarationNode, CoreIdentifierNode,
-            CoreStatementNode, ExpressionStatementNode, Node, OkFunctionDeclarationNode,
+            CoreLambdaDeclarationNode, CoreRAssignmentNode, CoreStatementNode, ExpressionNode,
+            ExpressionStatementNode, LambdaDeclarationNode, Node, OkFunctionDeclarationNode,
             RAssignmentNode, ReturnStatementNode, StatementNode, TypeDeclarationNode,
             VariableDeclarationNode,
         },
@@ -173,8 +174,21 @@ impl ByteCodeGenerator {
     }
 
     fn compile_r_assign(&mut self, r_assign: &RAssignmentNode) {
-        // either compile expression or compile closure
-        todo!()
+        // either compile expression or compile closure and push the object on stack
+        match r_assign.core_ref() {
+            CoreRAssignmentNode::LAMBDA(lambda_decl) => match lambda_decl.core_ref() {
+                CoreFunctionDeclarationNode::OK(ok_lambda_decl) => {
+                    self.compile_func_decl(ok_lambda_decl)
+                }
+                CoreFunctionDeclarationNode::MISSING_TOKENS(_) => {
+                    unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
+                }
+            },
+            CoreRAssignmentNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt),
+            CoreRAssignmentNode::MISSING_TOKENS(_) => {
+                unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
+            }
+        }
     }
 
     fn compile_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode) {
