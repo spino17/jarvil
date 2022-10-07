@@ -829,6 +829,19 @@ impl OkFunctionDeclarationNode {
     pub fn context(&self) -> Option<Rc<RefCell<Vec<UpValue>>>> {
         std::mem::take(&mut self.0.as_ref().borrow_mut().context)
     }
+
+    pub fn has_upvalues(&self) -> Option<bool> {
+        match &self.0.as_ref().borrow().context {
+            Some(context) => {
+                if context.as_ref().borrow().len() > 0 {
+                    return Some(true);
+                } else {
+                    return Some(false);
+                }
+            }
+            None => None,
+        }
+    }
 }
 
 impl Node for OkFunctionDeclarationNode {

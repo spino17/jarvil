@@ -767,6 +767,7 @@ impl TypeChecker {
     }
 
     pub fn check_func_decl(&mut self, ok_func_decl: &OkFunctionDeclarationNode) {
+        // TODO - add is_construted true
         let core_ok_func_decl = ok_func_decl.0.as_ref().borrow();
         let return_type_node = &core_ok_func_decl.return_type;
         let return_type_obj = match return_type_node {
