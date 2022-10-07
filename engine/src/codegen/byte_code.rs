@@ -1,5 +1,4 @@
-use core::num;
-use std::{cell::RefCell, convert::TryInto, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     ast::{

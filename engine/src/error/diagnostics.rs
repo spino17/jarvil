@@ -18,6 +18,7 @@ pub enum Diagnostics {
     InvalidLValue(InvalidLValueError),
     IdentifierAlreadyDeclared(IdentifierAlreadyDeclaredError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
+    RightSideWithVoidTypeNotAllowed(RightSideWithVoidTypeNotAllowedError),
     MoreParamsCount(MoreParamsCountError),
     LessParamsCount(LessParamsCountError),
     MoreThanMaxLimitParamsPassed(MoreThanMaxLimitParamsPassedError),
@@ -52,6 +53,9 @@ impl Diagnostics {
             Diagnostics::IncorrectlyIndentedBlock(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InvalidLValue(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierAlreadyDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::RightSideWithVoidTypeNotAllowed(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MoreParamsCount(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::LessParamsCount(diagnostic) => Report::new(diagnostic.clone()),
@@ -353,6 +357,30 @@ impl IdentifierNotDeclaredError {
                 .style(Style::new().yellow())
                 .to_string()
             )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("right side with `()` type is not allowed")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct RightSideWithVoidTypeNotAllowedError {
+    #[label("has type `()`")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl RightSideWithVoidTypeNotAllowedError {
+    pub fn new(range: TextRange) -> Self {
+        RightSideWithVoidTypeNotAllowedError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "variable declaration or assignment with type `void` is not allowed"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }

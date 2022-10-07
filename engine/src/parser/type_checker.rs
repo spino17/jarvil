@@ -30,7 +30,8 @@ use crate::{
             IdentifierNotCallableError, InvalidReturnStatementError, LessParamsCountError,
             MismatchedParamTypeError, MismatchedReturnTypeError, MismatchedTypesOnLeftRightError,
             MoreParamsCountError, NoReturnStatementInFunctionError, PropertyDoesNotExistError,
-            PropertyNotSupportedError, UnaryOperatorInvalidUseError,
+            PropertyNotSupportedError, RightSideWithVoidTypeNotAllowedError,
+            UnaryOperatorInvalidUseError,
         },
         helper::PropertyKind,
     },
@@ -743,6 +744,12 @@ impl TypeChecker {
             }
         };
         let r_type = self.check_r_assign(r_assign);
+        if r_type.is_void() {
+            let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
+            self.errors
+                .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
+            return;
+        }
         if !l_type.is_eq(&r_type) {
             let err = MismatchedTypesOnLeftRightError::new(l_type, r_type, range, r_assign.range());
             self.errors
@@ -752,7 +759,14 @@ impl TypeChecker {
 
     pub fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        let r_type = self.check_r_assign(&core_variable_decl.r_assign);
+        let r_assign = &core_variable_decl.r_assign;
+        let r_type = self.check_r_assign(r_assign);
+        if r_type.is_void() {
+            let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
+            self.errors
+                .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
+            return;
+        }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
             if !r_type.is_lambda() {
                 // variable with lambda type is already set in resolving phase => see `resolve_function` method
