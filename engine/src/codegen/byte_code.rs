@@ -122,14 +122,14 @@ impl ByteCodeGenerator {
         // TODO - as soon as we encounter a variable usage we check whether it's a local variable or an upvalue
         // depending on that we generate the LOAD/STORE instruction with appropiate index
         match stmt.core_ref() {
-            CoreStatementNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt),
+            CoreStatementNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt, false),
             CoreStatementNode::ASSIGNMENT(assignment) => self.compile_assignment(assignment),
             CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
                 self.compile_variable_decl(variable_decl)
             }
             CoreStatementNode::FUNCTION_DECLARATION(func_decl) => match func_decl.core_ref() {
                 CoreFunctionDeclarationNode::OK(ok_func_decl) => {
-                    self.compile_func_decl(ok_func_decl)
+                    self.compile_func_decl(ok_func_decl, true)
                 }
                 CoreFunctionDeclarationNode::MISSING_TOKENS(_) => {
                     unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
@@ -146,7 +146,7 @@ impl ByteCodeGenerator {
         }
     }
 
-    fn compile_expression(&mut self, expr: &ExpressionStatementNode) {
+    fn compile_expression(&mut self, expr: &ExpressionStatementNode, is_r_assign: bool) {
         todo!()
     }
 
@@ -180,20 +180,20 @@ impl ByteCodeGenerator {
         match r_assign.core_ref() {
             CoreRAssignmentNode::LAMBDA(lambda_decl) => match lambda_decl.core_ref() {
                 CoreFunctionDeclarationNode::OK(ok_lambda_decl) => {
-                    self.compile_func_decl(ok_lambda_decl)
+                    self.compile_func_decl(ok_lambda_decl, true)
                 }
                 CoreFunctionDeclarationNode::MISSING_TOKENS(_) => {
                     unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
                 }
             },
-            CoreRAssignmentNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt),
+            CoreRAssignmentNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt, true),
             CoreRAssignmentNode::MISSING_TOKENS(_) => {
                 unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
             }
         }
     }
 
-    fn compile_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode) {
+    fn compile_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode, is_lambda: bool) {
         let upvalues = func_decl
                                                     .context()
                                                     .expect(
@@ -227,10 +227,6 @@ impl Visitor for ByteCodeGenerator {
             }
             ASTNode::BLOCK(block) => {
                 self.compile_block(block);
-                return None;
-            }
-            ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
-                self.compile_func_decl(func_decl);
                 return None;
             }
             _ => Some(()),
