@@ -765,7 +765,6 @@ impl TypeChecker {
             let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
             self.errors
                 .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
-            return;
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
             if !r_type.is_lambda() {

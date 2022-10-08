@@ -24,28 +24,28 @@ impl UserDefinedTypeData {
     pub fn lambda_data(&self, panic_message: &'static str) -> &LambdaTypeData {
         match self {
             UserDefinedTypeData::LAMBDA(data) => data,
-            _ => panic!(panic_message),
+            _ => panic!("{}", panic_message),
         }
     }
 
     pub fn struct_data(&self, panic_message: &'static str) -> &StructData {
         match self {
             UserDefinedTypeData::STRUCT(data) => data,
-            _ => panic!(panic_message),
+            _ => panic!("{}", panic_message),
         }
     }
 
     pub fn lambda_data_mut(&mut self, panic_message: &'static str) -> &mut LambdaTypeData {
         match self {
             UserDefinedTypeData::LAMBDA(data) => data,
-            _ => panic!(panic_message),
+            _ => panic!("{}", panic_message),
         }
     }
 
     pub fn struct_data_mut(&mut self, panic_message: &'static str) -> &mut StructData {
         match self {
             UserDefinedTypeData::STRUCT(data) => data,
-            _ => panic!(panic_message),
+            _ => panic!("{}", panic_message),
         }
     }
 }
