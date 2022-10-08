@@ -1,5 +1,4 @@
 use crate::{backend::chunk::Chunk, parser::resolver::UpValue};
-use core::num;
 use std::{cell::RefCell, rc::Rc};
 
 pub struct Local {

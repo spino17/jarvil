@@ -1,5 +1,5 @@
 use crate::ast::ast::{
-    FuncKeywordKind, FunctionKind, ReturnStatementNode, StatementNode, StructStatementNode,
+    CallableKind, FuncKeywordKind, ReturnStatementNode, StatementNode, StructStatementNode,
 };
 use crate::constants::common::IDENTIFIER;
 use crate::lexer::token::{CoreToken, Token};
@@ -59,7 +59,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
             let function_decl_node = parser.function_decl(
                 Some(&function_name),
                 &FuncKeywordKind::DEF(def_keyword),
-                FunctionKind::FUNC,
+                CallableKind::FUNC,
             );
             StatementNode::new_with_function_declaration(&function_decl_node)
         }

@@ -8,9 +8,9 @@ use crate::scope::core::VariableCaptureKind;
 use crate::{
     ast::{
         ast::{
-            ASTNode, BlockNode, CoreAtomStartNode, CoreIdentifierNode, CoreNameTypeSpecsNode,
-            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
-            FunctionDeclarationNode, FunctionKind, LambdaDeclarationNode, Node,
+            ASTNode, BlockNode, CallableKind, CoreAtomStartNode, CoreIdentifierNode,
+            CoreNameTypeSpecsNode, CoreRAssignmentNode, CoreStatemenIndentWrapperNode,
+            CoreStatementNode, FunctionDeclarationNode, LambdaDeclarationNode, Node,
             OkFunctionDeclarationNode, OkIdentifierNode, OkLambdaTypeDeclarationNode,
             StructDeclarationNode, TypeExpressionNode, TypeResolveKind, VariableDeclarationNode,
         },
@@ -505,7 +505,7 @@ impl Resolver {
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 match kind {
-                    FunctionKind::FUNC => {
+                    CallableKind::FUNC => {
                         if let Some((name, previous_decl_range)) =
                             self.try_declare_and_bind_function(ok_identifier)
                         {
@@ -519,7 +519,7 @@ impl Resolver {
                                 .push(Diagnostics::IdentifierAlreadyDeclared(err));
                         }
                     }
-                    FunctionKind::LAMBDA => {
+                    CallableKind::LAMBDA => {
                         let stack_index = self.variable_decl_callback();
                         if let Some((name, previous_decl_range)) =
                             self.try_declare_and_bind_variable(ok_identifier, stack_index)
@@ -535,7 +535,9 @@ impl Resolver {
                                 .push(Diagnostics::IdentifierAlreadyDeclared(err));
                         }
                     }
-                    FunctionKind::METHOD => unimplemented!(),
+                    CallableKind::METHOD => unimplemented!(),
+                    CallableKind::CLASSMETHOD => unimplemented!(),
+                    CallableKind::CONSTRUCTOR => unimplemented!(),
                 }
             }
         }
@@ -642,7 +644,7 @@ impl Resolver {
                 if let Some(symbol_data) = ok_identifier.symbol_data() {
                     match symbol_data.0 {
                         IdentifierKind::FUNCTION(func_symbol_data) => {
-                            assert!(kind.clone() == FunctionKind::FUNC);
+                            assert!(kind.clone() == CallableKind::FUNC);
                             func_symbol_data
                                 .0
                                 .as_ref()
@@ -650,7 +652,7 @@ impl Resolver {
                                 .set_data(params_vec, return_type);
                         }
                         IdentifierKind::VARIABLE(variable_symbol_data) => {
-                            assert!(kind.clone() == FunctionKind::LAMBDA);
+                            assert!(kind.clone() == CallableKind::LAMBDA);
                             let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(
                                 params_vec,
                                 return_type,

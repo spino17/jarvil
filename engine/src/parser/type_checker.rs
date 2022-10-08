@@ -5,15 +5,14 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-            BinaryExpressionNode, BlockKind, BlockNode, ComparisonNode, CoreAssignmentNode,
-            CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
-            CoreFunctionDeclarationNode, CoreIdentifierNode, CoreRAssignmentNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, FunctionKind,
-            NameTypeSpecsNode, Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode,
-            ParamsNode, RAssignmentNode, ReturnStatementNode, StatementNode, TokenNode,
-            TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-            VariableDeclarationNode,
+            BinaryExpressionNode, BlockKind, BlockNode, CallableKind, ComparisonNode,
+            CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
+            CoreExpressionNode, CoreFunctionDeclarationNode, CoreIdentifierNode,
+            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, NameTypeSpecsNode,
+            Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode,
+            ReturnStatementNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+            TypeResolveKind, UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -132,7 +131,7 @@ impl TypeChecker {
     pub fn type_of_lambda(&self, func_decl: &OkFunctionDeclarationNode) -> Type {
         let core_func_decl = func_decl.0.as_ref().borrow();
         assert!(
-            core_func_decl.kind == FunctionKind::LAMBDA,
+            core_func_decl.kind == CallableKind::LAMBDA,
             "construction of type is only valid for lambda declaration"
         );
         let func_name = &core_func_decl.name;

@@ -52,21 +52,6 @@ impl Chunk {
         self.line_numbers.push(line_number);
     }
 
-    pub fn disassemble(&self) -> Vec<String> {
-        let mut offset = 0;
-        let mut parsed_instructions: Vec<String> = vec![];
-        let mut inst_index = 0;
-        while offset < self.code.len() {
-            let (str_rep, new_offset) = self.disassemble_instruction(offset);
-            let mut inst_str = format!("{}: ", self.line_numbers[inst_index]);
-            inst_str.push_str(&str_rep);
-            parsed_instructions.push(inst_str);
-            offset = new_offset;
-            inst_index = inst_index + 1;
-        }
-        parsed_instructions
-    }
-
     pub fn disassemble_instruction(&self, offset: usize) -> (String, usize) {
         let op_code = &OP_CODES_MAP[usize::from(self.code[offset])];
         let op_code_str = op_code.to_string();
@@ -99,6 +84,21 @@ impl Chunk {
             OpCode::BINARY_OP_LESS_EQUAL => (op_code_str, offset + 1),
             //OpCode::POPN => ("POPN".to_string(), offset + 1),
         }
+    }
+
+    pub fn disassemble(&self) -> Vec<String> {
+        let mut offset = 0;
+        let mut parsed_instructions: Vec<String> = vec![];
+        let mut inst_index = 0;
+        while offset < self.code.len() {
+            let (str_rep, new_offset) = self.disassemble_instruction(offset);
+            let mut inst_str = format!("{}: ", self.line_numbers[inst_index]);
+            inst_str.push_str(&str_rep);
+            parsed_instructions.push(inst_str);
+            offset = new_offset;
+            inst_index = inst_index + 1;
+        }
+        parsed_instructions
     }
 }
 

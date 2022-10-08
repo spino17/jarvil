@@ -4,8 +4,8 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{
-    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
-    FunctionDeclarationNode, FunctionKind, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
+    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableKind, ExpressionNode,
+    FuncKeywordKind, FunctionDeclarationNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
     Node, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
     TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
 };
@@ -481,7 +481,7 @@ impl PackratParser {
         &mut self,
         name: Option<&IdentifierNode>,
         func_keyword: &FuncKeywordKind,
-        kind: FunctionKind,
+        kind: CallableKind,
     ) -> FunctionDeclarationNode {
         components::function_declaration::function_decl(self, name, func_keyword, kind)
     }

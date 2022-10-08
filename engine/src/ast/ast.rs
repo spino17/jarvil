@@ -739,7 +739,7 @@ impl FunctionDeclarationNode {
         rparen: &TokenNode,
         right_arrow: Option<&TokenNode>,
         colon: &TokenNode,
-        kind: FunctionKind,
+        kind: CallableKind,
     ) -> Self {
         let node = Rc::new(CoreFunctionDeclarationNode::OK(
             OkFunctionDeclarationNode::new(
@@ -773,14 +773,16 @@ pub struct CoreOkFunctionDeclarationNode {
     pub params: Option<NameTypeSpecsNode>,
     pub return_type: Option<TypeExpressionNode>,
     pub block: BlockNode,
-    pub kind: FunctionKind,
+    pub kind: CallableKind,
     pub context: Option<Rc<RefCell<Vec<UpValue>>>>, // will be used while code-generation for closures
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum FunctionKind {
+pub enum CallableKind {
     FUNC,
-    METHOD,
+    METHOD, // Add the symbol entry of the struct for which this is a method
+    CLASSMETHOD,
+    CONSTRUCTOR,
     LAMBDA,
 }
 
@@ -804,7 +806,7 @@ impl OkFunctionDeclarationNode {
         rparen: &TokenNode,
         right_arrow: Option<&TokenNode>,
         colon: &TokenNode,
-        kind: FunctionKind,
+        kind: CallableKind,
     ) -> Self {
         let node = Rc::new(RefCell::new(CoreOkFunctionDeclarationNode {
             func_keyword: func_keyword.clone(),
