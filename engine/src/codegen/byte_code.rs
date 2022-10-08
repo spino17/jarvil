@@ -198,9 +198,11 @@ impl ByteCodeGenerator {
                                                     .expect(
                                                         "`context` in `CoreOkFunctionDeclarationNode` should be set after resolving first phase"
                                                     );
-        let core_func_decl = func_decl.0.as_ref().borrow();
+        let block = &func_decl.0.as_ref().borrow().block;
         self.open_compiler(upvalues);
-        // TODO - walk on the statements
+        for stmt in &block.0.as_ref().borrow().stmts {
+            self.walk_stmt_indent_wrapper(stmt);
+        }
         let code = self.close_compiler();
         // close_compiler
         // make function object out of the chunk we get => if name is available then set the func_obj to symbol entry of the
