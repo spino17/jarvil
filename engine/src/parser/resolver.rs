@@ -77,13 +77,6 @@ impl RuntimeStackSimulator {
 
     pub fn open_block(&mut self) {
         self.curr_depth += 1;
-        /*
-        if self.curr_depth >= self.local_indexes.as_ref().borrow().len() {
-            self.local_indexes.as_ref().borrow_mut().push(0);
-        } else {
-            self.local_indexes.as_ref().borrow_mut()[self.curr_depth] = 0;
-        }
-         */
         self.local_indexes.as_ref().borrow_mut().push(0);
     }
 
@@ -346,18 +339,6 @@ impl Resolver {
             None => Some(name),
         }
     }
-
-    /*
-    pub fn try_resolving_variable(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
-        let lookup_fn =
-            |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_variables_namespace(key);
-        let bind_fn =
-            |identifier: &OkIdentifierNode,
-             symbol_data: &SymbolData<VariableData>,
-             depth: usize| { identifier.bind_variable_decl(symbol_data, depth) };
-        self.try_resolving(identifier, lookup_fn, bind_fn)
-    }
-     */
 
     pub fn try_resolving_variable_with_upvalues(
         &mut self,
