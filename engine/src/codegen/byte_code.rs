@@ -118,12 +118,8 @@ impl ByteCodeGenerator {
 
     fn compile_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
-            CoreStatementNode::EXPRESSION(expr_stmt) => {
-                self.compile_expression(expr_stmt, false);
-            }
-            CoreStatementNode::ASSIGNMENT(assignment) => {
-                self.compile_assignment(assignment);
-            }
+            CoreStatementNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt, false),
+            CoreStatementNode::ASSIGNMENT(assignment) => self.compile_assignment(assignment),
             CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
                 self.compile_variable_decl(variable_decl)
             }
@@ -135,15 +131,11 @@ impl ByteCodeGenerator {
                     unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
                 }
             },
-            CoreStatementNode::TYPE_DECLARATION(type_decl) => {
-                self.compile_type_decl(type_decl);
-            }
+            CoreStatementNode::TYPE_DECLARATION(type_decl) => self.compile_type_decl(type_decl),
             CoreStatementNode::STRUCT_STATEMENT(_) => unreachable!(
                 "`STRUCT_STATEMENT` variant should be handled in `TYPE_DECLARATION` variant"
             ),
-            CoreStatementNode::RETURN(return_stmt) => {
-                self.compile_return_stmt(return_stmt);
-            }
+            CoreStatementNode::RETURN(return_stmt) => self.compile_return_stmt(return_stmt),
             CoreStatementNode::MISSING_TOKENS(_) => {
                 unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
             }

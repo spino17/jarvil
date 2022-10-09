@@ -44,7 +44,7 @@ impl Chunk {
         self.write_byte(op_code.to_byte(), line_number);
     }
 
-    pub fn write_constant(&mut self, const_value: Data, line_number: usize) {
+    pub fn write_push_constant(&mut self, const_value: Data, line_number: usize) {
         let const_index = self.constants.len();
         self.constants.push(const_value);
         self.code.push(OpCode::PUSH_CONSTANT.to_byte());
