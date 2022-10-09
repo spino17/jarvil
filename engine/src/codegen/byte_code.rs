@@ -117,28 +117,33 @@ impl ByteCodeGenerator {
     }
 
     fn compile_stmt(&mut self, stmt: &StatementNode) {
-        // TODO - make cases for all the stmts and compile them
-        // TODO - as soon as we encounter a variable usage we check whether it's a local variable or an upvalue
-        // depending on that we generate the LOAD/STORE instruction with appropiate index
         match stmt.core_ref() {
-            CoreStatementNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt, false),
-            CoreStatementNode::ASSIGNMENT(assignment) => self.compile_assignment(assignment),
+            CoreStatementNode::EXPRESSION(expr_stmt) => {
+                self.compile_expression(expr_stmt, false);
+            }
+            CoreStatementNode::ASSIGNMENT(assignment) => {
+                self.compile_assignment(assignment);
+            }
             CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
                 self.compile_variable_decl(variable_decl)
             }
             CoreStatementNode::FUNCTION_DECLARATION(func_decl) => match func_decl.core_ref() {
                 CoreFunctionDeclarationNode::OK(ok_func_decl) => {
-                    self.compile_func_decl(ok_func_decl, true)
+                    self.compile_func_decl(ok_func_decl)
                 }
                 CoreFunctionDeclarationNode::MISSING_TOKENS(_) => {
                     unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
                 }
             },
-            CoreStatementNode::TYPE_DECLARATION(type_decl) => self.compile_type_decl(type_decl),
+            CoreStatementNode::TYPE_DECLARATION(type_decl) => {
+                self.compile_type_decl(type_decl);
+            }
             CoreStatementNode::STRUCT_STATEMENT(_) => unreachable!(
                 "`STRUCT_STATEMENT` variant should be handled in `TYPE_DECLARATION` variant"
             ),
-            CoreStatementNode::RETURN(return_stmt) => self.compile_return_stmt(return_stmt),
+            CoreStatementNode::RETURN(return_stmt) => {
+                self.compile_return_stmt(return_stmt);
+            }
             CoreStatementNode::MISSING_TOKENS(_) => {
                 unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
             }
@@ -175,11 +180,10 @@ impl ByteCodeGenerator {
     }
 
     fn compile_r_assign(&mut self, r_assign: &RAssignmentNode) {
-        // either compile expression or compile closure and push the object on stack
         match r_assign.core_ref() {
             CoreRAssignmentNode::LAMBDA(lambda_decl) => match lambda_decl.core_ref() {
                 CoreFunctionDeclarationNode::OK(ok_lambda_decl) => {
-                    self.compile_func_decl(ok_lambda_decl, true)
+                    self.compile_func_decl(ok_lambda_decl)
                 }
                 CoreFunctionDeclarationNode::MISSING_TOKENS(_) => {
                     unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
@@ -192,7 +196,7 @@ impl ByteCodeGenerator {
         }
     }
 
-    fn compile_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode, is_lambda: bool) {
+    fn compile_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode) {
         let upvalues = func_decl
                                                     .context()
                                                     .expect(
@@ -203,11 +207,8 @@ impl ByteCodeGenerator {
         for stmt in &block.0.as_ref().borrow().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        let code = self.close_compiler();
-        // close_compiler
-        // make function object out of the chunk we get => if name is available then set the func_obj to symbol entry of the
-        // function and if there is no name (in case of lambda assignment), just emit a bytecode to push the object on stack
-        // and add it to the constant array in curr chunk
+        let chunk = self.close_compiler();
+        // form the empty closure object with the above chunk and generate bytecode for capturing upvalues.
     }
 
     fn compile_type_decl(&mut self, type_decl: &TypeDeclarationNode) {
