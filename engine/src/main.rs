@@ -135,10 +135,10 @@ fn main() {
     vf.push(Data::OBJ(obj4.clone()));
     vf.push(Data::OBJ(obj6.clone()));
     let obj5 = Object::new_with_list(vf, &mut vm.object_tracker);
-    vm.chunk.write_constant(Data::OBJ(obj1), 5);
-    vm.chunk.write_constant(Data::OBJ(obj2), 5);
-    vm.chunk.write_constant(Data::OBJ(obj4), 5);
-    vm.chunk.write_constant(Data::OBJ(obj6), 5);
+    vm.chunk.write_push_constant(Data::OBJ(obj1), 5);
+    vm.chunk.write_push_constant(Data::OBJ(obj2), 5);
+    vm.chunk.write_push_constant(Data::OBJ(obj4), 5);
+    vm.chunk.write_push_constant(Data::OBJ(obj6), 5);
     //vm.chunk.write_constant(Data::OBJ(obj5), 10);
     //vm.chunk.write_constant(Data::FLOAT(13.0), 1);
     //vm.chunk.write_constant(Data::INT(13), 2);
