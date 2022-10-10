@@ -19,7 +19,6 @@ mod utils;
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use jarvil::backend::chunk::OpCode;
-use jarvil::backend::object::dict::CoreDictObject;
 use jarvil::backend::object::list::ListObject;
 use jarvil::backend::object::string::StringObject;
 use jarvil::backend::vm::VM;
