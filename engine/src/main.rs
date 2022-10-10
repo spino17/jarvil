@@ -27,6 +27,7 @@ use jarvil::backend::{data::Data, object::core::Object};
 use jarvil::types::array;
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
+use std::alloc::Layout;
 use std::collections::HashMap;
 use std::env::args;
 use std::hash::Hash;
@@ -102,6 +103,16 @@ impl Ptr {
 }
  */
 
+struct Nodes {
+    name: String,
+}
+
+impl Drop for Nodes {
+    fn drop(&mut self) {
+        println!("I am going to marry my wife");
+    }
+}
+
 fn main() {
     miette::set_hook(Box::new(|err| {
         let mut my_theme = GraphicalTheme::default();
@@ -114,6 +125,7 @@ fn main() {
     }));
     let args: Vec<String> = args().collect();
     start_compiler(args);
+
     let mut vm = VM::new();
     let s = StringObject::new_with_bytes("bro ");
     let v = StringObject::new_with_bytes("bro s");

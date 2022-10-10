@@ -158,10 +158,10 @@ impl Drop for CoreListObject {
     fn drop(&mut self) {
         println!("{} dropping!", self);
         if self.cap != 0 {
-            while let Some(_) = self.pop() {}
+            while let Some(_) = self.pop() {} // first drop all the individual elements
             let layout = Layout::array::<Data>(self.cap).unwrap();
             unsafe {
-                alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
+                alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout); // then free up the allocated array
             }
         }
     }
