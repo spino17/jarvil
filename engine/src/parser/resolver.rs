@@ -499,7 +499,10 @@ impl Resolver {
                 }
             }
         }
-        self.walk_block(func_body);
+        // self.walk_block(func_body);
+        for stmt in &func_body.0.as_ref().borrow().stmts {
+            self.walk_stmt_indent_wrapper(stmt);
+        }
         func_body.set_scope(&self.namespace);
         let context = self.close_func();
         if let Some(identifier) = func_name {
