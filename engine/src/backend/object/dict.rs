@@ -1,5 +1,7 @@
 use crate::backend::data::Data;
+use crate::backend::operators::eval_binary_op;
 use crate::backend::vm::VM;
+use crate::lexer::token::BinaryOperatorKind;
 use std::alloc;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
@@ -98,6 +100,7 @@ impl CoreDictObject {
                     Entry::OK(ok_entry) => {
                         let curr_key = &ok_entry.key;
                         let curr_hash = ok_entry.hash;
+                        // eval_binary_op(curr_key.clone(), key.clone(), BinaryOperatorKind::DoubleEqual, &mut vm.object_tracker);
                         // TODO - complete this function
                         /*
                         if curr_hash == hash && curr_key == key {
