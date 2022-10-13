@@ -1,6 +1,6 @@
 use super::{function::FunctionObject, list::ListObject, string::StringObject};
-use crate::{backend::vm::VM, error::constants::CASTING_OBJECT_ERROR_MSG};
-use std::{borrow::Borrow, cell::RefCell, fmt::Display, ptr::NonNull, rc::Rc};
+use crate::error::constants::CASTING_OBJECT_ERROR_MSG;
+use std::{fmt::Display, ptr::NonNull};
 
 // Objects are Heap-allocated datatypes
 // NOTE: All the objects are wrapped inside NonNull<T> in order to avoid automatic calling of drop.
