@@ -108,14 +108,6 @@ impl ByteCodeGenerator {
         num_of_popped_elements
     }
 
-    fn compile_block(&mut self, block: &BlockNode) {
-        self.open_block();
-        for stmt in &block.0.as_ref().borrow().stmts {
-            self.walk_stmt_indent_wrapper(stmt);
-        }
-        self.close_block(block.end_class_line_number());
-    }
-
     fn compile_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
             CoreStatementNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt, false),
@@ -220,7 +212,11 @@ impl Visitor for ByteCodeGenerator {
                 return None;
             }
             ASTNode::BLOCK(block) => {
-                self.compile_block(block);
+                self.open_block();
+                for stmt in &block.0.as_ref().borrow().stmts {
+                    self.walk_stmt_indent_wrapper(stmt);
+                }
+                self.close_block(block.end_class_line_number());
                 return None;
             }
             _ => Some(()),
