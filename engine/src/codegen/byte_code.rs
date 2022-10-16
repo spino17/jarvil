@@ -96,6 +96,7 @@ impl ByteCodeGenerator {
                 // TODO - check local at the index
                 // generate OP_POP according to whether it's captured or not
                 // override depth
+                // find continous ordinary POP instructions and emit POPN instead
                 if compiler.locals[index].is_captured {
                     todo!()
                 } else {
@@ -110,7 +111,10 @@ impl ByteCodeGenerator {
 
     fn compile_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
-            CoreStatementNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt, false),
+            CoreStatementNode::EXPRESSION(expr_stmt) => {
+                self.compile_expression(&expr_stmt.core_ref().expr);
+                // TODO emit pop instruction here
+            }
             CoreStatementNode::ASSIGNMENT(assignment) => self.compile_assignment(assignment),
             CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
                 self.compile_variable_decl(variable_decl)
@@ -134,7 +138,8 @@ impl ByteCodeGenerator {
         }
     }
 
-    fn compile_expression(&mut self, expr: &ExpressionStatementNode, is_r_assign: bool) {
+    fn compile_expression(&mut self, expr: &ExpressionNode) {
+        // compile expression and push it on stack
         todo!()
     }
 
@@ -173,7 +178,9 @@ impl ByteCodeGenerator {
                     unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
                 }
             },
-            CoreRAssignmentNode::EXPRESSION(expr_stmt) => self.compile_expression(expr_stmt, true),
+            CoreRAssignmentNode::EXPRESSION(expr_stmt) => {
+                self.compile_expression(&expr_stmt.core_ref().expr)
+            }
             CoreRAssignmentNode::MISSING_TOKENS(_) => {
                 unreachable!("`MISSING_TOKENS` variant is not allowed uptill compiling phase")
             }
