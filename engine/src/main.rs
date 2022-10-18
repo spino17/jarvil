@@ -29,6 +29,7 @@ use owo_colors::Style;
 use std::alloc::Layout;
 use std::collections::HashMap;
 use std::env::args;
+use std::fmt::Display;
 use std::hash::Hash;
 use std::ptr::NonNull;
 
@@ -106,9 +107,41 @@ struct Nodes {
     name: String,
 }
 
-impl Drop for Nodes {
+impl Nodes {
+    fn set_name(&mut self, name: &str) {
+        self.name = name.to_string();
+    }
+}
+
+#[derive(Clone)]
+struct NodeObject(NonNull<Nodes>);
+
+impl NodeObject {
+    fn new(name: &str) -> NodeObject {
+        let x = unsafe {
+            NonNull::new_unchecked(Box::into_raw(Box::new(Nodes {
+                name: name.to_string(),
+            })))
+        };
+        NodeObject(x)
+    }
+
+    fn set_name(&self, name: &str) {
+        unsafe {
+            (&mut *self.0.as_ptr()).set_name(name);
+        }
+    }
+}
+
+impl Display for NodeObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        unsafe { write!(f, "{}", (*self.0.as_ptr()).name) }
+    }
+}
+
+impl Drop for NodeObject {
     fn drop(&mut self) {
-        println!("I am going to marry my wife");
+        let _x = unsafe { Box::from_raw(self.0.as_ptr()) };
     }
 }
 

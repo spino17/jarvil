@@ -13,6 +13,11 @@ pub enum OpCode {
     PUSH_CONSTANT, // TOS = constants[index], where `index` is operand in the instruction => PUSH_CONSTANT index
     PUSH_TRUE,     // => TOS = True
     PUSH_FALSE,    // TOS = False
+    POP,           // TOS
+    LOAD_LOCAL, // TOS = stack[index], where `index` is operand in the instruction => LOAD_LOCAL index
+    STORE_LOCAL, // stack[index] = TOS, where `index` is operand in the instruction => STORE_LOCAL index
+    LOAD_UPVALUE, // TOS = frame.closure.upvalues[index], where `index` is operand in the instruction => LOAD_UPVALUE index
+    STORE_UPVALUE, // *frame.closure.upvalues[index] = TOS, where `index` is operand in the instruction => STORE_UPVALUE index
     UNARY_OP_MINUS, // TOS = -TOS
     UNARY_OP_NOT,  // TOS = not TOS
     BINARY_OP_ADD, // TOS = TO1 + TOS
@@ -25,7 +30,6 @@ pub enum OpCode {
     BINARY_OP_GREATER_EQUAL, // TOS = (TO1 >= TOS)
     BINARY_OP_LESS, // TOS = (TO1 < TOS)
     BINARY_OP_LESS_EQUAL, // TOS = (TO1 <= TOS)
-                   //POPN,  // pop n elements from the stack
 }
 
 pub struct Chunk {
@@ -38,6 +42,19 @@ impl Chunk {
     pub fn write_byte(&mut self, byte: u8, line_number: usize) {
         self.code.push(byte);
         self.line_numbers.push(line_number);
+    }
+
+    pub fn read_byte(&self, offset: usize) -> usize {
+        let v = self.code[offset];
+        v.into()
+    }
+
+    pub fn read_usize(&self, offset: usize) -> usize {
+        let byte_multiple = get_machine_byte_factor();
+        let v = self.code[offset..offset + byte_multiple]
+            .try_into()
+            .unwrap();
+        usize::from_be_bytes(v)
     }
 
     pub fn write_instruction(&mut self, op_code: OpCode, line_number: usize) {
@@ -58,6 +75,8 @@ impl Chunk {
         match op_code {
             OpCode::RETURN => (op_code_str, offset + 1),
             OpCode::PUSH_CONSTANT => {
+                // instruction: PUSH_CONSTANT index
+                // NOTE: `index` is usize
                 let byte_multiple = get_machine_byte_factor();
                 let v = self.code[offset + 1..offset + (byte_multiple + 1)]
                     .try_into()
@@ -82,7 +101,39 @@ impl Chunk {
             OpCode::BINARY_OP_GREATER_EQUAL => (op_code_str, offset + 1),
             OpCode::BINARY_OP_LESS => (op_code_str, offset + 1),
             OpCode::BINARY_OP_LESS_EQUAL => (op_code_str, offset + 1),
-            //OpCode::POPN => ("POPN".to_string(), offset + 1),
+            OpCode::POP => (op_code_str, offset + 1),
+            OpCode::LOAD_LOCAL => {
+                // instruction: LOAD_LOCAL index
+                // NOTE: `index` is u8
+                (
+                    format!("{} {}", op_code_str, self.read_byte(offset + 1)),
+                    offset + 2,
+                )
+            }
+            OpCode::STORE_LOCAL => {
+                // instruction: STORE_LOCAL index
+                // NOTE: `index` is u8
+                (
+                    format!("{} {}", op_code_str, self.read_byte(offset + 1)),
+                    offset + 2,
+                )
+            }
+            OpCode::LOAD_UPVALUE => {
+                // instruction: LOAD_UPVALUE index
+                // NOTE: `index` is u8
+                (
+                    format!("{} {}", op_code_str, self.read_byte(offset + 1)),
+                    offset + 2,
+                )
+            }
+            OpCode::STORE_UPVALUE => {
+                // instruction: STORE_UPVALUE index
+                // NOTE: `index` is u8
+                (
+                    format!("{} {}", op_code_str, self.read_byte(offset + 1)),
+                    offset + 2,
+                )
+            }
         }
     }
 

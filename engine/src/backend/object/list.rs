@@ -214,7 +214,7 @@ impl ListObject {
         unsafe {
             // We are converting back to `Box` here so that rust will propertly drop the owned structures.
             // See `https://doc.rust-lang.org/stable/std/boxed/struct.Box.html#method.into_raw` for more information.
-            // We could have done this manually but it's buggy to get it right (which was with previous implementation).
+            // We could have done this manually but it's hard to get it right (which was with previous implementation).
             Box::from_raw(self.0.as_ptr());
         }
         // value will be dropped here!

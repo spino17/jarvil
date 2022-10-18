@@ -150,9 +150,6 @@ impl CoreDictObject {
                 });
             }
             // free up the old array allocation
-            for i in 0..self.cap {
-                ptr::drop_in_place(self.ptr.as_ptr().add(i));
-            }
             alloc::dealloc(
                 self.ptr.as_ptr() as *mut u8,
                 CoreDictObject::layout(self.cap),

@@ -202,6 +202,7 @@ impl VM {
                     );
                     self.stack.push(result);
                 }
+                _ => unimplemented!(),
             }
         }
     }
