@@ -199,7 +199,7 @@ impl ByteCodeGenerator {
         for stmt in &block.0.as_ref().borrow().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        // TODO - add return nil if there is no return stmt
+        // TODO - if we encounter return statement early then don't generate code further
         let chunk = self.close_compiler();
         // form the empty closure object with the above chunk and generate bytecode for capturing upvalues.
     }
@@ -209,8 +209,11 @@ impl ByteCodeGenerator {
     }
 
     fn compile_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {
-        let core_return_stmt = return_stmt.core_ref();
-        todo!()
+        match &return_stmt.core_ref().expr {
+            Some(expr) => self.compile_expression(expr),
+            None => self.emit_bytecode(OpCode::PUSH_NIL, return_stmt.start_line_number()),
+        }
+        self.emit_bytecode(OpCode::RETURN, return_stmt.start_line_number());
     }
 }
 

@@ -13,6 +13,7 @@ pub enum OpCode {
     PUSH_CONSTANT, // TOS = constants[index], where `index` is operand in the instruction => PUSH_CONSTANT index
     PUSH_TRUE,     // => TOS = True
     PUSH_FALSE,    // TOS = False
+    PUSH_NIL,      // TOS = NIL
     POP,           // TOS
     LOAD_LOCAL, // TOS = stack[index], where `index` is operand in the instruction => LOAD_LOCAL index
     STORE_LOCAL, // stack[index] = TOS, where `index` is operand in the instruction => STORE_LOCAL index
@@ -44,12 +45,12 @@ impl Chunk {
         v.into()
     }
 
-    pub fn read_usize(&self, offset: usize) -> usize {
+    pub fn read_usize(&self, offset: usize) -> (usize, usize) {
         let byte_multiple = get_machine_byte_factor();
         let v = self.code[offset..offset + byte_multiple]
             .try_into()
             .unwrap();
-        usize::from_be_bytes(v)
+        (usize::from_be_bytes(v), byte_multiple)
     }
 
     pub fn write_byte(&mut self, byte: u8, line_number: usize) {
@@ -77,30 +78,22 @@ impl Chunk {
             OpCode::PUSH_CONSTANT => {
                 // instruction: PUSH_CONSTANT index
                 // NOTE: `index` is usize
+                /*
                 let byte_multiple = get_machine_byte_factor();
                 let v = self.code[offset + 1..offset + (byte_multiple + 1)]
                     .try_into()
                     .unwrap();
-                let const_value = &self.constants[usize::from_be_bytes(v)];
+                 */
+                let (index, byte_multiple) = self.read_usize(offset + 1);
+                let const_value = &self.constants[index];
                 (
                     format!("{} {}", op_code_str, const_value),
                     offset + (byte_multiple + 1),
                 )
             }
-            OpCode::UNARY_OP_MINUS => (op_code_str, offset + 1),
-            OpCode::BINARY_OP_ADD => (op_code_str, offset + 1),
-            OpCode::BINARY_OP_SUBTRACT => (op_code_str, offset + 1),
-            OpCode::BINARY_OP_MULTIPLY => (op_code_str, offset + 1),
-            OpCode::BINARY_OP_DIVIDE => (op_code_str, offset + 1),
             OpCode::PUSH_TRUE => (op_code_str, offset + 1),
             OpCode::PUSH_FALSE => (op_code_str, offset + 1),
-            OpCode::UNARY_OP_NOT => (op_code_str, offset + 1),
-            OpCode::BINARY_OP_DOUBLE_EQUAL => (op_code_str, offset + 1),
-            OpCode::BINARY_OP_NOT_EQUAL => (op_code_str, offset + 1),
-            OpCode::BINARY_OP_GREATER => (op_code_str, offset + 1),
-            OpCode::BINARY_OP_GREATER_EQUAL => (op_code_str, offset + 1),
-            OpCode::BINARY_OP_LESS => (op_code_str, offset + 1),
-            OpCode::BINARY_OP_LESS_EQUAL => (op_code_str, offset + 1),
+            OpCode::PUSH_NIL => (op_code_str, offset + 1),
             OpCode::POP => (op_code_str, offset + 1),
             OpCode::LOAD_LOCAL => {
                 // instruction: LOAD_LOCAL index
@@ -134,6 +127,18 @@ impl Chunk {
                     offset + 2,
                 )
             }
+            OpCode::UNARY_OP_MINUS => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_ADD => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_SUBTRACT => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_MULTIPLY => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_DIVIDE => (op_code_str, offset + 1),
+            OpCode::UNARY_OP_NOT => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_DOUBLE_EQUAL => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_NOT_EQUAL => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_GREATER => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_GREATER_EQUAL => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_LESS => (op_code_str, offset + 1),
+            OpCode::BINARY_OP_LESS_EQUAL => (op_code_str, offset + 1),
         }
     }
 
