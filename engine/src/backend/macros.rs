@@ -60,7 +60,8 @@ macro_rules! impl_eval_arithmetic_op {
                     _ => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG)
                 }
             }
-            Data::BOOL(_) => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG)
+            Data::BOOL(_) => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG),
+            Data::NIL => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG),
         }
     };
 }
@@ -88,7 +89,8 @@ macro_rules! impl_eval_comparison_op {
                     _ => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG)
                 }
             }
-            Data::BOOL(_) => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG)
+            Data::BOOL(_) => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG),
+            Data::NIL => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG),
         }
     };
 }

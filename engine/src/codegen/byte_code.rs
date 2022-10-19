@@ -112,8 +112,9 @@ impl ByteCodeGenerator {
     fn compile_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
             CoreStatementNode::EXPRESSION(expr_stmt) => {
-                self.compile_expression(&expr_stmt.core_ref().expr);
-                // TODO emit pop instruction here
+                let core_expr_stmt = expr_stmt.core_ref();
+                self.compile_expression(&core_expr_stmt.expr);
+                self.emit_bytecode(OpCode::POP, core_expr_stmt.expr.start_line_number());
             }
             CoreStatementNode::ASSIGNMENT(assignment) => self.compile_assignment(assignment),
             CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
@@ -198,6 +199,7 @@ impl ByteCodeGenerator {
         for stmt in &block.0.as_ref().borrow().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
+        // TODO - add return nil if there is no return stmt
         let chunk = self.close_compiler();
         // form the empty closure object with the above chunk and generate bytecode for capturing upvalues.
     }
@@ -207,6 +209,7 @@ impl ByteCodeGenerator {
     }
 
     fn compile_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {
+        let core_return_stmt = return_stmt.core_ref();
         todo!()
     }
 }

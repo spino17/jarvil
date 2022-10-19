@@ -96,6 +96,7 @@ pub fn eval_divide(l_data: Data, r_data: Data, tracker: &mut ObjectTracker) -> D
             _ => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG),
         },
         Data::BOOL(_) => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG),
+        Data::NIL => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG),
     }
 }
 
@@ -117,6 +118,10 @@ pub fn eval_double_equal(l_data: Data, r_data: Data, tracker: &mut ObjectTracker
         },
         Data::OBJ(l_obj) => match r_data {
             Data::OBJ(r_obj) => return eval_obj_double_equal(l_obj, r_obj, tracker),
+            _ => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG),
+        },
+        Data::NIL => match r_data {
+            Data::NIL => true,
             _ => unreachable!("{}", TYPE_CHECK_BUG_ERROR_MSG),
         },
     };

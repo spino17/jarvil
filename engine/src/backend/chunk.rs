@@ -39,11 +39,6 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn write_byte(&mut self, byte: u8, line_number: usize) {
-        self.code.push(byte);
-        self.line_numbers.push(line_number);
-    }
-
     pub fn read_byte(&self, offset: usize) -> usize {
         let v = self.code[offset];
         v.into()
@@ -55,6 +50,11 @@ impl Chunk {
             .try_into()
             .unwrap();
         usize::from_be_bytes(v)
+    }
+
+    pub fn write_byte(&mut self, byte: u8, line_number: usize) {
+        self.code.push(byte);
+        self.line_numbers.push(line_number);
     }
 
     pub fn write_instruction(&mut self, op_code: OpCode, line_number: usize) {
