@@ -368,7 +368,9 @@ pub trait Visitor {
             }
             ASTNode::RETURN(return_stmt) => {
                 let core_return_stmt = return_stmt.core_ref();
-                self.walk_expression(&core_return_stmt.expr);
+                if let Some(expr) = &core_return_stmt.expr {
+                    self.walk_expression(expr);
+                }
             }
             ASTNode::R_ASSIGNMENT(r_assignment_node) => {
                 let core_r_assignment = r_assignment_node.core_ref();

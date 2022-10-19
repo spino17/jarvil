@@ -818,11 +818,17 @@ impl TypeChecker {
             self.errors.push(Diagnostics::InvalidReturnStatement(err));
         }
         let expr = &core_return_stmt.expr;
-        let expr_type_obj = self.check_expr(expr);
+        let expr_type_obj = match expr {
+            Some(expr) => self.check_expr(expr),
+            _ => Type::new_with_void(),
+        };
         let expected_type_obj = self.context.func_stack[func_stack_len - 1].clone();
         if !expr_type_obj.is_eq(&expected_type_obj) {
-            let err =
-                MismatchedReturnTypeError::new(expected_type_obj, expr_type_obj, expr.range());
+            let err = MismatchedReturnTypeError::new(
+                expected_type_obj,
+                expr_type_obj,
+                core_return_stmt.return_keyword.range(),
+            );
             self.errors.push(Diagnostics::MismatchedReturnType(err));
         }
     }

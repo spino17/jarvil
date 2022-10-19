@@ -337,7 +337,7 @@ impl StatementNode {
 
     pub fn new_with_return_statement(
         return_keyword: &TokenNode,
-        expr: &ExpressionNode,
+        expr: Option<&ExpressionNode>,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreStatementNode::RETURN(ReturnStatementNode::new(
@@ -903,7 +903,7 @@ impl Node for VariableDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct CoreReturnStatementNode {
     pub return_keyword: TokenNode,
-    pub expr: ExpressionNode,
+    pub expr: Option<ExpressionNode>,
     pub newline: TokenNode,
 }
 
@@ -911,10 +911,13 @@ pub struct CoreReturnStatementNode {
 pub struct ReturnStatementNode(Rc<CoreReturnStatementNode>);
 
 impl ReturnStatementNode {
-    fn new(return_keyword: &TokenNode, expr: &ExpressionNode, newline: &TokenNode) -> Self {
+    fn new(return_keyword: &TokenNode, expr: Option<&ExpressionNode>, newline: &TokenNode) -> Self {
         let node = Rc::new(CoreReturnStatementNode {
             return_keyword: return_keyword.clone(),
-            expr: expr.clone(),
+            expr: match expr {
+                Some(expr) => Some(expr.clone()),
+                None => None,
+            },
             newline: newline.clone(),
         });
         ReturnStatementNode(node)
