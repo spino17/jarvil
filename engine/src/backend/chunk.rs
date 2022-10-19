@@ -15,6 +15,7 @@ pub enum OpCode {
     PUSH_FALSE,    // TOS = False
     PUSH_NIL,      // TOS = NIL
     POP,           // TOS
+    POP_N_CAPTURE, // TOS is captured by the upvalue object
     LOAD_LOCAL, // TOS = stack[index], where `index` is operand in the instruction => LOAD_LOCAL index
     STORE_LOCAL, // stack[index] = TOS, where `index` is operand in the instruction => STORE_LOCAL index
     LOAD_UPVALUE, // TOS = frame.closure.upvalues[index], where `index` is operand in the instruction => LOAD_UPVALUE index
@@ -95,6 +96,7 @@ impl Chunk {
             OpCode::PUSH_FALSE => (op_code_str, offset + 1),
             OpCode::PUSH_NIL => (op_code_str, offset + 1),
             OpCode::POP => (op_code_str, offset + 1),
+            OpCode::POP_N_CAPTURE => (op_code_str, offset + 1),
             OpCode::LOAD_LOCAL => {
                 // instruction: LOAD_LOCAL index
                 // NOTE: `index` is u8

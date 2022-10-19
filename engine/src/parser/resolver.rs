@@ -499,7 +499,6 @@ impl Resolver {
                 }
             }
         }
-        // self.walk_block(func_body);
         for stmt in &func_body.0.as_ref().borrow().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }

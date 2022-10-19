@@ -86,21 +86,20 @@ impl ByteCodeGenerator {
     }
 
     fn emit_block_close_bytecode(&mut self, line_number: usize) -> usize {
-        let compiler = self.compiler.0.as_ref().borrow();
+        let mut compiler = self.compiler.0.as_ref().borrow_mut();
         let len = compiler.locals.len();
         let curr_depth = compiler.depth();
         let mut num_of_popped_elements = 0;
         if len > 0 {
-            let index = len - 1;
+            let mut index = len - 1;
             while compiler.locals[index].depth == curr_depth {
-                // TODO - check local at the index
-                // generate OP_POP according to whether it's captured or not
-                // override depth
-                // find continous ordinary POP instructions and emit POPN instead
+                // TODO - find continous ordinary POP instructions and emit POPN instead
                 if compiler.locals[index].is_captured {
-                    todo!()
+                    compiler
+                        .chunk
+                        .write_instruction(OpCode::POP_N_CAPTURE, line_number);
                 } else {
-                    todo!()
+                    compiler.chunk.write_instruction(OpCode::POP, line_number);
                 }
                 num_of_popped_elements += 1;
                 index -= 1;
