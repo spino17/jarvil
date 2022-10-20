@@ -68,7 +68,7 @@ impl ByteCodeGenerator {
     }
 
     fn close_block(&mut self, line_number: usize) {
-        let num_of_popped_elements = self.emit_block_close_bytecode(line_number); // emit bytecode for popping all the local variables declared in the block
+        let num_of_popped_elements = self.emit_block_close_bytecode(line_number);
         self.compiler
             .0
             .as_ref()
