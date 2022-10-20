@@ -72,6 +72,11 @@ impl VM {
                     self.advance_ip();
                     self.stack.push(Data::BOOL(false));
                 }
+                OpCode::UNARY_OP_PLUS => {
+                    self.advance_ip();
+                    let result = eval_unary_op(self.stack.pop(), UnaryOperatorKind::Plus);
+                    self.stack.push(result)
+                }
                 OpCode::UNARY_OP_MINUS => {
                     self.advance_ip();
                     let result = eval_unary_op(self.stack.pop(), UnaryOperatorKind::Minus);

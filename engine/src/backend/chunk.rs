@@ -20,6 +20,7 @@ pub enum OpCode {
     STORE_LOCAL, // stack[index] = TOS, where `index` is operand in the instruction => STORE_LOCAL index
     LOAD_UPVALUE, // TOS = frame.closure.upvalues[index], where `index` is operand in the instruction => LOAD_UPVALUE index
     STORE_UPVALUE, // *frame.closure.upvalues[index] = TOS, where `index` is operand in the instruction => STORE_UPVALUE index
+    UNARY_OP_PLUS, // TOS = +TOS
     UNARY_OP_MINUS, // TOS = -TOS
     UNARY_OP_NOT,  // TOS = not TOS
     BINARY_OP_ADD, // TOS = TO1 + TOS
@@ -129,6 +130,7 @@ impl Chunk {
                     offset + 2,
                 )
             }
+            OpCode::UNARY_OP_PLUS => (op_code_str, offset + 1),
             OpCode::UNARY_OP_MINUS => (op_code_str, offset + 1),
             OpCode::BINARY_OP_ADD => (op_code_str, offset + 1),
             OpCode::BINARY_OP_SUBTRACT => (op_code_str, offset + 1),

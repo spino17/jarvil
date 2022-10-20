@@ -140,6 +140,7 @@ impl ByteCodeGenerator {
 
     fn compile_expression(&mut self, expr: &ExpressionNode) {
         // compile expression and push it on stack
+        let core_expr = expr.core_ref();
         todo!()
     }
 
