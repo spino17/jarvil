@@ -201,6 +201,7 @@ impl ByteCodeGenerator {
         }
         // TODO - if we encounter return statement early then don't generate code further
         let chunk = self.close_compiler();
+        // TODO - add this in constants array and apply the same formalism of upvalues in this one!
         // form the empty closure object with the above chunk and generate bytecode for capturing upvalues.
     }
 
