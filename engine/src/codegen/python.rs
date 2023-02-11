@@ -12,7 +12,7 @@ use crate::{
         },
         walk::Visitor,
     },
-    context,
+    context, lexer::token::Token,
 };
 
 pub struct PythonCodeGenerator {
@@ -40,7 +40,7 @@ impl PythonCodeGenerator {
         self.generate_code.push_str(str);
     }
 
-    pub fn print_token(&mut self, extra_newlines: &TokenNode) {
+    pub fn print_token(&mut self, token: &Token) {
         todo!()
     }
 
