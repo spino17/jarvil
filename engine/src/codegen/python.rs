@@ -3,16 +3,14 @@ use std::convert::TryInto;
 use crate::{
     ast::{
         ast::{
-            ASTNode, AssignmentNode, CoreAssignmentNode, CoreFunctionDeclarationNode,
-            CoreStatementNode, CoreTypeDeclarationNode, ExpressionNode, ExpressionStatementNode,
-            FunctionDeclarationNode, LambdaDeclarationNode, OkAssignmentNode,
+            ASTNode, CoreAssignmentNode, CoreFunctionDeclarationNode, CoreStatementNode,
+            CoreTypeDeclarationNode, ExpressionNode, LambdaDeclarationNode, OkAssignmentNode,
             OkFunctionDeclarationNode, ReturnStatementNode, StatementNode, StructDeclarationNode,
-            StructStatementNode, TypeDeclarationNode, VariableDeclarationNode,
+            StructStatementNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
     context,
-    types::core::CoreType,
 };
 
 pub struct PythonCodeGenerator {
