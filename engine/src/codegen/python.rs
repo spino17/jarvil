@@ -3,10 +3,12 @@ use std::convert::TryInto;
 use crate::{
     ast::{
         ast::{
-            ASTNode, CoreAssignmentNode, CoreFunctionDeclarationNode, CoreStatementNode,
-            CoreTypeDeclarationNode, ExpressionNode, LambdaDeclarationNode, OkAssignmentNode,
-            OkFunctionDeclarationNode, ReturnStatementNode, StatementNode, StructDeclarationNode,
-            StructStatementNode, VariableDeclarationNode,
+            ASTNode, CoreAssignmentNode, CoreFunctionDeclarationNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreStructDeclarationNode,
+            CoreTypeDeclarationNode, ExpressionNode, ExpressionStatementNode,
+            LambdaDeclarationNode, OkAssignmentNode, OkFunctionDeclarationNode, OkTokenNode,
+            ReturnStatementNode, SkippedTokensNode, StatementNode, StructDeclarationNode,
+            StructStatementNode, TokenNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -38,7 +40,11 @@ impl PythonCodeGenerator {
         self.generate_code.push_str(str);
     }
 
-    pub fn print_expr(&mut self, expr: &ExpressionNode) {
+    pub fn print_token(&mut self, extra_newlines: &TokenNode) {
+        todo!()
+    }
+
+    pub fn print_expr(&mut self, expr: &ExpressionStatementNode) {
         todo!()
     }
 
@@ -73,8 +79,7 @@ impl PythonCodeGenerator {
     pub fn print_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
             CoreStatementNode::EXPRESSION(expr_stmt) => {
-                let core_expr = &expr_stmt.core_ref().expr;
-                self.print_expr(core_expr);
+                self.print_expr(expr_stmt);
             }
             CoreStatementNode::ASSIGNMENT(assign_stmt) => {
                 let core_assign_stmt = assign_stmt.core_ref();
@@ -125,13 +130,33 @@ impl Visitor for PythonCodeGenerator {
         match node {
             ASTNode::BLOCK(block) => {
                 self.open_block();
-                self.add_str_to_python_code(get_newline());
                 let core_block = block.0.as_ref().borrow();
+                let newline_node = &core_block.newline;
+                // print this above newline along with comments if any and spaces
                 for stmt in &core_block.stmts {
-                    self.add_str_to_python_code(&get_whitespaces_from_indent_level(self.indent_level));
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block();
+                return None;
+            }
+            ASTNode::STATEMENT_INDENT_WRAPPER(stmt_wrapper) => {
+                let core_stmt_wrapper = stmt_wrapper.core_ref();
+                match core_stmt_wrapper {
+                    CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(ok_stmt) => {
+                        // add indentation string before each valid statement
+                        self.walk_stmt(ok_stmt);
+                    }
+                    CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(extra_newlines) => {
+                        let core_extra_newlines = extra_newlines.core_ref();
+                        for extra_newline in &core_extra_newlines.skipped_tokens {
+                            let core_token = &extra_newline.core_ref().skipped_token;
+                            self.print_token(core_token);
+                        }
+                    }
+                    CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(_) => unreachable!(),
+                    CoreStatemenIndentWrapperNode::LEADING_SKIPPED_TOKENS(_) => unreachable!(),
+                    CoreStatemenIndentWrapperNode::TRAILING_SKIPPED_TOKENS(_) => unreachable!(),
+                }
                 return None;
             }
             ASTNode::STATEMENT(stmt) => {
@@ -152,5 +177,5 @@ pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
 }
 
 pub fn get_newline() -> &'static str {
-    return "\n"
+    return "\n";
 }
