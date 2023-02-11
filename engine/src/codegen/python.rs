@@ -34,6 +34,10 @@ impl PythonCodeGenerator {
         self.indent_level = self.indent_level - 1;
     }
 
+    pub fn add_str_to_python_code(&mut self, str: &str) {
+        self.generate_code.push_str(str);
+    }
+
     pub fn print_expr(&mut self, expr: &ExpressionNode) {
         todo!()
     }
@@ -121,8 +125,10 @@ impl Visitor for PythonCodeGenerator {
         match node {
             ASTNode::BLOCK(block) => {
                 self.open_block();
+                self.add_str_to_python_code(get_newline());
                 let core_block = block.0.as_ref().borrow();
                 for stmt in &core_block.stmts {
+                    self.add_str_to_python_code(&get_whitespaces_from_indent_level(self.indent_level));
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block();
@@ -143,4 +149,8 @@ pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
     return " "
         .to_string()
         .repeat(expected_indent_spaces.try_into().unwrap());
+}
+
+pub fn get_newline() -> &'static str {
+    return "\n"
 }
