@@ -284,7 +284,7 @@ impl PackratParser {
         if !self.is_curr_token_on_newline() {
             skipped_tokens = self.skip_to_newline();
         }
-        let mut expected_indent_spaces = context::indent_spaces() * self.indent_level;
+        let mut expected_indent_spaces = context::indent_spaces() as i64 * self.indent_level;
         let mut indent_spaces = 0;
         loop {
             let token = &self.token_vec[self.lookahead];

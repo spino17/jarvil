@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use crate::{
     ast::{
         ast::{
@@ -9,15 +11,23 @@ use crate::{
         },
         walk::Visitor,
     },
+    context,
     types::core::CoreType,
 };
 
 pub struct PythonCodeGenerator {
-    // internal state to track printing of the python code
-    indent_level: u64,
+    indent_level: usize,
+    generate_code: String,
 }
 
 impl PythonCodeGenerator {
+    pub fn new() -> PythonCodeGenerator {
+        PythonCodeGenerator {
+            indent_level: 0,
+            generate_code: "".to_string(),
+        }
+    }
+
     pub fn open_block(&mut self) {
         self.indent_level = self.indent_level + 1;
     }
@@ -127,4 +137,12 @@ impl Visitor for PythonCodeGenerator {
             _ => Some(()),
         }
     }
+}
+
+// Utility functions
+pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
+    let expected_indent_spaces = context::indent_spaces() * indent_level;
+    return " "
+        .to_string()
+        .repeat(expected_indent_spaces.try_into().unwrap());
 }
