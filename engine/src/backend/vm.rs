@@ -56,7 +56,7 @@ impl VM {
             match OP_CODES_MAP[usize::from(self.chunk.code[self.ip])] {
                 OpCode::RETURN => {
                     self.advance_ip();
-                    println!("{}", self.stack.pop());
+                    // println!("{}", self.stack.pop());
                     return InterpretResult::OK;
                 }
                 OpCode::PUSH_CONSTANT => {

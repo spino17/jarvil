@@ -123,7 +123,6 @@ impl FunctionContext {
         let mut counter = 0;
         for upvalue in &*self.upvalues.as_ref().borrow() {
             if upvalue.index == index && upvalue.is_local == is_local {
-                println!("found matching upvalue! at index `{}`", counter);
                 return Ok(counter);
             }
             counter += 1;
@@ -170,10 +169,6 @@ impl Resolver {
         index: Result<usize, usize>,
         is_local: bool,
     ) -> Result<usize, usize> {
-        println!(
-            "adding upvalue in func context `{}` with index `{:?}` and is_local: `{}`",
-            func_index, index, is_local
-        );
         let func_context = &mut self.func_contexts[func_index];
         let index = func_context.add_upvalue(index, is_local);
         if index.is_err() && !func_context.is_capture_var_limit_overflow {
@@ -268,7 +263,6 @@ impl Resolver {
                                 VariableCaptureKind::LOCAL
                             } else {
                                 symbol_data.0.as_ref().borrow_mut().set_is_captured();
-                                println!("variable `{}` is captured", key);
                                 let mut index = self.add_upvalue_to_func(
                                     curr_func_context_index + 1,
                                     Ok(symbol_data.0.as_ref().borrow().stack_index()),
@@ -393,7 +387,6 @@ impl Resolver {
             identifier.bind_variable_decl(symbol_data, 0, VariableCaptureKind::LOCAL)
         };
         let name = Rc::new(identifier.token_value(&self.code));
-        println!("variable `{}` has index `{}`", name, stack_index);
         let symbol_data = declare_fn(&self.namespace, &name, stack_index, identifier.range());
         match symbol_data {
             Ok(symbol_data) => {

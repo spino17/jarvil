@@ -766,12 +766,10 @@ impl TypeChecker {
                 .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            if !r_type.is_lambda() {
-                if let Some(symbol_data) = ok_identifier.variable_symbol_data(
-                    "variable name should be resolved to `SymbolData<VariableData>`",
-                ) {
-                    symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
-                }
+            if let Some(symbol_data) = ok_identifier.variable_symbol_data(
+                "variable name should be resolved to `SymbolData<VariableData>`",
+            ) {
+                symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
             }
         };
     }

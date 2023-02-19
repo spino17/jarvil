@@ -156,7 +156,7 @@ impl Display for CoreListObject {
 
 impl Drop for CoreListObject {
     fn drop(&mut self) {
-        println!("{} dropping!", self);
+        // println!("{} dropping!", self);
         if self.cap != 0 {
             // while let Some(_) = self.pop() {}  // std::mem::needs_drop::<Data> = false
             let layout = Layout::array::<Data>(self.cap).unwrap();

@@ -184,6 +184,9 @@ impl Visitor for PythonCodeGenerator {
                 self.print_stmt(stmt);
                 return None;
             }
+            ASTNode::CLASS_METHOD_CALL(class_method_call) => {
+                todo!()
+            }
             _ => Some(()),
         }
     }

@@ -18,20 +18,9 @@ mod utils;
 
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
-use jarvil::backend::chunk::OpCode;
-use jarvil::backend::object::list::ListObject;
-use jarvil::backend::object::string::StringObject;
-use jarvil::backend::vm::VM;
-use jarvil::backend::{data::Data, object::core::Object};
-use jarvil::types::array;
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
-use std::alloc::Layout;
-use std::collections::HashMap;
 use std::env::args;
-use std::fmt::Display;
-use std::hash::Hash;
-use std::ptr::NonNull;
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -51,100 +40,6 @@ fn start_compiler(args: Vec<String>) {
     }
 }
 
-/*
-#[derive(Clone, Debug)]
-struct Nod {
-    name: String,
-}
-impl Nod {
-    fn set_name(&mut self, name: &str) {
-        self.name = name.to_string();
-    }
-}
-
-impl Drop for Nod {
-    fn drop(&mut self) {
-        println!("being dropped!");
-    }
-}
-
-#[derive(Clone, Debug)]
-// struct Ptr(NonNull<ManuallyDrop<Nod>>);
-struct Ptr {
-    ptr: NonNull<Nod>,
-}
-
-impl Ptr {
-    fn new(name: &str) -> Self {
-        let x = Box::new(Nod {
-            name: name.to_string(),
-        });
-        let x_ptr = Box::into_raw(x);
-        let ptr = unsafe {
-            match NonNull::new(x_ptr) {
-                Some(p) => p,
-                None => unreachable!("x_ptr has successful allocation"),
-            }
-        };
-        Ptr { ptr }
-    }
-
-    fn set_name(&self, name: &str) {
-        unsafe {
-            (&mut *self.ptr.as_ptr()).set_name(name);
-        }
-    }
-
-    fn manual_drop(&self) {
-        unsafe {
-            Box::from_raw(self.ptr.as_ptr());
-        }
-    }
-}
- */
-
-struct Nodes {
-    name: String,
-}
-
-impl Nodes {
-    fn set_name(&mut self, name: &str) {
-        self.name = name.to_string();
-    }
-}
-
-#[derive(Clone)]
-struct NodeObject(NonNull<Nodes>);
-
-impl NodeObject {
-    fn new(name: &str) -> NodeObject {
-        let x = unsafe {
-            NonNull::new_unchecked(Box::into_raw(Box::new(Nodes {
-                name: name.to_string(),
-            })))
-        };
-        NodeObject(x)
-    }
-
-    fn set_name(&self, name: &str) {
-        unsafe {
-            (&mut *self.0.as_ptr()).set_name(name);
-        }
-    }
-}
-
-impl Display for NodeObject {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        unsafe { write!(f, "{}", (*self.0.as_ptr()).name) }
-    }
-}
-
-impl Drop for NodeObject {
-    fn drop(&mut self) {
-        let _x = unsafe { Box::from_raw(self.0.as_ptr()) };
-    }
-}
-
 fn main() {
     miette::set_hook(Box::new(|err| {
         let mut my_theme = GraphicalTheme::default();
@@ -158,6 +53,7 @@ fn main() {
     let args: Vec<String> = args().collect();
     start_compiler(args);
 
+    /*
     let mut vm = VM::new();
     let s = StringObject::new_with_bytes("bro ");
     let v = StringObject::new_with_bytes("bro s");
@@ -248,4 +144,5 @@ fn main() {
         *u_ptr.add(1) = 10;
     }
     println!("{:?}", u);
+     */
 }
