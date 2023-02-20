@@ -9,6 +9,8 @@ use std::ops::Add;
 use std::ptr;
 use std::ptr::NonNull;
 
+use super::core::ObjectTracker;
+
 // This unsafe code is heavily taken from the `Rustonomicon` book.
 // See Implementing Vec section in `https://github.com/rust-lang/nomicon` and `https://doc.rust-lang.org/nomicon/` for more information.
 
@@ -108,7 +110,7 @@ impl CoreListObject {
         }
     }
 
-    fn is_equal(l1: &CoreListObject, l2: &CoreListObject, vm: &mut VM) -> bool {
+    fn is_equal(l1: &CoreListObject, l2: &CoreListObject, tracker: &mut ObjectTracker) -> bool {
         let len1 = l1.len();
         let len2 = l2.len();
         if len1 != len2 {
@@ -120,7 +122,7 @@ impl CoreListObject {
                     (&*l1.ptr.as_ptr().add(i)).clone(),
                     (&*l2.ptr.as_ptr().add(i)).clone(),
                     BinaryOperatorKind::DoubleEqual,
-                    vm,
+                    tracker,
                 )
                 .as_bool()
                 {
@@ -154,9 +156,9 @@ impl Display for CoreListObject {
 
 impl Drop for CoreListObject {
     fn drop(&mut self) {
-        println!("{} dropping!", self);
+        // println!("{} dropping!", self);
         if self.cap != 0 {
-            while let Some(_) = self.pop() {}
+            // while let Some(_) = self.pop() {}  // std::mem::needs_drop::<Data> = false
             let layout = Layout::array::<Data>(self.cap).unwrap();
             unsafe {
                 alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
@@ -203,8 +205,8 @@ impl ListObject {
         ListObject(ptr)
     }
 
-    pub fn is_equal(l1: &ListObject, l2: &ListObject, vm: &mut VM) -> bool {
-        unsafe { CoreListObject::is_equal(&*l1.0.as_ptr(), &*l2.0.as_ptr(), vm) }
+    pub fn is_equal(l1: &ListObject, l2: &ListObject, tracker: &mut ObjectTracker) -> bool {
+        unsafe { CoreListObject::is_equal(&*l1.0.as_ptr(), &*l2.0.as_ptr(), tracker) }
     }
 
     // This method will be called by the garbage collector
@@ -212,7 +214,7 @@ impl ListObject {
         unsafe {
             // We are converting back to `Box` here so that rust will propertly drop the owned structures.
             // See `https://doc.rust-lang.org/stable/std/boxed/struct.Box.html#method.into_raw` for more information.
-            // We could have done this manually but it's buggy to get it right (which was with previous implementation).
+            // We could have done this manually but it's hard to get it right (which was with previous implementation).
             Box::from_raw(self.0.as_ptr());
         }
         // value will be dropped here!

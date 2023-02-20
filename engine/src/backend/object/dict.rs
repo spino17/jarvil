@@ -1,4 +1,7 @@
 use crate::backend::data::Data;
+use crate::backend::operators::eval_binary_op;
+use crate::backend::vm::VM;
+use crate::lexer::token::BinaryOperatorKind;
 use std::alloc;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
@@ -87,7 +90,7 @@ impl CoreDictObject {
         new_ptr
     }
 
-    fn find_entry(ptr: NonNull<Entry>, hash: usize, cap: usize, key: &Data) -> usize {
+    fn find_entry(ptr: NonNull<Entry>, hash: usize, cap: usize, key: &Data, vm: &mut VM) -> usize {
         let mut tombstone_index: Option<usize> = None;
         let mut index = hash % cap;
         unsafe {
@@ -97,6 +100,7 @@ impl CoreDictObject {
                     Entry::OK(ok_entry) => {
                         let curr_key = &ok_entry.key;
                         let curr_hash = ok_entry.hash;
+                        // eval_binary_op(curr_key.clone(), key.clone(), BinaryOperatorKind::DoubleEqual, &mut vm.object_tracker);
                         // TODO - complete this function
                         /*
                         if curr_hash == hash && curr_key == key {
@@ -119,7 +123,7 @@ impl CoreDictObject {
         }
     }
 
-    fn grow(&mut self) {
+    fn grow(&mut self, vm: &mut VM) {
         let new_cap = 2 * self.cap;
         let new_ptr = CoreDictObject::allocate(new_cap);
         let mut new_count = 0;
@@ -137,7 +141,8 @@ impl CoreDictObject {
                     }
                     _ => continue,
                 };
-                let entry_index = CoreDictObject::find_entry(new_ptr.clone(), hash, new_cap, key);
+                let entry_index =
+                    CoreDictObject::find_entry(new_ptr.clone(), hash, new_cap, key, vm);
                 *new_ptr.as_ptr().add(entry_index) = Entry::OK(OkEntry {
                     hash,
                     key: key.clone(),
@@ -163,11 +168,11 @@ impl CoreDictObject {
         self.cap
     }
 
-    fn insert(&mut self, key: Data, hash: usize, value: Data) -> Option<Data> {
+    fn insert(&mut self, key: Data, hash: usize, value: Data, vm: &mut VM) -> Option<Data> {
         if self.count as f64 > (self.cap as f64 * LOAD_FACTOR) {
-            self.grow();
+            self.grow(vm);
         }
-        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, &key);
+        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, &key, vm);
         unsafe {
             let old_value = match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => Some(ok_entry.value.clone()),
@@ -182,11 +187,11 @@ impl CoreDictObject {
         }
     }
 
-    fn lookup(&self, key: &Data, hash: usize) -> Option<Data> {
+    fn lookup(&self, key: &Data, hash: usize, vm: &mut VM) -> Option<Data> {
         if self.count == 0 {
             return None;
         }
-        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, key);
+        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, key, vm);
         unsafe {
             match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => return Some(ok_entry.value.clone()),
@@ -195,11 +200,11 @@ impl CoreDictObject {
         }
     }
 
-    fn delete(&self, key: &Data, hash: usize) -> Option<Data> {
+    fn delete(&self, key: &Data, hash: usize, vm: &mut VM) -> Option<Data> {
         if self.count == 0 {
             return None;
         }
-        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, key);
+        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, key, vm);
         unsafe {
             let value = match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(ok_entry) => &ok_entry.value,
@@ -210,8 +215,8 @@ impl CoreDictObject {
         }
     }
 
-    fn has_key(&self, key: &Data, hash: usize) -> bool {
-        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, key);
+    fn has_key(&self, key: &Data, hash: usize, vm: &mut VM) -> bool {
+        let entry_index = CoreDictObject::find_entry(self.ptr.clone(), hash, self.cap, key, vm);
         unsafe {
             match &*self.ptr.as_ptr().add(entry_index) {
                 Entry::OK(_) => return true,
@@ -229,6 +234,7 @@ impl Drop for CoreDictObject {
     fn drop(&mut self) {
         let layout = CoreDictObject::layout(self.cap);
         unsafe {
+            // std::mem::needs_drop::<Entry> = false
             alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
         }
     }
@@ -278,20 +284,20 @@ impl DictObject {
         unsafe { (&*self.0.as_ptr()).cap() }
     }
 
-    fn insert(&self, key: Data, value: Data, hash: usize) -> Option<Data> {
-        unsafe { (&mut *self.0.as_ptr()).insert(key, hash, value) }
+    fn insert(&self, key: Data, value: Data, hash: usize, vm: &mut VM) -> Option<Data> {
+        unsafe { (&mut *self.0.as_ptr()).insert(key, hash, value, vm) }
     }
 
-    fn lookup(&self, key: &Data, hash: usize) -> Option<Data> {
-        unsafe { (&*self.0.as_ptr()).lookup(key, hash) }
+    fn lookup(&self, key: &Data, hash: usize, vm: &mut VM) -> Option<Data> {
+        unsafe { (&*self.0.as_ptr()).lookup(key, hash, vm) }
     }
 
-    fn delete(&self, key: &Data, hash: usize) -> Option<Data> {
-        unsafe { (&*self.0.as_ptr()).delete(key, hash) }
+    fn delete(&self, key: &Data, hash: usize, vm: &mut VM) -> Option<Data> {
+        unsafe { (&*self.0.as_ptr()).delete(key, hash, vm) }
     }
 
-    fn has_key(&self, key: &Data, hash: usize) -> bool {
-        unsafe { (&*self.0.as_ptr()).has_key(key, hash) }
+    fn has_key(&self, key: &Data, hash: usize, vm: &mut VM) -> bool {
+        unsafe { (&*self.0.as_ptr()).has_key(key, hash, vm) }
     }
 
     fn manual_drop(&self) {

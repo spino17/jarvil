@@ -18,17 +18,9 @@ mod utils;
 
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
-use jarvil::backend::chunk::OpCode;
-use jarvil::backend::object::dict::CoreDictObject;
-use jarvil::backend::object::list::ListObject;
-use jarvil::backend::object::string::StringObject;
-use jarvil::backend::vm::VM;
-use jarvil::backend::{data::Data, object::core::Object};
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
-use std::collections::HashMap;
 use std::env::args;
-use std::hash::Hash;
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -48,58 +40,6 @@ fn start_compiler(args: Vec<String>) {
     }
 }
 
-/*
-#[derive(Clone, Debug)]
-struct Nod {
-    name: String,
-}
-impl Nod {
-    fn set_name(&mut self, name: &str) {
-        self.name = name.to_string();
-    }
-}
-
-impl Drop for Nod {
-    fn drop(&mut self) {
-        println!("being dropped!");
-    }
-}
-
-#[derive(Clone, Debug)]
-// struct Ptr(NonNull<ManuallyDrop<Nod>>);
-struct Ptr {
-    ptr: NonNull<Nod>,
-}
-
-impl Ptr {
-    fn new(name: &str) -> Self {
-        let x = Box::new(Nod {
-            name: name.to_string(),
-        });
-        let x_ptr = Box::into_raw(x);
-        let ptr = unsafe {
-            match NonNull::new(x_ptr) {
-                Some(p) => p,
-                None => unreachable!("x_ptr has successful allocation"),
-            }
-        };
-        Ptr { ptr }
-    }
-
-    fn set_name(&self, name: &str) {
-        unsafe {
-            (&mut *self.ptr.as_ptr()).set_name(name);
-        }
-    }
-
-    fn manual_drop(&self) {
-        unsafe {
-            Box::from_raw(self.ptr.as_ptr());
-        }
-    }
-}
- */
-
 fn main() {
     miette::set_hook(Box::new(|err| {
         let mut my_theme = GraphicalTheme::default();
@@ -112,13 +52,15 @@ fn main() {
     }));
     let args: Vec<String> = args().collect();
     start_compiler(args);
+
+    /*
     let mut vm = VM::new();
     let s = StringObject::new_with_bytes("bro ");
     let v = StringObject::new_with_bytes("bro s");
     let u = StringObject::new_with_bytes("bro varima");
-    let obj1 = Object::new_with_string(s, &mut vm);
-    let obj2 = Object::new_with_string(v, &mut vm);
-    let obj3 = Object::new_with_string(u, &mut vm);
+    let obj1 = Object::new_with_string(s, &mut vm.object_tracker);
+    let obj2 = Object::new_with_string(v, &mut vm.object_tracker);
+    let obj3 = Object::new_with_string(u, &mut vm.object_tracker);
     let vec = ListObject::new();
     vec.push(Data::OBJ(obj1.clone()));
     vec.push(Data::OBJ(obj2.clone()));
@@ -127,16 +69,16 @@ fn main() {
     ve.push(Data::OBJ(obj3.clone()));
     ve.push(Data::OBJ(obj3.clone()));
     //ve.push(Data::INT(12));
-    let obj4 = Object::new_with_list(vec.clone(), &mut vm);
-    let obj6 = Object::new_with_list(ve.clone(), &mut vm);
+    let obj4 = Object::new_with_list(vec.clone(), &mut vm.object_tracker);
+    let obj6 = Object::new_with_list(ve.clone(), &mut vm.object_tracker);
     let vf = ListObject::new();
     vf.push(Data::OBJ(obj4.clone()));
     vf.push(Data::OBJ(obj6.clone()));
-    let obj5 = Object::new_with_list(vf, &mut vm);
-    vm.chunk.write_constant(Data::OBJ(obj1), 5);
-    vm.chunk.write_constant(Data::OBJ(obj2), 5);
-    vm.chunk.write_constant(Data::OBJ(obj4), 5);
-    vm.chunk.write_constant(Data::OBJ(obj6), 5);
+    let obj5 = Object::new_with_list(vf, &mut vm.object_tracker);
+    vm.chunk.write_push_constant(Data::OBJ(obj1), 5);
+    vm.chunk.write_push_constant(Data::OBJ(obj2), 5);
+    vm.chunk.write_push_constant(Data::OBJ(obj4), 5);
+    vm.chunk.write_push_constant(Data::OBJ(obj6), 5);
     //vm.chunk.write_constant(Data::OBJ(obj5), 10);
     //vm.chunk.write_constant(Data::FLOAT(13.0), 1);
     //vm.chunk.write_constant(Data::INT(13), 2);
@@ -192,5 +134,15 @@ fn main() {
         std::mem::ManuallyDrop::drop(&mut s.0);
         std::mem::ManuallyDrop::drop(&mut v.0);
     }
+     */
+    let v = vec![1, 2, 3, 4];
+    let v_ptr = v.as_ptr();
+
+    let mut u = [1, 2, 3];
+    let u_ptr = u.as_mut_ptr();
+    unsafe {
+        *u_ptr.add(1) = 10;
+    }
+    println!("{:?}", u);
      */
 }

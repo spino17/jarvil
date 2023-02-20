@@ -1,7 +1,7 @@
 pub mod chunk {
     #[macro_use]
     use jarvil_macros::OpCodeUtil;
-    use super::helper::get_machine_byte_multiple;
+    use super::helper::get_machine_byte_factor;
     use crate::backend::data::Data;
     use std::{convert::TryInto, fmt::Display};
     pub enum OpCode {
@@ -44,6 +44,32 @@ pub mod chunk {
             }
         }
     }
+    impl Display for OpCode {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let str = match self {
+                OpCode::RETURN => "RETURN",
+                OpCode::PUSH_CONSTANT => "PUSH_CONSTANT",
+                OpCode::PUSH_TRUE => "PUSH_TRUE",
+                OpCode::PUSH_FALSE => "PUSH_FALSE",
+                OpCode::UNARY_OP_MINUS => "UNARY_OP_MINUS",
+                OpCode::UNARY_OP_NOT => "UNARY_OP_NOT",
+                OpCode::BINARY_OP_ADD => "BINARY_OP_ADD",
+                OpCode::BINARY_OP_SUBTRACT => "BINARY_OP_SUBTRACT",
+                OpCode::BINARY_OP_MULTIPLY => "BINARY_OP_MULTIPLY",
+                OpCode::BINARY_OP_DIVIDE => "BINARY_OP_DIVIDE",
+                OpCode::BINARY_OP_DOUBLE_EQUAL => "BINARY_OP_DOUBLE_EQUAL",
+                OpCode::BINARY_OP_NOT_EQUAL => "BINARY_OP_NOT_EQUAL",
+                OpCode::BINARY_OP_GREATER => "BINARY_OP_GREATER",
+                OpCode::BINARY_OP_GREATER_EQUAL => "BINARY_OP_GREATER_EQUAL",
+                OpCode::BINARY_OP_LESS => "BINARY_OP_LESS",
+                OpCode::BINARY_OP_LESS_EQUAL => "BINARY_OP_LESS_EQUAL",
+            };
+            f.write_fmt(::core::fmt::Arguments::new_v1(
+                &[""],
+                &[::core::fmt::ArgumentV1::new_display(&str)],
+            ))
+        }
+    }
     pub const OP_CODES_MAP: [OpCode; 16] = [
         OpCode::RETURN,
         OpCode::PUSH_CONSTANT,
@@ -71,6 +97,9 @@ pub mod chunk {
         pub fn write_byte(&mut self, byte: u8, line_number: usize) {
             self.code.push(byte);
             self.line_numbers.push(line_number);
+        }
+        pub fn write_instruction(&mut self, op_code: OpCode, line_number: usize) {
+            self.write_byte(op_code.to_byte(), line_number);
         }
         pub fn write_constant(&mut self, const_value: Data, line_number: usize) {
             let const_index = self.constants.len();
@@ -102,10 +131,12 @@ pub mod chunk {
             parsed_instructions
         }
         pub fn disassemble_instruction(&self, offset: usize) -> (String, usize) {
-            match OP_CODES_MAP[usize::from(self.code[offset])] {
-                OpCode::RETURN => ("RETURN".to_string(), offset + 1),
+            let op_code = &OP_CODES_MAP[usize::from(self.code[offset])];
+            let op_code_str = op_code.to_string();
+            match op_code {
+                OpCode::RETURN => (op_code_str, offset + 1),
                 OpCode::PUSH_CONSTANT => {
-                    let byte_multiple = get_machine_byte_multiple();
+                    let byte_multiple = get_machine_byte_factor();
                     let v = self.code[offset + 1..offset + (byte_multiple + 1)]
                         .try_into()
                         .unwrap();
@@ -113,32 +144,31 @@ pub mod chunk {
                     (
                         {
                             let res = ::alloc::fmt::format(::core::fmt::Arguments::new_v1(
-                                &["PUSH CONSTANT `", "`"],
-                                &[::core::fmt::ArgumentV1::new_display(&const_value)],
+                                &["", " "],
+                                &[
+                                    ::core::fmt::ArgumentV1::new_display(&op_code_str),
+                                    ::core::fmt::ArgumentV1::new_display(&const_value),
+                                ],
                             ));
                             res
                         },
                         offset + (byte_multiple + 1),
                     )
                 }
-                OpCode::UNARY_OP_MINUS => ("UNARY_OP_MINUS".to_string(), offset + 1),
-                OpCode::BINARY_OP_ADD => ("BINARY_OP_ADD".to_string(), offset + 1),
-                OpCode::BINARY_OP_SUBTRACT => ("BINARY_OP_SUBTRACT".to_string(), offset + 1),
-                OpCode::BINARY_OP_MULTIPLY => ("BINARY_OP_MULTIPLY".to_string(), offset + 1),
-                OpCode::BINARY_OP_DIVIDE => ("BINARY_OP_DIVIDE".to_string(), offset + 1),
-                OpCode::PUSH_TRUE => ("PUSH `True`".to_string(), offset + 1),
-                OpCode::PUSH_FALSE => ("PUSH `False`".to_string(), offset + 1),
-                OpCode::UNARY_OP_NOT => ("UNARY_NOT".to_string(), offset + 1),
-                OpCode::BINARY_OP_DOUBLE_EQUAL => {
-                    ("BINARY_OP_DOUBLE_EQUAL".to_string(), offset + 1)
-                }
-                OpCode::BINARY_OP_NOT_EQUAL => ("BINARY_OP_NOT_EQUAL".to_string(), offset + 1),
-                OpCode::BINARY_OP_GREATER => ("BINARY_OP_GREATER".to_string(), offset + 1),
-                OpCode::BINARY_OP_GREATER_EQUAL => {
-                    ("BINARY_OP_GREATER_EQUAL".to_string(), offset + 1)
-                }
-                OpCode::BINARY_OP_LESS => ("BINARY_OP_LESS".to_string(), offset + 1),
-                OpCode::BINARY_OP_LESS_EQUAL => ("BINARY_OP_LESS_EQUAL".to_string(), offset + 1),
+                OpCode::UNARY_OP_MINUS => (op_code_str, offset + 1),
+                OpCode::BINARY_OP_ADD => (op_code_str, offset + 1),
+                OpCode::BINARY_OP_SUBTRACT => (op_code_str, offset + 1),
+                OpCode::BINARY_OP_MULTIPLY => (op_code_str, offset + 1),
+                OpCode::BINARY_OP_DIVIDE => (op_code_str, offset + 1),
+                OpCode::PUSH_TRUE => (op_code_str, offset + 1),
+                OpCode::PUSH_FALSE => (op_code_str, offset + 1),
+                OpCode::UNARY_OP_NOT => (op_code_str, offset + 1),
+                OpCode::BINARY_OP_DOUBLE_EQUAL => (op_code_str, offset + 1),
+                OpCode::BINARY_OP_NOT_EQUAL => (op_code_str, offset + 1),
+                OpCode::BINARY_OP_GREATER => (op_code_str, offset + 1),
+                OpCode::BINARY_OP_GREATER_EQUAL => (op_code_str, offset + 1),
+                OpCode::BINARY_OP_LESS => (op_code_str, offset + 1),
+                OpCode::BINARY_OP_LESS_EQUAL => (op_code_str, offset + 1),
             }
         }
     }

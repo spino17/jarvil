@@ -87,3 +87,5 @@ pub const KEYWORDS: [&'static str; 21] = [
 ];
 
 pub const ATOMIC_TYPES: [&'static str; 4] = [INT, FLOAT, STRING, BOOL];
+
+pub const EIGHT_BIT_MAX_VALUE: usize = 250;

@@ -349,7 +349,7 @@ pub trait Visitor {
                 }
             }
             ASTNode::OK_FUNCTION_DECLARATION(ok_function_declaration_node) => {
-                let core_ok_func_decl = ok_function_declaration_node.core_ref();
+                let core_ok_func_decl = ok_function_declaration_node.0.as_ref().borrow();
                 if let Some(func_name) = &core_ok_func_decl.name {
                     self.walk_identifier(func_name);
                 }
@@ -368,7 +368,9 @@ pub trait Visitor {
             }
             ASTNode::RETURN(return_stmt) => {
                 let core_return_stmt = return_stmt.core_ref();
-                self.walk_expression(&core_return_stmt.expr);
+                if let Some(expr) = &core_return_stmt.expr {
+                    self.walk_expression(expr);
+                }
             }
             ASTNode::R_ASSIGNMENT(r_assignment_node) => {
                 let core_r_assignment = r_assignment_node.core_ref();

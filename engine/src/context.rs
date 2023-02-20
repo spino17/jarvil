@@ -8,7 +8,7 @@ thread_local! {
 // overriding mechanism to set custom values through command line or IDE settings.
 
 struct Context {
-    indent_spaces: i64,
+    indent_spaces: usize,
     max_error_lines: usize,
     max_line_width: usize,
 }
@@ -22,11 +22,11 @@ impl Context {
         }
     }
 
-    fn set_indent(&mut self, indent_spaces: i64) {
+    fn set_indent(&mut self, indent_spaces: usize) {
         self.indent_spaces = indent_spaces;
     }
 
-    fn indent_spaces(&self) -> i64 {
+    fn indent_spaces(&self) -> usize {
         self.indent_spaces
     }
 
@@ -47,7 +47,7 @@ impl Context {
     }
 }
 
-pub fn set_indent(indent_spaces: i64) {
+pub fn set_indent(indent_spaces: usize) {
     match CONTEXT.try_with(|ctx| ctx.borrow_mut().set_indent(indent_spaces)) {
         Err(err) => {
             panic!("{}", err)
@@ -56,7 +56,7 @@ pub fn set_indent(indent_spaces: i64) {
     }
 }
 
-pub fn indent_spaces() -> i64 {
+pub fn indent_spaces() -> usize {
     match CONTEXT.try_with(|ctx| ctx.borrow().indent_spaces()) {
         Ok(val) => val,
         Err(err) => {

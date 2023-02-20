@@ -1,6 +1,6 @@
 use super::expression::core::is_expression_starting_with;
 use crate::ast::ast::{
-    ErrornousNode, FuncKeywordKind, FunctionKind, IdentifierNode, RAssignmentNode,
+    CallableKind, ErrornousNode, FuncKeywordKind, IdentifierNode, RAssignmentNode,
 };
 use crate::constants::common::LAMBDA_KEYWORD;
 use crate::lexer::token::{CoreToken, Token};
@@ -34,7 +34,7 @@ pub fn r_assign(
             let func_decl_node = parser.function_decl(
                 identifier_name,
                 &FuncKeywordKind::FUNC(func_keyword_node),
-                FunctionKind::LAMBDA,
+                CallableKind::LAMBDA,
             );
             RAssignmentNode::new_with_lambda(&func_decl_node)
         }

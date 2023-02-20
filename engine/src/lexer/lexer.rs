@@ -11,7 +11,7 @@ use text_size::TextRange;
 use text_size::TextSize;
 
 pub trait Lexer {
-    fn tokenize(&mut self, code: &mut Code) -> (Vec<Token>, Vec<Diagnostics>);
+    fn tokenize(self, code: &mut Code) -> (Vec<Token>, Vec<Diagnostics>);
 }
 
 pub struct CoreLexer {
@@ -23,7 +23,7 @@ pub struct CoreLexer {
 }
 
 impl Lexer for CoreLexer {
-    fn tokenize(&mut self, code: &mut Code) -> (Vec<Token>, Vec<Diagnostics>) {
+    fn tokenize(mut self, code: &mut Code) -> (Vec<Token>, Vec<Diagnostics>) {
         let mut token_vec: Vec<Token> = Vec::new();
         token_vec.push(Token {
             line_number: self.line_number,
@@ -64,7 +64,7 @@ impl Lexer for CoreLexer {
             token.set_trivia(mem::take(&mut trivia_vec));
         }
         token_vec.push(token);
-        (token_vec, std::mem::take(&mut self.errors))
+        (token_vec, self.errors)
     }
 }
 

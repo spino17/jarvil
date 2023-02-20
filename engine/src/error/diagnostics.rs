@@ -11,13 +11,17 @@ pub enum Diagnostics {
     InvalidChar(InvalidCharError),
     NoClosingSymbol(NoClosingSymbolError),
     MissingToken(MissingTokenError),
+    LocalVariableDeclarationLimitReached(LocalVariableDeclarationLimitReachedError),
+    CapturedVariablesCountLimitReached(CapturedVariablesCountLimitReachedError),
     InvalidTrailingTokens(InvalidTrailingTokensError),
     IncorrectlyIndentedBlock(IncorrectlyIndentedBlockError),
     InvalidLValue(InvalidLValueError),
     IdentifierAlreadyDeclared(IdentifierAlreadyDeclaredError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
+    RightSideWithVoidTypeNotAllowed(RightSideWithVoidTypeNotAllowedError),
     MoreParamsCount(MoreParamsCountError),
     LessParamsCount(LessParamsCountError),
+    MoreThanMaxLimitParamsPassed(MoreThanMaxLimitParamsPassedError),
     MismatchedParamType(MismatchedParamTypeError),
     IdentifierNotCallable(IdentifierNotCallableError),
     ClassmethodDoesNotExist(ClassmethodDoesNotExistError),
@@ -39,13 +43,25 @@ impl Diagnostics {
             Diagnostics::InvalidChar(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::NoClosingSymbol(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MissingToken(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::LocalVariableDeclarationLimitReached(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::CapturedVariablesCountLimitReached(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
             Diagnostics::InvalidTrailingTokens(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IncorrectlyIndentedBlock(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InvalidLValue(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierAlreadyDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::RightSideWithVoidTypeNotAllowed(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MoreParamsCount(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::LessParamsCount(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::MoreThanMaxLimitParamsPassed(diagonstic) => {
+                Report::new(diagonstic.clone())
+            }
             Diagnostics::MismatchedParamType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierNotCallable(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::ClassmethodDoesNotExist(diagonstic) => Report::new(diagonstic.clone()),
@@ -78,6 +94,7 @@ pub struct InvalidCharError {
     #[label("invalid char")]
     pub span: SourceSpan,
 }
+
 impl InvalidCharError {
     pub fn new(invalid_token: &Token) -> Self {
         InvalidCharError {
@@ -96,6 +113,7 @@ pub struct NoClosingSymbolError {
     #[label("no closing `{}` found", self.expected_symbol)]
     pub unclosed_span: SourceSpan,
 }
+
 impl NoClosingSymbolError {
     pub fn new(expected_symbol: String, token: &Token) -> Self {
         NoClosingSymbolError {
@@ -113,6 +131,7 @@ pub struct MissingTokenError {
     pub start_index: usize,
     pub len: usize,
 }
+
 impl MissingTokenError {
     pub fn new(expected_symbols: &[&'static str], received_token: &Token) -> Self {
         MissingTokenError {
@@ -123,6 +142,7 @@ impl MissingTokenError {
         }
     }
 }
+
 impl Diagnostic for MissingTokenError {
     fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
         return Some(Box::new("syntax error"));
@@ -172,6 +192,7 @@ pub struct InvalidTrailingTokensError {
     #[label("tokens will be skipped for any further analysis")]
     pub span: SourceSpan,
 }
+
 impl InvalidTrailingTokensError {
     pub fn new(start_index: usize, end_index: usize) -> Self {
         InvalidTrailingTokensError {
@@ -189,6 +210,7 @@ pub struct IncorrectlyIndentedBlockError {
     #[label("expected an indented statement with `{}` spaces, got `{}` spaces", self.expected_indent, self.received_indent)]
     pub span: SourceSpan,
 }
+
 impl IncorrectlyIndentedBlockError {
     pub fn new(expected_indent: i64, received_indent: i64, range: TextRange) -> Self {
         IncorrectlyIndentedBlockError {
@@ -208,6 +230,7 @@ pub struct InvalidLValueError {
     #[help]
     pub help: Option<String>, // any value derived from a function call is not assignable
 }
+
 impl InvalidLValueError {
     pub fn new(range: TextRange) -> Self {
         InvalidLValueError {
@@ -218,6 +241,42 @@ impl InvalidLValueError {
                     .style(Style::new().yellow())
                     .to_string(),
             ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("local variables declarations limit reached")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct LocalVariableDeclarationLimitReachedError {
+    pub max_limit: usize,
+    #[label("max. limit for active local variables on stack in single call-frame is {}, got more than that", self.max_limit)]
+    pub span: SourceSpan,
+}
+
+impl LocalVariableDeclarationLimitReachedError {
+    pub fn new(max_limit: usize, range: TextRange) -> Self {
+        LocalVariableDeclarationLimitReachedError {
+            max_limit,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("too many variables captured by the closure")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct CapturedVariablesCountLimitReachedError {
+    pub max_limit: usize,
+    #[label("max. limit for number of variables that can be captured by the closure is {}, captured more than that", self.max_limit)]
+    pub span: SourceSpan,
+}
+
+impl CapturedVariablesCountLimitReachedError {
+    pub fn new(max_limit: usize, range: TextRange) -> Self {
+        CapturedVariablesCountLimitReachedError {
+            max_limit,
+            span: range_to_span(range).into(),
         }
     }
 }
@@ -235,6 +294,7 @@ pub struct IdentifierAlreadyDeclaredError {
     #[help]
     pub help: Option<String>,
 }
+
 impl IdentifierAlreadyDeclaredError {
     pub fn new(
         identifier_kind: IdentifierKind,
@@ -285,6 +345,7 @@ pub struct IdentifierNotDeclaredError {
     #[help]
     help: Option<String>,
 }
+
 impl IdentifierNotDeclaredError {
     pub fn new(identifier_kind: IdentifierKind, range: TextRange) -> Self {
         IdentifierNotDeclaredError {
@@ -301,6 +362,30 @@ impl IdentifierNotDeclaredError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
+#[error("right side with `()` type is not allowed")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct RightSideWithVoidTypeNotAllowedError {
+    #[label("has type `()`")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl RightSideWithVoidTypeNotAllowedError {
+    pub fn new(range: TextRange) -> Self {
+        RightSideWithVoidTypeNotAllowedError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "variable declaration or assignment with type `void` is not allowed"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
 #[error("mismatched expected and passed number of parameters")]
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct MoreParamsCountError {
@@ -308,6 +393,7 @@ pub struct MoreParamsCountError {
     #[label("expected {} parameters, got more than that", self.expected_params_count)]
     pub span: SourceSpan,
 }
+
 impl MoreParamsCountError {
     pub fn new(expected_params_count: usize, range: TextRange) -> Self {
         MoreParamsCountError {
@@ -326,6 +412,7 @@ pub struct LessParamsCountError {
     #[label("expected {} parameters, got {}", self.expected_params_count, self.received_params_count)]
     pub span: SourceSpan,
 }
+
 impl LessParamsCountError {
     pub fn new(
         expected_params_count: usize,
@@ -335,6 +422,26 @@ impl LessParamsCountError {
         LessParamsCountError {
             expected_params_count,
             received_params_count,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("more than {} parameters passed in the function", self.max_limit)]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct MoreThanMaxLimitParamsPassedError {
+    params_count: usize,
+    max_limit: usize,
+    #[label("max. limit for parameters to a function is {}, got {}", self.max_limit, self.params_count)]
+    pub span: SourceSpan,
+}
+
+impl MoreThanMaxLimitParamsPassedError {
+    pub fn new(params_count: usize, max_limit: usize, range: TextRange) -> Self {
+        MoreThanMaxLimitParamsPassedError {
+            params_count,
+            max_limit,
             span: range_to_span(range).into(),
         }
     }
@@ -350,6 +457,7 @@ impl MismatchedParamTypeError {
         MismatchedParamTypeError { params_vec }
     }
 }
+
 impl Diagnostic for MismatchedParamTypeError {
     fn labels(&self) -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
         let mut span_vec: Vec<LabeledSpan> = vec![];
@@ -381,6 +489,7 @@ pub struct IdentifierNotCallableError {
     #[help]
     pub help: Option<String>,
 }
+
 impl IdentifierNotCallableError {
     pub fn new(ty: Type, range: TextRange) -> Self {
         IdentifierNotCallableError {
@@ -404,6 +513,7 @@ pub struct ClassmethodDoesNotExistError {
     #[label("no classmethod with this name exist for struct `{}`", self.struct_name)]
     pub span: SourceSpan,
 }
+
 impl ClassmethodDoesNotExistError {
     pub fn new(struct_name: String, range: TextRange) -> Self {
         ClassmethodDoesNotExistError {
@@ -424,6 +534,7 @@ pub struct PropertyDoesNotExistError {
     #[label("expression has type `{}`", self.ty)]
     pub expr_span: SourceSpan,
 }
+
 impl PropertyDoesNotExistError {
     pub fn new(
         property_kind: PropertyKind,
@@ -448,6 +559,7 @@ pub struct PropertyNotSupportedError {
     #[label("{} are only supported for `struct` types", self.property_name)]
     pub span: SourceSpan,
 }
+
 impl PropertyNotSupportedError {
     pub fn new(property_name: String, range: TextRange) -> Self {
         PropertyNotSupportedError {
@@ -464,6 +576,7 @@ pub struct ExpressionNotCallableError {
     #[label("expression is not callable")]
     pub span: SourceSpan,
 }
+
 impl ExpressionNotCallableError {
     pub fn new(range: TextRange) -> Self {
         ExpressionNotCallableError {
@@ -483,6 +596,7 @@ pub struct ExpressionIndexingNotValidError {
     #[label("expression is not indexable with value of type `{}`", self.index_type)]
     pub index_span: SourceSpan,
 }
+
 impl ExpressionIndexingNotValidError {
     pub fn new(
         expr_ty: Type,
@@ -513,6 +627,7 @@ pub struct UnaryOperatorInvalidUseError {
     #[help]
     pub help: Option<String>, // unary operator {} is valid only for {} operands
 }
+
 impl UnaryOperatorInvalidUseError {
     pub fn new(
         ty: Type,
@@ -551,6 +666,7 @@ pub struct BinaryOperatorInvalidOperandsError {
     #[help]
     pub help: Option<String>, // binary operator {} is valid only for {} operands
 }
+
 impl BinaryOperatorInvalidOperandsError {
     pub fn new(
         left_type: Type,
@@ -584,6 +700,7 @@ pub struct MismatchedTypesOnLeftRightError {
     #[help]
     pub help: Option<String>, // types on both sides should be same
 }
+
 impl MismatchedTypesOnLeftRightError {
     pub fn new(
         left_type: Type,
@@ -615,6 +732,7 @@ pub struct NoReturnStatementInFunctionError {
     #[help]
     pub help: Option<String>,
 }
+
 impl NoReturnStatementInFunctionError {
     pub fn new(range: TextRange) -> Self {
         NoReturnStatementInFunctionError {
@@ -638,6 +756,7 @@ pub struct InvalidReturnStatementError {
     #[help]
     pub help: Option<String>,
 }
+
 impl InvalidReturnStatementError {
     pub fn new(range: TextRange) -> Self {
         InvalidReturnStatementError {
@@ -661,6 +780,7 @@ pub struct MismatchedReturnTypeError {
     #[label("expected return value with type `{}`, got `{}`", self.expected_type, self.received_type)]
     pub span: SourceSpan,
 }
+
 impl MismatchedReturnTypeError {
     pub fn new(expected_type: Type, received_type: Type, range: TextRange) -> Self {
         MismatchedReturnTypeError {

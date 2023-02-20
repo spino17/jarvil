@@ -5,15 +5,14 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-            BinaryExpressionNode, BlockKind, BlockNode, ComparisonNode, CoreAssignmentNode,
-            CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
-            CoreFunctionDeclarationNode, CoreIdentifierNode, CoreRAssignmentNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, FunctionKind,
-            NameTypeSpecsNode, Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode,
-            ParamsNode, RAssignmentNode, ReturnStatementNode, StatementNode, TokenNode,
-            TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-            VariableDeclarationNode,
+            BinaryExpressionNode, BlockKind, BlockNode, CallableKind, ComparisonNode,
+            CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
+            CoreExpressionNode, CoreFunctionDeclarationNode, CoreIdentifierNode,
+            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, NameTypeSpecsNode,
+            Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode,
+            ReturnStatementNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+            TypeResolveKind, UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -30,7 +29,8 @@ use crate::{
             IdentifierNotCallableError, InvalidReturnStatementError, LessParamsCountError,
             MismatchedParamTypeError, MismatchedReturnTypeError, MismatchedTypesOnLeftRightError,
             MoreParamsCountError, NoReturnStatementInFunctionError, PropertyDoesNotExistError,
-            PropertyNotSupportedError, UnaryOperatorInvalidUseError,
+            PropertyNotSupportedError, RightSideWithVoidTypeNotAllowedError,
+            UnaryOperatorInvalidUseError,
         },
         helper::PropertyKind,
     },
@@ -68,40 +68,30 @@ pub enum ParamsTypeNCountResult {
 }
 
 pub struct TypeChecker {
-    namespace: Namespace,
     code: Code,
     errors: Vec<Diagnostics>,
     context: Context,
 }
 
 impl TypeChecker {
-    pub fn new(code: &Code, scope: &Namespace) -> Self {
+    pub fn new(code: &Code) -> Self {
         TypeChecker {
-            namespace: scope.clone(),
             code: code.clone(),
             errors: vec![],
             context: Context { func_stack: vec![] },
         }
     }
 
-    pub fn open_scope(&mut self, block: &BlockNode) {
-        self.namespace = block.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
-    }
-
-    pub fn close_scope(&mut self) {
-        self.namespace.close_scope();
-    }
-
-    pub fn check_ast(&mut self, ast: &BlockNode) -> Vec<Diagnostics> {
+    pub fn check_ast(mut self, ast: &BlockNode) -> Vec<Diagnostics> {
         let core_block = ast.0.as_ref().borrow();
         for stmt in &core_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        std::mem::take(&mut self.errors)
+        self.errors
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
-        match type_expr.type_obj(&self.namespace, &self.code) {
+        match type_expr.type_obj_after_resolved(&self.code) {
             TypeResolveKind::RESOLVED(type_obj) => type_obj,
             TypeResolveKind::UNRESOLVED(_) => return Type::new_with_unknown(),
             TypeResolveKind::INVALID => Type::new_with_unknown(),
@@ -139,9 +129,9 @@ impl TypeChecker {
     }
 
     pub fn type_of_lambda(&self, func_decl: &OkFunctionDeclarationNode) -> Type {
-        let core_func_decl = func_decl.core_ref();
+        let core_func_decl = func_decl.0.as_ref().borrow();
         assert!(
-            core_func_decl.kind == FunctionKind::LAMBDA,
+            core_func_decl.kind == CallableKind::LAMBDA,
             "construction of type is only valid for lambda declaration"
         );
         let func_name = &core_func_decl.name;
@@ -287,7 +277,7 @@ impl TypeChecker {
                                 (expected_params, return_type)
                             },
                             IdentifierKind::VARIABLE(variable_symbol_data) => {
-                                let lambda_type = variable_symbol_data.0.as_ref().borrow().data_type.clone();
+                                let lambda_type = variable_symbol_data.0.0.as_ref().borrow().data_type.clone();
                                 match lambda_type.0.as_ref() {
                                     CoreType::LAMBDA(lambda_data) => {
                                         let func_data = lambda_data.symbol_data.0.as_ref().borrow().lambda_data(
@@ -753,6 +743,12 @@ impl TypeChecker {
             }
         };
         let r_type = self.check_r_assign(r_assign);
+        if r_type.is_void() {
+            let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
+            self.errors
+                .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
+            return;
+        }
         if !l_type.is_eq(&r_type) {
             let err = MismatchedTypesOnLeftRightError::new(l_type, r_type, range, r_assign.range());
             self.errors
@@ -762,27 +758,30 @@ impl TypeChecker {
 
     pub fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        let r_type = self.check_r_assign(&core_variable_decl.r_assign);
+        let r_assign = &core_variable_decl.r_assign;
+        let r_type = self.check_r_assign(r_assign);
+        if r_type.is_void() {
+            let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
+            self.errors
+                .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
+        }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            if !r_type.is_lambda() {
-                // variable with lambda type is already set in resolving phase => see `resolve_function` method
-                if let Some(symbol_data) = ok_identifier.variable_symbol_data(
-                    "variable name should be resolved to `SymbolData<VariableData>`",
-                ) {
-                    symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
-                }
+            if let Some(symbol_data) = ok_identifier.variable_symbol_data(
+                "variable name should be resolved to `SymbolData<VariableData>`",
+            ) {
+                symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
             }
         };
     }
 
     pub fn check_func_decl(&mut self, ok_func_decl: &OkFunctionDeclarationNode) {
-        let core_ok_func_decl = ok_func_decl.core_ref();
+        // TODO - add is_construted true
+        let core_ok_func_decl = ok_func_decl.0.as_ref().borrow();
         let return_type_node = &core_ok_func_decl.return_type;
         let return_type_obj = match return_type_node {
             Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),
             None => Type::new_with_void(),
         };
-        self.open_scope(&core_ok_func_decl.block);
         self.context.func_stack.push(return_type_obj.clone());
         let mut has_return_stmt = false;
         for stmt in &core_ok_func_decl.block.0.as_ref().borrow().stmts {
@@ -806,7 +805,6 @@ impl TypeChecker {
             self.errors
                 .push(Diagnostics::NoReturnStatementInFunction(err));
         }
-        self.close_scope();
         self.context.func_stack.pop();
     }
 
@@ -818,11 +816,17 @@ impl TypeChecker {
             self.errors.push(Diagnostics::InvalidReturnStatement(err));
         }
         let expr = &core_return_stmt.expr;
-        let expr_type_obj = self.check_expr(expr);
+        let expr_type_obj = match expr {
+            Some(expr) => self.check_expr(expr),
+            _ => Type::new_with_void(),
+        };
         let expected_type_obj = self.context.func_stack[func_stack_len - 1].clone();
         if !expr_type_obj.is_eq(&expected_type_obj) {
-            let err =
-                MismatchedReturnTypeError::new(expected_type_obj, expr_type_obj, expr.range());
+            let err = MismatchedReturnTypeError::new(
+                expected_type_obj,
+                expr_type_obj,
+                core_return_stmt.return_keyword.range(),
+            );
             self.errors.push(Diagnostics::MismatchedReturnType(err));
         }
     }

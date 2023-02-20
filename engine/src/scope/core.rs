@@ -7,8 +7,14 @@ use std::rc::Rc;
 use text_size::TextRange;
 
 #[derive(Debug, Clone)]
+pub enum VariableCaptureKind {
+    LOCAL,
+    UPVALUE(usize), // index in the function upvalues containing the usage of the variable
+}
+
+#[derive(Debug, Clone)]
 pub enum IdentifierKind {
-    VARIABLE(SymbolData<VariableData>),
+    VARIABLE((SymbolData<VariableData>, VariableCaptureKind)),
     USER_DEFINED_TYPE(SymbolData<UserDefinedTypeData>),
     FUNCTION(SymbolData<FunctionData>),
 }
@@ -41,7 +47,7 @@ impl<T> CoreScope<T> {
         symbol_data
     }
 
-    fn get(&self, name: &Rc<String>) -> Option<&SymbolData<T>> {
+    pub fn get(&self, name: &Rc<String>) -> Option<&SymbolData<T>> {
         self.symbol_table.get(name)
     }
 }
@@ -65,6 +71,13 @@ impl<T> Scope<T> {
         })))
     }
 
+    pub fn parent(&self) -> Option<Scope<T>> {
+        match &self.0.as_ref().borrow().parent_scope {
+            Some(parent_scope) => Some(Scope(parent_scope.0.clone())),
+            None => None,
+        }
+    }
+
     fn insert<U: Fn(Scope<T>, Rc<String>) -> Option<SymbolData<T>>>(
         &self,
         key: &Rc<String>,
@@ -80,6 +93,14 @@ impl<T> Scope<T> {
         Ok(symbol_data)
     }
 
+    pub fn get(&self, key: &Rc<String>) -> Option<SymbolData<T>> {
+        match self.0.as_ref().borrow().get(key) {
+            Some(symbol_data) => Some(symbol_data.clone()),
+            None => None,
+        }
+    }
+
+    // returns symbol table entry and depth of the scope starting from local scope up to parents
     fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData<T>, usize)> {
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
@@ -132,6 +153,18 @@ impl Namespace {
         set_to_parent_scope!(functions, self);
     }
 
+    pub fn variable_scope(&self) -> &Scope<VariableData> {
+        &self.variables
+    }
+
+    pub fn type_scope(&self) -> &Scope<UserDefinedTypeData> {
+        &self.types
+    }
+
+    pub fn function_scope(&self) -> &Scope<FunctionData> {
+        &self.functions
+    }
+
     pub fn lookup_in_variables_namespace(
         &self,
         key: &Rc<String>,
@@ -156,6 +189,7 @@ impl Namespace {
     pub fn declare_variable(
         &self,
         name: &Rc<String>,
+        stack_index: usize,
         decl_range: TextRange,
     ) -> Result<SymbolData<VariableData>, TextRange> {
         let lookup_func =
@@ -164,8 +198,13 @@ impl Namespace {
                 Some(symbol_data) => Some(symbol_data.clone()),
                 None => None,
             };
-        self.variables
-            .insert(name, VariableData::default(), decl_range, lookup_func)
+        // println!("variable `{}` has index `{}`", name, stack_index);
+        self.variables.insert(
+            name,
+            VariableData::new(stack_index),
+            decl_range,
+            lookup_func,
+        )
     }
 
     pub fn declare_function(

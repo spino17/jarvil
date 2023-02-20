@@ -10,8 +10,11 @@ use jarvil_macros::Node;
 
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
+use crate::parser::resolver::FunctionContext;
+use crate::parser::resolver::UpValue;
 use crate::scope::core::IdentifierKind;
 use crate::scope::core::SymbolData;
+use crate::scope::core::VariableCaptureKind;
 use crate::scope::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
@@ -132,34 +135,51 @@ impl BlockNode {
     pub fn kind(&self) -> BlockKind {
         self.0.as_ref().borrow().kind.clone()
     }
+
+    pub fn end_class_line_number(&self) -> usize {
+        let core_block = self.0.as_ref().borrow();
+        let stmts_len = core_block.stmts.len();
+        if stmts_len > 0 {
+            return core_block.stmts[stmts_len - 1].start_line_number();
+        } else {
+            return self.start_line_number();
+        }
+    }
 }
 
 impl Node for BlockNode {
     fn range(&self) -> TextRange {
         let core_block = self.0.as_ref().borrow();
         let stmts_len = core_block.stmts.len();
-        let mut index = stmts_len - 1;
-        let mut is_empty = false;
-        loop {
-            match core_block.stmts[index].core_ref() {
-                CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(_) => {}
-                _ => break,
+        if stmts_len > 0 {
+            let mut index = stmts_len - 1;
+            let mut is_empty = false;
+            loop {
+                match core_block.stmts[index].core_ref() {
+                    CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(_) => {}
+                    _ => break,
+                }
+                if index == 0 {
+                    is_empty = true;
+                    break;
+                }
+                index = index - 1;
             }
-            if index == 0 {
-                is_empty = true;
-                break;
+            if is_empty {
+                impl_range!(
+                    self.0.as_ref().borrow().newline,
+                    self.0.as_ref().borrow().newline
+                )
+            } else {
+                impl_range!(
+                    self.0.as_ref().borrow().newline,
+                    self.0.as_ref().borrow().stmts[index]
+                )
             }
-            index = index - 1;
-        }
-        if is_empty {
-            impl_range!(
-                self.0.as_ref().borrow().newline,
-                self.0.as_ref().borrow().newline
-            )
         } else {
             impl_range!(
                 self.0.as_ref().borrow().newline,
-                self.0.as_ref().borrow().stmts[index]
+                self.0.as_ref().borrow().newline
             )
         }
     }
@@ -317,7 +337,7 @@ impl StatementNode {
 
     pub fn new_with_return_statement(
         return_keyword: &TokenNode,
-        expr: &ExpressionNode,
+        expr: Option<&ExpressionNode>,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreStatementNode::RETURN(ReturnStatementNode::new(
@@ -719,7 +739,7 @@ impl FunctionDeclarationNode {
         rparen: &TokenNode,
         right_arrow: Option<&TokenNode>,
         colon: &TokenNode,
-        kind: FunctionKind,
+        kind: CallableKind,
     ) -> Self {
         let node = Rc::new(CoreFunctionDeclarationNode::OK(
             OkFunctionDeclarationNode::new(
@@ -753,13 +773,16 @@ pub struct CoreOkFunctionDeclarationNode {
     pub params: Option<NameTypeSpecsNode>,
     pub return_type: Option<TypeExpressionNode>,
     pub block: BlockNode,
-    pub kind: FunctionKind,
+    pub kind: CallableKind,
+    pub context: Option<Rc<RefCell<Vec<UpValue>>>>, // will be used while code-generation for closures
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum FunctionKind {
+pub enum CallableKind {
     FUNC,
-    METHOD,
+    METHOD, // Add the symbol entry of the struct for which this is a method
+    CLASSMETHOD,
+    CONSTRUCTOR,
     LAMBDA,
 }
 
@@ -770,7 +793,7 @@ pub enum FuncKeywordKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct OkFunctionDeclarationNode(Rc<CoreOkFunctionDeclarationNode>);
+pub struct OkFunctionDeclarationNode(pub Rc<RefCell<CoreOkFunctionDeclarationNode>>);
 
 impl OkFunctionDeclarationNode {
     pub fn new(
@@ -783,9 +806,9 @@ impl OkFunctionDeclarationNode {
         rparen: &TokenNode,
         right_arrow: Option<&TokenNode>,
         colon: &TokenNode,
-        kind: FunctionKind,
+        kind: CallableKind,
     ) -> Self {
-        let node = Rc::new(CoreOkFunctionDeclarationNode {
+        let node = Rc::new(RefCell::new(CoreOkFunctionDeclarationNode {
             func_keyword: func_keyword.clone(),
             lparen: lparen.clone(),
             rparen: rparen.clone(),
@@ -796,22 +819,42 @@ impl OkFunctionDeclarationNode {
             return_type: extract_from_option!(return_type),
             block: block.clone(),
             kind,
-        });
+            context: None,
+        }));
         OkFunctionDeclarationNode(node)
     }
 
-    impl_core_ref!(CoreOkFunctionDeclarationNode);
+    pub fn set_context(&self, context: FunctionContext) {
+        self.0.as_ref().borrow_mut().context = Some(context.upvalues);
+    }
+
+    pub fn context(&self) -> Option<Rc<RefCell<Vec<UpValue>>>> {
+        std::mem::take(&mut self.0.as_ref().borrow_mut().context)
+    }
+
+    pub fn has_upvalues(&self) -> Option<bool> {
+        match &self.0.as_ref().borrow().context {
+            Some(context) => {
+                if context.as_ref().borrow().len() > 0 {
+                    return Some(true);
+                } else {
+                    return Some(false);
+                }
+            }
+            None => None,
+        }
+    }
 }
 
 impl Node for OkFunctionDeclarationNode {
     fn range(&self) -> TextRange {
-        match &self.0.as_ref().func_keyword {
-            FuncKeywordKind::DEF(token) => impl_range!(token, self.0.as_ref().block),
-            FuncKeywordKind::FUNC(token) => impl_range!(token, self.0.as_ref().block),
+        match &self.0.as_ref().borrow().func_keyword {
+            FuncKeywordKind::DEF(token) => impl_range!(token, self.0.as_ref().borrow().block),
+            FuncKeywordKind::FUNC(token) => impl_range!(token, self.0.as_ref().borrow().block),
         }
     }
     fn start_line_number(&self) -> usize {
-        match &self.0.as_ref().func_keyword {
+        match &self.0.as_ref().borrow().func_keyword {
             FuncKeywordKind::DEF(token) => token.start_line_number(),
             FuncKeywordKind::FUNC(token) => token.start_line_number(),
         }
@@ -860,7 +903,7 @@ impl Node for VariableDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct CoreReturnStatementNode {
     pub return_keyword: TokenNode,
-    pub expr: ExpressionNode,
+    pub expr: Option<ExpressionNode>,
     pub newline: TokenNode,
 }
 
@@ -868,10 +911,13 @@ pub struct CoreReturnStatementNode {
 pub struct ReturnStatementNode(Rc<CoreReturnStatementNode>);
 
 impl ReturnStatementNode {
-    fn new(return_keyword: &TokenNode, expr: &ExpressionNode, newline: &TokenNode) -> Self {
+    fn new(return_keyword: &TokenNode, expr: Option<&ExpressionNode>, newline: &TokenNode) -> Self {
         let node = Rc::new(CoreReturnStatementNode {
             return_keyword: return_keyword.clone(),
-            expr: expr.clone(),
+            expr: match expr {
+                Some(expr) => Some(expr.clone()),
+                None => None,
+            },
             newline: newline.clone(),
         });
         ReturnStatementNode(node)
@@ -1039,12 +1085,23 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
-    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
         match self.core_ref() {
-            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj(scope, code),
-            CoreTypeExpressionNode::ARRAY(array) => array.type_obj(scope, code),
+            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_before_resolved(scope, code),
+            CoreTypeExpressionNode::ARRAY(array) => array.type_obj_before_resolved(scope, code),
             CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
-                user_defined.type_obj(scope, code)
+                user_defined.type_obj_before_resolved(scope, code)
+            }
+            CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID,
+        }
+    }
+
+    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+        match self.core_ref() {
+            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_after_resolved(code),
+            CoreTypeExpressionNode::ARRAY(array) => array.type_obj_after_resolved(code),
+            CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
+                user_defined.type_obj_after_resolved(code)
             }
             CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID,
         }
@@ -1070,7 +1127,11 @@ impl AtomicTypeNode {
         AtomicTypeNode(node)
     }
 
-    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(&self, _scope: &Namespace, code: &Code) -> TypeResolveKind {
+        self.type_obj_after_resolved(code)
+    }
+
+    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
         match self.core_ref().kind.core_ref() {
             CoreTokenNode::OK(ok_token) => {
                 return TypeResolveKind::RESOLVED(Type::new_with_atomic(
@@ -1113,8 +1174,24 @@ impl ArrayTypeNode {
         ArrayTypeNode(node)
     }
 
-    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
-        match self.core_ref().sub_type.type_obj(scope, code) {
+    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+        match self
+            .core_ref()
+            .sub_type
+            .type_obj_before_resolved(scope, code)
+        {
+            TypeResolveKind::RESOLVED(element_type) => {
+                return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
+            }
+            TypeResolveKind::UNRESOLVED(identifier_node) => {
+                return TypeResolveKind::UNRESOLVED(identifier_node)
+            }
+            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+        }
+    }
+
+    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+        match self.core_ref().sub_type.type_obj_after_resolved(code) {
             TypeResolveKind::RESOLVED(element_type) => {
                 return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
             }
@@ -1153,22 +1230,23 @@ impl UserDefinedTypeNode {
         UserDefinedTypeNode(node)
     }
 
-    pub fn type_obj(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(code));
             match scope.lookup_in_types_namespace(&name) {
                 Some((symbol_data, depth)) => {
                     let temp_symbol_data = symbol_data.clone();
+                    ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
                     match &*symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::STRUCT(_) => {
-                            ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
+                            //ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
                             return TypeResolveKind::RESOLVED(Type::new_with_struct(
                                 name.to_string(),
                                 &temp_symbol_data,
                             ));
                         }
                         UserDefinedTypeData::LAMBDA(_) => {
-                            ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
+                            //ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
                             return TypeResolveKind::RESOLVED(Type::new_with_lambda(
                                 Some(name.to_string()),
                                 &temp_symbol_data,
@@ -1178,6 +1256,32 @@ impl UserDefinedTypeNode {
                 }
                 None => return TypeResolveKind::UNRESOLVED(ok_identifier.clone()),
             };
+        }
+        return TypeResolveKind::INVALID;
+    }
+
+    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+        if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
+            let name = Rc::new(ok_identifier.token_value(code));
+            match ok_identifier.user_defined_type_symbol_data(
+                "identifier should be resolved to `SymbolData<UserDefinedTypeData>`",
+            ) {
+                Some(symbol_data) => match &*symbol_data.0.as_ref().borrow() {
+                    UserDefinedTypeData::STRUCT(_) => {
+                        return TypeResolveKind::RESOLVED(Type::new_with_struct(
+                            name.to_string(),
+                            &symbol_data,
+                        ));
+                    }
+                    UserDefinedTypeData::LAMBDA(_) => {
+                        return TypeResolveKind::RESOLVED(Type::new_with_lambda(
+                            Some(name.to_string()),
+                            &symbol_data,
+                        ));
+                    }
+                },
+                None => return TypeResolveKind::UNRESOLVED(ok_identifier.clone()),
+            }
         }
         return TypeResolveKind::INVALID;
     }
@@ -1250,9 +1354,14 @@ impl OkIdentifierNode {
         self.0.as_ref().borrow().token.token_value(code)
     }
 
-    pub fn bind_variable_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
+    pub fn bind_variable_decl(
+        &self,
+        symbol_data: &SymbolData<VariableData>,
+        depth: usize,
+        kind: VariableCaptureKind,
+    ) {
         self.0.as_ref().borrow_mut().decl =
-            Some((IdentifierKind::VARIABLE(symbol_data.clone()), depth));
+            Some((IdentifierKind::VARIABLE((symbol_data.clone(), kind)), depth));
     }
 
     pub fn bind_user_defined_type_decl(
@@ -1284,7 +1393,7 @@ impl OkIdentifierNode {
     ) -> Option<SymbolData<VariableData>> {
         match &self.0.as_ref().borrow().decl {
             Some(symbol_data) => match &symbol_data.0 {
-                IdentifierKind::VARIABLE(x) => return Some(x.clone()),
+                IdentifierKind::VARIABLE(x) => return Some(x.0.clone()),
                 _ => panic!("{}", panic_message),
             },
             None => None,

@@ -50,7 +50,7 @@ Below is the complete grammer of the language with a custom (mostly copied from 
 
     atom_factor: ('.' id ['(' [params] ')'] | '[' expr ']' | '(' [params] ')') atom_factor
 
-    type_expr: 'int' | 'float' | 'string' | 'bool' | id | '[' type_expr; <INT> ']'
+    type_expr: 'int' | 'float' | 'string' | 'bool' | id | '[' type_expr ']'
 
     name_type_spec: id ':' type_expr
 

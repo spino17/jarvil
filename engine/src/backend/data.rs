@@ -8,6 +8,7 @@ pub enum Data {
     FLOAT(f64),
     OBJ(Object),
     BOOL(bool),
+    NIL,
 }
 
 impl Data {
@@ -59,6 +60,10 @@ impl Data {
                 Data::OBJ(obj_2) => obj_1.eq_type(obj_2),
                 _ => return false,
             },
+            Data::NIL => match data {
+                Data::NIL => return true,
+                _ => return false,
+            },
         }
     }
 
@@ -103,6 +108,13 @@ impl Data {
             _ => false,
         }
     }
+
+    pub fn is_nil(&self) -> bool {
+        match self {
+            Data::NIL => true,
+            _ => false,
+        }
+    }
 }
 
 impl Display for Data {
@@ -112,6 +124,7 @@ impl Display for Data {
             Data::FLOAT(val) => write!(f, "{}", val),
             Data::OBJ(val) => write!(f, "{}", val),
             Data::BOOL(val) => write!(f, "{}", val),
+            Data::NIL => write!(f, "<NIL>"),
         }
     }
 }

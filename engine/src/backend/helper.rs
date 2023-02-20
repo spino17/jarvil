@@ -1,4 +1,4 @@
-pub fn get_machine_byte_multiple() -> usize {
+pub fn get_machine_byte_factor() -> usize {
     let byte_multiple = match usize::BITS {
         8 => 1,
         16 => 2,

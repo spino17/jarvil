@@ -4,8 +4,8 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{
-    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, ExpressionNode, FuncKeywordKind,
-    FunctionDeclarationNode, FunctionKind, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
+    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableKind, ExpressionNode,
+    FuncKeywordKind, FunctionDeclarationNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
     Node, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
     TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
 };
@@ -55,7 +55,7 @@ impl PackratParser {
 impl Parser for PackratParser {
     fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>) {
         let code_node = self.code(token_vec);
-        (code_node, std::mem::take(&mut self.errors))
+        (code_node, self.errors)
     }
 }
 
@@ -284,7 +284,7 @@ impl PackratParser {
         if !self.is_curr_token_on_newline() {
             skipped_tokens = self.skip_to_newline();
         }
-        let mut expected_indent_spaces = context::indent_spaces() * self.indent_level;
+        let mut expected_indent_spaces = context::indent_spaces() as i64 * self.indent_level;
         let mut indent_spaces = 0;
         loop {
             let token = &self.token_vec[self.lookahead];
@@ -332,43 +332,6 @@ impl PackratParser {
             self.scan_next_token();
         }
     }
-
-    // ------------------- packrat parser caching utilities -------------------
-    /*
-    pub fn get_or_set_cache<
-        T: std::fmt::Debug,
-        F: FnOnce(&mut PackratParser) -> Result<T, JarvilError>,
-        G: FnOnce(&Result<T, JarvilError>) -> Result<T, JarvilError>,
-        H: FnOnce(&T) -> usize,
-    >(
-        &mut self,
-        cache_map: &Rc<RefCell<FxHashMap<usize, Result<T, JarvilError>>>>,
-        routine_fn: F,
-        clone_result_fn: G,
-        get_lookahead_fn: H,
-        curr_lookahead: usize,
-        message: &str,
-    ) -> Result<T, JarvilError> {
-        match cache_map.borrow().get(&curr_lookahead) {
-            Some(result) => {
-                let result = clone_result_fn(result);
-                match result {
-                    Ok(response) => {
-                        self.set_lookahead(get_lookahead_fn(&response));
-                        return Ok(response);
-                    }
-                    Err(err) => return Err(err),
-                }
-            }
-            _ => {}
-        }
-        let result = routine_fn(self);
-        let result_entry = clone_result_fn(&result);
-        // println!("cache missed: pushing the entry = {:?} in map of {}", result_entry, message);
-        cache_map.borrow_mut().insert(curr_lookahead, result_entry);
-        result
-    }
-     */
 
     // ------------------- production rule matching function for terminals and non-terminals -------------------
     // code
@@ -518,7 +481,7 @@ impl PackratParser {
         &mut self,
         name: Option<&IdentifierNode>,
         func_keyword: &FuncKeywordKind,
-        kind: FunctionKind,
+        kind: CallableKind,
     ) -> FunctionDeclarationNode {
         components::function_declaration::function_decl(self, name, func_keyword, kind)
     }
