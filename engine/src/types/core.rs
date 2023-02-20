@@ -1,18 +1,45 @@
 use super::lambda::Lambda;
 use super::r#struct::Struct;
-use crate::constants::common::{NON_TYPED, UNKNOWN};
-use crate::parser::components::expression::atom;
+use crate::constants::common::{BOOL, NON_TYPED, UNKNOWN};
+use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
-use std::fmt::{write, Debug, Formatter};
+use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
-
-// Type is data structure for type object. Type objects are more desirable than type expressions as the later contains a lot of information
-// not really useful for doing type-analysis.
 
 pub trait AbstractType {
     fn is_eq(&self, base_type: &Type) -> bool;
+}
+
+pub trait OperatorCompatiblity {
+    fn check_add(&self, other: &Type) -> Option<Type>;
+    fn check_subtract(&self, other: &Type) -> Option<Type>;
+    fn check_multiply(&self, other: &Type) -> Option<Type>;
+    fn check_divide(&self, other: &Type) -> Option<Type>;
+    fn check_double_equal(&self, other: &Type) -> Option<Type>;
+    fn check_greater(&self, other: &Type) -> Option<Type>;
+    fn check_less(&self, other: &Type) -> Option<Type>;
+    fn check_and(&self, other: &Type) -> Option<Type>;
+    fn check_or(&self, other: &Type) -> Option<Type>;
+    fn check_not_equal(&self, other: &Type) -> Option<Type> {
+        if self.check_double_equal(other).is_some() {
+            return Some(Type::new_with_atomic(BOOL));
+        }
+        return None;
+    }
+    fn check_greater_equal(&self, other: &Type) -> Option<Type> {
+        if self.check_greater(other).is_some() && self.check_double_equal(other).is_some() {
+            return Some(Type::new_with_atomic(BOOL));
+        }
+        return None;
+    }
+    fn check_less_equal(&self, other: &Type) -> Option<Type> {
+        if self.check_less(other).is_some() && self.check_double_equal(other).is_some() {
+            return Some(Type::new_with_atomic(BOOL));
+        }
+        return None;
+    }
 }
 
 #[derive(Debug)]
@@ -25,6 +52,7 @@ pub enum CoreType {
     UNKNOWN,
     VOID,
     // TODO - add below types also
+    // ANY // this type can be used to denote that any variable with this type can have any valid datatypes, will be useful in things like print(...)
     // ENUMERATION,
     // TUPLES,
     // REFERENCE,
@@ -33,6 +61,7 @@ pub enum CoreType {
 
 #[derive(Debug, Clone)]
 pub struct Type(pub Rc<CoreType>);
+
 impl Type {
     pub fn new_with_atomic(name: &str) -> Type {
         Type(Rc::new(CoreType::ATOMIC(Atomic::new(name))))
@@ -49,8 +78,8 @@ impl Type {
         Type(Rc::new(CoreType::LAMBDA(Lambda::new(name, symbol_data))))
     }
 
-    pub fn new_with_array(element_type: &Type, size: usize) -> Type {
-        Type(Rc::new(CoreType::ARRAY(Array::new(element_type, size))))
+    pub fn new_with_array(element_type: &Type) -> Type {
+        Type(Rc::new(CoreType::ARRAY(Array::new(element_type))))
     }
 
     pub fn new_with_unknown() -> Type {
@@ -71,6 +100,13 @@ impl Type {
     pub fn is_string(&self) -> bool {
         match self.0.as_ref() {
             CoreType::ATOMIC(atomic) => atomic.is_string(),
+            _ => false,
+        }
+    }
+
+    pub fn is_array(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::ARRAY(_) => true,
             _ => false,
         }
     }
@@ -117,7 +153,50 @@ impl Type {
             _ => false,
         }
     }
+
+    // This function returns Some if operation is possible and None otherwise
+    pub fn check_operator(&self, other: &Type, op_kind: &BinaryOperatorKind) -> Option<Type> {
+        match op_kind {
+            BinaryOperatorKind::Add => {
+                impl_op_compatiblity!(check_add, self, other)
+            }
+            BinaryOperatorKind::Subtract => {
+                impl_op_compatiblity!(check_subtract, self, other)
+            }
+            BinaryOperatorKind::Multiply => {
+                impl_op_compatiblity!(check_multiply, self, other)
+            }
+            BinaryOperatorKind::Divide => {
+                impl_op_compatiblity!(check_divide, self, other)
+            }
+            BinaryOperatorKind::Less => {
+                impl_op_compatiblity!(check_less, self, other)
+            }
+            BinaryOperatorKind::LessEqual => {
+                impl_op_compatiblity!(check_less_equal, self, other)
+            }
+            BinaryOperatorKind::Greater => {
+                impl_op_compatiblity!(check_greater, self, other)
+            }
+            BinaryOperatorKind::GreaterEqual => {
+                impl_op_compatiblity!(check_greater_equal, self, other)
+            }
+            BinaryOperatorKind::DoubleEqual => {
+                impl_op_compatiblity!(check_double_equal, self, other)
+            }
+            BinaryOperatorKind::NotEqual => {
+                impl_op_compatiblity!(check_not_equal, self, other)
+            }
+            BinaryOperatorKind::And => {
+                impl_op_compatiblity!(check_and, self, other)
+            }
+            BinaryOperatorKind::Or => {
+                impl_op_compatiblity!(check_or, self, other)
+            }
+        }
+    }
 }
+
 impl AbstractType for Type {
     fn is_eq(&self, base_type: &Type) -> bool {
         match self.0.as_ref() {
@@ -140,6 +219,7 @@ impl AbstractType for Type {
         }
     }
 }
+
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self.0.as_ref() {

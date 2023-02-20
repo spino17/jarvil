@@ -1,11 +1,11 @@
 use crate::ast::ast::BlockNode;
 use crate::code::Code;
-use crate::error::core::JarvilError;
+use crate::error::diagnostics::Diagnostics;
 use crate::lexer::lexer::{CoreLexer, Lexer};
 use crate::parser::parser::{PackratParser, Parser};
 
-pub fn build_ast(code: &mut Code) -> (BlockNode, Vec<JarvilError>) {
-    let mut core_lexer = CoreLexer::new();
+pub fn build_ast(code: &mut Code) -> (BlockNode, Vec<Diagnostics>) {
+    let core_lexer = CoreLexer::new();
     let (token_vec, mut lexical_errors) = core_lexer.tokenize(code);
     let parser = PackratParser::new(&*code);
     let (ast, mut parse_errors) = parser.parse(token_vec);

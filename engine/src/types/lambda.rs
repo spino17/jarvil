@@ -1,12 +1,16 @@
+use crate::constants::common::BOOL;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};
+
+use super::core::OperatorCompatiblity;
 
 #[derive(Debug)]
 pub struct Lambda {
     pub name: Option<String>,
     pub symbol_data: SymbolData<UserDefinedTypeData>,
 }
+
 impl Lambda {
     pub fn new(name: Option<String>, symbol_data: &SymbolData<UserDefinedTypeData>) -> Lambda {
         Lambda {
@@ -15,6 +19,7 @@ impl Lambda {
         }
     }
 }
+
 impl AbstractType for Lambda {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
@@ -59,6 +64,7 @@ impl AbstractType for Lambda {
         }
     }
 }
+
 impl ToString for Lambda {
     fn to_string(&self) -> String {
         match &self.name {
@@ -79,8 +85,46 @@ impl ToString for Lambda {
                     params_str.push_str(&format!("{}", param.1.to_string()));
                     flag = true;
                 }
-                format!("func({}) -> {}", params_str, self_func_data.return_type)
+                format!("lambda({}) -> {}", params_str, self_func_data.return_type)
             }
         }
+    }
+}
+
+impl OperatorCompatiblity for Lambda {
+    fn check_add(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_subtract(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_multiply(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_divide(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_double_equal(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_greater(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_less(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_and(&self, _other: &Type) -> Option<Type> {
+        None
+    }
+
+    fn check_or(&self, _other: &Type) -> Option<Type> {
+        None
     }
 }

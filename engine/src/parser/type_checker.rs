@@ -5,15 +5,14 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-            BinaryExpressionNode, BlockKind, BlockNode, ComparisonNode, CoreAssignmentNode,
-            CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
-            CoreFunctionDeclarationNode, CoreIdentifierNode, CoreRAssignmentNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, FunctionKind,
-            NameTypeSpecsNode, Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode,
-            ParamsNode, RAssignmentNode, ReturnStatementNode, StatementNode, TokenNode,
-            TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-            UnaryOperatorKind, VariableDeclarationNode,
+            BinaryExpressionNode, BlockKind, BlockNode, CallableKind, ComparisonNode,
+            CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
+            CoreExpressionNode, CoreFunctionDeclarationNode, CoreIdentifierNode,
+            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, NameTypeSpecsNode,
+            Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode,
+            ReturnStatementNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+            TypeResolveKind, UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -24,9 +23,18 @@ use crate::{
             LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG, SCOPE_NOT_SET_TO_BLOCK_MSG,
             STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
         },
-        core::{JarvilError, JarvilErrorKind},
+        diagnostics::{
+            BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError, Diagnostics,
+            ExpressionIndexingNotValidError, ExpressionNotCallableError,
+            IdentifierNotCallableError, InvalidReturnStatementError, LessParamsCountError,
+            MismatchedParamTypeError, MismatchedReturnTypeError, MismatchedTypesOnLeftRightError,
+            MoreParamsCountError, NoReturnStatementInFunctionError, PropertyDoesNotExistError,
+            PropertyNotSupportedError, RightSideWithVoidTypeNotAllowedError,
+            UnaryOperatorInvalidUseError,
+        },
+        helper::PropertyKind,
     },
-    lexer::token::BinaryOperatorKind,
+    lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
         core::{IdentifierKind, Namespace, SymbolData},
         function::FunctionData,
@@ -35,7 +43,6 @@ use crate::{
     types::{
         atomic,
         core::{AbstractType, CoreType, Type},
-        operators::{self, operator_factory},
     },
 };
 use std::rc::Rc;
@@ -57,43 +64,34 @@ pub enum ParamsTypeNCountResult {
     OK,
     MORE_PARAMS(usize),
     LESS_PARAMS((usize, usize)), // (expected_params_num, received_params_num)
-    MISMATCHED_TYPE(Vec<(Type, Type, usize)>), // (expected_type, received_type, index_of_param)
+    MISMATCHED_TYPE(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
 }
 
 pub struct TypeChecker {
-    namespace: Namespace,
     code: Code,
-    errors: Vec<JarvilError>,
+    errors: Vec<Diagnostics>,
     context: Context,
 }
+
 impl TypeChecker {
-    pub fn new(code: &Code, scope: &Namespace) -> Self {
+    pub fn new(code: &Code) -> Self {
         TypeChecker {
-            namespace: scope.clone(),
             code: code.clone(),
             errors: vec![],
             context: Context { func_stack: vec![] },
         }
     }
 
-    pub fn open_scope(&mut self, block: &BlockNode) {
-        self.namespace = block.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
-    }
-
-    pub fn close_scope(&mut self) {
-        self.namespace.close_scope();
-    }
-
-    pub fn check_ast(&mut self, ast: &BlockNode) -> Vec<JarvilError> {
+    pub fn check_ast(mut self, ast: &BlockNode) -> Vec<Diagnostics> {
         let core_block = ast.0.as_ref().borrow();
         for stmt in &core_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        std::mem::take(&mut self.errors)
+        self.errors
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
-        match type_expr.type_obj(&self.namespace, &self.code) {
+        match type_expr.type_obj_after_resolved(&self.code) {
             TypeResolveKind::RESOLVED(type_obj) => type_obj,
             TypeResolveKind::UNRESOLVED(_) => return Type::new_with_unknown(),
             TypeResolveKind::INVALID => Type::new_with_unknown(),
@@ -131,9 +129,9 @@ impl TypeChecker {
     }
 
     pub fn type_of_lambda(&self, func_decl: &OkFunctionDeclarationNode) -> Type {
-        let core_func_decl = func_decl.core_ref();
+        let core_func_decl = func_decl.0.as_ref().borrow();
         assert!(
-            core_func_decl.kind == FunctionKind::LAMBDA,
+            core_func_decl.kind == CallableKind::LAMBDA,
             "construction of type is only valid for lambda declaration"
         );
         let func_name = &core_func_decl.name;
@@ -154,7 +152,7 @@ impl TypeChecker {
         let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(params_vec, return_type));
         let lambda_type_obj = Type::new_with_lambda(
             None,
-            &SymbolData::new(symbol_data, core_func_decl.lparen.start_line_number()),
+            &SymbolData::new(symbol_data, core_func_decl.lparen.range()),
         );
         lambda_type_obj
     }
@@ -199,8 +197,7 @@ impl TypeChecker {
         if l_type.is_unknown() || r_type.is_unknown() {
             return Some(Type::new_with_unknown());
         }
-        let operator_obj = operator_factory(operator_kind);
-        let result = operator_obj.check_operation(l_type, r_type);
+        let result = l_type.check_operator(r_type, operator_kind);
         result
     }
 
@@ -215,7 +212,7 @@ impl TypeChecker {
                 let expected_params = expected_params.as_ref();
                 let received_params_iter = received_params.iter();
                 let mut index = 0;
-                let mut mismatch_types_vec: Vec<(Type, Type, usize)> = vec![]; // (expected_type, received_type, index_of_param)
+                let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![]; // (expected_type, received_type, index_of_param)
                 for received_param in received_params_iter {
                     let param_type_obj = self.check_expr(&received_param);
                     if index >= expected_params_len {
@@ -224,9 +221,10 @@ impl TypeChecker {
                     let expected_params_type_obj = &expected_params[index].1;
                     if !param_type_obj.is_eq(expected_params_type_obj) {
                         mismatch_types_vec.push((
-                            expected_params_type_obj.clone(),
-                            param_type_obj.clone(),
+                            expected_params_type_obj.to_string(),
+                            param_type_obj.clone().to_string(),
                             index + 1,
+                            received_param.range(),
                         ));
                     }
                     index = index + 1;
@@ -279,7 +277,7 @@ impl TypeChecker {
                                 (expected_params, return_type)
                             },
                             IdentifierKind::VARIABLE(variable_symbol_data) => {
-                                let lambda_type = variable_symbol_data.0.as_ref().borrow().data_type.clone();
+                                let lambda_type = variable_symbol_data.0.0.as_ref().borrow().data_type.clone();
                                 match lambda_type.0.as_ref() {
                                     CoreType::LAMBDA(lambda_data) => {
                                         let func_data = lambda_data.symbol_data.0.as_ref().borrow().lambda_data(
@@ -290,12 +288,10 @@ impl TypeChecker {
                                         (expected_params, return_type)
                                     },
                                     _ => {
-                                        let err_message = format!(
-                                            "variable `{}` with type `{}` is not callable",
-                                            ok_identifier.token_value(&self.code),
-                                            lambda_type
+                                        let err = IdentifierNotCallableError::new(
+                                            lambda_type, func_name.range()
                                         );
-                                        self.log_error(func_name.range(), func_name.start_line_number(), err_message);
+                                        self.errors.push(Diagnostics::IdentifierNotCallable(err));
                                         return Type::new_with_unknown()
                                     }
                                 }
@@ -308,10 +304,8 @@ impl TypeChecker {
                             _ => {
                                 self.log_params_type_and_count_check_error(
                                     func_name.range(),
-                                    func_name.start_line_number(),
-                                    &result,
+                                    result,
                                 );
-                                return Type::new_with_unknown();
                             }
                         }
                     }
@@ -352,36 +346,28 @@ impl TypeChecker {
                                             _ => {
                                                 self.log_params_type_and_count_check_error(
                                                     class_method.range(),
-                                                    class_method.start_line_number(),
-                                                    &result,
+                                                    result,
                                                 );
                                                 return Type::new_with_unknown();
                                             }
                                         }
                                     }
                                     None => {
-                                        let err_message = format!(
-                                            "no classmethod named `{}` exist for struct `{}`",
-                                            class_method_name, class_name
-                                        );
-                                        self.log_error(
+                                        let err = ClassmethodDoesNotExistError::new(
+                                            class_name,
                                             class_method.range(),
-                                            class_method.start_line_number(),
-                                            err_message,
                                         );
+                                        self.errors.push(Diagnostics::ClassmethodDoesNotExist(err));
                                         return Type::new_with_unknown();
                                     }
                                 }
                             }
                             _ => {
-                                let err_message =
-                                    "classmethods are only supported for `struct` types"
-                                        .to_string();
-                                self.log_error(
+                                let err = PropertyNotSupportedError::new(
+                                    "classmethod".to_string(),
                                     class.range(),
-                                    class.start_line_number(),
-                                    err_message,
                                 );
+                                self.errors.push(Diagnostics::PropertyNotSupported(err));
                                 return Type::new_with_unknown();
                             }
                         },
@@ -409,22 +395,14 @@ impl TypeChecker {
                         match result {
                             ParamsTypeNCountResult::OK => return return_type,
                             _ => {
-                                self.log_params_type_and_count_check_error(
-                                    atom.range(),
-                                    atom.start_line_number(),
-                                    &result,
-                                );
+                                self.log_params_type_and_count_check_error(atom.range(), result);
                                 return Type::new_with_unknown();
                             }
                         }
                     }
                     None => {
-                        let err_message = "expression is not callable";
-                        self.log_error(
-                            atom.range(),
-                            atom.start_line_number(),
-                            err_message.to_string(),
-                        );
+                        let err = ExpressionNotCallableError::new(atom.range());
+                        self.errors.push(Diagnostics::ExpressionNotCallable(err));
                         return Type::new_with_unknown();
                     }
                 }
@@ -448,32 +426,27 @@ impl TypeChecker {
                                 )
                                 .try_field(&property_name)
                             {
-                                Some(type_obj) => return type_obj,
+                                Some((type_obj, _)) => return type_obj,
                                 None => {
-                                    let err_message = format!(
-                                        "no property named `{}` exist for expression with type `{}`",
-                                        property_name,
-                                        atom_type_obj
-                                    );
-                                    self.log_error(
+                                    let err = PropertyDoesNotExistError::new(
+                                        PropertyKind::FIELD,
+                                        atom_type_obj.clone(),
                                         property.range(),
-                                        property.start_line_number(),
-                                        err_message,
+                                        atom.range(),
                                     );
+                                    self.errors.push(Diagnostics::PropertyDoesNotExist(err));
                                     return Type::new_with_unknown();
                                 }
                             }
                         }
                         _ => {
-                            let err_message = format!(
-                                "no property named `{}` exist for expression with type `{}`",
-                                property_name, atom_type_obj
-                            );
-                            self.log_error(
+                            let err = PropertyDoesNotExistError::new(
+                                PropertyKind::FIELD,
+                                atom_type_obj,
                                 property.range(),
-                                property.start_line_number(),
-                                err_message,
+                                atom.range(),
                             );
+                            self.errors.push(Diagnostics::PropertyDoesNotExist(err));
                             return Type::new_with_unknown();
                         }
                     }
@@ -483,7 +456,8 @@ impl TypeChecker {
             CoreAtomNode::METHOD_ACCESS(method_access) => {
                 // TODO - check for possiblitiy of a field access with type lambda which will have similar syntax
                 let core_method_access = method_access.core_ref();
-                let atom_type_obj = self.check_atom(&core_method_access.atom);
+                let atom = &core_method_access.atom;
+                let atom_type_obj = self.check_atom(atom);
                 let method = &core_method_access.method_name;
                 let params = &core_method_access.params;
                 if let CoreIdentifierNode::OK(ok_identifier) = method.core_ref() {
@@ -510,33 +484,32 @@ impl TypeChecker {
                                         _ => {
                                             self.log_params_type_and_count_check_error(
                                                 method.range(),
-                                                method.start_line_number(),
-                                                &result,
+                                                result,
                                             );
                                             return Type::new_with_unknown();
                                         }
                                     }
                                 }
                                 None => {
-                                    let err_message = format!(
-                                        "no method named `{}` exist for expression with type `{}`",
-                                        method_name, atom_type_obj
-                                    );
-                                    self.log_error(
+                                    let err = PropertyDoesNotExistError::new(
+                                        PropertyKind::METHOD,
+                                        atom_type_obj.clone(),
                                         method.range(),
-                                        method.start_line_number(),
-                                        err_message,
+                                        atom.range(),
                                     );
+                                    self.errors.push(Diagnostics::PropertyDoesNotExist(err));
                                     return Type::new_with_unknown();
                                 }
                             }
                         }
                         _ => {
-                            let err_message = format!(
-                                "no method named `{}` exist for expression with type `{}`",
-                                method_name, atom_type_obj
+                            let err = PropertyDoesNotExistError::new(
+                                PropertyKind::METHOD,
+                                atom_type_obj,
+                                method.range(),
+                                atom.range(),
                             );
-                            self.log_error(method.range(), method.start_line_number(), err_message);
+                            self.errors.push(Diagnostics::PropertyDoesNotExist(err));
                             return Type::new_with_unknown();
                         }
                     }
@@ -547,15 +520,19 @@ impl TypeChecker {
                 let core_index_access = index_access.core_ref();
                 let atom = &core_index_access.atom;
                 let atom_type_obj = self.check_atom(atom);
-                let index_type_obj = self.check_expr(&core_index_access.index);
+                let index = &core_index_access.index;
+                let index_type_obj = self.check_expr(index);
                 match self.is_indexable_with_type(&atom_type_obj, &index_type_obj) {
                     Some(element_type) => return element_type.clone(),
                     _ => {
-                        let err_message = format!(
-                            "expression with type `{}` is not indexable with value of type `{}`",
-                            atom_type_obj, index_type_obj
+                        let err = ExpressionIndexingNotValidError::new(
+                            atom_type_obj,
+                            index_type_obj,
+                            atom.range(),
+                            index.range(),
                         );
-                        self.log_error(atom.range(), atom.start_line_number(), err_message);
+                        self.errors
+                            .push(Diagnostics::ExpressionIndexingNotValid(err));
                         return Type::new_with_unknown();
                     }
                 }
@@ -622,37 +599,36 @@ impl TypeChecker {
         let core_only_unary_expr = only_unary_expr.core_ref();
         let unary_expr = &core_only_unary_expr.unary_expr;
         let operand_type = self.check_unary_expr(&unary_expr);
+        let operator = &core_only_unary_expr.operator;
         let operator_kind = &core_only_unary_expr.operator_kind;
         match operator_kind {
-            UnaryOperatorKind::PLUS | UnaryOperatorKind::MINUS => {
+            UnaryOperatorKind::Plus | UnaryOperatorKind::Minus => {
                 if operand_type.is_numeric() {
                     return operand_type;
                 } else {
-                    let err_message = format!(
-                        "unary expression with operator `+` or `-` is valid only for numeric (`int`, `float`) operand, got operand with type `{}`", 
-                        operand_type
-                    );
-                    self.log_error(
+                    let err = UnaryOperatorInvalidUseError::new(
+                        operand_type,
+                        "numeric (`int`, `float`)",
+                        "`+` or `-`",
                         unary_expr.range(),
-                        unary_expr.start_line_number(),
-                        err_message,
+                        operator.range(),
                     );
+                    self.errors.push(Diagnostics::UnaryOperatorInvalidUse(err));
                     return Type::new_with_unknown();
                 }
             }
-            UnaryOperatorKind::NOT => {
+            UnaryOperatorKind::Not => {
                 if operand_type.is_bool() {
                     return operand_type;
                 } else {
-                    let err_message = format!(
-                        "unary expression with operator `not` is valid only for boolean operand, got operand with type `{}`", 
-                        operand_type
-                    );
-                    self.log_error(
+                    let err = UnaryOperatorInvalidUseError::new(
+                        operand_type,
+                        "boolean",
+                        "`not`",
                         unary_expr.range(),
-                        unary_expr.start_line_number(),
-                        err_message,
+                        operator.range(),
                     );
+                    self.errors.push(Diagnostics::UnaryOperatorInvalidUse(err));
                     return Type::new_with_unknown();
                 }
             }
@@ -670,19 +646,25 @@ impl TypeChecker {
 
     pub fn check_binary_expr(&mut self, binary_expr: &BinaryExpressionNode) -> Type {
         let core_binary_expr = binary_expr.core_ref();
-        let l_type = self.check_expr(&core_binary_expr.left_expr);
+        let left_expr = &core_binary_expr.left_expr;
+        let right_expr = &core_binary_expr.right_expr;
+        let l_type = self.check_expr(left_expr);
         let operator = &core_binary_expr.operator;
         let operator_kind = &core_binary_expr.operator_kind;
-        let r_type = self.check_expr(&core_binary_expr.right_expr);
+        let r_type = self.check_expr(right_expr);
         let result = self.is_binary_operation_valid(&l_type, &r_type, operator_kind);
         match result {
             Some(type_obj) => return type_obj,
             None => {
-                let err_message = format!(
-                    "binary operator `{}` cannot be applied on left and right operand with types `{}` and `{}` respectively",
-                    operator_kind, l_type, r_type
+                let err = BinaryOperatorInvalidOperandsError::new(
+                    l_type,
+                    r_type,
+                    left_expr.range(),
+                    right_expr.range(),
+                    operator.range(),
                 );
-                self.log_error(operator.range(), operator.start_line_number(), err_message);
+                self.errors
+                    .push(Diagnostics::BinaryOperatorInvalidOperands(err));
                 return Type::new_with_unknown();
             }
         }
@@ -694,8 +676,11 @@ impl TypeChecker {
         let operators = &core_comp_expr.operators;
         let operands_len = operands.len();
         for index in 1..operands_len {
-            let l_type = self.check_expr(&operands[index - 1]);
-            let r_type = self.check_expr(&operands[index]);
+            let left_expr = &operands[index - 1];
+            let right_expr = &operands[index];
+            let l_type = self.check_expr(left_expr);
+            let r_type = self.check_expr(right_expr);
+            let operator = &operators[index - 1];
             let operator_kind = operators[index - 1]
                 .is_binary_operator()
                 .expect("operator token is always valid");
@@ -711,15 +696,15 @@ impl TypeChecker {
                     _ => unreachable!("comparison operator always result into `bool` type"),
                 },
                 None => {
-                    let err_message = format!(
-                        "binary operator `{}` cannot be applied on left and right operand with types `{}` and `{}` respectively",
-                        operator_kind, l_type, r_type
+                    let err = BinaryOperatorInvalidOperandsError::new(
+                        l_type,
+                        r_type,
+                        left_expr.range(),
+                        right_expr.range(),
+                        operator.range(),
                     );
-                    self.log_error(
-                        operators[index - 1].range(),
-                        operators[index - 1].start_line_number(),
-                        err_message,
-                    );
+                    self.errors
+                        .push(Diagnostics::BinaryOperatorInvalidOperands(err));
                     return Type::new_with_unknown();
                 }
             }
@@ -741,58 +726,62 @@ impl TypeChecker {
 
     pub fn check_assignment(&mut self, assignment: &AssignmentNode) {
         let core_assignment = assignment.core_ref();
-        let (l_type, r_assign) = match core_assignment {
+        let (l_type, r_assign, range) = match core_assignment {
             CoreAssignmentNode::OK(ok_assignment) => {
                 let core_ok_assignment = ok_assignment.core_ref();
-                let l_type = self.check_atom(&core_ok_assignment.l_atom);
+                let l_expr = &core_ok_assignment.l_atom;
+                let l_type = self.check_atom(l_expr);
                 let r_assign = &core_ok_assignment.r_assign;
-                (l_type, r_assign)
+                (l_type, r_assign, l_expr.range())
             }
             CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value) => {
                 let core_invalid_l_value = invalid_l_value.core_ref();
                 let expr = &core_invalid_l_value.l_expr;
                 let r_assign = &core_invalid_l_value.r_assign;
                 let l_type = self.check_expr(expr);
-                (l_type, r_assign)
+                (l_type, r_assign, expr.range())
             }
         };
         let r_type = self.check_r_assign(r_assign);
+        if r_type.is_void() {
+            let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
+            self.errors
+                .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
+            return;
+        }
         if !l_type.is_eq(&r_type) {
-            let err_message = format!(
-                "mismatched types\nleft side has type `{}`, right side has type `{}`",
-                l_type, r_type
-            );
-            self.log_error(
-                assignment.range(),
-                assignment.start_line_number(),
-                err_message,
-            )
+            let err = MismatchedTypesOnLeftRightError::new(l_type, r_type, range, r_assign.range());
+            self.errors
+                .push(Diagnostics::MismatchedTypesOnLeftRight(err));
         }
     }
 
     pub fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        let r_type = self.check_r_assign(&core_variable_decl.r_assign);
+        let r_assign = &core_variable_decl.r_assign;
+        let r_type = self.check_r_assign(r_assign);
+        if r_type.is_void() {
+            let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
+            self.errors
+                .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
+        }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            if !r_type.is_lambda() {
-                // variable with lambda type is already set in resolving phase => see `resolve_function` method
-                if let Some(symbol_data) = ok_identifier.variable_symbol_data(
-                    "variable name should be resolved to `SymbolData<VariableData>`",
-                ) {
-                    symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
-                }
+            if let Some(symbol_data) = ok_identifier.variable_symbol_data(
+                "variable name should be resolved to `SymbolData<VariableData>`",
+            ) {
+                symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
             }
         };
     }
 
     pub fn check_func_decl(&mut self, ok_func_decl: &OkFunctionDeclarationNode) {
-        let core_ok_func_decl = ok_func_decl.core_ref();
+        // TODO - add is_construted true
+        let core_ok_func_decl = ok_func_decl.0.as_ref().borrow();
         let return_type_node = &core_ok_func_decl.return_type;
         let return_type_obj = match return_type_node {
             Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),
             None => Type::new_with_void(),
         };
-        self.open_scope(&core_ok_func_decl.block);
         self.context.func_stack.push(return_type_obj.clone());
         let mut has_return_stmt = false;
         for stmt in &core_ok_func_decl.block.0.as_ref().borrow().stmts {
@@ -812,14 +801,10 @@ impl TypeChecker {
         }
         if !has_return_stmt && !return_type_obj.is_void() {
             let return_type_node = return_type_node.as_ref().unwrap();
-            let err_message = format!("function body has no `return` statement");
-            self.log_error(
-                return_type_node.range(),
-                return_type_node.start_line_number(),
-                err_message,
-            );
+            let err = NoReturnStatementInFunctionError::new(return_type_node.range());
+            self.errors
+                .push(Diagnostics::NoReturnStatementInFunction(err));
         }
-        self.close_scope();
         self.context.func_stack.pop();
     }
 
@@ -827,22 +812,22 @@ impl TypeChecker {
         let core_return_stmt = return_stmt.core_ref();
         let func_stack_len = self.context.func_stack.len();
         if func_stack_len == 0 {
-            let err_message = format!("invalid `return` statement");
-            self.log_error(
-                return_stmt.range(),
-                return_stmt.start_line_number(),
-                err_message,
-            );
+            let err = InvalidReturnStatementError::new(return_stmt.range());
+            self.errors.push(Diagnostics::InvalidReturnStatement(err));
         }
         let expr = &core_return_stmt.expr;
-        let expr_type_obj = self.check_expr(expr);
+        let expr_type_obj = match expr {
+            Some(expr) => self.check_expr(expr),
+            _ => Type::new_with_void(),
+        };
         let expected_type_obj = self.context.func_stack[func_stack_len - 1].clone();
         if !expr_type_obj.is_eq(&expected_type_obj) {
-            let err_message = format!(
-                "mismatched types\nexpected return value type `{}`, got `{}`",
-                expected_type_obj, expr_type_obj
+            let err = MismatchedReturnTypeError::new(
+                expected_type_obj,
+                expr_type_obj,
+                core_return_stmt.return_keyword.range(),
             );
-            self.log_error(expr.range(), expr.start_line_number(), err_message);
+            self.errors.push(Diagnostics::MismatchedReturnType(err));
         }
     }
 
@@ -870,59 +855,30 @@ impl TypeChecker {
         }
     }
 
-    pub fn log_error(
-        &mut self,
-        error_range: TextRange,
-        start_line_number: usize,
-        err_message: String,
-    ) {
-        let start_err_index: usize = error_range.start().into();
-        let end_err_index: usize = error_range.end().into();
-        let err = JarvilError::form_error(
-            start_err_index,
-            end_err_index,
-            start_line_number,
-            &self.code,
-            err_message,
-            JarvilErrorKind::SEMANTIC_ERROR,
-        );
-        self.errors.push(err);
-    }
-
     pub fn log_params_type_and_count_check_error(
         &mut self,
-        error_range: TextRange,
-        start_line_number: usize,
-        result: &ParamsTypeNCountResult,
+        range: TextRange,
+        result: ParamsTypeNCountResult,
     ) {
-        let err_message = match result {
+        match result {
             ParamsTypeNCountResult::OK => return,
-            ParamsTypeNCountResult::LESS_PARAMS((expected_params_num, received_params_num)) => {
-                format!(
-                    "expected {} arguments, got {}",
-                    expected_params_num, received_params_num
-                )
+            ParamsTypeNCountResult::LESS_PARAMS((expected_params_count, received_params_count)) => {
+                let err =
+                    LessParamsCountError::new(expected_params_count, received_params_count, range);
+                self.errors.push(Diagnostics::LessParamsCount(err));
             }
-            ParamsTypeNCountResult::MORE_PARAMS(expected_params_num) => {
-                format!(
-                    "expected {} arguments, got more than that",
-                    expected_params_num
-                )
+            ParamsTypeNCountResult::MORE_PARAMS(expected_params_count) => {
+                let err = MoreParamsCountError::new(expected_params_count, range);
+                self.errors.push(Diagnostics::MoreParamsCount(err));
             }
-            ParamsTypeNCountResult::MISMATCHED_TYPE(mismatch_type_vec) => {
-                let mut err_message = "mismatched types".to_string();
-                for entry in mismatch_type_vec {
-                    err_message.push_str(&format!(
-                        "\nargument {} expected type `{}`, got `{}`",
-                        entry.2, entry.0, entry.1
-                    ));
-                }
-                err_message
+            ParamsTypeNCountResult::MISMATCHED_TYPE(params_vec) => {
+                let err = MismatchedParamTypeError::new(params_vec);
+                self.errors.push(Diagnostics::MismatchedParamType(err));
             }
-        };
-        self.log_error(error_range, start_line_number, err_message);
+        }
     }
 }
+
 impl Visitor for TypeChecker {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {

@@ -6,3 +6,8 @@ pub const STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG: &'static s
 pub const LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG: &'static str = "
     lambda type name should be binded with `LambdaTypeData` variant of `SymbolData<UserDefinedTypeData>`
 ";
+
+pub const CASTING_DATA_ERROR_MSG: &'static str = "`Data` type value not castable";
+pub const CASTING_OBJECT_ERROR_MSG: &'static str = "`Object` type value not castable";
+pub const TYPE_CHECK_BUG_ERROR_MSG: &'static str = "type-checking phase should not allow this";
+pub const RESOLVE_PHASE_BUG_ERROR_MSQ: &'static str = "resolving phase should not allow this";

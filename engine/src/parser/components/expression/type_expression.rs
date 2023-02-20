@@ -20,10 +20,7 @@ pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 3] =
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
     let token = &parser.curr_token();
     if !is_type_expression_starting_with(token) {
-        parser.log_missing_token_error_for_multiple_expected_symbols(
-            &TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS,
-            &token,
-        );
+        parser.log_missing_token_error(&TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS, &token);
         return TypeExpressionNode::new_with_missing_tokens(
             &Rc::new(TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
             &token,
@@ -41,11 +38,9 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
         CoreToken::LSQUARE      => {
             let lsquare_node = parser.expect("[");
             let sub_type_node = parser.type_expr();
-            let semicolon_node = parser.expect(";");
-            let array_size_node = parser.expect(INTEGER);
             let rsquare_node = parser.expect("]");
             TypeExpressionNode::new_with_array_type(
-                &array_size_node, &sub_type_node, &lsquare_node, &rsquare_node, &semicolon_node
+                &sub_type_node, &lsquare_node, &rsquare_node
             )
         },
         _ => unreachable!("tokens not matching `starting_with_symbols` for type expression would already be eliminated")

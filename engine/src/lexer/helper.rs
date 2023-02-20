@@ -1,6 +1,5 @@
 use super::token::LexicalErrorKind;
 use crate::{code::Code, lexer::token::CoreToken};
-use std::rc::Rc;
 
 pub fn is_letter(c: &char) -> bool {
     if c.is_ascii_alphabetic() || (*c == '_') {
@@ -136,17 +135,11 @@ pub fn extract_slash_prefix_lexeme(
         }
         2 => {
             *begin_lexeme = forward_lexeme;
-            let err_str = Rc::new(String::from(
-                "missing trailing symbol `*/` for block comment",
-            ));
-            return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str));
+            return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS("*/"));
         }
         3 => {
             *begin_lexeme = forward_lexeme;
-            let err_str = Rc::new(String::from(
-                "missing trailing symbol `*/` for block comment",
-            ));
-            return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str));
+            return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS("*/"));
         }
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable"),
     }
@@ -244,15 +237,13 @@ pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Code)
                 return CoreToken::NOT_EQUAL;
             }
             _ => {
-                let error_str = Rc::new(String::from("invalid character `!` found"));
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone()))
+                CoreToken::LEXICAL_ERROR(LexicalErrorKind::INVALID_CHAR)
             }
         }
     } else {
-        let error_str = Rc::new(String::from("invalid character `!` found"));
         *begin_lexeme = *begin_lexeme + 1;
-        CoreToken::LEXICAL_ERROR((LexicalErrorKind::INVALID_CHAR, error_str.clone()))
+        CoreToken::LEXICAL_ERROR(LexicalErrorKind::INVALID_CHAR)
     }
 }
 
@@ -282,8 +273,7 @@ pub fn extract_single_quote_prefix_lexeme(
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
-    let err_str = Rc::new(String::from(r#"no closing `'` found for literal"#));
-    return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str));
+    return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS("'"));
 }
 
 // " -> "..."
@@ -312,8 +302,7 @@ pub fn extract_double_quote_prefix_lexeme(
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
-    let err_str = Rc::new(String::from(r#"no closing `"` found for literal"#));
-    return CoreToken::LEXICAL_ERROR((LexicalErrorKind::NO_CLOSING_SYMBOLS, err_str));
+    return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS(r#"""#));
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type
@@ -436,13 +425,12 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                     match next_c {
                         Some(next_c) => match next_c {
                             'o' => check_keyword("r", value_iter, CoreToken::FOR),
-                            'u' => check_keyword("nc", value_iter, CoreToken::FUNC),
                             'l' => check_keyword("oat", value_iter, CoreToken::ATOMIC_TYPE),
                             _ => return CoreToken::IDENTIFIER,
                         },
                         None => return CoreToken::IDENTIFIER,
                     }
-                } // for, func, float
+                } // for, float
                 'w' => check_keyword("hile", value_iter, CoreToken::WHILE), // while
                 'c' => check_keyword("ontinue", value_iter, CoreToken::CONTINUE), // continue
                 'b' => {
@@ -512,7 +500,17 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                 } // else, elif
                 't' => check_keyword("ype", value_iter, CoreToken::TYPE_KEYWORD), // type
                 'd' => check_keyword("ef", value_iter, CoreToken::DEF),     // def
-                'l' => check_keyword("et", value_iter, CoreToken::LET),     // let
+                'l' => {
+                    let next_c = value_iter.next();
+                    match next_c {
+                        Some(next_c) => match next_c {
+                            'e' => check_keyword("t", value_iter, CoreToken::LET),
+                            'a' => check_keyword("mbda", value_iter, CoreToken::LAMBDA_KEYWORD),
+                            _ => return CoreToken::IDENTIFIER,
+                        },
+                        None => return CoreToken::IDENTIFIER,
+                    }
+                } // let, lambda
                 's' => {
                     let next_c = value_iter.next();
                     match next_c {

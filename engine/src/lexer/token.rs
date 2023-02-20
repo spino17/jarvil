@@ -4,10 +4,10 @@ use crate::code::Code;
 use crate::constants::common::{
     AND, ATOMIC_TYPE, BLANK, BLOCK_COMMENT, BREAK, COLON, COMMA, CONTINUE, DASH, DEF, DOT,
     DOUBLE_COLON, DOUBLE_EQUAL, DOUBLE_STAR, ELIF, ELSE, ENDMARKER, EQUAL, FALSE,
-    FLOATING_POINT_NUMBER, FOR, FUNC, GREATER_EQUAL, IDENTIFIER, IF, IMPL, IN, INTEGER,
-    INTERFACE_KEYWORD, LBRACE, LBRACKET, LESS_EQUAL, LET, LEXICAL_ERROR, LITERAL, LPAREN, LSQUARE,
-    NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN, RSQUARE,
-    SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, TRUE, TYPE_KEYWORD, WHILE,
+    FLOATING_POINT_NUMBER, FOR, GREATER_EQUAL, IDENTIFIER, IF, IMPL, IN, INTEGER,
+    INTERFACE_KEYWORD, LAMBDA_KEYWORD, LBRACE, LBRACKET, LESS_EQUAL, LET, LEXICAL_ERROR, LITERAL,
+    LPAREN, LSQUARE, NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW,
+    RPAREN, RSQUARE, SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, TRUE, TYPE_KEYWORD, WHILE,
 };
 use std::fmt::Display;
 use std::rc::Rc;
@@ -27,9 +27,9 @@ pub enum CoreToken {
     BREAK,    // 'break'
 
     // functions
-    DEF,    // 'def'
-    RETURN, // 'return'
-    FUNC,   // 'func'
+    DEF,            // 'def'
+    RETURN,         // 'return'
+    LAMBDA_KEYWORD, // 'lambda'
 
     // types
     TYPE_KEYWORD, // 'type'
@@ -98,52 +98,61 @@ pub enum CoreToken {
     ENDMARKER,
 
     // error
-    LEXICAL_ERROR((LexicalErrorKind, Rc<String>)),
+    LEXICAL_ERROR(LexicalErrorKind),
+}
+
+#[derive(Debug, Clone)]
+pub enum UnaryOperatorKind {
+    Plus,
+    Minus,
+    Not,
 }
 
 #[derive(Debug, Clone)]
 pub enum BinaryOperatorKind {
-    NOT_EQUAL,
-    DOUBLE_EQUAL,
-    GREATER,
-    GREATER_EQUAL,
-    LESS,
-    LESS_EQUAL,
-    MINUS,
-    PLUS,
-    DIVIDE,
-    MULTIPLY,
-    AND,
-    OR,
+    NotEqual,
+    DoubleEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+    Subtract,
+    Add,
+    Divide,
+    Multiply,
+    And,
+    Or,
 }
+
 impl BinaryOperatorKind {
     pub fn is_comparison(&self) -> bool {
         match self {
-            BinaryOperatorKind::LESS
-            | BinaryOperatorKind::LESS_EQUAL
-            | BinaryOperatorKind::GREATER
-            | BinaryOperatorKind::GREATER_EQUAL
-            | BinaryOperatorKind::DOUBLE_EQUAL
-            | BinaryOperatorKind::NOT_EQUAL => true,
+            BinaryOperatorKind::Less
+            | BinaryOperatorKind::LessEqual
+            | BinaryOperatorKind::Greater
+            | BinaryOperatorKind::GreaterEqual
+            | BinaryOperatorKind::DoubleEqual
+            | BinaryOperatorKind::NotEqual => true,
             _ => false,
         }
     }
 }
+
 impl Display for BinaryOperatorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            BinaryOperatorKind::NOT_EQUAL => NOT_EQUAL,
-            BinaryOperatorKind::DOUBLE_EQUAL => DOUBLE_EQUAL,
-            BinaryOperatorKind::GREATER => RBRACKET,
-            BinaryOperatorKind::GREATER_EQUAL => GREATER_EQUAL,
-            BinaryOperatorKind::LESS => LBRACKET,
-            BinaryOperatorKind::LESS_EQUAL => LESS_EQUAL,
-            BinaryOperatorKind::MINUS => DASH,
-            BinaryOperatorKind::PLUS => PLUS,
-            BinaryOperatorKind::DIVIDE => SLASH,
-            BinaryOperatorKind::MULTIPLY => STAR,
-            BinaryOperatorKind::AND => AND,
-            BinaryOperatorKind::OR => OR,
+            BinaryOperatorKind::NotEqual => NOT_EQUAL,
+            BinaryOperatorKind::DoubleEqual => DOUBLE_EQUAL,
+            BinaryOperatorKind::Greater => RBRACKET,
+            BinaryOperatorKind::GreaterEqual => GREATER_EQUAL,
+            BinaryOperatorKind::Less => LBRACKET,
+            BinaryOperatorKind::LessEqual => LESS_EQUAL,
+            BinaryOperatorKind::Subtract => DASH,
+            BinaryOperatorKind::Add => PLUS,
+            BinaryOperatorKind::Divide => SLASH,
+            BinaryOperatorKind::Multiply => STAR,
+            BinaryOperatorKind::And => AND,
+            BinaryOperatorKind::Or => OR,
         };
         write!(f, "{}", str)
     }
@@ -152,7 +161,7 @@ impl Display for BinaryOperatorKind {
 #[derive(Debug, Clone, PartialEq)]
 pub enum LexicalErrorKind {
     INVALID_CHAR,
-    NO_CLOSING_SYMBOLS,
+    NO_CLOSING_SYMBOLS(&'static str),
 }
 
 #[derive(Debug, Clone)]
@@ -187,6 +196,10 @@ impl Token {
         self.range.end().into()
     }
 
+    pub fn len(&self) -> usize {
+        self.end_index() - self.start_index()
+    }
+
     pub fn name(&self) -> String {
         String::from(self.core_token.to_string())
     }
@@ -199,26 +212,26 @@ impl Token {
         self.core_token.is_eq(symbol)
     }
 
-    pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
-        match self.core_token {
-            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NOT_EQUAL),
-            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DOUBLE_EQUAL),
-            CoreToken::RBRACKET => Some(BinaryOperatorKind::GREATER),
-            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GREATER_EQUAL),
-            CoreToken::LBRACKET => Some(BinaryOperatorKind::LESS),
-            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LESS_EQUAL),
-            CoreToken::DASH => Some(BinaryOperatorKind::MINUS),
-            CoreToken::PLUS => Some(BinaryOperatorKind::PLUS),
-            CoreToken::SLASH => Some(BinaryOperatorKind::DIVIDE),
-            CoreToken::STAR => Some(BinaryOperatorKind::MULTIPLY),
-            CoreToken::AND => Some(BinaryOperatorKind::AND),
-            CoreToken::OR => Some(BinaryOperatorKind::OR),
-            _ => None,
-        }
-    }
-
     pub fn is_identifier(&self) -> bool {
         self.core_token.IDENTIFIER()
+    }
+
+    pub fn try_as_binary_operator(&self) -> Option<BinaryOperatorKind> {
+        match self.core_token {
+            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NotEqual),
+            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DoubleEqual),
+            CoreToken::RBRACKET => Some(BinaryOperatorKind::Greater),
+            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GreaterEqual),
+            CoreToken::LBRACKET => Some(BinaryOperatorKind::Less),
+            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LessEqual),
+            CoreToken::DASH => Some(BinaryOperatorKind::Subtract),
+            CoreToken::PLUS => Some(BinaryOperatorKind::Add),
+            CoreToken::SLASH => Some(BinaryOperatorKind::Divide),
+            CoreToken::STAR => Some(BinaryOperatorKind::Multiply),
+            CoreToken::AND => Some(BinaryOperatorKind::And),
+            CoreToken::OR => Some(BinaryOperatorKind::Or),
+            _ => None,
+        }
     }
 
     pub fn get_precedence(&self) -> u8 {

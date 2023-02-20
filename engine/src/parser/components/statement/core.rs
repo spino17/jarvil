@@ -1,5 +1,5 @@
 use crate::ast::ast::{
-    FuncKeywordKind, FunctionKind, ReturnStatementNode, StatementNode, StructStatementNode,
+    CallableKind, FuncKeywordKind, ReturnStatementNode, StatementNode, StructStatementNode,
 };
 use crate::constants::common::IDENTIFIER;
 use crate::lexer::token::{CoreToken, Token};
@@ -59,7 +59,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
             let function_decl_node = parser.function_decl(
                 Some(&function_name),
                 &FuncKeywordKind::DEF(def_keyword),
-                FunctionKind::FUNC,
+                CallableKind::FUNC,
             );
             StatementNode::new_with_function_declaration(&function_decl_node)
         }
@@ -74,9 +74,22 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
         CoreToken::IMPL => todo!(),
         CoreToken::RETURN => {
             let return_node = parser.expect("return");
-            let expr_node = parser.expr();
-            let newline = parser.expect_terminators();
-            StatementNode::new_with_return_statement(&return_node, &expr_node, &newline)
+            let token = &parser.curr_token();
+            match token.core_token {
+                CoreToken::NEWLINE | CoreToken::ENDMARKER => {
+                    let newline = parser.expect_terminators();
+                    StatementNode::new_with_return_statement(&return_node, None, &newline)
+                }
+                _ => {
+                    let expr_node = parser.expr();
+                    let newline = parser.expect_terminators();
+                    StatementNode::new_with_return_statement(
+                        &return_node,
+                        Some(&expr_node),
+                        &newline,
+                    )
+                }
+            }
         }
         CoreToken::BREAK => todo!(),
         CoreToken::CONTINUE => todo!(),

@@ -6,12 +6,14 @@ pub struct FunctionData {
     pub params: Rc<Vec<(Rc<String>, Type)>>,
     pub return_type: Type,
 }
+
 impl FunctionData {
     pub fn set_data(&mut self, params: Vec<(Rc<String>, Type)>, return_type: Type) {
         self.params = Rc::new(params);
         self.return_type = return_type;
     }
 }
+
 impl Default for FunctionData {
     fn default() -> Self {
         FunctionData {
@@ -20,6 +22,7 @@ impl Default for FunctionData {
         }
     }
 }
+
 impl Clone for FunctionData {
     fn clone(&self) -> Self {
         FunctionData {

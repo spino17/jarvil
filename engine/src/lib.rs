@@ -2,6 +2,7 @@ pub mod ast;
 pub mod backend;
 pub mod cmd;
 pub mod code;
+pub mod codegen;
 pub mod constants;
 pub mod context;
 pub mod error;
