@@ -54,6 +54,7 @@ impl PythonCodeGenerator {
         self.add_str_to_python_code(&token.token_value(&self.code));
     }
 
+    // use scope also before generating the token names (as identifiers)
     pub fn print_token_node(&mut self, token: &TokenNode) {
         match token.core_ref() {
             CoreTokenNode::OK(ok_token_node) => {
