@@ -14,7 +14,6 @@ mod reader;
 mod scope;
 mod server;
 mod types;
-mod utils;
 
 use crate::cmd::compile::build::build;
 use crate::reader::read_file;
@@ -30,7 +29,7 @@ fn attach_source_code(err: Report, source: String) -> Report {
     }
 }
 
-fn start_compiler(args: Vec<String>) {
+fn compile(args: Vec<String>) {
     let (code_vec, code_str) = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     let result = build(code_vec);
     if let Err(err) = result {
@@ -51,98 +50,5 @@ fn main() {
         Box::new(GraphicalReportHandler::new_themed(my_theme))
     }));
     let args: Vec<String> = args().collect();
-    start_compiler(args);
-
-    /*
-    let mut vm = VM::new();
-    let s = StringObject::new_with_bytes("bro ");
-    let v = StringObject::new_with_bytes("bro s");
-    let u = StringObject::new_with_bytes("bro varima");
-    let obj1 = Object::new_with_string(s, &mut vm.object_tracker);
-    let obj2 = Object::new_with_string(v, &mut vm.object_tracker);
-    let obj3 = Object::new_with_string(u, &mut vm.object_tracker);
-    let vec = ListObject::new();
-    vec.push(Data::OBJ(obj1.clone()));
-    vec.push(Data::OBJ(obj2.clone()));
-    //vec.push(Data::FLOAT(12.3));
-    let ve = ListObject::new();
-    ve.push(Data::OBJ(obj3.clone()));
-    ve.push(Data::OBJ(obj3.clone()));
-    //ve.push(Data::INT(12));
-    let obj4 = Object::new_with_list(vec.clone(), &mut vm.object_tracker);
-    let obj6 = Object::new_with_list(ve.clone(), &mut vm.object_tracker);
-    let vf = ListObject::new();
-    vf.push(Data::OBJ(obj4.clone()));
-    vf.push(Data::OBJ(obj6.clone()));
-    let obj5 = Object::new_with_list(vf, &mut vm.object_tracker);
-    vm.chunk.write_push_constant(Data::OBJ(obj1), 5);
-    vm.chunk.write_push_constant(Data::OBJ(obj2), 5);
-    vm.chunk.write_push_constant(Data::OBJ(obj4), 5);
-    vm.chunk.write_push_constant(Data::OBJ(obj6), 5);
-    //vm.chunk.write_constant(Data::OBJ(obj5), 10);
-    //vm.chunk.write_constant(Data::FLOAT(13.0), 1);
-    //vm.chunk.write_constant(Data::INT(13), 2);
-    vm.chunk.write_byte(OpCode::BINARY_OP_ADD.to_byte(), 8);
-    //vm.chunk.write_constant(Data::OBJ(obj3), 5);
-    //vm.chunk.write_byte(OpCode::OP_ADD.to_byte(), 8);
-    //vm.chunk.write_constant(Data::OBJ(obj4), 1);
-    vm.chunk.write_byte(OpCode::RETURN.to_byte(), 7);
-    vm.run();
-    println!("{}", vm.chunk);
-    println!("{}", vm);
-
-    let vol = ListObject::new();
-    //vol.push(Data::INT(2));
-    vol.push(Data::INT(2));
-    vol.push(Data::INT(-2));
-
-    let vd = ListObject::new();
-    vd.push(Data::INT(2));
-    vd.push(Data::INT(-2));
-
-    let v = vol.clone() + vd.clone();
-    v.push(Data::FLOAT(23.4));
-    println!("addition of vectors: {}", v);
-    //vf.push(Data::BOOL(true));
-    println!("v1: {}", vol);
-    println!("v2: {}", vd);
-    //println!("{}", vf);
-    //println!("v: {}", v);
-    //println!("u: {}", u);
-    /*
-    let x = Ptr::new("BHavys");
-    let y = x.clone();  // clones the pointer!
-    unsafe {
-        println!("x: {:?}", *(x.ptr.as_ptr()));
-        println!("y: {:?}", *(y.ptr.as_ptr()));
-    }
-    x.set_name("other_name");
-    unsafe {
-        println!("x: {:?}", *(x.ptr.as_ptr()));
-        println!("y: {:?}", *(y.ptr.as_ptr()));
-    }
-    unsafe {
-        println!("x: {:?}", *(x.ptr.as_ptr()));
-    }
-    println!("{:?}", x.ptr.as_ptr());
-    println!("{:?}", y.ptr.as_ptr());
-    x.manual_drop();
-     */
-    // y.manual_drop();
-    /*
-    unsafe {
-        std::mem::ManuallyDrop::drop(&mut s.0);
-        std::mem::ManuallyDrop::drop(&mut v.0);
-    }
-     */
-    let v = vec![1, 2, 3, 4];
-    let v_ptr = v.as_ptr();
-
-    let mut u = [1, 2, 3];
-    let u_ptr = u.as_mut_ptr();
-    unsafe {
-        *u_ptr.add(1) = 10;
-    }
-    println!("{:?}", u);
-     */
+    compile(args);
 }

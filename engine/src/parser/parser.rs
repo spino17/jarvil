@@ -20,9 +20,8 @@ use crate::error::diagnostics::{
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
-use std::convert::TryFrom;
 use std::rc::Rc;
-use text_size::{TextRange, TextSize};
+use text_size::TextRange;
 
 pub trait Parser {
     fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>);
@@ -65,6 +64,7 @@ impl PackratParser {
         self.token_vec = token_vec;
     }
 
+    /*
     pub fn curr_lookahead(&self) -> usize {
         self.lookahead
     }
@@ -72,11 +72,12 @@ impl PackratParser {
     pub fn set_lookahead(&mut self, reset_index: usize) {
         self.lookahead = reset_index;
     }
+     */
 
     pub fn scan_next_token(&mut self) {
-        if self.lookahead == self.token_vec.len() - 1 {
-            return;
-        }
+        //if self.lookahead == self.token_vec.len() - 1 {
+        //    return;
+        //}
         self.lookahead = self.lookahead + 1;
     }
 
@@ -125,6 +126,7 @@ impl PackratParser {
         (token.get_precedence(), token.core_token.to_string())
     }
 
+    /*
     pub fn previous_token(&mut self) -> Token {
         if self.lookahead == 0 {
             return Token {
@@ -152,6 +154,7 @@ impl PackratParser {
             }
         }
     }
+     */
 
     pub fn is_curr_token_on_newline(&self) -> bool {
         if self.lookahead == 0 {
@@ -171,10 +174,15 @@ impl PackratParser {
         let mut skipped_tokens: Vec<SkippedTokenNode> = vec![];
         loop {
             let token = &self.token_vec[self.lookahead].clone();
-            if token.is_eq("\n") || token.is_eq(ENDMARKER) {
+            if token.is_eq("\n") {
                 self.log_trailing_skipped_tokens_error(&skipped_tokens);
                 skipped_tokens.push(SkippedTokenNode::new(&token));
                 self.scan_next_token();
+                return skipped_tokens;
+            } else if token.is_eq(ENDMARKER) {
+                self.log_trailing_skipped_tokens_error(&skipped_tokens);
+                skipped_tokens.push(SkippedTokenNode::new(&token));
+                // self.scan_next_token();
                 return skipped_tokens;
             } else {
                 skipped_tokens.push(SkippedTokenNode::new(&token));
@@ -238,9 +246,9 @@ impl PackratParser {
     // ------------------- parsing routines for terminals and block indentation -------------------
     pub fn expect(&mut self, symbol: &'static str) -> TokenNode {
         let token = self.curr_token();
-        if symbol.eq(IDENTIFIER) {
-            unreachable!("use `expect_ident` for parsing identifier");
-        }
+        //if symbol.eq(IDENTIFIER) || symbol.eq("\n") || symbol.eq(ENDMARKER) {
+        //    unreachable!("use `expect_ident` for parsing identifier and `expect_terminators` for parsing `\n` and `ENDMARKER`");
+        //}
         if token.is_eq(symbol) {
             self.scan_next_token();
             TokenNode::new_with_ok(&token)
@@ -275,7 +283,18 @@ impl PackratParser {
     }
 
     pub fn expect_terminators(&mut self) -> TokenNode {
-        self.expects(&["\n", ENDMARKER])
+        // self.expects()
+        let symbols = &["\n", ENDMARKER];
+        let token = self.curr_token();
+        if token.is_eq("\n") {
+            self.scan_next_token();
+            return TokenNode::new_with_ok(&token);
+        } else if token.is_eq(ENDMARKER) {
+            return TokenNode::new_with_ok(&token);
+        } else {
+            self.log_missing_token_error(symbols, &token);
+            return TokenNode::new_with_missing_tokens(&Rc::new(symbols.to_vec()), &token);
+        }
     }
 
     pub fn expect_indent_spaces(&mut self) -> IndentResult {
