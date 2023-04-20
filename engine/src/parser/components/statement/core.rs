@@ -111,7 +111,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
     statement_node
 }
 
-pub const STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS: [&'static str; 11] = [
+pub const STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS: [&'static str; 11] = [
     "let",
     "def",
     "for",

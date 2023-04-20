@@ -4,7 +4,7 @@ use crate::ast::ast::{
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::components::statement::core::{
-    is_statement_within_function_starting_with, STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS,
+    is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS,
 };
 use crate::{ast::ast::NameTypeSpecsNode, parser::parser::PackratParser};
 use std::rc::Rc;
@@ -73,7 +73,7 @@ pub fn function_decl(
             let func_block_node = parser.block(
                 |token| is_statement_within_function_starting_with(token),
                 |parser| parser.stmt(),
-                &STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS,
+                &STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS,
                 BlockKind::FUNC,
             );
             return FunctionDeclarationNode::new(
@@ -94,7 +94,7 @@ pub fn function_decl(
             let func_block_node = parser.block(
                 |token| is_statement_within_function_starting_with(token),
                 |parser| parser.stmt(),
-                &STATEMENT_WITH_FUNCTION_EXPECTED_STARTING_SYMBOLS,
+                &STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS,
                 BlockKind::FUNC,
             );
             return FunctionDeclarationNode::new(
