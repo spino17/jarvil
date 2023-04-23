@@ -9,6 +9,7 @@ use jarvil_macros::Nodify;
 use jarvil_macros::Node;
 
 use crate::lexer::token::BinaryOperatorKind;
+use crate::lexer::token::CoreToken;
 use crate::lexer::token::UnaryOperatorKind;
 use crate::parser::resolver::FunctionContext;
 use crate::parser::resolver::UpValue;
@@ -1334,24 +1335,30 @@ default_errornous_node_impl!(IdentifierNode, CoreIdentifierNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreOkIdentifierNode {
-    pub token: Token,
+    pub token: TokenNode,
     pub decl: Option<(IdentifierKind, usize)>, // (symbol data reference, depth)
 }
 
 #[derive(Debug, Clone)]
-pub struct OkIdentifierNode(Rc<RefCell<CoreOkIdentifierNode>>);
+pub struct OkIdentifierNode(pub Rc<RefCell<CoreOkIdentifierNode>>);
 
 impl OkIdentifierNode {
     fn new(token: &Token) -> Self {
         let node = Rc::new(RefCell::new(CoreOkIdentifierNode {
-            token: token.clone(),
+            token: TokenNode::new_with_ok(token),
             decl: None,
         }));
         OkIdentifierNode(node)
     }
 
     pub fn token_value(&self, code: &Code) -> String {
-        self.0.as_ref().borrow().token.token_value(code)
+        match &self.0.as_ref().borrow().token.core_ref() {
+            CoreTokenNode::OK(ok_token) => {
+                return ok_token.core_ref().token.token_value(code)
+            }
+            CoreTokenNode::MISSING_TOKENS(_) => unreachable!(),
+            CoreTokenNode::SKIPPED(_) => unreachable!(),
+        }
     }
 
     pub fn bind_variable_decl(
@@ -1433,10 +1440,10 @@ impl OkIdentifierNode {
 
 impl Node for OkIdentifierNode {
     fn range(&self) -> TextRange {
-        self.0.as_ref().borrow().token.range
+        self.0.as_ref().borrow().token.range()
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().borrow().token.line_number
+        self.0.as_ref().borrow().token.start_line_number()
     }
 }
 

@@ -7,7 +7,7 @@ use crate::{
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreTypeDeclarationNode, ExpressionStatementNode, LambdaDeclarationNode,
             OkAssignmentNode, OkFunctionDeclarationNode, ReturnStatementNode, StatementNode,
-            StructDeclarationNode, StructStatementNode, TokenNode, VariableDeclarationNode,
+            StructDeclarationNode, StructStatementNode, TokenNode, VariableDeclarationNode, BlockNode,
         },
         walk::Visitor,
     },
@@ -29,6 +29,14 @@ impl PythonCodeGenerator {
             generate_code: "".to_string(),
             code: code.clone(),
         }
+    }
+
+    pub fn generate_python_code(mut self, ast: &BlockNode) -> String {
+        let code_block = ast.0.as_ref().borrow();
+        for stmt in &code_block.stmts {
+            self.walk_stmt_indent_wrapper(stmt);
+        }
+        self.generate_code
     }
 
     pub fn open_block(&mut self) {
@@ -162,9 +170,9 @@ impl Visitor for PythonCodeGenerator {
                 let core_stmt_wrapper = stmt_wrapper.core_ref();
                 match core_stmt_wrapper {
                     CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(ok_stmt) => {
-                        self.add_str_to_python_code(&get_whitespaces_from_indent_level(
-                            self.indent_level,
-                        ));
+                        //self.add_str_to_python_code(&get_whitespaces_from_indent_level(
+                        //    self.indent_level,
+                        //));
                         self.walk_stmt(ok_stmt);
                     }
                     CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(extra_newlines) => {
@@ -180,13 +188,16 @@ impl Visitor for PythonCodeGenerator {
                 }
                 return None;
             }
+            ASTNode::TOKEN(token) => {
+                self.print_token_node(token);
+                return None
+            }
+            /*
             ASTNode::STATEMENT(stmt) => {
                 self.print_stmt(stmt);
                 return None;
             }
-            ASTNode::CLASS_METHOD_CALL(class_method_call) => {
-                todo!()
-            }
+             */
             _ => Some(()),
         }
     }

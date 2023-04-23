@@ -440,6 +440,7 @@ impl Resolver {
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         self.walk_r_assignment(&core_variable_decl.r_assign);
+        // TODO - Lambda Specific
         if let CoreRAssignmentNode::LAMBDA(_) = core_variable_decl.r_assign.core_ref() {
             return;
         }
@@ -498,6 +499,7 @@ impl Resolver {
         let context = self.close_func();
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
+                // TODO - Lambda Specific
                 match kind {
                     CallableKind::FUNC => {
                         if let Some((name, previous_decl_range)) =
@@ -637,6 +639,7 @@ impl Resolver {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 if let Some(symbol_data) = ok_identifier.symbol_data() {
                     match symbol_data.0 {
+                        // TODO - Lambda Specific
                         IdentifierKind::FUNCTION(func_symbol_data) => {
                             assert!(kind.clone() == CallableKind::FUNC);
                             func_symbol_data

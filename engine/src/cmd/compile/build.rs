@@ -1,10 +1,12 @@
 use crate::ast::ast::BlockNode;
 use crate::code::Code;
+use crate::codegen::python::PythonCodeGenerator;
 use crate::error::diagnostics::Diagnostics;
 use crate::lexer::lexer::{CoreLexer, Lexer};
 use crate::parser::parser::{PackratParser, Parser};
 use crate::parser::resolver::Resolver;
 use crate::parser::type_checker::TypeChecker;
+use std::fs;
 
 pub fn build_ast(code: &mut Code) -> (BlockNode, Vec<Diagnostics>) {
     let core_lexer = CoreLexer::new();
@@ -29,5 +31,8 @@ pub fn build(code_vec: Vec<char>) -> Result<(), Diagnostics> {
         return Err(errors[0].clone());
     }
     // TODO - return chunk in result and use VM to execute it!
+    let mut py_generator = PythonCodeGenerator::new(&code);
+    let py_code = py_generator.generate_python_code(&ast);
+    fs::write("/Users/bhavyabhatt/Desktop/generated-python-file.jv", py_code).expect("file write failed");
     Ok(())
 }
