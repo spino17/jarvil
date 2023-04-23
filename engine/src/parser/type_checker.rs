@@ -5,14 +5,14 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-            BinaryExpressionNode, BlockKind, BlockNode, CallableKind, ComparisonNode,
-            CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-            CoreExpressionNode, CoreFunctionDeclarationNode, CoreIdentifierNode,
-            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreUnaryExpressionNode, ExpressionNode, FunctionDeclarationNode, NameTypeSpecsNode,
-            Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode,
-            ReturnStatementNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-            TypeResolveKind, UnaryExpressionNode, VariableDeclarationNode,
+            BinaryExpressionNode, BlockNode, CallableKind, ComparisonNode, CoreAssignmentNode,
+            CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
+            CoreFunctionDeclarationNode, CoreIdentifierNode, CoreRAssignmentNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CoreUnaryExpressionNode, ExpressionNode, NameTypeSpecsNode, Node,
+            OkFunctionDeclarationNode, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode,
+            ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
+            UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -20,7 +20,7 @@ use crate::{
     constants::common::{BOOL, FLOAT, INT, STRING},
     error::{
         constants::{
-            LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG, SCOPE_NOT_SET_TO_BLOCK_MSG,
+            LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG,
             STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
         },
         diagnostics::{
@@ -36,14 +36,11 @@ use crate::{
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
-        core::{IdentifierKind, Namespace, SymbolData},
+        core::{IdentifierKind, SymbolData},
         function::FunctionData,
         user_defined_types::{LambdaTypeData, UserDefinedTypeData},
     },
-    types::{
-        atomic,
-        core::{AbstractType, CoreType, Type},
-    },
+    types::core::{AbstractType, CoreType, Type},
 };
 use std::rc::Rc;
 use text_size::TextRange;

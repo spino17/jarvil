@@ -9,8 +9,7 @@ use crate::{
     ast::{
         ast::{
             ASTNode, BlockNode, CallableKind, CoreAtomStartNode, CoreIdentifierNode,
-            CoreNameTypeSpecsNode, CoreRAssignmentNode, CoreStatemenIndentWrapperNode,
-            CoreStatementNode, FunctionDeclarationNode, LambdaDeclarationNode, Node,
+            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, Node,
             OkFunctionDeclarationNode, OkIdentifierNode, OkLambdaTypeDeclarationNode,
             StructDeclarationNode, TypeExpressionNode, TypeResolveKind, VariableDeclarationNode,
         },

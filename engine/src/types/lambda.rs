@@ -1,4 +1,3 @@
-use crate::constants::common::BOOL;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};

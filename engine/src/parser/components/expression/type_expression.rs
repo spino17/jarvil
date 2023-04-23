@@ -1,6 +1,6 @@
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::TypeExpressionNode;
-use crate::constants::common::{ATOMIC_TYPE, IDENTIFIER, INTEGER};
+use crate::constants::common::{ATOMIC_TYPE, IDENTIFIER};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::parser::PackratParser;
 use std::rc::Rc;

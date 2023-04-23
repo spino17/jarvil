@@ -1,6 +1,6 @@
 use crate::ast::ast::{AtomNode, AtomStartNode, CallExpressionNode, ParamsNode};
 use crate::lexer::token::CoreToken;
-use crate::{constants::common::IDENTIFIER, parser::parser::PackratParser};
+use crate::parser::parser::PackratParser;
 
 pub fn trailing_atom(parser: &mut PackratParser, atom_start: AtomNode) -> AtomNode {
     let token = &parser.curr_token();
