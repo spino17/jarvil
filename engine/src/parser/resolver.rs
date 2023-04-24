@@ -1,10 +1,6 @@
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
-use crate::error::diagnostics::{
-    CapturedVariablesCountLimitReachedError, LocalVariableDeclarationLimitReachedError,
-    MoreThanMaxLimitParamsPassedError,
-};
+use crate::error::diagnostics::MoreThanMaxLimitParamsPassedError;
 use crate::error::helper::IdentifierKind as IdentKind;
-use crate::scope::core::VariableCaptureKind;
 use crate::{
     ast::{
         ast::{
@@ -32,7 +28,6 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::FxHashMap;
-use std::cell::RefCell;
 use std::{rc::Rc, vec};
 use text_size::TextRange;
 
@@ -41,109 +36,11 @@ pub enum ResolverMode {
     RESOLVE, // second pass
 }
 
-#[derive(Debug, Clone)]
-pub struct RuntimeStackSimulator {
-    local_indexes: Rc<RefCell<Vec<usize>>>, // simulation of runtime snapshots of stack
-    curr_depth: usize,                      // curr depth in blocks starting with 0
-    curr_local_var_index: usize,            // relative index of the local variable
-}
-
-impl Default for RuntimeStackSimulator {
-    fn default() -> Self {
-        RuntimeStackSimulator {
-            local_indexes: Rc::new(RefCell::new(vec![0])),
-            curr_depth: 0,
-            curr_local_var_index: 0,
-        }
-    }
-}
-
-impl RuntimeStackSimulator {
-    pub fn variable_decl_callback(&mut self) -> Result<usize, usize> {
-        self.local_indexes.as_ref().borrow_mut()[self.curr_depth] += 1;
-        let curr_index = self.curr_local_var_index;
-        self.curr_local_var_index += 1;
-        if self.curr_local_var_index > EIGHT_BIT_MAX_VALUE {
-            return Err(curr_index);
-        }
-        Ok(curr_index)
-    }
-
-    pub fn rollback_variable_decl(&mut self) {
-        self.local_indexes.as_ref().borrow_mut()[self.curr_depth] -= 1;
-        self.curr_local_var_index -= 1;
-    }
-
-    pub fn open_block(&mut self) {
-        self.curr_depth += 1;
-        self.local_indexes.as_ref().borrow_mut().push(0);
-    }
-
-    pub fn close_block(&mut self) -> usize {
-        let num_of_popped_elements = self.local_indexes.as_ref().borrow()[self.curr_depth];
-        self.curr_local_var_index = self.curr_local_var_index - num_of_popped_elements;
-        self.curr_depth -= 1;
-        self.local_indexes.as_ref().borrow_mut().pop();
-        num_of_popped_elements
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct UpValue {
-    index: usize, // if is_local is `true` then this would be relative stack_index of the captured local variable
-    is_local: bool,
-}
-
-#[derive(Debug, Clone)]
-pub struct FunctionContext {
-    pub upvalues: Rc<RefCell<Vec<UpValue>>>,
-    frame_stack: RuntimeStackSimulator,
-    is_local_var_limit_overflow: bool,
-    is_capture_var_limit_overflow: bool,
-    range: TextRange,
-}
-
-impl FunctionContext {
-    fn new(range: TextRange) -> Self {
-        FunctionContext {
-            upvalues: Rc::new(RefCell::new(vec![])),
-            frame_stack: RuntimeStackSimulator::default(),
-            is_local_var_limit_overflow: false,
-            is_capture_var_limit_overflow: false,
-            range,
-        }
-    }
-
-    fn add_upvalue(&mut self, index: Result<usize, usize>, is_local: bool) -> Result<usize, usize> {
-        let index = match index {
-            Ok(val) => val,
-            Err(val) => val,
-        };
-        let mut counter = 0;
-        for upvalue in &*self.upvalues.as_ref().borrow() {
-            if upvalue.index == index && upvalue.is_local == is_local {
-                return Ok(counter);
-            }
-            counter += 1;
-        }
-        // TODO - add check that index should be bounded by EIGHT_MAX_..
-        let value = UpValue { index, is_local };
-        self.upvalues.as_ref().borrow_mut().push(value);
-        let next_index = self.upvalues.as_ref().borrow().len() - 1;
-        if next_index > EIGHT_BIT_MAX_VALUE {
-            Err(next_index)
-        } else {
-            Ok(next_index)
-        }
-    }
-}
-
 pub struct Resolver {
     namespace: Namespace,
     pub code: Code,
     errors: Vec<Diagnostics>,
     mode: ResolverMode,
-    func_contexts: Vec<FunctionContext>,
 }
 
 impl Resolver {
@@ -153,82 +50,26 @@ impl Resolver {
             code: code.clone(),
             errors: vec![],
             mode: ResolverMode::DECLARE,
-            func_contexts: vec![],
         }
-    }
-
-    pub fn func_context(&mut self) -> &mut FunctionContext {
-        let len = self.func_contexts.len();
-        &mut self.func_contexts[len - 1]
-    }
-
-    pub fn add_upvalue_to_func(
-        &mut self,
-        func_index: usize,
-        index: Result<usize, usize>,
-        is_local: bool,
-    ) -> Result<usize, usize> {
-        let func_context = &mut self.func_contexts[func_index];
-        let index = func_context.add_upvalue(index, is_local);
-        if index.is_err() && !func_context.is_capture_var_limit_overflow {
-            let err = CapturedVariablesCountLimitReachedError::new(
-                EIGHT_BIT_MAX_VALUE,
-                self.func_contexts[func_index].range,
-            );
-            self.errors
-                .push(Diagnostics::CapturedVariablesCountLimitReached(err));
-        };
-        index
     }
 
     pub fn open_block(&mut self) {
         self.namespace.open_scope();
-        self.func_context().frame_stack.open_block();
     }
 
     pub fn close_block(&mut self) {
         self.namespace.close_scope();
-        self.func_context().frame_stack.close_block();
-    }
-
-    pub fn variable_decl_callback(&mut self) -> usize {
-        let len = self.func_contexts.len();
-        let curr_func_context = &mut self.func_contexts[len - 1];
-        match curr_func_context.frame_stack.variable_decl_callback() {
-            Ok(stack_index) => stack_index,
-            Err(stack_index) => {
-                if !curr_func_context.is_local_var_limit_overflow {
-                    let err = LocalVariableDeclarationLimitReachedError::new(
-                        EIGHT_BIT_MAX_VALUE,
-                        curr_func_context.range,
-                    );
-                    self.errors
-                        .push(Diagnostics::LocalVariableDeclarationLimitReached(err));
-                    curr_func_context.is_local_var_limit_overflow = true;
-                }
-                return stack_index;
-            }
-        }
-    }
-
-    pub fn rollback_variable_decl(&mut self) {
-        self.func_context().frame_stack.rollback_variable_decl();
     }
 
     pub fn open_func(&mut self, range: TextRange) {
         self.namespace.open_scope();
-        self.func_contexts.push(FunctionContext::new(range));
     }
 
-    pub fn close_func(&mut self) -> FunctionContext {
+    pub fn close_func(&mut self) {
         self.namespace.close_scope();
-        self.func_contexts
-            .pop()
-            .expect("`func_context` will never be empty")
     }
 
     pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
-        self.func_contexts.push(FunctionContext::new(ast.range()));
         let code_block = ast.0.as_ref().borrow();
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
@@ -237,80 +78,7 @@ impl Resolver {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        assert!(self.func_context().upvalues.as_ref().borrow().len() == 0); // top-level block cannot have upvalues
         (self.namespace, self.errors)
-    }
-
-    pub fn lookup_in_variables_namespace_with_upvalues(
-        &mut self,
-        key: &Rc<String>,
-    ) -> Option<(SymbolData<VariableData>, usize, VariableCaptureKind)> {
-        let mut curr_func_context_index = self.func_contexts.len() - 1;
-        let mut total_resolved_depth = 0;
-        let mut curr_scope = self.namespace.variable_scope().clone();
-        while curr_func_context_index >= 0 {
-            let curr_depth = self.func_contexts[curr_func_context_index]
-                .frame_stack
-                .curr_depth
-                + 1;
-            let mut curr_scope_depth = 1;
-            while curr_depth >= curr_scope_depth {
-                match curr_scope.get(&key) {
-                    Some(symbol_data) => {
-                        let capture_kind =
-                            if curr_func_context_index == self.func_contexts.len() - 1 {
-                                VariableCaptureKind::LOCAL
-                            } else {
-                                symbol_data.0.as_ref().borrow_mut().set_is_captured();
-                                let mut index = self.add_upvalue_to_func(
-                                    curr_func_context_index + 1,
-                                    Ok(symbol_data.0.as_ref().borrow().stack_index()),
-                                    true,
-                                );
-                                for i in curr_func_context_index + 2..self.func_contexts.len() {
-                                    index = self.add_upvalue_to_func(i, index, false);
-                                }
-                                VariableCaptureKind::UPVALUE(match index {
-                                    Ok(val) => val,
-                                    Err(val) => val,
-                                })
-                            };
-                        return Some((symbol_data, total_resolved_depth, capture_kind));
-                    }
-                    None => match &curr_scope.parent() {
-                        Some(parent_scope) => {
-                            curr_scope = parent_scope.clone();
-                        }
-                        None => return None,
-                    },
-                };
-                curr_scope_depth += 1;
-                total_resolved_depth += 1;
-            }
-            curr_func_context_index -= 1;
-        }
-        None
-    }
-
-    pub fn try_declare_and_bind<
-        T,
-        U: Fn(&Namespace, &Rc<String>, TextRange) -> Result<SymbolData<T>, TextRange>,
-        V: Fn(&OkIdentifierNode, &SymbolData<T>),
-    >(
-        &mut self,
-        identifier: &OkIdentifierNode,
-        declare_fn: U,
-        bind_fn: V,
-    ) -> Option<(Rc<String>, TextRange)> {
-        let name = Rc::new(identifier.token_value(&self.code));
-        let symbol_data = declare_fn(&self.namespace, &name, identifier.range());
-        match symbol_data {
-            Ok(symbol_data) => {
-                bind_fn(identifier, &symbol_data);
-                None
-            }
-            Err(previous_decl_range) => Some((name, previous_decl_range)),
-        }
     }
 
     pub fn try_resolving<
@@ -325,26 +93,22 @@ impl Resolver {
     ) -> Option<Rc<String>> {
         let name = Rc::new(identifier.token_value(&self.code));
         match lookup_fn(&self.namespace, &name) {
-            Some(symbol_data) => {
-                bind_fn(identifier, &symbol_data.0, symbol_data.1);
+            Some((symbol_data, depth)) => {
+                bind_fn(identifier, &symbol_data, depth);
                 None
             }
             None => Some(name),
         }
     }
 
-    pub fn try_resolving_variable_with_upvalues(
-        &mut self,
-        identifier: &OkIdentifierNode,
-    ) -> Option<Rc<String>> {
-        let name = Rc::new(identifier.token_value(&self.code));
-        match self.lookup_in_variables_namespace_with_upvalues(&name) {
-            Some((symbol_data, depth, capture_kind)) => {
-                identifier.bind_variable_decl(&symbol_data, depth, capture_kind);
-                None
-            }
-            None => Some(name),
-        }
+    pub fn try_resolving_variable(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
+        let lookup_fn =
+            |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_variables_namespace(key);
+        let bind_fn =
+            |identifier: &OkIdentifierNode,
+             symbol_data: &SymbolData<VariableData>,
+             depth: usize| { identifier.bind_variable_decl(symbol_data, depth) };
+        self.try_resolving(identifier, lookup_fn, bind_fn)
     }
 
     pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
@@ -371,22 +135,39 @@ impl Resolver {
         self.try_resolving(identifier, lookup_fn, bind_fn)
     }
 
+    pub fn try_declare_and_bind<
+        T,
+        U: Fn(&Namespace, &Rc<String>, TextRange) -> Result<SymbolData<T>, TextRange>,
+        V: Fn(&OkIdentifierNode, &SymbolData<T>),
+    >(
+        &mut self,
+        identifier: &OkIdentifierNode,
+        declare_fn: U,
+        bind_fn: V,
+    ) -> Option<(Rc<String>, TextRange)> {
+        let name = Rc::new(identifier.token_value(&self.code));
+        let symbol_data = declare_fn(&self.namespace, &name, identifier.range());
+        match symbol_data {
+            Ok(symbol_data) => {
+                bind_fn(identifier, &symbol_data);
+                None
+            }
+            Err(previous_decl_range) => Some((name, previous_decl_range)),
+        }
+    }
+
     pub fn try_declare_and_bind_variable(
         &mut self,
         identifier: &OkIdentifierNode,
-        stack_index: usize,
     ) -> Option<(Rc<String>, TextRange)> {
-        let declare_fn = |namespace: &Namespace,
-                          name: &Rc<String>,
-                          stack_index: usize,
-                          decl_range: TextRange| {
-            namespace.declare_variable(name, stack_index, decl_range)
+        let declare_fn = |namespace: &Namespace, name: &Rc<String>, decl_range: TextRange| {
+            namespace.declare_variable(name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
-            identifier.bind_variable_decl(symbol_data, 0, VariableCaptureKind::LOCAL)
+            identifier.bind_variable_decl(symbol_data, 0)
         };
         let name = Rc::new(identifier.token_value(&self.code));
-        let symbol_data = declare_fn(&self.namespace, &name, stack_index, identifier.range());
+        let symbol_data = declare_fn(&self.namespace, &name, identifier.range());
         match symbol_data {
             Ok(symbol_data) => {
                 bind_fn(identifier, &symbol_data);
@@ -441,15 +222,14 @@ impl Resolver {
         let core_variable_decl = variable_decl.core_ref();
         self.walk_r_assignment(&core_variable_decl.r_assign);
         // TODO - Lambda Specific
+        // Remove this condition
         if let CoreRAssignmentNode::LAMBDA(_) = core_variable_decl.r_assign.core_ref() {
             return;
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            let stack_index = self.variable_decl_callback();
             if let Some((name, previous_decl_range)) =
-                self.try_declare_and_bind_variable(ok_identifier, stack_index)
+                self.try_declare_and_bind_variable(ok_identifier)
             {
-                self.rollback_variable_decl();
                 let err = IdentifierAlreadyDeclaredError::new(
                     IdentKind::VARIABLE,
                     name.to_string(),
@@ -462,7 +242,7 @@ impl Resolver {
         }
     }
 
-    pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) -> FunctionContext {
+    pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
         let core_func_decl = func_decl.0.as_ref().borrow();
         let func_name = &core_func_decl.name;
         let params = &core_func_decl.params;
@@ -475,11 +255,9 @@ impl Resolver {
                 let core_param = param.core_ref();
                 let param_name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = param_name.core_ref() {
-                    let stack_index = self.variable_decl_callback();
                     if let Some((name, previous_decl_range)) =
-                        self.try_declare_and_bind_variable(ok_identifier, stack_index)
+                        self.try_declare_and_bind_variable(ok_identifier)
                     {
-                        self.rollback_variable_decl();
                         let err = IdentifierAlreadyDeclaredError::new(
                             IdentKind::VARIABLE,
                             name.to_string(),
@@ -496,7 +274,7 @@ impl Resolver {
             self.walk_stmt_indent_wrapper(stmt);
         }
         func_body.set_scope(&self.namespace);
-        let context = self.close_func();
+        self.close_func();
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 // TODO - Lambda Specific
@@ -515,12 +293,11 @@ impl Resolver {
                                 .push(Diagnostics::IdentifierAlreadyDeclared(err));
                         }
                     }
+                    // TODO - Shift this in the variable declaration section
                     CallableKind::LAMBDA => {
-                        let stack_index = self.variable_decl_callback();
                         if let Some((name, previous_decl_range)) =
-                            self.try_declare_and_bind_variable(ok_identifier, stack_index)
+                            self.try_declare_and_bind_variable(ok_identifier)
                         {
-                            self.rollback_variable_decl();
                             let err = IdentifierAlreadyDeclaredError::new(
                                 IdentKind::VARIABLE,
                                 name.to_string(),
@@ -537,7 +314,6 @@ impl Resolver {
                 }
             }
         }
-        context
     }
 
     pub fn declare_struct(&mut self, struct_decl: &StructDeclarationNode) {
@@ -659,7 +435,6 @@ impl Resolver {
                                 &SymbolData::new(symbol_data, ok_identifier.range()),
                             );
                             variable_symbol_data.0
-                                .0
                                 .as_ref()
                                 .borrow_mut()
                                 .set_data_type(&lambda_type_obj);
@@ -801,8 +576,7 @@ impl Visitor for Resolver {
                     return None;
                 }
                 ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
-                    let context = self.declare_function(func_decl);
-                    func_decl.set_context(context);
+                    self.declare_function(func_decl);
                     return None;
                 }
                 ASTNode::STRUCT_DECLARATION(struct_decl) => {
@@ -817,9 +591,7 @@ impl Visitor for Resolver {
                     match atom_start.core_ref() {
                         CoreAtomStartNode::IDENTIFIER(identifier) => {
                             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                                if let Some(_) =
-                                    self.try_resolving_variable_with_upvalues(ok_identifier)
-                                {
+                                if let Some(_) = self.try_resolving_variable(ok_identifier) {
                                     let err = IdentifierNotDeclaredError::new(
                                         IdentKind::VARIABLE,
                                         ok_identifier.range(),
@@ -834,14 +606,10 @@ impl Visitor for Resolver {
                                 core_func_call.function_name.core_ref()
                             {
                                 let lambda_name = Rc::new(ok_identifier.token_value(&self.code));
-                                if let Some(symbol_data) =
-                                    self.lookup_in_variables_namespace_with_upvalues(&lambda_name)
+                                if let Some((symbol_data, depth)) =
+                                    self.namespace.lookup_in_variables_namespace(&lambda_name)
                                 {
-                                    ok_identifier.bind_variable_decl(
-                                        &symbol_data.0,
-                                        symbol_data.1,
-                                        symbol_data.2,
-                                    );
+                                    ok_identifier.bind_variable_decl(&symbol_data, depth);
                                 }
                             }
                             if let Some(params) = &core_func_call.params {

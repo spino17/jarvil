@@ -3,11 +3,11 @@ use std::{borrow::Borrow, convert::TryInto};
 use crate::{
     ast::{
         ast::{
-            ASTNode, CoreAssignmentNode, CoreFunctionDeclarationNode,
+            ASTNode, BlockNode, CoreAssignmentNode, CoreFunctionDeclarationNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreTypeDeclarationNode, ExpressionStatementNode, LambdaDeclarationNode,
+            CoreTypeDeclarationNode, ExpressionStatementNode, LambdaTypeDeclarationNode,
             OkAssignmentNode, OkFunctionDeclarationNode, ReturnStatementNode, StatementNode,
-            StructDeclarationNode, StructStatementNode, TokenNode, VariableDeclarationNode, BlockNode,
+            StructDeclarationNode, StructStatementNode, TokenNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -96,7 +96,7 @@ impl PythonCodeGenerator {
         todo!()
     }
 
-    pub fn print_lambda_decl_stmt(&mut self, lambda_decl_stmt: &LambdaDeclarationNode) {
+    pub fn print_lambda_decl_stmt(&mut self, lambda_decl_stmt: &LambdaTypeDeclarationNode) {
         todo!()
     }
 
@@ -190,7 +190,7 @@ impl Visitor for PythonCodeGenerator {
             }
             ASTNode::TOKEN(token) => {
                 self.print_token_node(token);
-                return None
+                return None;
             }
             /*
             ASTNode::STATEMENT(stmt) => {

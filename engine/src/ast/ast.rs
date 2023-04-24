@@ -9,13 +9,9 @@ use jarvil_macros::Nodify;
 use jarvil_macros::Node;
 
 use crate::lexer::token::BinaryOperatorKind;
-use crate::lexer::token::CoreToken;
 use crate::lexer::token::UnaryOperatorKind;
-use crate::parser::resolver::FunctionContext;
-use crate::parser::resolver::UpValue;
 use crate::scope::core::IdentifierKind;
 use crate::scope::core::SymbolData;
-use crate::scope::core::VariableCaptureKind;
 use crate::scope::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
@@ -53,7 +49,7 @@ pub enum ASTNode {
     STRUCT_STATEMENT(StructStatementNode),
     TYPE_DECLARATION(TypeDeclarationNode),
     STRUCT_DECLARATION(StructDeclarationNode),
-    LAMBDA_DECLARATION(LambdaDeclarationNode),
+    LAMBDA_DECLARATION(LambdaTypeDeclarationNode),
     OK_LAMBDA_TYPE_DECLARATION(OkLambdaTypeDeclarationNode),
     FUNCTION_DECLARATION(FunctionDeclarationNode),
     OK_FUNCTION_DECLARATION(OkFunctionDeclarationNode),
@@ -551,7 +547,7 @@ impl Node for StructStatementNode {
 #[derive(Debug, Clone, Node)]
 pub enum CoreTypeDeclarationNode {
     STRUCT(StructDeclarationNode),
-    LAMBDA(LambdaDeclarationNode),
+    LAMBDA(LambdaTypeDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -574,7 +570,7 @@ impl TypeDeclarationNode {
         TypeDeclarationNode(node)
     }
 
-    pub fn new_with_lambda(lambda: &LambdaDeclarationNode) -> Self {
+    pub fn new_with_lambda(lambda: &LambdaTypeDeclarationNode) -> Self {
         let node = Rc::new(CoreTypeDeclarationNode::LAMBDA(lambda.clone()));
         TypeDeclarationNode(node)
     }
@@ -623,15 +619,15 @@ impl Node for StructDeclarationNode {
 }
 
 #[derive(Debug, Clone, Node)]
-pub enum CoreLambdaDeclarationNode {
+pub enum CoreLambdaTypeDeclarationNode {
     OK(OkLambdaTypeDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
 #[derive(Debug, Clone)]
-pub struct LambdaDeclarationNode(Rc<CoreLambdaDeclarationNode>);
+pub struct LambdaTypeDeclarationNode(Rc<CoreLambdaTypeDeclarationNode>);
 
-impl LambdaDeclarationNode {
+impl LambdaTypeDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
         args: Option<&NameTypeSpecsNode>,
@@ -643,7 +639,7 @@ impl LambdaDeclarationNode {
         right_arrow: Option<&TokenNode>,
         newline: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreLambdaDeclarationNode::OK(
+        let node = Rc::new(CoreLambdaTypeDeclarationNode::OK(
             OkLambdaTypeDeclarationNode::new(
                 name,
                 args,
@@ -656,12 +652,12 @@ impl LambdaDeclarationNode {
                 newline,
             ),
         ));
-        LambdaDeclarationNode(node)
+        LambdaTypeDeclarationNode(node)
     }
 
-    impl_core_ref!(CoreLambdaDeclarationNode);
+    impl_core_ref!(CoreLambdaTypeDeclarationNode);
 }
-default_errornous_node_impl!(LambdaDeclarationNode, CoreLambdaDeclarationNode);
+default_errornous_node_impl!(LambdaTypeDeclarationNode, CoreLambdaTypeDeclarationNode);
 
 #[derive(Debug, Clone)]
 pub struct CoreOkLambdaTypeDeclarationNode {
@@ -721,6 +717,14 @@ impl Node for OkLambdaTypeDeclarationNode {
 }
 
 #[derive(Debug, Clone, Node)]
+pub enum CoreLambdaDeclarationNode {
+    // OK(OkLambdaDeclarationNode),
+    MISSING_TOKENS(MissingTokenNode),
+}
+
+pub struct LambdaDeclarationNode(Rc<CoreLambdaDeclarationNode>);
+
+#[derive(Debug, Clone, Node)]
 pub enum CoreFunctionDeclarationNode {
     OK(OkFunctionDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
@@ -775,7 +779,7 @@ pub struct CoreOkFunctionDeclarationNode {
     pub return_type: Option<TypeExpressionNode>,
     pub block: BlockNode,
     pub kind: CallableKind,
-    pub context: Option<Rc<RefCell<Vec<UpValue>>>>, // will be used while code-generation for closures
+    // pub context: Option<Rc<RefCell<Vec<UpValue>>>>, // will be used while code-generation for closures
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -820,11 +824,12 @@ impl OkFunctionDeclarationNode {
             return_type: extract_from_option!(return_type),
             block: block.clone(),
             kind,
-            context: None,
+            // context: None,
         }));
         OkFunctionDeclarationNode(node)
     }
 
+    /*
     pub fn set_context(&self, context: FunctionContext) {
         self.0.as_ref().borrow_mut().context = Some(context.upvalues);
     }
@@ -845,6 +850,7 @@ impl OkFunctionDeclarationNode {
             None => None,
         }
     }
+     */
 }
 
 impl Node for OkFunctionDeclarationNode {
@@ -1353,9 +1359,7 @@ impl OkIdentifierNode {
 
     pub fn token_value(&self, code: &Code) -> String {
         match &self.0.as_ref().borrow().token.core_ref() {
-            CoreTokenNode::OK(ok_token) => {
-                return ok_token.core_ref().token.token_value(code)
-            }
+            CoreTokenNode::OK(ok_token) => return ok_token.core_ref().token.token_value(code),
             CoreTokenNode::MISSING_TOKENS(_) => unreachable!(),
             CoreTokenNode::SKIPPED(_) => unreachable!(),
         }
@@ -1365,10 +1369,10 @@ impl OkIdentifierNode {
         &self,
         symbol_data: &SymbolData<VariableData>,
         depth: usize,
-        kind: VariableCaptureKind,
+        // kind: VariableCaptureKind,
     ) {
         self.0.as_ref().borrow_mut().decl =
-            Some((IdentifierKind::VARIABLE((symbol_data.clone(), kind)), depth));
+            Some((IdentifierKind::VARIABLE(symbol_data.clone()), depth));
     }
 
     pub fn bind_user_defined_type_decl(
@@ -1400,8 +1404,8 @@ impl OkIdentifierNode {
     ) -> Option<SymbolData<VariableData>> {
         match &self.0.as_ref().borrow().decl {
             Some(symbol_data) => match &symbol_data.0 {
-                IdentifierKind::VARIABLE(x) => return Some(x.0.clone()),
-                _ => panic!("{}", panic_message),
+                IdentifierKind::VARIABLE(x) => return Some(x.clone()),
+                _ => unreachable!("{}", panic_message),
             },
             None => None,
         }
@@ -1414,7 +1418,7 @@ impl OkIdentifierNode {
         match &self.0.as_ref().borrow().decl {
             Some(symbol_data) => match &symbol_data.0 {
                 IdentifierKind::FUNCTION(x) => return Some(x.clone()),
-                _ => panic!("{}", panic_message),
+                _ => unreachable!("{}", panic_message),
             },
             None => None,
         }
@@ -1427,7 +1431,7 @@ impl OkIdentifierNode {
         match &self.0.as_ref().borrow().decl {
             Some(symbol_data) => match &symbol_data.0 {
                 IdentifierKind::USER_DEFINED_TYPE(x) => return Some(x.clone()),
-                _ => panic!("{}", panic_message),
+                _ => unreachable!("{}", panic_message),
             },
             None => None,
         }

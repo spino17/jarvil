@@ -1,23 +1,24 @@
 use super::ast::{
-    CoreIdentifierNode, CoreTokenNode, IdentifierNode, OkIdentifierNode, OkTokenNode, FuncKeywordKind,
+    CoreIdentifierNode, CoreTokenNode, FuncKeywordKind, IdentifierNode, OkIdentifierNode,
+    OkTokenNode,
 };
 use crate::ast::ast::ASTNode;
 use crate::ast::ast::{
     ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
     BinaryExpressionNode, BlockNode, CallExpressionNode, CallNode, ClassMethodCallNode,
     ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreExpressionNode, CoreFunctionDeclarationNode, CoreLambdaDeclarationNode,
+    CoreExpressionNode, CoreFunctionDeclarationNode, CoreLambdaTypeDeclarationNode,
     CoreNameTypeSpecsNode, CoreParamsNode, CoreRAssignmentNode, CoreStatemenIndentWrapperNode,
     CoreStatementNode, CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode,
     ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
-    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
-    MethodAccessNode, MissingTokenNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode,
-    OkFunctionDeclarationNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode,
-    OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode,
-    RAssignmentNode, ReturnStatementNode, SkippedTokenNode, SkippedTokensNode,
-    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructStatementNode,
-    TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
-    VariableDeclarationNode,
+    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
+    LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
+    NameTypeSpecsNode, OkAssignmentNode, OkFunctionDeclarationNode, OkLambdaTypeDeclarationNode,
+    OkNameTypeSpecsNode, OkParamsNode, OnlyUnaryExpressionNode, ParamsNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, ReturnStatementNode,
+    SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
+    StructDeclarationNode, StructStatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -99,8 +100,8 @@ pub trait Visitor {
     );
     impl_node_walk!(
         walk_lambda_decl,
-        LambdaDeclarationNode,
-        new_with_LambdaDeclarationNode
+        LambdaTypeDeclarationNode,
+        new_with_LambdaTypeDeclarationNode
     );
     impl_node_walk!(walk_token, TokenNode, new_with_TokenNode);
     impl_node_walk!(
@@ -328,10 +329,10 @@ pub trait Visitor {
             }
             ASTNode::LAMBDA_DECLARATION(lambda_declaration_node) => {
                 match &lambda_declaration_node.core_ref() {
-                    CoreLambdaDeclarationNode::OK(ok_lambda_decl) => {
+                    CoreLambdaTypeDeclarationNode::OK(ok_lambda_decl) => {
                         self.walk_ok_lambda_type_declaration(ok_lambda_decl);
                     }
-                    CoreLambdaDeclarationNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreLambdaTypeDeclarationNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
@@ -369,7 +370,7 @@ pub trait Visitor {
                 let core_ok_func_decl = ok_function_declaration_node.0.as_ref().borrow();
                 match &core_ok_func_decl.func_keyword {
                     FuncKeywordKind::DEF(def_keyword) => self.walk_token(def_keyword),
-                    FuncKeywordKind::FUNC(func_keyword) => self.walk_token(func_keyword)
+                    FuncKeywordKind::FUNC(func_keyword) => self.walk_token(func_keyword),
                 }
                 if let Some(func_name) = &core_ok_func_decl.name {
                     self.walk_identifier(func_name);

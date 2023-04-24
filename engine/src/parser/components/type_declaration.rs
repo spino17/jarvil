@@ -1,5 +1,5 @@
 use crate::ast::ast::{BlockKind, ErrornousNode, NameTypeSpecsNode};
-use crate::ast::ast::{LambdaDeclarationNode, TypeDeclarationNode};
+use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::lexer::token::CoreToken;
 use crate::{constants::common::IDENTIFIER, parser::parser::PackratParser};
 use std::rc::Rc;
@@ -44,7 +44,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                     let r_arrow_node = parser.expect("->");
                     let return_type_node = parser.type_expr();
                     let newline_node = parser.expect_terminators();
-                    LambdaDeclarationNode::new(
+                    LambdaTypeDeclarationNode::new(
                         &type_name_node,
                         args_node,
                         Some(&return_type_node),
@@ -58,7 +58,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                 }
                 CoreToken::NEWLINE | CoreToken::ENDMARKER => {
                     let newline_node = parser.expect_terminators();
-                    LambdaDeclarationNode::new(
+                    LambdaTypeDeclarationNode::new(
                         &type_name_node,
                         args_node,
                         None,
@@ -72,7 +72,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                 }
                 _ => {
                     parser.log_missing_token_error(&["->", "\n"], token);
-                    let lambda_node = LambdaDeclarationNode::new_with_missing_tokens(
+                    let lambda_node = LambdaTypeDeclarationNode::new_with_missing_tokens(
                         &Rc::new(["->", "\n"].to_vec()),
                         token,
                     );
