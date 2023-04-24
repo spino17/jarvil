@@ -126,7 +126,7 @@ impl TypeChecker {
     }
 
     pub fn type_of_lambda(&self, func_decl: &OkFunctionDeclarationNode) -> Type {
-        let core_func_decl = func_decl.0.as_ref().borrow();
+        let core_func_decl = func_decl.0.as_ref();
         assert!(
             core_func_decl.kind == CallableKind::LAMBDA,
             "construction of type is only valid for lambda declaration"
@@ -773,7 +773,7 @@ impl TypeChecker {
 
     pub fn check_func_decl(&mut self, ok_func_decl: &OkFunctionDeclarationNode) {
         // TODO - add is_construted true
-        let core_ok_func_decl = ok_func_decl.0.as_ref().borrow();
+        let core_ok_func_decl = ok_func_decl.0.as_ref();
         let return_type_node = &core_ok_func_decl.return_type;
         let return_type_obj = match return_type_node {
             Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),

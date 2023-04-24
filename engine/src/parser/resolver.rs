@@ -243,7 +243,7 @@ impl Resolver {
     }
 
     pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
-        let core_func_decl = func_decl.0.as_ref().borrow();
+        let core_func_decl = func_decl.0.as_ref();
         let func_name = &core_func_decl.name;
         let params = &core_func_decl.params;
         let func_body = &core_func_decl.block;
@@ -365,7 +365,7 @@ impl Resolver {
     }
 
     pub fn resolve_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
-        let core_func_decl = func_decl.0.as_ref().borrow();
+        let core_func_decl = func_decl.0.as_ref();
         let func_name = &core_func_decl.name;
         let params = &core_func_decl.params;
         let return_type = &core_func_decl.return_type;
