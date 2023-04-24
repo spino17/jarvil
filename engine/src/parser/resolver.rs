@@ -1,3 +1,4 @@
+use crate::ast::ast::{CallableBodyNode, CallablePrototypeNode};
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::MoreThanMaxLimitParamsPassedError;
 use crate::error::helper::IdentifierKind as IdentKind;
@@ -242,8 +243,59 @@ impl Resolver {
         }
     }
 
+    pub fn declare_callable_prototype(
+        &mut self,
+        callable_prototype: &CallablePrototypeNode,
+        callable_range: TextRange,
+    ) {
+        let core_callable_prototype = callable_prototype.core_ref();
+        let params = &core_callable_prototype.params;
+        self.open_func(callable_range);
+        if let Some(params) = params {
+            let params_iter = params.iter();
+            for param in params_iter {
+                let core_param = param.core_ref();
+                let param_name = &core_param.name;
+                if let CoreIdentifierNode::OK(ok_identifier) = param_name.core_ref() {
+                    if let Some((name, previous_decl_range)) =
+                        self.try_declare_and_bind_variable(ok_identifier)
+                    {
+                        let err = IdentifierAlreadyDeclaredError::new(
+                            IdentKind::VARIABLE,
+                            name.to_string(),
+                            previous_decl_range,
+                            ok_identifier.range(),
+                        );
+                        self.errors
+                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn declare_callable_body(
+        &mut self,
+        callable_body: &CallableBodyNode,
+        callable_range: TextRange,
+    ) {
+        let core_callable_body = callable_body.0.as_ref();
+        self.declare_callable_prototype(&core_callable_body.prototype, callable_range);
+        let func_body = &core_callable_body.block;
+        for stmt in &func_body.0.as_ref().borrow().stmts {
+            self.walk_stmt_indent_wrapper(stmt);
+        }
+        func_body.set_scope(&self.namespace);
+        self.close_func();
+    }
+
     pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
         let core_func_decl = func_decl.0.as_ref();
+        let func_name = &core_func_decl.name;
+        let kind = &core_func_decl.kind;
+        let body = &core_func_decl.body;
+        self.declare_callable_body(body, func_decl.range());
+        /*
         let func_name = &core_func_decl.name;
         let params = &core_func_decl.params;
         let func_body = &core_func_decl.block;
@@ -275,6 +327,7 @@ impl Resolver {
         }
         func_body.set_scope(&self.namespace);
         self.close_func();
+         */
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 // TODO - Lambda Specific
@@ -364,9 +417,71 @@ impl Resolver {
         }
     }
 
+    pub fn resolve_callable_prototype(
+        &mut self,
+        callable_prototype: &CallablePrototypeNode,
+    ) -> (Vec<(Rc<String>, Type)>, Type) {
+        let core_callable_prototype = callable_prototype.core_ref();
+        let params = &core_callable_prototype.params;
+        let return_type = &core_callable_prototype.return_type;
+        let rparen = &core_callable_prototype.rparen;
+        let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
+        let return_type: Type = match return_type {
+            Some(return_type_expr) => {
+                let type_obj = self.type_obj_from_expression(return_type_expr);
+                type_obj
+            }
+            None => Type::new_with_void(),
+        };
+        let mut params_count: usize = 0;
+        if let Some(params) = params {
+            let params_iter = params.iter();
+            for param in params_iter {
+                let core_param = param.core_ref();
+                let name = &core_param.name;
+                if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                    if let Some(symbol_data) = ok_identifier.variable_symbol_data(
+                        "param name should be resolved to `SymbolData<VariableData>`",
+                    ) {
+                        let variable_name = Rc::new(ok_identifier.token_value(&self.code));
+                        let type_obj = self.type_obj_from_expression(&core_param.data_type);
+                        symbol_data.0.as_ref().borrow_mut().set_data_type(&type_obj);
+                        params_vec.push((variable_name, type_obj));
+                        params_count += 1;
+                    }
+                }
+            }
+        }
+        if params_count > EIGHT_BIT_MAX_VALUE {
+            let err = MoreThanMaxLimitParamsPassedError::new(
+                params_count,
+                EIGHT_BIT_MAX_VALUE,
+                rparen.range(),
+            );
+            self.errors
+                .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
+        }
+        (params_vec, return_type)
+    }
+
+    pub fn resolve_callable_body(
+        &mut self,
+        callable_body: &CallableBodyNode,
+    ) -> (Vec<(Rc<String>, Type)>, Type) {
+        let core_callable_body = callable_body.core_ref();
+        let func_body = &core_callable_body.block;
+        let (params_vec, return_type) =
+            self.resolve_callable_prototype(&core_callable_body.prototype);
+        self.namespace = func_body.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
+        self.walk_block(func_body);
+        self.namespace.close_scope();
+        (params_vec, return_type)
+    }
+
     pub fn resolve_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
         let core_func_decl = func_decl.0.as_ref();
         let func_name = &core_func_decl.name;
+        /*
         let params = &core_func_decl.params;
         let return_type = &core_func_decl.return_type;
         let func_body = &core_func_decl.block;
@@ -410,6 +525,8 @@ impl Resolver {
         self.namespace = func_body.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
         self.walk_block(func_body);
         self.namespace.close_scope();
+         */
+        let (params_vec, return_type) = self.resolve_callable_body(&core_func_decl.body);
         let kind = &core_func_decl.kind;
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {

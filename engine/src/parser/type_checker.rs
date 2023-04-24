@@ -5,14 +5,14 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-            BinaryExpressionNode, BlockNode, CallableKind, ComparisonNode, CoreAssignmentNode,
-            CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
-            CoreFunctionDeclarationNode, CoreIdentifierNode, CoreRAssignmentNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreUnaryExpressionNode, ExpressionNode, NameTypeSpecsNode, Node,
-            OkFunctionDeclarationNode, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode,
-            ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
-            UnaryExpressionNode, VariableDeclarationNode,
+            BinaryExpressionNode, BlockNode, CallableBodyNode, CallableKind, CallablePrototypeNode,
+            ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
+            CoreAtomicExpressionNode, CoreExpressionNode, CoreFunctionDeclarationNode,
+            CoreIdentifierNode, CoreRAssignmentNode, CoreStatemenIndentWrapperNode,
+            CoreStatementNode, CoreTokenNode, CoreUnaryExpressionNode, ExpressionNode,
+            NameTypeSpecsNode, Node, OkFunctionDeclarationNode, OnlyUnaryExpressionNode,
+            ParamsNode, RAssignmentNode, ReturnStatementNode, StatementNode, TokenNode,
+            TypeExpressionNode, TypeResolveKind, UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -132,8 +132,9 @@ impl TypeChecker {
             "construction of type is only valid for lambda declaration"
         );
         let func_name = &core_func_decl.name;
-        let params = &core_func_decl.params;
-        let return_type = &core_func_decl.return_type;
+        let prototype = &core_func_decl.body.core_ref().prototype.core_ref();
+        let params = &prototype.params;
+        let return_type = &prototype.return_type;
         let (params_vec, return_type) = match func_name {
             Some(func_name) => match func_name.core_ref() {
                 CoreIdentifierNode::OK(ok_identifier) => match ok_identifier.variable_symbol_data(
@@ -149,7 +150,7 @@ impl TypeChecker {
         let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(params_vec, return_type));
         let lambda_type_obj = Type::new_with_lambda(
             None,
-            &SymbolData::new(symbol_data, core_func_decl.lparen.range()),
+            &SymbolData::new(symbol_data, prototype.lparen.range()),
         );
         lambda_type_obj
     }
@@ -771,9 +772,55 @@ impl TypeChecker {
         };
     }
 
+    pub fn check_callable_prototype(&mut self, callable_prototype: &CallablePrototypeNode) -> Type {
+        let core_callable_prototype = callable_prototype.0.as_ref();
+        let return_type_node = &core_callable_prototype.return_type;
+        let return_type_obj = match return_type_node {
+            Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),
+            None => Type::new_with_void(),
+        };
+        self.context.func_stack.push(return_type_obj.clone());
+        return_type_obj
+    }
+
+    pub fn check_callable_body(&mut self, callable_body: &CallableBodyNode) {
+        let core_callable_body = callable_body.0.as_ref();
+        let return_type_obj = self.check_callable_prototype(&core_callable_body.prototype);
+        let mut has_return_stmt = false;
+        for stmt in &core_callable_body.block.0.as_ref().borrow().stmts {
+            let stmt = match stmt.core_ref() {
+                CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
+                CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
+                    let core_stmt = stmt.core_ref();
+                    core_stmt.stmt.clone()
+                }
+                _ => continue,
+            };
+            self.walk_stmt(&stmt);
+            if let CoreStatementNode::RETURN(_) = stmt.core_ref() {
+                has_return_stmt = true;
+                // TODO - we can break here as any statement following return statement is dead code
+            }
+        }
+        if !has_return_stmt && !return_type_obj.is_void() {
+            let return_type_node = callable_body
+                .core_ref()
+                .prototype
+                .core_ref()
+                .return_type
+                .as_ref()
+                .unwrap();
+            let err = NoReturnStatementInFunctionError::new(return_type_node.range());
+            self.errors
+                .push(Diagnostics::NoReturnStatementInFunction(err));
+        }
+        self.context.func_stack.pop();
+    }
+
     pub fn check_func_decl(&mut self, ok_func_decl: &OkFunctionDeclarationNode) {
-        // TODO - add is_construted true
         let core_ok_func_decl = ok_func_decl.0.as_ref();
+        self.check_callable_body(&core_ok_func_decl.body);
+        /*
         let return_type_node = &core_ok_func_decl.return_type;
         let return_type_obj = match return_type_node {
             Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),
@@ -803,6 +850,7 @@ impl TypeChecker {
                 .push(Diagnostics::NoReturnStatementInFunction(err));
         }
         self.context.func_stack.pop();
+         */
     }
 
     pub fn check_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {

@@ -624,15 +624,13 @@ impl OkFunctionDeclarationNode {
     ) -> Self {
         let node = Rc::new(CoreOkFunctionDeclarationNode {
             func_keyword: func_keyword.clone(),
-            lparen: lparen.clone(),
-            rparen: rparen.clone(),
-            right_arrow: extract_from_option!(right_arrow),
-            colon: colon.clone(),
             name: extract_from_option!(name),
-            params: extract_from_option!(params),
-            return_type: extract_from_option!(return_type),
-            block: block.clone(),
             kind,
+            body: CallableBodyNode::new(
+                block,
+                colon,
+                &CallablePrototypeNode::new(params, return_type, lparen, rparen, right_arrow),
+            ),
         });
         OkFunctionDeclarationNode(node)
     }
@@ -643,8 +641,8 @@ impl OkFunctionDeclarationNode {
 impl Node for OkFunctionDeclarationNode {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().func_keyword {
-            FuncKeywordKind::DEF(token) => impl_range!(token, self.0.as_ref().block),
-            FuncKeywordKind::FUNC(token) => impl_range!(token, self.0.as_ref().block),
+            FuncKeywordKind::DEF(token) => impl_range!(token, self.0.as_ref().body),
+            FuncKeywordKind::FUNC(token) => impl_range!(token, self.0.as_ref().body),
         }
     }
     fn start_line_number(&self) -> usize {

@@ -21,7 +21,6 @@ use crate::ast::ast::{
     StructDeclarationNode, StructStatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
     UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
-use crate::types::lambda;
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
 // See /src/go/ast/walk.go
@@ -432,19 +431,7 @@ pub trait Visitor {
                 if let Some(func_name) = &core_ok_func_decl.name {
                     self.walk_identifier(func_name);
                 }
-                self.walk_token(&core_ok_func_decl.lparen);
-                if let Some(name_type_specs) = &core_ok_func_decl.params {
-                    self.walk_name_type_specs(name_type_specs);
-                }
-                self.walk_token(&core_ok_func_decl.rparen);
-                if let Some(right_arrow) = &core_ok_func_decl.right_arrow {
-                    self.walk_token(right_arrow);
-                }
-                if let Some(return_type) = &core_ok_func_decl.return_type {
-                    self.walk_type_expression(return_type);
-                }
-                self.walk_token(&core_ok_func_decl.colon);
-                self.walk_block(&core_ok_func_decl.block);
+                self.walk_callable_body(&core_ok_func_decl.body);
             }
             ASTNode::VARIABLE_DECLARATION(variable_decl_node) => {
                 let core_variable_decl = variable_decl_node.core_ref();

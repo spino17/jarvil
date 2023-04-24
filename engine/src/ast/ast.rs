@@ -315,15 +315,9 @@ pub enum CoreFunctionDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct CoreOkFunctionDeclarationNode {
     pub func_keyword: FuncKeywordKind,
-    pub lparen: TokenNode,
-    pub rparen: TokenNode,
-    pub right_arrow: Option<TokenNode>,
-    pub colon: TokenNode,
     pub name: Option<IdentifierNode>,
-    pub params: Option<NameTypeSpecsNode>,
-    pub return_type: Option<TypeExpressionNode>,
-    pub block: BlockNode,
     pub kind: CallableKind,
+    pub body: CallableBodyNode,
 }
 
 // LAMBDA_DECLARATION
