@@ -696,6 +696,7 @@ impl Visitor for Resolver {
                     self.declare_function(func_decl);
                     return None;
                 }
+                // TODO - add ASTNode::CALLABLE_BODY
                 ASTNode::STRUCT_DECLARATION(struct_decl) => {
                     self.declare_struct(struct_decl);
                     return None;
@@ -754,6 +755,7 @@ impl Visitor for Resolver {
                     self.resolve_function(func_decl);
                     return None;
                 }
+                // TODO - add ASTNode::CALLABLE_BODY
                 ASTNode::STRUCT_DECLARATION(struct_decl) => {
                     self.resolve_struct(struct_decl);
                     return None;

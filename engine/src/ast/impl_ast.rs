@@ -654,10 +654,25 @@ impl Node for OkFunctionDeclarationNode {
 }
 
 impl LambdaDeclarationNode {
-    pub fn new(lambda_keyword: &TokenNode, body: &CallableBodyNode) -> Self {
+    pub fn new(
+        lambda_keyword: &TokenNode,
+        params: Option<&NameTypeSpecsNode>,
+        return_type: Option<&TypeExpressionNode>,
+        block: &BlockNode,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        right_arrow: Option<&TokenNode>,
+        colon: &TokenNode,
+    ) -> Self {
         let node = Rc::new(CoreLambdaDeclarationNode::OK(OkLambdaDeclarationNode::new(
             lambda_keyword,
-            body,
+            params,
+            return_type,
+            block,
+            lparen,
+            rparen,
+            right_arrow,
+            colon,
         )));
         LambdaDeclarationNode(node)
     }
@@ -667,10 +682,23 @@ impl LambdaDeclarationNode {
 default_errornous_node_impl!(LambdaDeclarationNode, CoreLambdaDeclarationNode);
 
 impl OkLambdaDeclarationNode {
-    pub fn new(lambda_keyword: &TokenNode, body: &CallableBodyNode) -> Self {
+    pub fn new(
+        lambda_keyword: &TokenNode,
+        params: Option<&NameTypeSpecsNode>,
+        return_type: Option<&TypeExpressionNode>,
+        block: &BlockNode,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        right_arrow: Option<&TokenNode>,
+        colon: &TokenNode,
+    ) -> Self {
         let node = Rc::new(CoreOkLambdaDeclarationNode {
             lambda_keyword: lambda_keyword.clone(),
-            body: body.clone(),
+            body: CallableBodyNode::new(
+                block,
+                colon,
+                &CallablePrototypeNode::new(params, return_type, lparen, rparen, right_arrow),
+            ),
         });
         OkLambdaDeclarationNode(node)
     }
