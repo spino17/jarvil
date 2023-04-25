@@ -229,7 +229,6 @@ pub trait Visitor {
     );
     impl_node_walk!(walk_identifier, IdentifierNode, new_with_IdentifierNode);
 
-    // This method is AST walk which means it does not visit symbols. Visiting symbols can be useful while formatting
     fn walk(&mut self, node: &ASTNode) {
         match self.visit(node) {
             None => return,

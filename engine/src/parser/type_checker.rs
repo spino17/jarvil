@@ -820,37 +820,6 @@ impl TypeChecker {
     pub fn check_func_decl(&mut self, ok_func_decl: &OkFunctionDeclarationNode) {
         let core_ok_func_decl = ok_func_decl.0.as_ref();
         self.check_callable_body(&core_ok_func_decl.body);
-        /*
-        let return_type_node = &core_ok_func_decl.return_type;
-        let return_type_obj = match return_type_node {
-            Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),
-            None => Type::new_with_void(),
-        };
-        self.context.func_stack.push(return_type_obj.clone());
-        let mut has_return_stmt = false;
-        for stmt in &core_ok_func_decl.block.0.as_ref().borrow().stmts {
-            let stmt = match stmt.core_ref() {
-                CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
-                CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
-                    let core_stmt = stmt.core_ref();
-                    core_stmt.stmt.clone()
-                }
-                _ => continue,
-            };
-            self.walk_stmt(&stmt);
-            if let CoreStatementNode::RETURN(_) = stmt.core_ref() {
-                has_return_stmt = true;
-                // TODO - we can break here as any statement following return statement is dead code
-            }
-        }
-        if !has_return_stmt && !return_type_obj.is_void() {
-            let return_type_node = return_type_node.as_ref().unwrap();
-            let err = NoReturnStatementInFunctionError::new(return_type_node.range());
-            self.errors
-                .push(Diagnostics::NoReturnStatementInFunction(err));
-        }
-        self.context.func_stack.pop();
-         */
     }
 
     pub fn check_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {
