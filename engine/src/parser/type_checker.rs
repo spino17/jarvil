@@ -548,7 +548,7 @@ impl TypeChecker {
                 let core_lambda = lambda.core_ref();
                 match core_lambda {
                     CoreFunctionDeclarationNode::OK(ok_func_decl) => {
-                        self.check_func_decl(ok_func_decl);
+                        self.check_func_decl(ok_func_decl); // change this to `check_lambda_decl`
                         return self.type_of_lambda(ok_func_decl);
                     }
                     _ => Type::new_with_unknown(),

@@ -241,6 +241,7 @@ pub enum CoreLambdaTypeDeclarationNode {
 // `type` <name> `:` `(` [<params>] `)` [`->`] [<return_type>] `\n`
 #[derive(Debug, Clone)]
 pub struct CoreOkLambdaTypeDeclarationNode {
+    // TODO - change this to use `callable_prototype`
     pub type_keyword: TokenNode,
     pub colon: TokenNode,
     pub lparen: TokenNode,

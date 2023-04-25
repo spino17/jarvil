@@ -1,7 +1,8 @@
-use crate::ast::ast::{CallableBodyNode, CallablePrototypeNode};
+use crate::ast::ast::{CallableBodyNode, CallablePrototypeNode, OkLambdaDeclarationNode};
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::MoreThanMaxLimitParamsPassedError;
 use crate::error::helper::IdentifierKind as IdentKind;
+use crate::types::lambda;
 use crate::{
     ast::{
         ast::{
@@ -62,7 +63,7 @@ impl Resolver {
         self.namespace.close_scope();
     }
 
-    pub fn open_func(&mut self, range: TextRange) {
+    pub fn open_func(&mut self) {
         self.namespace.open_scope();
     }
 
@@ -243,14 +244,9 @@ impl Resolver {
         }
     }
 
-    pub fn declare_callable_prototype(
-        &mut self,
-        callable_prototype: &CallablePrototypeNode,
-        callable_range: TextRange,
-    ) {
+    pub fn declare_callable_prototype(&mut self, callable_prototype: &CallablePrototypeNode) {
         let core_callable_prototype = callable_prototype.core_ref();
         let params = &core_callable_prototype.params;
-        self.open_func(callable_range);
         if let Some(params) = params {
             let params_iter = params.iter();
             for param in params_iter {
@@ -274,13 +270,10 @@ impl Resolver {
         }
     }
 
-    pub fn declare_callable_body(
-        &mut self,
-        callable_body: &CallableBodyNode,
-        callable_range: TextRange,
-    ) {
+    pub fn declare_callable_body(&mut self, callable_body: &CallableBodyNode) {
         let core_callable_body = callable_body.0.as_ref();
-        self.declare_callable_prototype(&core_callable_body.prototype, callable_range);
+        self.open_func();
+        self.declare_callable_prototype(&core_callable_body.prototype);
         let func_body = &core_callable_body.block;
         for stmt in &func_body.0.as_ref().borrow().stmts {
             self.walk_stmt_indent_wrapper(stmt);
@@ -290,11 +283,11 @@ impl Resolver {
     }
 
     pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
-        let core_func_decl = func_decl.0.as_ref();
+        let core_func_decl = func_decl.core_ref();
         let func_name = &core_func_decl.name;
         let kind = &core_func_decl.kind;
         let body = &core_func_decl.body;
-        self.declare_callable_body(body, func_decl.range());
+        self.walk_callable_body(body);
         if let Some(identifier) = func_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 // TODO - Lambda Specific
@@ -439,14 +432,17 @@ impl Resolver {
         let func_body = &core_callable_body.block;
         let (params_vec, return_type) =
             self.resolve_callable_prototype(&core_callable_body.prototype);
+        /*
         self.namespace = func_body.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
         self.walk_block(func_body);
         self.namespace.close_scope();
+         */
+        self.walk_block(func_body);
         (params_vec, return_type)
     }
 
     pub fn resolve_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
-        let core_func_decl = func_decl.0.as_ref();
+        let core_func_decl = func_decl.core_ref();
         let func_name = &core_func_decl.name;
         let (params_vec, return_type) = self.resolve_callable_body(&core_func_decl.body);
         let kind = &core_func_decl.kind;
@@ -618,7 +614,10 @@ impl Visitor for Resolver {
                     self.declare_function(func_decl);
                     return None;
                 }
-                // TODO - add ASTNode::CALLABLE_BODY
+                ASTNode::CALLABLE_BODY(callable_body) => {
+                    self.declare_callable_body(callable_body);
+                    return None;
+                }
                 ASTNode::STRUCT_DECLARATION(struct_decl) => {
                     self.declare_struct(struct_decl);
                     return None;
@@ -671,13 +670,11 @@ impl Visitor for Resolver {
                 }
                 _ => return Some(()),
             },
-            // TODO - add here all nodes having block
             ResolverMode::RESOLVE => match node {
                 ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
                     self.resolve_function(func_decl);
                     return None;
                 }
-                // TODO - add ASTNode::CALLABLE_BODY
                 ASTNode::STRUCT_DECLARATION(struct_decl) => {
                     self.resolve_struct(struct_decl);
                     return None;
@@ -728,6 +725,15 @@ impl Visitor for Resolver {
                         }
                         _ => {}
                     }
+                    return None;
+                }
+                ASTNode::BLOCK(block) => {
+                    self.namespace = block.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
+                    let core_block = block.0.as_ref().borrow();
+                    for stmt in &core_block.stmts {
+                        self.walk_stmt_indent_wrapper(stmt);
+                    }
+                    self.namespace.close_scope();
                     return None;
                 }
                 _ => return Some(()),
