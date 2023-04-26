@@ -432,11 +432,6 @@ impl Resolver {
         let func_body = &core_callable_body.block;
         let (params_vec, return_type) =
             self.resolve_callable_prototype(&core_callable_body.prototype);
-        /*
-        self.namespace = func_body.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
-        self.walk_block(func_body);
-        self.namespace.close_scope();
-         */
         self.walk_block(func_body);
         (params_vec, return_type)
     }
