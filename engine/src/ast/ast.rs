@@ -237,19 +237,14 @@ pub enum CoreLambdaTypeDeclarationNode {
 }
 
 // OK_LAMBDA_TYPE_DECLARATION
-// `type` <name> `:` `(` [<params>] `)` [`->`] [<return_type>] `\n`
+// `type` <name> `:` <prototype> `\n`
 #[derive(Debug, Clone)]
 pub struct CoreOkLambdaTypeDeclarationNode {
-    // TODO - change this to use `callable_prototype`
     pub type_keyword: TokenNode,
-    pub colon: TokenNode,
-    pub lparen: TokenNode,
-    pub rparen: TokenNode,
-    pub right_arrow: Option<TokenNode>,
-    pub newline: TokenNode,
     pub name: IdentifierNode,
-    pub params: Option<NameTypeSpecsNode>,
-    pub return_type: Option<TypeExpressionNode>,
+    pub colon: TokenNode,
+    pub prototype: CallablePrototypeNode,
+    pub newline: TokenNode,
 }
 
 // TYPE_EXPRESSION

@@ -444,27 +444,13 @@ impl Node for StructDeclarationNode {
 impl LambdaTypeDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
-        args: Option<&NameTypeSpecsNode>,
-        return_type: Option<&TypeExpressionNode>,
         type_keyword: &TokenNode,
         colon: &TokenNode,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        right_arrow: Option<&TokenNode>,
+        prototype: &CallablePrototypeNode,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreLambdaTypeDeclarationNode::OK(
-            OkLambdaTypeDeclarationNode::new(
-                name,
-                args,
-                return_type,
-                type_keyword,
-                colon,
-                lparen,
-                rparen,
-                right_arrow,
-                newline,
-            ),
+            OkLambdaTypeDeclarationNode::new(name, type_keyword, colon, prototype, newline),
         ));
         LambdaTypeDeclarationNode(node)
     }
@@ -476,25 +462,17 @@ default_errornous_node_impl!(LambdaTypeDeclarationNode, CoreLambdaTypeDeclaratio
 impl OkLambdaTypeDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
-        params: Option<&NameTypeSpecsNode>,
-        return_type: Option<&TypeExpressionNode>,
         type_keyword: &TokenNode,
         colon: &TokenNode,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        right_arrow: Option<&TokenNode>,
+        prototype: &CallablePrototypeNode,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreOkLambdaTypeDeclarationNode {
-            lparen: lparen.clone(),
-            rparen: rparen.clone(),
-            right_arrow: extract_from_option!(right_arrow),
-            newline: newline.clone(),
             type_keyword: type_keyword.clone(),
             colon: colon.clone(),
             name: name.clone(),
-            params: extract_from_option!(params),
-            return_type: extract_from_option!(return_type),
+            prototype: prototype.clone(),
+            newline: newline.clone(),
         });
         OkLambdaTypeDeclarationNode(node)
     }
@@ -504,10 +482,7 @@ impl OkLambdaTypeDeclarationNode {
 
 impl Node for OkLambdaTypeDeclarationNode {
     fn range(&self) -> TextRange {
-        match &self.core_ref().return_type {
-            Some(return_type) => impl_range!(self.0.as_ref().type_keyword, return_type),
-            None => impl_range!(self.0.as_ref().type_keyword, self.0.as_ref().rparen),
-        }
+        self.0.as_ref().newline.range()
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().type_keyword.start_line_number()

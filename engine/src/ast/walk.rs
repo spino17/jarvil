@@ -8,11 +8,10 @@ use crate::ast::ast::{
     ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
     BinaryExpressionNode, BlockNode, CallExpressionNode, CallNode, ClassMethodCallNode,
     ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreExpressionNode, CoreFunctionDeclarationNode, CoreLambdaTypeDeclarationNode,
-    CoreNameTypeSpecsNode, CoreParamsNode, CoreRAssignmentNode, CoreStatemenIndentWrapperNode,
-    CoreStatementNode, CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode,
-    ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
-    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
+    CoreExpressionNode, CoreLambdaTypeDeclarationNode, CoreNameTypeSpecsNode, CoreParamsNode,
+    CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTypeDeclarationNode,
+    CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode, ExpressionStatementNode,
+    FunctionDeclarationNode, IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
     LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
     NameTypeSpecsNode, OkAssignmentNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode,
     OkParamsNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
@@ -352,21 +351,10 @@ pub trait Visitor {
             }
             ASTNode::OK_LAMBDA_TYPE_DECLARATION(ok_lambda_decl_node) => {
                 let core_ok_lambda_decl = ok_lambda_decl_node.core_ref();
-                // TODO - change this to use walk_callable_prototype
                 self.walk_token(&core_ok_lambda_decl.type_keyword);
                 self.walk_identifier(&core_ok_lambda_decl.name);
                 self.walk_token(&core_ok_lambda_decl.colon);
-                self.walk_token(&core_ok_lambda_decl.lparen);
-                if let Some(args) = &core_ok_lambda_decl.params {
-                    self.walk_name_type_specs(args);
-                }
-                self.walk_token(&core_ok_lambda_decl.rparen);
-                if let Some(right_arrow) = &core_ok_lambda_decl.right_arrow {
-                    self.walk_token(right_arrow);
-                }
-                if let Some(return_type) = &core_ok_lambda_decl.return_type {
-                    self.walk_type_expression(return_type);
-                }
+                self.walk_callable_prototype(&core_ok_lambda_decl.prototype);
                 self.walk_token(&core_ok_lambda_decl.newline);
             }
             ASTNode::CALLABLE_PROTOTYPE(callable_prototype) => {

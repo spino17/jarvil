@@ -1,4 +1,4 @@
-use crate::ast::ast::{BlockKind, ErrornousNode, NameTypeSpecsNode};
+use crate::ast::ast::{BlockKind, CallablePrototypeNode, ErrornousNode, NameTypeSpecsNode};
 use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::lexer::token::CoreToken;
 use crate::{constants::common::IDENTIFIER, parser::parser::PackratParser};
@@ -44,29 +44,35 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                     let r_arrow_node = parser.expect("->");
                     let return_type_node = parser.type_expr();
                     let newline_node = parser.expect_terminators();
-                    LambdaTypeDeclarationNode::new(
-                        &type_name_node,
+                    let callable_prototype = CallablePrototypeNode::new(
                         args_node,
                         Some(&return_type_node),
-                        &type_keyword_node,
-                        &colon_node,
                         &lparen_node,
                         &rparen_node,
                         Some(&r_arrow_node),
+                    );
+                    LambdaTypeDeclarationNode::new(
+                        &type_name_node,
+                        &type_keyword_node,
+                        &colon_node,
+                        &callable_prototype,
                         &newline_node,
                     )
                 }
                 CoreToken::NEWLINE | CoreToken::ENDMARKER => {
                     let newline_node = parser.expect_terminators();
-                    LambdaTypeDeclarationNode::new(
-                        &type_name_node,
+                    let callable_prototype = CallablePrototypeNode::new(
                         args_node,
                         None,
-                        &type_keyword_node,
-                        &colon_node,
                         &lparen_node,
                         &rparen_node,
                         None,
+                    );
+                    LambdaTypeDeclarationNode::new(
+                        &type_name_node,
+                        &type_keyword_node,
+                        &colon_node,
+                        &callable_prototype,
                         &newline_node,
                     )
                 }

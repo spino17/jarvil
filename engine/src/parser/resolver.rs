@@ -540,11 +540,11 @@ impl Resolver {
     }
 
     pub fn resolve_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
-        let core_lambda_type_decl = lambda_type_decl.core_ref();
+        let core_callable_prototype = lambda_type_decl.core_ref().prototype.core_ref();
         let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
-        let params = &core_lambda_type_decl.params;
-        let return_type = &core_lambda_type_decl.return_type;
-        let rparen = &core_lambda_type_decl.rparen;
+        let params = &core_callable_prototype.params;
+        let return_type = &core_callable_prototype.return_type;
+        let rparen = &core_callable_prototype.rparen;
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -589,7 +589,7 @@ impl Resolver {
             self.errors
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
-        if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
+        if let CoreIdentifierNode::OK(ok_identifier) = lambda_type_decl.core_ref().name.core_ref() {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "lambda type name should be resolved to `SymbolData<UserDefinedTypeData>`",
             ) {
