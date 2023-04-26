@@ -11,8 +11,6 @@ pub enum Diagnostics {
     InvalidChar(InvalidCharError),
     NoClosingSymbol(NoClosingSymbolError),
     MissingToken(MissingTokenError),
-    LocalVariableDeclarationLimitReached(LocalVariableDeclarationLimitReachedError),
-    CapturedVariablesCountLimitReached(CapturedVariablesCountLimitReachedError),
     InvalidTrailingTokens(InvalidTrailingTokensError),
     IncorrectlyIndentedBlock(IncorrectlyIndentedBlockError),
     InvalidLValue(InvalidLValueError),
@@ -32,6 +30,7 @@ pub enum Diagnostics {
     UnaryOperatorInvalidUse(UnaryOperatorInvalidUseError),
     BinaryOperatorInvalidOperands(BinaryOperatorInvalidOperandsError),
     MismatchedTypesOnLeftRight(MismatchedTypesOnLeftRightError),
+    NoValidStatementInsideFunctionBody(NoValidStatementInsideFunctionBody),
     NoReturnStatementInFunction(NoReturnStatementInFunctionError),
     InvalidReturnStatement(InvalidReturnStatementError),
     MismatchedReturnType(MismatchedReturnTypeError),
@@ -43,12 +42,6 @@ impl Diagnostics {
             Diagnostics::InvalidChar(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::NoClosingSymbol(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MissingToken(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::LocalVariableDeclarationLimitReached(diagnostic) => {
-                Report::new(diagnostic.clone())
-            }
-            Diagnostics::CapturedVariablesCountLimitReached(diagnostic) => {
-                Report::new(diagnostic.clone())
-            }
             Diagnostics::InvalidTrailingTokens(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IncorrectlyIndentedBlock(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InvalidLValue(diagnostic) => Report::new(diagnostic.clone()),
@@ -75,6 +68,7 @@ impl Diagnostics {
             }
             Diagnostics::MismatchedTypesOnLeftRight(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::NoReturnStatementInFunction(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NoValidStatementInsideFunctionBody(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InvalidReturnStatement(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MismatchedReturnType(diagnostic) => Report::new(diagnostic.clone()),
         }
@@ -134,11 +128,16 @@ pub struct MissingTokenError {
 
 impl MissingTokenError {
     pub fn new(expected_symbols: &[&'static str], received_token: &Token) -> Self {
+        let len = if received_token.is_eq("\n") {
+            received_token.len() - 1
+        } else {
+            received_token.len()
+        };
         MissingTokenError {
             expected_symbols: expected_symbols.to_vec(),
             received_token: received_token.name(),
             start_index: received_token.start_index(),
-            len: received_token.len(),
+            len,
         }
     }
 }
@@ -241,42 +240,6 @@ impl InvalidLValueError {
                     .style(Style::new().yellow())
                     .to_string(),
             ),
-        }
-    }
-}
-
-#[derive(Diagnostic, Debug, Error, Clone)]
-#[error("local variables declarations limit reached")]
-#[diagnostic(code("semantic error (resolving phase)"))]
-pub struct LocalVariableDeclarationLimitReachedError {
-    pub max_limit: usize,
-    #[label("max. limit for active local variables on stack in single call-frame is {}, got more than that", self.max_limit)]
-    pub span: SourceSpan,
-}
-
-impl LocalVariableDeclarationLimitReachedError {
-    pub fn new(max_limit: usize, range: TextRange) -> Self {
-        LocalVariableDeclarationLimitReachedError {
-            max_limit,
-            span: range_to_span(range).into(),
-        }
-    }
-}
-
-#[derive(Diagnostic, Debug, Error, Clone)]
-#[error("too many variables captured by the closure")]
-#[diagnostic(code("semantic error (resolving phase)"))]
-pub struct CapturedVariablesCountLimitReachedError {
-    pub max_limit: usize,
-    #[label("max. limit for number of variables that can be captured by the closure is {}, captured more than that", self.max_limit)]
-    pub span: SourceSpan,
-}
-
-impl CapturedVariablesCountLimitReachedError {
-    pub fn new(max_limit: usize, range: TextRange) -> Self {
-        CapturedVariablesCountLimitReachedError {
-            max_limit,
-            span: range_to_span(range).into(),
         }
     }
 }
@@ -739,6 +702,30 @@ impl NoReturnStatementInFunctionError {
             span: range_to_span(range).into(),
             help: Some(
                 "function with a return value should have atleast one `return` statement inside the top-level block"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("no valid statement found")]
+#[diagnostic(code("semantic error (type-checking phase)"))]
+pub struct NoValidStatementInsideFunctionBody {
+    #[label("function body has no valid statement")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl NoValidStatementInsideFunctionBody {
+    pub fn new(range: TextRange) -> Self {
+        NoValidStatementInsideFunctionBody {
+            span: range_to_span(range).into(),
+            help: Some(
+                "function body should have atleast one statement"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()

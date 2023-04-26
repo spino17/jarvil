@@ -3,11 +3,11 @@ use std::{borrow::Borrow, convert::TryInto};
 use crate::{
     ast::{
         ast::{
-            ASTNode, CoreAssignmentNode, CoreFunctionDeclarationNode,
+            ASTNode, BlockNode, CoreAssignmentNode, CoreFunctionDeclarationNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreTypeDeclarationNode, ExpressionStatementNode, LambdaDeclarationNode,
-            OkAssignmentNode, OkFunctionDeclarationNode, ReturnStatementNode, StatementNode,
-            StructDeclarationNode, StructStatementNode, TokenNode, VariableDeclarationNode, BlockNode,
+            CoreTypeDeclarationNode, ExpressionStatementNode, FunctionDeclarationNode,
+            LambdaTypeDeclarationNode, OkAssignmentNode, ReturnStatementNode, StatementNode,
+            StructDeclarationNode, StructStatementNode, TokenNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -88,7 +88,7 @@ impl PythonCodeGenerator {
         todo!()
     }
 
-    pub fn print_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode) {
+    pub fn print_func_decl(&mut self, func_decl: &FunctionDeclarationNode) {
         todo!()
     }
 
@@ -96,7 +96,7 @@ impl PythonCodeGenerator {
         todo!()
     }
 
-    pub fn print_lambda_decl_stmt(&mut self, lambda_decl_stmt: &LambdaDeclarationNode) {
+    pub fn print_lambda_decl_stmt(&mut self, lambda_decl_stmt: &LambdaTypeDeclarationNode) {
         todo!()
     }
 
@@ -125,13 +125,7 @@ impl PythonCodeGenerator {
                 self.print_return_stmt(return_stmt);
             }
             CoreStatementNode::FUNCTION_DECLARATION(func_decl_stmt) => {
-                let core_func_decl = func_decl_stmt.core_ref();
-                match core_func_decl {
-                    CoreFunctionDeclarationNode::OK(ok_func_decl) => {
-                        self.print_func_decl(ok_func_decl)
-                    }
-                    CoreFunctionDeclarationNode::MISSING_TOKENS(_) => unreachable!(),
-                }
+                self.print_func_decl(func_decl_stmt);
             }
             CoreStatementNode::TYPE_DECLARATION(type_decl_stmt) => {
                 let core_type_decl_stmt = type_decl_stmt.core_ref();
@@ -190,7 +184,7 @@ impl Visitor for PythonCodeGenerator {
             }
             ASTNode::TOKEN(token) => {
                 self.print_token_node(token);
-                return None
+                return None;
             }
             /*
             ASTNode::STATEMENT(stmt) => {

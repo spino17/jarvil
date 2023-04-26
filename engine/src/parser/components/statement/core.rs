@@ -1,4 +1,4 @@
-use crate::ast::ast::{CallableKind, FuncKeywordKind, StatementNode, StructStatementNode};
+use crate::ast::ast::{CallableKind, FunctionDeclarationNode, StatementNode, StructStatementNode};
 use crate::constants::common::IDENTIFIER;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
@@ -53,13 +53,16 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
             StatementNode::new_with_variable_declaration(&variable_decl_node)
         }
         CoreToken::DEF => {
-            let (function_name, def_keyword) = parser.function_name();
-            let function_decl_node = parser.function_decl(
-                Some(&function_name),
-                &FuncKeywordKind::DEF(def_keyword),
+            let def_keyword = parser.expect("def");
+            let func_name = parser.expect_ident();
+            let callable_body = parser.callable_body();
+            let func_decl = FunctionDeclarationNode::new(
+                &func_name,
+                &def_keyword,
                 CallableKind::FUNC,
+                &callable_body,
             );
-            StatementNode::new_with_function_declaration(&function_decl_node)
+            StatementNode::new_with_function_declaration(&func_decl)
         }
         CoreToken::FOR => todo!(),
         CoreToken::WHILE => todo!(),
@@ -131,11 +134,11 @@ pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
 }
 
 pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {
-    let struct_name = parser.expect_ident();
-    let colon_node = parser.expect(":");
-    let type_expr_node = parser.type_expr();
+    // let struct_name = parser.expect_ident();
+    // let colon_node = parser.expect(":");
+    // let type_expr_node = parser.type_expr();
+    let name_type_spec = parser.name_type_spec();
     let newline_node = parser.expect_terminators();
-    let struct_stmt =
-        StructStatementNode::new(&struct_name, &type_expr_node, &colon_node, &newline_node);
+    let struct_stmt = StructStatementNode::new(&name_type_spec, &newline_node);
     StatementNode::new_with_struct_stmt(&struct_stmt)
 }

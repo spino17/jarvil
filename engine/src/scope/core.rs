@@ -7,14 +7,8 @@ use std::rc::Rc;
 use text_size::TextRange;
 
 #[derive(Debug, Clone)]
-pub enum VariableCaptureKind {
-    LOCAL,
-    UPVALUE(usize), // index in the function upvalues containing the usage of the variable
-}
-
-#[derive(Debug, Clone)]
 pub enum IdentifierKind {
-    VARIABLE((SymbolData<VariableData>, VariableCaptureKind)),
+    VARIABLE(SymbolData<VariableData>),
     USER_DEFINED_TYPE(SymbolData<UserDefinedTypeData>),
     FUNCTION(SymbolData<FunctionData>),
 }
@@ -189,7 +183,6 @@ impl Namespace {
     pub fn declare_variable(
         &self,
         name: &Rc<String>,
-        stack_index: usize,
         decl_range: TextRange,
     ) -> Result<SymbolData<VariableData>, TextRange> {
         let lookup_func =
@@ -198,13 +191,8 @@ impl Namespace {
                 Some(symbol_data) => Some(symbol_data.clone()),
                 None => None,
             };
-        // println!("variable `{}` has index `{}`", name, stack_index);
-        self.variables.insert(
-            name,
-            VariableData::new(stack_index),
-            decl_range,
-            lookup_func,
-        )
+        self.variables
+            .insert(name, VariableData::default(), decl_range, lookup_func)
     }
 
     pub fn declare_function(

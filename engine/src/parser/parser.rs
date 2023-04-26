@@ -4,10 +4,10 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{
-    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableKind, ExpressionNode,
-    FuncKeywordKind, FunctionDeclarationNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
-    Node, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
-    TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
+    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableBodyNode, ExpressionNode,
+    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, ParamsNode, RAssignmentNode,
+    SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::ast::ast::{BlockKind, ErrornousNode};
 use crate::code::Code;
@@ -481,28 +481,19 @@ impl PackratParser {
     }
 
     pub fn name_type_spec(&mut self) -> NameTypeSpecNode {
-        components::function_declaration::name_type_spec(self)
+        components::common::name_type_spec(self)
     }
 
     pub fn name_type_specs(&mut self) -> NameTypeSpecsNode {
-        components::function_declaration::name_type_specs(self)
+        components::common::name_type_specs(self)
     }
 
     pub fn r_assign(&mut self, identifier_name: Option<&IdentifierNode>) -> RAssignmentNode {
         components::common::r_assign(self, identifier_name)
     }
 
-    pub fn function_name(&mut self) -> (IdentifierNode, TokenNode) {
-        components::function_declaration::function_name(self)
-    }
-
-    pub fn function_decl(
-        &mut self,
-        name: Option<&IdentifierNode>,
-        func_keyword: &FuncKeywordKind,
-        kind: CallableKind,
-    ) -> FunctionDeclarationNode {
-        components::function_declaration::function_decl(self, name, func_keyword, kind)
+    pub fn callable_body(&mut self) -> CallableBodyNode {
+        components::common::callable_body(self)
     }
 
     pub fn struct_stmt(&mut self) -> StatementNode {

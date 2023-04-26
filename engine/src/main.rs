@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate jarvil_macros;
 mod ast;
-mod backend;
 mod cmd;
 mod code;
 mod codegen;
@@ -35,7 +34,7 @@ fn compile(args: Vec<String>) {
     if let Err(err) = result {
         let err = attach_source_code(err.report(), code_str);
         // TODO - later give option to the user to display all errors
-        println!("{:?}", err)
+        println!("{:?}", err);
     }
 }
 
@@ -49,6 +48,7 @@ fn main() {
         my_theme.styles.help = Style::new().white();
         Box::new(GraphicalReportHandler::new_themed(my_theme))
     }));
+
     let args: Vec<String> = args().collect();
     compile(args);
 }

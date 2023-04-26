@@ -33,6 +33,10 @@ pub fn build(code_vec: Vec<char>) -> Result<(), Diagnostics> {
     // TODO - return chunk in result and use VM to execute it!
     let mut py_generator = PythonCodeGenerator::new(&code);
     let py_code = py_generator.generate_python_code(&ast);
-    fs::write("/Users/bhavyabhatt/Desktop/generated-python-file.jv", py_code).expect("file write failed");
+    fs::write(
+        "/Users/bhavyabhatt/Desktop/generated-python-file.jv",
+        py_code,
+    )
+    .expect("file write failed");
     Ok(())
 }
