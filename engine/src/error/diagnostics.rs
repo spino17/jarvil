@@ -30,6 +30,7 @@ pub enum Diagnostics {
     UnaryOperatorInvalidUse(UnaryOperatorInvalidUseError),
     BinaryOperatorInvalidOperands(BinaryOperatorInvalidOperandsError),
     MismatchedTypesOnLeftRight(MismatchedTypesOnLeftRightError),
+    NoValidStatementInsideFunctionBody(NoValidStatementInsideFunctionBody),
     NoReturnStatementInFunction(NoReturnStatementInFunctionError),
     InvalidReturnStatement(InvalidReturnStatementError),
     MismatchedReturnType(MismatchedReturnTypeError),
@@ -67,6 +68,7 @@ impl Diagnostics {
             }
             Diagnostics::MismatchedTypesOnLeftRight(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::NoReturnStatementInFunction(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NoValidStatementInsideFunctionBody(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InvalidReturnStatement(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MismatchedReturnType(diagnostic) => Report::new(diagnostic.clone()),
         }
@@ -700,6 +702,30 @@ impl NoReturnStatementInFunctionError {
             span: range_to_span(range).into(),
             help: Some(
                 "function with a return value should have atleast one `return` statement inside the top-level block"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("no valid statement found")]
+#[diagnostic(code("semantic error (type-checking phase)"))]
+pub struct NoValidStatementInsideFunctionBody {
+    #[label("function body has no valid statement")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl NoValidStatementInsideFunctionBody {
+    pub fn new(range: TextRange) -> Self {
+        NoValidStatementInsideFunctionBody {
+            span: range_to_span(range).into(),
+            help: Some(
+                "function body should have atleast one statement"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()

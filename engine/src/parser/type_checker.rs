@@ -30,7 +30,7 @@ use crate::{
             MismatchedParamTypeError, MismatchedReturnTypeError, MismatchedTypesOnLeftRightError,
             MoreParamsCountError, NoReturnStatementInFunctionError, PropertyDoesNotExistError,
             PropertyNotSupportedError, RightSideWithVoidTypeNotAllowedError,
-            UnaryOperatorInvalidUseError,
+            UnaryOperatorInvalidUseError, NoValidStatementInsideFunctionBody,
         },
         helper::PropertyKind,
     },
@@ -791,6 +791,7 @@ impl TypeChecker {
                     self.check_callable_prototype(&core_ok_callable_body.prototype);
                 self.context.func_stack.push(return_type_obj.clone());
                 let mut has_return_stmt = false;
+                let mut has_atleast_one_stmt = false;
                 for stmt in &core_ok_callable_body.block.0.as_ref().borrow().stmts {
                     let stmt = match stmt.core_ref() {
                         CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
@@ -801,22 +802,28 @@ impl TypeChecker {
                         _ => continue,
                     };
                     self.walk_stmt(&stmt);
+                    has_atleast_one_stmt = true;
                     if let CoreStatementNode::RETURN(_) = stmt.core_ref() {
                         has_return_stmt = true;
                         // TODO - we can break here as any statement following return statement is dead code
                     }
                 }
-                if !has_return_stmt && !return_type_obj.is_void() {
-                    let return_type_node = ok_callable_body
-                        .core_ref()
-                        .prototype
-                        .core_ref()
-                        .return_type
-                        .as_ref()
-                        .unwrap();
-                    let err = NoReturnStatementInFunctionError::new(return_type_node.range());
-                    self.errors
-                        .push(Diagnostics::NoReturnStatementInFunction(err));
+                if !has_atleast_one_stmt {
+                    let err = NoValidStatementInsideFunctionBody::new(core_ok_callable_body.colon.range());
+                    self.errors.push(Diagnostics::NoValidStatementInsideFunctionBody(err));
+                } else {
+                    if !has_return_stmt && !return_type_obj.is_void() {
+                        let return_type_node = ok_callable_body
+                            .core_ref()
+                            .prototype
+                            .core_ref()
+                            .return_type
+                            .as_ref()
+                            .unwrap();
+                        let err = NoReturnStatementInFunctionError::new(return_type_node.range());
+                        self.errors
+                            .push(Diagnostics::NoReturnStatementInFunction(err));
+                    }
                 }
                 self.context.func_stack.pop();
             }
