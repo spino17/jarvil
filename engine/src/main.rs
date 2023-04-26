@@ -31,7 +31,6 @@ fn attach_source_code(err: Report, source: String) -> Report {
 fn compile(args: Vec<String>) {
     let (code_vec, code_str) = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     let result = build(code_vec);
-    println!("{:?}", result);
     if let Err(err) = result {
         let err = attach_source_code(err.report(), code_str);
         // TODO - later give option to the user to display all errors

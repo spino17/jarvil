@@ -63,10 +63,9 @@ pub enum ASTNode {
     // Callable
     CALLABLE_PROTOTYPE(CallablePrototypeNode),
     CALLABLE_BODY(CallableBodyNode),
+    OK_CALLABLE_BODY(OkCallableBodyNode),
     FUNCTION_DECLARATION(FunctionDeclarationNode),
-    OK_FUNCTION_DECLARATION(OkFunctionDeclarationNode),
     LAMBDA_DECLARATION(LambdaDeclarationNode),
-    OK_LAMBDA_DECLARATION(OkLambdaDeclarationNode),
 
     // Expression
     EXPRESSION_STATEMENT(ExpressionStatementNode),
@@ -199,7 +198,7 @@ pub struct CoreInvalidLValueNode {
 // R_ASSIGNMENT
 #[derive(Debug, Clone, Node)]
 pub enum CoreRAssignmentNode {
-    LAMBDA(FunctionDeclarationNode),
+    LAMBDA(LambdaDeclarationNode),
     EXPRESSION(ExpressionStatementNode),
     MISSING_TOKENS(MissingTokenNode),
 }
@@ -296,43 +295,37 @@ pub struct CoreCallablePrototypeNode {
 }
 
 // CALLABLE_BODY
+#[derive(Debug, Clone, Node)]
+pub enum CoreCallableBodyNode {
+    OK(OkCallableBodyNode),
+    MISSING_TOKENS(MissingTokenNode),
+}
+
+// OK_CALLABLE_BODY
 // `(` [<params>] `)` [`->`] [<return_type>] `:` <block>
 #[derive(Debug, Clone)]
-pub struct CoreCallableBodyNode {
+pub struct CoreOkCallableBodyNode {
     pub colon: TokenNode,
     pub block: BlockNode,
     pub prototype: CallablePrototypeNode,
 }
 
 // FUNCTION_DECLARATION
-#[derive(Debug, Clone, Node)]
-pub enum CoreFunctionDeclarationNode {
-    OK(OkFunctionDeclarationNode),
-    MISSING_TOKENS(MissingTokenNode),
-}
-
-// OK_FUNCTION_DECLARATION
-// `def` <name> `(` [<params>] `)` [`->`] [<return_type>] `:` <block>
+// `def` <name> <body>
 #[derive(Debug, Clone)]
-pub struct CoreOkFunctionDeclarationNode {
-    pub func_keyword: FuncKeywordKind,
-    pub name: Option<IdentifierNode>,
+pub struct CoreFunctionDeclarationNode {
+    pub def_keyword: TokenNode,
+    pub name: IdentifierNode,
     pub kind: CallableKind,
     pub body: CallableBodyNode,
 }
 
 // LAMBDA_DECLARATION
-#[derive(Debug, Clone, Node)]
-pub enum CoreLambdaDeclarationNode {
-    OK(OkLambdaDeclarationNode),
-    MISSING_TOKENS(MissingTokenNode),
-}
-
-// OK_LAMBDA_DECLARATION
 // `lambda` `(` [<params>] `)` [`->`] [<return_type>] `:` <block>
 #[derive(Debug, Clone)]
-pub struct CoreOkLambdaDeclarationNode {
+pub struct CoreLambdaDeclarationNode {
     pub lambda_keyword: TokenNode,
+    pub name: Option<IdentifierNode>,
     pub body: CallableBodyNode,
 }
 
@@ -618,13 +611,11 @@ pub struct CallablePrototypeNode(pub Rc<CoreCallablePrototypeNode>);
 #[derive(Debug, Clone)]
 pub struct CallableBodyNode(pub Rc<CoreCallableBodyNode>);
 #[derive(Debug, Clone)]
+pub struct OkCallableBodyNode(pub Rc<CoreOkCallableBodyNode>);
+#[derive(Debug, Clone)]
 pub struct FunctionDeclarationNode(pub Rc<CoreFunctionDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct OkFunctionDeclarationNode(pub Rc<CoreOkFunctionDeclarationNode>);
-#[derive(Debug, Clone)]
 pub struct LambdaDeclarationNode(pub Rc<CoreLambdaDeclarationNode>);
-#[derive(Debug, Clone)]
-pub struct OkLambdaDeclarationNode(pub Rc<CoreOkLambdaDeclarationNode>);
 #[derive(Debug, Clone)]
 pub struct ExpressionStatementNode(pub Rc<CoreExpressionStatementNode>);
 #[derive(Debug, Clone)]
@@ -698,10 +689,4 @@ pub enum CallableKind {
     METHOD, // Add the symbol entry of the struct for which this is a method
     CLASSMETHOD,
     CONSTRUCTOR,
-    LAMBDA,
-}
-#[derive(Debug, Clone)]
-pub enum FuncKeywordKind {
-    DEF(TokenNode),
-    FUNC(TokenNode),
 }

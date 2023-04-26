@@ -1,15 +1,17 @@
-use crate::ast::ast::{CallableBodyNode, CallablePrototypeNode, OkLambdaDeclarationNode};
+use crate::ast::ast::{
+    CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, FunctionDeclarationNode,
+    LambdaDeclarationNode,
+};
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::MoreThanMaxLimitParamsPassedError;
 use crate::error::helper::IdentifierKind as IdentKind;
-use crate::types::lambda;
 use crate::{
     ast::{
         ast::{
             ASTNode, BlockNode, CallableKind, CoreAtomStartNode, CoreIdentifierNode,
-            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, Node,
-            OkFunctionDeclarationNode, OkIdentifierNode, OkLambdaTypeDeclarationNode,
-            StructDeclarationNode, TypeExpressionNode, TypeResolveKind, VariableDeclarationNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, Node, OkIdentifierNode,
+            OkLambdaTypeDeclarationNode, StructDeclarationNode, TypeExpressionNode,
+            TypeResolveKind, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -223,11 +225,6 @@ impl Resolver {
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         self.walk_r_assignment(&core_variable_decl.r_assign);
-        // TODO - Lambda Specific
-        // Remove this condition
-        if let CoreRAssignmentNode::LAMBDA(_) = core_variable_decl.r_assign.core_ref() {
-            return;
-        }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
             if let Some((name, previous_decl_range)) =
                 self.try_declare_and_bind_variable(ok_identifier)
@@ -272,59 +269,47 @@ impl Resolver {
 
     pub fn declare_callable_body(&mut self, callable_body: &CallableBodyNode) {
         let core_callable_body = callable_body.0.as_ref();
-        self.open_func();
-        self.declare_callable_prototype(&core_callable_body.prototype);
-        let func_body = &core_callable_body.block;
-        for stmt in &func_body.0.as_ref().borrow().stmts {
-            self.walk_stmt_indent_wrapper(stmt);
+        match core_callable_body {
+            CoreCallableBodyNode::OK(ok_callable_body) => {
+                let core_ok_callable_body = ok_callable_body.core_ref();
+                self.open_func();
+                self.declare_callable_prototype(&core_ok_callable_body.prototype);
+                let func_body = &core_ok_callable_body.block;
+                for stmt in &func_body.0.as_ref().borrow().stmts {
+                    self.walk_stmt_indent_wrapper(stmt);
+                }
+                func_body.set_scope(&self.namespace);
+                self.close_func();
+            }
+            CoreCallableBodyNode::MISSING_TOKENS(_) => return,
         }
-        func_body.set_scope(&self.namespace);
-        self.close_func();
     }
 
-    pub fn declare_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
+    pub fn declare_function(&mut self, func_decl: &FunctionDeclarationNode) {
         let core_func_decl = func_decl.core_ref();
         let func_name = &core_func_decl.name;
         let kind = &core_func_decl.kind;
         let body = &core_func_decl.body;
         self.walk_callable_body(body);
-        if let Some(identifier) = func_name {
-            if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                // TODO - Lambda Specific
-                match kind {
-                    CallableKind::FUNC => {
-                        if let Some((name, previous_decl_range)) =
-                            self.try_declare_and_bind_function(ok_identifier)
-                        {
-                            let err = IdentifierAlreadyDeclaredError::new(
-                                IdentKind::FUNCTION,
-                                name.to_string(),
-                                previous_decl_range,
-                                ok_identifier.range(),
-                            );
-                            self.errors
-                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                        }
+        if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
+            match kind {
+                CallableKind::FUNC => {
+                    if let Some((name, previous_decl_range)) =
+                        self.try_declare_and_bind_function(ok_identifier)
+                    {
+                        let err = IdentifierAlreadyDeclaredError::new(
+                            IdentKind::FUNCTION,
+                            name.to_string(),
+                            previous_decl_range,
+                            ok_identifier.range(),
+                        );
+                        self.errors
+                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
                     }
-                    // TODO - Shift this in the variable declaration section
-                    CallableKind::LAMBDA => {
-                        if let Some((name, previous_decl_range)) =
-                            self.try_declare_and_bind_variable(ok_identifier)
-                        {
-                            let err = IdentifierAlreadyDeclaredError::new(
-                                IdentKind::VARIABLE,
-                                name.to_string(),
-                                previous_decl_range,
-                                ok_identifier.range(),
-                            );
-                            self.errors
-                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                        }
-                    }
-                    CallableKind::METHOD => unimplemented!(),
-                    CallableKind::CLASSMETHOD => unimplemented!(),
-                    CallableKind::CONSTRUCTOR => unimplemented!(),
                 }
+                CallableKind::METHOD => unimplemented!(),
+                CallableKind::CLASSMETHOD => unimplemented!(),
+                CallableKind::CONSTRUCTOR => unimplemented!(),
             }
         }
     }
@@ -429,33 +414,30 @@ impl Resolver {
         callable_body: &CallableBodyNode,
     ) -> (Vec<(Rc<String>, Type)>, Type) {
         let core_callable_body = callable_body.core_ref();
-        let func_body = &core_callable_body.block;
-        let (params_vec, return_type) =
-            self.resolve_callable_prototype(&core_callable_body.prototype);
-        self.walk_block(func_body);
-        (params_vec, return_type)
+        match core_callable_body {
+            CoreCallableBodyNode::OK(ok_callable_body) => {
+                let core_ok_callable_body = ok_callable_body.core_ref();
+                let func_body = &core_ok_callable_body.block;
+                let (params_vec, return_type) =
+                    self.resolve_callable_prototype(&core_ok_callable_body.prototype);
+                self.walk_block(func_body);
+                (params_vec, return_type)
+            }
+            CoreCallableBodyNode::MISSING_TOKENS(_) => {
+                return (Vec::new(), Type::new_with_unknown())
+            }
+        }
     }
 
-    pub fn resolve_function(&mut self, func_decl: &OkFunctionDeclarationNode) {
-        let core_func_decl = func_decl.core_ref();
-        let func_name = &core_func_decl.name;
-        let (params_vec, return_type) = self.resolve_callable_body(&core_func_decl.body);
-        let kind = &core_func_decl.kind;
-        if let Some(identifier) = func_name {
+    pub fn resolve_lambda(&mut self, lambda_decl: &LambdaDeclarationNode) {
+        let core_lambda_decl = lambda_decl.core_ref();
+        let lambda_variable_name = &core_lambda_decl.name;
+        let (params_vec, return_type) = self.resolve_callable_body(&core_lambda_decl.body);
+        if let Some(identifier) = lambda_variable_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 if let Some(symbol_data) = ok_identifier.symbol_data() {
                     match symbol_data.0 {
-                        // TODO - Lambda Specific
-                        IdentifierKind::FUNCTION(func_symbol_data) => {
-                            assert!(kind.clone() == CallableKind::FUNC);
-                            func_symbol_data
-                                .0
-                                .as_ref()
-                                .borrow_mut()
-                                .set_data(params_vec, return_type);
-                        }
                         IdentifierKind::VARIABLE(variable_symbol_data) => {
-                            assert!(kind.clone() == CallableKind::LAMBDA);
                             let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(
                                 params_vec,
                                 return_type,
@@ -464,15 +446,40 @@ impl Resolver {
                                 None,
                                 &SymbolData::new(symbol_data, ok_identifier.range()),
                             );
-                            variable_symbol_data.0
+                            variable_symbol_data
+                                .0
                                 .as_ref()
                                 .borrow_mut()
                                 .set_data_type(&lambda_type_obj);
                         }
                         _ => unreachable!(
-                            "function name should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`"
+                            "lambda variable name should be resolved to `SymbolData<VariableData>`"
                         ),
                     }
+                }
+            }
+        }
+    }
+
+    pub fn resolve_function(&mut self, func_decl: &FunctionDeclarationNode) {
+        let core_func_decl = func_decl.core_ref();
+        let func_name = &core_func_decl.name;
+        let (params_vec, return_type) = self.resolve_callable_body(&core_func_decl.body);
+        let kind = &core_func_decl.kind;
+        if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
+            if let Some(symbol_data) = ok_identifier.symbol_data() {
+                match symbol_data.0 {
+                    IdentifierKind::FUNCTION(func_symbol_data) => {
+                        assert!(kind.clone() == CallableKind::FUNC);
+                        func_symbol_data
+                            .0
+                            .as_ref()
+                            .borrow_mut()
+                            .set_data(params_vec, return_type);
+                    }
+                    _ => unreachable!(
+                        "function name should be resolved to `SymbolData<FunctionData>`"
+                    ),
                 }
             }
         }
@@ -601,11 +608,20 @@ impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match self.mode {
             ResolverMode::DECLARE => match node {
+                ASTNode::BLOCK(block) => {
+                    self.open_block();
+                    let core_block = block.0.as_ref().borrow();
+                    for stmt in &core_block.stmts {
+                        self.walk_stmt_indent_wrapper(stmt);
+                    }
+                    self.close_block();
+                    return None;
+                }
                 ASTNode::VARIABLE_DECLARATION(variable_decl) => {
                     self.declare_variable(variable_decl);
                     return None;
                 }
-                ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
+                ASTNode::FUNCTION_DECLARATION(func_decl) => {
                     self.declare_function(func_decl);
                     return None;
                 }
@@ -654,20 +670,28 @@ impl Visitor for Resolver {
                     }
                     return None;
                 }
+                _ => return Some(()),
+            },
+            ResolverMode::RESOLVE => match node {
                 ASTNode::BLOCK(block) => {
-                    self.open_block();
+                    self.namespace = block.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
                     let core_block = block.0.as_ref().borrow();
                     for stmt in &core_block.stmts {
                         self.walk_stmt_indent_wrapper(stmt);
                     }
-                    self.close_block();
+                    self.namespace.close_scope();
                     return None;
                 }
-                _ => return Some(()),
-            },
-            ResolverMode::RESOLVE => match node {
-                ASTNode::OK_FUNCTION_DECLARATION(func_decl) => {
+                ASTNode::FUNCTION_DECLARATION(func_decl) => {
                     self.resolve_function(func_decl);
+                    return None;
+                }
+                ASTNode::LAMBDA_DECLARATION(lambda_decl) => {
+                    self.resolve_lambda(lambda_decl);
+                    return None;
+                }
+                ASTNode::CALLABLE_BODY(callable_body) => {
+                    self.resolve_callable_body(callable_body);
                     return None;
                 }
                 ASTNode::STRUCT_DECLARATION(struct_decl) => {
@@ -720,15 +744,6 @@ impl Visitor for Resolver {
                         }
                         _ => {}
                     }
-                    return None;
-                }
-                ASTNode::BLOCK(block) => {
-                    self.namespace = block.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
-                    let core_block = block.0.as_ref().borrow();
-                    for stmt in &core_block.stmts {
-                        self.walk_stmt_indent_wrapper(stmt);
-                    }
-                    self.namespace.close_scope();
                     return None;
                 }
                 _ => return Some(()),

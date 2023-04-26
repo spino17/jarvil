@@ -1,7 +1,7 @@
 use super::ast::{
-    CallableBodyNode, CallablePrototypeNode, CoreIdentifierNode, CoreLambdaDeclarationNode,
-    CoreTokenNode, FuncKeywordKind, IdentifierNode, LambdaDeclarationNode, OkIdentifierNode,
-    OkLambdaDeclarationNode, OkTokenNode,
+    CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreIdentifierNode,
+    CoreTokenNode, IdentifierNode, LambdaDeclarationNode, OkCallableBodyNode, OkIdentifierNode,
+    OkTokenNode,
 };
 use crate::ast::ast::ASTNode;
 use crate::ast::ast::{
@@ -14,12 +14,12 @@ use crate::ast::ast::{
     ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
     LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
-    NameTypeSpecsNode, OkAssignmentNode, OkFunctionDeclarationNode, OkLambdaTypeDeclarationNode,
-    OkNameTypeSpecsNode, OkParamsNode, OnlyUnaryExpressionNode, ParamsNode,
-    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, ReturnStatementNode,
-    SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
-    StructDeclarationNode, StructStatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
+    NameTypeSpecsNode, OkAssignmentNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode,
+    OkParamsNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
+    PropertyAccessNode, RAssignmentNode, ReturnStatementNode, SkippedTokenNode, SkippedTokensNode,
+    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructStatementNode,
+    TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
+    VariableDeclarationNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -85,6 +85,11 @@ pub trait Visitor {
         new_with_CallableBodyNode
     );
     impl_node_walk!(
+        walk_ok_callable_body,
+        OkCallableBodyNode,
+        new_with_OkCallableBodyNode
+    );
+    impl_node_walk!(
         walk_type_decl,
         TypeDeclarationNode,
         new_with_TypeDeclarationNode
@@ -139,16 +144,6 @@ pub trait Visitor {
         walk_type_expression,
         TypeExpressionNode,
         new_with_TypeExpressionNode
-    );
-    impl_node_walk!(
-        walk_ok_lambda_decl,
-        OkLambdaDeclarationNode,
-        new_with_OkLambdaDeclarationNode
-    );
-    impl_node_walk!(
-        walk_ok_func_decl,
-        OkFunctionDeclarationNode,
-        new_with_OkFunctionDeclarationNode
     );
     impl_node_walk!(walk_r_assignment, RAssignmentNode, new_with_RAssignmentNode);
     impl_node_walk!(walk_expression, ExpressionNode, new_with_ExpressionNode);
@@ -390,47 +385,31 @@ pub trait Visitor {
             }
             ASTNode::CALLABLE_BODY(callable_body) => {
                 let core_callable_body = callable_body.0.as_ref();
-                self.walk_callable_prototype(&core_callable_body.prototype);
-                self.walk_token(&core_callable_body.colon);
-                self.walk_block(&core_callable_body.block);
+                match &core_callable_body {
+                    CoreCallableBodyNode::OK(ok_callable_body) => {
+                        self.walk_ok_callable_body(ok_callable_body);
+                    }
+                    CoreCallableBodyNode::MISSING_TOKENS(missing_tokens) => {
+                        self.walk_missing_tokens(missing_tokens);
+                    }
+                }
+            }
+            ASTNode::OK_CALLABLE_BODY(ok_callable_body) => {
+                let core_ok_callable_body = ok_callable_body.core_ref();
+                self.walk_callable_prototype(&core_ok_callable_body.prototype);
+                self.walk_token(&core_ok_callable_body.colon);
+                self.walk_block(&core_ok_callable_body.block);
             }
             ASTNode::LAMBDA_DECLARATION(lambda_decl_node) => {
                 let core_lambda_decl_node = lambda_decl_node.core_ref();
-                match &core_lambda_decl_node {
-                    CoreLambdaDeclarationNode::OK(ok_lambda_decl_node) => {
-                        self.walk_ok_lambda_decl(ok_lambda_decl_node);
-                    }
-                    CoreLambdaDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                        self.walk_missing_tokens(missing_tokens);
-                    }
-                }
-            }
-            ASTNode::OK_LAMBDA_DECLARATION(ok_lambda_decl_node) => {
-                let core_ok_lambda_decl_node = ok_lambda_decl_node.core_ref();
-                self.walk_token(&core_ok_lambda_decl_node.lambda_keyword);
-                self.walk_callable_body(&core_ok_lambda_decl_node.body);
+                self.walk_token(&core_lambda_decl_node.lambda_keyword);
+                self.walk_callable_body(&core_lambda_decl_node.body);
             }
             ASTNode::FUNCTION_DECLARATION(function_decl_node) => {
                 let core_func_decl = function_decl_node.core_ref();
-                match &core_func_decl {
-                    CoreFunctionDeclarationNode::OK(ok_func_decl) => {
-                        self.walk_ok_func_decl(ok_func_decl);
-                    }
-                    CoreFunctionDeclarationNode::MISSING_TOKENS(missing_tokens) => {
-                        self.walk_missing_tokens(missing_tokens);
-                    }
-                }
-            }
-            ASTNode::OK_FUNCTION_DECLARATION(ok_function_decl_node) => {
-                let core_ok_func_decl = ok_function_decl_node.0.as_ref();
-                match &core_ok_func_decl.func_keyword {
-                    FuncKeywordKind::DEF(def_keyword) => self.walk_token(def_keyword),
-                    FuncKeywordKind::FUNC(func_keyword) => self.walk_token(func_keyword),
-                }
-                if let Some(func_name) = &core_ok_func_decl.name {
-                    self.walk_identifier(func_name);
-                }
-                self.walk_callable_body(&core_ok_func_decl.body);
+                self.walk_token(&core_func_decl.def_keyword);
+                self.walk_identifier(&core_func_decl.name);
+                self.walk_callable_body(&core_func_decl.body);
             }
             ASTNode::VARIABLE_DECLARATION(variable_decl_node) => {
                 let core_variable_decl = variable_decl_node.core_ref();
@@ -454,7 +433,7 @@ pub trait Visitor {
                         self.walk_expr_stmt(expr_stmt);
                     }
                     CoreRAssignmentNode::LAMBDA(lambda) => {
-                        self.walk_func_decl(lambda);
+                        self.walk_lambda_decl(lambda);
                     }
                     CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);

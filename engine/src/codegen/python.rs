@@ -5,8 +5,8 @@ use crate::{
         ast::{
             ASTNode, BlockNode, CoreAssignmentNode, CoreFunctionDeclarationNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreTypeDeclarationNode, ExpressionStatementNode, LambdaTypeDeclarationNode,
-            OkAssignmentNode, OkFunctionDeclarationNode, ReturnStatementNode, StatementNode,
+            CoreTypeDeclarationNode, ExpressionStatementNode, FunctionDeclarationNode,
+            LambdaTypeDeclarationNode, OkAssignmentNode, ReturnStatementNode, StatementNode,
             StructDeclarationNode, StructStatementNode, TokenNode, VariableDeclarationNode,
         },
         walk::Visitor,
@@ -88,7 +88,7 @@ impl PythonCodeGenerator {
         todo!()
     }
 
-    pub fn print_func_decl(&mut self, func_decl: &OkFunctionDeclarationNode) {
+    pub fn print_func_decl(&mut self, func_decl: &FunctionDeclarationNode) {
         todo!()
     }
 
@@ -125,13 +125,7 @@ impl PythonCodeGenerator {
                 self.print_return_stmt(return_stmt);
             }
             CoreStatementNode::FUNCTION_DECLARATION(func_decl_stmt) => {
-                let core_func_decl = func_decl_stmt.core_ref();
-                match core_func_decl {
-                    CoreFunctionDeclarationNode::OK(ok_func_decl) => {
-                        self.print_func_decl(ok_func_decl)
-                    }
-                    CoreFunctionDeclarationNode::MISSING_TOKENS(_) => unreachable!(),
-                }
+                self.print_func_decl(func_decl_stmt);
             }
             CoreStatementNode::TYPE_DECLARATION(type_decl_stmt) => {
                 let core_type_decl_stmt = type_decl_stmt.core_ref();

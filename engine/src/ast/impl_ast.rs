@@ -9,16 +9,15 @@ use super::ast::{
     CoreIdentifierNode, CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode,
     CoreInvalidLValueNode, CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode,
     CoreMethodAccessNode, CoreMissingTokenNode, CoreNameTypeSpecNode, CoreNameTypeSpecsNode,
-    CoreOkAssignmentNode, CoreOkFunctionDeclarationNode, CoreOkIdentifierNode,
-    CoreOkLambdaDeclarationNode, CoreOkLambdaTypeDeclarationNode, CoreOkNameTypeSpecsNode,
-    CoreOkParamsNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode, CoreParamsNode,
-    CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
-    CoreReturnStatementNode, CoreStructDeclarationNode, CoreStructStatementNode, CoreTokenNode,
-    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode,
-    CoreUserDefinedTypeNode, CoreVariableDeclarationNode, FuncKeywordKind, IdentifierNode,
-    IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
-    MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode,
-    OkFunctionDeclarationNode, OkIdentifierNode, OkLambdaDeclarationNode,
+    CoreOkAssignmentNode, CoreOkCallableBodyNode, CoreOkIdentifierNode,
+    CoreOkLambdaTypeDeclarationNode, CoreOkNameTypeSpecsNode, CoreOkParamsNode, CoreOkTokenNode,
+    CoreOnlyUnaryExpressionNode, CoreParamsNode, CoreParenthesisedExpressionNode,
+    CorePropertyAccessNode, CoreRAssignmentNode, CoreReturnStatementNode,
+    CoreStructDeclarationNode, CoreStructStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
+    CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
+    CoreVariableDeclarationNode, IdentifierNode, IndexAccessNode, InvalidLValueNode,
+    LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode,
+    NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode,
     OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkTokenNode,
     OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode,
     RAssignmentNode, StructDeclarationNode, TypeExpressionNode, TypeResolveKind,
@@ -366,15 +365,10 @@ impl Node for InvalidLValueNode {
 }
 
 impl StructStatementNode {
-    pub fn new(
-        param_name: &IdentifierNode,
-        param_type: &TypeExpressionNode,
-        colon: &TokenNode,
-        newline: &TokenNode,
-    ) -> Self {
+    pub fn new(name_type_spec: &NameTypeSpecNode, newline: &TokenNode) -> Self {
         let node = Rc::new(CoreStructStatementNode {
             newline: newline.clone(),
-            name_type_spec: NameTypeSpecNode::new(param_name, param_type, colon),
+            name_type_spec: name_type_spec.clone(),
         });
         StructStatementNode(node)
     }
@@ -521,7 +515,7 @@ impl Node for OkLambdaTypeDeclarationNode {
 }
 
 impl CallablePrototypeNode {
-    fn new(
+    pub fn new(
         params: Option<&NameTypeSpecsNode>,
         return_type: Option<&TypeExpressionNode>,
         lparen: &TokenNode,
@@ -554,19 +548,31 @@ impl Node for CallablePrototypeNode {
 }
 
 impl CallableBodyNode {
-    fn new(block: &BlockNode, colon: &TokenNode, prototype: &CallablePrototypeNode) -> Self {
-        let node = Rc::new(CoreCallableBodyNode {
-            colon: colon.clone(),
-            block: block.clone(),
-            prototype: prototype.clone(),
-        });
+    pub fn new(block: &BlockNode, colon: &TokenNode, prototype: &CallablePrototypeNode) -> Self {
+        let node = Rc::new(CoreCallableBodyNode::OK(OkCallableBodyNode::new(
+            block, colon, prototype,
+        )));
         CallableBodyNode(node)
     }
 
     impl_core_ref!(CoreCallableBodyNode);
 }
+default_errornous_node_impl!(CallableBodyNode, CoreCallableBodyNode);
 
-impl Node for CallableBodyNode {
+impl OkCallableBodyNode {
+    pub fn new(block: &BlockNode, colon: &TokenNode, prototype: &CallablePrototypeNode) -> Self {
+        let node = Rc::new(CoreOkCallableBodyNode {
+            colon: colon.clone(),
+            block: block.clone(),
+            prototype: prototype.clone(),
+        });
+        OkCallableBodyNode(node)
+    }
+
+    impl_core_ref!(CoreOkCallableBodyNode);
+}
+
+impl Node for OkCallableBodyNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().prototype, self.0.as_ref().block)
     }
@@ -577,138 +583,52 @@ impl Node for CallableBodyNode {
 
 impl FunctionDeclarationNode {
     pub fn new(
-        name: Option<&IdentifierNode>,
-        args: Option<&NameTypeSpecsNode>,
-        return_type: Option<&TypeExpressionNode>,
-        block: &BlockNode,
-        func_keyword: &FuncKeywordKind,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        right_arrow: Option<&TokenNode>,
-        colon: &TokenNode,
+        name: &IdentifierNode,
+        def_keyword: &TokenNode,
         kind: CallableKind,
+        body: &CallableBodyNode,
     ) -> Self {
-        let node = Rc::new(CoreFunctionDeclarationNode::OK(
-            OkFunctionDeclarationNode::new(
-                name,
-                args,
-                return_type,
-                block,
-                func_keyword,
-                lparen,
-                rparen,
-                right_arrow,
-                colon,
-                kind,
-            ),
-        ));
+        let node = Rc::new(CoreFunctionDeclarationNode {
+            name: name.clone(),
+            def_keyword: def_keyword.clone(),
+            kind: kind.clone(),
+            body: body.clone(),
+        });
         FunctionDeclarationNode(node)
     }
 
     impl_core_ref!(CoreFunctionDeclarationNode);
 }
-default_errornous_node_impl!(FunctionDeclarationNode, CoreFunctionDeclarationNode);
 
-impl OkFunctionDeclarationNode {
-    pub fn new(
-        name: Option<&IdentifierNode>,
-        params: Option<&NameTypeSpecsNode>,
-        return_type: Option<&TypeExpressionNode>,
-        block: &BlockNode,
-        func_keyword: &FuncKeywordKind,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        right_arrow: Option<&TokenNode>,
-        colon: &TokenNode,
-        kind: CallableKind,
-    ) -> Self {
-        let node = Rc::new(CoreOkFunctionDeclarationNode {
-            func_keyword: func_keyword.clone(),
-            name: extract_from_option!(name),
-            kind,
-            body: CallableBodyNode::new(
-                block,
-                colon,
-                &CallablePrototypeNode::new(params, return_type, lparen, rparen, right_arrow),
-            ),
-        });
-        OkFunctionDeclarationNode(node)
-    }
-
-    impl_core_ref!(CoreOkFunctionDeclarationNode);
-}
-
-impl Node for OkFunctionDeclarationNode {
+impl Node for FunctionDeclarationNode {
     fn range(&self) -> TextRange {
-        match &self.0.as_ref().func_keyword {
-            FuncKeywordKind::DEF(token) => impl_range!(token, self.0.as_ref().body),
-            FuncKeywordKind::FUNC(token) => impl_range!(token, self.0.as_ref().body),
-        }
+        impl_range!(self.0.as_ref().def_keyword, self.0.as_ref().body)
     }
     fn start_line_number(&self) -> usize {
-        match &self.0.as_ref().func_keyword {
-            FuncKeywordKind::DEF(token) => token.start_line_number(),
-            FuncKeywordKind::FUNC(token) => token.start_line_number(),
-        }
+        self.0.as_ref().def_keyword.start_line_number()
     }
 }
 
 impl LambdaDeclarationNode {
     pub fn new(
+        name: Option<&IdentifierNode>,
         lambda_keyword: &TokenNode,
-        params: Option<&NameTypeSpecsNode>,
-        return_type: Option<&TypeExpressionNode>,
-        block: &BlockNode,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        right_arrow: Option<&TokenNode>,
-        colon: &TokenNode,
+        body: &CallableBodyNode,
     ) -> Self {
-        let node = Rc::new(CoreLambdaDeclarationNode::OK(OkLambdaDeclarationNode::new(
-            lambda_keyword,
-            params,
-            return_type,
-            block,
-            lparen,
-            rparen,
-            right_arrow,
-            colon,
-        )));
+        let node = Rc::new(CoreLambdaDeclarationNode {
+            name: extract_from_option!(name),
+            lambda_keyword: lambda_keyword.clone(),
+            body: body.clone(),
+        });
         LambdaDeclarationNode(node)
     }
 
     impl_core_ref!(CoreLambdaDeclarationNode);
 }
-default_errornous_node_impl!(LambdaDeclarationNode, CoreLambdaDeclarationNode);
 
-impl OkLambdaDeclarationNode {
-    pub fn new(
-        lambda_keyword: &TokenNode,
-        params: Option<&NameTypeSpecsNode>,
-        return_type: Option<&TypeExpressionNode>,
-        block: &BlockNode,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        right_arrow: Option<&TokenNode>,
-        colon: &TokenNode,
-    ) -> Self {
-        let node = Rc::new(CoreOkLambdaDeclarationNode {
-            lambda_keyword: lambda_keyword.clone(),
-            body: CallableBodyNode::new(
-                block,
-                colon,
-                &CallablePrototypeNode::new(params, return_type, lparen, rparen, right_arrow),
-            ),
-        });
-        OkLambdaDeclarationNode(node)
-    }
-
-    impl_core_ref!(CoreOkLambdaDeclarationNode);
-}
-
-impl Node for OkLambdaDeclarationNode {
+impl Node for LambdaDeclarationNode {
     fn range(&self) -> TextRange {
-        impl_range!(&self.0.as_ref().lambda_keyword, self.0.as_ref().body)
+        impl_range!(self.0.as_ref().lambda_keyword, self.0.as_ref().body)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().lambda_keyword.start_line_number()
@@ -1062,7 +982,7 @@ impl Node for UserDefinedTypeNode {
 }
 
 impl RAssignmentNode {
-    pub fn new_with_lambda(lambda_decl: &FunctionDeclarationNode) -> Self {
+    pub fn new_with_lambda(lambda_decl: &LambdaDeclarationNode) -> Self {
         let node = Rc::new(CoreRAssignmentNode::LAMBDA(lambda_decl.clone()));
         RAssignmentNode(node)
     }
