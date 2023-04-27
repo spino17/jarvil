@@ -504,6 +504,22 @@ pub struct CoreNameTypeSpecNode {
     pub data_type: TypeExpressionNode,
 }
 
+// TYPE_TUPLE
+#[derive(Debug, Clone, Node)]
+pub enum CoreTypeTupleNode {
+    OK(OkTypeTupleNode),
+    MISSING_TOKENS(MissingTokenNode),
+}
+
+// OK_TYPE_TUPLE
+// <data_type> `,` <remaining_types>
+#[derive(Debug, Clone)]
+pub struct CoreOkTypeTupleNode {
+    pub comma: Option<TokenNode>,
+    pub data_type: TypeExpressionNode,
+    pub remaining_types: Option<TypeTupleNode>,
+}
+
 // PARAMS
 #[derive(Debug, Clone, Node)]
 pub enum CoreParamsNode {
@@ -651,6 +667,10 @@ pub struct NameTypeSpecsNode(pub Rc<CoreNameTypeSpecsNode>);
 pub struct OkNameTypeSpecsNode(pub Rc<CoreOkNameTypeSpecsNode>);
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(pub Rc<CoreNameTypeSpecNode>);
+#[derive(Debug, Clone)]
+pub struct TypeTupleNode(pub Rc<CoreTypeTupleNode>);
+#[derive(Debug, Clone)]
+pub struct OkTypeTupleNode(pub Rc<CoreOkTypeTupleNode>);
 #[derive(Debug, Clone)]
 pub struct ParamsNode(pub Rc<CoreParamsNode>);
 #[derive(Debug, Clone)]

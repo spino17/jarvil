@@ -11,16 +11,16 @@ use super::ast::{
     CoreMethodAccessNode, CoreMissingTokenNode, CoreNameTypeSpecNode, CoreNameTypeSpecsNode,
     CoreOkAssignmentNode, CoreOkCallableBodyNode, CoreOkIdentifierNode,
     CoreOkLambdaTypeDeclarationNode, CoreOkNameTypeSpecsNode, CoreOkParamsNode, CoreOkTokenNode,
-    CoreOnlyUnaryExpressionNode, CoreParamsNode, CoreParenthesisedExpressionNode,
-    CorePropertyAccessNode, CoreRAssignmentNode, CoreReturnStatementNode,
-    CoreStructDeclarationNode, CoreStructStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
-    CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
-    CoreVariableDeclarationNode, IdentifierNode, IndexAccessNode, InvalidLValueNode,
-    LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode,
-    NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode,
-    OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkTokenNode,
+    CoreOkTypeTupleNode, CoreOnlyUnaryExpressionNode, CoreParamsNode,
+    CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
+    CoreReturnStatementNode, CoreStructDeclarationNode, CoreStructStatementNode, CoreTokenNode,
+    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
+    CoreUserDefinedTypeNode, CoreVariableDeclarationNode, IdentifierNode, IndexAccessNode,
+    InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
+    NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode,
+    OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkTokenNode, OkTypeTupleNode,
     OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode,
-    RAssignmentNode, StructDeclarationNode, TypeExpressionNode, TypeResolveKind,
+    RAssignmentNode, StructDeclarationNode, TypeExpressionNode, TypeResolveKind, TypeTupleNode,
     UnaryExpressionNode, UserDefinedTypeNode,
 };
 use super::ast::{
@@ -30,7 +30,7 @@ use super::ast::{
     ReturnStatementNode, SkippedTokenNode, StatemenIndentWrapperNode, StatementNode,
     StructStatementNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
 };
-use super::iterators::{NameTypeSpecsIterator, ParamsIterator};
+use super::iterators::{NameTypeSpecsIterator, ParamsIterator, TypeTupleIterator};
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
@@ -678,6 +678,58 @@ impl Node for ReturnStatementNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().return_keyword.start_line_number()
+    }
+}
+
+impl TypeTupleNode {
+    pub fn new(ok_type_tuple: &OkTypeTupleNode) -> Self {
+        let node = Rc::new(CoreTypeTupleNode::OK(ok_type_tuple.clone()));
+        TypeTupleNode(node)
+    }
+
+    pub fn iter(&self) -> TypeTupleIterator {
+        TypeTupleIterator::new(self)
+    }
+
+    impl_core_ref!(CoreTypeTupleNode);
+}
+default_errornous_node_impl!(TypeTupleNode, CoreTypeTupleNode);
+
+impl OkTypeTupleNode {
+    pub fn new_with_args(
+        data_type: &TypeExpressionNode,
+        remaining_types: &TypeTupleNode,
+        comma: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(CoreOkTypeTupleNode {
+            comma: Some(comma.clone()),
+            data_type: data_type.clone(),
+            remaining_types: Some(remaining_types.clone()),
+        });
+        OkTypeTupleNode(node)
+    }
+
+    pub fn new_with_single_data_type(data_type: &TypeExpressionNode) -> Self {
+        let node = Rc::new(CoreOkTypeTupleNode {
+            comma: None,
+            data_type: data_type.clone(),
+            remaining_types: None,
+        });
+        OkTypeTupleNode(node)
+    }
+
+    impl_core_ref!(CoreOkTypeTupleNode);
+}
+
+impl Node for OkTypeTupleNode {
+    fn range(&self) -> TextRange {
+        match &self.0.as_ref().remaining_types {
+            Some(remaining_types) => impl_range!(self.0.as_ref().data_type, remaining_types),
+            None => impl_range!(self.0.as_ref().data_type, self.0.as_ref().data_type),
+        }
+    }
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().data_type.start_line_number()
     }
 }
 
