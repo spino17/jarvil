@@ -336,6 +336,7 @@ pub trait Visitor {
                 let core_struct_decl = struct_decl_node.core_ref();
                 self.walk_token(&core_struct_decl.type_keyword);
                 self.walk_identifier(&core_struct_decl.name);
+                self.walk_token(&core_struct_decl.struct_keyword);
                 self.walk_token(&core_struct_decl.colon);
                 self.walk_block(&core_struct_decl.block);
             }
@@ -353,7 +354,8 @@ pub trait Visitor {
                 let core_ok_lambda_decl = ok_lambda_decl_node.core_ref();
                 self.walk_token(&core_ok_lambda_decl.type_keyword);
                 self.walk_identifier(&core_ok_lambda_decl.name);
-                self.walk_token(&core_ok_lambda_decl.colon);
+                self.walk_token(&core_ok_lambda_decl.lambda_keyword);
+                self.walk_token(&core_ok_lambda_decl.equal);
                 self.walk_callable_prototype(&core_ok_lambda_decl.prototype);
                 self.walk_token(&core_ok_lambda_decl.newline);
             }

@@ -212,11 +212,12 @@ pub enum CoreTypeDeclarationNode {
 }
 
 // STRUCT_DECLARATION
-// `type` <name> `:` <block>
+// `type` <name> struct `:` <block>
 #[derive(Debug, Clone)]
 pub struct CoreStructDeclarationNode {
     pub type_keyword: TokenNode,
     pub colon: TokenNode,
+    pub struct_keyword: TokenNode,
     pub name: IdentifierNode,
     pub block: BlockNode,
 }
@@ -241,8 +242,9 @@ pub enum CoreLambdaTypeDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct CoreOkLambdaTypeDeclarationNode {
     pub type_keyword: TokenNode,
+    pub lambda_keyword: TokenNode,
     pub name: IdentifierNode,
-    pub colon: TokenNode,
+    pub equal: TokenNode,
     pub prototype: CallablePrototypeNode,
     pub newline: TokenNode,
 }

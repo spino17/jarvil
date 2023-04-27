@@ -84,7 +84,50 @@ pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
     }
 }
 
+pub fn callable_prototype(parser: &mut PackratParser) -> CallablePrototypeNode {
+    let mut args_node: Option<&NameTypeSpecsNode> = None;
+    let name_type_specs_node: NameTypeSpecsNode;
+    let lparen_node = parser.expect("(");
+    if !parser.check_curr_token(")") {
+        name_type_specs_node = parser.name_type_specs();
+        args_node = Some(&name_type_specs_node);
+    }
+    let rparen_node = parser.expect(")");
+    if parser.check_curr_token("->") {
+        let r_arrow_node = parser.expect("->");
+        let return_type_node = parser.type_expr();
+        return CallablePrototypeNode::new(
+            args_node,
+            Some(&return_type_node),
+            &lparen_node,
+            &rparen_node,
+            Some(&r_arrow_node),
+        );
+    } else {
+        return CallablePrototypeNode::new(args_node, None, &lparen_node, &rparen_node, None);
+    }
+}
+
 pub fn callable_body(parser: &mut PackratParser) -> CallableBodyNode {
+    let callable_prototype = parser.callable_prototype();
+    let token = &parser.curr_token();
+    match token.core_token {
+        CoreToken::COLON => {
+            let colon_node = parser.expect(":");
+            let func_block_node = parser.block(
+                |token| is_statement_within_function_starting_with(token),
+                |parser| parser.stmt(),
+                &STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS,
+                BlockKind::FUNC,
+            );
+            return CallableBodyNode::new(&func_block_node, &colon_node, &callable_prototype);
+        }
+        _ => {
+            parser.log_missing_token_error(&[":"], token);
+            return CallableBodyNode::new_with_missing_tokens(&Rc::new([":"].to_vec()), token);
+        }
+    }
+    /*
     let lparen_node = parser.expect("(");
     let mut args_node: Option<&NameTypeSpecsNode> = None;
     let name_type_specs_node: NameTypeSpecsNode;
@@ -134,4 +177,5 @@ pub fn callable_body(parser: &mut PackratParser) -> CallableBodyNode {
             );
         }
     }
+     */
 }

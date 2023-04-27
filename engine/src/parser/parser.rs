@@ -4,10 +4,10 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{
-    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableBodyNode, ExpressionNode,
-    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, ParamsNode, RAssignmentNode,
-    SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    UnaryExpressionNode, VariableDeclarationNode,
+    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
+    CallablePrototypeNode, ExpressionNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
+    Node, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
+    TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::ast::ast::{BlockKind, ErrornousNode};
 use crate::code::Code;
@@ -490,6 +490,10 @@ impl PackratParser {
 
     pub fn r_assign(&mut self, identifier_name: Option<&IdentifierNode>) -> RAssignmentNode {
         components::common::r_assign(self, identifier_name)
+    }
+
+    pub fn callable_prototype(&mut self) -> CallablePrototypeNode {
+        components::common::callable_prototype(self)
     }
 
     pub fn callable_body(&mut self) -> CallableBodyNode {

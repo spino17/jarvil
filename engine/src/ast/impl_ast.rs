@@ -393,12 +393,14 @@ impl TypeDeclarationNode {
         name: &IdentifierNode,
         block: &BlockNode,
         type_keyword: &TokenNode,
+        struct_keyword: &TokenNode,
         colon: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreTypeDeclarationNode::STRUCT(StructDeclarationNode::new(
             name,
             block,
             type_keyword,
+            struct_keyword,
             colon,
         )));
         TypeDeclarationNode(node)
@@ -418,11 +420,13 @@ impl StructDeclarationNode {
         name: &IdentifierNode,
         block: &BlockNode,
         type_keyword: &TokenNode,
+        struct_keyword: &TokenNode,
         colon: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreStructDeclarationNode {
             type_keyword: type_keyword.clone(),
             colon: colon.clone(),
+            struct_keyword: struct_keyword.clone(),
             name: name.clone(),
             block: block.clone(),
         });
@@ -445,12 +449,20 @@ impl LambdaTypeDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
         type_keyword: &TokenNode,
-        colon: &TokenNode,
+        lambda_keyword: &TokenNode,
+        equal: &TokenNode,
         prototype: &CallablePrototypeNode,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreLambdaTypeDeclarationNode::OK(
-            OkLambdaTypeDeclarationNode::new(name, type_keyword, colon, prototype, newline),
+            OkLambdaTypeDeclarationNode::new(
+                name,
+                type_keyword,
+                lambda_keyword,
+                equal,
+                prototype,
+                newline,
+            ),
         ));
         LambdaTypeDeclarationNode(node)
     }
@@ -463,13 +475,15 @@ impl OkLambdaTypeDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
         type_keyword: &TokenNode,
-        colon: &TokenNode,
+        lambda_keyword: &TokenNode,
+        equal: &TokenNode,
         prototype: &CallablePrototypeNode,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreOkLambdaTypeDeclarationNode {
             type_keyword: type_keyword.clone(),
-            colon: colon.clone(),
+            lambda_keyword: lambda_keyword.clone(),
+            equal: equal.clone(),
             name: name.clone(),
             prototype: prototype.clone(),
             newline: newline.clone(),
