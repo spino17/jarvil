@@ -1,7 +1,7 @@
 use super::ast::{
     CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreIdentifierNode,
     CoreTokenNode, IdentifierNode, LambdaDeclarationNode, OkCallableBodyNode, OkIdentifierNode,
-    OkTokenNode,
+    OkTokenNode, CoreTypeTupleNode, TypeTupleNode, OkTypeTupleNode,
 };
 use crate::ast::ast::ASTNode;
 use crate::ast::ast::{
@@ -151,6 +151,8 @@ pub trait Visitor {
         OkNameTypeSpecsNode,
         new_with_OkNameTypeSpecsNode
     );
+    impl_node_walk!(walk_type_tuple, TypeTupleNode, new_with_TypeTupleNode);
+    impl_node_walk!(walk_ok_type_tuple, OkTypeTupleNode, new_with_OkTypeTupleNode);
     impl_node_walk!(walk_atomic_type, AtomicTypeNode, new_with_AtomicTypeNode);
     impl_node_walk!(
         walk_user_defined_type,
@@ -456,6 +458,27 @@ pub trait Visitor {
                 self.walk_identifier(&core_name_type_spec.name);
                 self.walk_token(&core_name_type_spec.colon);
                 self.walk_type_expression(&core_name_type_spec.data_type);
+            }
+            ASTNode::TYPE_TUPLE(type_tuple_node) => {
+                let core_type_tuple = type_tuple_node.core_ref();
+                match core_type_tuple {
+                    CoreTypeTupleNode::OK(ok_type_tuple) => {
+                        self.walk_ok_type_tuple(ok_type_tuple);
+                    }
+                    CoreTypeTupleNode::MISSING_TOKENS(missing_tokens) => {
+                        self.walk_missing_tokens(missing_tokens);
+                    }
+                }
+            }
+            ASTNode::OK_TYPE_TUPLE(ok_type_tuple_node) => {
+                let core_ok_type_tuple = ok_type_tuple_node.core_ref();
+                self.walk_type_expression(&core_ok_type_tuple.data_type);
+                if let Some(comma) = &core_ok_type_tuple.comma {
+                    self.walk_token(comma);
+                }
+                if let Some(remaining_types) = &core_ok_type_tuple.remaining_types {
+                    self.walk_type_tuple(remaining_types);
+                }
             }
             ASTNode::TYPE_EXPRESSION(type_expression_node) => {
                 let core_type_expr = type_expression_node.core_ref();

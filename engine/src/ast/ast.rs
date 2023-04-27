@@ -91,6 +91,8 @@ pub enum ASTNode {
     NAME_TYPE_SPECS(NameTypeSpecsNode),
     OK_NAME_TYPE_SPECS(OkNameTypeSpecsNode),
     NAME_TYPE_SPEC(NameTypeSpecNode),
+    TYPE_TUPLE(TypeTupleNode),
+    OK_TYPE_TUPLE(OkTypeTupleNode),
     PARAMS(ParamsNode),
     OK_PARAMS(OkParamsNode),
 
