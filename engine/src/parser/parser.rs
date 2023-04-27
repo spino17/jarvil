@@ -64,20 +64,7 @@ impl PackratParser {
         self.token_vec = token_vec;
     }
 
-    /*
-    pub fn curr_lookahead(&self) -> usize {
-        self.lookahead
-    }
-
-    pub fn set_lookahead(&mut self, reset_index: usize) {
-        self.lookahead = reset_index;
-    }
-     */
-
     pub fn scan_next_token(&mut self) {
-        //if self.lookahead == self.token_vec.len() - 1 {
-        //    return;
-        //}
         self.lookahead = self.lookahead + 1;
     }
 
@@ -125,36 +112,6 @@ impl PackratParser {
         let token = &self.token_vec[self.lookahead];
         (token.get_precedence(), token.core_token.to_string())
     }
-
-    /*
-    pub fn previous_token(&mut self) -> Token {
-        if self.lookahead == 0 {
-            return Token {
-                line_number: 1,
-                core_token: CoreToken::NEWLINE,
-                range: TextRange::new(
-                    TextSize::try_from(0 as usize).unwrap(),
-                    TextSize::try_from(0 as usize).unwrap(),
-                ),
-                trivia: None,
-            };
-        }
-        self.token_vec[self.lookahead - 1].clone()
-    }
-
-    pub fn ignore_newlines(&mut self) -> Vec<SkippedTokenNode> {
-        let mut ignored_newlines_vec = vec![];
-        loop {
-            let token = &self.token_vec[self.lookahead];
-            if token.is_eq("\n") {
-                ignored_newlines_vec.push(SkippedTokenNode::new(&token));
-                self.scan_next_token();
-            } else {
-                return ignored_newlines_vec;
-            }
-        }
-    }
-     */
 
     pub fn is_curr_token_on_newline(&self) -> bool {
         if self.lookahead == 0 {
@@ -246,9 +203,6 @@ impl PackratParser {
     // ------------------- parsing routines for terminals and block indentation -------------------
     pub fn expect(&mut self, symbol: &'static str) -> TokenNode {
         let token = self.curr_token();
-        //if symbol.eq(IDENTIFIER) || symbol.eq("\n") || symbol.eq(ENDMARKER) {
-        //    unreachable!("use `expect_ident` for parsing identifier and `expect_terminators` for parsing `\n` and `ENDMARKER`");
-        //}
         if token.is_eq(symbol) {
             self.scan_next_token();
             TokenNode::new_with_ok(&token)
@@ -283,7 +237,6 @@ impl PackratParser {
     }
 
     pub fn expect_terminators(&mut self) -> TokenNode {
-        // self.expects()
         let symbols = &["\n", ENDMARKER];
         let token = self.curr_token();
         if token.is_eq("\n") {
@@ -353,7 +306,6 @@ impl PackratParser {
     }
 
     // ------------------- production rule matching function for terminals and non-terminals -------------------
-    // code
     pub fn code(&mut self, token_vec: Vec<Token>) -> BlockNode {
         components::code::code(self, token_vec)
     }
@@ -374,7 +326,6 @@ impl PackratParser {
         )
     }
 
-    // statements
     pub fn stmt(&mut self) -> StatementNode {
         components::statement::core::stmt(self)
     }
@@ -383,12 +334,10 @@ impl PackratParser {
         components::assignment::assignment(self, expr)
     }
 
-    // type expression
     pub fn type_expr(&mut self) -> TypeExpressionNode {
         components::expression::type_expression::type_expr(self)
     }
 
-    // expression
     pub fn atomic_expr(&mut self) -> AtomicExpressionNode {
         components::expression::core::atomic_expr(self)
     }
@@ -470,12 +419,10 @@ impl PackratParser {
         components::expression::atom::atom(self)
     }
 
-    // function
     pub fn params(&mut self) -> ParamsNode {
         components::expression::common::params(self)
     }
 
-    // declaration
     pub fn variable_decl(&mut self) -> VariableDeclarationNode {
         components::variable_declaration::variable_decl(self)
     }
