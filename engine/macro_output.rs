@@ -43,6 +43,7 @@ pub const IN: &'static str                      = "in";
 pub const TRUE: &'static str                    = "True";
 pub const FALSE: &'static str                   = "False";
 pub const LAMBDA_KEYWORD: &'static str          = "lambda";
+pub const STRUCT_KEYWORD: &'static str          = "struct";
 pub const RETURN: &'static str                  = "return";
 pub const INT: &'static str                     = "int";
 pub const INTEGER: &'static str                 = "<integer>";

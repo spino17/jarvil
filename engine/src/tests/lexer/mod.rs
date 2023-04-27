@@ -178,6 +178,12 @@ fn test_string() {
 }
 
 #[test]
+fn test_struct() {
+    let alt_vec = vec!["s", "strings", "stru", "struct", "structure", "struce"];
+    assert_token_for_identifier(alt_vec, "struct", CoreToken::STRUCT_KEYWORD)
+}
+
+#[test]
 fn test_bool() {
     let alt_vec = vec!["b", "bob", "bolt", "bool", "booling", "boost"];
     assert_token_for_identifier(alt_vec, "bool", CoreToken::ATOMIC_TYPE)

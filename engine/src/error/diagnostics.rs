@@ -68,7 +68,9 @@ impl Diagnostics {
             }
             Diagnostics::MismatchedTypesOnLeftRight(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::NoReturnStatementInFunction(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::NoValidStatementInsideFunctionBody(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NoValidStatementInsideFunctionBody(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
             Diagnostics::InvalidReturnStatement(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MismatchedReturnType(diagnostic) => Report::new(diagnostic.clone()),
         }
@@ -726,10 +728,10 @@ impl NoValidStatementInsideFunctionBody {
             span: range_to_span(range).into(),
             help: Some(
                 "function body should have atleast one statement"
-                .to_string()
-                .style(Style::new().yellow())
-                .to_string()
-            )
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }

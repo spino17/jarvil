@@ -28,9 +28,10 @@ use crate::{
             ExpressionIndexingNotValidError, ExpressionNotCallableError,
             IdentifierNotCallableError, InvalidReturnStatementError, LessParamsCountError,
             MismatchedParamTypeError, MismatchedReturnTypeError, MismatchedTypesOnLeftRightError,
-            MoreParamsCountError, NoReturnStatementInFunctionError, PropertyDoesNotExistError,
+            MoreParamsCountError, NoReturnStatementInFunctionError,
+            NoValidStatementInsideFunctionBody, PropertyDoesNotExistError,
             PropertyNotSupportedError, RightSideWithVoidTypeNotAllowedError,
-            UnaryOperatorInvalidUseError, NoValidStatementInsideFunctionBody,
+            UnaryOperatorInvalidUseError,
         },
         helper::PropertyKind,
     },
@@ -809,8 +810,11 @@ impl TypeChecker {
                     }
                 }
                 if !has_atleast_one_stmt {
-                    let err = NoValidStatementInsideFunctionBody::new(core_ok_callable_body.colon.range());
-                    self.errors.push(Diagnostics::NoValidStatementInsideFunctionBody(err));
+                    let err = NoValidStatementInsideFunctionBody::new(
+                        core_ok_callable_body.colon.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::NoValidStatementInsideFunctionBody(err));
                 } else {
                     if !has_return_stmt && !return_type_obj.is_void() {
                         let return_type_node = ok_callable_body

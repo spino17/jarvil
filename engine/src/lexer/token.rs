@@ -7,7 +7,8 @@ use crate::constants::common::{
     FLOATING_POINT_NUMBER, FOR, GREATER_EQUAL, IDENTIFIER, IF, IMPL, IN, INTEGER,
     INTERFACE_KEYWORD, LAMBDA_KEYWORD, LBRACE, LBRACKET, LESS_EQUAL, LET, LEXICAL_ERROR, LITERAL,
     LPAREN, LSQUARE, NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW,
-    RPAREN, RSQUARE, SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, TRUE, TYPE_KEYWORD, WHILE,
+    RPAREN, RSQUARE, SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, STRUCT_KEYWORD, TRUE,
+    TYPE_KEYWORD, WHILE,
 };
 use std::fmt::Display;
 use std::rc::Rc;
@@ -38,6 +39,7 @@ pub enum CoreToken {
     SELF,              // 'self'
     IMPL,              // 'impl'
     INTERFACE_KEYWORD, // 'interface'
+    STRUCT_KEYWORD,    // 'struct'
 
     // logical operators
     AND, // 'and'
