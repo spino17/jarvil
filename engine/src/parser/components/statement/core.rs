@@ -34,19 +34,6 @@ pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 10] = [
 
 pub fn stmt(parser: &mut PackratParser) -> StatementNode {
     let token = &parser.curr_token();
-    /*
-    if !is_statement_starting_with(token) {
-        parser.log_missing_token_error_for_multiple_expected_symbols(
-            &STATEMENT_EXPECTED_STARTING_SYMBOLS,
-            token,
-        );
-        return StatementNode::new_with_missing_tokens(
-            &Rc::new(STATEMENT_EXPECTED_STARTING_SYMBOLS.to_vec()),
-            token,
-            parser.curr_lookahead(),
-        );
-    }
-     */
     let statement_node = match token.core_token {
         CoreToken::LET => {
             let variable_decl_node = parser.variable_decl();
@@ -134,9 +121,6 @@ pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
 }
 
 pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {
-    // let struct_name = parser.expect_ident();
-    // let colon_node = parser.expect(":");
-    // let type_expr_node = parser.type_expr();
     let name_type_spec = parser.name_type_spec();
     let newline_node = parser.expect_terminators();
     let struct_stmt = StructStatementNode::new(&name_type_spec, &newline_node);

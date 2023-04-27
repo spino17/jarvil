@@ -1,7 +1,7 @@
 use super::ast::{
     CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreIdentifierNode,
-    CoreTokenNode, IdentifierNode, LambdaDeclarationNode, OkCallableBodyNode, OkIdentifierNode,
-    OkTokenNode, CoreTypeTupleNode, TypeTupleNode, OkTypeTupleNode,
+    CoreTokenNode, CoreTypeTupleNode, IdentifierNode, LambdaDeclarationNode, OkCallableBodyNode,
+    OkIdentifierNode, OkTokenNode, OkTypeTupleNode, TypeTupleNode,
 };
 use crate::ast::ast::ASTNode;
 use crate::ast::ast::{
@@ -152,7 +152,11 @@ pub trait Visitor {
         new_with_OkNameTypeSpecsNode
     );
     impl_node_walk!(walk_type_tuple, TypeTupleNode, new_with_TypeTupleNode);
-    impl_node_walk!(walk_ok_type_tuple, OkTypeTupleNode, new_with_OkTypeTupleNode);
+    impl_node_walk!(
+        walk_ok_type_tuple,
+        OkTypeTupleNode,
+        new_with_OkTypeTupleNode
+    );
     impl_node_walk!(walk_atomic_type, AtomicTypeNode, new_with_AtomicTypeNode);
     impl_node_walk!(
         walk_user_defined_type,
