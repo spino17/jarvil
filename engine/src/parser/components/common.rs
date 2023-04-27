@@ -5,7 +5,7 @@ use super::statement::core::{
 use crate::ast::ast::{
     BlockKind, CallableBodyNode, CallablePrototypeNode, ErrornousNode, IdentifierNode,
     LambdaDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, OkNameTypeSpecsNode,
-    RAssignmentNode,
+    RAssignmentNode, OkTypeTupleNode, TypeTupleNode,
 };
 use crate::constants::common::LAMBDA_KEYWORD;
 use crate::lexer::token::{CoreToken, Token};
@@ -80,6 +80,27 @@ pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
                 &Rc::new([",", ")"].to_vec()),
                 token,
             );
+        }
+    }
+}
+
+pub fn type_tuple(parser: &mut PackratParser) -> TypeTupleNode {
+    let first_type_node = parser.type_expr();
+    let token = &parser.curr_token();
+    match token.core_token {
+        CoreToken::COMMA => {
+            let comma_node = parser.expect(",");
+            let remaining_types = parser.type_tuple();
+            let ok_type_tuple_node = OkTypeTupleNode::new_with_args(&first_type_node, &remaining_types, &comma_node);
+            return TypeTupleNode::new(&ok_type_tuple_node);
+        }
+        CoreToken::RPAREN => {
+            let ok_type_tuple_node = OkTypeTupleNode::new_with_single_data_type(&first_type_node);
+            return TypeTupleNode::new(&ok_type_tuple_node);
+        }
+        _ => {
+            parser.log_missing_token_error(&[",", ")"], token);
+            return TypeTupleNode::new_with_missing_tokens(&Rc::new([",", ")"].to_vec()), token)
         }
     }
 }

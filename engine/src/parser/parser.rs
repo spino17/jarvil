@@ -7,7 +7,7 @@ use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallablePrototypeNode, ExpressionNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
     Node, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
-    TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
+    TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode, TypeTupleNode,
 };
 use crate::ast::ast::{BlockKind, ErrornousNode};
 use crate::code::Code;
@@ -413,6 +413,10 @@ impl PackratParser {
 
     pub fn name_type_specs(&mut self) -> NameTypeSpecsNode {
         components::common::name_type_specs(self)
+    }
+
+    pub fn type_tuple(&mut self) -> TypeTupleNode {
+        components::common::type_tuple(self)
     }
 
     pub fn r_assign(&mut self, identifier_name: Option<&IdentifierNode>) -> RAssignmentNode {

@@ -1,4 +1,4 @@
-use crate::ast::ast::{BlockKind, ErrornousNode};
+use crate::ast::ast::{BlockKind, ErrornousNode, TypeTupleNode};
 use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::lexer::token::CoreToken;
 use crate::{constants::common::IDENTIFIER, parser::parser::PackratParser};
