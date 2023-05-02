@@ -7,7 +7,8 @@ use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallablePrototypeNode, ExpressionNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
     Node, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
-    TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode, TypeTupleNode,
+    TypeDeclarationNode, TypeExpressionNode, TypeTupleNode, UnaryExpressionNode,
+    VariableDeclarationNode,
 };
 use crate::ast::ast::{BlockKind, ErrornousNode};
 use crate::code::Code;

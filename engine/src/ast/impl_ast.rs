@@ -451,7 +451,11 @@ impl LambdaTypeDeclarationNode {
         type_keyword: &TokenNode,
         lambda_keyword: &TokenNode,
         equal: &TokenNode,
-        prototype: &CallablePrototypeNode,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        type_tuple: Option<&TypeTupleNode>,
+        right_arrow: Option<&TokenNode>,
+        return_type: Option<&TypeExpressionNode>,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreLambdaTypeDeclarationNode::OK(
@@ -460,7 +464,11 @@ impl LambdaTypeDeclarationNode {
                 type_keyword,
                 lambda_keyword,
                 equal,
-                prototype,
+                lparen,
+                rparen,
+                type_tuple,
+                right_arrow,
+                return_type,
                 newline,
             ),
         ));
@@ -477,7 +485,11 @@ impl OkLambdaTypeDeclarationNode {
         type_keyword: &TokenNode,
         lambda_keyword: &TokenNode,
         equal: &TokenNode,
-        prototype: &CallablePrototypeNode,
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        type_tuple: Option<&TypeTupleNode>,
+        right_arrow: Option<&TokenNode>,
+        return_type: Option<&TypeExpressionNode>,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreOkLambdaTypeDeclarationNode {
@@ -485,7 +497,11 @@ impl OkLambdaTypeDeclarationNode {
             lambda_keyword: lambda_keyword.clone(),
             equal: equal.clone(),
             name: name.clone(),
-            prototype: prototype.clone(),
+            lparen: lparen.clone(),
+            rparen: rparen.clone(),
+            type_tuple: extract_from_option!(type_tuple),
+            right_arrow: extract_from_option!(right_arrow),
+            return_type: extract_from_option!(return_type),
             newline: newline.clone(),
         });
         OkLambdaTypeDeclarationNode(node)

@@ -247,7 +247,11 @@ pub struct CoreOkLambdaTypeDeclarationNode {
     pub lambda_keyword: TokenNode,
     pub name: IdentifierNode,
     pub equal: TokenNode,
-    pub prototype: CallablePrototypeNode,
+    pub lparen: TokenNode,
+    pub rparen: TokenNode,
+    pub type_tuple: Option<TypeTupleNode>,
+    pub right_arrow: Option<TokenNode>,
+    pub return_type: Option<TypeExpressionNode>,
     pub newline: TokenNode,
 }
 

@@ -38,12 +38,11 @@ use crate::{
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
         core::{IdentifierKind, SymbolData},
-        function::FunctionData,
         user_defined_types::{LambdaTypeData, UserDefinedTypeData},
     },
     types::core::{AbstractType, CoreType, Type},
 };
-use std::rc::Rc;
+use std::{ops::Index, rc::Rc};
 use text_size::TextRange;
 
 #[derive(Debug)]
@@ -69,6 +68,20 @@ pub struct TypeChecker {
     code: Code,
     errors: Vec<Diagnostics>,
     context: Context,
+}
+
+pub enum CallableParamsData {
+    LAMBDA(Rc<Vec<Type>>),
+    OTHER(Rc<Vec<(Rc<String>, Type)>>),
+}
+
+impl CallableParamsData {
+    fn len(&self) -> usize {
+        match self {
+            CallableParamsData::LAMBDA(lambda_params_data) => lambda_params_data.len(),
+            CallableParamsData::OTHER(other_params_data) => other_params_data.len(),
+        }
+    }
 }
 
 impl TypeChecker {
@@ -100,8 +113,8 @@ impl TypeChecker {
         &self,
         return_type: &Option<TypeExpressionNode>,
         params: &Option<NameTypeSpecsNode>,
-    ) -> (Vec<(Rc<String>, Type)>, Type) {
-        let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
+    ) -> (Vec<Type>, Type) {
+        let mut params_vec: Vec<Type> = vec![];
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -118,7 +131,7 @@ impl TypeChecker {
                     if ok_identifier.is_resolved() {
                         let variable_name = Rc::new(ok_identifier.token_value(&self.code));
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
-                        params_vec.push((variable_name, type_obj));
+                        params_vec.push(type_obj);
                     }
                 }
             }
@@ -162,19 +175,19 @@ impl TypeChecker {
         }
     }
 
-    pub fn is_callable(&mut self, atom: &AtomNode) -> Option<FunctionData> {
+    pub fn is_callable(&mut self, atom: &AtomNode) -> Option<(Rc<Vec<Type>>, Type)> {
         let atom_type_obj = self.check_atom(atom);
         match atom_type_obj.0.as_ref() {
-            CoreType::LAMBDA(lambda) => Some(
-                lambda
+            CoreType::LAMBDA(lambda) => {
+                let lambda_data = lambda
                     .symbol_data
                     .0
                     .as_ref()
                     .borrow()
                     .lambda_data(LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG)
-                    .func_data
-                    .clone(),
-            ),
+                    .clone();
+                return Some((lambda_data.param_types, lambda_data.return_type));
+            }
             _ => None,
         }
     }
@@ -208,13 +221,12 @@ impl TypeChecker {
 
     pub fn check_params_type_and_count(
         &mut self,
-        expected_params: &Rc<Vec<(Rc<String>, Type)>>,
+        expected_param_data: CallableParamsData,
         received_params: &Option<ParamsNode>,
     ) -> ParamsTypeNCountResult {
-        let expected_params_len = expected_params.len();
+        let expected_params_len = expected_param_data.len();
         match received_params {
             Some(received_params) => {
-                let expected_params = expected_params.as_ref();
                 let received_params_iter = received_params.iter();
                 let mut index = 0;
                 let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![]; // (expected_type, received_type, index_of_param)
@@ -223,8 +235,15 @@ impl TypeChecker {
                     if index >= expected_params_len {
                         return ParamsTypeNCountResult::MORE_PARAMS(expected_params_len);
                     }
-                    let expected_params_type_obj = &expected_params[index].1;
-                    if !param_type_obj.is_eq(expected_params_type_obj) {
+                    let expected_params_type_obj = match &expected_param_data {
+                        CallableParamsData::LAMBDA(lambda_data) => {
+                            lambda_data.as_ref()[index].clone()
+                        }
+                        CallableParamsData::OTHER(other_data) => {
+                            other_data.as_ref()[index].1.clone()
+                        }
+                    };
+                    if !param_type_obj.is_eq(&expected_params_type_obj) {
                         mismatch_types_vec.push((
                             expected_params_type_obj.to_string(),
                             param_type_obj.clone().to_string(),
@@ -274,23 +293,21 @@ impl TypeChecker {
                 let params = &core_call_expr.params;
                 if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
                     if let Some(symbol_data) = ok_identifier.symbol_data() {
-                        let (expected_params, return_type) = match symbol_data.0 {
+                        let (expected_params_data, return_type) = match symbol_data.0 {
                             IdentifierKind::FUNCTION(func_symbol_data) => {
                                 let func_data = func_symbol_data.0.as_ref().borrow().clone();
                                 let expected_params = func_data.params;
                                 let return_type = func_data.return_type;
-                                (expected_params, return_type)
+                                (CallableParamsData::OTHER(expected_params), return_type)
                             },
                             IdentifierKind::VARIABLE(variable_symbol_data) => {
                                 let lambda_type = variable_symbol_data.0.as_ref().borrow().data_type.clone();
                                 match lambda_type.0.as_ref() {
                                     CoreType::LAMBDA(lambda_data) => {
-                                        let func_data = lambda_data.symbol_data.0.as_ref().borrow().lambda_data(
+                                        let lambda_data = lambda_data.symbol_data.0.as_ref().borrow().lambda_data(
                                             LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG
-                                        ).func_data.clone();
-                                        let expected_params = func_data.params;
-                                        let return_type = func_data.return_type;
-                                        (expected_params, return_type)
+                                        ).clone();
+                                        (CallableParamsData::LAMBDA(lambda_data.param_types), lambda_data.return_type)
                                     },
                                     _ => {
                                         let err = IdentifierNotCallableError::new(
@@ -303,7 +320,7 @@ impl TypeChecker {
                             },  // TODO - handle case when the call is constructor call
                             _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`")
                         };
-                        let result = self.check_params_type_and_count(&expected_params, params);
+                        let result = self.check_params_type_and_count(expected_params_data, params);
                         match result {
                             ParamsTypeNCountResult::OK => return return_type,
                             _ => {
@@ -344,8 +361,10 @@ impl TypeChecker {
                                     Some(func_data) => {
                                         let expected_params = func_data.params.clone();
                                         let return_type = func_data.return_type.clone();
-                                        let result = self
-                                            .check_params_type_and_count(&expected_params, params);
+                                        let result = self.check_params_type_and_count(
+                                            CallableParamsData::OTHER(expected_params),
+                                            params,
+                                        );
                                         match result {
                                             ParamsTypeNCountResult::OK => return return_type,
                                             _ => {
@@ -393,10 +412,11 @@ impl TypeChecker {
                 let atom = &core_call.atom;
                 let params = &core_call.params;
                 match self.is_callable(atom) {
-                    Some(func_data) => {
-                        let expected_params = func_data.params;
-                        let return_type = func_data.return_type;
-                        let result = self.check_params_type_and_count(&expected_params, params);
+                    Some((expected_param_types, return_type)) => {
+                        let result = self.check_params_type_and_count(
+                            CallableParamsData::LAMBDA(expected_param_types),
+                            params,
+                        );
                         match result {
                             ParamsTypeNCountResult::OK => return return_type,
                             _ => {
@@ -482,8 +502,10 @@ impl TypeChecker {
                                 Some(func_data) => {
                                     let expected_params = &func_data.params;
                                     let return_type = &func_data.return_type;
-                                    let result =
-                                        self.check_params_type_and_count(&expected_params, params);
+                                    let result = self.check_params_type_and_count(
+                                        CallableParamsData::OTHER(expected_params.clone()),
+                                        params,
+                                    );
                                     match result {
                                         ParamsTypeNCountResult::OK => return return_type.clone(),
                                         _ => {

@@ -365,12 +365,13 @@ impl Resolver {
     pub fn resolve_callable_prototype(
         &mut self,
         callable_prototype: &CallablePrototypeNode,
-    ) -> (Vec<(Rc<String>, Type)>, Type) {
+    ) -> (Vec<(Rc<String>, Type)>, Vec<Type>, Type) {
         let core_callable_prototype = callable_prototype.core_ref();
         let params = &core_callable_prototype.params;
         let return_type = &core_callable_prototype.return_type;
         let rparen = &core_callable_prototype.rparen;
         let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
+        let mut param_types_vec: Vec<Type> = vec![];
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -391,7 +392,8 @@ impl Resolver {
                         let variable_name = Rc::new(ok_identifier.token_value(&self.code));
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         symbol_data.0.as_ref().borrow_mut().set_data_type(&type_obj);
-                        params_vec.push((variable_name, type_obj));
+                        params_vec.push((variable_name, type_obj.clone()));
+                        param_types_vec.push(type_obj);
                         params_count += 1;
                     }
                 }
@@ -406,25 +408,25 @@ impl Resolver {
             self.errors
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
-        (params_vec, return_type)
+        (params_vec, param_types_vec, return_type)
     }
 
     pub fn resolve_callable_body(
         &mut self,
         callable_body: &CallableBodyNode,
-    ) -> (Vec<(Rc<String>, Type)>, Type) {
+    ) -> (Vec<(Rc<String>, Type)>, Vec<Type>, Type) {
         let core_callable_body = callable_body.core_ref();
         match core_callable_body {
             CoreCallableBodyNode::OK(ok_callable_body) => {
                 let core_ok_callable_body = ok_callable_body.core_ref();
                 let func_body = &core_ok_callable_body.block;
-                let (params_vec, return_type) =
+                let (params_vec, param_types_vec, return_type) =
                     self.resolve_callable_prototype(&core_ok_callable_body.prototype);
                 self.walk_block(func_body);
-                (params_vec, return_type)
+                (params_vec, param_types_vec, return_type)
             }
             CoreCallableBodyNode::MISSING_TOKENS(_) => {
-                return (Vec::new(), Type::new_with_unknown())
+                return (Vec::new(), Vec::new(), Type::new_with_unknown())
             }
         }
     }
@@ -432,14 +434,14 @@ impl Resolver {
     pub fn resolve_lambda(&mut self, lambda_decl: &LambdaDeclarationNode) {
         let core_lambda_decl = lambda_decl.core_ref();
         let lambda_variable_name = &core_lambda_decl.name;
-        let (params_vec, return_type) = self.resolve_callable_body(&core_lambda_decl.body);
+        let (_, param_types_vec, return_type) = self.resolve_callable_body(&core_lambda_decl.body);
         if let Some(identifier) = lambda_variable_name {
             if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
                 if let Some(symbol_data) = ok_identifier.symbol_data() {
                     match symbol_data.0 {
                         IdentifierKind::VARIABLE(variable_symbol_data) => {
                             let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(
-                                params_vec,
+                                param_types_vec,
                                 return_type,
                             ));
                             let lambda_type_obj = Type::new_with_lambda(
@@ -464,7 +466,7 @@ impl Resolver {
     pub fn resolve_function(&mut self, func_decl: &FunctionDeclarationNode) {
         let core_func_decl = func_decl.core_ref();
         let func_name = &core_func_decl.name;
-        let (params_vec, return_type) = self.resolve_callable_body(&core_func_decl.body);
+        let (params_vec, _, return_type) = self.resolve_callable_body(&core_func_decl.body);
         let kind = &core_func_decl.kind;
         if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
             if let Some(symbol_data) = ok_identifier.symbol_data() {
@@ -540,11 +542,11 @@ impl Resolver {
     }
 
     pub fn resolve_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
-        let core_callable_prototype = lambda_type_decl.core_ref().prototype.core_ref();
-        let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
-        let params = &core_callable_prototype.params;
-        let return_type = &core_callable_prototype.return_type;
-        let rparen = &core_callable_prototype.rparen;
+        let core_lambda_type_decl = lambda_type_decl.core_ref();
+        let mut types_vec: Vec<Type> = vec![];
+        let type_tuple = &core_lambda_type_decl.type_tuple;
+        let return_type = &core_lambda_type_decl.return_type;
+        let rparen = &core_lambda_type_decl.rparen;
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -552,37 +554,17 @@ impl Resolver {
             }
             None => Type::new_with_void(),
         };
-        let mut params_count = 0;
-        if let Some(params) = params {
-            let params_iter = params.iter();
-            let mut params_map: FxHashMap<Rc<String>, TextRange> = FxHashMap::default();
-            for param in params_iter {
-                let core_param = param.core_ref();
-                let name = &core_param.name;
-                if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                    let variable_name = Rc::new(ok_identifier.token_value(&self.code));
-                    let range = ok_identifier.range();
-                    if let Some(previous_decl_range) = params_map.get(&variable_name) {
-                        let err = IdentifierAlreadyDeclaredError::new(
-                            IdentKind::ARGUMENT,
-                            variable_name.to_string(),
-                            *previous_decl_range,
-                            range,
-                        );
-                        self.errors
-                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                        continue;
-                    }
-                    let type_obj = self.type_obj_from_expression(&core_param.data_type);
-                    params_map.insert(variable_name.clone(), range);
-                    params_vec.push((variable_name, type_obj));
-                    params_count += 1;
-                }
+        let mut types_count = 0;
+        if let Some(type_tuple) = type_tuple {
+            let type_tuple_iter = type_tuple.iter();
+            for data_type in type_tuple_iter {
+                types_vec.push(self.type_obj_from_expression(&data_type));
+                types_count += 1;
             }
         }
-        if params_count > EIGHT_BIT_MAX_VALUE {
+        if types_count > EIGHT_BIT_MAX_VALUE {
             let err = MoreThanMaxLimitParamsPassedError::new(
-                params_count,
+                types_count,
                 EIGHT_BIT_MAX_VALUE,
                 rparen.range(),
             );
@@ -598,7 +580,7 @@ impl Resolver {
                     .as_ref()
                     .borrow_mut()
                     .lambda_data_mut(LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG)
-                    .set_params_and_return_type(params_vec, return_type)
+                    .set_params_and_return_type(types_vec, return_type)
             }
         }
     }

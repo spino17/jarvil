@@ -362,7 +362,17 @@ pub trait Visitor {
                 self.walk_identifier(&core_ok_lambda_decl.name);
                 self.walk_token(&core_ok_lambda_decl.lambda_keyword);
                 self.walk_token(&core_ok_lambda_decl.equal);
-                self.walk_callable_prototype(&core_ok_lambda_decl.prototype);
+                self.walk_token(&core_ok_lambda_decl.lparen);
+                if let Some(type_tuple) = &core_ok_lambda_decl.type_tuple {
+                    self.walk_type_tuple(type_tuple);
+                }
+                self.walk_token(&core_ok_lambda_decl.rparen);
+                if let Some(right_arrow) = &core_ok_lambda_decl.right_arrow {
+                    self.walk_token(right_arrow);
+                }
+                if let Some(return_type) = &core_ok_lambda_decl.return_type {
+                    self.walk_type_expression(return_type);
+                }
                 self.walk_token(&core_ok_lambda_decl.newline);
             }
             ASTNode::CALLABLE_PROTOTYPE(callable_prototype) => {
