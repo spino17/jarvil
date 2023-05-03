@@ -605,7 +605,7 @@ pub trait Visitor {
                 self.walk_expression(&core_comp_expr.operands[0]);
                 for i in 0..operator_len {
                     self.walk_token(&core_comp_expr.operators[i]);
-                    self.walk_expression(&core_comp_expr.operands[i]);
+                    self.walk_expression(&core_comp_expr.operands[i + 1]);
                 }
             }
             ASTNode::PARAMS(params_node) => {
