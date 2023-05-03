@@ -36,8 +36,8 @@ use std::{rc::Rc, vec};
 use text_size::TextRange;
 
 pub enum ResolverMode {
-    DECLARE, // first pass
-    RESOLVE, // second pass
+    DECLARE, // first pass - visit the declaration nodes and fills up the scope with placeholder values
+    RESOLVE, // second pass - resolve each identifier in appropiate namespaces
 }
 
 pub struct Resolver {
