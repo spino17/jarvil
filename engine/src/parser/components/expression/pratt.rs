@@ -1,5 +1,6 @@
-// This is alternate (and better) implementation for expression parsing called Pratt Parser.
-// Many famous production-grade parsers like microsoft's `tolerant-php-parser`, `Golang` and `JSLint` uses this technique (among many others).
+// This is alternate (and better) top-down approach for parsing expression called Pratt Parser.
+// Many famous production-grade parsers like microsoft's `tolerant-php-parser`, `Golang` and Douglas Crockford’s `JSLint` uses this technique 
+// (among many others).
 // See following for more information:
 // 1. `http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/`
 // 2. `https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html`
@@ -15,7 +16,7 @@ pub fn pratt_expr(parser: &mut PackratParser, precedence: u8) -> ExpressionNode 
     let mut left_expr: ExpressionNode = ExpressionNode::new_with_unary(&prefix);
     loop {
         let (operator_precedence, operator_str) = parser.curr_token_precedence_and_name();
-        if precedence >= operator_precedence {
+        if precedence >= operator_precedence {  // equality gives left-assosiativity for equal precedence operators
             break;
         }
         let operator_node = parser.expect(operator_str);
