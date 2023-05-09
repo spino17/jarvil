@@ -650,6 +650,8 @@ impl Visitor for Resolver {
                 }
                 _ => return Some(()),
             },
+            // add nodes for variable decl and assignment to first traverse the right hand side so that
+            // errors like let x = x + 1 is catched
             ResolverMode::RESOLVE => match node {
                 ASTNode::FUNCTION_DECLARATION(func_decl) => {
                     self.resolve_function(func_decl);

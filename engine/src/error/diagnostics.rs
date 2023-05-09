@@ -270,7 +270,7 @@ impl IdentifierAlreadyDeclaredError {
         let help_str = match identifier_kind {
             IdentifierKind::VARIABLE | IdentifierKind::FUNCTION => {
                 format!(
-                    "{}s are not allowed to be redeclared inside the same block",
+                    "{}s are not allowed to be redeclared inside the same scope",
                     identifier_kind
                 )
             }
@@ -285,7 +285,7 @@ impl IdentifierAlreadyDeclaredError {
             }
             IdentifierKind::TYPE => {
                 format!(
-                    "{}s are not allowed to be redeclared inside the complete scope",
+                    "{}s are not allowed to be redeclared inside the complete scope chain",
                     identifier_kind
                 )
             }
