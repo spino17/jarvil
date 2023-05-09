@@ -422,7 +422,12 @@ impl Resolver {
                 let func_body = &core_ok_callable_body.block;
                 let (params_vec, param_types_vec, return_type) =
                     self.resolve_callable_prototype(&core_ok_callable_body.prototype);
-                self.walk_block(func_body);
+                self.namespace = func_body.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
+                let core_block = func_body.0.as_ref().borrow();
+                for stmt in &core_block.stmts {
+                    self.walk_stmt_indent_wrapper(stmt);
+                }
+                self.namespace.close_scope();
                 (params_vec, param_types_vec, return_type)
             }
             CoreCallableBodyNode::MISSING_TOKENS(_) => {
@@ -590,15 +595,6 @@ impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match self.mode {
             ResolverMode::DECLARE => match node {
-                ASTNode::BLOCK(block) => {
-                    self.open_block();
-                    let core_block = block.0.as_ref().borrow();
-                    for stmt in &core_block.stmts {
-                        self.walk_stmt_indent_wrapper(stmt);
-                    }
-                    self.close_block();
-                    return None;
-                }
                 ASTNode::VARIABLE_DECLARATION(variable_decl) => {
                     self.declare_variable(variable_decl);
                     return None;
@@ -655,15 +651,6 @@ impl Visitor for Resolver {
                 _ => return Some(()),
             },
             ResolverMode::RESOLVE => match node {
-                ASTNode::BLOCK(block) => {
-                    self.namespace = block.scope().expect(SCOPE_NOT_SET_TO_BLOCK_MSG);
-                    let core_block = block.0.as_ref().borrow();
-                    for stmt in &core_block.stmts {
-                        self.walk_stmt_indent_wrapper(stmt);
-                    }
-                    self.namespace.close_scope();
-                    return None;
-                }
                 ASTNode::FUNCTION_DECLARATION(func_decl) => {
                     self.resolve_function(func_decl);
                     return None;
