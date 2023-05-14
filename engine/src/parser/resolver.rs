@@ -633,6 +633,7 @@ impl Visitor for Resolver {
                             }
                         }
                         CoreAtomStartNode::CALL(func_call) => {
+                            // Also lookup in Type namespace for struct type constructor call
                             let core_func_call = func_call.core_ref();
                             if let CoreIdentifierNode::OK(ok_identifier) =
                                 core_func_call.function_name.core_ref()
