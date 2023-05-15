@@ -762,6 +762,13 @@ impl TypeChecker {
                 let l_type = self.check_expr(expr);
                 (l_type, r_assign, expr.range())
             }
+            CoreAssignmentNode::INVALID_R_LAMBDA(invalid_r_lambda) => {
+                let core_invalid_r_lambda = invalid_r_lambda.core_ref();
+                let expr = &core_invalid_r_lambda.l_expr;
+                let r_assign = &core_invalid_r_lambda.r_assign;
+                let l_type = self.check_expr(expr);
+                (l_type, r_assign, expr.range())
+            }
         };
         let r_type = self.check_r_assign(r_assign);
         if r_type.is_void() {

@@ -289,7 +289,7 @@ impl Resolver {
         (params_vec, param_types_vec, return_type)
     }
 
-    pub fn declare_callable_body(
+    pub fn visit_callable_body(
         &mut self,
         callable_body_decl: &CallableBodyNode,
     ) -> (Vec<(Rc<String>, Type)>, Vec<Type>, Type) {
@@ -336,7 +336,7 @@ impl Resolver {
             CoreRAssignmentNode::LAMBDA(lambda_r_assign) => {
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
                 let (_, params_vec, return_type) =
-                    self.declare_callable_body(&core_lambda_r_assign.body);
+                    self.visit_callable_body(&core_lambda_r_assign.body);
                 let lambda_type_obj = match core_lambda_r_assign.body.core_ref() {
                     CoreCallableBodyNode::OK(ok_callable_body) => {
                         let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(
@@ -403,10 +403,11 @@ impl Resolver {
                 CallableKind::METHOD | CallableKind::CLASSMETHOD | CallableKind::CONSTRUCTOR => {}
             }
         }
-        let (params_vec, _, return_type) = self.declare_callable_body(body);
+        let (params_vec, _, return_type) = self.visit_callable_body(body);
         if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
             match kind {
                 CallableKind::FUNC => {
+                    /*
                     if let Some(symbol_data) = ok_identifier.symbol_data() {
                         match symbol_data.0 {
                             IdentifierKind::FUNCTION(func_symbol_data) => {
@@ -420,6 +421,16 @@ impl Resolver {
                                 "function name should be resolved to `SymbolData<FunctionData>`"
                             ),
                         }
+                    }
+                     */
+                    if let Some(symbol_data) = ok_identifier.function_symbol_data(
+                        "function name should be resolved to `SymbolData<FunctionData>`",
+                    ) {
+                        symbol_data
+                            .0
+                            .as_ref()
+                            .borrow_mut()
+                            .set_data(params_vec, return_type);
                     }
                 }
                 // TODO - For below class contained functions, find the struct symbol_data and add into the appropiate maps
@@ -551,7 +562,7 @@ impl Resolver {
             self.errors
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
-        if let CoreIdentifierNode::OK(ok_identifier) = lambda_type_decl.core_ref().name.core_ref() {
+        if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "lambda type name should be resolved to `SymbolData<UserDefinedTypeData>`",
             ) {
@@ -580,6 +591,10 @@ impl Visitor for Resolver {
             }
             ASTNode::VARIABLE_DECLARATION(variable_decl) => {
                 self.declare_variable(variable_decl);
+                return None;
+            }
+            ASTNode::CALLABLE_BODY(callable_body) => {
+                self.visit_callable_body(callable_body);
                 return None;
             }
             ASTNode::FUNCTION_DECLARATION(func_decl) => {

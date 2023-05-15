@@ -16,12 +16,12 @@ use super::ast::{
     CoreReturnStatementNode, CoreStructDeclarationNode, CoreStructStatementNode, CoreTokenNode,
     CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
     CoreUserDefinedTypeNode, CoreVariableDeclarationNode, IdentifierNode, IndexAccessNode,
-    InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
-    NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode,
-    OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkTokenNode, OkTypeTupleNode,
-    OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode,
-    RAssignmentNode, StructDeclarationNode, TypeExpressionNode, TypeResolveKind, TypeTupleNode,
-    UnaryExpressionNode, UserDefinedTypeNode,
+    InvalidLValueNode, InvalidRLambdaNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
+    MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode,
+    OkIdentifierNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkTokenNode,
+    OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
+    PropertyAccessNode, RAssignmentNode, StructDeclarationNode, TypeExpressionNode,
+    TypeResolveKind, TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode,
 };
 use super::ast::{
     AssignmentNode, BlockKind, BlockNode, CoreBlockNode, CoreSkippedTokenNode,
@@ -31,6 +31,7 @@ use super::ast::{
     StructStatementNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
 };
 use super::iterators::{NameTypeSpecsIterator, ParamsIterator, TypeTupleIterator};
+use crate::ast::ast::CoreInvalidRLambdaNode;
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
@@ -356,6 +357,28 @@ impl InvalidLValueNode {
 }
 
 impl Node for InvalidLValueNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().l_expr, self.0.as_ref().r_assign)
+    }
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().l_expr.start_line_number()
+    }
+}
+
+impl InvalidRLambdaNode {
+    pub fn new(l_expr: &ExpressionNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
+        let node = Rc::new(CoreInvalidRLambdaNode {
+            l_expr: l_expr.clone(),
+            equal: equal.clone(),
+            r_assign: r_assign.clone(),
+        });
+        InvalidRLambdaNode(node)
+    }
+
+    impl_core_ref!(CoreInvalidRLambdaNode);
+}
+
+impl Node for InvalidRLambdaNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().l_expr, self.0.as_ref().r_assign)
     }

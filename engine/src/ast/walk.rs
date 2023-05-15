@@ -4,6 +4,7 @@ use super::ast::{
     OkIdentifierNode, OkTokenNode, OkTypeTupleNode, TypeTupleNode,
 };
 use crate::ast::ast::ASTNode;
+use crate::ast::ast::InvalidRLambdaNode;
 use crate::ast::ast::{
     ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
     BinaryExpressionNode, BlockNode, CallExpressionNode, CallNode, ClassMethodCallNode,
@@ -112,6 +113,11 @@ pub trait Visitor {
         walk_invalid_l_value_assignment,
         InvalidLValueNode,
         new_with_InvalidLValueNode
+    );
+    impl_node_walk!(
+        walk_invalid_r_lambda_assignment,
+        InvalidRLambdaNode,
+        new_with_InvalidRLambdaNode
     );
     impl_node_walk!(
         walk_struct_decl,
@@ -309,6 +315,9 @@ pub trait Visitor {
                 CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value_assignment) => {
                     self.walk_invalid_l_value_assignment(invalid_l_value_assignment);
                 }
+                CoreAssignmentNode::INVALID_R_LAMBDA(invalid_r_lambda_assignment) => {
+                    self.walk_invalid_r_lambda_assignment(invalid_r_lambda_assignment);
+                }
             },
             ASTNode::OK_ASSIGNMENT(ok_assignment) => {
                 let core_ok_assignment = ok_assignment.core_ref();
@@ -321,6 +330,12 @@ pub trait Visitor {
                 self.walk_expression(&core_invalid_l_value.l_expr);
                 self.walk_token(&core_invalid_l_value.equal);
                 self.walk_r_assignment(&core_invalid_l_value.r_assign);
+            }
+            ASTNode::INVALID_R_LAMBDA(invalid_r_lambda) => {
+                let core_invalid_r_lambda = invalid_r_lambda.core_ref();
+                self.walk_expression(&core_invalid_r_lambda.l_expr);
+                self.walk_token(&core_invalid_r_lambda.equal);
+                self.walk_r_assignment(&core_invalid_r_lambda.r_assign);
             }
             ASTNode::STRUCT_STATEMENT(struct_statement) => {
                 let core_struct_stmt = struct_statement.core_ref();

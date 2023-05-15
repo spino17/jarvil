@@ -116,6 +116,7 @@ impl PythonCodeGenerator {
                         self.print_assign_stmt(ok_assign_stmt)
                     }
                     CoreAssignmentNode::INVALID_L_VALUE(_) => unreachable!(),
+                    CoreAssignmentNode::INVALID_R_LAMBDA(_) => unreachable!(),
                 }
             }
             CoreStatementNode::VARIABLE_DECLARATION(variable_decl_stmt) => {
