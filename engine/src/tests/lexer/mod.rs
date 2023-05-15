@@ -173,7 +173,9 @@ fn test_float() {
 
 #[test]
 fn test_string() {
-    let alt_vec = vec!["s", "stage", "strike", "str", "string", "stringy", "stringfy"];
+    let alt_vec = vec![
+        "s", "stage", "strike", "str", "string", "stringy", "stringfy",
+    ];
     assert_token_for_identifier(alt_vec, "str", CoreToken::ATOMIC_TYPE)
 }
 

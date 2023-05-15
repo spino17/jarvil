@@ -1,6 +1,7 @@
 use super::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
+use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -187,6 +188,26 @@ impl Namespace {
             };
         self.variables
             .insert(name, VariableData::default(), decl_range, lookup_func)
+    }
+
+    pub fn declare_variable_with_type(
+        &self,
+        name: &Rc<String>,
+        variable_type: &Type,
+        decl_range: TextRange,
+    ) -> Result<SymbolData<VariableData>, TextRange> {
+        let lookup_func =
+            |scope: Scope<VariableData>, key: Rc<String>| match scope.0.as_ref().borrow().get(&key)
+            {
+                Some(symbol_data) => Some(symbol_data.clone()),
+                None => None,
+            };
+        self.variables.insert(
+            name,
+            VariableData::new(variable_type),
+            decl_range,
+            lookup_func,
+        )
     }
 
     pub fn declare_function(

@@ -15,6 +15,7 @@ pub enum Diagnostics {
     IncorrectlyIndentedBlock(IncorrectlyIndentedBlockError),
     InvalidLValue(InvalidLValueError),
     IdentifierAlreadyDeclared(IdentifierAlreadyDeclaredError),
+    IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
     RightSideWithVoidTypeNotAllowed(RightSideWithVoidTypeNotAllowedError),
     MoreParamsCount(MoreParamsCountError),
@@ -46,6 +47,9 @@ impl Diagnostics {
             Diagnostics::IncorrectlyIndentedBlock(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InvalidLValue(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierAlreadyDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::IdentifierNotFoundInAnyNamespace(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
             Diagnostics::RightSideWithVoidTypeNotAllowed(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
@@ -318,6 +322,30 @@ impl IdentifierNotDeclaredError {
             span: range_to_span(range).into(),
             help: Some(
                 "identifiers are declared in one of the three namespaces: variables, functions and types"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("callable is not declared in any namespace")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct IdentifierNotFoundInAnyNamespaceError {
+    #[label("not found in the scope")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl IdentifierNotFoundInAnyNamespaceError {
+    pub fn new(range: TextRange) -> Self {
+        IdentifierNotFoundInAnyNamespaceError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "identifiers are declared in one of the three namespaces: variables, functions and types\ncallable identifier are resolved in the following order of namespace:\nfunction => type => variable"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()

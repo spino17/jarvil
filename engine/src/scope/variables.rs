@@ -7,6 +7,13 @@ pub struct VariableData {
 }
 
 impl VariableData {
+    pub fn new(variable_type: &Type) -> Self {
+        VariableData {
+            data_type: variable_type.clone(),
+            is_init: true,
+        }
+    }
+
     pub fn set_data_type(&mut self, data_type: &Type) {
         self.data_type = data_type.clone();
     }
