@@ -86,7 +86,7 @@ impl<T> Scope<T> {
         }
     }
 
-    fn insert<U: Fn(Scope<T>, Rc<String>) -> Option<SymbolData<T>>>(
+    pub fn insert<U: Fn(Scope<T>, Rc<String>) -> Option<SymbolData<T>>>(
         &self,
         key: &Rc<String>,
         meta_data: T,
@@ -133,7 +133,7 @@ impl<T> Scope<T> {
 
 #[derive(Debug)]
 pub struct Namespace {
-    variables: Scope<VariableData>,
+    pub variables: Scope<VariableData>,
     types: Scope<UserDefinedTypeData>,
     functions: Scope<FunctionData>,
 }

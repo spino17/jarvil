@@ -483,6 +483,7 @@ impl Resolver {
 
     pub fn declare_struct_type(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
+        /*
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             if let Some((name, previous_decl_range)) =
                 self.try_declare_and_bind_struct_type(ok_identifier)
@@ -497,6 +498,46 @@ impl Resolver {
                     .push(Diagnostics::IdentifierAlreadyDeclared(err));
             }
         }
+         */
+        let struct_type_obj = match core_struct_decl.name.core_ref() {
+            CoreIdentifierNode::OK(ok_identifier) => {
+                let temp_struct_type_obj =
+                    match self.try_declare_and_bind_struct_type(ok_identifier) {
+                        Some((name, previous_decl_range)) => {
+                            let err = IdentifierAlreadyDeclaredError::new(
+                                IdentKind::TYPE,
+                                name.to_string(),
+                                previous_decl_range,
+                                ok_identifier.range(),
+                            );
+                            self.errors
+                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                            Type::new_with_unknown()
+                        }
+                        None => {
+                            match ok_identifier.user_defined_type_symbol_data(
+                            "struct name should be resolved to `SymbolData<UserDefinedTypeData>`"
+                        ) {
+                            Some(symbol_data) => {
+                                let name = Rc::new(ok_identifier.token_value(&self.code));
+                                Type::new_with_struct(name.to_string(), &symbol_data)
+                            }
+                            None => unreachable!()
+                        }
+                        }
+                    };
+                temp_struct_type_obj
+            }
+            _ => Type::new_with_unknown(),
+        };
+        self.open_block();
+        let result = self.namespace.declare_variable_with_type(
+            &Rc::new(String::from("self")),
+            &struct_type_obj,
+            core_struct_decl.name.range(),
+            true,
+        );
+        assert!(result.is_ok());
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
@@ -536,6 +577,7 @@ impl Resolver {
                 _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
             }
         }
+        self.close_block();
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "struct name should be resolved to `SymbolData<UserDefinedTypeData>`",
