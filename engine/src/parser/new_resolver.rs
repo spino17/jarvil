@@ -1,7 +1,6 @@
 use crate::ast::ast::{
-    CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreRAssignmentNode,
-    CoreRVariableDeclarationNode, FunctionDeclarationNode, LambdaDeclarationNode,
-    LambdaTypeDeclarationNode,
+    CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode,
+    CoreRVariableDeclarationNode, FunctionDeclarationNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -21,13 +20,13 @@ use crate::{
     code::Code,
     error::{
         constants::{
-            LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG, SCOPE_NOT_SET_TO_BLOCK_MSG,
+            LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG,
             STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
         },
         diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
     },
     scope::{
-        core::{IdentifierKind, Namespace, SymbolData},
+        core::{Namespace, SymbolData},
         function::FunctionData,
         user_defined_types::{LambdaTypeData, UserDefinedTypeData},
         variables::VariableData,
@@ -250,24 +249,24 @@ impl Resolver {
                 let core_param = param.core_ref();
                 let param_name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = param_name.core_ref() {
-                    let name = Rc::new(ok_identifier.token_value(&self.code));
+                    let param_name = Rc::new(ok_identifier.token_value(&self.code));
                     let param_type = self.type_obj_from_expression(&core_param.data_type);
                     let symbol_data = self.namespace.declare_variable_with_type(
-                        &name,
+                        &param_name,
                         &param_type,
                         ok_identifier.range(),
                     );
                     match symbol_data {
                         Ok(symbol_data) => {
                             ok_identifier.bind_variable_decl(&symbol_data, 0);
-                            params_vec.push((name, param_type.clone()));
+                            params_vec.push((param_name, param_type.clone()));
                             param_types_vec.push(param_type);
                             params_count += 1;
                         }
                         Err(previous_decl_range) => {
                             let err = IdentifierAlreadyDeclaredError::new(
                                 IdentKind::VARIABLE,
-                                name.to_string(),
+                                param_name.to_string(),
                                 previous_decl_range,
                                 ok_identifier.range(),
                             );
@@ -409,22 +408,6 @@ impl Resolver {
         if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
             match kind {
                 CallableKind::FUNC => {
-                    /*
-                    if let Some(symbol_data) = ok_identifier.symbol_data() {
-                        match symbol_data.0 {
-                            IdentifierKind::FUNCTION(func_symbol_data) => {
-                                func_symbol_data
-                                    .0
-                                    .as_ref()
-                                    .borrow_mut()
-                                    .set_data(params_vec, return_type);
-                            }
-                            _ => unreachable!(
-                                "function name should be resolved to `SymbolData<FunctionData>`"
-                            ),
-                        }
-                    }
-                     */
                     if let Some(symbol_data) = ok_identifier.function_symbol_data(
                         "function name should be resolved to `SymbolData<FunctionData>`",
                     ) {
