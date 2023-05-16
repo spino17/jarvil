@@ -37,6 +37,11 @@ use rustc_hash::FxHashMap;
 use std::{rc::Rc, vec};
 use text_size::TextRange;
 
+pub enum ResolveResult {
+    OK(usize),       // depth
+    Err(Rc<String>), // name of the identifier
+}
+
 pub struct Resolver {
     namespace: Namespace,
     pub code: Code,
@@ -85,18 +90,18 @@ impl Resolver {
         identifier: &OkIdentifierNode,
         lookup_fn: U,
         bind_fn: V,
-    ) -> Option<Rc<String>> {
+    ) -> ResolveResult {
         let name = Rc::new(identifier.token_value(&self.code));
         match lookup_fn(&self.namespace, &name) {
             Some((symbol_data, depth)) => {
                 bind_fn(identifier, &symbol_data, depth);
-                None
+                ResolveResult::OK(depth)
             }
-            None => Some(name),
+            None => ResolveResult::Err(name),
         }
     }
 
-    pub fn try_resolving_variable(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
+    pub fn try_resolving_variable(&mut self, identifier: &OkIdentifierNode) -> ResolveResult {
         let lookup_fn =
             |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_variables_namespace(key);
         let bind_fn =
@@ -106,7 +111,7 @@ impl Resolver {
         self.try_resolving(identifier, lookup_fn, bind_fn)
     }
 
-    pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> Option<Rc<String>> {
+    pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> ResolveResult {
         let lookup_fn =
             |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_functions_namespace(key);
         let bind_fn =
@@ -119,7 +124,7 @@ impl Resolver {
     pub fn try_resolving_user_defined_type(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<Rc<String>> {
+    ) -> ResolveResult {
         let lookup_fn =
             |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_types_namespace(key);
         let bind_fn = |identifier: &OkIdentifierNode,
@@ -598,12 +603,30 @@ impl Visitor for Resolver {
                 match atom_start.core_ref() {
                     CoreAtomStartNode::IDENTIFIER(identifier) => {
                         if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
+                            /*
                             if let Some(_) = self.try_resolving_variable(ok_identifier) {
                                 let err = IdentifierNotDeclaredError::new(
                                     IdentKind::VARIABLE,
                                     ok_identifier.range(),
                                 );
                                 self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                            }
+                             */
+                            match self.try_resolving_variable(ok_identifier) {
+                                ResolveResult::OK(depth) => {
+                                    if depth > 0 {
+                                        let name = Rc::new(ok_identifier.token_value(&self.code));
+                                        println!("{}", name);
+                                        self.namespace.set_to_variable_non_locals(&name);
+                                    }
+                                }
+                                ResolveResult::Err(_) => {
+                                    let err = IdentifierNotDeclaredError::new(
+                                        IdentKind::VARIABLE,
+                                        ok_identifier.range(),
+                                    );
+                                    self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                                }
                             }
                         }
                     }
@@ -616,24 +639,50 @@ impl Visitor for Resolver {
                             match self.namespace.lookup_in_functions_namespace(&name) {
                                 Some((symbol_data, depth)) => {
                                     ok_identifier.bind_function_decl(&symbol_data, depth);
-                                }
-                                None => match self.namespace.lookup_in_types_namespace(&name) {
-                                    Some((symbol_data, depth)) => {
-                                        ok_identifier
-                                            .bind_user_defined_type_decl(&symbol_data, depth);
+                                    if depth > 0 {
+                                        self.namespace.set_to_function_non_locals(&name);
+                                        println!("{}", name);
                                     }
-                                    None => {
-                                        if let Some(_) = self.try_resolving_variable(ok_identifier)
-                                        {
-                                            let err = IdentifierNotFoundInAnyNamespaceError::new(
-                                                ok_identifier.range(),
-                                            );
-                                            self.errors.push(
-                                                Diagnostics::IdentifierNotFoundInAnyNamespace(err),
-                                            );
+                                }
+                                None => {
+                                    match self.namespace.lookup_in_types_namespace(&name) {
+                                        Some((symbol_data, depth)) => {
+                                            ok_identifier
+                                                .bind_user_defined_type_decl(&symbol_data, depth);
+                                        }
+                                        None => {
+                                            /*
+                                            if let Some(_) = self.try_resolving_variable(ok_identifier)
+                                            {
+                                                let err = IdentifierNotFoundInAnyNamespaceError::new(
+                                                    ok_identifier.range(),
+                                                );
+                                                self.errors.push(
+                                                    Diagnostics::IdentifierNotFoundInAnyNamespace(err),
+                                                );
+                                            }
+                                             */
+                                            match self.try_resolving_variable(ok_identifier) {
+                                                ResolveResult::OK(depth) => {
+                                                    if depth > 0 {
+                                                        self.namespace
+                                                            .set_to_variable_non_locals(&name);
+                                                        println!("{}", name);
+                                                    }
+                                                }
+                                                ResolveResult::Err(_) => {
+                                                    let err =
+                                                        IdentifierNotFoundInAnyNamespaceError::new(
+                                                            ok_identifier.range(),
+                                                        );
+                                                    self.errors.push(
+                                                    Diagnostics::IdentifierNotFoundInAnyNamespace(err),
+                                                );
+                                                }
+                                            }
                                         }
                                     }
-                                },
+                                }
                             }
                         }
                         if let Some(params) = &core_func_call.params {
@@ -645,7 +694,9 @@ impl Visitor for Resolver {
                         if let CoreIdentifierNode::OK(ok_identifier) =
                             core_class_method_call.class_name.core_ref()
                         {
-                            if let Some(_) = self.try_resolving_user_defined_type(ok_identifier) {
+                            if let ResolveResult::Err(_) =
+                                self.try_resolving_user_defined_type(ok_identifier)
+                            {
                                 let err = IdentifierNotDeclaredError::new(
                                     IdentKind::TYPE,
                                     ok_identifier.range(),

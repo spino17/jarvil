@@ -2,7 +2,7 @@ use super::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::Type;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::RefCell;
 use std::rc::Rc;
 use text_size::TextRange;
@@ -33,6 +33,7 @@ impl<T> Clone for SymbolData<T> {
 pub struct CoreScope<T> {
     symbol_table: FxHashMap<Rc<String>, SymbolData<T>>,
     parent_scope: Option<Scope<T>>,
+    non_locals: FxHashSet<Rc<String>>,
 }
 
 impl<T> CoreScope<T> {
@@ -45,6 +46,10 @@ impl<T> CoreScope<T> {
     pub fn get(&self, name: &Rc<String>) -> Option<&SymbolData<T>> {
         self.symbol_table.get(name)
     }
+
+    pub fn set_to_non_locals(&mut self, name: &Rc<String>) {
+        self.non_locals.insert(name.clone());
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -55,6 +60,7 @@ impl<T> Scope<T> {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_scope: None,
+            non_locals: FxHashSet::default(),
         })))
     }
 
@@ -63,6 +69,7 @@ impl<T> Scope<T> {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_scope: Some(Scope(scope)),
+            non_locals: FxHashSet::default(),
         })))
     }
 
@@ -111,6 +118,10 @@ impl<T> Scope<T> {
                 }
             }
         }
+    }
+
+    fn set_to_non_locals(&self, name: &Rc<String>) {
+        self.0.as_ref().borrow_mut().set_to_non_locals(name);
     }
 }
 
@@ -259,6 +270,18 @@ impl Namespace {
             decl_range,
             lookup_func,
         )
+    }
+
+    pub fn set_to_variable_non_locals(&self, name: &Rc<String>) {
+        self.variables.set_to_non_locals(name);
+    }
+
+    pub fn set_to_function_non_locals(&self, name: &Rc<String>) {
+        self.functions.set_to_non_locals(name);
+    }
+
+    pub fn set_to_type_non_locals(&self, name: &Rc<String>) {
+        self.types.set_to_non_locals(name);
     }
 }
 
