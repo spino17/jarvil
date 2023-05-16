@@ -1,4 +1,3 @@
-use super::expression::core::is_expression_starting_with;
 use super::statement::core::{
     is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS,
 };
@@ -9,13 +8,6 @@ use crate::ast::ast::{
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::parser::PackratParser;
 use std::rc::Rc;
-
-pub fn is_r_starting_with(token: &Token) -> bool {
-    match token.core_token {
-        CoreToken::LAMBDA_KEYWORD => true,
-        _ => is_expression_starting_with(token),
-    }
-}
 
 pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
     let name_node = parser.expect_ident();
@@ -58,9 +50,12 @@ pub fn type_tuple(parser: &mut PackratParser) -> TypeTupleNode {
     match token.core_token {
         CoreToken::COMMA => {
             let comma_node = parser.expect(",");
-            let remaining_types = parser.type_tuple();
-            let ok_type_tuple_node =
-                OkTypeTupleNode::new_with_args(&first_type_node, &remaining_types, &comma_node);
+            let remaining_types_node = parser.type_tuple();
+            let ok_type_tuple_node = OkTypeTupleNode::new_with_args(
+                &first_type_node,
+                &remaining_types_node,
+                &comma_node,
+            );
             return TypeTupleNode::new(&ok_type_tuple_node);
         }
         CoreToken::RPAREN => {
