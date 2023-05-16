@@ -2,7 +2,10 @@ use super::helper::{range_to_span, IdentifierKind, PropertyKind};
 use crate::{lexer::token::Token, parser::helper::format_symbol, types::core::Type};
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use owo_colors::{OwoColorize, Style};
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    rc::Rc,
+};
 use text_size::TextRange;
 use thiserror::Error;
 
@@ -18,6 +21,7 @@ pub enum Diagnostics {
     IdentifierAlreadyDeclared(IdentifierAlreadyDeclaredError),
     IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
+    VariableReferencedBeforeAssignment(VariableReferencedBeforeAssignmentError),
     RightSideWithVoidTypeNotAllowed(RightSideWithVoidTypeNotAllowedError),
     MoreParamsCount(MoreParamsCountError),
     LessParamsCount(LessParamsCountError),
@@ -56,6 +60,9 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::VariableReferencedBeforeAssignment(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
             Diagnostics::MoreParamsCount(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::LessParamsCount(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MoreThanMaxLimitParamsPassed(diagonstic) => {
@@ -348,6 +355,35 @@ impl IdentifierNotDeclaredError {
             span: range_to_span(range).into(),
             help: Some(
                 "identifiers are declared in one of the three namespaces: variables, functions and types"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("variable `{}` referenced before assignment", self.variable_name)]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct VariableReferencedBeforeAssignmentError {
+    pub variable_name: String,
+    #[label("variable declared here")]
+    pub decl_span: SourceSpan,
+    #[label("same variable used within the declaration statement")]
+    pub usage_span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl VariableReferencedBeforeAssignmentError {
+    pub fn new(variable_name: String, decl_range: TextRange, usage_range: TextRange) -> Self {
+        VariableReferencedBeforeAssignmentError {
+            variable_name,
+            decl_span: range_to_span(decl_range).into(),
+            usage_span: range_to_span(usage_range).into(),
+            help: Some(
+                "variables are not allowed to be referenced inside the their own declaration statement"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()

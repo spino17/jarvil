@@ -7,15 +7,23 @@ pub struct VariableData {
 }
 
 impl VariableData {
-    pub fn new(variable_type: &Type) -> Self {
+    pub fn new(variable_type: &Type, is_init: bool) -> Self {
         VariableData {
             data_type: variable_type.clone(),
-            is_init: true,
+            is_init,
         }
     }
 
     pub fn set_data_type(&mut self, data_type: &Type) {
         self.data_type = data_type.clone();
+    }
+
+    pub fn set_is_init(&mut self, is_init: bool) {
+        self.is_init = is_init
+    }
+
+    pub fn is_initialized(&self) -> bool {
+        self.is_init
     }
 }
 
@@ -23,7 +31,7 @@ impl Default for VariableData {
     fn default() -> Self {
         VariableData {
             data_type: Type::new_with_unknown(),
-            is_init: true,
+            is_init: false,
         }
     }
 }

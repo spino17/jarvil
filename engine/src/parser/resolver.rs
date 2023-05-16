@@ -5,8 +5,10 @@ use crate::ast::ast::{
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
     IdentifierNotFoundInAnyNamespaceError, MoreThanMaxLimitParamsPassedError,
+    VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
+use crate::scope::core::VariableLookupResult;
 use crate::{
     ast::{
         ast::{
@@ -101,14 +103,36 @@ impl Resolver {
         }
     }
 
-    pub fn try_resolving_variable(&mut self, identifier: &OkIdentifierNode) -> ResolveResult {
+    pub fn try_resolving_variable(
+        &mut self,
+        identifier: &OkIdentifierNode,
+    ) -> VariableLookupResult {
+        /*
         let lookup_fn =
             |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_variables_namespace(key);
         let bind_fn =
             |identifier: &OkIdentifierNode,
              symbol_data: &SymbolData<VariableData>,
              depth: usize| { identifier.bind_variable_decl(symbol_data, depth) };
-        self.try_resolving(identifier, lookup_fn, bind_fn)
+        self.try_resolving(identifier, lookup_fn, bind_fn);
+         */
+        let name = Rc::new(identifier.token_value(&self.code));
+        //if let VariableLookupResult::OK((symbol_data, depth)) = lookup_result {
+        //    identifier.bind_variable_decl(&symbol_data, depth);
+        //}
+        match self
+            .namespace
+            .lookup_in_variables_namespace_with_is_init(&name)
+        {
+            VariableLookupResult::OK((symbol_data, depth)) => {
+                identifier.bind_variable_decl(&symbol_data, depth);
+                return VariableLookupResult::OK((symbol_data, depth));
+            }
+            VariableLookupResult::NOT_INITIALIZED(decl_range) => {
+                return VariableLookupResult::NOT_INITIALIZED(decl_range)
+            }
+            VariableLookupResult::Err => return VariableLookupResult::Err,
+        }
     }
 
     pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> ResolveResult {
@@ -260,6 +284,7 @@ impl Resolver {
                         &param_name,
                         &param_type,
                         ok_identifier.range(),
+                        true,
                     );
                     match symbol_data {
                         Ok(symbol_data) => {
@@ -340,6 +365,15 @@ impl Resolver {
         // it's type is set to the variable symbol_data here itself.
         match core_variable_decl.r_node.core_ref() {
             CoreRVariableDeclarationNode::LAMBDA(lambda_r_assign) => {
+                // For case of lambda variable, it is allowed to be referenced inside the body to
+                // enable recursive definitions
+                if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+                    if let Some(symbol_data) = ok_identifier.variable_symbol_data(
+                        "variable name should be resolved to `SymbolData<VariableData>`",
+                    ) {
+                        symbol_data.0.as_ref().borrow_mut().set_is_init(true);
+                    }
+                };
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
                 let (_, params_vec, return_type) =
                     self.visit_callable_body(&core_lambda_r_assign.body);
@@ -383,6 +417,13 @@ impl Resolver {
                 self.walk_missing_tokens(missing_token);
             }
         }
+        if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+            if let Some(symbol_data) = ok_identifier.variable_symbol_data(
+                "variable name should be resolved to `SymbolData<VariableData>`",
+            ) {
+                symbol_data.0.as_ref().borrow_mut().set_is_init(true);
+            }
+        };
     }
 
     pub fn declare_function(&mut self, func_decl: &FunctionDeclarationNode) {
@@ -393,6 +434,7 @@ impl Resolver {
         if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
             match kind {
                 CallableKind::FUNC => {
+                    // TODO - check first whether the identifier with same name is captured in non-local scope
                     if let Some((name, previous_decl_range)) =
                         self.try_declare_and_bind_function(ok_identifier)
                     {
@@ -612,15 +654,24 @@ impl Visitor for Resolver {
                                 self.errors.push(Diagnostics::IdentifierNotDeclared(err));
                             }
                              */
+                            let name = Rc::new(ok_identifier.token_value(&self.code));
                             match self.try_resolving_variable(ok_identifier) {
-                                ResolveResult::OK(depth) => {
+                                VariableLookupResult::OK((_, depth)) => {
                                     if depth > 0 {
-                                        let name = Rc::new(ok_identifier.token_value(&self.code));
                                         println!("{}", name);
                                         self.namespace.set_to_variable_non_locals(&name);
                                     }
                                 }
-                                ResolveResult::Err(_) => {
+                                VariableLookupResult::NOT_INITIALIZED(decl_range) => {
+                                    let err = VariableReferencedBeforeAssignmentError::new(
+                                        name.to_string(),
+                                        decl_range,
+                                        ok_identifier.range(),
+                                    );
+                                    self.errors
+                                        .push(Diagnostics::VariableReferencedBeforeAssignment(err));
+                                }
+                                VariableLookupResult::Err => {
                                     let err = IdentifierNotDeclaredError::new(
                                         IdentKind::VARIABLE,
                                         ok_identifier.range(),
@@ -641,7 +692,6 @@ impl Visitor for Resolver {
                                     ok_identifier.bind_function_decl(&symbol_data, depth);
                                     if depth > 0 {
                                         self.namespace.set_to_function_non_locals(&name);
-                                        println!("{}", name);
                                     }
                                 }
                                 None => {
@@ -663,21 +713,26 @@ impl Visitor for Resolver {
                                             }
                                              */
                                             match self.try_resolving_variable(ok_identifier) {
-                                                ResolveResult::OK(depth) => {
+                                                VariableLookupResult::OK((_, depth)) => {
                                                     if depth > 0 {
                                                         self.namespace
                                                             .set_to_variable_non_locals(&name);
-                                                        println!("{}", name);
                                                     }
                                                 }
-                                                ResolveResult::Err(_) => {
+                                                VariableLookupResult::NOT_INITIALIZED(
+                                                    decl_range,
+                                                ) => {
+                                                    let err = VariableReferencedBeforeAssignmentError::new(name.to_string(), decl_range, ok_identifier.range());
+                                                    self.errors.push(Diagnostics::VariableReferencedBeforeAssignment(err));
+                                                }
+                                                VariableLookupResult::Err => {
                                                     let err =
                                                         IdentifierNotFoundInAnyNamespaceError::new(
                                                             ok_identifier.range(),
                                                         );
                                                     self.errors.push(
-                                                    Diagnostics::IdentifierNotFoundInAnyNamespace(err),
-                                                );
+                                                        Diagnostics::IdentifierNotFoundInAnyNamespace(err),
+                                                    );
                                                 }
                                             }
                                         }

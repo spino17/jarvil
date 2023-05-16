@@ -14,8 +14,14 @@ pub enum IdentifierKind {
     FUNCTION(SymbolData<FunctionData>),
 }
 
+pub enum VariableLookupResult {
+    OK((SymbolData<VariableData>, usize)),
+    NOT_INITIALIZED(TextRange),
+    Err,
+}
+
 #[derive(Debug)]
-pub struct SymbolData<T>(pub Rc<RefCell<T>>, TextRange); // (identifier_meta_data, decl_line_number)
+pub struct SymbolData<T>(pub Rc<RefCell<T>>, pub TextRange); // (identifier_meta_data, decl_line_number)
 
 impl<T> SymbolData<T> {
     pub fn new(core_data: T, decl_range: TextRange) -> Self {
@@ -172,6 +178,22 @@ impl Namespace {
         self.variables.lookup(key)
     }
 
+    pub fn lookup_in_variables_namespace_with_is_init(
+        &self,
+        key: &Rc<String>,
+    ) -> VariableLookupResult {
+        match self.variables.lookup(key) {
+            Some((symbol_data, depth)) => {
+                if symbol_data.0.as_ref().borrow().is_initialized() {
+                    return VariableLookupResult::OK((symbol_data, depth));
+                } else {
+                    return VariableLookupResult::NOT_INITIALIZED(symbol_data.1.clone());
+                }
+            }
+            None => return VariableLookupResult::Err,
+        }
+    }
+
     pub fn lookup_in_types_namespace(
         &self,
         key: &Rc<String>,
@@ -206,6 +228,7 @@ impl Namespace {
         name: &Rc<String>,
         variable_type: &Type,
         decl_range: TextRange,
+        is_init: bool,
     ) -> Result<SymbolData<VariableData>, TextRange> {
         let lookup_func =
             |scope: Scope<VariableData>, key: Rc<String>| match scope.0.as_ref().borrow().get(&key)
@@ -215,7 +238,7 @@ impl Namespace {
             };
         self.variables.insert(
             name,
-            VariableData::new(variable_type),
+            VariableData::new(variable_type, is_init),
             decl_range,
             lookup_func,
         )
