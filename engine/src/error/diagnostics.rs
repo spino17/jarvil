@@ -267,7 +267,7 @@ impl InvalidRLambdaError {
         InvalidRLambdaError {
             span: range_to_span(range).into(),
             help: Some(
-                "lambda is not allowed to be assigned to l-value expression"
+                "lambda expression is not allowed to be assigned to l-value expression directly\nyou can achieve the operation by declaring a new lambda variable and then using it in the assignment"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),

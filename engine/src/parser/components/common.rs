@@ -2,58 +2,18 @@ use super::expression::core::is_expression_starting_with;
 use super::statement::core::{
     is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS,
 };
-use crate::ast::ast::Node;
 use crate::ast::ast::{
-    BlockKind, CallableBodyNode, CallablePrototypeNode, ErrornousNode, IdentifierNode,
-    LambdaDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, OkNameTypeSpecsNode,
-    OkTypeTupleNode, RAssignmentNode, TypeTupleNode,
+    BlockKind, CallableBodyNode, CallablePrototypeNode, ErrornousNode, NameTypeSpecNode,
+    NameTypeSpecsNode, OkNameTypeSpecsNode, OkTypeTupleNode, TypeTupleNode,
 };
-use crate::constants::common::LAMBDA_KEYWORD;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::parser::PackratParser;
 use std::rc::Rc;
-use text_size::TextRange;
 
-pub fn is_r_assign_starting_with(token: &Token) -> bool {
+pub fn is_r_starting_with(token: &Token) -> bool {
     match token.core_token {
         CoreToken::LAMBDA_KEYWORD => true,
         _ => is_expression_starting_with(token),
-    }
-}
-
-pub const R_ASSIGNMENT_STARTING_SYMBOLS: [&'static str; 2] = ["<expression>", "lambda"];
-
-pub fn r_assign(
-    parser: &mut PackratParser,
-    identifier_name: Option<&IdentifierNode>,
-) -> (RAssignmentNode, Option<TextRange>) {
-    let token = &parser.curr_token();
-    if !is_r_assign_starting_with(token) {
-        parser.log_missing_token_error(&R_ASSIGNMENT_STARTING_SYMBOLS, token);
-        return (
-            RAssignmentNode::new_with_missing_tokens(
-                &Rc::new(R_ASSIGNMENT_STARTING_SYMBOLS.to_vec()),
-                token,
-            ),
-            None,
-        );
-    }
-    match token.core_token {
-        CoreToken::LAMBDA_KEYWORD => {
-            let lambda_keyword = parser.expect(LAMBDA_KEYWORD);
-            let callable_body = parser.callable_body();
-            let lambda_decl_node =
-                LambdaDeclarationNode::new(identifier_name, &lambda_keyword, &callable_body);
-            (
-                RAssignmentNode::new_with_lambda(&lambda_decl_node),
-                Some(lambda_keyword.range()),
-            )
-        }
-        _ => {
-            let expr_node = parser.expr();
-            let newline = parser.expect_terminators();
-            (RAssignmentNode::new_with_expr(&expr_node, &newline), None)
-        }
     }
 }
 

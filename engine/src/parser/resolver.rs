@@ -224,7 +224,7 @@ impl Resolver {
 
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        self.walk_r_assignment(&core_variable_decl.r_assign);
+        self.walk_r_variable_declaration(&core_variable_decl.r_node);
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
             if let Some((name, previous_decl_range)) =
                 self.try_declare_and_bind_variable(ok_identifier)
@@ -435,30 +435,21 @@ impl Resolver {
         let core_lambda_decl = lambda_decl.core_ref();
         let lambda_variable_name = &core_lambda_decl.name;
         let (_, param_types_vec, return_type) = self.resolve_callable_body(&core_lambda_decl.body);
-        if let Some(identifier) = lambda_variable_name {
-            if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                if let Some(symbol_data) = ok_identifier.symbol_data() {
-                    match symbol_data.0 {
-                        IdentifierKind::VARIABLE(variable_symbol_data) => {
-                            let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(
-                                param_types_vec,
-                                return_type,
-                            ));
-                            let lambda_type_obj = Type::new_with_lambda(
-                                None,
-                                &SymbolData::new(symbol_data, ok_identifier.range()),
-                            );
-                            variable_symbol_data
-                                .0
-                                .as_ref()
-                                .borrow_mut()
-                                .set_data_type(&lambda_type_obj);
-                        }
-                        _ => unreachable!(
-                            "lambda variable name should be resolved to `SymbolData<VariableData>`"
-                        ),
-                    }
-                }
+        if let CoreIdentifierNode::OK(ok_identifier) = lambda_variable_name.core_ref() {
+            if let Some(variable_symbol_data) = ok_identifier.variable_symbol_data(
+                "variable name should be resolved to `SymbolData<VariableData>`",
+            ) {
+                let symbol_data =
+                    UserDefinedTypeData::LAMBDA(LambdaTypeData::new(param_types_vec, return_type));
+                let lambda_type_obj = Type::new_with_lambda(
+                    None,
+                    &SymbolData::new(symbol_data, ok_identifier.range()),
+                );
+                variable_symbol_data
+                    .0
+                    .as_ref()
+                    .borrow_mut()
+                    .set_data_type(&lambda_type_obj);
             }
         }
     }

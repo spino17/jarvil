@@ -10,16 +10,17 @@ use crate::ast::ast::{
     BinaryExpressionNode, BlockNode, CallExpressionNode, CallNode, ClassMethodCallNode,
     ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
     CoreExpressionNode, CoreLambdaTypeDeclarationNode, CoreNameTypeSpecsNode, CoreParamsNode,
-    CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTypeDeclarationNode,
-    CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode, ExpressionStatementNode,
-    FunctionDeclarationNode, IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
+    CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode,
+    CoreStatementNode, CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode,
+    ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
+    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
     LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
     NameTypeSpecsNode, OkAssignmentNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode,
     OkParamsNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
-    PropertyAccessNode, RAssignmentNode, ReturnStatementNode, SkippedTokenNode, SkippedTokensNode,
-    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructStatementNode,
-    TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
-    VariableDeclarationNode,
+    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
+    SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
+    StructDeclarationNode, StructStatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -151,6 +152,11 @@ pub trait Visitor {
         new_with_TypeExpressionNode
     );
     impl_node_walk!(walk_r_assignment, RAssignmentNode, new_with_RAssignmentNode);
+    impl_node_walk!(
+        walk_r_variable_declaration,
+        RVariableDeclarationNode,
+        new_with_RVariableDeclarationNode
+    );
     impl_node_walk!(walk_expression, ExpressionNode, new_with_ExpressionNode);
     impl_node_walk!(
         walk_ok_name_type_specs,
@@ -437,7 +443,7 @@ pub trait Visitor {
                 self.walk_token(&core_variable_decl.let_keyword);
                 self.walk_identifier(&core_variable_decl.name);
                 self.walk_token(&core_variable_decl.equal);
-                self.walk_r_assignment(&core_variable_decl.r_assign);
+                self.walk_r_variable_declaration(&core_variable_decl.r_node);
             }
             ASTNode::RETURN(return_stmt) => {
                 let core_return_stmt = return_stmt.core_ref();
@@ -453,10 +459,21 @@ pub trait Visitor {
                     CoreRAssignmentNode::EXPRESSION(expr_stmt) => {
                         self.walk_expr_stmt(expr_stmt);
                     }
-                    CoreRAssignmentNode::LAMBDA(lambda) => {
+                    CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => {
+                        self.walk_missing_tokens(missing_tokens);
+                    }
+                }
+            }
+            ASTNode::R_VARIABLE_DECLARATION(r_variable_decl) => {
+                let core_r_variable_decl = r_variable_decl.core_ref();
+                match core_r_variable_decl {
+                    CoreRVariableDeclarationNode::EXPRESSION(expr_stmt) => {
+                        self.walk_expr_stmt(expr_stmt);
+                    }
+                    CoreRVariableDeclarationNode::LAMBDA(lambda) => {
                         self.walk_lambda_decl(lambda);
                     }
-                    CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreRVariableDeclarationNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }

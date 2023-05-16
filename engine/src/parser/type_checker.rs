@@ -8,10 +8,11 @@ use crate::{
             BinaryExpressionNode, BlockNode, CallableBodyNode, CallablePrototypeNode,
             ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
             CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode,
-            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreUnaryExpressionNode, ExpressionNode, LambdaDeclarationNode, NameTypeSpecsNode,
-            Node, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, ReturnStatementNode,
-            StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
+            CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode,
+            CoreStatementNode, CoreTokenNode, CoreUnaryExpressionNode, ExpressionNode,
+            LambdaDeclarationNode, NameTypeSpecsNode, Node, OnlyUnaryExpressionNode, ParamsNode,
+            RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, StatementNode,
+            TokenNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
             VariableDeclarationNode,
         },
         walk::Visitor,
@@ -141,27 +142,24 @@ impl TypeChecker {
 
     pub fn type_of_lambda(&self, lambda_decl: &LambdaDeclarationNode) -> Type {
         let core_lambda_decl = lambda_decl.0.as_ref();
-        let func_name = &core_lambda_decl.name;
+        let lambda_name = &core_lambda_decl.name;
         match &core_lambda_decl.body.core_ref() {
             CoreCallableBodyNode::OK(ok_callable_decl) => {
                 let core_ok_callable_decl = ok_callable_decl.core_ref();
                 let prototype = &core_ok_callable_decl.prototype.core_ref();
                 let params = &prototype.params;
                 let return_type = &prototype.return_type;
-                let (params_vec, return_type) = match func_name {
-                    Some(func_name) => match func_name.core_ref() {
-                        CoreIdentifierNode::OK(ok_identifier) => match ok_identifier
-                            .variable_symbol_data(
-                                "lambda name should be resolved to `SymbolData<VariableData>`",
-                            ) {
-                            Some(symbol_data) => {
-                                return symbol_data.0.as_ref().borrow().data_type.clone()
-                            }
-                            None => self.params_and_return_type_obj_from_expr(return_type, params),
-                        },
-                        _ => self.params_and_return_type_obj_from_expr(return_type, params),
+                let (params_vec, return_type) = match lambda_name.core_ref() {
+                    CoreIdentifierNode::OK(ok_identifier) => match ok_identifier
+                        .variable_symbol_data(
+                            "lambda name should be resolved to `SymbolData<VariableData>`",
+                        ) {
+                        Some(symbol_data) => {
+                            return symbol_data.0.as_ref().borrow().data_type.clone()
+                        }
+                        None => self.params_and_return_type_obj_from_expr(return_type, params),
                     },
-                    None => self.params_and_return_type_obj_from_expr(return_type, params),
+                    _ => self.params_and_return_type_obj_from_expr(return_type, params),
                 };
                 let symbol_data =
                     UserDefinedTypeData::LAMBDA(LambdaTypeData::new(params_vec, return_type));
@@ -573,11 +571,24 @@ impl TypeChecker {
             CoreRAssignmentNode::EXPRESSION(expr_stmt) => {
                 self.check_expr(&expr_stmt.core_ref().expr)
             }
-            CoreRAssignmentNode::LAMBDA(lambda) => {
+            CoreRAssignmentNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
+        }
+    }
+
+    pub fn check_r_variable_declaration(
+        &mut self,
+        r_variable_decl: &RVariableDeclarationNode,
+    ) -> Type {
+        let core_r_variable_decl = r_variable_decl.core_ref();
+        match core_r_variable_decl {
+            CoreRVariableDeclarationNode::EXPRESSION(expr_stmt) => {
+                self.check_expr(&expr_stmt.core_ref().expr)
+            }
+            CoreRVariableDeclarationNode::LAMBDA(lambda) => {
                 self.check_callable_body(&lambda.core_ref().body);
                 return self.type_of_lambda(lambda);
             }
-            _ => Type::new_with_unknown(),
+            CoreRVariableDeclarationNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
         }
     }
 
@@ -786,10 +797,10 @@ impl TypeChecker {
 
     pub fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        let r_assign = &core_variable_decl.r_assign;
-        let r_type = self.check_r_assign(r_assign);
+        let r_variable_decl = &core_variable_decl.r_node;
+        let r_type = self.check_r_variable_declaration(r_variable_decl);
         if r_type.is_void() {
-            let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
+            let err = RightSideWithVoidTypeNotAllowedError::new(r_variable_decl.range());
             self.errors
                 .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
         }

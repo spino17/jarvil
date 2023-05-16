@@ -1,6 +1,7 @@
 use crate::ast::ast::{
     CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreRAssignmentNode,
-    FunctionDeclarationNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
+    CoreRVariableDeclarationNode, FunctionDeclarationNode, LambdaDeclarationNode,
+    LambdaTypeDeclarationNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -317,6 +318,7 @@ impl Resolver {
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+            // TODO - check first whether the identifier with same name is captured in non-local scope
             if let Some((name, previous_decl_range)) =
                 self.try_declare_and_bind_variable(ok_identifier)
             {
@@ -332,8 +334,8 @@ impl Resolver {
         }
         // Except `CoreRAssignmentNode::LAMBDA`, type of the variable is set in the `type_checker.rs`. For `CoreRAssignmentNode::LAMBDA`,
         // it's type is set to the variable symbol_data here itself.
-        match core_variable_decl.r_assign.core_ref() {
-            CoreRAssignmentNode::LAMBDA(lambda_r_assign) => {
+        match core_variable_decl.r_node.core_ref() {
+            CoreRVariableDeclarationNode::LAMBDA(lambda_r_assign) => {
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
                 let (_, params_vec, return_type) =
                     self.visit_callable_body(&core_lambda_r_assign.body);
@@ -370,10 +372,10 @@ impl Resolver {
                     }
                 };
             }
-            CoreRAssignmentNode::EXPRESSION(expr_r_assign) => {
+            CoreRVariableDeclarationNode::EXPRESSION(expr_r_assign) => {
                 self.walk_expr_stmt(expr_r_assign);
             }
-            CoreRAssignmentNode::MISSING_TOKENS(missing_token) => {
+            CoreRVariableDeclarationNode::MISSING_TOKENS(missing_token) => {
                 self.walk_missing_tokens(missing_token);
             }
         }

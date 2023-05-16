@@ -13,14 +13,15 @@ use super::ast::{
     CoreOkLambdaTypeDeclarationNode, CoreOkNameTypeSpecsNode, CoreOkParamsNode, CoreOkTokenNode,
     CoreOkTypeTupleNode, CoreOnlyUnaryExpressionNode, CoreParamsNode,
     CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
-    CoreReturnStatementNode, CoreStructDeclarationNode, CoreStructStatementNode, CoreTokenNode,
-    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
-    CoreUserDefinedTypeNode, CoreVariableDeclarationNode, IdentifierNode, IndexAccessNode,
-    InvalidLValueNode, InvalidRLambdaNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
-    MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode,
-    OkIdentifierNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkTokenNode,
-    OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
-    PropertyAccessNode, RAssignmentNode, StructDeclarationNode, TypeExpressionNode,
+    CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreStructDeclarationNode,
+    CoreStructStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreTypeExpressionNode,
+    CoreTypeTupleNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
+    CoreVariableDeclarationNode, IdentifierNode, IndexAccessNode, InvalidLValueNode,
+    InvalidRLambdaNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
+    NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode,
+    OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkTokenNode, OkTypeTupleNode,
+    OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode,
+    RAssignmentNode, RVariableDeclarationNode, StructDeclarationNode, TypeExpressionNode,
     TypeResolveKind, TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode,
 };
 use super::ast::{
@@ -638,13 +639,9 @@ impl Node for FunctionDeclarationNode {
 }
 
 impl LambdaDeclarationNode {
-    pub fn new(
-        name: Option<&IdentifierNode>,
-        lambda_keyword: &TokenNode,
-        body: &CallableBodyNode,
-    ) -> Self {
+    pub fn new(name: &IdentifierNode, lambda_keyword: &TokenNode, body: &CallableBodyNode) -> Self {
         let node = Rc::new(CoreLambdaDeclarationNode {
-            name: extract_from_option!(name),
+            name: name.clone(),
             lambda_keyword: lambda_keyword.clone(),
             body: body.clone(),
         });
@@ -666,7 +663,7 @@ impl Node for LambdaDeclarationNode {
 impl VariableDeclarationNode {
     pub fn new(
         name: &IdentifierNode,
-        r_assign: &RAssignmentNode,
+        r_node: &RVariableDeclarationNode,
         let_keyword: &TokenNode,
         equal: &TokenNode,
     ) -> Self {
@@ -674,7 +671,7 @@ impl VariableDeclarationNode {
             let_keyword: let_keyword.clone(),
             equal: equal.clone(),
             name: name.clone(),
-            r_assign: r_assign.clone(),
+            r_node: r_node.clone(),
         });
         VariableDeclarationNode(node)
     }
@@ -684,7 +681,7 @@ impl VariableDeclarationNode {
 
 impl Node for VariableDeclarationNode {
     fn range(&self) -> TextRange {
-        impl_range!(self.0.as_ref().let_keyword, self.0.as_ref().r_assign)
+        impl_range!(self.0.as_ref().let_keyword, self.0.as_ref().r_node)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().let_keyword.start_line_number()
@@ -1062,11 +1059,6 @@ impl Node for UserDefinedTypeNode {
 }
 
 impl RAssignmentNode {
-    pub fn new_with_lambda(lambda_decl: &LambdaDeclarationNode) -> Self {
-        let node = Rc::new(CoreRAssignmentNode::LAMBDA(lambda_decl.clone()));
-        RAssignmentNode(node)
-    }
-
     pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
         let node = Rc::new(CoreRAssignmentNode::EXPRESSION(
             ExpressionStatementNode::new(expr, newline),
@@ -1077,6 +1069,23 @@ impl RAssignmentNode {
     impl_core_ref!(CoreRAssignmentNode);
 }
 default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode);
+
+impl RVariableDeclarationNode {
+    pub fn new_with_lambda(lambda_decl: &LambdaDeclarationNode) -> Self {
+        let node = Rc::new(CoreRVariableDeclarationNode::LAMBDA(lambda_decl.clone()));
+        RVariableDeclarationNode(node)
+    }
+
+    pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
+        let node = Rc::new(CoreRVariableDeclarationNode::EXPRESSION(
+            ExpressionStatementNode::new(expr, newline),
+        ));
+        RVariableDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreRVariableDeclarationNode);
+}
+default_errornous_node_impl!(RVariableDeclarationNode, CoreRVariableDeclarationNode);
 
 impl ExpressionNode {
     pub fn new_with_unary(unary_expr: &UnaryExpressionNode) -> Self {

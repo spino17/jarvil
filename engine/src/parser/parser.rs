@@ -429,13 +429,6 @@ impl PackratParser {
         components::common::type_tuple(self)
     }
 
-    pub fn r_assign(
-        &mut self,
-        identifier_name: Option<&IdentifierNode>,
-    ) -> (RAssignmentNode, Option<TextRange>) {
-        components::common::r_assign(self, identifier_name)
-    }
-
     pub fn callable_prototype(&mut self) -> CallablePrototypeNode {
         components::common::callable_prototype(self)
     }

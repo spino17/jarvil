@@ -49,6 +49,7 @@ pub enum ASTNode {
     INVALID_L_VALUE(InvalidLValueNode),
     INVALID_R_LAMBDA(InvalidRLambdaNode),
     R_ASSIGNMENT(RAssignmentNode),
+    R_VARIABLE_DECLARATION(RVariableDeclarationNode),
 
     // Types
     TYPE_DECLARATION(TypeDeclarationNode),
@@ -170,7 +171,7 @@ pub struct CoreVariableDeclarationNode {
     pub let_keyword: TokenNode,
     pub equal: TokenNode,
     pub name: IdentifierNode,
-    pub r_assign: RAssignmentNode,
+    pub r_node: RVariableDeclarationNode,
 }
 
 // ASSIGNMENT
@@ -211,6 +212,12 @@ pub struct CoreInvalidRLambdaNode {
 // R_ASSIGNMENT
 #[derive(Debug, Clone, Node)]
 pub enum CoreRAssignmentNode {
+    EXPRESSION(ExpressionStatementNode),
+    MISSING_TOKENS(MissingTokenNode),
+}
+
+#[derive(Debug, Clone, Node)]
+pub enum CoreRVariableDeclarationNode {
     LAMBDA(LambdaDeclarationNode),
     EXPRESSION(ExpressionStatementNode),
     MISSING_TOKENS(MissingTokenNode),
@@ -339,7 +346,7 @@ pub struct CoreFunctionDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct CoreLambdaDeclarationNode {
     pub lambda_keyword: TokenNode,
-    pub name: Option<IdentifierNode>,
+    pub name: IdentifierNode,
     pub body: CallableBodyNode,
 }
 
@@ -620,6 +627,8 @@ pub struct InvalidLValueNode(pub Rc<CoreInvalidLValueNode>);
 pub struct InvalidRLambdaNode(pub Rc<CoreInvalidRLambdaNode>);
 #[derive(Debug, Clone)]
 pub struct RAssignmentNode(pub Rc<CoreRAssignmentNode>);
+#[derive(Debug, Clone)]
+pub struct RVariableDeclarationNode(pub Rc<CoreRVariableDeclarationNode>);
 #[derive(Debug, Clone)]
 pub struct TypeDeclarationNode(pub Rc<CoreTypeDeclarationNode>);
 #[derive(Debug, Clone)]

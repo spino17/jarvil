@@ -1,15 +1,30 @@
+use super::expression::core::is_expression_starting_with;
 use crate::{
-    ast::ast::{AssignmentNode, ExpressionNode, Node},
+    ast::ast::{AssignmentNode, ErrornousNode, ExpressionNode, Node, RAssignmentNode},
+    lexer::token::Token,
     parser::parser::PackratParser,
 };
+use std::rc::Rc;
+pub const R_ASSIGNMENT_STARTING_SYMBOLS: [&'static str; 1] = ["<expression>"];
+
+pub fn is_r_assignment_starting_with(token: &Token) -> bool {
+    is_expression_starting_with(token)
+}
 
 pub fn assignment(parser: &mut PackratParser, expr: &ExpressionNode) -> AssignmentNode {
     let equal_node = parser.expect("=");
-    let (r_assign_node, is_lambda) = parser.r_assign(None);
-    if let Some(lambda_range) = is_lambda {
-        parser.log_invalid_r_lambda_error(lambda_range);
-        return AssignmentNode::new_with_invalid_l_value(&expr, &r_assign_node, &equal_node);
-    }
+    let token = &parser.curr_token();
+    let r_assign_node = if !is_r_assignment_starting_with(token) {
+        parser.log_missing_token_error(&["<expression>"], token);
+        RAssignmentNode::new_with_missing_tokens(
+            &Rc::new(R_ASSIGNMENT_STARTING_SYMBOLS.to_vec()),
+            token,
+        )
+    } else {
+        let expr_node = parser.expr();
+        let newline = parser.expect_terminators();
+        RAssignmentNode::new_with_expr(expr, &newline)
+    };
     match expr.is_valid_l_value() {
         Some(atom_node) => AssignmentNode::new(&atom_node, &r_assign_node, &equal_node),
         None => {
