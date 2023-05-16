@@ -4,8 +4,8 @@ use crate::ast::ast::{
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
-    IdentifierNotFoundInAnyNamespaceError, MoreThanMaxLimitParamsPassedError,
-    VariableReferencedBeforeAssignmentError,
+    IdentifierFoundInNonLocalsError, IdentifierNotFoundInAnyNamespaceError,
+    MoreThanMaxLimitParamsPassedError, VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::core::VariableLookupResult;
@@ -348,17 +348,27 @@ impl Resolver {
         let core_variable_decl = variable_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
             // TODO - check first whether the identifier with same name is captured in non-local scope
-            if let Some((name, previous_decl_range)) =
-                self.try_declare_and_bind_variable(ok_identifier)
-            {
-                let err = IdentifierAlreadyDeclaredError::new(
+            let name = Rc::new(ok_identifier.token_value(&self.code));
+            if self.namespace.is_variable_in_non_locals(&name) {
+                let err = IdentifierFoundInNonLocalsError::new(
                     IdentKind::VARIABLE,
-                    name.to_string(),
-                    previous_decl_range,
                     ok_identifier.range(),
                 );
                 self.errors
-                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                    .push(Diagnostics::IdentifierFoundInNonLocals(err));
+            } else {
+                if let Some((name, previous_decl_range)) =
+                    self.try_declare_and_bind_variable(ok_identifier)
+                {
+                    let err = IdentifierAlreadyDeclaredError::new(
+                        IdentKind::VARIABLE,
+                        name.to_string(),
+                        previous_decl_range,
+                        ok_identifier.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                }
             }
         }
         // Except `CoreRAssignmentNode::LAMBDA`, type of the variable is set in the `type_checker.rs`. For `CoreRAssignmentNode::LAMBDA`,
@@ -435,17 +445,27 @@ impl Resolver {
             match kind {
                 CallableKind::FUNC => {
                     // TODO - check first whether the identifier with same name is captured in non-local scope
-                    if let Some((name, previous_decl_range)) =
-                        self.try_declare_and_bind_function(ok_identifier)
-                    {
-                        let err = IdentifierAlreadyDeclaredError::new(
+                    let name = Rc::new(ok_identifier.token_value(&self.code));
+                    if self.namespace.is_function_in_non_locals(&name) {
+                        let err = IdentifierFoundInNonLocalsError::new(
                             IdentKind::FUNCTION,
-                            name.to_string(),
-                            previous_decl_range,
                             ok_identifier.range(),
                         );
                         self.errors
-                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                            .push(Diagnostics::IdentifierFoundInNonLocals(err));
+                    } else {
+                        if let Some((name, previous_decl_range)) =
+                            self.try_declare_and_bind_function(ok_identifier)
+                        {
+                            let err = IdentifierAlreadyDeclaredError::new(
+                                IdentKind::FUNCTION,
+                                name.to_string(),
+                                previous_decl_range,
+                                ok_identifier.range(),
+                            );
+                            self.errors
+                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                        }
                     }
                 }
                 CallableKind::METHOD | CallableKind::CLASSMETHOD | CallableKind::CONSTRUCTOR => {}
@@ -700,7 +720,6 @@ impl Visitor for Resolver {
                             match self.try_resolving_variable(ok_identifier) {
                                 VariableLookupResult::OK((_, depth)) => {
                                     if depth > 0 {
-                                        println!("{}", name);
                                         self.namespace.set_to_variable_non_locals(&name);
                                     }
                                 }

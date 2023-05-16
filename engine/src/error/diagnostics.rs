@@ -19,6 +19,7 @@ pub enum Diagnostics {
     InvalidLValue(InvalidLValueError),
     InvalidRLambda(InvalidRLambdaError),
     IdentifierAlreadyDeclared(IdentifierAlreadyDeclaredError),
+    IdentifierFoundInNonLocals(IdentifierFoundInNonLocalsError),
     IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
     VariableReferencedBeforeAssignment(VariableReferencedBeforeAssignmentError),
@@ -56,6 +57,7 @@ impl Diagnostics {
             Diagnostics::IdentifierNotFoundInAnyNamespace(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
+            Diagnostics::IdentifierFoundInNonLocals(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::RightSideWithVoidTypeNotAllowed(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
@@ -355,6 +357,32 @@ impl IdentifierNotDeclaredError {
             span: range_to_span(range).into(),
             help: Some(
                 "identifiers are declared in one of the three namespaces: variables, functions and types"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("{} found in non-locals", self.identifier_kind)]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct IdentifierFoundInNonLocalsError {
+    pub identifier_kind: IdentifierKind,
+    #[label("identifier with same name is resolved in non-local scope")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl IdentifierFoundInNonLocalsError {
+    pub fn new(identifier_kind: IdentifierKind, range: TextRange) -> Self {
+        IdentifierFoundInNonLocalsError {
+            identifier_kind,
+            span: range_to_span(range).into(),
+            help: Some(
+                "variables and functions are not allowed to be declared in the scope where there exist a reference with the same name to a non-local declaration"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()

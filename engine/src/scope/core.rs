@@ -56,6 +56,10 @@ impl<T> CoreScope<T> {
     pub fn set_to_non_locals(&mut self, name: &Rc<String>) {
         self.non_locals.insert(name.clone());
     }
+
+    pub fn is_in_non_locals(&self, name: &Rc<String>) -> bool {
+        self.non_locals.get(name).is_some()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -128,6 +132,10 @@ impl<T> Scope<T> {
 
     fn set_to_non_locals(&self, name: &Rc<String>) {
         self.0.as_ref().borrow_mut().set_to_non_locals(name);
+    }
+
+    fn is_in_non_locals(&self, name: &Rc<String>) -> bool {
+        self.0.as_ref().borrow().is_in_non_locals(name)
     }
 }
 
@@ -299,12 +307,16 @@ impl Namespace {
         self.variables.set_to_non_locals(name);
     }
 
+    pub fn is_variable_in_non_locals(&self, name: &Rc<String>) -> bool {
+        self.variables.is_in_non_locals(name)
+    }
+
     pub fn set_to_function_non_locals(&self, name: &Rc<String>) {
         self.functions.set_to_non_locals(name);
     }
 
-    pub fn set_to_type_non_locals(&self, name: &Rc<String>) {
-        self.types.set_to_non_locals(name);
+    pub fn is_function_in_non_locals(&self, name: &Rc<String>) -> bool {
+        self.functions.is_in_non_locals(name)
     }
 }
 
