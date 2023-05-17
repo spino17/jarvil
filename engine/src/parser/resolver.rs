@@ -45,10 +45,19 @@ pub enum ResolveResult {
     Err(Rc<String>), // name of the identifier
 }
 
+pub struct ClassContext {
+    is_containing_self: Vec<bool>,
+}
+
+pub struct Context {
+    class_context: ClassContext,
+}
+
 pub struct Resolver {
     namespace: Namespace,
     pub code: Code,
     errors: Vec<Diagnostics>,
+    context: Context,
 }
 
 impl Resolver {
@@ -57,6 +66,11 @@ impl Resolver {
             namespace: Namespace::new(),
             code: code.clone(),
             errors: vec![],
+            context: Context {
+                class_context: ClassContext {
+                    is_containing_self: vec![],
+                },
+            },
         }
     }
 
@@ -74,6 +88,16 @@ impl Resolver {
 
     pub fn close_func(&mut self) {
         self.namespace.close_scope();
+    }
+
+    pub fn set_curr_class_context_is_containing_self(&mut self, value: bool) {
+        let len = self.context.class_context.is_containing_self.len();
+        self.context.class_context.is_containing_self[len - 1] = value;
+    }
+
+    pub fn get_curr_class_context_is_containing_self(&self) -> bool {
+        let len = self.context.class_context.is_containing_self.len();
+        self.context.class_context.is_containing_self[len - 1]
     }
 
     pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
@@ -482,6 +506,7 @@ impl Resolver {
     }
 
     pub fn declare_struct_type(&mut self, struct_decl: &StructDeclarationNode) {
+        self.context.class_context.is_containing_self.push(false);
         let core_struct_decl = struct_decl.core_ref();
         let struct_type_obj = match core_struct_decl.name.core_ref() {
             CoreIdentifierNode::OK(ok_identifier) => {
@@ -528,7 +553,6 @@ impl Resolver {
         let mut methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> =
             FxHashMap::default();
-        // let mut construct_range: Option<TextRange> = None;
 
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
@@ -568,6 +592,7 @@ impl Resolver {
                     // if there is self in the body => method
                     // if not self reference => class_method
                     // if name of the method is `__init__` => constructor
+                    self.set_curr_class_context_is_containing_self(false);
                     let core_func_decl = bounded_method_wrappewr.core_ref().func_decl.core_ref();
                     let (params_vec, _, return_type) = self.visit_callable_body(&core_func_decl.body);
                     if let CoreIdentifierNode::OK(ok_bounded_method_name) = core_func_decl.name.core_ref() {
@@ -584,7 +609,26 @@ impl Resolver {
                             }
                         } else {
                             // TODO - do related to methods and classmethods
-                            // check that methods or classmethods should not be redeclaree
+                            let is_containing_self = self.get_curr_class_context_is_containing_self();
+                            if is_containing_self {
+                                match methods.get(&method_name_str) {
+                                    Some((_, previous_decl_range)) => {
+                                        // TODO - raise error `previous declaration method already here`
+                                    },
+                                    None => {
+                                        methods.insert(Rc::new(method_name_str), (func_meta_data, ok_bounded_method_name.range()));
+                                    }
+                                }
+                            } else {
+                                match class_methods.get(&method_name_str) {
+                                    Some((_, previous_decl_range)) => {
+                                        // TODO - raise error `previous declaration method already here`
+                                    },
+                                    None => {
+                                        class_methods.insert(Rc::new(method_name_str), (func_meta_data, ok_bounded_method_name.range()));
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -604,9 +648,10 @@ impl Resolver {
                     .as_ref()
                     .borrow_mut()
                     .struct_data_mut(STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG)
-                    .set_fields(fields_map);
+                    .set_meta_data(fields_map, constructor, methods, class_methods);
             }
         }
+        self.context.class_context.is_containing_self.pop();
     }
 
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
@@ -734,7 +779,9 @@ impl Visitor for Resolver {
                     CoreAtomStartNode::SELF_KEYWORD(self_keyword) => {
                         if let CoreSelfKeywordNode::OK(ok_self_keyword) = self_keyword.core_ref() {
                             match self.try_resolving_self_keyword(ok_self_keyword) {
-                                Some(_) => {}
+                                Some(_) => {
+                                    self.set_curr_class_context_is_containing_self(true);
+                                }
                                 None => {
                                     let err = SelfNotFoundError::new(ok_self_keyword.range());
                                     self.errors.push(Diagnostics::SelfNotFound(err));
