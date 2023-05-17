@@ -26,14 +26,14 @@ use crate::{
             STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
         },
         diagnostics::{
-            BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError, Diagnostics,
-            ExpressionIndexingNotValidError, ExpressionNotCallableError,
-            IdentifierNotCallableError, InvalidReturnStatementError, LessParamsCountError,
-            MismatchedParamTypeError, MismatchedReturnTypeError, MismatchedTypesOnLeftRightError,
-            MoreParamsCountError, NoReturnStatementInFunctionError,
-            NoValidStatementInsideFunctionBody, PropertyDoesNotExistError,
-            PropertyNotSupportedError, RightSideWithVoidTypeNotAllowedError,
-            UnaryOperatorInvalidUseError,
+            BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError,
+            ConstructorNotFoundForTypeError, Diagnostics, ExpressionIndexingNotValidError,
+            ExpressionNotCallableError, IdentifierNotCallableError, InvalidReturnStatementError,
+            LessParamsCountError, MismatchedParamTypeError, MismatchedReturnTypeError,
+            MismatchedTypesOnLeftRightError, MoreParamsCountError,
+            NoReturnStatementInFunctionError, NoValidStatementInsideFunctionBody,
+            PropertyDoesNotExistError, PropertyNotSupportedError,
+            RightSideWithVoidTypeNotAllowedError, UnaryOperatorInvalidUseError,
         },
         helper::PropertyKind,
     },
@@ -328,15 +328,34 @@ impl TypeChecker {
                                     _ => {
                                         let err = IdentifierNotCallableError::new(
                                             lambda_type,
-                                            func_name.range(),
+                                            ok_identifier.range(),
                                         );
                                         self.errors.push(Diagnostics::IdentifierNotCallable(err));
                                         return Type::new_with_unknown();
                                     }
                                 }
-                            } // TODO - handle case when the call is constructor call
+                            }
                             IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_Data) => {
-                                unreachable!("function name should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`")
+                                match &*user_defined_type_symbol_Data.0.as_ref().borrow() {
+                                    UserDefinedTypeData::STRUCT(struct_symbol_data) => {
+                                        let constructor_meta_data =
+                                            struct_symbol_data.constructor.0.clone();
+                                        (
+                                            CallableParamsData::OTHER(constructor_meta_data.params),
+                                            constructor_meta_data.return_type,
+                                        )
+                                    }
+                                    UserDefinedTypeData::LAMBDA(_) => {
+                                        let type_name = ok_identifier.token_value(&self.code);
+                                        let err = ConstructorNotFoundForTypeError::new(
+                                            type_name,
+                                            ok_identifier.range(),
+                                        );
+                                        self.errors
+                                            .push(Diagnostics::ConstructorNotFoundForType(err));
+                                        return Type::new_with_unknown();
+                                    }
+                                }
                             }
                         };
                         let result = self.check_params_type_and_count(expected_params_data, params);
@@ -645,7 +664,7 @@ impl TypeChecker {
                 self.check_expr(&parenthesised_expr.core_ref().expr)
             }
             CoreAtomicExpressionNode::ATOM(atom) => self.check_atom(atom),
-            _ => Type::new_with_unknown(),
+            CoreAtomicExpressionNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
         }
     }
 

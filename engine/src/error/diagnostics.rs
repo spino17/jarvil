@@ -30,6 +30,7 @@ pub enum Diagnostics {
     MoreThanMaxLimitParamsPassed(MoreThanMaxLimitParamsPassedError),
     MismatchedParamType(MismatchedParamTypeError),
     IdentifierNotCallable(IdentifierNotCallableError),
+    ConstructorNotFoundForType(ConstructorNotFoundForTypeError),
     ClassmethodDoesNotExist(ClassmethodDoesNotExistError),
     PropertyDoesNotExist(PropertyDoesNotExistError),
     PropertyNotSupported(PropertyNotSupportedError),
@@ -74,6 +75,7 @@ impl Diagnostics {
             }
             Diagnostics::MismatchedParamType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierNotCallable(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::ConstructorNotFoundForType(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::ClassmethodDoesNotExist(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::PropertyDoesNotExist(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::PropertyNotSupported(diagnostic) => Report::new(diagnostic.clone()),
@@ -606,6 +608,32 @@ impl IdentifierNotCallableError {
             span: range_to_span(range).into(),
             help: Some(
                 "only variables with `lambda` types are callable"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("constructor not found")]
+#[diagnostic(code("semantic error (type-checking phase)"))]
+pub struct ConstructorNotFoundForTypeError {
+    pub ty: String,
+    #[label("type `{}` does not have a constructor", self.ty)]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl ConstructorNotFoundForTypeError {
+    pub fn new(ty_str: String, range: TextRange) -> Self {
+        ConstructorNotFoundForTypeError {
+            ty: ty_str,
+            span: range_to_span(range).into(),
+            help: Some(
+                "only struct type is allowed to call constructor via self name"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),
