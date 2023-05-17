@@ -1,7 +1,7 @@
 use super::ast::{
     ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
     BinaryExpressionNode, BlockKind, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
-    CallNode, CallableBodyNode, CallableKind, CallablePrototypeNode, ClassMethodCallNode,
+    CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode,
     ComparisonNode, CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
     CoreAtomicExpressionNode, CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode,
     CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,

@@ -1,6 +1,6 @@
 use crate::ast::ast::{
     CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreRVariableDeclarationNode,
-    CoreSelfKeywordNode, FunctionDeclarationNode, FunctionWrapperNode, OkSelfKeywordNode,
+    CoreSelfKeywordNode, FunctionWrapperNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -13,7 +13,7 @@ use crate::scope::core::VariableLookupResult;
 use crate::{
     ast::{
         ast::{
-            ASTNode, BlockNode, CallableKind, CoreAtomStartNode, CoreIdentifierNode,
+            ASTNode, BlockNode, CoreAtomStartNode, CoreIdentifierNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, Node, OkIdentifierNode,
             OkLambdaTypeDeclarationNode, StructDeclarationNode, TypeExpressionNode,
             TypeResolveKind, VariableDeclarationNode,
@@ -36,8 +36,7 @@ use crate::{
     },
     types::core::Type,
 };
-use rustc_hash::{FxHashMap, FxHashSet};
-use std::cell::RefCell;
+use rustc_hash::FxHashMap;
 use std::{rc::Rc, vec};
 use text_size::TextRange;
 
@@ -773,11 +772,6 @@ impl Visitor for Resolver {
                 self.declare_variable(variable_decl);
                 return None;
             }
-            //ASTNode::CALLABLE_BODY(callable_body) => {
-            //    println!("Hello");
-            //    self.visit_callable_body(callable_body);
-            //    return None;
-            //}
             ASTNode::FUNCTION_WRAPPER(func_wrapper) => {
                 self.declare_function(func_wrapper);
                 return None;
