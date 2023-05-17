@@ -339,7 +339,7 @@ impl TypeChecker {
                                 match &*user_defined_type_symbol_Data.0.as_ref().borrow() {
                                     UserDefinedTypeData::STRUCT(struct_symbol_data) => {
                                         let constructor_meta_data =
-                                            struct_symbol_data.constructor.0.clone();
+                                            struct_symbol_data.constructor.clone();
                                         (
                                             CallableParamsData::OTHER(constructor_meta_data.params),
                                             constructor_meta_data.return_type,
@@ -390,12 +390,7 @@ impl TypeChecker {
                                     }
                                     _ => return Type::new_with_unknown(),
                                 };
-                                match struct_data
-                                    .class_methods
-                                    .as_ref()
-                                    .borrow()
-                                    .get(&class_method_name)
-                                {
+                                match struct_data.class_methods.as_ref().get(&class_method_name) {
                                     Some((func_data, _)) => {
                                         let expected_params = func_data.params.clone();
                                         let return_type = func_data.return_type.clone();

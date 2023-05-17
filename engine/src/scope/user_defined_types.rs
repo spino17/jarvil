@@ -1,7 +1,6 @@
 use super::function::FunctionData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
-use std::cell::RefCell;
 use std::rc::Rc;
 use text_size::TextRange;
 
@@ -53,9 +52,9 @@ impl UserDefinedTypeData {
 #[derive(Debug, Clone, Default)]
 pub struct StructData {
     pub fields: Rc<FxHashMap<Rc<String>, (Type, TextRange)>>,
-    pub constructor: (FunctionData, bool), // bool field is `is_constructor_set` to prevent redeclaration of constructor
-    pub methods: Rc<RefCell<FxHashMap<Rc<String>, (FunctionData, TextRange)>>>,
-    pub class_methods: Rc<RefCell<FxHashMap<Rc<String>, (FunctionData, TextRange)>>>,
+    pub constructor: FunctionData,
+    pub methods: Rc<FxHashMap<Rc<String>, (FunctionData, TextRange)>>,
+    pub class_methods: Rc<FxHashMap<Rc<String>, (FunctionData, TextRange)>>,
 }
 
 impl StructData {
@@ -63,11 +62,18 @@ impl StructData {
         self.fields = Rc::new(fields);
     }
 
-    pub fn try_constructor(&self) -> Option<FunctionData> {
-        if self.constructor.1 {
-            return Some(self.constructor.0.clone());
-        } else {
-            return None;
+    pub fn set_meta_data(
+        &mut self,
+        fields: FxHashMap<Rc<String>, (Type, TextRange)>,
+        constructor: Option<(FunctionData, TextRange)>,
+        methods: FxHashMap<Rc<String>, (FunctionData, TextRange)>,
+        class_methods: FxHashMap<Rc<String>, (FunctionData, TextRange)>,
+    ) {
+        self.fields = Rc::new(fields);
+        self.methods = Rc::new(methods);
+        self.class_methods = Rc::new(class_methods);
+        if let Some((constructor_meta_data, _)) = constructor {
+            self.constructor = constructor_meta_data;
         }
     }
 
@@ -79,7 +85,7 @@ impl StructData {
     }
 
     pub fn try_method(&self, method_name: &Rc<String>) -> Option<(FunctionData, TextRange)> {
-        match self.methods.as_ref().borrow().get(method_name) {
+        match self.methods.as_ref().get(method_name) {
             Some(func_data) => Some(func_data.clone()),
             None => None,
         }
@@ -89,7 +95,7 @@ impl StructData {
         &self,
         class_method_name: &Rc<String>,
     ) -> Option<(FunctionData, TextRange)> {
-        match self.class_methods.as_ref().borrow().get(class_method_name) {
+        match self.class_methods.as_ref().get(class_method_name) {
             Some(func_data) => Some(func_data.clone()),
             None => None,
         }

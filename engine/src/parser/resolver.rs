@@ -524,12 +524,11 @@ impl Resolver {
         assert!(result.is_ok());
 
         let mut fields_map: FxHashMap<Rc<String>, (Type, TextRange)> = FxHashMap::default();
-        let mut constructor: FunctionData = FunctionData::default();
+        let mut constructor: Option<(FunctionData, TextRange)> = None;
         let mut methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> =
             FxHashMap::default();
-        // let mut is_constructor_set = false;
-        let mut construct_range: Option<TextRange> = None;
+        // let mut construct_range: Option<TextRange> = None;
 
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
@@ -575,17 +574,17 @@ impl Resolver {
                         let func_meta_data = FunctionData::new(params_vec, return_type);
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") {
-                            match construct_range {
-                                Some(previous_decl_range) => {
+                            match constructor {
+                                Some((_, previous_decl_range_)) => {
                                     // TODO - raise error `constructor cannot be redeclared`
                                 }
                                 None => {
-                                    construct_range = Some(ok_bounded_method_name.range());
-                                    constructor = func_meta_data;
+                                    constructor = Some((func_meta_data, ok_bounded_method_name.range()));
                                 }
                             }
                         } else {
                             // TODO - do related to methods and classmethods
+                            // check that methods or classmethods should not be redeclaree
                         }
                     }
                 }
@@ -593,10 +592,10 @@ impl Resolver {
             }
         }
         self.close_block();
-        if construct_range.is_none() {
-            // TODO - raise error `no constructor found`
-        }
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
+            if constructor.is_none() {
+                // TODO - raise error `no constructor found`
+            }
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "struct name should be resolved to `SymbolData<UserDefinedTypeData>`",
             ) {
