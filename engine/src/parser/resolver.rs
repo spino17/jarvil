@@ -5,8 +5,8 @@ use crate::ast::ast::{
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
     ConstructorNotFoundInsideStructDeclarationError, IdentifierFoundInNonLocalsError,
-    IdentifierNotFoundInAnyNamespaceError, MoreThanMaxLimitParamsPassedError, SelfNotFoundError,
-    VariableReferencedBeforeAssignmentError,
+    IdentifierNotFoundInAnyNamespaceError, MoreThanMaxLimitParamsPassedError,
+    NonVoidConstructorReturnTypeError, SelfNotFoundError, VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::core::VariableLookupResult;
@@ -286,15 +286,17 @@ impl Resolver {
     pub fn declare_callable_prototype(
         &mut self,
         callable_prototype: &CallablePrototypeNode,
-    ) -> (Vec<(Rc<String>, Type)>, Vec<Type>, Type) {
+    ) -> (Vec<(Rc<String>, Type)>, Vec<Type>, Type, Option<TextRange>) {
         let core_callable_prototype = callable_prototype.core_ref();
         let params = &core_callable_prototype.params;
         let return_type = &core_callable_prototype.return_type;
         let rparen = &core_callable_prototype.rparen;
         let mut params_vec: Vec<(Rc<String>, Type)> = vec![];
         let mut param_types_vec: Vec<Type> = vec![];
+        let mut return_type_range: Option<TextRange> = None;
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
+                return_type_range = Some(return_type_expr.range());
                 let type_obj = self.type_obj_from_expression(return_type_expr);
                 type_obj
             }
@@ -345,19 +347,19 @@ impl Resolver {
             self.errors
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
-        (params_vec, param_types_vec, return_type)
+        (params_vec, param_types_vec, return_type, return_type_range)
     }
 
     pub fn visit_callable_body(
         &mut self,
         callable_body_decl: &CallableBodyNode,
-    ) -> (Vec<(Rc<String>, Type)>, Vec<Type>, Type) {
+    ) -> (Vec<(Rc<String>, Type)>, Vec<Type>, Type, Option<TextRange>) {
         let core_callable_body_decl = callable_body_decl.core_ref();
         match core_callable_body_decl {
             CoreCallableBodyNode::OK(ok_callable_body) => {
                 let core_ok_callable_body = ok_callable_body.core_ref();
                 self.open_func();
-                let (params_vec, param_types_vec, return_type) =
+                let (params_vec, param_types_vec, return_type, return_type_range) =
                     self.declare_callable_prototype(&core_ok_callable_body.prototype);
                 let callable_body = &core_ok_callable_body.block;
                 for stmt in &callable_body.0.as_ref().borrow().stmts {
@@ -365,10 +367,10 @@ impl Resolver {
                 }
                 callable_body.set_scope(&self.namespace);
                 self.close_func();
-                (params_vec, param_types_vec, return_type)
+                (params_vec, param_types_vec, return_type, return_type_range)
             }
             CoreCallableBodyNode::MISSING_TOKENS(_) => {
-                return (Vec::new(), Vec::new(), Type::new_with_unknown())
+                return (Vec::new(), Vec::new(), Type::new_with_unknown(), None)
             }
         }
     }
@@ -413,7 +415,7 @@ impl Resolver {
                     }
                 };
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
-                let (_, params_vec, return_type) =
+                let (_, params_vec, return_type, _) =
                     self.visit_callable_body(&core_lambda_r_assign.body);
                 let lambda_type_obj = match core_lambda_r_assign.body.core_ref() {
                     CoreCallableBodyNode::OK(ok_callable_body) => {
@@ -492,7 +494,7 @@ impl Resolver {
                 }
             }
         }
-        let (params_vec, _, return_type) = self.visit_callable_body(body);
+        let (params_vec, _, return_type, _) = self.visit_callable_body(body);
         if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
             if let Some(symbol_data) = ok_identifier.function_symbol_data(
                 "function name should be resolved to `SymbolData<FunctionData>`",
@@ -585,7 +587,7 @@ impl Resolver {
                     if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier.token_value(&self.code);
                         let type_obj = self.type_obj_from_expression(
-                            &core_struct_stmt.name_type_spec.core_ref().data_type
+                            &core_struct_stmt.name_type_spec.core_ref().data_type,
                         );
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
@@ -593,21 +595,26 @@ impl Resolver {
                                     IdentKind::FIELD,
                                     field_name,
                                     *previous_decl_range,
-                                    ok_identifier.range()
+                                    ok_identifier.range(),
                                 );
-                                self.errors.push(Diagnostics::IdentifierAlreadyDeclared(err));
-                            },
+                                self.errors
+                                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                            }
                             None => {
-                                fields_map.insert(Rc::new(field_name), (type_obj, ok_identifier.range()));
+                                fields_map
+                                    .insert(Rc::new(field_name), (type_obj, ok_identifier.range()));
                             }
                         }
                     }
-                },
+                }
                 CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrappewr) => {
                     self.set_curr_class_context_is_containing_self(false);
                     let core_func_decl = bounded_method_wrappewr.core_ref().func_decl.core_ref();
-                    let (params_vec, _, return_type) = self.visit_callable_body(&core_func_decl.body);
-                    if let CoreIdentifierNode::OK(ok_bounded_method_name) = core_func_decl.name.core_ref() {
+                    let (params_vec, _, return_type, return_type_range) =
+                        self.visit_callable_body(&core_func_decl.body);
+                    if let CoreIdentifierNode::OK(ok_bounded_method_name) =
+                        core_func_decl.name.core_ref()
+                    {
                         let func_meta_data = FunctionData::new(params_vec, return_type);
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") {
@@ -617,14 +624,22 @@ impl Resolver {
                                         IdentKind::CONSTRUCTOR,
                                         method_name_str,
                                         previous_decl_range,
-                                        ok_bounded_method_name.range()
+                                        ok_bounded_method_name.range(),
                                     );
-                                    self.errors.push(Diagnostics::IdentifierAlreadyDeclared(err));
+                                    self.errors
+                                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
                                 None => {
-                                    constructor = Some((func_meta_data, ok_bounded_method_name.range()));
-                                    // TODO - check that return type of constructor should be void
-                                    // raise error otherwise
+                                    if let Some(return_type_range) = return_type_range {
+                                        assert!(!func_meta_data.return_type.is_void());
+                                        let err = NonVoidConstructorReturnTypeError::new(
+                                            return_type_range,
+                                        );
+                                        self.errors
+                                            .push(Diagnostics::NonVoidConstructorReturnType(err))
+                                    }
+                                    constructor =
+                                        Some((func_meta_data, ok_bounded_method_name.range()));
                                 }
                             }
                         } else {
@@ -634,23 +649,31 @@ impl Resolver {
                                         IdentKind::METHOD,
                                         method_name_str,
                                         previous_decl_range,
-                                        ok_bounded_method_name.range()
+                                        ok_bounded_method_name.range(),
                                     );
-                                    self.errors.push(Diagnostics::IdentifierAlreadyDeclared(err));
+                                    self.errors
+                                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
                                 None => {
-                                    let is_containing_self = self.get_curr_class_context_is_containing_self();
+                                    let is_containing_self =
+                                        self.get_curr_class_context_is_containing_self();
                                     if is_containing_self {
-                                        methods.insert(Rc::new(method_name_str), (func_meta_data, ok_bounded_method_name.range()));
+                                        methods.insert(
+                                            Rc::new(method_name_str),
+                                            (func_meta_data, ok_bounded_method_name.range()),
+                                        );
                                     } else {
-                                        class_methods.insert(Rc::new(method_name_str), (func_meta_data, ok_bounded_method_name.range()));
+                                        class_methods.insert(
+                                            Rc::new(method_name_str),
+                                            (func_meta_data, ok_bounded_method_name.range()),
+                                        );
                                     }
                                 }
                             }
                         }
                     }
                 }
-                _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
+                _ => unreachable!(),
             }
         }
         self.close_block();

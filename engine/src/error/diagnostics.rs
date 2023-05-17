@@ -23,6 +23,7 @@ pub enum Diagnostics {
     IdentifierFoundInNonLocals(IdentifierFoundInNonLocalsError),
     IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
+    NonVoidConstructorReturnType(NonVoidConstructorReturnTypeError),
     SelfNotFound(SelfNotFoundError),
     VariableReferencedBeforeAssignment(VariableReferencedBeforeAssignmentError),
     RightSideWithVoidTypeNotAllowed(RightSideWithVoidTypeNotAllowedError),
@@ -68,6 +69,9 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NonVoidConstructorReturnType(diagonstic) => {
+                Report::new(diagonstic.clone())
+            }
             Diagnostics::SelfNotFound(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::VariableReferencedBeforeAssignment(diagnostic) => {
                 Report::new(diagnostic.clone())
@@ -285,6 +289,30 @@ impl InvalidRLambdaError {
             span: range_to_span(range).into(),
             help: Some(
                 "lambda expression is not allowed to be assigned to l-value expression directly\nyou can achieve the operation by declaring a new lambda variable and then using it in the assignment"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("non-void constructor return type")]
+#[diagnostic(code("syntax error"))]
+pub struct NonVoidConstructorReturnTypeError {
+    #[label("constructor cannot have a return type")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>, // any value derived from a function call is not assignable
+}
+
+impl NonVoidConstructorReturnTypeError {
+    pub fn new(range: TextRange) -> Self {
+        NonVoidConstructorReturnTypeError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "developer is not supposed to explicitly provide return type for the constructor"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),
