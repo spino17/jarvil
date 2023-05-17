@@ -1,8 +1,8 @@
 use super::ast::{
     ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
     BinaryExpressionNode, BlockKind, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
-    CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode,
-    ComparisonNode, CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
+    CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
+    CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
     CoreAtomicExpressionNode, CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode,
     CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
     CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode, CoreExpressionNode,
@@ -20,19 +20,17 @@ use super::ast::{
     CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
     CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode,
     FunctionDeclarationNode, FunctionWrapperNode, IdentifierNode, IncorrectlyIndentedStatementNode,
-    IndexAccessNode, InvalidLValueNode, InvalidRLambdaNode, LambdaDeclarationNode,
-    LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode,
-    OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode, OkLambdaTypeDeclarationNode,
-    OkNameTypeSpecsNode, OkParamsNode, OkSelfKeywordNode, OkTokenNode, OkTypeTupleNode,
-    OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode,
-    RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode,
-    SkippedTokenNode, StatemenIndentWrapperNode, StatementNode, StructDeclarationNode,
-    StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    TypeResolveKind, TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode,
-    VariableDeclarationNode,
+    IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
+    MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode,
+    OkIdentifierNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode,
+    OkSelfKeywordNode, OkTokenNode, OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode,
+    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode, TokenNode,
+    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, TypeTupleNode, UnaryExpressionNode,
+    UserDefinedTypeNode, VariableDeclarationNode,
 };
 use super::iterators::{NameTypeSpecsIterator, ParamsIterator, TypeTupleIterator};
-use crate::ast::ast::CoreInvalidRLambdaNode;
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
@@ -367,28 +365,6 @@ impl InvalidLValueNode {
 }
 
 impl Node for InvalidLValueNode {
-    fn range(&self) -> TextRange {
-        impl_range!(self.0.as_ref().l_expr, self.0.as_ref().r_assign)
-    }
-    fn start_line_number(&self) -> usize {
-        self.0.as_ref().l_expr.start_line_number()
-    }
-}
-
-impl InvalidRLambdaNode {
-    pub fn new(l_expr: &ExpressionNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
-        let node = Rc::new(CoreInvalidRLambdaNode {
-            l_expr: l_expr.clone(),
-            equal: equal.clone(),
-            r_assign: r_assign.clone(),
-        });
-        InvalidRLambdaNode(node)
-    }
-
-    impl_core_ref!(CoreInvalidRLambdaNode);
-}
-
-impl Node for InvalidRLambdaNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().l_expr, self.0.as_ref().r_assign)
     }

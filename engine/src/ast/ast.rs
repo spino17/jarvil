@@ -49,7 +49,6 @@ pub enum ASTNode {
     ASSIGNMENT(AssignmentNode),
     OK_ASSIGNMENT(OkAssignmentNode),
     INVALID_L_VALUE(InvalidLValueNode),
-    INVALID_R_LAMBDA(InvalidRLambdaNode),
     R_ASSIGNMENT(RAssignmentNode),
     R_VARIABLE_DECLARATION(RVariableDeclarationNode),
 
@@ -186,7 +185,6 @@ pub struct CoreVariableDeclarationNode {
 pub enum CoreAssignmentNode {
     OK(OkAssignmentNode),
     INVALID_L_VALUE(InvalidLValueNode),
-    INVALID_R_LAMBDA(InvalidRLambdaNode),
 }
 
 // OK_ASSIGNMENT
@@ -202,15 +200,6 @@ pub struct CoreOkAssignmentNode {
 // <l_expr> `=` <r_assign>
 #[derive(Debug, Clone)]
 pub struct CoreInvalidLValueNode {
-    pub l_expr: ExpressionNode,
-    pub equal: TokenNode,
-    pub r_assign: RAssignmentNode,
-}
-
-// INVALID_L_VALUE
-// <l_expr> `=` <r_assign>
-#[derive(Debug, Clone)]
-pub struct CoreInvalidRLambdaNode {
     pub l_expr: ExpressionNode,
     pub equal: TokenNode,
     pub r_assign: RAssignmentNode,
@@ -650,8 +639,6 @@ pub struct AssignmentNode(pub Rc<CoreAssignmentNode>);
 pub struct OkAssignmentNode(pub Rc<CoreOkAssignmentNode>);
 #[derive(Debug, Clone)]
 pub struct InvalidLValueNode(pub Rc<CoreInvalidLValueNode>);
-#[derive(Debug, Clone)]
-pub struct InvalidRLambdaNode(pub Rc<CoreInvalidRLambdaNode>);
 #[derive(Debug, Clone)]
 pub struct RAssignmentNode(pub Rc<CoreRAssignmentNode>);
 #[derive(Debug, Clone)]
