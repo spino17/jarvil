@@ -755,7 +755,6 @@ pub trait Visitor {
                     CoreTokenNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
                     }
-                    CoreTokenNode::SKIPPED(skipped_token) => self.walk_skipped_token(skipped_token),
                 }
             }
             ASTNode::IDENTIFIER(identifier) => {
@@ -765,13 +764,10 @@ pub trait Visitor {
                     CoreIdentifierNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
                     }
-                    CoreIdentifierNode::SKIPPED(skipped_token) => {
-                        self.walk_skipped_token(skipped_token)
-                    }
                 }
             }
             ASTNode::OK_IDENTIFIER(ok_identifier) => {
-                self.walk_token(&ok_identifier.0.as_ref().borrow().token);
+                self.walk_ok_token(&ok_identifier.0.as_ref().borrow().token);
             }
             ASTNode::OK_TOKEN(_) => {
                 // do nothing

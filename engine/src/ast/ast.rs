@@ -566,13 +566,12 @@ pub struct CoreOkParamsNode {
 pub enum CoreIdentifierNode {
     OK(OkIdentifierNode),
     MISSING_TOKENS(MissingTokenNode),
-    SKIPPED(SkippedTokenNode),
 }
 
 // OK_IDENTIFIER
 #[derive(Debug, Clone)]
 pub struct CoreOkIdentifierNode {
-    pub token: TokenNode,
+    pub token: OkTokenNode,
     pub decl: Option<(IdentifierKind, usize)>, // (symbol data reference, depth)
 }
 
@@ -581,7 +580,6 @@ pub struct CoreOkIdentifierNode {
 pub enum CoreTokenNode {
     OK(OkTokenNode),
     MISSING_TOKENS(MissingTokenNode),
-    SKIPPED(SkippedTokenNode),
 }
 
 // OK_TOKEN

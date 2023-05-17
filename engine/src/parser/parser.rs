@@ -6,7 +6,7 @@
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallablePrototypeNode, ExpressionNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
-    Node, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
+    Node, OkTokenNode, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
     TypeDeclarationNode, TypeExpressionNode, TypeTupleNode, UnaryExpressionNode,
     VariableDeclarationNode,
 };
@@ -227,7 +227,8 @@ impl PackratParser {
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
             self.scan_next_token();
-            IdentifierNode::new_with_ok(&token)
+            let ok_token_node = OkTokenNode::new(&token);
+            IdentifierNode::new_with_ok(&ok_token_node)
         } else {
             self.log_missing_token_error(&[symbol], &token);
             IdentifierNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)

@@ -1654,15 +1654,8 @@ impl Node for IndexAccessNode {
 }
 
 impl IdentifierNode {
-    pub fn new_with_ok(token: &Token) -> Self {
+    pub fn new_with_ok(token: &OkTokenNode) -> Self {
         let node = Rc::new(CoreIdentifierNode::OK(OkIdentifierNode::new(token)));
-        IdentifierNode(node)
-    }
-
-    pub fn new_with_skipped_token(skipped_token: &Token) -> Self {
-        let node = Rc::new(CoreIdentifierNode::SKIPPED(SkippedTokenNode::new(
-            skipped_token,
-        )));
         IdentifierNode(node)
     }
 
@@ -1678,20 +1671,16 @@ impl IdentifierNode {
 default_errornous_node_impl!(IdentifierNode, CoreIdentifierNode);
 
 impl OkIdentifierNode {
-    pub fn new(token: &Token) -> Self {
+    pub fn new(token: &OkTokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreOkIdentifierNode {
-            token: TokenNode::new_with_ok(token),
+            token: token.clone(),
             decl: None,
         }));
         OkIdentifierNode(node)
     }
 
     pub fn token_value(&self, code: &Code) -> String {
-        match &self.0.as_ref().borrow().token.core_ref() {
-            CoreTokenNode::OK(ok_token) => return ok_token.core_ref().token.token_value(code),
-            CoreTokenNode::MISSING_TOKENS(_) => unreachable!(),
-            CoreTokenNode::SKIPPED(_) => unreachable!(),
-        }
+        self.0.as_ref().borrow().token.token_value(code)
     }
 
     pub fn bind_variable_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
@@ -1778,11 +1767,6 @@ impl Node for OkIdentifierNode {
 impl TokenNode {
     pub fn new_with_ok(token: &Token) -> Self {
         let node = Rc::new(CoreTokenNode::OK(OkTokenNode::new(token)));
-        TokenNode(node)
-    }
-
-    pub fn new_with_skipped_token(skipped_token: &Token) -> Self {
-        let node = Rc::new(CoreTokenNode::SKIPPED(SkippedTokenNode::new(skipped_token)));
         TokenNode(node)
     }
 
