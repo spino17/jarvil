@@ -323,7 +323,7 @@ impl Namespace {
 impl Clone for Namespace {
     fn clone(&self) -> Self {
         Namespace {
-            variables: self.variables.clone(), // TODO - variables and lambdas
+            variables: self.variables.clone(),
             types: self.types.clone(),
             functions: self.functions.clone(),
         }

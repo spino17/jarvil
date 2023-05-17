@@ -528,6 +528,7 @@ impl Resolver {
         let mut methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> =
             FxHashMap::default();
+        let mut is_constructor_set = false;
 
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
@@ -571,6 +572,17 @@ impl Resolver {
                     let (params_vec, _, return_type) = self.visit_callable_body(&core_func_decl.body);
                     if let CoreIdentifierNode::OK(ok_bounded_method_name) = core_func_decl.name.core_ref() {
                         let func_meta_data = FunctionData::new(params_vec, return_type);
+                        let method_name_str = ok_bounded_method_name.token_value(&self.code);
+                        if method_name_str.eq("__init__") {
+                            if is_constructor_set {
+                                // TODO - raise error `constructor cannot be redeclared`
+                            } else {
+                                is_constructor_set = true;
+                                constructor = func_meta_data;
+                            }
+                        } else {
+                            // TODO - do related to methods and classmethods
+                        }
                     }
                 }
                 _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
@@ -578,6 +590,9 @@ impl Resolver {
         }
         self.close_block();
         // TODO - constructor should always be declared with name `__init__`
+        if !is_constructor_set {
+            // TODO - raise error `no constructor found`
+        }
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "struct name should be resolved to `SymbolData<UserDefinedTypeData>`",

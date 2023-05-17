@@ -33,7 +33,6 @@ pub fn infix(
     operator_precedence: u8,
 ) -> ExpressionNode {
     if is_comparison(operator_precedence) {
-        // precedence of comparison operators - TODO - write tests for this
         parser.infix_comparison_expr(left_expr_node, operator_node, operator_precedence)
     } else {
         parser.infix_binary_expr(left_expr_node, operator_node, operator_precedence)

@@ -64,7 +64,6 @@ pub fn trailing_atom(parser: &mut PackratParser, atom_start_node: AtomNode) -> A
             return parser.trailing_atom(atom_node);
         }
         _ => {
-            // TODO - add FOLLOW(atom) to handle this more robustly
             return atom_start_node;
         }
     }
