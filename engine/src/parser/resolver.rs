@@ -36,6 +36,7 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::FxHashMap;
+use std::cell::RefCell;
 use std::{rc::Rc, vec};
 use text_size::TextRange;
 
@@ -469,7 +470,7 @@ impl Resolver {
                         }
                     }
                 }
-                CallableKind::METHOD | CallableKind::CLASSMETHOD | CallableKind::CONSTRUCTOR => {}
+                CallableKind::METHOD => {}
             }
         }
         let (params_vec, _, return_type) = self.visit_callable_body(body);
@@ -490,12 +491,6 @@ impl Resolver {
                 CallableKind::METHOD => {
                     // TODO - have the `struct` name attached with the kind and use that to find it's symbol data and add meta_data and
                     // method name to the struct symbol data
-                    todo!()
-                }
-                CallableKind::CLASSMETHOD => {
-                    todo!()
-                }
-                CallableKind::CONSTRUCTOR => {
                     todo!()
                 }
             }
@@ -543,7 +538,12 @@ impl Resolver {
             true,
         );
         assert!(result.is_ok());
-        let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
+
+        let mut fields_map: FxHashMap<Rc<String>, (Type, TextRange)> = FxHashMap::default();
+        let mut constructor: FunctionData = FunctionData::default();
+        let mut methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
+        let mut class_methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
+
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
             let stmt = match stmt.core_ref() {
@@ -554,8 +554,8 @@ impl Resolver {
                 _ => continue,
             };
             match stmt.core_ref() {
-                CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
-                    let core_struct_stmt = struct_stmt.core_ref();
+                CoreStatementNode::STRUCT_PROPERTY_DECLARATION(struct_property_decl) => {
+                    let core_struct_stmt = struct_property_decl.core_ref();
                     let name = &core_struct_stmt.name_type_spec.core_ref().name;
                     if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier.token_value(&self.code);
@@ -573,12 +573,14 @@ impl Resolver {
                                 self.errors.push(Diagnostics::IdentifierAlreadyDeclared(err));
                             },
                             None => {
-                                fields_map.insert(field_name, (type_obj, ok_identifier.range()));
+                                fields_map.insert(Rc::new(field_name), (type_obj, ok_identifier.range()));
                             }
                         }
                     }
                 },
-                // TODO - change this to include method declarations also
+                CoreStatementNode::FUNCTION_DECLARATION(method_decl) => {
+                    // todo!()
+                }
                 _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
             }
         }

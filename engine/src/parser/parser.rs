@@ -5,9 +5,9 @@
 
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockKind, BlockNode,
-    CallableBodyNode, CallablePrototypeNode, ErrornousNode, ExpressionNode, IdentifierNode,
-    NameTypeSpecNode, NameTypeSpecsNode, Node, OkSelfKeywordNode, OkTokenNode, ParamsNode,
-    SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
+    CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode,
+    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, OkSelfKeywordNode, OkTokenNode,
+    ParamsNode, SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
     TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::code::Code;
@@ -444,6 +444,10 @@ impl PackratParser {
 
     pub fn type_tuple(&mut self) -> TypeTupleNode {
         components::common::type_tuple(self)
+    }
+
+    pub fn function_stmt(&mut self, callable_kind: CallableKind) -> StatementNode {
+        components::common::function_stmt(self, callable_kind)
     }
 
     pub fn callable_prototype(&mut self) -> CallablePrototypeNode {

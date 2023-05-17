@@ -15,8 +15,9 @@ use crate::ast::ast::{
     OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
     PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
     SelfKeywordNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
-    StructDeclarationNode, StructStatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
+    StructDeclarationNode, StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode,
+    TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode,
+    VariableDeclarationNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -92,9 +93,9 @@ pub trait Visitor {
         new_with_TypeDeclarationNode
     );
     impl_node_walk!(
-        walk_struct_stmt,
-        StructStatementNode,
-        new_with_StructStatementNode
+        walk_struct_property_declaration,
+        StructPropertyDeclarationNode,
+        new_with_StructPropertyDeclarationNode
     );
     impl_node_walk!(
         walk_missing_tokens,
@@ -301,8 +302,8 @@ pub trait Visitor {
                 CoreStatementNode::TYPE_DECLARATION(type_decl) => {
                     self.walk_type_decl(type_decl);
                 }
-                CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
-                    self.walk_struct_stmt(struct_stmt);
+                CoreStatementNode::STRUCT_PROPERTY_DECLARATION(struct_stmt) => {
+                    self.walk_struct_property_declaration(struct_stmt);
                 }
                 CoreStatementNode::RETURN(return_stmt) => {
                     self.walk_return_stmt(return_stmt);
@@ -345,7 +346,7 @@ pub trait Visitor {
                 self.walk_token(&core_invalid_r_lambda.equal);
                 self.walk_r_assignment(&core_invalid_r_lambda.r_assign);
             }
-            ASTNode::STRUCT_STATEMENT(struct_statement) => {
+            ASTNode::STRUCT_PROPERTY_DECLARATION(struct_statement) => {
                 let core_struct_stmt = struct_statement.core_ref();
                 self.walk_name_type_spec(&core_struct_stmt.name_type_spec);
                 self.walk_token(&core_struct_stmt.newline);

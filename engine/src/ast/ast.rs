@@ -56,7 +56,7 @@ pub enum ASTNode {
     // Types
     TYPE_DECLARATION(TypeDeclarationNode),
     STRUCT_DECLARATION(StructDeclarationNode),
-    STRUCT_STATEMENT(StructStatementNode),
+    STRUCT_PROPERTY_DECLARATION(StructPropertyDeclarationNode),
     LAMBDA_TYPE_DECLARATION(LambdaTypeDeclarationNode),
     OK_LAMBDA_TYPE_DECLARATION(OkLambdaTypeDeclarationNode),
     TYPE_EXPRESSION(TypeExpressionNode),
@@ -155,7 +155,7 @@ pub enum CoreStatementNode {
     RETURN(ReturnStatementNode),
     FUNCTION_DECLARATION(FunctionDeclarationNode),
     TYPE_DECLARATION(TypeDeclarationNode),
-    STRUCT_STATEMENT(StructStatementNode),
+    STRUCT_PROPERTY_DECLARATION(StructPropertyDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -249,7 +249,7 @@ pub struct CoreStructDeclarationNode {
 // STRUCT_STATEMENT
 // <name_type_spec> `\n`
 #[derive(Debug, Clone)]
-pub struct CoreStructStatementNode {
+pub struct CoreStructPropertyDeclarationNode {
     pub newline: TokenNode,
     pub name_type_spec: NameTypeSpecNode,
 }
@@ -649,7 +649,7 @@ pub struct TypeDeclarationNode(pub Rc<CoreTypeDeclarationNode>);
 #[derive(Debug, Clone)]
 pub struct StructDeclarationNode(pub Rc<CoreStructDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct StructStatementNode(pub Rc<CoreStructStatementNode>);
+pub struct StructPropertyDeclarationNode(pub Rc<CoreStructPropertyDeclarationNode>);
 #[derive(Debug, Clone)]
 pub struct LambdaTypeDeclarationNode(pub Rc<CoreLambdaTypeDeclarationNode>);
 #[derive(Debug, Clone)]
@@ -742,15 +742,15 @@ pub enum BlockKind {
     FUNC,
     STRUCT,
 }
+
 pub enum TypeResolveKind {
     RESOLVED(Type),
     UNRESOLVED(OkIdentifierNode),
     INVALID,
 }
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum CallableKind {
     FUNC,
-    METHOD, // Add the symbol entry of the struct for which this is a method
-    CLASSMETHOD,
-    CONSTRUCTOR,
+    METHOD,
 }

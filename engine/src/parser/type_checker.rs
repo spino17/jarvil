@@ -491,6 +491,7 @@ impl TypeChecker {
             }
             CoreAtomNode::METHOD_ACCESS(method_access) => {
                 // TODO - check for possiblitiy of a field access with type lambda which will have similar syntax
+                // Python gives priority to field first then method
                 let core_method_access = method_access.core_ref();
                 let atom = &core_method_access.atom;
                 let atom_type_obj = self.check_atom(atom);
@@ -508,7 +509,7 @@ impl TypeChecker {
                                 .struct_data(
                                     STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
                                 )
-                                .try_method(&method_name)
+                                .try_method(&Rc::new(method_name))
                             {
                                 Some(func_data) => {
                                     let expected_params = &func_data.params;

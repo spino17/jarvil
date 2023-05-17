@@ -1,4 +1,6 @@
-use crate::ast::ast::{CallableKind, FunctionDeclarationNode, StatementNode, StructStatementNode};
+use crate::ast::ast::{
+    CallableKind, FunctionDeclarationNode, StatementNode, StructPropertyDeclarationNode,
+};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::PackratParser;
@@ -35,6 +37,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
             StatementNode::new_with_variable_declaration(&variable_decl_node)
         }
         CoreToken::DEF => {
+            /*
             let def_keyword_node = parser.expect("def");
             let func_name_node = parser.expect_ident();
             let callable_body = parser.callable_body();
@@ -45,6 +48,8 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
                 &callable_body,
             );
             StatementNode::new_with_function_declaration(&func_decl_node)
+             */
+            parser.function_stmt(CallableKind::FUNC)
         }
         CoreToken::FOR => todo!(),
         CoreToken::WHILE => todo!(),
@@ -113,9 +118,16 @@ pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
 }
 
 pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {
-    // TODO - add the case for parsing `def` method defination also
-    let name_type_spec_node = parser.name_type_spec();
-    let newline_node = parser.expect_terminators();
-    let struct_stmt = StructStatementNode::new(&name_type_spec_node, &newline_node);
-    StatementNode::new_with_struct_stmt(&struct_stmt)
+    let token = &parser.curr_token();
+    match token.core_token {
+        CoreToken::IDENTIFIER => {
+            let name_type_spec_node = parser.name_type_spec();
+            let newline_node = parser.expect_terminators();
+            let struct_stmt =
+                StructPropertyDeclarationNode::new(&name_type_spec_node, &newline_node);
+            return StatementNode::new_with_struct_stmt(&struct_stmt);
+        }
+        CoreToken::DEF => return parser.function_stmt(CallableKind::METHOD),
+        _ => unreachable!(),
+    }
 }

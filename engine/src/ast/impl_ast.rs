@@ -14,23 +14,23 @@ use super::ast::{
     CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOkTypeTupleNode, CoreOnlyUnaryExpressionNode,
     CoreParamsNode, CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
-    CoreStructDeclarationNode, CoreStructStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
-    CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
-    CoreVariableDeclarationNode, IdentifierNode, IndexAccessNode, InvalidLValueNode,
-    InvalidRLambdaNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
-    NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode,
-    OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkSelfKeywordNode, OkTokenNode,
-    OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
-    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, SelfKeywordNode,
-    StructDeclarationNode, TypeExpressionNode, TypeResolveKind, TypeTupleNode, UnaryExpressionNode,
-    UserDefinedTypeNode,
+    CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreTokenNode,
+    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
+    CoreUserDefinedTypeNode, CoreVariableDeclarationNode, IdentifierNode, IndexAccessNode,
+    InvalidLValueNode, InvalidRLambdaNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
+    MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode,
+    OkIdentifierNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode,
+    OkSelfKeywordNode, OkTokenNode, OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    SelfKeywordNode, StructDeclarationNode, TypeExpressionNode, TypeResolveKind, TypeTupleNode,
+    UnaryExpressionNode, UserDefinedTypeNode,
 };
 use super::ast::{
     AssignmentNode, BlockKind, BlockNode, CoreBlockNode, CoreSkippedTokenNode,
     CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode, ExpressionNode,
     ExpressionStatementNode, FunctionDeclarationNode, IncorrectlyIndentedStatementNode,
     ReturnStatementNode, SkippedTokenNode, StatemenIndentWrapperNode, StatementNode,
-    StructStatementNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
+    StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
 };
 use super::iterators::{NameTypeSpecsIterator, ParamsIterator, TypeTupleIterator};
 use crate::ast::ast::CoreInvalidRLambdaNode;
@@ -236,8 +236,10 @@ impl StatementNode {
         StatementNode(node)
     }
 
-    pub fn new_with_struct_stmt(struct_stmt: &StructStatementNode) -> Self {
-        let node = Rc::new(CoreStatementNode::STRUCT_STATEMENT(struct_stmt.clone()));
+    pub fn new_with_struct_stmt(struct_stmt: &StructPropertyDeclarationNode) -> Self {
+        let node = Rc::new(CoreStatementNode::STRUCT_PROPERTY_DECLARATION(
+            struct_stmt.clone(),
+        ));
         StatementNode(node)
     }
 
@@ -389,19 +391,19 @@ impl Node for InvalidRLambdaNode {
     }
 }
 
-impl StructStatementNode {
+impl StructPropertyDeclarationNode {
     pub fn new(name_type_spec: &NameTypeSpecNode, newline: &TokenNode) -> Self {
-        let node = Rc::new(CoreStructStatementNode {
+        let node = Rc::new(CoreStructPropertyDeclarationNode {
             newline: newline.clone(),
             name_type_spec: name_type_spec.clone(),
         });
-        StructStatementNode(node)
+        StructPropertyDeclarationNode(node)
     }
 
-    impl_core_ref!(CoreStructStatementNode);
+    impl_core_ref!(CoreStructPropertyDeclarationNode);
 }
 
-impl Node for StructStatementNode {
+impl Node for StructPropertyDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(
             self.0.as_ref().name_type_spec,

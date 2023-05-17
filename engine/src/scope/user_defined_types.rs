@@ -52,26 +52,41 @@ impl UserDefinedTypeData {
 
 #[derive(Debug, Clone, Default)]
 pub struct StructData {
-    pub fields: Rc<FxHashMap<String, (Type, TextRange)>>,
-    pub constructor: FunctionData,
-    pub methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
-    pub class_methods: Rc<RefCell<FxHashMap<String, FunctionData>>>,
+    pub fields: Rc<FxHashMap<Rc<String>, (Type, TextRange)>>,
+    pub constructor: (FunctionData, bool), // bool field is `is_constructor_set` to prevent redeclaration of constructor
+    pub methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
+    pub class_methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
 }
 
 impl StructData {
-    pub fn set_fields(&mut self, fields: FxHashMap<String, (Type, TextRange)>) {
+    pub fn set_fields(&mut self, fields: FxHashMap<Rc<String>, (Type, TextRange)>) {
         self.fields = Rc::new(fields);
     }
 
-    pub fn try_field(&self, field_name: &String) -> Option<(Type, TextRange)> {
+    pub fn try_constructor(&self) -> Option<FunctionData> {
+        if self.constructor.1 {
+            return Some(self.constructor.0.clone());
+        } else {
+            return None;
+        }
+    }
+
+    pub fn try_field(&self, field_name: &Rc<String>) -> Option<(Type, TextRange)> {
         match self.fields.as_ref().get(field_name) {
             Some(type_obj) => return Some((type_obj.0.clone(), type_obj.1)),
             None => None,
         }
     }
 
-    pub fn try_method(&self, method_name: &String) -> Option<FunctionData> {
+    pub fn try_method(&self, method_name: &Rc<String>) -> Option<FunctionData> {
         match self.methods.as_ref().borrow().get(method_name) {
+            Some(func_data) => Some(func_data.clone()),
+            None => None,
+        }
+    }
+
+    pub fn try_class_method(&self, class_method_name: &Rc<String>) -> Option<FunctionData> {
+        match self.class_methods.as_ref().borrow().get(class_method_name) {
             Some(func_data) => Some(func_data.clone()),
             None => None,
         }
