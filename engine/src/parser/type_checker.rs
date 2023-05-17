@@ -10,10 +10,11 @@ use crate::{
             CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode,
             CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreUnaryExpressionNode, ExpressionNode, LambdaDeclarationNode, NameTypeSpecsNode,
-            Node, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
-            ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
-            UnaryExpressionNode, VariableDeclarationNode,
+            CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
+            LambdaDeclarationNode, NameTypeSpecsNode, Node, OnlyUnaryExpressionNode, ParamsNode,
+            RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, StatementNode,
+            TokenNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
+            VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -310,26 +311,33 @@ impl TypeChecker {
                                 let expected_params = func_data.params;
                                 let return_type = func_data.return_type;
                                 (CallableParamsData::OTHER(expected_params), return_type)
-                            },
+                            }
                             IdentifierKind::VARIABLE(variable_symbol_data) => {
-                                let lambda_type = variable_symbol_data.0.as_ref().borrow().data_type.clone();
+                                let lambda_type =
+                                    variable_symbol_data.0.as_ref().borrow().data_type.clone();
                                 match lambda_type.0.as_ref() {
                                     CoreType::LAMBDA(lambda_data) => {
                                         let lambda_data = lambda_data.symbol_data.0.as_ref().borrow().lambda_data(
                                             LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG
                                         ).clone();
-                                        (CallableParamsData::LAMBDA(lambda_data.param_types), lambda_data.return_type)
-                                    },
+                                        (
+                                            CallableParamsData::LAMBDA(lambda_data.param_types),
+                                            lambda_data.return_type,
+                                        )
+                                    }
                                     _ => {
                                         let err = IdentifierNotCallableError::new(
-                                            lambda_type, func_name.range()
+                                            lambda_type,
+                                            func_name.range(),
                                         );
                                         self.errors.push(Diagnostics::IdentifierNotCallable(err));
-                                        return Type::new_with_unknown()
+                                        return Type::new_with_unknown();
                                     }
                                 }
-                            },  // TODO - handle case when the call is constructor call
-                            _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`")
+                            } // TODO - handle case when the call is constructor call
+                            IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_Data) => {
+                                unreachable!("function name should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`")
+                            }
                         };
                         let result = self.check_params_type_and_count(expected_params_data, params);
                         match result {
@@ -924,13 +932,27 @@ impl TypeChecker {
             CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
                 self.check_variable_decl(variable_decl);
             }
-            CoreStatementNode::FUNCTION_DECLARATION(func_decl) => {
-                self.check_callable_body(&func_decl.core_ref().body);
+            CoreStatementNode::FUNCTION_WRAPPER(func_wrapper) => {
+                self.check_callable_body(&func_wrapper.core_ref().func_decl.core_ref().body);
+            }
+            CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+                self.check_callable_body(
+                    &bounded_method_wrapper.core_ref().func_decl.core_ref().body,
+                );
             }
             CoreStatementNode::RETURN(return_stmt) => {
                 self.check_return_stmt(return_stmt);
             }
-            _ => return,
+            CoreStatementNode::TYPE_DECLARATION(type_decl) => match type_decl.core_ref() {
+                CoreTypeDeclarationNode::STRUCT(struct_decl) => {
+                    self.walk_block(&struct_decl.core_ref().block);
+                }
+                CoreTypeDeclarationNode::LAMBDA(_) | CoreTypeDeclarationNode::MISSING_TOKENS(_) => {
+                    return
+                }
+            },
+            CoreStatementNode::STRUCT_PROPERTY_DECLARATION(_)
+            | CoreStatementNode::MISSING_TOKENS(_) => return,
         }
     }
 

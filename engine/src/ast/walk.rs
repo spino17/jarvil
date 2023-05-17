@@ -1,23 +1,23 @@
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-    AtomicTypeNode, BinaryExpressionNode, BlockNode, CallExpressionNode, CallNode,
-    CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
+    AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
+    CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
     CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
     CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode, CoreLambdaTypeDeclarationNode,
     CoreNameTypeSpecsNode, CoreParamsNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
     CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
     CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
-    ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode, IdentifierNode,
-    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, InvalidRLambdaNode,
-    LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode,
-    NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode,
-    OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkSelfKeywordNode, OkTokenNode,
-    OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
-    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
-    SelfKeywordNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
-    StructDeclarationNode, StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode,
-    TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode,
-    VariableDeclarationNode,
+    ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode,
+    IdentifierNode, IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
+    InvalidRLambdaNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
+    MissingTokenNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode,
+    OkIdentifierNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode,
+    OkSelfKeywordNode, OkTokenNode, OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, SkippedTokensNode,
+    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    TokenNode, TypeDeclarationNode, TypeExpressionNode, TypeTupleNode, UnaryExpressionNode,
+    UserDefinedTypeNode, VariableDeclarationNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -66,6 +66,16 @@ pub trait Visitor {
         walk_func_decl,
         FunctionDeclarationNode,
         new_with_FunctionDeclarationNode
+    );
+    impl_node_walk!(
+        walk_func_wrapper,
+        FunctionWrapperNode,
+        new_with_FunctionWrapperNode
+    );
+    impl_node_walk!(
+        walk_bounded_method_wrapper,
+        BoundedMethodWrapperNode,
+        new_with_BoundedMethodWrapperNode
     );
     impl_node_walk!(
         walk_lambda_decl,
@@ -296,8 +306,11 @@ pub trait Visitor {
                 CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
                     self.walk_variable_decl(variable_decl);
                 }
-                CoreStatementNode::FUNCTION_DECLARATION(func_decl) => {
-                    self.walk_func_decl(func_decl);
+                CoreStatementNode::FUNCTION_WRAPPER(func_wrapper) => {
+                    self.walk_func_wrapper(func_wrapper);
+                }
+                CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+                    self.walk_bounded_method_wrapper(bounded_method_wrapper);
                 }
                 CoreStatementNode::TYPE_DECLARATION(type_decl) => {
                     self.walk_type_decl(type_decl);
@@ -440,6 +453,12 @@ pub trait Visitor {
                 self.walk_token(&core_func_decl.def_keyword);
                 self.walk_identifier(&core_func_decl.name);
                 self.walk_callable_body(&core_func_decl.body);
+            }
+            ASTNode::FUNCTION_WRAPPER(func_wrapper) => {
+                self.walk_func_decl(&func_wrapper.core_ref().func_decl);
+            }
+            ASTNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+                self.walk_func_decl(&bounded_method_wrapper.core_ref().func_decl);
             }
             ASTNode::VARIABLE_DECLARATION(variable_decl_node) => {
                 let core_variable_decl = variable_decl_node.core_ref();

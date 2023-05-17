@@ -1,11 +1,12 @@
 use super::ast::{
-    ArrayTypeNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
-    BinaryExpressionNode, CallExpressionNode, CallNode, CallableBodyNode, CallableKind,
-    CallablePrototypeNode, ClassMethodCallNode, ComparisonNode, CoreArrayTypeNode,
-    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreCallExpressionNode, CoreCallNode,
-    CoreCallableBodyNode, CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode,
-    CoreExpressionNode, CoreExpressionStatementNode, CoreFunctionDeclarationNode,
+    ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
+    BinaryExpressionNode, BlockKind, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
+    CallNode, CallableBodyNode, CallableKind, CallablePrototypeNode, ClassMethodCallNode,
+    ComparisonNode, CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
+    CoreAtomicExpressionNode, CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode,
+    CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
+    CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode, CoreExpressionNode,
+    CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
     CoreIdentifierNode, CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode,
     CoreInvalidLValueNode, CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode,
     CoreMethodAccessNode, CoreMissingTokenNode, CoreNameTypeSpecNode, CoreNameTypeSpecsNode,
@@ -14,23 +15,21 @@ use super::ast::{
     CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOkTypeTupleNode, CoreOnlyUnaryExpressionNode,
     CoreParamsNode, CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
+    CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
     CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreTokenNode,
     CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
-    CoreUserDefinedTypeNode, CoreVariableDeclarationNode, IdentifierNode, IndexAccessNode,
-    InvalidLValueNode, InvalidRLambdaNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
-    MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode,
-    OkIdentifierNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode,
-    OkSelfKeywordNode, OkTokenNode, OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode,
-    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
-    SelfKeywordNode, StructDeclarationNode, TypeExpressionNode, TypeResolveKind, TypeTupleNode,
-    UnaryExpressionNode, UserDefinedTypeNode,
-};
-use super::ast::{
-    AssignmentNode, BlockKind, BlockNode, CoreBlockNode, CoreSkippedTokenNode,
-    CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode, ExpressionNode,
-    ExpressionStatementNode, FunctionDeclarationNode, IncorrectlyIndentedStatementNode,
-    ReturnStatementNode, SkippedTokenNode, StatemenIndentWrapperNode, StatementNode,
-    StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
+    CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode,
+    FunctionDeclarationNode, FunctionWrapperNode, IdentifierNode, IncorrectlyIndentedStatementNode,
+    IndexAccessNode, InvalidLValueNode, InvalidRLambdaNode, LambdaDeclarationNode,
+    LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode,
+    OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode, OkLambdaTypeDeclarationNode,
+    OkNameTypeSpecsNode, OkParamsNode, OkSelfKeywordNode, OkTokenNode, OkTypeTupleNode,
+    OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode,
+    RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode,
+    SkippedTokenNode, StatemenIndentWrapperNode, StatementNode, StructDeclarationNode,
+    StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    TypeResolveKind, TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode,
+    VariableDeclarationNode,
 };
 use super::iterators::{NameTypeSpecsIterator, ParamsIterator, TypeTupleIterator};
 use crate::ast::ast::CoreInvalidRLambdaNode;
@@ -224,9 +223,16 @@ impl StatementNode {
         StatementNode(node)
     }
 
-    pub fn new_with_function_declaration(function_decl: &FunctionDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::FUNCTION_DECLARATION(
-            function_decl.clone(),
+    pub fn new_with_function_wrapper(func_wrapper: &FunctionWrapperNode) -> Self {
+        let node = Rc::new(CoreStatementNode::FUNCTION_WRAPPER(func_wrapper.clone()));
+        StatementNode(node)
+    }
+
+    pub fn new_with_bounded_method_wrapper(
+        bounded_method_wrapper: &BoundedMethodWrapperNode,
+    ) -> Self {
+        let node = Rc::new(CoreStatementNode::BOUNDED_METHOD_WRAPPER(
+            bounded_method_wrapper.clone(),
         ));
         StatementNode(node)
     }
@@ -614,16 +620,10 @@ impl Node for OkCallableBodyNode {
 }
 
 impl FunctionDeclarationNode {
-    pub fn new(
-        name: &IdentifierNode,
-        def_keyword: &TokenNode,
-        kind: CallableKind,
-        body: &CallableBodyNode,
-    ) -> Self {
+    pub fn new(name: &IdentifierNode, def_keyword: &TokenNode, body: &CallableBodyNode) -> Self {
         let node = Rc::new(CoreFunctionDeclarationNode {
             name: name.clone(),
             def_keyword: def_keyword.clone(),
-            kind: kind.clone(),
             body: body.clone(),
         });
         FunctionDeclarationNode(node)
@@ -638,6 +638,46 @@ impl Node for FunctionDeclarationNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().def_keyword.start_line_number()
+    }
+}
+
+impl FunctionWrapperNode {
+    pub fn new(func_decl: &FunctionDeclarationNode) -> Self {
+        let node = Rc::new(CoreFunctionWrapperNode {
+            func_decl: func_decl.clone(),
+        });
+        FunctionWrapperNode(node)
+    }
+
+    impl_core_ref!(CoreFunctionWrapperNode);
+}
+
+impl Node for FunctionWrapperNode {
+    fn range(&self) -> TextRange {
+        self.0.as_ref().func_decl.range()
+    }
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().func_decl.start_line_number()
+    }
+}
+
+impl BoundedMethodWrapperNode {
+    pub fn new(func_decl: &FunctionDeclarationNode) -> Self {
+        let node = Rc::new(CoreBoundedMethodWrapperNode {
+            func_decl: func_decl.clone(),
+        });
+        BoundedMethodWrapperNode(node)
+    }
+
+    impl_core_ref!(CoreBoundedMethodWrapperNode);
+}
+
+impl Node for BoundedMethodWrapperNode {
+    fn range(&self) -> TextRange {
+        self.0.as_ref().func_decl.range()
+    }
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().func_decl.start_line_number()
     }
 }
 

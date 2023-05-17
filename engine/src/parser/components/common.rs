@@ -2,9 +2,9 @@ use super::statement::core::{
     is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS,
 };
 use crate::ast::ast::{
-    BlockKind, CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode,
-    FunctionDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, OkNameTypeSpecsNode,
-    OkTypeTupleNode, StatementNode, TypeTupleNode,
+    BlockKind, BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode,
+    ErrornousNode, FunctionDeclarationNode, FunctionWrapperNode, NameTypeSpecNode,
+    NameTypeSpecsNode, OkNameTypeSpecsNode, OkTypeTupleNode, StatementNode, TypeTupleNode,
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::PackratParser;
@@ -119,11 +119,18 @@ pub fn function_stmt(parser: &mut PackratParser, callable_kind: CallableKind) ->
     let def_keyword_node = parser.expect("def");
     let func_name_node = parser.expect_ident();
     let callable_body = parser.callable_body();
-    let func_decl_node = FunctionDeclarationNode::new(
-        &func_name_node,
-        &def_keyword_node,
-        callable_kind,
-        &callable_body,
-    );
-    StatementNode::new_with_function_declaration(&func_decl_node)
+    let func_decl_node =
+        FunctionDeclarationNode::new(&func_name_node, &def_keyword_node, &callable_body);
+    match callable_kind {
+        CallableKind::FUNC => {
+            return StatementNode::new_with_function_wrapper(&FunctionWrapperNode::new(
+                &func_decl_node,
+            ))
+        }
+        CallableKind::METHOD => {
+            return StatementNode::new_with_bounded_method_wrapper(&BoundedMethodWrapperNode::new(
+                &func_decl_node,
+            ))
+        }
+    }
 }

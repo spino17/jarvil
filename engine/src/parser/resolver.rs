@@ -1,6 +1,6 @@
 use crate::ast::ast::{
     CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreRVariableDeclarationNode,
-    CoreSelfKeywordNode, FunctionDeclarationNode, OkSelfKeywordNode,
+    CoreSelfKeywordNode, FunctionDeclarationNode, FunctionWrapperNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -439,60 +439,44 @@ impl Resolver {
         };
     }
 
-    pub fn declare_function(&mut self, func_decl: &FunctionDeclarationNode) {
-        let core_func_decl = func_decl.core_ref();
+    pub fn declare_function(&mut self, func_wrapper: &FunctionWrapperNode) {
+        let core_func_decl = func_wrapper.core_ref().func_decl.core_ref();
         let func_name = &core_func_decl.name;
-        let kind = &core_func_decl.kind;
         let body = &core_func_decl.body;
         if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
-            match kind {
-                CallableKind::FUNC => {
-                    let name = Rc::new(ok_identifier.token_value(&self.code));
-                    if self.namespace.is_function_in_non_locals(&name) {
-                        let err = IdentifierFoundInNonLocalsError::new(
-                            IdentKind::FUNCTION,
-                            ok_identifier.range(),
-                        );
-                        self.errors
-                            .push(Diagnostics::IdentifierFoundInNonLocals(err));
-                    } else {
-                        if let Some((name, previous_decl_range)) =
-                            self.try_declare_and_bind_function(ok_identifier)
-                        {
-                            let err = IdentifierAlreadyDeclaredError::new(
-                                IdentKind::FUNCTION,
-                                name.to_string(),
-                                previous_decl_range,
-                                ok_identifier.range(),
-                            );
-                            self.errors
-                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                        }
-                    }
+            let name = Rc::new(ok_identifier.token_value(&self.code));
+            if self.namespace.is_function_in_non_locals(&name) {
+                let err = IdentifierFoundInNonLocalsError::new(
+                    IdentKind::FUNCTION,
+                    ok_identifier.range(),
+                );
+                self.errors
+                    .push(Diagnostics::IdentifierFoundInNonLocals(err));
+            } else {
+                if let Some((name, previous_decl_range)) =
+                    self.try_declare_and_bind_function(ok_identifier)
+                {
+                    let err = IdentifierAlreadyDeclaredError::new(
+                        IdentKind::FUNCTION,
+                        name.to_string(),
+                        previous_decl_range,
+                        ok_identifier.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
-                CallableKind::METHOD => {}
             }
         }
         let (params_vec, _, return_type) = self.visit_callable_body(body);
         if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
-            match kind {
-                CallableKind::FUNC => {
-                    if let Some(symbol_data) = ok_identifier.function_symbol_data(
-                        "function name should be resolved to `SymbolData<FunctionData>`",
-                    ) {
-                        symbol_data
-                            .0
-                            .as_ref()
-                            .borrow_mut()
-                            .set_data(params_vec, return_type);
-                    }
-                }
-                // TODO - For below class contained functions, find the struct symbol_data and add into the appropiate maps
-                CallableKind::METHOD => {
-                    // TODO - have the `struct` name attached with the kind and use that to find it's symbol data and add meta_data and
-                    // method name to the struct symbol data
-                    todo!()
-                }
+            if let Some(symbol_data) = ok_identifier.function_symbol_data(
+                "function name should be resolved to `SymbolData<FunctionData>`",
+            ) {
+                symbol_data
+                    .0
+                    .as_ref()
+                    .borrow_mut()
+                    .set_data(params_vec, return_type);
             }
         }
     }
@@ -542,7 +526,8 @@ impl Resolver {
         let mut fields_map: FxHashMap<Rc<String>, (Type, TextRange)> = FxHashMap::default();
         let mut constructor: FunctionData = FunctionData::default();
         let mut methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> = FxHashMap::default();
-        let mut class_methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> = FxHashMap::default();
+        let mut class_methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> =
+            FxHashMap::default();
 
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
@@ -578,13 +563,21 @@ impl Resolver {
                         }
                     }
                 },
-                CoreStatementNode::FUNCTION_DECLARATION(method_decl) => {
-                    todo!()
+                CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrappewr) => {
+                    // if there is self in the body => method
+                    // if not self reference => class_method
+                    // if name of the method is `__init__` => constructor
+                    let core_func_decl = bounded_method_wrappewr.core_ref().func_decl.core_ref();
+                    let (params_vec, _, return_type) = self.visit_callable_body(&core_func_decl.body);
+                    if let CoreIdentifierNode::OK(ok_bounded_method_name) = core_func_decl.name.core_ref() {
+                        let func_meta_data = FunctionData::new(params_vec, return_type);
+                    }
                 }
                 _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
             }
         }
         self.close_block();
+        // TODO - constructor should always be declared with name `__init__`
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "struct name should be resolved to `SymbolData<UserDefinedTypeData>`",
@@ -674,12 +667,13 @@ impl Visitor for Resolver {
                 self.declare_variable(variable_decl);
                 return None;
             }
-            ASTNode::CALLABLE_BODY(callable_body) => {
-                self.visit_callable_body(callable_body);
-                return None;
-            }
-            ASTNode::FUNCTION_DECLARATION(func_decl) => {
-                self.declare_function(func_decl);
+            //ASTNode::CALLABLE_BODY(callable_body) => {
+            //    println!("Hello");
+            //    self.visit_callable_body(callable_body);
+            //    return None;
+            //}
+            ASTNode::FUNCTION_WRAPPER(func_wrapper) => {
+                self.declare_function(func_wrapper);
                 return None;
             }
             ASTNode::STRUCT_DECLARATION(struct_decl) => {

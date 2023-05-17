@@ -8,6 +8,13 @@ pub struct FunctionData {
 }
 
 impl FunctionData {
+    pub fn new(params: Vec<(Rc<String>, Type)>, return_type: Type) -> Self {
+        FunctionData {
+            params: Rc::new(params),
+            return_type,
+        }
+    }
+
     pub fn set_data(&mut self, params: Vec<(Rc<String>, Type)>, return_type: Type) {
         self.params = Rc::new(params);
         self.return_type = return_type;

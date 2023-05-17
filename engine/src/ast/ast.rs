@@ -69,6 +69,8 @@ pub enum ASTNode {
     CALLABLE_BODY(CallableBodyNode),
     OK_CALLABLE_BODY(OkCallableBodyNode),
     FUNCTION_DECLARATION(FunctionDeclarationNode),
+    FUNCTION_WRAPPER(FunctionWrapperNode),
+    BOUNDED_METHOD_WRAPPER(BoundedMethodWrapperNode),
     LAMBDA_DECLARATION(LambdaDeclarationNode),
 
     // Expression
@@ -153,7 +155,8 @@ pub enum CoreStatementNode {
     ASSIGNMENT(AssignmentNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
     RETURN(ReturnStatementNode),
-    FUNCTION_DECLARATION(FunctionDeclarationNode),
+    FUNCTION_WRAPPER(FunctionWrapperNode),
+    BOUNDED_METHOD_WRAPPER(BoundedMethodWrapperNode),
     TYPE_DECLARATION(TypeDeclarationNode),
     STRUCT_PROPERTY_DECLARATION(StructPropertyDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
@@ -341,8 +344,17 @@ pub struct CoreOkCallableBodyNode {
 pub struct CoreFunctionDeclarationNode {
     pub def_keyword: TokenNode,
     pub name: IdentifierNode,
-    pub kind: CallableKind,
     pub body: CallableBodyNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreFunctionWrapperNode {
+    pub func_decl: FunctionDeclarationNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreBoundedMethodWrapperNode {
+    pub func_decl: FunctionDeclarationNode,
 }
 
 // LAMBDA_DECLARATION
@@ -670,6 +682,10 @@ pub struct CallableBodyNode(pub Rc<CoreCallableBodyNode>);
 pub struct OkCallableBodyNode(pub Rc<CoreOkCallableBodyNode>);
 #[derive(Debug, Clone)]
 pub struct FunctionDeclarationNode(pub Rc<CoreFunctionDeclarationNode>);
+#[derive(Debug, Clone)]
+pub struct FunctionWrapperNode(pub Rc<CoreFunctionWrapperNode>);
+#[derive(Debug, Clone)]
+pub struct BoundedMethodWrapperNode(pub Rc<CoreBoundedMethodWrapperNode>);
 #[derive(Debug, Clone)]
 pub struct LambdaDeclarationNode(pub Rc<CoreLambdaDeclarationNode>);
 #[derive(Debug, Clone)]

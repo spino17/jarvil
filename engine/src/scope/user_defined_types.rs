@@ -85,7 +85,10 @@ impl StructData {
         }
     }
 
-    pub fn try_class_method(&self, class_method_name: &Rc<String>) -> Option<(FunctionData, TextRange)> {
+    pub fn try_class_method(
+        &self,
+        class_method_name: &Rc<String>,
+    ) -> Option<(FunctionData, TextRange)> {
         match self.class_methods.as_ref().borrow().get(class_method_name) {
             Some(func_data) => Some(func_data.clone()),
             None => None,
