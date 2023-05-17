@@ -109,18 +109,20 @@ pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
         CoreToken::TRUE => true,
         CoreToken::FALSE => true,
         CoreToken::IDENTIFIER => true,
+        CoreToken::SELF => true,
         CoreToken::LPAREN => true,
         _ => false,
     }
 }
 
-pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 7] = [
+pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 8] = [
     TRUE,
     FALSE,
     INTEGER,
     FLOATING_POINT_NUMBER,
     LITERAL,
     IDENTIFIER,
+    "self",
     "(",
 ];
 
@@ -154,7 +156,7 @@ pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
             let literal_node = parser.expect(LITERAL);
             AtomicExpressionNode::new_with_literal(&literal_node)
         }
-        CoreToken::IDENTIFIER                   => {
+        CoreToken::IDENTIFIER | CoreToken::SELF => {
             let atom = parser.atom();
             AtomicExpressionNode::new_with_atom(&atom)
         }

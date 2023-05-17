@@ -716,44 +716,39 @@ impl Visitor for Resolver {
                                         self.namespace.set_to_function_non_locals(&name);
                                     }
                                 }
-                                None => {
-                                    match self.namespace.lookup_in_types_namespace(&name) {
-                                        Some((symbol_data, depth)) => {
-                                            ok_identifier
-                                                .bind_user_defined_type_decl(&symbol_data, depth);
-                                        }
-                                        None => {
-                                            match self.try_resolving_variable(ok_identifier) {
-                                                VariableLookupResult::OK((_, depth)) => {
-                                                    if depth > 0 {
-                                                        self.namespace
-                                                            .set_to_variable_non_locals(&name);
-                                                    }
-                                                }
-                                                VariableLookupResult::NOT_INITIALIZED(
-                                                    decl_range,
-                                                ) => {
-                                                    let err 
-                                                    = VariableReferencedBeforeAssignmentError::new(
-                                                        name.to_string(), 
-                                                        decl_range, 
-                                                        ok_identifier.range()
-                                                    );
-                                                    self.errors.push(Diagnostics::VariableReferencedBeforeAssignment(err));
-                                                }
-                                                VariableLookupResult::Err => {
-                                                    let err =
-                                                        IdentifierNotFoundInAnyNamespaceError::new(
-                                                            ok_identifier.range(),
-                                                        );
-                                                    self.errors.push(
-                                                        Diagnostics::IdentifierNotFoundInAnyNamespace(err),
-                                                    );
-                                                }
+                                None => match self.namespace.lookup_in_types_namespace(&name) {
+                                    Some((symbol_data, depth)) => {
+                                        ok_identifier
+                                            .bind_user_defined_type_decl(&symbol_data, depth);
+                                    }
+                                    None => match self.try_resolving_variable(ok_identifier) {
+                                        VariableLookupResult::OK((_, depth)) => {
+                                            if depth > 0 {
+                                                self.namespace.set_to_variable_non_locals(&name);
                                             }
                                         }
-                                    }
-                                }
+                                        VariableLookupResult::NOT_INITIALIZED(decl_range) => {
+                                            let err = VariableReferencedBeforeAssignmentError::new(
+                                                name.to_string(),
+                                                decl_range,
+                                                ok_identifier.range(),
+                                            );
+                                            self.errors.push(
+                                                Diagnostics::VariableReferencedBeforeAssignment(
+                                                    err,
+                                                ),
+                                            );
+                                        }
+                                        VariableLookupResult::Err => {
+                                            let err = IdentifierNotFoundInAnyNamespaceError::new(
+                                                ok_identifier.range(),
+                                            );
+                                            self.errors.push(
+                                                Diagnostics::IdentifierNotFoundInAnyNamespace(err),
+                                            );
+                                        }
+                                    },
+                                },
                             }
                         }
                         if let Some(params) = &core_func_call.params {

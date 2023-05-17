@@ -445,7 +445,8 @@ pub enum CoreAtomNode {
 // ATOM_START
 #[derive(Debug, Clone, Node)]
 pub enum CoreAtomStartNode {
-    IDENTIFIER(IdentifierNode),             // id
+    IDENTIFIER(IdentifierNode), // id
+    // SELF(SelfNode),                         // self
     CALL(CallExpressionNode),               // id(...)
     CLASS_METHOD_CALL(ClassMethodCallNode), // id::id(...)
 }

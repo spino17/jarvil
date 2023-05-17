@@ -71,6 +71,7 @@ pub fn trailing_atom(parser: &mut PackratParser, atom_start_node: AtomNode) -> A
 }
 
 pub fn atom(parser: &mut PackratParser) -> AtomNode {
+    // TODO - add case for `self` keyword also
     let leading_identifier_node = parser.expect_ident();
     let token = &parser.curr_token();
     match token.core_token {
