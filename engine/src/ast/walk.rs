@@ -1,26 +1,22 @@
-use super::ast::{
-    CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreIdentifierNode,
-    CoreTokenNode, CoreTypeTupleNode, IdentifierNode, LambdaDeclarationNode, OkCallableBodyNode,
-    OkIdentifierNode, OkTokenNode, OkTypeTupleNode, TypeTupleNode,
-};
-use crate::ast::ast::ASTNode;
-use crate::ast::ast::InvalidRLambdaNode;
 use crate::ast::ast::{
-    ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
-    BinaryExpressionNode, BlockNode, CallExpressionNode, CallNode, ClassMethodCallNode,
-    ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreExpressionNode, CoreLambdaTypeDeclarationNode, CoreNameTypeSpecsNode, CoreParamsNode,
-    CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode,
-    CoreStatementNode, CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode,
-    ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
-    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
-    LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
-    NameTypeSpecsNode, OkAssignmentNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode,
-    OkParamsNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
+    ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
+    AtomicTypeNode, BinaryExpressionNode, BlockNode, CallExpressionNode, CallNode,
+    CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
+    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
+    CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode, CoreLambdaTypeDeclarationNode,
+    CoreNameTypeSpecsNode, CoreParamsNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
+    CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
+    ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode, IdentifierNode,
+    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, InvalidRLambdaNode,
+    LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode,
+    NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode,
+    OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkSelfKeywordNode, OkTokenNode,
+    OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
     PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
-    SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
+    SelfKeywordNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
     StructDeclarationNode, StructStatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
+    TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -240,6 +236,12 @@ pub trait Visitor {
         new_with_OkIdentifierNode
     );
     impl_node_walk!(walk_identifier, IdentifierNode, new_with_IdentifierNode);
+    impl_node_walk!(walk_self_keyword, SelfKeywordNode, new_with_SelfKeywordNode);
+    impl_node_walk!(
+        walk_ok_self_keyword,
+        OkSelfKeywordNode,
+        new_with_OkSelfKeywordNode
+    );
 
     fn walk(&mut self, node: &ASTNode) {
         match self.visit(node) {
@@ -768,6 +770,20 @@ pub trait Visitor {
             }
             ASTNode::OK_IDENTIFIER(ok_identifier) => {
                 self.walk_ok_token(&ok_identifier.0.as_ref().borrow().token);
+            }
+            ASTNode::SELF_KEYWORD(self_keyword) => {
+                let core_self_keyword = self_keyword.core_ref();
+                match core_self_keyword {
+                    CoreSelfKeywordNode::OK(ok_self_keyword) => {
+                        self.walk_ok_self_keyword(ok_self_keyword)
+                    }
+                    CoreSelfKeywordNode::MISSING_TOKENS(missing_tokens) => {
+                        self.walk_missing_tokens(missing_tokens)
+                    }
+                }
+            }
+            ASTNode::OK_SELF_KEYWORD(ok_self_keyword) => {
+                self.walk_ok_token(&ok_self_keyword.0.as_ref().borrow().token);
             }
             ASTNode::OK_TOKEN(_) => {
                 // do nothing

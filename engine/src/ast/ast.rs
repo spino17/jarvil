@@ -14,6 +14,8 @@ use jarvil_macros::Node;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
 use crate::scope::core::IdentifierKind;
+use crate::scope::core::SymbolData;
+use crate::scope::variables::VariableData;
 use crate::{lexer::token::Token, scope::core::Namespace, types::core::Type};
 use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
@@ -101,6 +103,8 @@ pub enum ASTNode {
     // Basic
     IDENTIFIER(IdentifierNode),
     OK_IDENTIFIER(OkIdentifierNode),
+    SELF_KEYWORD(SelfKeywordNode),
+    OK_SELF_KEYWORD(OkSelfKeywordNode),
     TOKEN(TokenNode),
     OK_TOKEN(OkTokenNode),
     MISSING_TOKEN(MissingTokenNode),
@@ -575,6 +579,18 @@ pub struct CoreOkIdentifierNode {
     pub decl: Option<(IdentifierKind, usize)>, // (symbol data reference, depth)
 }
 
+#[derive(Debug, Clone, Node)]
+pub enum CoreSelfKeywordNode {
+    OK(OkSelfKeywordNode),
+    MISSING_TOKENS(MissingTokenNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreOkSelfKeywordNode {
+    pub token: OkTokenNode,
+    pub decl: Option<(SymbolData<VariableData>, usize)>,
+}
+
 // TOKEN
 #[derive(Debug, Clone, Node)]
 pub enum CoreTokenNode {
@@ -706,6 +722,10 @@ pub struct OkParamsNode(pub Rc<CoreOkParamsNode>);
 pub struct IdentifierNode(pub Rc<CoreIdentifierNode>);
 #[derive(Debug, Clone)]
 pub struct OkIdentifierNode(pub Rc<RefCell<CoreOkIdentifierNode>>);
+#[derive(Debug, Clone)]
+pub struct SelfKeywordNode(pub Rc<CoreSelfKeywordNode>);
+#[derive(Debug, Clone)]
+pub struct OkSelfKeywordNode(pub Rc<RefCell<CoreOkSelfKeywordNode>>);
 #[derive(Debug, Clone)]
 pub struct TokenNode(pub Rc<CoreTokenNode>);
 #[derive(Debug, Clone)]

@@ -10,19 +10,20 @@ use super::ast::{
     CoreInvalidLValueNode, CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode,
     CoreMethodAccessNode, CoreMissingTokenNode, CoreNameTypeSpecNode, CoreNameTypeSpecsNode,
     CoreOkAssignmentNode, CoreOkCallableBodyNode, CoreOkIdentifierNode,
-    CoreOkLambdaTypeDeclarationNode, CoreOkNameTypeSpecsNode, CoreOkParamsNode, CoreOkTokenNode,
-    CoreOkTypeTupleNode, CoreOnlyUnaryExpressionNode, CoreParamsNode,
-    CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
-    CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreStructDeclarationNode,
-    CoreStructStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreTypeExpressionNode,
-    CoreTypeTupleNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
+    CoreOkLambdaTypeDeclarationNode, CoreOkNameTypeSpecsNode, CoreOkParamsNode,
+    CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOkTypeTupleNode, CoreOnlyUnaryExpressionNode,
+    CoreParamsNode, CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
+    CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
+    CoreStructDeclarationNode, CoreStructStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
+    CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
     CoreVariableDeclarationNode, IdentifierNode, IndexAccessNode, InvalidLValueNode,
     InvalidRLambdaNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
     NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode,
-    OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkTokenNode, OkTypeTupleNode,
-    OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode,
-    RAssignmentNode, RVariableDeclarationNode, StructDeclarationNode, TypeExpressionNode,
-    TypeResolveKind, TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode,
+    OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkSelfKeywordNode, OkTokenNode,
+    OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
+    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, SelfKeywordNode,
+    StructDeclarationNode, TypeExpressionNode, TypeResolveKind, TypeTupleNode, UnaryExpressionNode,
+    UserDefinedTypeNode,
 };
 use super::ast::{
     AssignmentNode, BlockKind, BlockNode, CoreBlockNode, CoreSkippedTokenNode,
@@ -1756,6 +1757,61 @@ impl OkIdentifierNode {
 }
 
 impl Node for OkIdentifierNode {
+    fn range(&self) -> TextRange {
+        self.0.as_ref().borrow().token.range()
+    }
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().borrow().token.start_line_number()
+    }
+}
+
+impl SelfKeywordNode {
+    pub fn new_with_ok(token: &OkTokenNode) -> Self {
+        let node = Rc::new(CoreSelfKeywordNode::OK(OkSelfKeywordNode::new(token)));
+        SelfKeywordNode(node)
+    }
+
+    pub fn get_ok(&self) -> Option<OkSelfKeywordNode> {
+        match &self.0.as_ref() {
+            CoreSelfKeywordNode::OK(ok_self_keyword_node) => Some(ok_self_keyword_node.clone()),
+            _ => None,
+        }
+    }
+
+    impl_core_ref!(CoreSelfKeywordNode);
+}
+default_errornous_node_impl!(SelfKeywordNode, CoreSelfKeywordNode);
+
+impl OkSelfKeywordNode {
+    pub fn new(token: &OkTokenNode) -> Self {
+        let node = Rc::new(RefCell::new(CoreOkSelfKeywordNode {
+            token: token.clone(),
+            decl: None,
+        }));
+        OkSelfKeywordNode(node)
+    }
+
+    pub fn token_value(&self, code: &Code) -> String {
+        self.0.as_ref().borrow().token.token_value(code)
+    }
+
+    pub fn bind_variable_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
+        self.0.as_ref().borrow_mut().decl = Some((symbol_data.clone(), depth));
+    }
+
+    pub fn symbol_data(&self) -> Option<SymbolData<VariableData>> {
+        match &self.0.as_ref().borrow().decl {
+            Some((symbol_data, _)) => return Some(symbol_data.clone()),
+            None => return None,
+        }
+    }
+
+    pub fn is_resolved(&self) -> bool {
+        self.0.as_ref().borrow().decl.is_some()
+    }
+}
+
+impl Node for OkSelfKeywordNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().borrow().token.range()
     }
