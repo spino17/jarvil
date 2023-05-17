@@ -336,13 +336,24 @@ impl TypeChecker {
                                 }
                             }
                             IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_Data) => {
+                                let type_decl_range = user_defined_type_symbol_Data.1;
+                                let name = ok_identifier.token_value(&self.code);
                                 match &*user_defined_type_symbol_Data.0.as_ref().borrow() {
                                     UserDefinedTypeData::STRUCT(struct_symbol_data) => {
                                         let constructor_meta_data =
                                             struct_symbol_data.constructor.clone();
+                                        let return_type = Type::new_with_struct(
+                                            name.to_string(),
+                                            &SymbolData::new(
+                                                UserDefinedTypeData::STRUCT(
+                                                    struct_symbol_data.clone(),
+                                                ),
+                                                type_decl_range,
+                                            ),
+                                        );
                                         (
                                             CallableParamsData::OTHER(constructor_meta_data.params),
-                                            constructor_meta_data.return_type,
+                                            return_type,
                                         )
                                     }
                                     UserDefinedTypeData::LAMBDA(_) => {

@@ -19,6 +19,7 @@ pub enum Diagnostics {
     InvalidLValue(InvalidLValueError),
     InvalidRLambda(InvalidRLambdaError),
     IdentifierAlreadyDeclared(IdentifierAlreadyDeclaredError),
+    ConstructorNotFoundInsideStructDeclaration(ConstructorNotFoundInsideStructDeclarationError),
     IdentifierFoundInNonLocals(IdentifierFoundInNonLocalsError),
     IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
@@ -56,6 +57,9 @@ impl Diagnostics {
             Diagnostics::InvalidLValue(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InvalidRLambda(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierAlreadyDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::ConstructorNotFoundInsideStructDeclaration(diagonstic) => {
+                Report::new(diagonstic.clone())
+            }
             Diagnostics::IdentifierNotFoundInAnyNamespace(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
@@ -332,6 +336,12 @@ impl IdentifierAlreadyDeclaredError {
                     identifier_kind
                 )
             }
+            IdentifierKind::METHOD => {
+                format!("all methods of struct should have distinct names")
+            }
+            IdentifierKind::CONSTRUCTOR => {
+                format!("constructor is not allowed to be redeclared")
+            }
         };
         IdentifierAlreadyDeclaredError {
             identifier_kind,
@@ -361,6 +371,30 @@ impl IdentifierNotDeclaredError {
             span: range_to_span(range).into(),
             help: Some(
                 "identifiers are declared in one of the three namespaces: variables, functions and types"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("constructor not found")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct ConstructorNotFoundInsideStructDeclarationError {
+    #[label("constructor definition not found inside struct declaration")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl ConstructorNotFoundInsideStructDeclarationError {
+    pub fn new(range: TextRange) -> Self {
+        ConstructorNotFoundInsideStructDeclarationError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "struct declaration should always have constructor definition with signature: `def __init__(<params>) -> <struct_name>`"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()

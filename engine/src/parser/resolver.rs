@@ -4,8 +4,9 @@ use crate::ast::ast::{
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
-    IdentifierFoundInNonLocalsError, IdentifierNotFoundInAnyNamespaceError,
-    MoreThanMaxLimitParamsPassedError, SelfNotFoundError, VariableReferencedBeforeAssignmentError,
+    ConstructorNotFoundInsideStructDeclarationError, IdentifierFoundInNonLocalsError,
+    IdentifierNotFoundInAnyNamespaceError, MoreThanMaxLimitParamsPassedError, SelfNotFoundError,
+    VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::core::VariableLookupResult;
@@ -35,7 +36,7 @@ use crate::{
     },
     types::core::Type,
 };
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::RefCell;
 use std::{rc::Rc, vec};
 use text_size::TextRange;
@@ -554,6 +555,20 @@ impl Resolver {
         let mut class_methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> =
             FxHashMap::default();
 
+        fn is_already_a_method(
+            methods: &FxHashMap<Rc<String>, (FunctionData, TextRange)>,
+            class_methods: &FxHashMap<Rc<String>, (FunctionData, TextRange)>,
+            name: &String,
+        ) -> Option<TextRange> {
+            match methods.get(name) {
+                Some((_, previous_decl_range)) => return Some(previous_decl_range.clone()),
+                None => match class_methods.get(name) {
+                    Some((_, previous_decl_range)) => return Some(previous_decl_range.clone()),
+                    None => return None,
+                },
+            }
+        }
+
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
             let stmt = match stmt.core_ref() {
@@ -589,9 +604,6 @@ impl Resolver {
                     }
                 },
                 CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrappewr) => {
-                    // if there is self in the body => method
-                    // if not self reference => class_method
-                    // if name of the method is `__init__` => constructor
                     self.set_curr_class_context_is_containing_self(false);
                     let core_func_decl = bounded_method_wrappewr.core_ref().func_decl.core_ref();
                     let (params_vec, _, return_type) = self.visit_callable_body(&core_func_decl.body);
@@ -600,31 +612,37 @@ impl Resolver {
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") {
                             match constructor {
-                                Some((_, previous_decl_range_)) => {
-                                    // TODO - raise error `constructor cannot be redeclared`
+                                Some((_, previous_decl_range)) => {
+                                    let err = IdentifierAlreadyDeclaredError::new(
+                                        IdentKind::CONSTRUCTOR,
+                                        method_name_str,
+                                        previous_decl_range,
+                                        ok_bounded_method_name.range()
+                                    );
+                                    self.errors.push(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
                                 None => {
                                     constructor = Some((func_meta_data, ok_bounded_method_name.range()));
+                                    // TODO - check that return type of constructor should be void
+                                    // raise error otherwise
                                 }
                             }
                         } else {
-                            // TODO - do related to methods and classmethods
-                            let is_containing_self = self.get_curr_class_context_is_containing_self();
-                            if is_containing_self {
-                                match methods.get(&method_name_str) {
-                                    Some((_, previous_decl_range)) => {
-                                        // TODO - raise error `previous declaration method already here`
-                                    },
-                                    None => {
-                                        methods.insert(Rc::new(method_name_str), (func_meta_data, ok_bounded_method_name.range()));
-                                    }
+                            match is_already_a_method(&methods, &class_methods, &method_name_str) {
+                                Some(previous_decl_range) => {
+                                    let err = IdentifierAlreadyDeclaredError::new(
+                                        IdentKind::METHOD,
+                                        method_name_str,
+                                        previous_decl_range,
+                                        ok_bounded_method_name.range()
+                                    );
+                                    self.errors.push(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
-                            } else {
-                                match class_methods.get(&method_name_str) {
-                                    Some((_, previous_decl_range)) => {
-                                        // TODO - raise error `previous declaration method already here`
-                                    },
-                                    None => {
+                                None => {
+                                    let is_containing_self = self.get_curr_class_context_is_containing_self();
+                                    if is_containing_self {
+                                        methods.insert(Rc::new(method_name_str), (func_meta_data, ok_bounded_method_name.range()));
+                                    } else {
                                         class_methods.insert(Rc::new(method_name_str), (func_meta_data, ok_bounded_method_name.range()));
                                     }
                                 }
@@ -638,7 +656,10 @@ impl Resolver {
         self.close_block();
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             if constructor.is_none() {
-                // TODO - raise error `no constructor found`
+                let err =
+                    ConstructorNotFoundInsideStructDeclarationError::new(ok_identifier.range());
+                self.errors
+                    .push(Diagnostics::ConstructorNotFoundInsideStructDeclaration(err));
             }
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "struct name should be resolved to `SymbolData<UserDefinedTypeData>`",
