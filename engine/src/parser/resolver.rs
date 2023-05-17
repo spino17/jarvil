@@ -1,11 +1,11 @@
 use crate::ast::ast::{
     CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreRVariableDeclarationNode,
-    FunctionDeclarationNode,
+    CoreSelfKeywordNode, FunctionDeclarationNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
     IdentifierFoundInNonLocalsError, IdentifierNotFoundInAnyNamespaceError,
-    MoreThanMaxLimitParamsPassedError, VariableReferencedBeforeAssignmentError,
+    MoreThanMaxLimitParamsPassedError, SelfNotFoundError, VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::core::VariableLookupResult;
@@ -120,6 +120,21 @@ impl Resolver {
                 return VariableLookupResult::NOT_INITIALIZED(decl_range)
             }
             VariableLookupResult::Err => return VariableLookupResult::Err,
+        }
+    }
+
+    pub fn try_resolving_self_keyword(
+        &mut self,
+        self_keyword: &OkSelfKeywordNode,
+    ) -> Option<(SymbolData<VariableData>, usize)> {
+        let name = Rc::new(self_keyword.token_value(&self.code));
+        assert!(name == Rc::new("self".to_string()));
+        match self.namespace.lookup_in_variables_namespace(&name) {
+            Some((symbol_data, depth)) => {
+                self_keyword.bind_decl(&symbol_data, depth);
+                return Some((symbol_data, depth));
+            }
+            None => return None,
         }
     }
 
@@ -704,7 +719,15 @@ impl Visitor for Resolver {
                         }
                     }
                     CoreAtomStartNode::SELF_KEYWORD(self_keyword) => {
-                        //todo!() // find self keyword in variable namespace and bind it
+                        if let CoreSelfKeywordNode::OK(ok_self_keyword) = self_keyword.core_ref() {
+                            match self.try_resolving_self_keyword(ok_self_keyword) {
+                                Some(_) => {}
+                                None => {
+                                    let err = SelfNotFoundError::new(ok_self_keyword.range());
+                                    self.errors.push(Diagnostics::SelfNotFound(err));
+                                }
+                            }
+                        }
                     }
                     CoreAtomStartNode::CALL(func_call) => {
                         let core_func_call = func_call.core_ref();

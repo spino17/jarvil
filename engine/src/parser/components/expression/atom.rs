@@ -126,59 +126,6 @@ pub fn atom_start(parser: &mut PackratParser) -> AtomStartNode {
 }
 
 pub fn atom(parser: &mut PackratParser) -> AtomNode {
-    // TODO - add case for `self` keyword also
-    /*
-    let leading_identifier_node = parser.expect_ident();
-    let token = &parser.curr_token();
-    match token.core_token {
-        CoreToken::LPAREN => {
-            let lparen_node = parser.expect("(");
-            let mut params_node: Option<&ParamsNode> = None;
-            let params: ParamsNode;
-            if !parser.check_curr_token(")") {
-                params = parser.params();
-                params_node = Some(&params);
-            }
-            let rparen_node = parser.expect(")");
-            let call_expr_node = CallExpressionNode::new(
-                &leading_identifier_node,
-                params_node,
-                &lparen_node,
-                &rparen_node,
-            );
-            let atom_start_node = AtomStartNode::new_with_function_call(&call_expr_node);
-            let atom_node = AtomNode::new_with_atom_start(&atom_start_node);
-            return parser.trailing_atom(atom_node);
-        }
-        CoreToken::DOUBLE_COLON => {
-            let double_colon_node = parser.expect("::");
-            let class_method_name = parser.expect_ident();
-            let lparen_node = parser.expect("(");
-            let mut params_node: Option<&ParamsNode> = None;
-            let params: ParamsNode;
-            if !parser.check_curr_token(")") {
-                params = parser.params();
-                params_node = Some(&params);
-            }
-            let rparen_node = parser.expect(")");
-            let atom_start_node = AtomStartNode::new_with_class_method_call(
-                &leading_identifier_node,
-                &class_method_name,
-                params_node,
-                &double_colon_node,
-                &lparen_node,
-                &rparen_node,
-            );
-            let atom_node = AtomNode::new_with_atom_start(&atom_start_node);
-            return parser.trailing_atom(atom_node);
-        }
-        _ => {
-            let atom_start_node = AtomStartNode::new_with_identifier(&leading_identifier_node);
-            let atom_node = AtomNode::new_with_atom_start(&atom_start_node);
-            return parser.trailing_atom(atom_node);
-        }
-    }
-     */
     let atom_start_node = parser.atom_start();
     let atom_node = AtomNode::new_with_atom_start(&atom_start_node);
     return parser.trailing_atom(atom_node);

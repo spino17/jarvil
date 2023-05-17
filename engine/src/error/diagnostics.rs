@@ -22,6 +22,7 @@ pub enum Diagnostics {
     IdentifierFoundInNonLocals(IdentifierFoundInNonLocalsError),
     IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
+    SelfNotFound(SelfNotFoundError),
     VariableReferencedBeforeAssignment(VariableReferencedBeforeAssignmentError),
     RightSideWithVoidTypeNotAllowed(RightSideWithVoidTypeNotAllowedError),
     MoreParamsCount(MoreParamsCountError),
@@ -62,6 +63,7 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::SelfNotFound(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::VariableReferencedBeforeAssignment(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
@@ -361,6 +363,30 @@ impl IdentifierNotDeclaredError {
                 .style(Style::new().yellow())
                 .to_string()
             )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("`self` is not declared in the scope")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct SelfNotFoundError {
+    #[label("not found in the scope")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl SelfNotFoundError {
+    pub fn new(range: TextRange) -> Self {
+        SelfNotFoundError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "`self` should only be used inside a class scope"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }
