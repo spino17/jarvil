@@ -19,7 +19,7 @@ pub fn is_statement_starting_with(token: &Token) -> bool {
     }
 }
 
-pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 10] = [
+pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 8] = [
     "let",
     "def",
     "for",
@@ -27,8 +27,6 @@ pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 10] = [
     "if",
     "type",
     "interface",
-    "impl",
-    IDENTIFIER,
     "<expression>",
 ];
 
@@ -59,7 +57,6 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
             StatementNode::new_with_type_declaration(&type_decl_node)
         }
         CoreToken::INTERFACE_KEYWORD => todo!(),
-        CoreToken::IMPL => todo!(),
         CoreToken::RETURN => {
             let return_node = parser.expect("return");
             let token = &parser.curr_token();
@@ -99,7 +96,7 @@ pub fn stmt(parser: &mut PackratParser) -> StatementNode {
     statement_node
 }
 
-pub const STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS: [&'static str; 11] = [
+pub const STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS: [&'static str; 9] = [
     "let",
     "def",
     "for",
@@ -107,8 +104,6 @@ pub const STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS: [&'static str; 11
     "if",
     "type",
     "interface",
-    "impl",
-    IDENTIFIER,
     "<expression>",
     "return",
 ];
@@ -121,6 +116,7 @@ pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
 }
 
 pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {
+    // TODO - add the case for parsing `def` method defination also
     let name_type_spec_node = parser.name_type_spec();
     let newline_node = parser.expect_terminators();
     let struct_stmt = StructStatementNode::new(&name_type_spec_node, &newline_node);
