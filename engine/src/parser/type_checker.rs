@@ -369,7 +369,7 @@ impl TypeChecker {
                                     .borrow()
                                     .get(&class_method_name)
                                 {
-                                    Some(func_data) => {
+                                    Some((func_data, _)) => {
                                         let expected_params = func_data.params.clone();
                                         let return_type = func_data.return_type.clone();
                                         let result = self.check_params_type_and_count(
@@ -511,7 +511,7 @@ impl TypeChecker {
                                 )
                                 .try_method(&Rc::new(method_name))
                             {
-                                Some(func_data) => {
+                                Some((func_data, _)) => {
                                     let expected_params = &func_data.params;
                                     let return_type = &func_data.return_type;
                                     let result = self.check_params_type_and_count(

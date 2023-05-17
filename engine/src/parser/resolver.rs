@@ -541,8 +541,8 @@ impl Resolver {
 
         let mut fields_map: FxHashMap<Rc<String>, (Type, TextRange)> = FxHashMap::default();
         let mut constructor: FunctionData = FunctionData::default();
-        let mut methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
-        let mut class_methods: FxHashMap<Rc<String>, FunctionData> = FxHashMap::default();
+        let mut methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> = FxHashMap::default();
+        let mut class_methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> = FxHashMap::default();
 
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
@@ -579,7 +579,7 @@ impl Resolver {
                     }
                 },
                 CoreStatementNode::FUNCTION_DECLARATION(method_decl) => {
-                    // todo!()
+                    todo!()
                 }
                 _ => unreachable!("statements other than `StructStatementNode` are not allowed in struct declaration block"),
             }

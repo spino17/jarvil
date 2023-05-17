@@ -54,8 +54,8 @@ impl UserDefinedTypeData {
 pub struct StructData {
     pub fields: Rc<FxHashMap<Rc<String>, (Type, TextRange)>>,
     pub constructor: (FunctionData, bool), // bool field is `is_constructor_set` to prevent redeclaration of constructor
-    pub methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
-    pub class_methods: Rc<RefCell<FxHashMap<Rc<String>, FunctionData>>>,
+    pub methods: Rc<RefCell<FxHashMap<Rc<String>, (FunctionData, TextRange)>>>,
+    pub class_methods: Rc<RefCell<FxHashMap<Rc<String>, (FunctionData, TextRange)>>>,
 }
 
 impl StructData {
@@ -78,14 +78,14 @@ impl StructData {
         }
     }
 
-    pub fn try_method(&self, method_name: &Rc<String>) -> Option<FunctionData> {
+    pub fn try_method(&self, method_name: &Rc<String>) -> Option<(FunctionData, TextRange)> {
         match self.methods.as_ref().borrow().get(method_name) {
             Some(func_data) => Some(func_data.clone()),
             None => None,
         }
     }
 
-    pub fn try_class_method(&self, class_method_name: &Rc<String>) -> Option<FunctionData> {
+    pub fn try_class_method(&self, class_method_name: &Rc<String>) -> Option<(FunctionData, TextRange)> {
         match self.class_methods.as_ref().borrow().get(class_method_name) {
             Some(func_data) => Some(func_data.clone()),
             None => None,
