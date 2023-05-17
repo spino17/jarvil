@@ -8,12 +8,12 @@ use crate::{
             BinaryExpressionNode, BlockNode, CallableBodyNode, CallablePrototypeNode,
             ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
             CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode,
-            CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode,
-            CoreStatementNode, CoreTokenNode, CoreUnaryExpressionNode, ExpressionNode,
-            LambdaDeclarationNode, NameTypeSpecsNode, Node, OnlyUnaryExpressionNode, ParamsNode,
-            RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, StatementNode,
-            TokenNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-            VariableDeclarationNode,
+            CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CoreUnaryExpressionNode, ExpressionNode, LambdaDeclarationNode, NameTypeSpecsNode,
+            Node, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
+            ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
+            UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -285,6 +285,20 @@ impl TypeChecker {
                 }
                 _ => Type::new_with_unknown(),
             },
+            CoreAtomStartNode::SELF_KEYWORD(self_keyword) => {
+                let core_self_keyword = self_keyword.core_ref();
+                match core_self_keyword {
+                    CoreSelfKeywordNode::OK(ok_self_keyword) => {
+                        match ok_self_keyword.symbol_data() {
+                            Some(symbol_data) => {
+                                return symbol_data.0.as_ref().borrow().data_type.clone()
+                            }
+                            None => return Type::new_with_unknown(),
+                        }
+                    }
+                    _ => Type::new_with_unknown(),
+                }
+            }
             CoreAtomStartNode::CALL(call_expr) => {
                 let core_call_expr = call_expr.core_ref();
                 let func_name = &core_call_expr.function_name;

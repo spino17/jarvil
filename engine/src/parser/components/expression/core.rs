@@ -23,7 +23,7 @@ pub fn is_expression_starting_with(token: &Token) -> bool {
     }
 }
 
-pub const EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 10] =
+pub const EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 11] =
     UNARY_EXPRESSION_STARTING_SYMBOLS;
 
 pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
@@ -47,7 +47,7 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
     }
 }
 
-pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10] = [
+pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 11] = [
     "+",
     "-",
     NOT,
@@ -57,6 +57,7 @@ pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10] = [
     FLOATING_POINT_NUMBER,
     LITERAL,
     IDENTIFIER,
+    "self",
     "(",
 ];
 

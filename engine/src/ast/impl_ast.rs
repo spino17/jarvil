@@ -1508,6 +1508,11 @@ impl AtomStartNode {
         AtomStartNode(node)
     }
 
+    pub fn new_with_self_keyword(self_keyword: &SelfKeywordNode) -> Self {
+        let node = Rc::new(CoreAtomStartNode::SELF_KEYWORD(self_keyword.clone()));
+        AtomStartNode(node)
+    }
+
     pub fn new_with_function_call(call_expr: &CallExpressionNode) -> Self {
         let node = Rc::new(CoreAtomStartNode::CALL(call_expr.clone()));
         AtomStartNode(node)
@@ -1537,6 +1542,7 @@ impl AtomStartNode {
     pub fn is_valid_l_value(&self) -> bool {
         match &self.0.as_ref() {
             CoreAtomStartNode::IDENTIFIER(_) => true,
+            CoreAtomStartNode::SELF_KEYWORD(_) => true,
             _ => false,
         }
     }
@@ -1795,7 +1801,7 @@ impl OkSelfKeywordNode {
         self.0.as_ref().borrow().token.token_value(code)
     }
 
-    pub fn bind_variable_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
+    pub fn bind_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
         self.0.as_ref().borrow_mut().decl = Some((symbol_data.clone(), depth));
     }
 

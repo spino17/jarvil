@@ -703,6 +703,9 @@ impl Visitor for Resolver {
                             }
                         }
                     }
+                    CoreAtomStartNode::SELF_KEYWORD(self_keyword) => {
+                        todo!() // find self keyword in variable namespace and bind it
+                    }
                     CoreAtomStartNode::CALL(func_call) => {
                         let core_func_call = func_call.core_ref();
                         if let CoreIdentifierNode::OK(ok_identifier) =
