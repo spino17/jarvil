@@ -528,7 +528,8 @@ impl Resolver {
         let mut methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<Rc<String>, (FunctionData, TextRange)> =
             FxHashMap::default();
-        let mut is_constructor_set = false;
+        // let mut is_constructor_set = false;
+        let mut construct_range: Option<TextRange> = None;
 
         let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
@@ -574,11 +575,14 @@ impl Resolver {
                         let func_meta_data = FunctionData::new(params_vec, return_type);
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") {
-                            if is_constructor_set {
-                                // TODO - raise error `constructor cannot be redeclared`
-                            } else {
-                                is_constructor_set = true;
-                                constructor = func_meta_data;
+                            match construct_range {
+                                Some(previous_decl_range) => {
+                                    // TODO - raise error `constructor cannot be redeclared`
+                                }
+                                None => {
+                                    construct_range = Some(ok_bounded_method_name.range());
+                                    constructor = func_meta_data;
+                                }
                             }
                         } else {
                             // TODO - do related to methods and classmethods
@@ -589,8 +593,7 @@ impl Resolver {
             }
         }
         self.close_block();
-        // TODO - constructor should always be declared with name `__init__`
-        if !is_constructor_set {
+        if construct_range.is_none() {
             // TODO - raise error `no constructor found`
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
