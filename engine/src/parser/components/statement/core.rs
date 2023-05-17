@@ -1,5 +1,4 @@
 use crate::ast::ast::{CallableKind, FunctionDeclarationNode, StatementNode, StructStatementNode};
-use crate::constants::common::IDENTIFIER;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::PackratParser;
@@ -13,8 +12,6 @@ pub fn is_statement_starting_with(token: &Token) -> bool {
         CoreToken::IF => true,
         CoreToken::TYPE_KEYWORD => true,
         CoreToken::INTERFACE_KEYWORD => true,
-        CoreToken::IMPL => true,
-        CoreToken::IDENTIFIER => true,
         _ => is_expression_starting_with(token),
     }
 }
