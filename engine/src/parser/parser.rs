@@ -4,15 +4,14 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{
-    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
-    CallablePrototypeNode, ExpressionNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
-    Node, OkTokenNode, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
-    TypeDeclarationNode, TypeExpressionNode, TypeTupleNode, UnaryExpressionNode,
-    VariableDeclarationNode,
+    AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockKind, BlockNode,
+    CallableBodyNode, CallablePrototypeNode, ErrornousNode, ExpressionNode, IdentifierNode,
+    NameTypeSpecNode, NameTypeSpecsNode, Node, OkSelfKeywordNode, OkTokenNode, ParamsNode,
+    SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
+    TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
 };
-use crate::ast::ast::{BlockKind, ErrornousNode};
 use crate::code::Code;
-use crate::constants::common::{ENDMARKER, IDENTIFIER};
+use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::{
     Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidRLambdaError,
@@ -235,6 +234,19 @@ impl PackratParser {
         }
     }
 
+    pub fn expect_self(&mut self) -> SelfKeywordNode {
+        let token = self.curr_token();
+        let symbol = SELF;
+        if token.is_eq(symbol) {
+            self.scan_next_token();
+            let ok_token_node = OkTokenNode::new(&token);
+            SelfKeywordNode::new_with_ok(&ok_token_node)
+        } else {
+            self.log_missing_token_error(&[symbol], &token);
+            SelfKeywordNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
+        }
+    }
+
     pub fn expects(&mut self, symbols: &[&'static str]) -> TokenNode {
         let token = self.curr_token();
         for &symbol in symbols {
@@ -408,6 +420,10 @@ impl PackratParser {
 
     pub fn atom(&mut self) -> AtomNode {
         components::expression::atom::atom(self)
+    }
+
+    pub fn atom_start(&mut self) -> AtomStartNode {
+        components::expression::atom::atom_start(self)
     }
 
     pub fn params(&mut self) -> ParamsNode {
