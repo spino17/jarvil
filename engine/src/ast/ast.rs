@@ -297,6 +297,7 @@ pub struct CoreArrayTypeNode {
 }
 
 // DICTIONARY_TYPE
+// `{` <key_type> `:` <value_type> `}`
 #[derive(Debug, Clone)]
 pub struct CoreHashMapTypeNode {
     pub lcurly: TokenNode,
@@ -313,7 +314,7 @@ pub struct CoreUserDefinedTypeNode {
 }
 
 // CALLABLE_PROTOTYPE
-// `(` [<params>] `)` [`->`] [<return_type>]
+// `(` [<params>] `)` [`->` <return_type>]
 #[derive(Debug, Clone)]
 pub struct CoreCallablePrototypeNode {
     pub lparen: TokenNode,

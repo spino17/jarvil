@@ -30,7 +30,6 @@ pub fn get_newline() -> &'static str {
 }
 
 pub struct PythonCodeGenerator {
-    indent_level: usize,
     generate_code: String,
     code: Code,
 }
@@ -38,7 +37,6 @@ pub struct PythonCodeGenerator {
 impl PythonCodeGenerator {
     pub fn new(code: &Code) -> PythonCodeGenerator {
         PythonCodeGenerator {
-            indent_level: 0,
             generate_code: "".to_string(),
             code: code.clone(),
         }
@@ -50,14 +48,6 @@ impl PythonCodeGenerator {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.generate_code
-    }
-
-    pub fn open_block(&mut self) {
-        self.indent_level = self.indent_level + 1;
-    }
-
-    pub fn close_block(&mut self) {
-        self.indent_level = self.indent_level - 1;
     }
 
     pub fn add_str_to_python_code(&mut self, str: &str) {
@@ -87,23 +77,10 @@ impl PythonCodeGenerator {
 impl Visitor for PythonCodeGenerator {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
-            ASTNode::BLOCK(block) => {
-                self.open_block();
-                let core_block = block.0.as_ref().borrow();
-                self.print_token_node(&core_block.newline);
-                for stmt in &core_block.stmts {
-                    self.walk_stmt_indent_wrapper(stmt);
-                }
-                self.close_block();
-                return None;
-            }
             ASTNode::STATEMENT_INDENT_WRAPPER(stmt_wrapper) => {
                 let core_stmt_wrapper = stmt_wrapper.core_ref();
                 match core_stmt_wrapper {
                     CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(ok_stmt) => {
-                        //self.add_str_to_python_code(&get_whitespaces_from_indent_level(
-                        //    self.indent_level,
-                        //));
                         self.walk_stmt(ok_stmt);
                     }
                     CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(extra_newlines) => {
@@ -127,12 +104,6 @@ impl Visitor for PythonCodeGenerator {
                 self.print_token(&token.core_ref().token);
                 return None;
             }
-            /*
-            ASTNode::STATEMENT(stmt) => {
-                self.print_stmt(stmt);
-                return None;
-            }
-             */
             _ => Some(()),
         }
     }
