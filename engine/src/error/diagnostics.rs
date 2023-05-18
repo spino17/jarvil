@@ -46,6 +46,7 @@ pub enum Diagnostics {
     NoReturnStatementInFunction(NoReturnStatementInFunctionError),
     InvalidReturnStatement(InvalidReturnStatementError),
     MismatchedReturnType(MismatchedReturnTypeError),
+    NonHashableTypeInIndex(NonHashableTypeInIndexError),
 }
 
 impl Diagnostics {
@@ -102,6 +103,7 @@ impl Diagnostics {
             }
             Diagnostics::InvalidReturnStatement(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MismatchedReturnType(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NonHashableTypeInIndex(diagnostic) => Report::new(diagnostic.clone()),
         }
     }
 }
@@ -1030,6 +1032,30 @@ impl MismatchedReturnTypeError {
             expected_type: expected_type.to_string(),
             received_type: received_type.to_string(),
             span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("non-hashable type found in hashmap index")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct NonHashableTypeInIndexError {
+    #[label("non-hashable type")]
+    pub index_span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl NonHashableTypeInIndexError {
+    pub fn new(index_span: TextRange) -> Self {
+        NonHashableTypeInIndexError {
+            index_span: range_to_span(index_span).into(),
+            help: Some(
+                "only `int`, `float` and `str` are hashable types"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }

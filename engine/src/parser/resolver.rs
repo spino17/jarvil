@@ -1,15 +1,17 @@
 use crate::ast::ast::{
     CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreRVariableDeclarationNode,
-    CoreSelfKeywordNode, FunctionWrapperNode, OkSelfKeywordNode,
+    CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
     ConstructorNotFoundInsideStructDeclarationError, IdentifierFoundInNonLocalsError,
     IdentifierNotFoundInAnyNamespaceError, MoreThanMaxLimitParamsPassedError,
-    NonVoidConstructorReturnTypeError, SelfNotFoundError, VariableReferencedBeforeAssignmentError,
+    NonHashableTypeInIndexError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
+    VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::core::VariableLookupResult;
+use crate::types::core::CoreType;
 use crate::{
     ast::{
         ast::{
@@ -272,7 +274,24 @@ impl Resolver {
 
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_before_resolved(&self.namespace, &self.code) {
-            TypeResolveKind::RESOLVED(type_obj) => type_obj,
+            TypeResolveKind::RESOLVED(type_obj) => match type_obj.0.as_ref() {
+                CoreType::HASHMAP(hashmap) => {
+                    let index_span = match type_expr.core_ref() {
+                        CoreTypeExpressionNode::HASHMAP(hashmap_type_expr) => {
+                            hashmap_type_expr.core_ref().key_type.range()
+                        }
+                        _ => unreachable!(),
+                    };
+                    if hashmap.key_type.is_hashable() {
+                        return type_obj;
+                    } else {
+                        let err = NonHashableTypeInIndexError::new(index_span);
+                        self.errors.push(Diagnostics::NonHashableTypeInIndex(err));
+                        return Type::new_with_unknown();
+                    }
+                }
+                _ => return type_obj,
+            },
             TypeResolveKind::UNRESOLVED(identifier) => {
                 let err = IdentifierNotDeclaredError::new(IdentKind::TYPE, identifier.range());
                 self.errors.push(Diagnostics::IdentifierNotDeclared(err));

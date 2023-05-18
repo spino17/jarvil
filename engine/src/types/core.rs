@@ -154,6 +154,13 @@ impl Type {
         }
     }
 
+    pub fn is_hashmap(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::HASHMAP(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_hashable(&self) -> bool {
         // `int`, `float`, `str` are only hashable types in python
         self.is_int() || self.is_float() || self.is_string()
