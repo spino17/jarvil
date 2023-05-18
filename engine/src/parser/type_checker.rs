@@ -198,8 +198,6 @@ impl TypeChecker {
     }
 
     pub fn is_indexable_with_type(&mut self, base_type: &Type, index_type: &Type) -> Option<Type> {
-        // TODO - type can be (array, int), (hashmap, any type given in the definition)
-        // also check if the key type is hashable or not
         match base_type.0.as_ref() {
             CoreType::ARRAY(array) => {
                 if index_type.is_int() {
@@ -528,45 +526,6 @@ impl TypeChecker {
                 let atom_type_obj = self.check_atom(atom);
                 let property = &core_property_access.propertry;
                 if let CoreIdentifierNode::OK(ok_identifier) = property.core_ref() {
-                    /*
-                    let property_name = Rc::new(ok_identifier.token_value(&self.code));
-                    match atom_type_obj.0.as_ref() {
-                        CoreType::STRUCT(struct_type) => {
-                            match struct_type
-                                .symbol_data
-                                .0
-                                .as_ref()
-                                .borrow()
-                                .struct_data(
-                                    STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
-                                )
-                                .try_field(&property_name)
-                            {
-                                Some((type_obj, _)) => return type_obj,
-                                None => {
-                                    let err = PropertyDoesNotExistError::new(
-                                        PropertyKind::FIELD,
-                                        atom_type_obj.clone(),
-                                        property.range(),
-                                        atom.range(),
-                                    );
-                                    self.errors.push(Diagnostics::PropertyDoesNotExist(err));
-                                    return Type::new_with_unknown();
-                                }
-                            }
-                        }
-                        _ => {
-                            let err = PropertyDoesNotExistError::new(
-                                PropertyKind::FIELD,
-                                atom_type_obj,
-                                property.range(),
-                                atom.range(),
-                            );
-                            self.errors.push(Diagnostics::PropertyDoesNotExist(err));
-                            return Type::new_with_unknown();
-                        }
-                    }
-                     */
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     match result {
                         StructPropertyCheckResult::PROPERTY_EXIST((_, type_obj)) => {
@@ -603,62 +562,6 @@ impl TypeChecker {
                 let method = &core_method_access.method_name;
                 let params = &core_method_access.params;
                 if let CoreIdentifierNode::OK(ok_identifier) = method.core_ref() {
-                    /*
-                    let method_name = ok_identifier.token_value(&self.code);
-                    match atom_type_obj.0.as_ref() {
-                        CoreType::STRUCT(struct_type) => {
-                            match struct_type
-                                .symbol_data
-                                .0
-                                .as_ref()
-                                .borrow()
-                                .struct_data(
-                                    STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
-                                )
-                                .try_method(&Rc::new(method_name))
-                            {
-                                Some((func_data, _)) => {
-                                    let expected_params = &func_data.params;
-                                    let return_type = &func_data.return_type;
-                                    let result = self.check_params_type_and_count(
-                                        CallableParamsData::OTHER(expected_params.clone()),
-                                        params,
-                                    );
-                                    match result {
-                                        ParamsTypeNCountResult::OK => return return_type.clone(),
-                                        _ => {
-                                            self.log_params_type_and_count_check_error(
-                                                method.range(),
-                                                result,
-                                            );
-                                            return Type::new_with_unknown();
-                                        }
-                                    }
-                                }
-                                None => {
-                                    let err = PropertyDoesNotExistError::new(
-                                        PropertyKind::METHOD,
-                                        atom_type_obj.clone(),
-                                        method.range(),
-                                        atom.range(),
-                                    );
-                                    self.errors.push(Diagnostics::PropertyDoesNotExist(err));
-                                    return Type::new_with_unknown();
-                                }
-                            }
-                        }
-                        _ => {
-                            let err = PropertyDoesNotExistError::new(
-                                PropertyKind::METHOD,
-                                atom_type_obj,
-                                method.range(),
-                                atom.range(),
-                            );
-                            self.errors.push(Diagnostics::PropertyDoesNotExist(err));
-                            return Type::new_with_unknown();
-                        }
-                    }
-                     */
                     // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
                     // (for example: a field with lambda type) and then it goes on to find it in methods.
                     // This is sync with what python does.
