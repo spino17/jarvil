@@ -7,7 +7,6 @@ macro_rules! impl_op_compatiblity {
             CoreType::STRUCT(struct_type) => struct_type.$t($u),
             CoreType::LAMBDA(lambda_type) => lambda_type.$t($u),
             CoreType::UNKNOWN => return None,
-            CoreType::NON_TYPED => return None,
             CoreType::VOID => return None,
         }
     };

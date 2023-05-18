@@ -209,7 +209,6 @@ impl TypeChecker {
                 }
             }
             CoreType::HASHMAP(hashmap) => {
-                // `int`, `float`, `str` are only hashable types in python
                 if index_type.is_eq(&hashmap.key_type) && index_type.is_hashable() {
                     return Some(hashmap.value_type.clone());
                 } else {

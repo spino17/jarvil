@@ -50,7 +50,6 @@ pub enum CoreType {
     LAMBDA(Lambda),
     ARRAY(Array),
     HASHMAP(HashMap),
-    NON_TYPED,
     UNKNOWN,
     VOID,
     // TODO - add below types also
@@ -156,6 +155,7 @@ impl Type {
     }
 
     pub fn is_hashable(&self) -> bool {
+        // `int`, `float`, `str` are only hashable types in python
         self.is_int() || self.is_float() || self.is_string()
     }
 
@@ -221,10 +221,6 @@ impl AbstractType for Type {
                 CoreType::UNKNOWN => true,
                 _ => false,
             },
-            CoreType::NON_TYPED => match base_type.0.as_ref() {
-                CoreType::NON_TYPED => true,
-                _ => false,
-            },
             CoreType::VOID => match base_type.0.as_ref() {
                 CoreType::VOID => true,
                 _ => false,
@@ -242,7 +238,6 @@ impl std::fmt::Display for Type {
             CoreType::ARRAY(array_type) => write!(f, "{}", array_type.to_string()),
             CoreType::HASHMAP(hashmap_type) => write!(f, "{}", hashmap_type.to_string()),
             CoreType::UNKNOWN => write!(f, "{}", UNKNOWN),
-            CoreType::NON_TYPED => write!(f, "{}", NON_TYPED),
             CoreType::VOID => write!(f, "()"),
         }
     }
