@@ -7,19 +7,20 @@ use super::ast::{
     CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
     CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode, CoreExpressionNode,
     CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
-    CoreIdentifierNode, CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode,
-    CoreInvalidLValueNode, CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode,
-    CoreMethodAccessNode, CoreMissingTokenNode, CoreNameTypeSpecNode, CoreNameTypeSpecsNode,
-    CoreOkAssignmentNode, CoreOkCallableBodyNode, CoreOkIdentifierNode,
-    CoreOkLambdaTypeDeclarationNode, CoreOkNameTypeSpecsNode, CoreOkParamsNode,
-    CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOkTypeTupleNode, CoreOnlyUnaryExpressionNode,
-    CoreParamsNode, CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
-    CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
-    CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
-    CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreTokenNode,
-    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
-    CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode,
-    FunctionDeclarationNode, FunctionWrapperNode, IdentifierNode, IncorrectlyIndentedStatementNode,
+    CoreHashMapTypeNode, CoreIdentifierNode, CoreIncorrectlyIndentedStatementNode,
+    CoreIndexAccessNode, CoreInvalidLValueNode, CoreLambdaDeclarationNode,
+    CoreLambdaTypeDeclarationNode, CoreMethodAccessNode, CoreMissingTokenNode,
+    CoreNameTypeSpecNode, CoreNameTypeSpecsNode, CoreOkAssignmentNode, CoreOkCallableBodyNode,
+    CoreOkIdentifierNode, CoreOkLambdaTypeDeclarationNode, CoreOkNameTypeSpecsNode,
+    CoreOkParamsNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOkTypeTupleNode,
+    CoreOnlyUnaryExpressionNode, CoreParamsNode, CoreParenthesisedExpressionNode,
+    CorePropertyAccessNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
+    CoreReturnStatementNode, CoreSelfKeywordNode, CoreSkippedTokenNode, CoreSkippedTokensNode,
+    CoreStatemenIndentWrapperNode, CoreStatementNode, CoreStructDeclarationNode,
+    CoreStructPropertyDeclarationNode, CoreTokenNode, CoreTypeDeclarationNode,
+    CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
+    CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
+    FunctionWrapperNode, HashMapTypeNode, IdentifierNode, IncorrectlyIndentedStatementNode,
     IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
     MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode,
     OkIdentifierNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode,
@@ -1000,6 +1001,84 @@ impl Node for ArrayTypeNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().lsquare.start_line_number()
+    }
+}
+
+impl HashMapTypeNode {
+    pub fn new(
+        lcurly: &TokenNode,
+        rcurly: &TokenNode,
+        colon: &TokenNode,
+        key_type: &TypeExpressionNode,
+        value_type: &TypeExpressionNode,
+    ) -> Self {
+        let node = Rc::new(CoreHashMapTypeNode {
+            lcurly: lcurly.clone(),
+            rcurly: rcurly.clone(),
+            colon: colon.clone(),
+            key_type: key_type.clone(),
+            value_type: value_type.clone(),
+        });
+        HashMapTypeNode(node)
+    }
+
+    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+        match self
+            .core_ref()
+            .key_type
+            .type_obj_before_resolved(scope, code)
+        {
+            TypeResolveKind::RESOLVED(key_type) => {
+                match self
+                    .core_ref()
+                    .value_type
+                    .type_obj_before_resolved(scope, code)
+                {
+                    TypeResolveKind::RESOLVED(value_type) => {
+                        TypeResolveKind::RESOLVED(Type::new_with_hashmap(&key_type, &value_type))
+                    }
+                    TypeResolveKind::UNRESOLVED(identifier_node) => {
+                        return TypeResolveKind::UNRESOLVED(identifier_node)
+                    }
+                    TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+                }
+            }
+            TypeResolveKind::UNRESOLVED(identifier_node) => {
+                return TypeResolveKind::UNRESOLVED(identifier_node)
+            }
+            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+        }
+    }
+
+    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+        match self.core_ref().key_type.type_obj_after_resolved(code) {
+            TypeResolveKind::RESOLVED(key_type) => {
+                match self.core_ref().value_type.type_obj_after_resolved(code) {
+                    TypeResolveKind::RESOLVED(value_type) => {
+                        TypeResolveKind::RESOLVED(Type::new_with_hashmap(&key_type, &value_type))
+                    }
+                    TypeResolveKind::UNRESOLVED(identifier_node) => {
+                        return TypeResolveKind::UNRESOLVED(identifier_node)
+                    }
+                    TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+                }
+            }
+            TypeResolveKind::UNRESOLVED(identifier_node) => {
+                return TypeResolveKind::UNRESOLVED(identifier_node)
+            }
+            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+        }
+    }
+
+    impl_core_ref!(CoreHashMapTypeNode);
+}
+
+impl Node for HashMapTypeNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().lcurly, self.0.as_ref().rcurly)
+    }
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().lcurly.start_line_number()
     }
 }
 

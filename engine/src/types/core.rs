@@ -1,3 +1,4 @@
+use super::hashmap::HashMap;
 use super::lambda::Lambda;
 use super::r#struct::Struct;
 use crate::constants::common::{BOOL, NON_TYPED, UNKNOWN};
@@ -48,6 +49,7 @@ pub enum CoreType {
     STRUCT(Struct),
     LAMBDA(Lambda),
     ARRAY(Array),
+    HASHMAP(HashMap),
     NON_TYPED,
     UNKNOWN,
     VOID,
@@ -80,6 +82,12 @@ impl Type {
 
     pub fn new_with_array(element_type: &Type) -> Type {
         Type(Rc::new(CoreType::ARRAY(Array::new(element_type))))
+    }
+
+    pub fn new_with_hashmap(key_type: &Type, value_type: &Type) -> Type {
+        Type(Rc::new(CoreType::HASHMAP(HashMap::new(
+            key_type, value_type,
+        ))))
     }
 
     pub fn new_with_unknown() -> Type {
@@ -204,6 +212,7 @@ impl AbstractType for Type {
             CoreType::STRUCT(struct_type) => struct_type.is_eq(base_type),
             CoreType::LAMBDA(lambda_type) => lambda_type.is_eq(base_type),
             CoreType::ARRAY(array_type) => array_type.is_eq(base_type),
+            CoreType::HASHMAP(hashmap_type) => hashmap_type.is_eq(base_type),
             CoreType::UNKNOWN => match base_type.0.as_ref() {
                 CoreType::UNKNOWN => true,
                 _ => false,
@@ -227,6 +236,7 @@ impl std::fmt::Display for Type {
             CoreType::STRUCT(struct_type) => write!(f, "{}", struct_type.to_string()),
             CoreType::LAMBDA(lambda_type) => write!(f, "{}", lambda_type.to_string()),
             CoreType::ARRAY(array_type) => write!(f, "{}", array_type.to_string()),
+            CoreType::HASHMAP(hashmap_type) => write!(f, "{}", hashmap_type.to_string()),
             CoreType::UNKNOWN => write!(f, "{}", UNKNOWN),
             CoreType::NON_TYPED => write!(f, "{}", NON_TYPED),
             CoreType::VOID => write!(f, "()"),

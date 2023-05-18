@@ -294,6 +294,16 @@ pub struct CoreArrayTypeNode {
     pub sub_type: TypeExpressionNode,
 }
 
+// DICTIONARY_TYPE
+#[derive(Debug, Clone)]
+pub struct CoreHashMapTypeNode {
+    pub lcurly: TokenNode,
+    pub rcurly: TokenNode,
+    pub colon: TokenNode,
+    pub key_type: TypeExpressionNode,
+    pub value_type: TypeExpressionNode,
+}
+
 // USER_DEFINED_TYPE
 #[derive(Debug, Clone)]
 pub struct CoreUserDefinedTypeNode {
@@ -659,6 +669,8 @@ pub struct TypeExpressionNode(pub Rc<CoreTypeExpressionNode>);
 pub struct AtomicTypeNode(pub Rc<CoreAtomicTypeNode>);
 #[derive(Debug, Clone)]
 pub struct ArrayTypeNode(pub Rc<CoreArrayTypeNode>);
+#[derive(Debug, Clone)]
+pub struct HashMapTypeNode(pub Rc<CoreHashMapTypeNode>);
 #[derive(Debug, Clone)]
 pub struct UserDefinedTypeNode(pub Rc<CoreUserDefinedTypeNode>);
 #[derive(Debug, Clone)]
