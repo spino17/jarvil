@@ -45,7 +45,7 @@ use crate::{
     },
     types::core::{AbstractType, CoreType, Type},
 };
-use std::{ops::Index, rc::Rc};
+use std::rc::Rc;
 use text_size::TextRange;
 
 use super::resolver::Resolver;
