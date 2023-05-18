@@ -1,7 +1,8 @@
 use crate::{
     ast::{
         ast::{
-            ASTNode, BlockNode, CallablePrototypeNode, CoreAssignmentNode,
+            ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
+            ClassMethodCallNode, CoreAssignmentNode, CoreCallableBodyNode,
             CoreFunctionDeclarationNode, CoreIdentifierNode, CoreLambdaDeclarationNode,
             CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
             CoreTokenNode, CoreTypeDeclarationNode, ExpressionStatementNode,
@@ -198,6 +199,71 @@ impl PythonCodeGenerator {
             CoreTypeDeclarationNode::MISSING_TOKENS(_) => unreachable!(),
         }
     }
+
+    pub fn print_class_method_call(&mut self, class_method_call: &ClassMethodCallNode) {
+        let core_class_method_call = class_method_call.core_ref();
+        let lparen = &core_class_method_call.lparen;
+        let rparen = &core_class_method_call.rparen;
+        let class_name = &core_class_method_call.class_name;
+        let class_method_name = &core_class_method_call.class_method_name;
+        let params = &core_class_method_call.params;
+        self.print_identifier(class_name);
+        self.add_str_to_python_code(".");
+        self.print_identifier(class_method_name);
+        self.print_token_node(lparen);
+        if let Some(params) = params {
+            self.walk_params(params);
+        }
+        self.print_token_node(rparen);
+    }
+
+    pub fn print_bounded_method_wrapper(
+        &mut self,
+        bounded_method_wrapper: &BoundedMethodWrapperNode,
+    ) {
+        let bounded_kind = match &bounded_method_wrapper.0.as_ref().borrow().bounded_kind {
+            Some(bounded_kind) => bounded_kind.clone(),
+            None => unreachable!(),
+        };
+        match bounded_kind {
+            BoundedMethodKind::CLASS_METHOD => {
+                self.walk_func_decl(&bounded_method_wrapper.0.as_ref().borrow().func_decl);
+                return;
+            }
+            BoundedMethodKind::METHOD | BoundedMethodKind::CONSTRUCTOR => {
+                let core_func_decl = &bounded_method_wrapper
+                    .0
+                    .as_ref()
+                    .borrow()
+                    .func_decl
+                    .core_ref()
+                    .clone();
+                let def_keyword = &core_func_decl.def_keyword;
+                let name = &core_func_decl.name;
+                let body = match core_func_decl.body.core_ref() {
+                    CoreCallableBodyNode::OK(ok_callable_body) => ok_callable_body.core_ref(),
+                    _ => unreachable!(),
+                };
+                let colon = &body.colon;
+                let block = &body.block;
+                let prototype = body.prototype.core_ref();
+                let lparen = &prototype.lparen;
+                let rparen = &prototype.rparen;
+                let params = &prototype.params;
+
+                self.print_token_node(def_keyword);
+                self.print_identifier(name);
+                self.print_token_node(lparen);
+                self.add_str_to_python_code("self, ");
+                if let Some(params) = params {
+                    self.walk_name_type_specs(params);
+                }
+                self.print_token_node(rparen);
+                self.print_token_node(colon);
+                self.walk_block(block);
+            }
+        };
+    }
 }
 
 impl Visitor for PythonCodeGenerator {
@@ -238,6 +304,10 @@ impl Visitor for PythonCodeGenerator {
                 return None;
             }
             ASTNode::STRUCT_PROPERTY_DECLARATION(_) => return None,
+            ASTNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+                self.print_bounded_method_wrapper(bounded_method_wrapper);
+                return None;
+            }
             ASTNode::CALLABLE_PROTOTYPE(callable_prototype) => {
                 self.print_callable_prototype(callable_prototype);
                 return None;
@@ -248,9 +318,12 @@ impl Visitor for PythonCodeGenerator {
                 self.print_identifier(name);
                 return None;
             }
-            // Add callable_prototype to remove type annotations from arguments
             ASTNode::TYPE_DECLARATION(type_decl) => {
                 self.print_type_decl(type_decl);
+                return None;
+            }
+            ASTNode::CLASS_METHOD_CALL(class_method_call) => {
+                self.print_class_method_call(class_method_call);
                 return None;
             }
             ASTNode::IDENTIFIER(identifier) => {
