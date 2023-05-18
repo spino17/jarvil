@@ -642,6 +642,7 @@ impl BoundedMethodWrapperNode {
     pub fn new(func_decl: &FunctionDeclarationNode) -> Self {
         let node = Rc::new(CoreBoundedMethodWrapperNode {
             func_decl: func_decl.clone(),
+            bounded_kind: None
         });
         BoundedMethodWrapperNode(node)
     }

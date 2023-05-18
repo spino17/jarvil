@@ -357,6 +357,7 @@ pub struct CoreFunctionWrapperNode {
 #[derive(Debug, Clone)]
 pub struct CoreBoundedMethodWrapperNode {
     pub func_decl: FunctionDeclarationNode,
+    pub bounded_kind: Option<BoundedMethodKind>
 }
 
 // LAMBDA_DECLARATION
@@ -765,6 +766,13 @@ pub enum TypeResolveKind {
     RESOLVED(Type),
     UNRESOLVED(OkIdentifierNode),
     INVALID,
+}
+
+#[derive(Debug, Clone)]
+pub enum BoundedMethodKind {
+    CONSTRUCTOR,
+    METHOD,
+    CLASS_METHOD
 }
 
 #[derive(Debug, Clone, PartialEq)]
