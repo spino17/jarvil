@@ -893,10 +893,26 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
+    pub fn new_with_hashmap_type(
+        lcurly: &TokenNode,
+        rcurly: &TokenNode,
+        colon: &TokenNode,
+        key_type: &TypeExpressionNode,
+        value_type: &TypeExpressionNode,
+    ) -> Self {
+        let node = Rc::new(CoreTypeExpressionNode::HASHMAP(HashMapTypeNode::new(
+            lcurly, rcurly, colon, key_type, value_type,
+        )));
+        TypeExpressionNode(node)
+    }
+
     pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
         match self.core_ref() {
             CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_before_resolved(scope, code),
             CoreTypeExpressionNode::ARRAY(array) => array.type_obj_before_resolved(scope, code),
+            CoreTypeExpressionNode::HASHMAP(hashmap) => {
+                hashmap.type_obj_before_resolved(scope, code)
+            }
             CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
                 user_defined.type_obj_before_resolved(scope, code)
             }
@@ -908,6 +924,7 @@ impl TypeExpressionNode {
         match self.core_ref() {
             CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_after_resolved(code),
             CoreTypeExpressionNode::ARRAY(array) => array.type_obj_after_resolved(code),
+            CoreTypeExpressionNode::HASHMAP(hashmap) => hashmap.type_obj_after_resolved(code),
             CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
                 user_defined.type_obj_after_resolved(code)
             }

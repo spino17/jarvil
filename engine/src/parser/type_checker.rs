@@ -199,6 +199,7 @@ impl TypeChecker {
 
     pub fn is_indexable_with_type(&mut self, base_type: &Type, index_type: &Type) -> Option<Type> {
         // TODO - type can be (array, int), (hashmap, any type given in the definition)
+        // also check if the key type is hashable or not
         match base_type.0.as_ref() {
             CoreType::ARRAY(array) => {
                 if index_type.is_int() {

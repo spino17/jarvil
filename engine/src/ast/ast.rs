@@ -61,6 +61,7 @@ pub enum ASTNode {
     TYPE_EXPRESSION(TypeExpressionNode),
     ATOMIC_TYPE(AtomicTypeNode),
     ARRAY_TYPE(ArrayTypeNode),
+    HASHMAP_TYPE(HashMapTypeNode),
     USER_DEFINED_TYPE(UserDefinedTypeNode),
 
     // Callable
@@ -275,6 +276,7 @@ pub enum CoreTypeExpressionNode {
     ATOMIC(AtomicTypeNode),
     USER_DEFINED(UserDefinedTypeNode),
     ARRAY(ArrayTypeNode),
+    HASHMAP(HashMapTypeNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 

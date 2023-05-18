@@ -8,16 +8,16 @@ use crate::ast::ast::{
     CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
     CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
     ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode,
-    IdentifierNode, IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
-    LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode,
-    NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode, OkIdentifierNode,
-    OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode, OkSelfKeywordNode, OkTokenNode,
-    OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
-    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
-    SelfKeywordNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
-    StructDeclarationNode, StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode,
-    TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode,
-    VariableDeclarationNode,
+    HashMapTypeNode, IdentifierNode, IncorrectlyIndentedStatementNode, IndexAccessNode,
+    InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
+    MissingTokenNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode,
+    OkIdentifierNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode,
+    OkSelfKeywordNode, OkTokenNode, OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, SkippedTokensNode,
+    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    TokenNode, TypeDeclarationNode, TypeExpressionNode, TypeTupleNode, UnaryExpressionNode,
+    UserDefinedTypeNode, VariableDeclarationNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -178,6 +178,7 @@ pub trait Visitor {
         new_with_UserDefinedTypeNode
     );
     impl_node_walk!(walk_array_type, ArrayTypeNode, new_with_ArrayTypeNode);
+    impl_node_walk!(walk_hashmap_type, HashMapTypeNode, new_with_HashMapTypeNode);
     impl_node_walk!(
         walk_unary_expression,
         UnaryExpressionNode,
@@ -546,6 +547,9 @@ pub trait Visitor {
                     CoreTypeExpressionNode::ARRAY(array_type) => {
                         self.walk_array_type(array_type);
                     }
+                    CoreTypeExpressionNode::HASHMAP(hashmap_type) => {
+                        self.walk_hashmap_type(hashmap_type);
+                    }
                     CoreTypeExpressionNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
@@ -560,6 +564,14 @@ pub trait Visitor {
                 self.walk_token(&core_array_type.lsquare);
                 self.walk_type_expression(&core_array_type.sub_type);
                 self.walk_token(&core_array_type.rsquare);
+            }
+            ASTNode::HASHMAP_TYPE(hashmap_type_node) => {
+                let core_hashmap_type_node = hashmap_type_node.core_ref();
+                self.walk_token(&core_hashmap_type_node.lcurly);
+                self.walk_type_expression(&core_hashmap_type_node.key_type);
+                self.walk_token(&core_hashmap_type_node.colon);
+                self.walk_type_expression(&core_hashmap_type_node.value_type);
+                self.walk_token(&core_hashmap_type_node.rcurly);
             }
             ASTNode::USER_DEFINED_TYPE(user_defined_type) => {
                 let core_user_defined_type = user_defined_type.core_ref();
