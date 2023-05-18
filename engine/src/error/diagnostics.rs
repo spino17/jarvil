@@ -32,6 +32,7 @@ pub enum Diagnostics {
     MoreThanMaxLimitParamsPassed(MoreThanMaxLimitParamsPassedError),
     MismatchedParamType(MismatchedParamTypeError),
     IdentifierNotCallable(IdentifierNotCallableError),
+    StructFieldNotCallable(StructFieldNotCallableError),
     ConstructorNotFoundForType(ConstructorNotFoundForTypeError),
     ClassmethodDoesNotExist(ClassmethodDoesNotExistError),
     PropertyDoesNotExist(PropertyDoesNotExistError),
@@ -83,6 +84,7 @@ impl Diagnostics {
             }
             Diagnostics::MismatchedParamType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierNotCallable(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::StructFieldNotCallable(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::ConstructorNotFoundForType(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::ClassmethodDoesNotExist(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::PropertyDoesNotExist(diagnostic) => Report::new(diagnostic.clone()),
@@ -746,6 +748,24 @@ impl PropertyDoesNotExistError {
             ty: ty.to_string(),
             property_span: range_to_span(property_range).into(),
             expr_span: range_to_span(expr_range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("struct field not callable")]
+#[diagnostic(code("semantic error (type-checking phase)"))]
+pub struct StructFieldNotCallableError {
+    pub ty: String,
+    #[label("field with type `{}` is not callable", self.ty)]
+    pub field_span: SourceSpan,
+}
+
+impl StructFieldNotCallableError {
+    pub fn new(ty: Type, field_span: TextRange) -> Self {
+        StructFieldNotCallableError {
+            ty: ty.to_string(),
+            field_span: range_to_span(field_span).into(),
         }
     }
 }

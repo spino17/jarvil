@@ -33,7 +33,8 @@ use crate::{
             MismatchedTypesOnLeftRightError, MoreParamsCountError,
             NoReturnStatementInFunctionError, NoValidStatementInsideFunctionBody,
             PropertyDoesNotExistError, PropertyNotSupportedError,
-            RightSideWithVoidTypeNotAllowedError, UnaryOperatorInvalidUseError,
+            RightSideWithVoidTypeNotAllowedError, StructFieldNotCallableError,
+            UnaryOperatorInvalidUseError,
         },
         helper::PropertyKind,
     },
@@ -179,9 +180,9 @@ impl TypeChecker {
         }
     }
 
-    pub fn is_callable(&mut self, atom: &AtomNode) -> Option<(Rc<Vec<Type>>, Type)> {
-        let atom_type_obj = self.check_atom(atom);
-        match atom_type_obj.0.as_ref() {
+    pub fn is_callable(&mut self, type_obj: &Type) -> Option<(Rc<Vec<Type>>, Type)> {
+        // let atom_type_obj = self.check_atom(atom);
+        match type_obj.0.as_ref() {
             CoreType::LAMBDA(lambda) => {
                 let lambda_data = lambda
                     .symbol_data
@@ -491,7 +492,8 @@ impl TypeChecker {
                 let core_call = call.core_ref();
                 let atom = &core_call.atom;
                 let params = &core_call.params;
-                match self.is_callable(atom) {
+                let atom_type_obj = self.check_atom(atom);
+                match self.is_callable(&atom_type_obj) {
                     Some((expected_param_types, return_type)) => {
                         let result = self.check_params_type_and_count(
                             CallableParamsData::LAMBDA(expected_param_types),
@@ -587,14 +589,13 @@ impl TypeChecker {
                 Type::new_with_unknown()
             }
             CoreAtomNode::METHOD_ACCESS(method_access) => {
-                // TODO - check for possiblitiy of a field access with type lambda which will have similar syntax
-                // Python gives priority to field first then method
                 let core_method_access = method_access.core_ref();
                 let atom = &core_method_access.atom;
                 let atom_type_obj = self.check_atom(atom);
                 let method = &core_method_access.method_name;
                 let params = &core_method_access.params;
                 if let CoreIdentifierNode::OK(ok_identifier) = method.core_ref() {
+                    /*
                     let method_name = ok_identifier.token_value(&self.code);
                     match atom_type_obj.0.as_ref() {
                         CoreType::STRUCT(struct_type) => {
@@ -639,6 +640,84 @@ impl TypeChecker {
                             }
                         }
                         _ => {
+                            let err = PropertyDoesNotExistError::new(
+                                PropertyKind::METHOD,
+                                atom_type_obj,
+                                method.range(),
+                                atom.range(),
+                            );
+                            self.errors.push(Diagnostics::PropertyDoesNotExist(err));
+                            return Type::new_with_unknown();
+                        }
+                    }
+                     */
+                    // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
+                    // (for example: a field with lambda type) and then it goes on to find it in methods.
+                    // This is sync with what python does.
+                    let result = self.check_struct_property(&atom_type_obj, ok_identifier);
+                    let method_name = ok_identifier.token_value(&self.code);
+                    match result {
+                        StructPropertyCheckResult::PROPERTY_EXIST((_, type_obj)) => {
+                            match self.is_callable(&type_obj) {
+                                Some((expected_param_types, return_type)) => {
+                                    let result = self.check_params_type_and_count(
+                                        CallableParamsData::LAMBDA(expected_param_types),
+                                        params,
+                                    );
+                                    match result {
+                                        ParamsTypeNCountResult::OK => return return_type,
+                                        _ => {
+                                            self.log_params_type_and_count_check_error(
+                                                ok_identifier.range(),
+                                                result,
+                                            );
+                                            return Type::new_with_unknown();
+                                        }
+                                    }
+                                }
+                                None => {
+                                    let err = StructFieldNotCallableError::new(
+                                        type_obj,
+                                        ok_identifier.range(),
+                                    );
+                                    self.errors.push(Diagnostics::StructFieldNotCallable(err));
+                                    return Type::new_with_unknown();
+                                }
+                            }
+                        }
+                        StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(struct_data) => {
+                            match struct_data.try_method(&Rc::new(method_name)) {
+                                Some((func_data, _)) => {
+                                    let expected_params = &func_data.params;
+                                    let return_type = &func_data.return_type;
+                                    let result = self.check_params_type_and_count(
+                                        CallableParamsData::OTHER(expected_params.clone()),
+                                        params,
+                                    );
+                                    match result {
+                                        ParamsTypeNCountResult::OK => return return_type.clone(),
+                                        _ => {
+                                            self.log_params_type_and_count_check_error(
+                                                method.range(),
+                                                result,
+                                            );
+                                            return Type::new_with_unknown();
+                                        }
+                                    }
+                                }
+                                None => {
+                                    let err = PropertyDoesNotExistError::new(
+                                        PropertyKind::METHOD,
+                                        atom_type_obj.clone(),
+                                        method.range(),
+                                        atom.range(),
+                                    );
+                                    self.errors.push(Diagnostics::PropertyDoesNotExist(err));
+                                    return Type::new_with_unknown();
+                                }
+                            }
+                        }
+                        StructPropertyCheckResult::NON_STRUCT_TYPE => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::METHOD,
                                 atom_type_obj,
