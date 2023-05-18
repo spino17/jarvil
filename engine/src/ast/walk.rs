@@ -445,7 +445,7 @@ pub trait Visitor {
                 self.walk_func_decl(&func_wrapper.core_ref().func_decl);
             }
             ASTNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
-                self.walk_func_decl(&bounded_method_wrapper.core_ref().func_decl);
+                self.walk_func_decl(&bounded_method_wrapper.0.as_ref().borrow().func_decl);
             }
             ASTNode::VARIABLE_DECLARATION(variable_decl_node) => {
                 let core_variable_decl = variable_decl_node.core_ref();

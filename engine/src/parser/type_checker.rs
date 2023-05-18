@@ -1016,7 +1016,13 @@ impl TypeChecker {
             }
             CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
                 self.check_callable_body(
-                    &bounded_method_wrapper.core_ref().func_decl.core_ref().body,
+                    &bounded_method_wrapper
+                        .0
+                        .as_ref()
+                        .borrow()
+                        .func_decl
+                        .core_ref()
+                        .body,
                 );
             }
             CoreStatementNode::RETURN(return_stmt) => {

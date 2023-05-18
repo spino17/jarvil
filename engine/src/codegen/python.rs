@@ -6,15 +6,16 @@ use crate::{
             ASTNode, BlockNode, CoreAssignmentNode, CoreFunctionDeclarationNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreTypeDeclarationNode, ExpressionStatementNode, FunctionDeclarationNode,
-            LambdaTypeDeclarationNode, OkAssignmentNode, ReturnStatementNode, StatementNode,
-            StructDeclarationNode, StructPropertyDeclarationNode, TokenNode,
-            VariableDeclarationNode, OkIdentifierNode,
+            LambdaTypeDeclarationNode, OkAssignmentNode, OkIdentifierNode, ReturnStatementNode,
+            StatementNode, StructDeclarationNode, StructPropertyDeclarationNode, TokenNode,
+            VariableDeclarationNode,
         },
         walk::Visitor,
     },
     code::Code,
     context,
-    lexer::token::Token, scope::core::IdentifierKind,
+    lexer::token::Token,
+    scope::core::IdentifierKind,
 };
 
 // Utility functions
@@ -75,24 +76,23 @@ impl PythonCodeGenerator {
 
     pub fn print_identifier(&mut self, identifier: &OkIdentifierNode) {
         let suffix_str = match &identifier.0.as_ref().borrow().decl {
-            Some((ident_kind, _)) => {
-                match ident_kind {
-                    IdentifierKind::VARIABLE(_) => {
-                        "_var"
-                    }
-                    IdentifierKind::FUNCTION(_) => {
-                        "_func"
-                    }
-                    IdentifierKind::USER_DEFINED_TYPE(_) => {
-                        "_ty"
-                    }
-                }
-            }
-            None => ""
+            Some((ident_kind, _)) => match ident_kind {
+                IdentifierKind::VARIABLE(_) => "_var",
+                IdentifierKind::FUNCTION(_) => "_func",
+                IdentifierKind::USER_DEFINED_TYPE(_) => "_ty",
+            },
+            None => "",
         };
         let mut token_value = identifier.token_value(&self.code);
         token_value.push_str(suffix_str);
-        let token = identifier.0.as_ref().borrow().token.core_ref().token.clone();
+        let token = identifier
+            .0
+            .as_ref()
+            .borrow()
+            .token
+            .core_ref()
+            .token
+            .clone();
         let trivia = &token.trivia;
         if let Some(trivia) = trivia {
             for trivia_entry in trivia.as_ref() {

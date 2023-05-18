@@ -1,6 +1,7 @@
 use crate::ast::ast::{
-    CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreRVariableDeclarationNode,
-    CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode, OkSelfKeywordNode,
+    BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode,
+    CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode,
+    OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -648,7 +649,13 @@ impl Resolver {
                 }
                 CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrappewr) => {
                     self.set_curr_class_context_is_containing_self(false);
-                    let core_func_decl = bounded_method_wrappewr.core_ref().func_decl.core_ref();
+                    let core_func_decl = &bounded_method_wrappewr
+                        .0
+                        .as_ref()
+                        .borrow()
+                        .func_decl
+                        .core_ref()
+                        .clone();
                     let (params_vec, _, return_type, return_type_range) =
                         self.visit_callable_body(&core_func_decl.body);
                     if let CoreIdentifierNode::OK(ok_bounded_method_name) =
@@ -679,6 +686,8 @@ impl Resolver {
                                     }
                                     constructor =
                                         Some((func_meta_data, ok_bounded_method_name.range()));
+                                    bounded_method_wrappewr
+                                        .set_bounded_kind(BoundedMethodKind::CONSTRUCTOR);
                                 }
                             }
                         } else {
@@ -701,11 +710,15 @@ impl Resolver {
                                             Rc::new(method_name_str),
                                             (func_meta_data, ok_bounded_method_name.range()),
                                         );
+                                        bounded_method_wrappewr
+                                            .set_bounded_kind(BoundedMethodKind::METHOD);
                                     } else {
                                         class_methods.insert(
                                             Rc::new(method_name_str),
                                             (func_meta_data, ok_bounded_method_name.range()),
                                         );
+                                        bounded_method_wrappewr
+                                            .set_bounded_kind(BoundedMethodKind::CLASS_METHOD);
                                     }
                                 }
                             }

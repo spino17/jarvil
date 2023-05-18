@@ -357,7 +357,7 @@ pub struct CoreFunctionWrapperNode {
 #[derive(Debug, Clone)]
 pub struct CoreBoundedMethodWrapperNode {
     pub func_decl: FunctionDeclarationNode,
-    pub bounded_kind: Option<BoundedMethodKind>
+    pub bounded_kind: Option<BoundedMethodKind>,
 }
 
 // LAMBDA_DECLARATION
@@ -688,7 +688,7 @@ pub struct FunctionDeclarationNode(pub Rc<CoreFunctionDeclarationNode>);
 #[derive(Debug, Clone)]
 pub struct FunctionWrapperNode(pub Rc<CoreFunctionWrapperNode>);
 #[derive(Debug, Clone)]
-pub struct BoundedMethodWrapperNode(pub Rc<CoreBoundedMethodWrapperNode>);
+pub struct BoundedMethodWrapperNode(pub Rc<RefCell<CoreBoundedMethodWrapperNode>>);
 #[derive(Debug, Clone)]
 pub struct LambdaDeclarationNode(pub Rc<CoreLambdaDeclarationNode>);
 #[derive(Debug, Clone)]
@@ -772,7 +772,7 @@ pub enum TypeResolveKind {
 pub enum BoundedMethodKind {
     CONSTRUCTOR,
     METHOD,
-    CLASS_METHOD
+    CLASS_METHOD,
 }
 
 #[derive(Debug, Clone, PartialEq)]
