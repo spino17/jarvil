@@ -272,26 +272,47 @@ impl Resolver {
         self.try_declare_and_bind(identifier, declare_fn, bind_fn)
     }
 
+    pub fn check_if_type_is_hashmap_with_hashable_index<T: Fn(&mut Resolver, TextRange)>(
+        type_obj: &Type,
+        type_expr: &TypeExpressionNode,
+        is_log_error: Option<(T, &mut Resolver)>,
+    ) -> Type {
+        match type_obj.0.as_ref() {
+            CoreType::HASHMAP(hashmap) => {
+                let index_span = match type_expr.core_ref() {
+                    CoreTypeExpressionNode::HASHMAP(hashmap_type_expr) => {
+                        hashmap_type_expr.core_ref().key_type.range()
+                    }
+                    _ => unreachable!(),
+                };
+                if hashmap.key_type.is_hashable() {
+                    return type_obj.clone();
+                } else {
+                    if let Some((log_error_fn, resolver)) = is_log_error {
+                        log_error_fn(resolver, index_span)
+                    }
+                    return Type::new_with_unknown();
+                }
+            }
+            _ => return type_obj.clone(),
+        }
+    }
+
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_before_resolved(&self.namespace, &self.code) {
-            TypeResolveKind::RESOLVED(type_obj) => match type_obj.0.as_ref() {
-                CoreType::HASHMAP(hashmap) => {
-                    let index_span = match type_expr.core_ref() {
-                        CoreTypeExpressionNode::HASHMAP(hashmap_type_expr) => {
-                            hashmap_type_expr.core_ref().key_type.range()
-                        }
-                        _ => unreachable!(),
-                    };
-                    if hashmap.key_type.is_hashable() {
-                        return type_obj;
-                    } else {
-                        let err = NonHashableTypeInIndexError::new(index_span);
-                        self.errors.push(Diagnostics::NonHashableTypeInIndex(err));
-                        return Type::new_with_unknown();
-                    }
-                }
-                _ => return type_obj,
-            },
+            TypeResolveKind::RESOLVED(type_obj) => {
+                let log_error_fn = |resolver: &mut Resolver, index_span: TextRange| {
+                    let err = NonHashableTypeInIndexError::new(index_span);
+                    resolver
+                        .errors
+                        .push(Diagnostics::NonHashableTypeInIndex(err));
+                };
+                return Self::check_if_type_is_hashmap_with_hashable_index(
+                    &type_obj,
+                    type_expr,
+                    Some((log_error_fn, self)),
+                );
+            }
             TypeResolveKind::UNRESOLVED(identifier) => {
                 let err = IdentifierNotDeclaredError::new(IdentKind::TYPE, identifier.range());
                 self.errors.push(Diagnostics::IdentifierNotDeclared(err));

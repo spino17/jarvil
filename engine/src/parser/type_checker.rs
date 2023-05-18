@@ -48,6 +48,8 @@ use crate::{
 use std::{ops::Index, rc::Rc};
 use text_size::TextRange;
 
+use super::resolver::Resolver;
+
 #[derive(Debug)]
 struct Context {
     func_stack: Vec<Type>,
@@ -112,7 +114,12 @@ impl TypeChecker {
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_after_resolved(&self.code) {
-            TypeResolveKind::RESOLVED(type_obj) => type_obj,
+            TypeResolveKind::RESOLVED(type_obj) => {
+                type DummyFnType = fn(&mut Resolver, TextRange);
+                return Resolver::check_if_type_is_hashmap_with_hashable_index::<DummyFnType>(
+                    &type_obj, type_expr, None,
+                );
+            }
             TypeResolveKind::UNRESOLVED(_) => return Type::new_with_unknown(),
             TypeResolveKind::INVALID => Type::new_with_unknown(),
         }
