@@ -155,6 +155,10 @@ impl Type {
         }
     }
 
+    pub fn is_hashable(&self) -> bool {
+        self.is_int() || self.is_float() || self.is_string()
+    }
+
     pub fn is_unknown(&self) -> bool {
         match self.0.as_ref() {
             CoreType::UNKNOWN => true,
