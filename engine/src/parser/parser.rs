@@ -4,19 +4,18 @@
 // See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
 
 use crate::ast::ast::{
-    AssignmentNode, AtomNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
-    CallablePrototypeNode, ExpressionNode, IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode,
-    Node, ParamsNode, RAssignmentNode, SkippedTokenNode, StatementNode, TokenNode,
-    TypeDeclarationNode, TypeExpressionNode, TypeTupleNode, UnaryExpressionNode,
-    VariableDeclarationNode,
+    AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockKind, BlockNode,
+    CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode,
+    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, OkSelfKeywordNode, OkTokenNode,
+    ParamsNode, SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
+    TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
 };
-use crate::ast::ast::{BlockKind, ErrornousNode};
 use crate::code::Code;
-use crate::constants::common::{ENDMARKER, IDENTIFIER};
+use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::{
-    Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
-    MissingTokenError,
+    Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidRLambdaError,
+    InvalidTrailingTokensError, MissingTokenError,
 };
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
@@ -201,6 +200,15 @@ impl PackratParser {
         self.errors.push(Diagnostics::InvalidLValue(err));
     }
 
+    pub fn log_invalid_r_lambda_error(&mut self, range: TextRange) {
+        if self.ignore_all_errors {
+            return;
+        }
+        // -> TODO - check whether error on same line already exists
+        let err = InvalidRLambdaError::new(range);
+        self.errors.push(Diagnostics::InvalidRLambda(err));
+    }
+
     // ------------------- parsing routines for terminals and block indentation -------------------
     pub fn expect(&mut self, symbol: &'static str) -> TokenNode {
         let token = self.curr_token();
@@ -218,10 +226,24 @@ impl PackratParser {
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
             self.scan_next_token();
-            IdentifierNode::new_with_ok(&token)
+            let ok_token_node = OkTokenNode::new(&token);
+            IdentifierNode::new_with_ok(&ok_token_node)
         } else {
             self.log_missing_token_error(&[symbol], &token);
             IdentifierNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
+        }
+    }
+
+    pub fn expect_self(&mut self) -> SelfKeywordNode {
+        let token = self.curr_token();
+        let symbol = SELF;
+        if token.is_eq(symbol) {
+            self.scan_next_token();
+            let ok_token_node = OkTokenNode::new(&token);
+            SelfKeywordNode::new_with_ok(&ok_token_node)
+        } else {
+            self.log_missing_token_error(&[symbol], &token);
+            SelfKeywordNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
         }
     }
 
@@ -400,6 +422,10 @@ impl PackratParser {
         components::expression::atom::atom(self)
     }
 
+    pub fn atom_start(&mut self) -> AtomStartNode {
+        components::expression::atom::atom_start(self)
+    }
+
     pub fn params(&mut self) -> ParamsNode {
         components::expression::common::params(self)
     }
@@ -420,8 +446,8 @@ impl PackratParser {
         components::common::type_tuple(self)
     }
 
-    pub fn r_assign(&mut self, identifier_name: Option<&IdentifierNode>) -> RAssignmentNode {
-        components::common::r_assign(self, identifier_name)
+    pub fn function_stmt(&mut self, callable_kind: CallableKind) -> StatementNode {
+        components::common::function_stmt(self, callable_kind)
     }
 
     pub fn callable_prototype(&mut self) -> CallablePrototypeNode {

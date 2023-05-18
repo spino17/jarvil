@@ -2,7 +2,10 @@ use super::helper::{range_to_span, IdentifierKind, PropertyKind};
 use crate::{lexer::token::Token, parser::helper::format_symbol, types::core::Type};
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use owo_colors::{OwoColorize, Style};
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    rc::Rc,
+};
 use text_size::TextRange;
 use thiserror::Error;
 
@@ -14,14 +17,23 @@ pub enum Diagnostics {
     InvalidTrailingTokens(InvalidTrailingTokensError),
     IncorrectlyIndentedBlock(IncorrectlyIndentedBlockError),
     InvalidLValue(InvalidLValueError),
+    InvalidRLambda(InvalidRLambdaError),
     IdentifierAlreadyDeclared(IdentifierAlreadyDeclaredError),
+    ConstructorNotFoundInsideStructDeclaration(ConstructorNotFoundInsideStructDeclarationError),
+    IdentifierFoundInNonLocals(IdentifierFoundInNonLocalsError),
+    IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
+    NonVoidConstructorReturnType(NonVoidConstructorReturnTypeError),
+    SelfNotFound(SelfNotFoundError),
+    VariableReferencedBeforeAssignment(VariableReferencedBeforeAssignmentError),
     RightSideWithVoidTypeNotAllowed(RightSideWithVoidTypeNotAllowedError),
     MoreParamsCount(MoreParamsCountError),
     LessParamsCount(LessParamsCountError),
     MoreThanMaxLimitParamsPassed(MoreThanMaxLimitParamsPassedError),
     MismatchedParamType(MismatchedParamTypeError),
     IdentifierNotCallable(IdentifierNotCallableError),
+    StructFieldNotCallable(StructFieldNotCallableError),
+    ConstructorNotFoundForType(ConstructorNotFoundForTypeError),
     ClassmethodDoesNotExist(ClassmethodDoesNotExistError),
     PropertyDoesNotExist(PropertyDoesNotExistError),
     PropertyNotSupported(PropertyNotSupportedError),
@@ -34,6 +46,7 @@ pub enum Diagnostics {
     NoReturnStatementInFunction(NoReturnStatementInFunctionError),
     InvalidReturnStatement(InvalidReturnStatementError),
     MismatchedReturnType(MismatchedReturnTypeError),
+    NonHashableTypeInIndex(NonHashableTypeInIndexError),
 }
 
 impl Diagnostics {
@@ -45,11 +58,26 @@ impl Diagnostics {
             Diagnostics::InvalidTrailingTokens(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IncorrectlyIndentedBlock(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InvalidLValue(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::InvalidRLambda(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierAlreadyDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::ConstructorNotFoundInsideStructDeclaration(diagonstic) => {
+                Report::new(diagonstic.clone())
+            }
+            Diagnostics::IdentifierNotFoundInAnyNamespace(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::IdentifierFoundInNonLocals(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::RightSideWithVoidTypeNotAllowed(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NonVoidConstructorReturnType(diagonstic) => {
+                Report::new(diagonstic.clone())
+            }
+            Diagnostics::SelfNotFound(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::VariableReferencedBeforeAssignment(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
             Diagnostics::MoreParamsCount(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::LessParamsCount(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MoreThanMaxLimitParamsPassed(diagonstic) => {
@@ -57,6 +85,8 @@ impl Diagnostics {
             }
             Diagnostics::MismatchedParamType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierNotCallable(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::StructFieldNotCallable(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::ConstructorNotFoundForType(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::ClassmethodDoesNotExist(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::PropertyDoesNotExist(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::PropertyNotSupported(diagnostic) => Report::new(diagnostic.clone()),
@@ -73,6 +103,7 @@ impl Diagnostics {
             }
             Diagnostics::InvalidReturnStatement(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MismatchedReturnType(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NonHashableTypeInIndex(diagnostic) => Report::new(diagnostic.clone()),
         }
     }
 }
@@ -247,6 +278,54 @@ impl InvalidLValueError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
+#[error("invalid r-lambda")]
+#[diagnostic(code("syntax error"))]
+pub struct InvalidRLambdaError {
+    #[label("expression cannot be assigned lambda")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>, // any value derived from a function call is not assignable
+}
+
+impl InvalidRLambdaError {
+    pub fn new(range: TextRange) -> Self {
+        InvalidRLambdaError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "lambda expression is not allowed to be assigned to l-value expression directly\nyou can achieve the operation by declaring a new lambda variable and then using it in the assignment"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("non-void constructor return type")]
+#[diagnostic(code("syntax error"))]
+pub struct NonVoidConstructorReturnTypeError {
+    #[label("constructor cannot have a return type")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>, // any value derived from a function call is not assignable
+}
+
+impl NonVoidConstructorReturnTypeError {
+    pub fn new(range: TextRange) -> Self {
+        NonVoidConstructorReturnTypeError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "developer is not supposed to explicitly provide return type for the constructor"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
 #[error("{} is redeclared", self.identifier_kind)]
 #[diagnostic(code("semantic error (resolving phase)"))]
 pub struct IdentifierAlreadyDeclaredError {
@@ -270,7 +349,7 @@ impl IdentifierAlreadyDeclaredError {
         let help_str = match identifier_kind {
             IdentifierKind::VARIABLE | IdentifierKind::FUNCTION => {
                 format!(
-                    "{}s are not allowed to be redeclared inside the same block",
+                    "{}s are not allowed to be redeclared inside the same scope",
                     identifier_kind
                 )
             }
@@ -285,9 +364,15 @@ impl IdentifierAlreadyDeclaredError {
             }
             IdentifierKind::TYPE => {
                 format!(
-                    "{}s are not allowed to be redeclared inside the complete scope",
+                    "{}s are not allowed to be redeclared inside the complete scope chain",
                     identifier_kind
                 )
+            }
+            IdentifierKind::METHOD => {
+                format!("all methods of struct should have distinct names")
+            }
+            IdentifierKind::CONSTRUCTOR => {
+                format!("constructor is not allowed to be redeclared")
             }
         };
         IdentifierAlreadyDeclaredError {
@@ -318,6 +403,133 @@ impl IdentifierNotDeclaredError {
             span: range_to_span(range).into(),
             help: Some(
                 "identifiers are declared in one of the three namespaces: variables, functions and types"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("constructor not found")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct ConstructorNotFoundInsideStructDeclarationError {
+    #[label("constructor definition not found inside struct declaration")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl ConstructorNotFoundInsideStructDeclarationError {
+    pub fn new(range: TextRange) -> Self {
+        ConstructorNotFoundInsideStructDeclarationError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "struct declaration should always have constructor definition with signature: `def __init__(<params>) -> <struct_name>`"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("`self` is not declared in the scope")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct SelfNotFoundError {
+    #[label("not found in the scope")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl SelfNotFoundError {
+    pub fn new(range: TextRange) -> Self {
+        SelfNotFoundError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "`self` should only be used inside a class scope"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("{} found in non-locals", self.identifier_kind)]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct IdentifierFoundInNonLocalsError {
+    pub identifier_kind: IdentifierKind,
+    #[label("identifier with same name is resolved in non-local scope")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl IdentifierFoundInNonLocalsError {
+    pub fn new(identifier_kind: IdentifierKind, range: TextRange) -> Self {
+        IdentifierFoundInNonLocalsError {
+            identifier_kind,
+            span: range_to_span(range).into(),
+            help: Some(
+                "variables and functions are not allowed to be declared in the scope where there exist a reference with the same name to a non-local declaration"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("variable `{}` referenced before assignment", self.variable_name)]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct VariableReferencedBeforeAssignmentError {
+    pub variable_name: String,
+    #[label("variable declared here")]
+    pub decl_span: SourceSpan,
+    #[label("same variable used within the declaration statement")]
+    pub usage_span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl VariableReferencedBeforeAssignmentError {
+    pub fn new(variable_name: String, decl_range: TextRange, usage_range: TextRange) -> Self {
+        VariableReferencedBeforeAssignmentError {
+            variable_name,
+            decl_span: range_to_span(decl_range).into(),
+            usage_span: range_to_span(usage_range).into(),
+            help: Some(
+                "variables are not allowed to be referenced inside the their own declaration statement"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("callable is not declared in any namespace")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct IdentifierNotFoundInAnyNamespaceError {
+    #[label("not found in the scope")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl IdentifierNotFoundInAnyNamespaceError {
+    pub fn new(range: TextRange) -> Self {
+        IdentifierNotFoundInAnyNamespaceError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "identifiers are declared in one of the three namespaces: variables, functions and types\ncallable identifier are resolved in the following order of namespace:\nfunction => type => variable"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()
@@ -471,6 +683,32 @@ impl IdentifierNotCallableError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
+#[error("constructor not found")]
+#[diagnostic(code("semantic error (type-checking phase)"))]
+pub struct ConstructorNotFoundForTypeError {
+    pub ty: String,
+    #[label("type `{}` does not have a constructor", self.ty)]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl ConstructorNotFoundForTypeError {
+    pub fn new(ty_str: String, range: TextRange) -> Self {
+        ConstructorNotFoundForTypeError {
+            ty: ty_str,
+            span: range_to_span(range).into(),
+            help: Some(
+                "only struct type is allowed to call constructor via self name"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
 #[error("property does not exist")]
 #[diagnostic(code("semantic error (type-checking phase)"))]
 pub struct ClassmethodDoesNotExistError {
@@ -512,6 +750,24 @@ impl PropertyDoesNotExistError {
             ty: ty.to_string(),
             property_span: range_to_span(property_range).into(),
             expr_span: range_to_span(expr_range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("struct field not callable")]
+#[diagnostic(code("semantic error (type-checking phase)"))]
+pub struct StructFieldNotCallableError {
+    pub ty: String,
+    #[label("field with type `{}` is not callable", self.ty)]
+    pub field_span: SourceSpan,
+}
+
+impl StructFieldNotCallableError {
+    pub fn new(ty: Type, field_span: TextRange) -> Self {
+        StructFieldNotCallableError {
+            ty: ty.to_string(),
+            field_span: range_to_span(field_span).into(),
         }
     }
 }
@@ -776,6 +1032,30 @@ impl MismatchedReturnTypeError {
             expected_type: expected_type.to_string(),
             received_type: received_type.to_string(),
             span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("non-hashable type found in hashmap index")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct NonHashableTypeInIndexError {
+    #[label("non-hashable type")]
+    pub index_span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl NonHashableTypeInIndexError {
+    pub fn new(index_span: TextRange) -> Self {
+        NonHashableTypeInIndexError {
+            index_span: range_to_span(index_span).into(),
+            help: Some(
+                "only `int`, `float` and `str` are hashable types"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }

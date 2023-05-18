@@ -1,24 +1,23 @@
-use super::ast::{
-    CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode, CoreIdentifierNode,
-    CoreTokenNode, CoreTypeTupleNode, IdentifierNode, LambdaDeclarationNode, OkCallableBodyNode,
-    OkIdentifierNode, OkTokenNode, OkTypeTupleNode, TypeTupleNode,
-};
-use crate::ast::ast::ASTNode;
 use crate::ast::ast::{
-    ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
-    BinaryExpressionNode, BlockNode, CallExpressionNode, CallNode, ClassMethodCallNode,
-    ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreExpressionNode, CoreLambdaTypeDeclarationNode, CoreNameTypeSpecsNode, CoreParamsNode,
-    CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTypeDeclarationNode,
-    CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode, ExpressionStatementNode,
-    FunctionDeclarationNode, IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
-    LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
-    NameTypeSpecsNode, OkAssignmentNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode,
-    OkParamsNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
-    PropertyAccessNode, RAssignmentNode, ReturnStatementNode, SkippedTokenNode, SkippedTokensNode,
-    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructStatementNode,
-    TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
-    VariableDeclarationNode,
+    ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
+    AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
+    CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
+    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
+    CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode, CoreLambdaTypeDeclarationNode,
+    CoreNameTypeSpecsNode, CoreParamsNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
+    CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
+    ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode,
+    HashMapTypeNode, IdentifierNode, IncorrectlyIndentedStatementNode, IndexAccessNode,
+    InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
+    MissingTokenNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode,
+    OkIdentifierNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode,
+    OkSelfKeywordNode, OkTokenNode, OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, SkippedTokensNode,
+    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    TokenNode, TypeDeclarationNode, TypeExpressionNode, TypeTupleNode, UnaryExpressionNode,
+    UserDefinedTypeNode, VariableDeclarationNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -69,6 +68,16 @@ pub trait Visitor {
         new_with_FunctionDeclarationNode
     );
     impl_node_walk!(
+        walk_func_wrapper,
+        FunctionWrapperNode,
+        new_with_FunctionWrapperNode
+    );
+    impl_node_walk!(
+        walk_bounded_method_wrapper,
+        BoundedMethodWrapperNode,
+        new_with_BoundedMethodWrapperNode
+    );
+    impl_node_walk!(
         walk_lambda_decl,
         LambdaDeclarationNode,
         new_with_LambdaDeclarationNode
@@ -94,9 +103,9 @@ pub trait Visitor {
         new_with_TypeDeclarationNode
     );
     impl_node_walk!(
-        walk_struct_stmt,
-        StructStatementNode,
-        new_with_StructStatementNode
+        walk_struct_property_declaration,
+        StructPropertyDeclarationNode,
+        new_with_StructPropertyDeclarationNode
     );
     impl_node_walk!(
         walk_missing_tokens,
@@ -145,6 +154,11 @@ pub trait Visitor {
         new_with_TypeExpressionNode
     );
     impl_node_walk!(walk_r_assignment, RAssignmentNode, new_with_RAssignmentNode);
+    impl_node_walk!(
+        walk_r_variable_declaration,
+        RVariableDeclarationNode,
+        new_with_RVariableDeclarationNode
+    );
     impl_node_walk!(walk_expression, ExpressionNode, new_with_ExpressionNode);
     impl_node_walk!(
         walk_ok_name_type_specs,
@@ -164,6 +178,7 @@ pub trait Visitor {
         new_with_UserDefinedTypeNode
     );
     impl_node_walk!(walk_array_type, ArrayTypeNode, new_with_ArrayTypeNode);
+    impl_node_walk!(walk_hashmap_type, HashMapTypeNode, new_with_HashMapTypeNode);
     impl_node_walk!(
         walk_unary_expression,
         UnaryExpressionNode,
@@ -228,6 +243,12 @@ pub trait Visitor {
         new_with_OkIdentifierNode
     );
     impl_node_walk!(walk_identifier, IdentifierNode, new_with_IdentifierNode);
+    impl_node_walk!(walk_self_keyword, SelfKeywordNode, new_with_SelfKeywordNode);
+    impl_node_walk!(
+        walk_ok_self_keyword,
+        OkSelfKeywordNode,
+        new_with_OkSelfKeywordNode
+    );
 
     fn walk(&mut self, node: &ASTNode) {
         match self.visit(node) {
@@ -281,14 +302,17 @@ pub trait Visitor {
                 CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
                     self.walk_variable_decl(variable_decl);
                 }
-                CoreStatementNode::FUNCTION_DECLARATION(func_decl) => {
-                    self.walk_func_decl(func_decl);
+                CoreStatementNode::FUNCTION_WRAPPER(func_wrapper) => {
+                    self.walk_func_wrapper(func_wrapper);
+                }
+                CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+                    self.walk_bounded_method_wrapper(bounded_method_wrapper);
                 }
                 CoreStatementNode::TYPE_DECLARATION(type_decl) => {
                     self.walk_type_decl(type_decl);
                 }
-                CoreStatementNode::STRUCT_STATEMENT(struct_stmt) => {
-                    self.walk_struct_stmt(struct_stmt);
+                CoreStatementNode::STRUCT_PROPERTY_DECLARATION(struct_stmt) => {
+                    self.walk_struct_property_declaration(struct_stmt);
                 }
                 CoreStatementNode::RETURN(return_stmt) => {
                     self.walk_return_stmt(return_stmt);
@@ -322,7 +346,7 @@ pub trait Visitor {
                 self.walk_token(&core_invalid_l_value.equal);
                 self.walk_r_assignment(&core_invalid_l_value.r_assign);
             }
-            ASTNode::STRUCT_STATEMENT(struct_statement) => {
+            ASTNode::STRUCT_PROPERTY_DECLARATION(struct_statement) => {
                 let core_struct_stmt = struct_statement.core_ref();
                 self.walk_name_type_spec(&core_struct_stmt.name_type_spec);
                 self.walk_token(&core_struct_stmt.newline);
@@ -417,12 +441,18 @@ pub trait Visitor {
                 self.walk_identifier(&core_func_decl.name);
                 self.walk_callable_body(&core_func_decl.body);
             }
+            ASTNode::FUNCTION_WRAPPER(func_wrapper) => {
+                self.walk_func_decl(&func_wrapper.core_ref().func_decl);
+            }
+            ASTNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+                self.walk_func_decl(&bounded_method_wrapper.core_ref().func_decl);
+            }
             ASTNode::VARIABLE_DECLARATION(variable_decl_node) => {
                 let core_variable_decl = variable_decl_node.core_ref();
                 self.walk_token(&core_variable_decl.let_keyword);
                 self.walk_identifier(&core_variable_decl.name);
                 self.walk_token(&core_variable_decl.equal);
-                self.walk_r_assignment(&core_variable_decl.r_assign);
+                self.walk_r_variable_declaration(&core_variable_decl.r_node);
             }
             ASTNode::RETURN(return_stmt) => {
                 let core_return_stmt = return_stmt.core_ref();
@@ -438,10 +468,21 @@ pub trait Visitor {
                     CoreRAssignmentNode::EXPRESSION(expr_stmt) => {
                         self.walk_expr_stmt(expr_stmt);
                     }
-                    CoreRAssignmentNode::LAMBDA(lambda) => {
+                    CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => {
+                        self.walk_missing_tokens(missing_tokens);
+                    }
+                }
+            }
+            ASTNode::R_VARIABLE_DECLARATION(r_variable_decl) => {
+                let core_r_variable_decl = r_variable_decl.core_ref();
+                match core_r_variable_decl {
+                    CoreRVariableDeclarationNode::EXPRESSION(expr_stmt) => {
+                        self.walk_expr_stmt(expr_stmt);
+                    }
+                    CoreRVariableDeclarationNode::LAMBDA(lambda) => {
                         self.walk_lambda_decl(lambda);
                     }
-                    CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreRVariableDeclarationNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
@@ -506,6 +547,9 @@ pub trait Visitor {
                     CoreTypeExpressionNode::ARRAY(array_type) => {
                         self.walk_array_type(array_type);
                     }
+                    CoreTypeExpressionNode::HASHMAP(hashmap_type) => {
+                        self.walk_hashmap_type(hashmap_type);
+                    }
                     CoreTypeExpressionNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
@@ -520,6 +564,14 @@ pub trait Visitor {
                 self.walk_token(&core_array_type.lsquare);
                 self.walk_type_expression(&core_array_type.sub_type);
                 self.walk_token(&core_array_type.rsquare);
+            }
+            ASTNode::HASHMAP_TYPE(hashmap_type_node) => {
+                let core_hashmap_type_node = hashmap_type_node.core_ref();
+                self.walk_token(&core_hashmap_type_node.lcurly);
+                self.walk_type_expression(&core_hashmap_type_node.key_type);
+                self.walk_token(&core_hashmap_type_node.colon);
+                self.walk_type_expression(&core_hashmap_type_node.value_type);
+                self.walk_token(&core_hashmap_type_node.rcurly);
             }
             ASTNode::USER_DEFINED_TYPE(user_defined_type) => {
                 let core_user_defined_type = user_defined_type.core_ref();
@@ -675,6 +727,9 @@ pub trait Visitor {
                     CoreAtomStartNode::IDENTIFIER(token) => {
                         self.walk_identifier(token);
                     }
+                    CoreAtomStartNode::SELF_KEYWORD(self_keyword) => {
+                        self.walk_self_keyword(self_keyword);
+                    }
                     CoreAtomStartNode::CALL(call_expr) => {
                         self.walk_call_expression(call_expr);
                     }
@@ -723,7 +778,6 @@ pub trait Visitor {
                     CoreTokenNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
                     }
-                    CoreTokenNode::SKIPPED(skipped_token) => self.walk_skipped_token(skipped_token),
                 }
             }
             ASTNode::IDENTIFIER(identifier) => {
@@ -733,13 +787,24 @@ pub trait Visitor {
                     CoreIdentifierNode::MISSING_TOKENS(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
                     }
-                    CoreIdentifierNode::SKIPPED(skipped_token) => {
-                        self.walk_skipped_token(skipped_token)
-                    }
                 }
             }
             ASTNode::OK_IDENTIFIER(ok_identifier) => {
-                self.walk_token(&ok_identifier.0.as_ref().borrow().token);
+                self.walk_ok_token(&ok_identifier.0.as_ref().borrow().token);
+            }
+            ASTNode::SELF_KEYWORD(self_keyword) => {
+                let core_self_keyword = self_keyword.core_ref();
+                match core_self_keyword {
+                    CoreSelfKeywordNode::OK(ok_self_keyword) => {
+                        self.walk_ok_self_keyword(ok_self_keyword)
+                    }
+                    CoreSelfKeywordNode::MISSING_TOKENS(missing_tokens) => {
+                        self.walk_missing_tokens(missing_tokens)
+                    }
+                }
+            }
+            ASTNode::OK_SELF_KEYWORD(ok_self_keyword) => {
+                self.walk_ok_token(&ok_self_keyword.0.as_ref().borrow().token);
             }
             ASTNode::OK_TOKEN(_) => {
                 // do nothing

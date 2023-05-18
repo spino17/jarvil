@@ -14,6 +14,8 @@ use jarvil_macros::Node;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
 use crate::scope::core::IdentifierKind;
+use crate::scope::core::SymbolData;
+use crate::scope::variables::VariableData;
 use crate::{lexer::token::Token, scope::core::Namespace, types::core::Type};
 use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
@@ -48,16 +50,18 @@ pub enum ASTNode {
     OK_ASSIGNMENT(OkAssignmentNode),
     INVALID_L_VALUE(InvalidLValueNode),
     R_ASSIGNMENT(RAssignmentNode),
+    R_VARIABLE_DECLARATION(RVariableDeclarationNode),
 
     // Types
     TYPE_DECLARATION(TypeDeclarationNode),
     STRUCT_DECLARATION(StructDeclarationNode),
-    STRUCT_STATEMENT(StructStatementNode),
+    STRUCT_PROPERTY_DECLARATION(StructPropertyDeclarationNode),
     LAMBDA_TYPE_DECLARATION(LambdaTypeDeclarationNode),
     OK_LAMBDA_TYPE_DECLARATION(OkLambdaTypeDeclarationNode),
     TYPE_EXPRESSION(TypeExpressionNode),
     ATOMIC_TYPE(AtomicTypeNode),
     ARRAY_TYPE(ArrayTypeNode),
+    HASHMAP_TYPE(HashMapTypeNode),
     USER_DEFINED_TYPE(UserDefinedTypeNode),
 
     // Callable
@@ -65,6 +69,8 @@ pub enum ASTNode {
     CALLABLE_BODY(CallableBodyNode),
     OK_CALLABLE_BODY(OkCallableBodyNode),
     FUNCTION_DECLARATION(FunctionDeclarationNode),
+    FUNCTION_WRAPPER(FunctionWrapperNode),
+    BOUNDED_METHOD_WRAPPER(BoundedMethodWrapperNode),
     LAMBDA_DECLARATION(LambdaDeclarationNode),
 
     // Expression
@@ -99,6 +105,8 @@ pub enum ASTNode {
     // Basic
     IDENTIFIER(IdentifierNode),
     OK_IDENTIFIER(OkIdentifierNode),
+    SELF_KEYWORD(SelfKeywordNode),
+    OK_SELF_KEYWORD(OkSelfKeywordNode),
     TOKEN(TokenNode),
     OK_TOKEN(OkTokenNode),
     MISSING_TOKEN(MissingTokenNode),
@@ -147,9 +155,10 @@ pub enum CoreStatementNode {
     ASSIGNMENT(AssignmentNode),
     VARIABLE_DECLARATION(VariableDeclarationNode),
     RETURN(ReturnStatementNode),
-    FUNCTION_DECLARATION(FunctionDeclarationNode),
+    FUNCTION_WRAPPER(FunctionWrapperNode),
+    BOUNDED_METHOD_WRAPPER(BoundedMethodWrapperNode),
     TYPE_DECLARATION(TypeDeclarationNode),
-    STRUCT_STATEMENT(StructStatementNode),
+    STRUCT_PROPERTY_DECLARATION(StructPropertyDeclarationNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -169,7 +178,7 @@ pub struct CoreVariableDeclarationNode {
     pub let_keyword: TokenNode,
     pub equal: TokenNode,
     pub name: IdentifierNode,
-    pub r_assign: RAssignmentNode,
+    pub r_node: RVariableDeclarationNode,
 }
 
 // ASSIGNMENT
@@ -200,6 +209,12 @@ pub struct CoreInvalidLValueNode {
 // R_ASSIGNMENT
 #[derive(Debug, Clone, Node)]
 pub enum CoreRAssignmentNode {
+    EXPRESSION(ExpressionStatementNode),
+    MISSING_TOKENS(MissingTokenNode),
+}
+
+#[derive(Debug, Clone, Node)]
+pub enum CoreRVariableDeclarationNode {
     LAMBDA(LambdaDeclarationNode),
     EXPRESSION(ExpressionStatementNode),
     MISSING_TOKENS(MissingTokenNode),
@@ -227,7 +242,7 @@ pub struct CoreStructDeclarationNode {
 // STRUCT_STATEMENT
 // <name_type_spec> `\n`
 #[derive(Debug, Clone)]
-pub struct CoreStructStatementNode {
+pub struct CoreStructPropertyDeclarationNode {
     pub newline: TokenNode,
     pub name_type_spec: NameTypeSpecNode,
 }
@@ -261,6 +276,7 @@ pub enum CoreTypeExpressionNode {
     ATOMIC(AtomicTypeNode),
     USER_DEFINED(UserDefinedTypeNode),
     ARRAY(ArrayTypeNode),
+    HASHMAP(HashMapTypeNode),
     MISSING_TOKENS(MissingTokenNode),
 }
 
@@ -278,6 +294,16 @@ pub struct CoreArrayTypeNode {
     pub lsquare: TokenNode,
     pub rsquare: TokenNode,
     pub sub_type: TypeExpressionNode,
+}
+
+// DICTIONARY_TYPE
+#[derive(Debug, Clone)]
+pub struct CoreHashMapTypeNode {
+    pub lcurly: TokenNode,
+    pub rcurly: TokenNode,
+    pub colon: TokenNode,
+    pub key_type: TypeExpressionNode,
+    pub value_type: TypeExpressionNode,
 }
 
 // USER_DEFINED_TYPE
@@ -319,8 +345,17 @@ pub struct CoreOkCallableBodyNode {
 pub struct CoreFunctionDeclarationNode {
     pub def_keyword: TokenNode,
     pub name: IdentifierNode,
-    pub kind: CallableKind,
     pub body: CallableBodyNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreFunctionWrapperNode {
+    pub func_decl: FunctionDeclarationNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreBoundedMethodWrapperNode {
+    pub func_decl: FunctionDeclarationNode,
 }
 
 // LAMBDA_DECLARATION
@@ -328,7 +363,7 @@ pub struct CoreFunctionDeclarationNode {
 #[derive(Debug, Clone)]
 pub struct CoreLambdaDeclarationNode {
     pub lambda_keyword: TokenNode,
-    pub name: Option<IdentifierNode>,
+    pub name: IdentifierNode,
     pub body: CallableBodyNode,
 }
 
@@ -428,6 +463,7 @@ pub enum CoreAtomNode {
 #[derive(Debug, Clone, Node)]
 pub enum CoreAtomStartNode {
     IDENTIFIER(IdentifierNode),             // id
+    SELF_KEYWORD(SelfKeywordNode),          // self
     CALL(CallExpressionNode),               // id(...)
     CLASS_METHOD_CALL(ClassMethodCallNode), // id::id(...)
 }
@@ -547,14 +583,25 @@ pub struct CoreOkParamsNode {
 pub enum CoreIdentifierNode {
     OK(OkIdentifierNode),
     MISSING_TOKENS(MissingTokenNode),
-    SKIPPED(SkippedTokenNode),
 }
 
 // OK_IDENTIFIER
 #[derive(Debug, Clone)]
 pub struct CoreOkIdentifierNode {
-    pub token: TokenNode,
+    pub token: OkTokenNode,
     pub decl: Option<(IdentifierKind, usize)>, // (symbol data reference, depth)
+}
+
+#[derive(Debug, Clone, Node)]
+pub enum CoreSelfKeywordNode {
+    OK(OkSelfKeywordNode),
+    MISSING_TOKENS(MissingTokenNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreOkSelfKeywordNode {
+    pub token: OkTokenNode,
+    pub decl: Option<(SymbolData<VariableData>, usize)>,
 }
 
 // TOKEN
@@ -562,7 +609,6 @@ pub struct CoreOkIdentifierNode {
 pub enum CoreTokenNode {
     OK(OkTokenNode),
     MISSING_TOKENS(MissingTokenNode),
-    SKIPPED(SkippedTokenNode),
 }
 
 // OK_TOKEN
@@ -608,11 +654,13 @@ pub struct InvalidLValueNode(pub Rc<CoreInvalidLValueNode>);
 #[derive(Debug, Clone)]
 pub struct RAssignmentNode(pub Rc<CoreRAssignmentNode>);
 #[derive(Debug, Clone)]
+pub struct RVariableDeclarationNode(pub Rc<CoreRVariableDeclarationNode>);
+#[derive(Debug, Clone)]
 pub struct TypeDeclarationNode(pub Rc<CoreTypeDeclarationNode>);
 #[derive(Debug, Clone)]
 pub struct StructDeclarationNode(pub Rc<CoreStructDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct StructStatementNode(pub Rc<CoreStructStatementNode>);
+pub struct StructPropertyDeclarationNode(pub Rc<CoreStructPropertyDeclarationNode>);
 #[derive(Debug, Clone)]
 pub struct LambdaTypeDeclarationNode(pub Rc<CoreLambdaTypeDeclarationNode>);
 #[derive(Debug, Clone)]
@@ -624,6 +672,8 @@ pub struct AtomicTypeNode(pub Rc<CoreAtomicTypeNode>);
 #[derive(Debug, Clone)]
 pub struct ArrayTypeNode(pub Rc<CoreArrayTypeNode>);
 #[derive(Debug, Clone)]
+pub struct HashMapTypeNode(pub Rc<CoreHashMapTypeNode>);
+#[derive(Debug, Clone)]
 pub struct UserDefinedTypeNode(pub Rc<CoreUserDefinedTypeNode>);
 #[derive(Debug, Clone)]
 pub struct CallablePrototypeNode(pub Rc<CoreCallablePrototypeNode>);
@@ -633,6 +683,10 @@ pub struct CallableBodyNode(pub Rc<CoreCallableBodyNode>);
 pub struct OkCallableBodyNode(pub Rc<CoreOkCallableBodyNode>);
 #[derive(Debug, Clone)]
 pub struct FunctionDeclarationNode(pub Rc<CoreFunctionDeclarationNode>);
+#[derive(Debug, Clone)]
+pub struct FunctionWrapperNode(pub Rc<CoreFunctionWrapperNode>);
+#[derive(Debug, Clone)]
+pub struct BoundedMethodWrapperNode(pub Rc<CoreBoundedMethodWrapperNode>);
 #[derive(Debug, Clone)]
 pub struct LambdaDeclarationNode(pub Rc<CoreLambdaDeclarationNode>);
 #[derive(Debug, Clone)]
@@ -686,6 +740,10 @@ pub struct IdentifierNode(pub Rc<CoreIdentifierNode>);
 #[derive(Debug, Clone)]
 pub struct OkIdentifierNode(pub Rc<RefCell<CoreOkIdentifierNode>>);
 #[derive(Debug, Clone)]
+pub struct SelfKeywordNode(pub Rc<CoreSelfKeywordNode>);
+#[derive(Debug, Clone)]
+pub struct OkSelfKeywordNode(pub Rc<RefCell<CoreOkSelfKeywordNode>>);
+#[derive(Debug, Clone)]
 pub struct TokenNode(pub Rc<CoreTokenNode>);
 #[derive(Debug, Clone)]
 pub struct OkTokenNode(pub Rc<CoreOkTokenNode>);
@@ -701,15 +759,15 @@ pub enum BlockKind {
     FUNC,
     STRUCT,
 }
+
 pub enum TypeResolveKind {
     RESOLVED(Type),
     UNRESOLVED(OkIdentifierNode),
     INVALID,
 }
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum CallableKind {
     FUNC,
-    METHOD, // Add the symbol entry of the struct for which this is a method
-    CLASSMETHOD,
-    CONSTRUCTOR,
+    METHOD,
 }

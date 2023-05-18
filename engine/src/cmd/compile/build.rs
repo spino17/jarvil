@@ -30,8 +30,7 @@ pub fn build(code_vec: Vec<char>) -> Result<(), Diagnostics> {
     if errors.len() > 0 {
         return Err(errors[0].clone());
     }
-    // TODO - return chunk in result and use VM to execute it!
-    let mut py_generator = PythonCodeGenerator::new(&code);
+    let py_generator = PythonCodeGenerator::new(&code);
     let py_code = py_generator.generate_python_code(&ast);
     fs::write(
         "/Users/bhavyabhatt/Desktop/generated-python-file.jv",

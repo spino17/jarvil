@@ -1,7 +1,8 @@
 use super::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
-use rustc_hash::FxHashMap;
+use crate::types::core::Type;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::RefCell;
 use std::rc::Rc;
 use text_size::TextRange;
@@ -13,8 +14,14 @@ pub enum IdentifierKind {
     FUNCTION(SymbolData<FunctionData>),
 }
 
+pub enum VariableLookupResult {
+    OK((SymbolData<VariableData>, usize)),
+    NOT_INITIALIZED(TextRange),
+    Err,
+}
+
 #[derive(Debug)]
-pub struct SymbolData<T>(pub Rc<RefCell<T>>, TextRange); // (identifier_meta_data, decl_line_number)
+pub struct SymbolData<T>(pub Rc<RefCell<T>>, pub TextRange); // (identifier_meta_data, decl_line_number)
 
 impl<T> SymbolData<T> {
     pub fn new(core_data: T, decl_range: TextRange) -> Self {
@@ -32,6 +39,7 @@ impl<T> Clone for SymbolData<T> {
 pub struct CoreScope<T> {
     symbol_table: FxHashMap<Rc<String>, SymbolData<T>>,
     parent_scope: Option<Scope<T>>,
+    non_locals: FxHashSet<Rc<String>>,
 }
 
 impl<T> CoreScope<T> {
@@ -44,6 +52,14 @@ impl<T> CoreScope<T> {
     pub fn get(&self, name: &Rc<String>) -> Option<&SymbolData<T>> {
         self.symbol_table.get(name)
     }
+
+    pub fn set_to_non_locals(&mut self, name: &Rc<String>) {
+        self.non_locals.insert(name.clone());
+    }
+
+    pub fn is_in_non_locals(&self, name: &Rc<String>) -> bool {
+        self.non_locals.get(name).is_some()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -54,6 +70,7 @@ impl<T> Scope<T> {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_scope: None,
+            non_locals: FxHashSet::default(),
         })))
     }
 
@@ -62,6 +79,7 @@ impl<T> Scope<T> {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_scope: Some(Scope(scope)),
+            non_locals: FxHashSet::default(),
         })))
     }
 
@@ -72,7 +90,7 @@ impl<T> Scope<T> {
         }
     }
 
-    fn insert<U: Fn(Scope<T>, Rc<String>) -> Option<SymbolData<T>>>(
+    pub fn insert<U: Fn(Scope<T>, Rc<String>) -> Option<SymbolData<T>>>(
         &self,
         key: &Rc<String>,
         meta_data: T,
@@ -111,17 +129,19 @@ impl<T> Scope<T> {
             }
         }
     }
-}
 
-pub enum NameSpaceKind {
-    VARIABLES,
-    TYPES,
-    FUNCTIONS,
+    fn set_to_non_locals(&self, name: &Rc<String>) {
+        self.0.as_ref().borrow_mut().set_to_non_locals(name);
+    }
+
+    fn is_in_non_locals(&self, name: &Rc<String>) -> bool {
+        self.0.as_ref().borrow().is_in_non_locals(name)
+    }
 }
 
 #[derive(Debug)]
 pub struct Namespace {
-    variables: Scope<VariableData>,
+    pub variables: Scope<VariableData>,
     types: Scope<UserDefinedTypeData>,
     functions: Scope<FunctionData>,
 }
@@ -166,6 +186,22 @@ impl Namespace {
         self.variables.lookup(key)
     }
 
+    pub fn lookup_in_variables_namespace_with_is_init(
+        &self,
+        key: &Rc<String>,
+    ) -> VariableLookupResult {
+        match self.variables.lookup(key) {
+            Some((symbol_data, depth)) => {
+                if symbol_data.0.as_ref().borrow().is_initialized() {
+                    return VariableLookupResult::OK((symbol_data, depth));
+                } else {
+                    return VariableLookupResult::NOT_INITIALIZED(symbol_data.1.clone());
+                }
+            }
+            None => return VariableLookupResult::Err,
+        }
+    }
+
     pub fn lookup_in_types_namespace(
         &self,
         key: &Rc<String>,
@@ -193,6 +229,27 @@ impl Namespace {
             };
         self.variables
             .insert(name, VariableData::default(), decl_range, lookup_func)
+    }
+
+    pub fn declare_variable_with_type(
+        &self,
+        name: &Rc<String>,
+        variable_type: &Type,
+        decl_range: TextRange,
+        is_init: bool,
+    ) -> Result<SymbolData<VariableData>, TextRange> {
+        let lookup_func =
+            |scope: Scope<VariableData>, key: Rc<String>| match scope.0.as_ref().borrow().get(&key)
+            {
+                Some(symbol_data) => Some(symbol_data.clone()),
+                None => None,
+            };
+        self.variables.insert(
+            name,
+            VariableData::new(variable_type, is_init),
+            decl_range,
+            lookup_func,
+        )
     }
 
     pub fn declare_function(
@@ -245,12 +302,28 @@ impl Namespace {
             lookup_func,
         )
     }
+
+    pub fn set_to_variable_non_locals(&self, name: &Rc<String>) {
+        self.variables.set_to_non_locals(name);
+    }
+
+    pub fn is_variable_in_non_locals(&self, name: &Rc<String>) -> bool {
+        self.variables.is_in_non_locals(name)
+    }
+
+    pub fn set_to_function_non_locals(&self, name: &Rc<String>) {
+        self.functions.set_to_non_locals(name);
+    }
+
+    pub fn is_function_in_non_locals(&self, name: &Rc<String>) -> bool {
+        self.functions.is_in_non_locals(name)
+    }
 }
 
 impl Clone for Namespace {
     fn clone(&self) -> Self {
         Namespace {
-            variables: self.variables.clone(), // TODO - variables and lambdas
+            variables: self.variables.clone(),
             types: self.types.clone(),
             functions: self.functions.clone(),
         }

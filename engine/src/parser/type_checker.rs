@@ -8,11 +8,13 @@ use crate::{
             BinaryExpressionNode, BlockNode, CallableBodyNode, CallablePrototypeNode,
             ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
             CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode,
-            CoreRAssignmentNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreUnaryExpressionNode, ExpressionNode, LambdaDeclarationNode, NameTypeSpecsNode,
-            Node, OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, ReturnStatementNode,
-            StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-            VariableDeclarationNode,
+            CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
+            LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode,
+            OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
+            ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
+            UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -24,13 +26,14 @@ use crate::{
             STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
         },
         diagnostics::{
-            BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError, Diagnostics,
-            ExpressionIndexingNotValidError, ExpressionNotCallableError,
-            IdentifierNotCallableError, InvalidReturnStatementError, LessParamsCountError,
-            MismatchedParamTypeError, MismatchedReturnTypeError, MismatchedTypesOnLeftRightError,
-            MoreParamsCountError, NoReturnStatementInFunctionError,
-            NoValidStatementInsideFunctionBody, PropertyDoesNotExistError,
-            PropertyNotSupportedError, RightSideWithVoidTypeNotAllowedError,
+            BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError,
+            ConstructorNotFoundForTypeError, Diagnostics, ExpressionIndexingNotValidError,
+            ExpressionNotCallableError, IdentifierNotCallableError, InvalidReturnStatementError,
+            LessParamsCountError, MismatchedParamTypeError, MismatchedReturnTypeError,
+            MismatchedTypesOnLeftRightError, MoreParamsCountError,
+            NoReturnStatementInFunctionError, NoValidStatementInsideFunctionBody,
+            PropertyDoesNotExistError, PropertyNotSupportedError,
+            RightSideWithVoidTypeNotAllowedError, StructFieldNotCallableError,
             UnaryOperatorInvalidUseError,
         },
         helper::PropertyKind,
@@ -38,12 +41,14 @@ use crate::{
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
         core::{IdentifierKind, SymbolData},
-        user_defined_types::{LambdaTypeData, UserDefinedTypeData},
+        user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData},
     },
     types::core::{AbstractType, CoreType, Type},
 };
-use std::{ops::Index, rc::Rc};
+use std::rc::Rc;
 use text_size::TextRange;
+
+use super::resolver::Resolver;
 
 #[derive(Debug)]
 struct Context {
@@ -55,6 +60,12 @@ pub enum AtomicTokenExprKind {
     INTEGER,
     FLOAT,
     LITERAL,
+}
+
+pub enum StructPropertyCheckResult {
+    PROPERTY_EXIST((StructData, Type)),
+    PROPERTY_DOES_NOT_EXIST(StructData),
+    NON_STRUCT_TYPE,
 }
 
 pub enum ParamsTypeNCountResult {
@@ -103,7 +114,12 @@ impl TypeChecker {
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_after_resolved(&self.code) {
-            TypeResolveKind::RESOLVED(type_obj) => type_obj,
+            TypeResolveKind::RESOLVED(type_obj) => {
+                type DummyFnType = fn(&mut Resolver, TextRange);
+                return Resolver::check_if_type_is_hashmap_with_hashable_index::<DummyFnType>(
+                    &type_obj, type_expr, None,
+                );
+            }
             TypeResolveKind::UNRESOLVED(_) => return Type::new_with_unknown(),
             TypeResolveKind::INVALID => Type::new_with_unknown(),
         }
@@ -129,7 +145,6 @@ impl TypeChecker {
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
                     if ok_identifier.is_resolved() {
-                        let variable_name = Rc::new(ok_identifier.token_value(&self.code));
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         params_vec.push(type_obj);
                     }
@@ -141,27 +156,24 @@ impl TypeChecker {
 
     pub fn type_of_lambda(&self, lambda_decl: &LambdaDeclarationNode) -> Type {
         let core_lambda_decl = lambda_decl.0.as_ref();
-        let func_name = &core_lambda_decl.name;
+        let lambda_name = &core_lambda_decl.name;
         match &core_lambda_decl.body.core_ref() {
             CoreCallableBodyNode::OK(ok_callable_decl) => {
                 let core_ok_callable_decl = ok_callable_decl.core_ref();
                 let prototype = &core_ok_callable_decl.prototype.core_ref();
                 let params = &prototype.params;
                 let return_type = &prototype.return_type;
-                let (params_vec, return_type) = match func_name {
-                    Some(func_name) => match func_name.core_ref() {
-                        CoreIdentifierNode::OK(ok_identifier) => match ok_identifier
-                            .variable_symbol_data(
-                                "lambda name should be resolved to `SymbolData<VariableData>`",
-                            ) {
-                            Some(symbol_data) => {
-                                return symbol_data.0.as_ref().borrow().data_type.clone()
-                            }
-                            None => self.params_and_return_type_obj_from_expr(return_type, params),
-                        },
-                        _ => self.params_and_return_type_obj_from_expr(return_type, params),
+                let (params_vec, return_type) = match lambda_name.core_ref() {
+                    CoreIdentifierNode::OK(ok_identifier) => match ok_identifier
+                        .variable_symbol_data(
+                            "lambda name should be resolved to `SymbolData<VariableData>`",
+                        ) {
+                        Some(symbol_data) => {
+                            return symbol_data.0.as_ref().borrow().data_type.clone()
+                        }
+                        None => self.params_and_return_type_obj_from_expr(return_type, params),
                     },
-                    None => self.params_and_return_type_obj_from_expr(return_type, params),
+                    _ => self.params_and_return_type_obj_from_expr(return_type, params),
                 };
                 let symbol_data =
                     UserDefinedTypeData::LAMBDA(LambdaTypeData::new(params_vec, return_type));
@@ -175,9 +187,9 @@ impl TypeChecker {
         }
     }
 
-    pub fn is_callable(&mut self, atom: &AtomNode) -> Option<(Rc<Vec<Type>>, Type)> {
-        let atom_type_obj = self.check_atom(atom);
-        match atom_type_obj.0.as_ref() {
+    pub fn is_callable(&mut self, type_obj: &Type) -> Option<(Rc<Vec<Type>>, Type)> {
+        // let atom_type_obj = self.check_atom(atom);
+        match type_obj.0.as_ref() {
             CoreType::LAMBDA(lambda) => {
                 let lambda_data = lambda
                     .symbol_data
@@ -193,11 +205,17 @@ impl TypeChecker {
     }
 
     pub fn is_indexable_with_type(&mut self, base_type: &Type, index_type: &Type) -> Option<Type> {
-        // TODO - type can be (array, int), (hashmap, any type given in the definition)
         match base_type.0.as_ref() {
             CoreType::ARRAY(array) => {
                 if index_type.is_int() {
                     return Some(array.element_type.clone());
+                } else {
+                    return None;
+                }
+            }
+            CoreType::HASHMAP(hashmap) => {
+                if index_type.is_eq(&hashmap.key_type) && index_type.is_hashable() {
+                    return Some(hashmap.value_type.clone());
                 } else {
                     return None;
                 }
@@ -287,6 +305,20 @@ impl TypeChecker {
                 }
                 _ => Type::new_with_unknown(),
             },
+            CoreAtomStartNode::SELF_KEYWORD(self_keyword) => {
+                let core_self_keyword = self_keyword.core_ref();
+                match core_self_keyword {
+                    CoreSelfKeywordNode::OK(ok_self_keyword) => {
+                        match ok_self_keyword.symbol_data() {
+                            Some(symbol_data) => {
+                                return symbol_data.0.as_ref().borrow().data_type.clone()
+                            }
+                            None => return Type::new_with_unknown(),
+                        }
+                    }
+                    _ => Type::new_with_unknown(),
+                }
+            }
             CoreAtomStartNode::CALL(call_expr) => {
                 let core_call_expr = call_expr.core_ref();
                 let func_name = &core_call_expr.function_name;
@@ -299,26 +331,63 @@ impl TypeChecker {
                                 let expected_params = func_data.params;
                                 let return_type = func_data.return_type;
                                 (CallableParamsData::OTHER(expected_params), return_type)
-                            },
+                            }
                             IdentifierKind::VARIABLE(variable_symbol_data) => {
-                                let lambda_type = variable_symbol_data.0.as_ref().borrow().data_type.clone();
+                                let lambda_type =
+                                    variable_symbol_data.0.as_ref().borrow().data_type.clone();
                                 match lambda_type.0.as_ref() {
                                     CoreType::LAMBDA(lambda_data) => {
                                         let lambda_data = lambda_data.symbol_data.0.as_ref().borrow().lambda_data(
                                             LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG
                                         ).clone();
-                                        (CallableParamsData::LAMBDA(lambda_data.param_types), lambda_data.return_type)
-                                    },
+                                        (
+                                            CallableParamsData::LAMBDA(lambda_data.param_types),
+                                            lambda_data.return_type,
+                                        )
+                                    }
                                     _ => {
                                         let err = IdentifierNotCallableError::new(
-                                            lambda_type, func_name.range()
+                                            lambda_type,
+                                            ok_identifier.range(),
                                         );
                                         self.errors.push(Diagnostics::IdentifierNotCallable(err));
-                                        return Type::new_with_unknown()
+                                        return Type::new_with_unknown();
                                     }
                                 }
-                            },  // TODO - handle case when the call is constructor call
-                            _ => unreachable!("function name should be resolved to `SymbolData<FunctionData>` or `SymbolData<VariableData>`")
+                            }
+                            IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_Data) => {
+                                let type_decl_range = user_defined_type_symbol_Data.1;
+                                let name = ok_identifier.token_value(&self.code);
+                                match &*user_defined_type_symbol_Data.0.as_ref().borrow() {
+                                    UserDefinedTypeData::STRUCT(struct_symbol_data) => {
+                                        let constructor_meta_data =
+                                            struct_symbol_data.constructor.clone();
+                                        let return_type = Type::new_with_struct(
+                                            name.to_string(),
+                                            &SymbolData::new(
+                                                UserDefinedTypeData::STRUCT(
+                                                    struct_symbol_data.clone(),
+                                                ),
+                                                type_decl_range,
+                                            ),
+                                        );
+                                        (
+                                            CallableParamsData::OTHER(constructor_meta_data.params),
+                                            return_type,
+                                        )
+                                    }
+                                    UserDefinedTypeData::LAMBDA(_) => {
+                                        let type_name = ok_identifier.token_value(&self.code);
+                                        let err = ConstructorNotFoundForTypeError::new(
+                                            type_name,
+                                            ok_identifier.range(),
+                                        );
+                                        self.errors
+                                            .push(Diagnostics::ConstructorNotFoundForType(err));
+                                        return Type::new_with_unknown();
+                                    }
+                                }
+                            }
                         };
                         let result = self.check_params_type_and_count(expected_params_data, params);
                         match result {
@@ -352,13 +421,8 @@ impl TypeChecker {
                                     }
                                     _ => return Type::new_with_unknown(),
                                 };
-                                match struct_data
-                                    .class_methods
-                                    .as_ref()
-                                    .borrow()
-                                    .get(&class_method_name)
-                                {
-                                    Some(func_data) => {
+                                match struct_data.class_methods.as_ref().get(&class_method_name) {
+                                    Some((func_data, _)) => {
                                         let expected_params = func_data.params.clone();
                                         let return_type = func_data.return_type.clone();
                                         let result = self.check_params_type_and_count(
@@ -403,6 +467,36 @@ impl TypeChecker {
         }
     }
 
+    pub fn check_struct_property(
+        &mut self,
+        atom_type_obj: &Type,
+        property_name: &OkIdentifierNode,
+    ) -> StructPropertyCheckResult {
+        let property_name_str = Rc::new(property_name.token_value(&self.code));
+        match atom_type_obj.0.as_ref() {
+            CoreType::STRUCT(struct_type) => {
+                let struct_data = struct_type
+                    .symbol_data
+                    .0
+                    .as_ref()
+                    .borrow()
+                    .struct_data(STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG)
+                    .clone();
+                match struct_data.try_field(&property_name_str) {
+                    Some((type_obj, _)) => {
+                        return StructPropertyCheckResult::PROPERTY_EXIST((struct_data, type_obj))
+                    }
+                    None => {
+                        return StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(
+                            struct_data.clone(),
+                        )
+                    }
+                }
+            }
+            _ => return StructPropertyCheckResult::NON_STRUCT_TYPE,
+        }
+    }
+
     pub fn check_atom(&mut self, atom: &AtomNode) -> Type {
         let core_atom = atom.core_ref();
         match core_atom {
@@ -411,7 +505,8 @@ impl TypeChecker {
                 let core_call = call.core_ref();
                 let atom = &core_call.atom;
                 let params = &core_call.params;
-                match self.is_callable(atom) {
+                let atom_type_obj = self.check_atom(atom);
+                match self.is_callable(&atom_type_obj) {
                     Some((expected_param_types, return_type)) => {
                         let result = self.check_params_type_and_count(
                             CallableParamsData::LAMBDA(expected_param_types),
@@ -438,33 +533,22 @@ impl TypeChecker {
                 let atom_type_obj = self.check_atom(atom);
                 let property = &core_property_access.propertry;
                 if let CoreIdentifierNode::OK(ok_identifier) = property.core_ref() {
-                    let property_name = Rc::new(ok_identifier.token_value(&self.code));
-                    match atom_type_obj.0.as_ref() {
-                        CoreType::STRUCT(struct_type) => {
-                            match struct_type
-                                .symbol_data
-                                .0
-                                .as_ref()
-                                .borrow()
-                                .struct_data(
-                                    STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
-                                )
-                                .try_field(&property_name)
-                            {
-                                Some((type_obj, _)) => return type_obj,
-                                None => {
-                                    let err = PropertyDoesNotExistError::new(
-                                        PropertyKind::FIELD,
-                                        atom_type_obj.clone(),
-                                        property.range(),
-                                        atom.range(),
-                                    );
-                                    self.errors.push(Diagnostics::PropertyDoesNotExist(err));
-                                    return Type::new_with_unknown();
-                                }
-                            }
+                    let result = self.check_struct_property(&atom_type_obj, ok_identifier);
+                    match result {
+                        StructPropertyCheckResult::PROPERTY_EXIST((_, type_obj)) => {
+                            return type_obj
                         }
-                        _ => {
+                        StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(_) => {
+                            let err = PropertyDoesNotExistError::new(
+                                PropertyKind::FIELD,
+                                atom_type_obj.clone(),
+                                ok_identifier.range(),
+                                atom.range(),
+                            );
+                            self.errors.push(Diagnostics::PropertyDoesNotExist(err));
+                            return Type::new_with_unknown();
+                        }
+                        StructPropertyCheckResult::NON_STRUCT_TYPE => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::FIELD,
                                 atom_type_obj,
@@ -479,27 +563,49 @@ impl TypeChecker {
                 Type::new_with_unknown()
             }
             CoreAtomNode::METHOD_ACCESS(method_access) => {
-                // TODO - check for possiblitiy of a field access with type lambda which will have similar syntax
                 let core_method_access = method_access.core_ref();
                 let atom = &core_method_access.atom;
                 let atom_type_obj = self.check_atom(atom);
                 let method = &core_method_access.method_name;
                 let params = &core_method_access.params;
                 if let CoreIdentifierNode::OK(ok_identifier) = method.core_ref() {
+                    // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
+                    // (for example: a field with lambda type) and then it goes on to find it in methods.
+                    // This is sync with what python does.
+                    let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     let method_name = ok_identifier.token_value(&self.code);
-                    match atom_type_obj.0.as_ref() {
-                        CoreType::STRUCT(struct_type) => {
-                            match struct_type
-                                .symbol_data
-                                .0
-                                .as_ref()
-                                .borrow()
-                                .struct_data(
-                                    STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
-                                )
-                                .try_method(&method_name)
-                            {
-                                Some(func_data) => {
+                    match result {
+                        StructPropertyCheckResult::PROPERTY_EXIST((_, type_obj)) => {
+                            match self.is_callable(&type_obj) {
+                                Some((expected_param_types, return_type)) => {
+                                    let result = self.check_params_type_and_count(
+                                        CallableParamsData::LAMBDA(expected_param_types),
+                                        params,
+                                    );
+                                    match result {
+                                        ParamsTypeNCountResult::OK => return return_type,
+                                        _ => {
+                                            self.log_params_type_and_count_check_error(
+                                                ok_identifier.range(),
+                                                result,
+                                            );
+                                            return Type::new_with_unknown();
+                                        }
+                                    }
+                                }
+                                None => {
+                                    let err = StructFieldNotCallableError::new(
+                                        type_obj,
+                                        ok_identifier.range(),
+                                    );
+                                    self.errors.push(Diagnostics::StructFieldNotCallable(err));
+                                    return Type::new_with_unknown();
+                                }
+                            }
+                        }
+                        StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(struct_data) => {
+                            match struct_data.try_method(&Rc::new(method_name)) {
+                                Some((func_data, _)) => {
                                     let expected_params = &func_data.params;
                                     let return_type = &func_data.return_type;
                                     let result = self.check_params_type_and_count(
@@ -529,7 +635,7 @@ impl TypeChecker {
                                 }
                             }
                         }
-                        _ => {
+                        StructPropertyCheckResult::NON_STRUCT_TYPE => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::METHOD,
                                 atom_type_obj,
@@ -573,11 +679,24 @@ impl TypeChecker {
             CoreRAssignmentNode::EXPRESSION(expr_stmt) => {
                 self.check_expr(&expr_stmt.core_ref().expr)
             }
-            CoreRAssignmentNode::LAMBDA(lambda) => {
+            CoreRAssignmentNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
+        }
+    }
+
+    pub fn check_r_variable_declaration(
+        &mut self,
+        r_variable_decl: &RVariableDeclarationNode,
+    ) -> Type {
+        let core_r_variable_decl = r_variable_decl.core_ref();
+        match core_r_variable_decl {
+            CoreRVariableDeclarationNode::EXPRESSION(expr_stmt) => {
+                self.check_expr(&expr_stmt.core_ref().expr)
+            }
+            CoreRVariableDeclarationNode::LAMBDA(lambda) => {
                 self.check_callable_body(&lambda.core_ref().body);
                 return self.type_of_lambda(lambda);
             }
-            _ => Type::new_with_unknown(),
+            CoreRVariableDeclarationNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
         }
     }
 
@@ -612,7 +731,7 @@ impl TypeChecker {
                 self.check_expr(&parenthesised_expr.core_ref().expr)
             }
             CoreAtomicExpressionNode::ATOM(atom) => self.check_atom(atom),
-            _ => Type::new_with_unknown(),
+            CoreAtomicExpressionNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
         }
     }
 
@@ -779,10 +898,10 @@ impl TypeChecker {
 
     pub fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        let r_assign = &core_variable_decl.r_assign;
-        let r_type = self.check_r_assign(r_assign);
+        let r_variable_decl = &core_variable_decl.r_node;
+        let r_type = self.check_r_variable_declaration(r_variable_decl);
         if r_type.is_void() {
-            let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
+            let err = RightSideWithVoidTypeNotAllowedError::new(r_variable_decl.range());
             self.errors
                 .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
         }
@@ -892,13 +1011,27 @@ impl TypeChecker {
             CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
                 self.check_variable_decl(variable_decl);
             }
-            CoreStatementNode::FUNCTION_DECLARATION(func_decl) => {
-                self.check_callable_body(&func_decl.core_ref().body);
+            CoreStatementNode::FUNCTION_WRAPPER(func_wrapper) => {
+                self.check_callable_body(&func_wrapper.core_ref().func_decl.core_ref().body);
+            }
+            CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+                self.check_callable_body(
+                    &bounded_method_wrapper.core_ref().func_decl.core_ref().body,
+                );
             }
             CoreStatementNode::RETURN(return_stmt) => {
                 self.check_return_stmt(return_stmt);
             }
-            _ => return,
+            CoreStatementNode::TYPE_DECLARATION(type_decl) => match type_decl.core_ref() {
+                CoreTypeDeclarationNode::STRUCT(struct_decl) => {
+                    self.walk_block(&struct_decl.core_ref().block);
+                }
+                CoreTypeDeclarationNode::LAMBDA(_) | CoreTypeDeclarationNode::MISSING_TOKENS(_) => {
+                    return
+                }
+            },
+            CoreStatementNode::STRUCT_PROPERTY_DECLARATION(_)
+            | CoreStatementNode::MISSING_TOKENS(_) => return,
         }
     }
 

@@ -1,53 +1,14 @@
-use super::expression::core::is_expression_starting_with;
 use super::statement::core::{
     is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS,
 };
 use crate::ast::ast::{
-    BlockKind, CallableBodyNode, CallablePrototypeNode, ErrornousNode, IdentifierNode,
-    LambdaDeclarationNode, NameTypeSpecNode, NameTypeSpecsNode, OkNameTypeSpecsNode,
-    OkTypeTupleNode, RAssignmentNode, TypeTupleNode,
+    BlockKind, BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode,
+    ErrornousNode, FunctionDeclarationNode, FunctionWrapperNode, NameTypeSpecNode,
+    NameTypeSpecsNode, OkNameTypeSpecsNode, OkTypeTupleNode, StatementNode, TypeTupleNode,
 };
-use crate::constants::common::LAMBDA_KEYWORD;
-use crate::lexer::token::{CoreToken, Token};
+use crate::lexer::token::CoreToken;
 use crate::parser::parser::PackratParser;
 use std::rc::Rc;
-
-pub fn is_r_assign_starting_with(token: &Token) -> bool {
-    match token.core_token {
-        CoreToken::LAMBDA_KEYWORD => true,
-        _ => is_expression_starting_with(token),
-    }
-}
-
-pub const R_ASSIGNMENT_STARTING_SYMBOLS: [&'static str; 2] = ["<expression>", "lambda"];
-
-pub fn r_assign(
-    parser: &mut PackratParser,
-    identifier_name: Option<&IdentifierNode>,
-) -> RAssignmentNode {
-    let token = &parser.curr_token();
-    if !is_r_assign_starting_with(token) {
-        parser.log_missing_token_error(&R_ASSIGNMENT_STARTING_SYMBOLS, token);
-        return RAssignmentNode::new_with_missing_tokens(
-            &Rc::new(R_ASSIGNMENT_STARTING_SYMBOLS.to_vec()),
-            token,
-        );
-    }
-    match token.core_token {
-        CoreToken::LAMBDA_KEYWORD => {
-            let lambda_keyword = parser.expect(LAMBDA_KEYWORD);
-            let callable_body = parser.callable_body();
-            let lambda_decl_node =
-                LambdaDeclarationNode::new(identifier_name, &lambda_keyword, &callable_body);
-            RAssignmentNode::new_with_lambda(&lambda_decl_node)
-        }
-        _ => {
-            let expr_node = parser.expr();
-            let newline = parser.expect_terminators();
-            RAssignmentNode::new_with_expr(&expr_node, &newline)
-        }
-    }
-}
 
 pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
     let name_node = parser.expect_ident();
@@ -90,9 +51,12 @@ pub fn type_tuple(parser: &mut PackratParser) -> TypeTupleNode {
     match token.core_token {
         CoreToken::COMMA => {
             let comma_node = parser.expect(",");
-            let remaining_types = parser.type_tuple();
-            let ok_type_tuple_node =
-                OkTypeTupleNode::new_with_args(&first_type_node, &remaining_types, &comma_node);
+            let remaining_types_node = parser.type_tuple();
+            let ok_type_tuple_node = OkTypeTupleNode::new_with_args(
+                &first_type_node,
+                &remaining_types_node,
+                &comma_node,
+            );
             return TypeTupleNode::new(&ok_type_tuple_node);
         }
         CoreToken::RPAREN => {
@@ -147,6 +111,26 @@ pub fn callable_body(parser: &mut PackratParser) -> CallableBodyNode {
         _ => {
             parser.log_missing_token_error(&[":"], token);
             return CallableBodyNode::new_with_missing_tokens(&Rc::new([":"].to_vec()), token);
+        }
+    }
+}
+
+pub fn function_stmt(parser: &mut PackratParser, callable_kind: CallableKind) -> StatementNode {
+    let def_keyword_node = parser.expect("def");
+    let func_name_node = parser.expect_ident();
+    let callable_body = parser.callable_body();
+    let func_decl_node =
+        FunctionDeclarationNode::new(&func_name_node, &def_keyword_node, &callable_body);
+    match callable_kind {
+        CallableKind::FUNC => {
+            return StatementNode::new_with_function_wrapper(&FunctionWrapperNode::new(
+                &func_decl_node,
+            ))
+        }
+        CallableKind::METHOD => {
+            return StatementNode::new_with_bounded_method_wrapper(&BoundedMethodWrapperNode::new(
+                &func_decl_node,
+            ))
         }
     }
 }

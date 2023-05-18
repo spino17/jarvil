@@ -10,11 +10,12 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
     let token = &parser.curr_token();
     let type_decl_node = match token.core_token {
         CoreToken::STRUCT_KEYWORD => {
-            let struct_keyword = parser.expect("struct");
+            let struct_keyword_node = parser.expect("struct");
             let colon_node = parser.expect(":");
             let block_node = parser.block(
                 |token| match token.core_token {
                     CoreToken::IDENTIFIER => true,
+                    CoreToken::DEF => true,
                     _ => false,
                 },
                 |parser| parser.struct_stmt(),
@@ -25,7 +26,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                 &type_name_node,
                 &block_node,
                 &type_keyword_node,
-                &struct_keyword,
+                &struct_keyword_node,
                 &colon_node,
             )
         }
@@ -37,7 +38,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
             let temp_r_arrow_node: TokenNode;
             let temp_return_type_node: TypeExpressionNode;
 
-            let lambda_keyword = parser.expect("lambda");
+            let lambda_keyword_node = parser.expect("lambda");
             let equal_node = parser.expect("=");
             let lparen_node = parser.expect("(");
             if !parser.check_curr_token(")") {
@@ -58,7 +59,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                     LambdaTypeDeclarationNode::new(
                         &type_name_node,
                         &type_keyword_node,
-                        &lambda_keyword,
+                        &lambda_keyword_node,
                         &equal_node,
                         &lparen_node,
                         &rparen_node,

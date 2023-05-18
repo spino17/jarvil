@@ -524,11 +524,6 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                             let next_next_next_c = value_iter.next();
                                             match next_next_next_c {
                                                 Some(next_next_next_c) => match next_next_next_c {
-                                                    'i' => check_keyword(
-                                                        "ng",
-                                                        value_iter,
-                                                        CoreToken::ATOMIC_TYPE,
-                                                    ),
                                                     'u' => check_keyword(
                                                         "ct",
                                                         value_iter,
@@ -536,7 +531,7 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                                     ),
                                                     _ => CoreToken::IDENTIFIER,
                                                 },
-                                                None => return CoreToken::IDENTIFIER,
+                                                None => return CoreToken::ATOMIC_TYPE,
                                             }
                                         }
                                         _ => return CoreToken::IDENTIFIER,
@@ -548,7 +543,7 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                         },
                         None => return CoreToken::IDENTIFIER,
                     }
-                } // self, string, struct
+                } // self, str, struct
                 'a' => check_keyword("nd", value_iter, CoreToken::AND),     // and
                 'n' => check_keyword("ot", value_iter, CoreToken::NOT),     // not
                 'o' => check_keyword("r", value_iter, CoreToken::OR),       // or

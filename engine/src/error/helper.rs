@@ -1,5 +1,5 @@
-use std::fmt::Display;
 use std::fmt::{self};
+use std::fmt::{write, Display};
 use text_size::TextRange;
 
 #[derive(Clone, Debug)]
@@ -9,6 +9,8 @@ pub enum IdentifierKind {
     TYPE,
     ARGUMENT,
     FIELD,
+    METHOD,
+    CONSTRUCTOR,
 }
 impl Display for IdentifierKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -18,6 +20,8 @@ impl Display for IdentifierKind {
             IdentifierKind::TYPE => write!(f, "type"),
             IdentifierKind::ARGUMENT => write!(f, "argument"),
             IdentifierKind::FIELD => write!(f, "field"),
+            IdentifierKind::METHOD => write!(f, "method"),
+            IdentifierKind::CONSTRUCTOR => write!(f, "constructor"),
         }
     }
 }
