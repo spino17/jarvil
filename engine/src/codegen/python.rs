@@ -14,7 +14,7 @@ use crate::{
     },
     code::Code,
     context,
-    lexer::token::Token,
+    lexer::token::{CoreToken, Token},
     scope::core::IdentifierKind,
 };
 use std::{convert::TryInto, rc::Rc};
@@ -88,18 +88,40 @@ impl PythonCodeGenerator {
         self.generate_code.push_str(str);
     }
 
+    pub fn print_token(&mut self, token: &Token) {
+        let trivia = &token.trivia;
+        self.print_trivia(trivia);
+        let token_value = token.token_value(&self.code);
+        match token.core_token {
+            CoreToken::SINGLE_LINE_COMMENT => {
+                if token_value.chars().next().unwrap() == '/' {
+                    let mut modified_str = "#".to_string();
+                    modified_str.push_str(&token_value[2..]);
+                    self.add_str_to_python_code(&modified_str);
+                } else {
+                    self.add_str_to_python_code(&token_value);
+                }
+            }
+            CoreToken::BLOCK_COMMENT => {
+                let len = token_value.len();
+                let mut critical_section = token_value[2..(len - 2)].to_string();
+                critical_section.push_str("\"\"\"");
+                let mut final_str = "\"\"\"".to_string();
+                final_str.push_str(&critical_section);
+                self.add_str_to_python_code(&final_str);
+            }
+            _ => {
+                self.add_str_to_python_code(&token_value);
+            }
+        }
+    }
+
     pub fn print_trivia(&mut self, trivia: &Option<Rc<Vec<Token>>>) {
         if let Some(trivia) = trivia {
             for trivia_entry in trivia.as_ref() {
                 self.print_token(trivia_entry);
             }
         }
-    }
-
-    pub fn print_token(&mut self, token: &Token) {
-        let trivia = &token.trivia;
-        self.print_trivia(trivia);
-        self.add_str_to_python_code(&token.token_value(&self.code));
     }
 
     pub fn print_token_node(&mut self, token: &TokenNode) {
@@ -254,8 +276,9 @@ impl PythonCodeGenerator {
                 self.print_token_node(def_keyword);
                 self.print_identifier(name);
                 self.print_token_node(lparen);
-                self.add_str_to_python_code("self, ");
+                self.add_str_to_python_code("self");
                 if let Some(params) = params {
+                    self.add_str_to_python_code(", ");
                     self.walk_name_type_specs(params);
                 }
                 self.print_token_node(rparen);
