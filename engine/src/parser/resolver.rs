@@ -832,6 +832,7 @@ impl Visitor for Resolver {
                         if let CoreIdentifierNode::OK(ok_identifier) =
                             core_func_call.function_name.core_ref()
                         {
+                            // order of namespace search: function => type => variable
                             let name = Rc::new(ok_identifier.token_value(&self.code));
                             match self.namespace.lookup_in_functions_namespace(&name) {
                                 Some((symbol_data, depth)) => {

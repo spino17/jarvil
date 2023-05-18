@@ -11,10 +11,10 @@ use crate::{
             CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
-            LambdaDeclarationNode, NameTypeSpecsNode, Node, OnlyUnaryExpressionNode, ParamsNode,
-            RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, StatementNode,
-            TokenNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-            VariableDeclarationNode,
+            LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode,
+            OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
+            ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
+            UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -40,7 +40,7 @@ use crate::{
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
         core::{IdentifierKind, SymbolData},
-        user_defined_types::{LambdaTypeData, UserDefinedTypeData},
+        user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData},
     },
     types::core::{AbstractType, CoreType, Type},
 };
@@ -57,6 +57,12 @@ pub enum AtomicTokenExprKind {
     INTEGER,
     FLOAT,
     LITERAL,
+}
+
+pub enum StructPropertyCheckResult {
+    PROPERTY_EXIST((StructData, Type)),
+    PROPERTY_DOES_NOT_EXIST(StructData),
+    NON_STRUCT_TYPE,
 }
 
 pub enum ParamsTypeNCountResult {
@@ -447,6 +453,36 @@ impl TypeChecker {
         }
     }
 
+    pub fn check_struct_property(
+        &mut self,
+        atom_type_obj: &Type,
+        property_name: &OkIdentifierNode,
+    ) -> StructPropertyCheckResult {
+        let property_name_str = Rc::new(property_name.token_value(&self.code));
+        match atom_type_obj.0.as_ref() {
+            CoreType::STRUCT(struct_type) => {
+                let struct_data = struct_type
+                    .symbol_data
+                    .0
+                    .as_ref()
+                    .borrow()
+                    .struct_data(STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG)
+                    .clone();
+                match struct_data.try_field(&property_name_str) {
+                    Some((type_obj, _)) => {
+                        return StructPropertyCheckResult::PROPERTY_EXIST((struct_data, type_obj))
+                    }
+                    None => {
+                        return StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(
+                            struct_data.clone(),
+                        )
+                    }
+                }
+            }
+            _ => return StructPropertyCheckResult::NON_STRUCT_TYPE,
+        }
+    }
+
     pub fn check_atom(&mut self, atom: &AtomNode) -> Type {
         let core_atom = atom.core_ref();
         match core_atom {
@@ -482,6 +518,7 @@ impl TypeChecker {
                 let atom_type_obj = self.check_atom(atom);
                 let property = &core_property_access.propertry;
                 if let CoreIdentifierNode::OK(ok_identifier) = property.core_ref() {
+                    /*
                     let property_name = Rc::new(ok_identifier.token_value(&self.code));
                     match atom_type_obj.0.as_ref() {
                         CoreType::STRUCT(struct_type) => {
@@ -509,6 +546,33 @@ impl TypeChecker {
                             }
                         }
                         _ => {
+                            let err = PropertyDoesNotExistError::new(
+                                PropertyKind::FIELD,
+                                atom_type_obj,
+                                property.range(),
+                                atom.range(),
+                            );
+                            self.errors.push(Diagnostics::PropertyDoesNotExist(err));
+                            return Type::new_with_unknown();
+                        }
+                    }
+                     */
+                    let result = self.check_struct_property(&atom_type_obj, ok_identifier);
+                    match result {
+                        StructPropertyCheckResult::PROPERTY_EXIST((_, type_obj)) => {
+                            return type_obj
+                        }
+                        StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(_) => {
+                            let err = PropertyDoesNotExistError::new(
+                                PropertyKind::FIELD,
+                                atom_type_obj.clone(),
+                                ok_identifier.range(),
+                                atom.range(),
+                            );
+                            self.errors.push(Diagnostics::PropertyDoesNotExist(err));
+                            return Type::new_with_unknown();
+                        }
+                        StructPropertyCheckResult::NON_STRUCT_TYPE => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::FIELD,
                                 atom_type_obj,
