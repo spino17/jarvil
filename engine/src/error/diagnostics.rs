@@ -430,7 +430,7 @@ impl ConstructorNotFoundInsideStructDeclarationError {
         ConstructorNotFoundInsideStructDeclarationError {
             span: range_to_span(range).into(),
             help: Some(
-                "struct declaration should always have constructor definition with signature: `def __init__(<params>) -> <struct_name>`"
+                "struct declaration should always have constructor definition with signature: `def __init__([<params>]): <block>"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()
