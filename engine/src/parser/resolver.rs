@@ -5,10 +5,10 @@ use crate::ast::ast::{
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
-    ConstructorNotFoundInsideStructDeclarationError, IdentifierFoundInNonLocalsError,
-    IdentifierNotFoundInAnyNamespaceError, MoreThanMaxLimitParamsPassedError,
-    NonHashableTypeInIndexError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
-    VariableReferencedBeforeAssignmentError,
+    ConstructorNotFoundInsideStructDeclarationError, FieldsNotInitializedInConstructorError,
+    IdentifierFoundInNonLocalsError, IdentifierNotFoundInAnyNamespaceError,
+    MoreThanMaxLimitParamsPassedError, NonHashableTypeInIndexError,
+    NonVoidConstructorReturnTypeError, SelfNotFoundError, VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::core::VariableLookupResult;
@@ -124,6 +124,9 @@ impl Resolver {
 
     pub fn get_curr_class_context_is_traversing_constructor(&self) -> bool {
         let len = self.context.class_context_stack.len();
+        if len == 0 {
+            return false;
+        }
         self.context.class_context_stack[len - 1].is_traversing_constructor
     }
 
@@ -429,7 +432,6 @@ impl Resolver {
                 for stmt in &callable_body.0.as_ref().borrow().stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
-                // callable_body.set_scope(&self.namespace);
                 self.close_block(callable_body);
                 (params_vec, param_types_vec, return_type, return_type_range)
             }
@@ -765,24 +767,48 @@ impl Resolver {
                 _ => unreachable!(),
             }
         }
-        // struct_body.set_scope(&self.namespace);
         self.close_block(struct_body);
         // TODO - check here whether any fields are missing in constructor_initialized_fields
-        let mut missing_fields_from_constructor: Vec<Rc<String>> = vec![];
-        for (field_name, _) in fields_map.iter() {
-            if !self.is_field_in_class_context_constructor_initialized_fields(field_name) {
-                missing_fields_from_constructor.push(field_name.clone());
-            }
-        }
-        if missing_fields_from_constructor.len() > 0 {
-            // TODO - raise error `some fields are not initialized inside the constructor`
-        }
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
-            if constructor.is_none() {
-                let err =
-                    ConstructorNotFoundInsideStructDeclarationError::new(ok_identifier.range());
-                self.errors
-                    .push(Diagnostics::ConstructorNotFoundInsideStructDeclaration(err));
+            match constructor {
+                Some((_, construct_span)) => {
+                    let mut missing_fields_from_constructor: Vec<Rc<String>> = vec![];
+                    for (field_name, _) in fields_map.iter() {
+                        if !self
+                            .is_field_in_class_context_constructor_initialized_fields(field_name)
+                        {
+                            missing_fields_from_constructor.push(field_name.clone());
+                        }
+                    }
+                    if missing_fields_from_constructor.len() > 0 {
+                        let len = missing_fields_from_constructor.len();
+                        let mut err_msg_str = format!("`{}`", missing_fields_from_constructor[0]);
+                        if len > 1 {
+                            for i in 1..(len - 1) {
+                                err_msg_str.push_str(&format!(
+                                    ", `{}`",
+                                    missing_fields_from_constructor[i]
+                                ));
+                            }
+                            err_msg_str.push_str(&format!(
+                                " and `{}`",
+                                missing_fields_from_constructor[len - 1]
+                            ));
+                        }
+                        let err = FieldsNotInitializedInConstructorError::new(
+                            err_msg_str,
+                            construct_span,
+                        );
+                        self.errors
+                            .push(Diagnostics::FieldsNotInitializedInConstructor(err));
+                    }
+                }
+                None => {
+                    let err =
+                        ConstructorNotFoundInsideStructDeclarationError::new(ok_identifier.range());
+                    self.errors
+                        .push(Diagnostics::ConstructorNotFoundInsideStructDeclaration(err));
+                }
             }
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "struct name should be resolved to `SymbolData<UserDefinedTypeData>`",
@@ -911,8 +937,6 @@ impl Visitor for Resolver {
                 return None;
             }
             ASTNode::OK_ASSIGNMENT(ok_assignment) => {
-                // TODO - only check if the class_context is set to true = if currently constructor is traversing.
-                // then check if there is a node like self.<property>, obtain the property and set it to class context.
                 self.visit_ok_assignment(ok_assignment);
                 return None;
             }

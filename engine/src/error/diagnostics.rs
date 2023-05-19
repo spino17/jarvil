@@ -47,6 +47,7 @@ pub enum Diagnostics {
     InvalidReturnStatement(InvalidReturnStatementError),
     MismatchedReturnType(MismatchedReturnTypeError),
     NonHashableTypeInIndex(NonHashableTypeInIndexError),
+    FieldsNotInitializedInConstructor(FieldsNotInitializedInConstructorError),
 }
 
 impl Diagnostics {
@@ -104,6 +105,9 @@ impl Diagnostics {
             Diagnostics::InvalidReturnStatement(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MismatchedReturnType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::NonHashableTypeInIndex(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::FieldsNotInitializedInConstructor(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
         }
     }
 }
@@ -427,6 +431,32 @@ impl ConstructorNotFoundInsideStructDeclarationError {
             span: range_to_span(range).into(),
             help: Some(
                 "struct declaration should always have constructor definition with signature: `def __init__(<params>) -> <struct_name>`"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("fields not initialized in constructor")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct FieldsNotInitializedInConstructorError {
+    pub message: String,
+    #[label("fields {} not initialized inside the constructor", self.message)]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl FieldsNotInitializedInConstructorError {
+    pub fn new(message: String, range: TextRange) -> Self {
+        FieldsNotInitializedInConstructorError {
+            message,
+            span: range_to_span(range).into(),
+            help: Some(
+                "all fields of struct should be initialized through assignment inside the constructor"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()
