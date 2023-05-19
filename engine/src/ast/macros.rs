@@ -112,12 +112,3 @@ macro_rules! impl_node_walk {
         }
     };
 }
-
-macro_rules! impl_manual_walk_block {
-    ($t: expr) => {
-        let code_block = $t.0.as_ref().borrow();
-        for stmt in &code_block.stmts {
-            self.walk_stmt_indent_wrapper(stmt);
-        }
-    };
-}
