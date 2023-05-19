@@ -39,7 +39,7 @@ use crate::{
     },
     types::core::Type,
 };
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::{rc::Rc, vec};
 use text_size::TextRange;
 
@@ -49,12 +49,12 @@ pub enum ResolveResult {
 }
 
 pub struct ClassContext {
-    is_containing_self: Vec<bool>,
-    constructor_initialized_fields: Vec<Rc<String>>,
+    is_containing_self: bool,
+    constructor_initialized_fields: FxHashSet<Rc<String>>,
 }
 
 pub struct Context {
-    class_context: ClassContext,
+    class_context_stack: Vec<ClassContext>,
 }
 
 pub struct Resolver {
@@ -71,10 +71,7 @@ impl Resolver {
             code: code.clone(),
             errors: vec![],
             context: Context {
-                class_context: ClassContext {
-                    is_containing_self: vec![],
-                    constructor_initialized_fields: vec![]
-                },
+                class_context_stack: vec![],
             },
         }
     }
@@ -89,13 +86,23 @@ impl Resolver {
     }
 
     pub fn set_curr_class_context_is_containing_self(&mut self, value: bool) {
-        let len = self.context.class_context.is_containing_self.len();
-        self.context.class_context.is_containing_self[len - 1] = value;
+        let len = self.context.class_context_stack.len();
+        self.context.class_context_stack[len - 1].is_containing_self = value;
     }
 
     pub fn get_curr_class_context_is_containing_self(&self) -> bool {
-        let len = self.context.class_context.is_containing_self.len();
-        self.context.class_context.is_containing_self[len - 1]
+        let len = self.context.class_context_stack.len();
+        self.context.class_context_stack[len - 1].is_containing_self
+    }
+
+    pub fn set_curr_class_context_constructor_initialized_fields(
+        &mut self,
+        field_name: &Rc<String>,
+    ) {
+        let len = self.context.class_context_stack.len();
+        self.context.class_context_stack[len - 1]
+            .constructor_initialized_fields
+            .insert(field_name.clone());
     }
 
     pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
@@ -544,7 +551,10 @@ impl Resolver {
     }
 
     pub fn declare_struct_type(&mut self, struct_decl: &StructDeclarationNode) {
-        self.context.class_context.is_containing_self.push(false);
+        self.context.class_context_stack.push(ClassContext {
+            is_containing_self: false,
+            constructor_initialized_fields: FxHashSet::default(),
+        });
         let core_struct_decl = struct_decl.core_ref();
         let struct_type_obj = match core_struct_decl.name.core_ref() {
             CoreIdentifierNode::OK(ok_identifier) => {
@@ -743,7 +753,7 @@ impl Resolver {
                     .set_meta_data(fields_map, constructor, methods, class_methods);
             }
         }
-        self.context.class_context.is_containing_self.pop();
+        self.context.class_context_stack.pop();
     }
 
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
