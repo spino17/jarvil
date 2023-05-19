@@ -78,9 +78,11 @@ impl PythonCodeGenerator {
 
     pub fn generate_python_code(mut self, ast: &BlockNode) -> String {
         let code_block = ast.0.as_ref().borrow();
+        self.add_str_to_python_code("def main():\n");
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
+        self.add_str_to_python_code("\n\nif __name__ == \"__main__\":\n    main()");
         self.generate_code
     }
 
@@ -217,7 +219,9 @@ impl PythonCodeGenerator {
                 self.print_token_node(colon);
                 self.walk_block(block);
             }
-            CoreTypeDeclarationNode::LAMBDA(_) => {}
+            CoreTypeDeclarationNode::LAMBDA(_) => {
+                self.add_str_to_python_code("\n");
+            }
             CoreTypeDeclarationNode::MISSING_TOKENS(_) => unreachable!(),
         }
     }
@@ -307,12 +311,14 @@ impl Visitor for PythonCodeGenerator {
                 let core_stmt_wrapper = stmt_wrapper.core_ref();
                 match core_stmt_wrapper {
                     CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(ok_stmt) => {
+                        self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                         self.walk_stmt(ok_stmt);
                     }
                     CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(extra_newlines) => {
                         let core_extra_newlines = extra_newlines.core_ref();
                         for extra_newline in &core_extra_newlines.skipped_tokens {
                             let core_token = &extra_newline.core_ref().skipped_token;
+                            self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                             self.print_token(core_token);
                         }
                     }
@@ -326,7 +332,10 @@ impl Visitor for PythonCodeGenerator {
                 self.print_variable_decl(variable_decl);
                 return None;
             }
-            ASTNode::STRUCT_PROPERTY_DECLARATION(_) => return None,
+            ASTNode::STRUCT_PROPERTY_DECLARATION(_) => {
+                self.add_str_to_python_code("\n");
+                return None;
+            }
             ASTNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
                 self.print_bounded_method_wrapper(bounded_method_wrapper);
                 return None;
