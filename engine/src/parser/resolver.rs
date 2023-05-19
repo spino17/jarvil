@@ -1,7 +1,7 @@
 use crate::ast::ast::{
-    BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreCallableBodyNode,
+    BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAtomNode, CoreCallableBodyNode,
     CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode,
-    OkSelfKeywordNode,
+    OkAssignmentNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -50,6 +50,7 @@ pub enum ResolveResult {
 
 pub struct ClassContext {
     is_containing_self: bool,
+    is_traversing_constructor: bool,
     constructor_initialized_fields: FxHashSet<Rc<String>>,
 }
 
@@ -95,14 +96,35 @@ impl Resolver {
         self.context.class_context_stack[len - 1].is_containing_self
     }
 
-    pub fn set_curr_class_context_constructor_initialized_fields(
-        &mut self,
-        field_name: &Rc<String>,
-    ) {
+    pub fn set_curr_class_context_constructor_initialized_fields(&mut self, field_name: String) {
         let len = self.context.class_context_stack.len();
         self.context.class_context_stack[len - 1]
             .constructor_initialized_fields
-            .insert(field_name.clone());
+            .insert(Rc::new(field_name));
+    }
+
+    pub fn is_field_in_class_context_constructor_initialized_fields(
+        &self,
+        field_name: &Rc<String>,
+    ) -> bool {
+        let len = self.context.class_context_stack.len();
+        match self.context.class_context_stack[len - 1]
+            .constructor_initialized_fields
+            .get(field_name)
+        {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
+    pub fn set_curr_class_context_is_traversing_constructor(&mut self, value: bool) {
+        let len = self.context.class_context_stack.len();
+        self.context.class_context_stack[len - 1].is_traversing_constructor = value;
+    }
+
+    pub fn get_curr_class_context_is_traversing_constructor(&self) -> bool {
+        let len = self.context.class_context_stack.len();
+        self.context.class_context_stack[len - 1].is_traversing_constructor
     }
 
     pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
@@ -553,6 +575,7 @@ impl Resolver {
     pub fn declare_struct_type(&mut self, struct_decl: &StructDeclarationNode) {
         self.context.class_context_stack.push(ClassContext {
             is_containing_self: false,
+            is_traversing_constructor: false,
             constructor_initialized_fields: FxHashSet::default(),
         });
         let core_struct_decl = struct_decl.core_ref();
@@ -661,6 +684,14 @@ impl Resolver {
                         .func_decl
                         .core_ref()
                         .clone();
+                    if let CoreIdentifierNode::OK(ok_bounded_method_name) =
+                        core_func_decl.name.core_ref()
+                    {
+                        let method_name_str = ok_bounded_method_name.token_value(&self.code);
+                        if method_name_str.eq("__init__") && constructor.is_none() {
+                            self.set_curr_class_context_is_traversing_constructor(true);
+                        }
+                    }
                     let (params_vec, _, return_type, return_type_range) =
                         self.visit_callable_body(&core_func_decl.body);
                     if let CoreIdentifierNode::OK(ok_bounded_method_name) =
@@ -693,6 +724,7 @@ impl Resolver {
                                         Some((func_meta_data, ok_bounded_method_name.range()));
                                     bounded_method_wrappewr
                                         .set_bounded_kind(BoundedMethodKind::CONSTRUCTOR);
+                                    self.set_curr_class_context_is_traversing_constructor(false);
                                 }
                             }
                         } else {
@@ -735,6 +767,16 @@ impl Resolver {
         }
         // struct_body.set_scope(&self.namespace);
         self.close_block(struct_body);
+        // TODO - check here whether any fields are missing in constructor_initialized_fields
+        let mut missing_fields_from_constructor: Vec<Rc<String>> = vec![];
+        for (field_name, _) in fields_map.iter() {
+            if !self.is_field_in_class_context_constructor_initialized_fields(field_name) {
+                missing_fields_from_constructor.push(field_name.clone());
+            }
+        }
+        if missing_fields_from_constructor.len() > 0 {
+            // TODO - raise error `some fields are not initialized inside the constructor`
+        }
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             if constructor.is_none() {
                 let err =
@@ -813,6 +855,31 @@ impl Resolver {
             }
         }
     }
+
+    pub fn visit_ok_assignment(&mut self, ok_assignment: &OkAssignmentNode) {
+        let core_ok_assignment = ok_assignment.core_ref();
+        let l_atom = &core_ok_assignment.l_atom;
+        let r_assign = &core_ok_assignment.r_assign;
+        self.walk_atom(l_atom);
+        self.walk_r_assignment(r_assign);
+        if self.get_curr_class_context_is_traversing_constructor() {
+            if let CoreAtomNode::PROPERTRY_ACCESS(property_access) = l_atom.core_ref() {
+                let core_property_access = property_access.core_ref();
+                let property_name = &core_property_access.propertry;
+                if let CoreIdentifierNode::OK(property_name) = property_name.core_ref() {
+                    let atom = &core_property_access.atom;
+                    if let CoreAtomNode::ATOM_START(atom_start) = atom.core_ref() {
+                        if let CoreAtomStartNode::SELF_KEYWORD(_) = atom_start.core_ref() {
+                            let property_name_str = property_name.token_value(&self.code);
+                            self.set_curr_class_context_constructor_initialized_fields(
+                                property_name_str,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 impl Visitor for Resolver {
@@ -841,6 +908,12 @@ impl Visitor for Resolver {
             }
             ASTNode::OK_LAMBDA_TYPE_DECLARATION(lambda_type_decl) => {
                 self.declare_lambda_type(lambda_type_decl);
+                return None;
+            }
+            ASTNode::OK_ASSIGNMENT(ok_assignment) => {
+                // TODO - only check if the class_context is set to true = if currently constructor is traversing.
+                // then check if there is a node like self.<property>, obtain the property and set it to class context.
+                self.visit_ok_assignment(ok_assignment);
                 return None;
             }
             ASTNode::ATOM_START(atom_start) => {
