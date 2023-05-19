@@ -81,15 +81,8 @@ impl Resolver {
         self.namespace.open_scope();
     }
 
-    pub fn close_block(&mut self) {
-        self.namespace.close_scope();
-    }
-
-    pub fn open_func(&mut self) {
-        self.namespace.open_scope();
-    }
-
-    pub fn close_func(&mut self) {
+    pub fn close_block(&mut self, body: &BlockNode) {
+        body.set_scope(&self.namespace);
         self.namespace.close_scope();
     }
 
@@ -398,15 +391,15 @@ impl Resolver {
         match core_callable_body_decl {
             CoreCallableBodyNode::OK(ok_callable_body) => {
                 let core_ok_callable_body = ok_callable_body.core_ref();
-                self.open_func();
+                self.open_block();
                 let (params_vec, param_types_vec, return_type, return_type_range) =
                     self.declare_callable_prototype(&core_ok_callable_body.prototype);
                 let callable_body = &core_ok_callable_body.block;
                 for stmt in &callable_body.0.as_ref().borrow().stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
-                callable_body.set_scope(&self.namespace);
-                self.close_func();
+                // callable_body.set_scope(&self.namespace);
+                self.close_block(callable_body);
                 (params_vec, param_types_vec, return_type, return_type_range)
             }
             CoreCallableBodyNode::MISSING_TOKENS(_) => {
@@ -728,7 +721,8 @@ impl Resolver {
                 _ => unreachable!(),
             }
         }
-        self.close_block();
+        // struct_body.set_scope(&self.namespace);
+        self.close_block(struct_body);
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             if constructor.is_none() {
                 let err =
@@ -818,7 +812,7 @@ impl Visitor for Resolver {
                 for stmt in &core_block.stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
-                self.close_block();
+                self.close_block(block);
                 return None;
             }
             ASTNode::VARIABLE_DECLARATION(variable_decl) => {

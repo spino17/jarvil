@@ -1,3 +1,5 @@
+use rustc_hash::FxHashSet;
+
 use crate::{
     ast::{
         ast::{
@@ -17,7 +19,7 @@ use crate::{
     lexer::token::{CoreToken, Token},
     scope::core::IdentifierKind,
 };
-use std::{convert::TryInto, rc::Rc};
+use std::{cell::RefCell, convert::TryInto, rc::Rc};
 
 // Utility functions
 pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
@@ -88,6 +90,22 @@ impl PythonCodeGenerator {
 
     pub fn add_str_to_python_code(&mut self, str: &str) {
         self.generate_code.push_str(str);
+    }
+
+    pub fn get_non_locals(
+        &self,
+        block: &BlockNode,
+    ) -> (
+        Rc<RefCell<FxHashSet<Rc<String>>>>,
+        Rc<RefCell<FxHashSet<Rc<String>>>>,
+    ) {
+        let block_scope = match &block.0.as_ref().borrow().scope {
+            Some(scope) => scope.clone(),
+            None => unreachable!(),
+        };
+        let variable_non_locals = block_scope.variables.0.as_ref().borrow().get_non_locals();
+        let func_non_locals = block_scope.functions.0.as_ref().borrow().get_non_locals();
+        (variable_non_locals, func_non_locals)
     }
 
     pub fn print_token(&mut self, token: &Token) {
@@ -301,6 +319,23 @@ impl Visitor for PythonCodeGenerator {
                 self.open_block();
                 let core_block = block.0.as_ref().borrow();
                 self.print_token_node(&core_block.newline);
+                let (variable_non_locals, func_non_locals) = self.get_non_locals(block);
+                for entry in variable_non_locals.as_ref().borrow().iter() {
+                    let mut variable_name = entry.to_string();
+                    variable_name.push_str("_var");
+                    self.add_str_to_python_code(&get_whitespaces_from_indent_level(
+                        self.indent_level + 1,
+                    ));
+                    self.add_str_to_python_code(&format!("nonlocal {}\n", variable_name));
+                }
+                for entry in func_non_locals.as_ref().borrow().iter() {
+                    let mut func_name = entry.to_string();
+                    func_name.push_str("_func");
+                    self.add_str_to_python_code(&get_whitespaces_from_indent_level(
+                        self.indent_level + 1,
+                    ));
+                    self.add_str_to_python_code(&format!("nonlocal {}\n", func_name));
+                }
                 for stmt in &core_block.stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }

@@ -39,7 +39,7 @@ impl<T> Clone for SymbolData<T> {
 pub struct CoreScope<T> {
     symbol_table: FxHashMap<Rc<String>, SymbolData<T>>,
     parent_scope: Option<Scope<T>>,
-    non_locals: FxHashSet<Rc<String>>,
+    non_locals: Rc<RefCell<FxHashSet<Rc<String>>>>,
 }
 
 impl<T> CoreScope<T> {
@@ -53,24 +53,28 @@ impl<T> CoreScope<T> {
         self.symbol_table.get(name)
     }
 
-    pub fn set_to_non_locals(&mut self, name: &Rc<String>) {
-        self.non_locals.insert(name.clone());
+    pub fn set_to_non_locals(&self, name: &Rc<String>) {
+        self.non_locals.as_ref().borrow_mut().insert(name.clone());
     }
 
     pub fn is_in_non_locals(&self, name: &Rc<String>) -> bool {
-        self.non_locals.get(name).is_some()
+        self.non_locals.as_ref().borrow().get(name).is_some()
+    }
+
+    pub fn get_non_locals(&self) -> Rc<RefCell<FxHashSet<Rc<String>>>> {
+        self.non_locals.clone()
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Scope<T>(Rc<RefCell<CoreScope<T>>>);
+pub struct Scope<T>(pub Rc<RefCell<CoreScope<T>>>);
 
 impl<T> Scope<T> {
     fn new() -> Self {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_scope: None,
-            non_locals: FxHashSet::default(),
+            non_locals: Rc::new(RefCell::new(FxHashSet::default())),
         })))
     }
 
@@ -79,7 +83,7 @@ impl<T> Scope<T> {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_scope: Some(Scope(scope)),
-            non_locals: FxHashSet::default(),
+            non_locals: Rc::new(RefCell::new(FxHashSet::default())),
         })))
     }
 
@@ -142,8 +146,8 @@ impl<T> Scope<T> {
 #[derive(Debug)]
 pub struct Namespace {
     pub variables: Scope<VariableData>,
-    types: Scope<UserDefinedTypeData>,
-    functions: Scope<FunctionData>,
+    pub types: Scope<UserDefinedTypeData>,
+    pub functions: Scope<FunctionData>,
 }
 
 impl Namespace {
