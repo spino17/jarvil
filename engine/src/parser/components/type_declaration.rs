@@ -1,5 +1,6 @@
 use crate::ast::ast::{BlockKind, ErrornousNode, TokenNode, TypeExpressionNode, TypeTupleNode};
 use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
+use crate::constants::common::DEF;
 use crate::lexer::token::CoreToken;
 use crate::{constants::common::IDENTIFIER, parser::parser::PackratParser};
 use std::rc::Rc;
@@ -19,7 +20,7 @@ pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
                     _ => false,
                 },
                 |parser| parser.struct_stmt(),
-                &[IDENTIFIER],
+                &[IDENTIFIER, DEF],
                 BlockKind::STRUCT,
             );
             TypeDeclarationNode::new_with_struct(

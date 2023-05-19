@@ -50,6 +50,7 @@ pub enum ResolveResult {
 
 pub struct ClassContext {
     is_containing_self: Vec<bool>,
+    constructor_initialized_fields: Vec<Rc<String>>,
 }
 
 pub struct Context {
@@ -72,6 +73,7 @@ impl Resolver {
             context: Context {
                 class_context: ClassContext {
                     is_containing_self: vec![],
+                    constructor_initialized_fields: vec![]
                 },
             },
         }
