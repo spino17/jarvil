@@ -1,11 +1,9 @@
 extern crate proc_macro;
 mod ast;
 mod token;
-mod opcode;
 use crate::ast::{node::impl_weak_nodes_macro};
 use crate::token::impl_tokenify_macro;
 use crate::ast::node::impl_node_trait;
-use opcode::impl_opcode_util_macro;
 use proc_macro::*;
 use std::str::FromStr;
 use syn::{
@@ -73,13 +71,4 @@ pub fn node(input: TokenStream) -> TokenStream {
         Err(e) => return token_stream_with_error(input, e),
     };
     impl_node_trait(&input_ast)
-}
-
-#[proc_macro_derive(OpCodeUtil)]
-pub fn opcode_util_macro_derive(input: TokenStream) -> TokenStream {
-    let input_ast: syn::DeriveInput = match syn::parse(input.clone()) {
-        Ok(it) => it,
-        Err(e) => return token_stream_with_error(input, e),
-    };
-    impl_opcode_util_macro(&input_ast)
 }
