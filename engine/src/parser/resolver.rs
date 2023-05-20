@@ -342,8 +342,13 @@ impl Resolver {
                 );
             }
             TypeResolveKind::UNRESOLVED(identifier) => {
-                let err = IdentifierNotDeclaredError::new(IdentKind::TYPE, identifier.range());
-                self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                for unresolved_identifier in identifier {
+                    let err = IdentifierNotDeclaredError::new(
+                        IdentKind::TYPE,
+                        unresolved_identifier.range(),
+                    );
+                    self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                }
                 return Type::new_with_unknown();
             }
             TypeResolveKind::INVALID => Type::new_with_unknown(),

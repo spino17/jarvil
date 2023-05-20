@@ -83,6 +83,10 @@ impl Type {
         Type(Rc::new(CoreType::ARRAY(Array::new(element_type))))
     }
 
+    pub fn new_with_tuple(types: Vec<Type>) -> Type {
+        todo!()
+    }
+
     pub fn new_with_hashmap(key_type: &Type, value_type: &Type) -> Type {
         Type(Rc::new(CoreType::HASHMAP(HashMap::new(
             key_type, value_type,

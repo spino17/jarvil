@@ -764,7 +764,7 @@ pub enum BlockKind {
 
 pub enum TypeResolveKind {
     RESOLVED(Type),
-    UNRESOLVED(OkIdentifierNode),
+    UNRESOLVED(Vec<OkIdentifierNode>),
     INVALID,
 }
 

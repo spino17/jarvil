@@ -1042,7 +1042,65 @@ impl HashMapTypeNode {
         HashMapTypeNode(node)
     }
 
+    fn aggregate_key_value_result(
+        &self,
+        key_result: TypeResolveKind,
+        value_result: TypeResolveKind,
+    ) -> TypeResolveKind {
+        match key_result {
+            TypeResolveKind::RESOLVED(key_type) => match value_result {
+                TypeResolveKind::RESOLVED(value_type) => {
+                    return TypeResolveKind::RESOLVED(Type::new_with_hashmap(
+                        &key_type,
+                        &value_type,
+                    ))
+                }
+                TypeResolveKind::UNRESOLVED(unresolved_vec) => {
+                    return TypeResolveKind::UNRESOLVED(unresolved_vec)
+                }
+                TypeResolveKind::INVALID => {
+                    return TypeResolveKind::RESOLVED(Type::new_with_hashmap(
+                        &key_type,
+                        &Type::new_with_unknown(),
+                    ))
+                }
+            },
+            TypeResolveKind::UNRESOLVED(mut key_unresolved_vec) => match value_result {
+                TypeResolveKind::RESOLVED(value_type) => {
+                    return TypeResolveKind::UNRESOLVED(key_unresolved_vec)
+                }
+                TypeResolveKind::UNRESOLVED(mut value_unresolved_vec) => {
+                    key_unresolved_vec.append(&mut value_unresolved_vec);
+                    return TypeResolveKind::UNRESOLVED(key_unresolved_vec);
+                }
+                TypeResolveKind::INVALID => return TypeResolveKind::UNRESOLVED(key_unresolved_vec),
+            },
+            TypeResolveKind::INVALID => match value_result {
+                TypeResolveKind::RESOLVED(value_type) => {
+                    return TypeResolveKind::RESOLVED(Type::new_with_hashmap(
+                        &Type::new_with_unknown(),
+                        &value_type,
+                    ))
+                }
+                TypeResolveKind::UNRESOLVED(unresolved_vec) => {
+                    return TypeResolveKind::UNRESOLVED(unresolved_vec)
+                }
+                TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+            },
+        }
+    }
+
     pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+        let key_result = self
+            .core_ref()
+            .key_type
+            .type_obj_before_resolved(scope, code);
+        let value_result = self
+            .core_ref()
+            .value_type
+            .type_obj_before_resolved(scope, code);
+        return self.aggregate_key_value_result(key_result, value_result);
+        /*
         match self
             .core_ref()
             .key_type
@@ -1068,9 +1126,11 @@ impl HashMapTypeNode {
             }
             TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
         }
+         */
     }
 
     pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+        /*
         match self.core_ref().key_type.type_obj_after_resolved(code) {
             TypeResolveKind::RESOLVED(key_type) => {
                 match self.core_ref().value_type.type_obj_after_resolved(code) {
@@ -1088,6 +1148,10 @@ impl HashMapTypeNode {
             }
             TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
         }
+         */
+        let key_result = self.core_ref().key_type.type_obj_after_resolved(code);
+        let value_result = self.core_ref().value_type.type_obj_after_resolved(code);
+        return self.aggregate_key_value_result(key_result, value_result);
     }
 
     impl_core_ref!(CoreHashMapTypeNode);
@@ -1132,7 +1196,7 @@ impl UserDefinedTypeNode {
                         }
                     }
                 }
-                None => return TypeResolveKind::UNRESOLVED(ok_identifier.clone()),
+                None => return TypeResolveKind::UNRESOLVED(vec![ok_identifier.clone()]),
             };
         }
         return TypeResolveKind::INVALID;
@@ -1158,7 +1222,7 @@ impl UserDefinedTypeNode {
                         ));
                     }
                 },
-                None => return TypeResolveKind::UNRESOLVED(ok_identifier.clone()),
+                None => return TypeResolveKind::UNRESOLVED(vec![ok_identifier.clone()]),
             }
         }
         return TypeResolveKind::INVALID;
