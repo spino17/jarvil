@@ -1,7 +1,9 @@
 use super::function::FunctionData;
+use super::user_defined_types::LambdaTypeData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::Type;
+use crate::types::lambda::Lambda;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -302,6 +304,29 @@ impl Namespace {
         self.types.insert(
             name,
             UserDefinedTypeData::default_with_lambda(),
+            decl_range,
+            lookup_func,
+        )
+    }
+
+    pub fn declare_lambda_type_with_meta_data(
+        &self,
+        name: &Rc<String>,
+        param_types: Vec<Type>,
+        return_type: Type,
+        decl_range: TextRange,
+    ) -> Result<SymbolData<UserDefinedTypeData>, TextRange> {
+        let lookup_func =
+            |scope: Scope<UserDefinedTypeData>, key: Rc<String>| match scope.lookup(&key) {
+                Some((symbol_data, _)) => Some(symbol_data),
+                None => None,
+            };
+        self.types.insert(
+            name,
+            UserDefinedTypeData::LAMBDA(LambdaTypeData {
+                param_types: Rc::new(param_types),
+                return_type,
+            }),
             decl_range,
             lookup_func,
         )

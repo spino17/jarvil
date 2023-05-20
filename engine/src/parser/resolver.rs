@@ -831,6 +831,7 @@ impl Resolver {
 
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
+        /*
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             if let Some((name, previous_decl_range)) =
                 self.try_declare_and_bind_lambda_type(ok_identifier)
@@ -845,6 +846,7 @@ impl Resolver {
                     .push(Diagnostics::IdentifierAlreadyDeclared(err));
             }
         }
+         */
         let mut types_vec: Vec<Type> = vec![];
         let type_tuple = &core_lambda_type_decl.type_tuple;
         let return_type = &core_lambda_type_decl.return_type;
@@ -874,6 +876,45 @@ impl Resolver {
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
+            /*
+            if let Some((name, previous_decl_range)) =
+                self.try_declare_and_bind_lambda_type(ok_identifier)
+            {
+                let err = IdentifierAlreadyDeclaredError::new(
+                    IdentKind::TYPE,
+                    name.to_string(),
+                    previous_decl_range,
+                    ok_identifier.range(),
+                );
+                self.errors
+                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
+            }
+             */
+            let name = Rc::new(ok_identifier.token_value(&self.code));
+            let symbol_data = self.namespace.declare_lambda_type_with_meta_data(
+                &name,
+                types_vec,
+                return_type,
+                ok_identifier.range(),
+            );
+            match symbol_data {
+                Ok(symbol_data) => {
+                    ok_identifier.bind_user_defined_type_decl(&symbol_data, 0);
+                }
+                Err(previous_decl_range) => {
+                    let err = IdentifierAlreadyDeclaredError::new(
+                        IdentKind::TYPE,
+                        name.to_string(),
+                        previous_decl_range,
+                        ok_identifier.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                }
+            }
+        }
+        /*
+        if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             if let Some(symbol_data) = ok_identifier.user_defined_type_symbol_data(
                 "lambda type name should be resolved to `SymbolData<UserDefinedTypeData>`",
             ) {
@@ -885,6 +926,7 @@ impl Resolver {
                     .set_params_and_return_type(types_vec, return_type)
             }
         }
+         */
     }
 
     pub fn visit_ok_assignment(&mut self, ok_assignment: &OkAssignmentNode) {

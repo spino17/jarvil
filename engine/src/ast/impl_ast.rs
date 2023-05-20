@@ -1143,7 +1143,7 @@ impl HashMapTypeNode {
                 }
             },
             TypeResolveKind::UNRESOLVED(mut key_unresolved_vec) => match value_result {
-                TypeResolveKind::RESOLVED(value_type) => {
+                TypeResolveKind::RESOLVED(_) => {
                     return TypeResolveKind::UNRESOLVED(key_unresolved_vec)
                 }
                 TypeResolveKind::UNRESOLVED(mut value_unresolved_vec) => {
