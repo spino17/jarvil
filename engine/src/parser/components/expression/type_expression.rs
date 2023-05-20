@@ -5,8 +5,8 @@ use crate::lexer::token::CoreToken;
 use crate::parser::parser::PackratParser;
 use std::rc::Rc;
 
-pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 4] =
-    [ATOMIC_TYPE, IDENTIFIER, "[", "{"];
+pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 5] =
+    [ATOMIC_TYPE, IDENTIFIER, "[", "{", "("];
 
 pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
     let token = &parser.curr_token();
@@ -24,6 +24,12 @@ pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
             let sub_type_node = parser.type_expr();
             let rsquare_node = parser.expect("]");
             TypeExpressionNode::new_with_array_type(&sub_type_node, &lsquare_node, &rsquare_node)
+        }
+        CoreToken::LPAREN => {
+            let lparen_node = parser.expect("(");
+            let types_node = parser.type_tuple();
+            let rparen_node = parser.expect(")");
+            TypeExpressionNode::new_with_tuple_type(&lparen_node, &rparen_node, &types_node)
         }
         CoreToken::LBRACE => {
             let lcurly_node = parser.expect("{");

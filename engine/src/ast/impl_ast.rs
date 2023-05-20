@@ -17,7 +17,7 @@ use super::ast::{
     CorePropertyAccessNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
     CoreReturnStatementNode, CoreSelfKeywordNode, CoreSkippedTokenNode, CoreSkippedTokensNode,
     CoreStatemenIndentWrapperNode, CoreStatementNode, CoreStructDeclarationNode,
-    CoreStructPropertyDeclarationNode, CoreTokenNode, CoreTypeDeclarationNode,
+    CoreStructPropertyDeclarationNode, CoreTokenNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
     CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
     CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
     FunctionWrapperNode, HashMapTypeNode, IdentifierNode, IncorrectlyIndentedStatementNode,
@@ -27,7 +27,7 @@ use super::ast::{
     OkSelfKeywordNode, OkTokenNode, OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode,
     ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
     ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode,
-    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode, TokenNode,
+    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode, TokenNode, TupleTypeNode,
     TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, TypeTupleNode, UnaryExpressionNode,
     UserDefinedTypeNode, VariableDeclarationNode,
 };
@@ -896,6 +896,17 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
+    pub fn new_with_tuple_type(
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        types: &TypeTupleNode,
+    ) -> Self {
+        let node = Rc::new(CoreTypeExpressionNode::TUPLE(TupleTypeNode::new(
+            lparen, rparen, types,
+        )));
+        TypeExpressionNode(node)
+    }
+
     pub fn new_with_hashmap_type(
         lcurly: &TokenNode,
         rcurly: &TokenNode,
@@ -913,6 +924,7 @@ impl TypeExpressionNode {
         match self.core_ref() {
             CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_before_resolved(scope, code),
             CoreTypeExpressionNode::ARRAY(array) => array.type_obj_before_resolved(scope, code),
+            CoreTypeExpressionNode::TUPLE(tuple) => tuple.type_obj_before_resolved(scope, code),
             CoreTypeExpressionNode::HASHMAP(hashmap) => {
                 hashmap.type_obj_before_resolved(scope, code)
             }
@@ -927,6 +939,7 @@ impl TypeExpressionNode {
         match self.core_ref() {
             CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_after_resolved(code),
             CoreTypeExpressionNode::ARRAY(array) => array.type_obj_after_resolved(code),
+            CoreTypeExpressionNode::TUPLE(tuple) => tuple.type_obj_after_resolved(code),
             CoreTypeExpressionNode::HASHMAP(hashmap) => hashmap.type_obj_after_resolved(code),
             CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
                 user_defined.type_obj_after_resolved(code)
@@ -1024,6 +1037,70 @@ impl Node for ArrayTypeNode {
     }
 }
 
+impl TupleTypeNode {
+    pub fn new(lparen: &TokenNode, rparen: &TokenNode, types: &TypeTupleNode) -> Self {
+        let node = Rc::new(CoreTupleTypeNode {
+            lparen: lparen.clone(),
+            rparen: rparen.clone(),
+            types: types.clone(),
+        });
+        TupleTypeNode(node)
+    }
+
+    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+        let mut unresolved_identifiers: Vec<OkIdentifierNode> = vec![];
+        let mut resolved_types: Vec<Type> = vec![];
+        for ty in self.core_ref().types.iter() {
+            match ty.type_obj_before_resolved(scope, code) {
+                TypeResolveKind::RESOLVED(type_obj) => resolved_types.push(type_obj),
+                TypeResolveKind::UNRESOLVED(mut identifier) => {
+                    unresolved_identifiers.append(&mut identifier)
+                }
+                TypeResolveKind::INVALID => resolved_types.push(Type::new_with_unknown()),
+            }
+        }
+        if unresolved_identifiers.len() > 0 {
+            return TypeResolveKind::UNRESOLVED(unresolved_identifiers);
+        } else if resolved_types.len() > 0 {
+            return TypeResolveKind::RESOLVED(Type::new_with_tuple(resolved_types));
+        } else {
+            return TypeResolveKind::INVALID;
+        }
+    }
+
+    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+        let mut unresolved_identifiers: Vec<OkIdentifierNode> = vec![];
+        let mut resolved_types: Vec<Type> = vec![];
+        for ty in self.core_ref().types.iter() {
+            match ty.type_obj_after_resolved(code) {
+                TypeResolveKind::RESOLVED(type_obj) => resolved_types.push(type_obj),
+                TypeResolveKind::UNRESOLVED(mut identifier) => {
+                    unresolved_identifiers.append(&mut identifier)
+                }
+                TypeResolveKind::INVALID => resolved_types.push(Type::new_with_unknown()),
+            }
+        }
+        if unresolved_identifiers.len() > 0 {
+            return TypeResolveKind::UNRESOLVED(unresolved_identifiers);
+        } else if resolved_types.len() > 0 {
+            return TypeResolveKind::RESOLVED(Type::new_with_tuple(resolved_types));
+        } else {
+            return TypeResolveKind::INVALID;
+        }
+    }
+
+    impl_core_ref!(CoreTupleTypeNode);
+}
+
+impl Node for TupleTypeNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen)
+    }
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().lparen.start_line_number()
+    }
+}
+
 impl HashMapTypeNode {
     pub fn new(
         lcurly: &TokenNode,
@@ -1100,55 +1177,9 @@ impl HashMapTypeNode {
             .value_type
             .type_obj_before_resolved(scope, code);
         return self.aggregate_key_value_result(key_result, value_result);
-        /*
-        match self
-            .core_ref()
-            .key_type
-            .type_obj_before_resolved(scope, code)
-        {
-            TypeResolveKind::RESOLVED(key_type) => {
-                match self
-                    .core_ref()
-                    .value_type
-                    .type_obj_before_resolved(scope, code)
-                {
-                    TypeResolveKind::RESOLVED(value_type) => {
-                        TypeResolveKind::RESOLVED(Type::new_with_hashmap(&key_type, &value_type))
-                    }
-                    TypeResolveKind::UNRESOLVED(identifier_node) => {
-                        return TypeResolveKind::UNRESOLVED(identifier_node)
-                    }
-                    TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
-                }
-            }
-            TypeResolveKind::UNRESOLVED(identifier_node) => {
-                return TypeResolveKind::UNRESOLVED(identifier_node)
-            }
-            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
-        }
-         */
     }
 
     pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
-        /*
-        match self.core_ref().key_type.type_obj_after_resolved(code) {
-            TypeResolveKind::RESOLVED(key_type) => {
-                match self.core_ref().value_type.type_obj_after_resolved(code) {
-                    TypeResolveKind::RESOLVED(value_type) => {
-                        TypeResolveKind::RESOLVED(Type::new_with_hashmap(&key_type, &value_type))
-                    }
-                    TypeResolveKind::UNRESOLVED(identifier_node) => {
-                        return TypeResolveKind::UNRESOLVED(identifier_node)
-                    }
-                    TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
-                }
-            }
-            TypeResolveKind::UNRESOLVED(identifier_node) => {
-                return TypeResolveKind::UNRESOLVED(identifier_node)
-            }
-            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
-        }
-         */
         let key_result = self.core_ref().key_type.type_obj_after_resolved(code);
         let value_result = self.core_ref().value_type.type_obj_after_resolved(code);
         return self.aggregate_key_value_result(key_result, value_result);

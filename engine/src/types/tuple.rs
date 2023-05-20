@@ -2,43 +2,50 @@ use super::core::OperatorCompatiblity;
 use crate::types::core::{AbstractType, CoreType, Type};
 
 #[derive(Debug)]
-pub struct HashMap {
-    pub key_type: Type,
-    pub value_type: Type,
+pub struct Tuple {
+    pub sub_types: Vec<Type>,
 }
 
-impl HashMap {
-    pub fn new(key_type: &Type, value_type: &Type) -> HashMap {
-        HashMap {
-            key_type: key_type.clone(),
-            value_type: value_type.clone(),
+impl Tuple {
+    pub fn new(sub_types: Vec<Type>) -> Tuple {
+        Tuple {
+            sub_types: sub_types.clone(),
         }
     }
 }
 
-impl AbstractType for HashMap {
+impl AbstractType for Tuple {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
-            CoreType::HASHMAP(hashmap_data) => {
-                self.key_type.is_eq(&hashmap_data.key_type)
-                    && self.value_type.is_eq(&hashmap_data.value_type)
+            CoreType::TUPLE(tuple_data) => {
+                if tuple_data.sub_types.len() != self.sub_types.len() {
+                    return false;
+                } else {
+                    let len = self.sub_types.len();
+                    for i in 0..len {
+                        if !self.sub_types[i].is_eq(&tuple_data.sub_types[i]) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
             }
             _ => false,
         }
     }
 }
 
-impl ToString for HashMap {
+impl ToString for Tuple {
     fn to_string(&self) -> String {
-        format!(
-            "{{{} : {}}}",
-            self.key_type.to_string(),
-            self.value_type.to_string()
-        )
+        let mut str = self.sub_types[0].to_string();
+        for i in 1..self.sub_types.len() {
+            str.push_str(&format!(", {}", self.sub_types[i]));
+        }
+        format!("({})", str)
     }
 }
 
-impl OperatorCompatiblity for HashMap {
+impl OperatorCompatiblity for Tuple {
     fn check_add(&self, _other: &Type) -> Option<Type> {
         None
     }

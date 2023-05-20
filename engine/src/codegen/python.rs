@@ -1,5 +1,3 @@
-use rustc_hash::FxHashSet;
-
 use crate::{
     ast::{
         ast::{
@@ -19,6 +17,7 @@ use crate::{
     lexer::token::{CoreToken, Token},
     scope::core::IdentifierKind,
 };
+use rustc_hash::FxHashSet;
 use std::{cell::RefCell, convert::TryInto, rc::Rc};
 
 // Utility functions

@@ -1,6 +1,7 @@
 use super::hashmap::HashMap;
 use super::lambda::Lambda;
 use super::r#struct::Struct;
+use super::tuple::Tuple;
 use crate::constants::common::{BOOL, NON_TYPED, UNKNOWN};
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::core::SymbolData;
@@ -49,6 +50,7 @@ pub enum CoreType {
     STRUCT(Struct),
     LAMBDA(Lambda),
     ARRAY(Array),
+    TUPLE(Tuple),
     HASHMAP(HashMap),
     UNKNOWN,
     VOID,
@@ -84,7 +86,7 @@ impl Type {
     }
 
     pub fn new_with_tuple(types: Vec<Type>) -> Type {
-        todo!()
+        Type(Rc::new(CoreType::TUPLE(Tuple::new(types))))
     }
 
     pub fn new_with_hashmap(key_type: &Type, value_type: &Type) -> Type {
@@ -165,6 +167,13 @@ impl Type {
         }
     }
 
+    pub fn is_tuple(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::TUPLE(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_hashable(&self) -> bool {
         // `int`, `float`, `str` are only hashable types in python
         self.is_int() || self.is_float() || self.is_string()
@@ -227,6 +236,7 @@ impl AbstractType for Type {
             CoreType::STRUCT(struct_type) => struct_type.is_eq(base_type),
             CoreType::LAMBDA(lambda_type) => lambda_type.is_eq(base_type),
             CoreType::ARRAY(array_type) => array_type.is_eq(base_type),
+            CoreType::TUPLE(tuple_type) => tuple_type.is_eq(base_type),
             CoreType::HASHMAP(hashmap_type) => hashmap_type.is_eq(base_type),
             CoreType::UNKNOWN => match base_type.0.as_ref() {
                 CoreType::UNKNOWN => true,
@@ -247,6 +257,7 @@ impl std::fmt::Display for Type {
             CoreType::STRUCT(struct_type) => write!(f, "{}", struct_type.to_string()),
             CoreType::LAMBDA(lambda_type) => write!(f, "{}", lambda_type.to_string()),
             CoreType::ARRAY(array_type) => write!(f, "{}", array_type.to_string()),
+            CoreType::TUPLE(tuple_type) => write!(f, "{}", tuple_type.to_string()),
             CoreType::HASHMAP(hashmap_type) => write!(f, "{}", hashmap_type.to_string()),
             CoreType::UNKNOWN => write!(f, "{}", UNKNOWN),
             CoreType::VOID => write!(f, "()"),

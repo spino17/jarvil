@@ -61,6 +61,7 @@ pub enum ASTNode {
     TYPE_EXPRESSION(TypeExpressionNode),
     ATOMIC_TYPE(AtomicTypeNode),
     ARRAY_TYPE(ArrayTypeNode),
+    TUPLE_TYPE(TupleTypeNode),
     HASHMAP_TYPE(HashMapTypeNode),
     USER_DEFINED_TYPE(UserDefinedTypeNode),
 
@@ -276,6 +277,7 @@ pub enum CoreTypeExpressionNode {
     ATOMIC(AtomicTypeNode),
     USER_DEFINED(UserDefinedTypeNode),
     ARRAY(ArrayTypeNode),
+    TUPLE(TupleTypeNode),
     HASHMAP(HashMapTypeNode),
     MISSING_TOKENS(MissingTokenNode),
 }
@@ -294,6 +296,15 @@ pub struct CoreArrayTypeNode {
     pub lsquare: TokenNode,
     pub rsquare: TokenNode,
     pub sub_type: TypeExpressionNode,
+}
+
+// TUPLE_TYPE
+// `(` <types> `)`
+#[derive(Debug, Clone)]
+pub struct CoreTupleTypeNode {
+    pub lparen: TokenNode,
+    pub rparen: TokenNode,
+    pub types: TypeTupleNode,
 }
 
 // DICTIONARY_TYPE
@@ -673,6 +684,8 @@ pub struct TypeExpressionNode(pub Rc<CoreTypeExpressionNode>);
 pub struct AtomicTypeNode(pub Rc<CoreAtomicTypeNode>);
 #[derive(Debug, Clone)]
 pub struct ArrayTypeNode(pub Rc<CoreArrayTypeNode>);
+#[derive(Debug, Clone)]
+pub struct TupleTypeNode(pub Rc<CoreTupleTypeNode>);
 #[derive(Debug, Clone)]
 pub struct HashMapTypeNode(pub Rc<CoreHashMapTypeNode>);
 #[derive(Debug, Clone)]

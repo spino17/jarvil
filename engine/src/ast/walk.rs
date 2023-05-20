@@ -20,6 +20,8 @@ use crate::ast::ast::{
     UserDefinedTypeNode, VariableDeclarationNode,
 };
 
+use super::ast::TupleTypeNode;
+
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
 // See /src/go/ast/walk.go
 
@@ -177,6 +179,7 @@ pub trait Visitor {
         UserDefinedTypeNode,
         new_with_UserDefinedTypeNode
     );
+    impl_node_walk!(walk_tuple_type, TupleTypeNode, new_with_TupleTypeNode);
     impl_node_walk!(walk_array_type, ArrayTypeNode, new_with_ArrayTypeNode);
     impl_node_walk!(walk_hashmap_type, HashMapTypeNode, new_with_HashMapTypeNode);
     impl_node_walk!(
@@ -547,6 +550,9 @@ pub trait Visitor {
                     CoreTypeExpressionNode::ARRAY(array_type) => {
                         self.walk_array_type(array_type);
                     }
+                    CoreTypeExpressionNode::TUPLE(tuple_type) => {
+                        self.walk_tuple_type(tuple_type);
+                    }
                     CoreTypeExpressionNode::HASHMAP(hashmap_type) => {
                         self.walk_hashmap_type(hashmap_type);
                     }
@@ -564,6 +570,12 @@ pub trait Visitor {
                 self.walk_token(&core_array_type.lsquare);
                 self.walk_type_expression(&core_array_type.sub_type);
                 self.walk_token(&core_array_type.rsquare);
+            }
+            ASTNode::TUPLE_TYPE(tuple_type_node) => {
+                let core_tuple_type = tuple_type_node.core_ref();
+                self.walk_token(&core_tuple_type.lparen);
+                self.walk_type_tuple(&core_tuple_type.types);
+                self.walk_token(&core_tuple_type.rparen);
             }
             ASTNode::HASHMAP_TYPE(hashmap_type_node) => {
                 let core_hashmap_type_node = hashmap_type_node.core_ref();
