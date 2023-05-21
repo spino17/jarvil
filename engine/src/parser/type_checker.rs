@@ -28,13 +28,14 @@ use crate::{
         diagnostics::{
             BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError,
             ConstructorNotFoundForTypeError, Diagnostics, ExpressionIndexingNotValidError,
-            ExpressionNotCallableError, IdentifierNotCallableError, InvalidReturnStatementError,
-            LessParamsCountError, MismatchedParamTypeError, MismatchedReturnTypeError,
-            MismatchedTypesOnLeftRightError, MoreParamsCountError,
-            NoReturnStatementInFunctionError, NoValidStatementInsideFunctionBody,
-            PropertyDoesNotExistError, PropertyNotSupportedError,
-            RightSideWithVoidTypeNotAllowedError, StructFieldNotCallableError,
-            UnaryOperatorInvalidUseError,
+            ExpressionNotCallableError, IdentifierNotCallableError,
+            InvalidIndexExpressionForTupleError, InvalidReturnStatementError, LessParamsCountError,
+            MismatchedParamTypeError, MismatchedReturnTypeError, MismatchedTypesOnLeftRightError,
+            MoreParamsCountError, NoReturnStatementInFunctionError,
+            NoValidStatementInsideFunctionBody, PropertyDoesNotExistError,
+            PropertyNotSupportedError, RightSideWithVoidTypeNotAllowedError,
+            StructFieldNotCallableError, TupleIndexOutOfBoundError, UnaryOperatorInvalidUseError,
+            UnresolvedIndexExpressionInTupleError,
         },
         helper::PropertyKind,
     },
@@ -78,6 +79,7 @@ pub enum ParamsTypeNCountResult {
     MISMATCHED_TYPE(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
 }
 
+#[derive(Debug, Clone)]
 pub enum TupleIndexCheckResult {
     OK(usize),
     POSITIVE_INDEX_OUT_OF_BOUND,
@@ -197,7 +199,6 @@ impl TypeChecker {
     }
 
     pub fn is_callable(&mut self, type_obj: &Type) -> Option<(Rc<Vec<Type>>, Type)> {
-        // let atom_type_obj = self.check_atom(atom);
         match type_obj.0.as_ref() {
             CoreType::LAMBDA(lambda) => {
                 let lambda_data = lambda
@@ -752,15 +753,43 @@ impl TypeChecker {
                                                 )
                                             }
                                             TupleIndexCheckResult::POSITIVE_INDEX_OUT_OF_BOUND => {
-                                                todo!()
+                                                // TODO - raise error `index out of bound`
+                                                // index should be between 0 - (tuple_len - 1)
+                                                let err = TupleIndexOutOfBoundError::new(
+                                                    sub_types.len(),
+                                                    index_expr.range(),
+                                                );
+                                                self.errors
+                                                    .push(Diagnostics::TupleIndexOutOfBound(err));
+                                                return (
+                                                    Type::new_with_unknown(),
+                                                    Some(atom_type_obj),
+                                                );
                                             }
                                             TupleIndexCheckResult::NEGATIVE_INDEX_OUT_OF_BOUND => {
-                                                todo!()
+                                                // TODO - raise error `index out of bound`
+                                                // index should be between -1 to -tuple_len
+                                                let err = TupleIndexOutOfBoundError::new(
+                                                    sub_types.len(),
+                                                    index_expr.range(),
+                                                );
+                                                self.errors
+                                                    .push(Diagnostics::TupleIndexOutOfBound(err));
+                                                return (
+                                                    Type::new_with_unknown(),
+                                                    Some(atom_type_obj),
+                                                );
                                             }
                                         }
                                     }
                                     None => {
                                         // TODO - raise error `the expr does not resolve to a valid integer value for indexing tuple`
+                                        let err = UnresolvedIndexExpressionInTupleError::new(
+                                            index_expr.range(),
+                                        );
+                                        self.errors.push(
+                                            Diagnostics::UnresolvedIndexExpressionInTuple(err),
+                                        );
                                         return (Type::new_with_unknown(), Some(atom_type_obj));
                                     }
                                 }
@@ -769,6 +798,10 @@ impl TypeChecker {
                             | CoreExpressionNode::COMPARISON(_)
                             | CoreExpressionNode::MISSING_TOKENS(_) => {
                                 // TODO - raise error `not a valid expression for indexing tuple`
+                                let err =
+                                    InvalidIndexExpressionForTupleError::new(index_expr.range());
+                                self.errors
+                                    .push(Diagnostics::InvalidIndexExpressionForTuple(err));
                                 return (Type::new_with_unknown(), Some(atom_type_obj));
                             }
                         }

@@ -1,5 +1,9 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
-use crate::{lexer::token::Token, parser::helper::format_symbol, types::core::Type};
+use crate::{
+    lexer::token::Token,
+    parser::{helper::format_symbol, type_checker::TupleIndexCheckResult},
+    types::core::Type,
+};
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use owo_colors::{OwoColorize, Style};
 use std::{
@@ -48,6 +52,9 @@ pub enum Diagnostics {
     MismatchedReturnType(MismatchedReturnTypeError),
     NonHashableTypeInIndex(NonHashableTypeInIndexError),
     FieldsNotInitializedInConstructor(FieldsNotInitializedInConstructorError),
+    TupleIndexOutOfBound(TupleIndexOutOfBoundError),
+    UnresolvedIndexExpressionInTuple(UnresolvedIndexExpressionInTupleError),
+    InvalidIndexExpressionForTuple(InvalidIndexExpressionForTupleError),
 }
 
 impl Diagnostics {
@@ -106,6 +113,13 @@ impl Diagnostics {
             Diagnostics::MismatchedReturnType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::NonHashableTypeInIndex(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::FieldsNotInitializedInConstructor(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::TupleIndexOutOfBound(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::UnresolvedIndexExpressionInTuple(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InvalidIndexExpressionForTuple(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -860,6 +874,56 @@ impl ExpressionIndexingNotValidError {
             index_type: index_ty.to_string(),
             expr_span: range_to_span(expr_range).into(),
             index_span: range_to_span(index_range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("tuple index out of bound")]
+#[diagnostic(code("semantic error (type-checking phase)"))]
+pub struct TupleIndexOutOfBoundError {
+    pub tuple_len: usize,
+    #[label("index out of bounds `(0, {})` or `(-1, -{})`", self.tuple_len - 1, self.tuple_len)]
+    pub index_span: SourceSpan,
+}
+
+impl TupleIndexOutOfBoundError {
+    pub fn new(tuple_len: usize, index_span: TextRange) -> Self {
+        TupleIndexOutOfBoundError {
+            tuple_len,
+            index_span: range_to_span(index_span).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("invalid indexing")]
+#[diagnostic(code("semantic error (type-checking phase)"))]
+pub struct InvalidIndexExpressionForTupleError {
+    #[label("invalid expression for indexing tuple")]
+    pub index_span: SourceSpan,
+}
+
+impl InvalidIndexExpressionForTupleError {
+    pub fn new(index_span: TextRange) -> Self {
+        InvalidIndexExpressionForTupleError {
+            index_span: range_to_span(index_span).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("unresolved index expression in tuple")]
+#[diagnostic(code("semantic error (type-checking phase)"))]
+pub struct UnresolvedIndexExpressionInTupleError {
+    #[label("expression does not resolve to a valid integer value for indexing tuple")]
+    pub index_span: SourceSpan,
+}
+
+impl UnresolvedIndexExpressionInTupleError {
+    pub fn new(index_span: TextRange) -> Self {
+        UnresolvedIndexExpressionInTupleError {
+            index_span: range_to_span(index_span).into(),
         }
     }
 }
