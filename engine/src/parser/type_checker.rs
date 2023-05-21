@@ -29,12 +29,13 @@ use crate::{
             BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError,
             ConstructorNotFoundForTypeError, Diagnostics, ExpressionIndexingNotValidError,
             ExpressionNotCallableError, IdentifierNotCallableError,
-            InvalidIndexExpressionForTupleError, InvalidReturnStatementError, LessParamsCountError,
-            MismatchedParamTypeError, MismatchedReturnTypeError, MismatchedTypesOnLeftRightError,
-            MoreParamsCountError, NoReturnStatementInFunctionError,
-            NoValidStatementInsideFunctionBody, PropertyDoesNotExistError,
-            PropertyNotSupportedError, RightSideWithVoidTypeNotAllowedError,
-            StructFieldNotCallableError, TupleIndexOutOfBoundError, UnaryOperatorInvalidUseError,
+            ImmutableTypeNotAssignableError, InvalidIndexExpressionForTupleError,
+            InvalidReturnStatementError, LessParamsCountError, MismatchedParamTypeError,
+            MismatchedReturnTypeError, MismatchedTypesOnLeftRightError, MoreParamsCountError,
+            NoReturnStatementInFunctionError, NoValidStatementInsideFunctionBody,
+            PropertyDoesNotExistError, PropertyNotSupportedError,
+            RightSideWithVoidTypeNotAllowedError, StructFieldNotCallableError,
+            TupleIndexOutOfBoundError, UnaryOperatorInvalidUseError,
             UnresolvedIndexExpressionInTupleError,
         },
         helper::PropertyKind,
@@ -1024,11 +1025,15 @@ impl TypeChecker {
                 let (l_type, interior_atom_type) = self.check_atom(l_expr);
                 // TODO - check that l_expr is a atom with index type and if `interior_atom_type`
                 // is tuple or str then raise error `type is not assignable`
-                if let CoreAtomNode::INDEX_ACCESS(_) = l_expr.core_ref() {
+                if let CoreAtomNode::INDEX_ACCESS(l_index_expr) = l_expr.core_ref() {
                     if let Some(interior_atom_type) = interior_atom_type {
                         if interior_atom_type.is_immutable() {
-                            // TODO - raise error `immutable type cannot be assigned`
-                            println!("immutable not assignable");
+                            let err = ImmutableTypeNotAssignableError::new(
+                                &interior_atom_type,
+                                l_index_expr.core_ref().atom.range(),
+                            );
+                            self.errors
+                                .push(Diagnostics::ImmutableTypeNotAssignable(err));
                         }
                     }
                 }

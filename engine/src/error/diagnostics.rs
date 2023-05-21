@@ -1,15 +1,8 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
-use crate::{
-    lexer::token::Token,
-    parser::{helper::format_symbol, type_checker::TupleIndexCheckResult},
-    types::core::Type,
-};
+use crate::{lexer::token::Token, parser::helper::format_symbol, types::core::Type};
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use owo_colors::{OwoColorize, Style};
-use std::{
-    fmt::{self, Display},
-    rc::Rc,
-};
+use std::fmt::{self, Display};
 use text_size::TextRange;
 use thiserror::Error;
 
@@ -55,6 +48,7 @@ pub enum Diagnostics {
     TupleIndexOutOfBound(TupleIndexOutOfBoundError),
     UnresolvedIndexExpressionInTuple(UnresolvedIndexExpressionInTupleError),
     InvalidIndexExpressionForTuple(InvalidIndexExpressionForTupleError),
+    ImmutableTypeNotAssignable(ImmutableTypeNotAssignableError),
 }
 
 impl Diagnostics {
@@ -122,6 +116,7 @@ impl Diagnostics {
             Diagnostics::InvalidIndexExpressionForTuple(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
+            Diagnostics::ImmutableTypeNotAssignable(diagnostic) => Report::new(diagnostic.clone()),
         }
     }
 }
@@ -598,6 +593,32 @@ impl RightSideWithVoidTypeNotAllowedError {
             span: range_to_span(range).into(),
             help: Some(
                 "variable declaration or assignment with type `void` is not allowed"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("assignment to immutable type")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct ImmutableTypeNotAssignableError {
+    pub ty: String,
+    #[label("type `{}` is not assignable", self.ty)]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl ImmutableTypeNotAssignableError {
+    pub fn new(ty: &Type, range: TextRange) -> Self {
+        ImmutableTypeNotAssignableError {
+            ty: ty.to_string(),
+            span: range_to_span(range).into(),
+            help: Some(
+                "`str` and `tuple` are immutable types which are not assignable"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),
