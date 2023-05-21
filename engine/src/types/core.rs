@@ -179,8 +179,21 @@ impl Type {
     }
 
     pub fn is_hashable(&self) -> bool {
-        // `int`, `float`, `str` are only hashable types in python
-        self.is_int() || self.is_float() || self.is_string()
+        // `int`, `float`, `str` and `tuple` with hashable sub_types are only hashable types
+        match self.0.as_ref() {
+            CoreType::ATOMIC(atomic) => {
+                return atomic.is_int() || atomic.is_string() || atomic.is_float()
+            }
+            CoreType::TUPLE(tuple) => {
+                for ty in &tuple.sub_types {
+                    if !ty.is_hashable() {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            _ => false,
+        }
     }
 
     pub fn is_unknown(&self) -> bool {

@@ -1023,8 +1023,6 @@ impl TypeChecker {
                 let core_ok_assignment = ok_assignment.core_ref();
                 let l_expr = &core_ok_assignment.l_atom;
                 let (l_type, interior_atom_type) = self.check_atom(l_expr);
-                // TODO - check that l_expr is a atom with index type and if `interior_atom_type`
-                // is tuple or str then raise error `type is not assignable`
                 if let CoreAtomNode::INDEX_ACCESS(l_index_expr) = l_expr.core_ref() {
                     if let Some(interior_atom_type) = interior_atom_type {
                         if interior_atom_type.is_immutable() {
