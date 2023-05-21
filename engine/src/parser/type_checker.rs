@@ -48,7 +48,7 @@ use crate::{
         core::{AbstractType, CoreType, Type},
     },
 };
-use std::rc::Rc;
+use std::{convert::TryInto, rc::Rc};
 use text_size::TextRange;
 
 use super::resolver::Resolver;
@@ -76,6 +76,12 @@ pub enum ParamsTypeNCountResult {
     MORE_PARAMS(usize),
     LESS_PARAMS((usize, usize)), // (expected_params_num, received_params_num)
     MISMATCHED_TYPE(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
+}
+
+pub enum TupleIndexCheckResult {
+    OK(usize),
+    POSITIVE_INDEX_OUT_OF_BOUND,
+    NEGATIVE_INDEX_OUT_OF_BOUND,
 }
 
 pub struct TypeChecker {
@@ -207,8 +213,62 @@ impl TypeChecker {
         }
     }
 
+    pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
+        match unary.core_ref() {
+            CoreUnaryExpressionNode::UNARY(unary) => {
+                let core_unary = unary.core_ref();
+                let operator_kind = &core_unary.operator_kind;
+                let operand_value = self.is_unary_expr_int_valued(&core_unary.unary_expr);
+                match operand_value {
+                    Some(value) => match operator_kind {
+                        UnaryOperatorKind::Plus => return Some(value),
+                        UnaryOperatorKind::Minus => return Some(-value),
+                        UnaryOperatorKind::Not => return None,
+                    },
+                    None => return None,
+                }
+            }
+            CoreUnaryExpressionNode::ATOMIC(atomic) => match atomic.core_ref() {
+                CoreAtomicExpressionNode::INTEGER(integer_valued_token) => {
+                    match integer_valued_token.core_ref() {
+                        CoreTokenNode::OK(ok_token) => {
+                            let value = ok_token.token_value(&self.code);
+                            match value.parse::<i32>() {
+                                Ok(value) => return Some(value),
+                                Err(_) => return None,
+                            }
+                        }
+                        _ => return None,
+                    }
+                }
+                _ => return None,
+            },
+            CoreUnaryExpressionNode::MISSING_TOKENS(_) => None,
+        }
+    }
+
+    pub fn is_valid_index_for_tuple(
+        &self,
+        index_value: i32,
+        tuple_len: usize,
+    ) -> TupleIndexCheckResult {
+        if index_value >= 0 {
+            if index_value < tuple_len as i32 {
+                return TupleIndexCheckResult::OK(index_value as usize);
+            } else {
+                return TupleIndexCheckResult::POSITIVE_INDEX_OUT_OF_BOUND;
+            }
+        } else {
+            if -(tuple_len as i32) <= index_value {
+                return TupleIndexCheckResult::OK((tuple_len as i32 + index_value) as usize);
+            } else {
+                return TupleIndexCheckResult::NEGATIVE_INDEX_OUT_OF_BOUND;
+            }
+        }
+    }
+
     pub fn is_indexable_with_type(&mut self, base_type: &Type, index_type: &Type) -> Option<Type> {
-        // TODO - add strings and tuples
+        // NOTE - case for `tuple` is already handled in the calling function
         match base_type.0.as_ref() {
             CoreType::ARRAY(array) => {
                 if index_type.is_int() {
@@ -511,15 +571,15 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_atom(&mut self, atom: &AtomNode) -> Type {
+    pub fn check_atom(&mut self, atom: &AtomNode) -> (Type, Option<Type>) {
         let core_atom = atom.core_ref();
         match core_atom {
-            CoreAtomNode::ATOM_START(atom_start) => self.check_atom_start(atom_start),
+            CoreAtomNode::ATOM_START(atom_start) => (self.check_atom_start(atom_start), None),
             CoreAtomNode::CALL(call) => {
                 let core_call = call.core_ref();
                 let atom = &core_call.atom;
                 let params = &core_call.params;
-                let atom_type_obj = self.check_atom(atom);
+                let (atom_type_obj, _) = self.check_atom(atom);
                 match self.is_callable(&atom_type_obj) {
                     Some((expected_param_types, return_type)) => {
                         let result = self.check_params_type_and_count(
@@ -527,30 +587,32 @@ impl TypeChecker {
                             params,
                         );
                         match result {
-                            ParamsTypeNCountResult::OK => return return_type,
+                            ParamsTypeNCountResult::OK => {
+                                return (return_type, Some(atom_type_obj))
+                            }
                             _ => {
                                 self.log_params_type_and_count_check_error(atom.range(), result);
-                                return Type::new_with_unknown();
+                                return (Type::new_with_unknown(), Some(atom_type_obj));
                             }
                         }
                     }
                     None => {
                         let err = ExpressionNotCallableError::new(atom.range());
                         self.errors.push(Diagnostics::ExpressionNotCallable(err));
-                        return Type::new_with_unknown();
+                        return (Type::new_with_unknown(), Some(atom_type_obj));
                     }
                 }
             }
             CoreAtomNode::PROPERTRY_ACCESS(property_access) => {
                 let core_property_access = property_access.core_ref();
                 let atom = &core_property_access.atom;
-                let atom_type_obj = self.check_atom(atom);
+                let (atom_type_obj, _) = self.check_atom(atom);
                 let property = &core_property_access.propertry;
                 if let CoreIdentifierNode::OK(ok_identifier) = property.core_ref() {
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     match result {
                         StructPropertyCheckResult::PROPERTY_EXIST((_, type_obj)) => {
-                            return type_obj
+                            return (type_obj, Some(atom_type_obj))
                         }
                         StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(_) => {
                             let err = PropertyDoesNotExistError::new(
@@ -560,26 +622,26 @@ impl TypeChecker {
                                 atom.range(),
                             );
                             self.errors.push(Diagnostics::PropertyDoesNotExist(err));
-                            return Type::new_with_unknown();
+                            return (Type::new_with_unknown(), Some(atom_type_obj));
                         }
                         StructPropertyCheckResult::NON_STRUCT_TYPE => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::FIELD,
-                                atom_type_obj,
+                                atom_type_obj.clone(),
                                 property.range(),
                                 atom.range(),
                             );
                             self.errors.push(Diagnostics::PropertyDoesNotExist(err));
-                            return Type::new_with_unknown();
+                            return (Type::new_with_unknown(), Some(atom_type_obj));
                         }
                     }
                 }
-                Type::new_with_unknown()
+                (Type::new_with_unknown(), Some(atom_type_obj))
             }
             CoreAtomNode::METHOD_ACCESS(method_access) => {
                 let core_method_access = method_access.core_ref();
                 let atom = &core_method_access.atom;
-                let atom_type_obj = self.check_atom(atom);
+                let (atom_type_obj, _) = self.check_atom(atom);
                 let method = &core_method_access.method_name;
                 let params = &core_method_access.params;
                 if let CoreIdentifierNode::OK(ok_identifier) = method.core_ref() {
@@ -597,13 +659,15 @@ impl TypeChecker {
                                         params,
                                     );
                                     match result {
-                                        ParamsTypeNCountResult::OK => return return_type,
+                                        ParamsTypeNCountResult::OK => {
+                                            return (return_type, Some(atom_type_obj))
+                                        }
                                         _ => {
                                             self.log_params_type_and_count_check_error(
                                                 ok_identifier.range(),
                                                 result,
                                             );
-                                            return Type::new_with_unknown();
+                                            return (Type::new_with_unknown(), Some(atom_type_obj));
                                         }
                                     }
                                 }
@@ -613,7 +677,7 @@ impl TypeChecker {
                                         ok_identifier.range(),
                                     );
                                     self.errors.push(Diagnostics::StructFieldNotCallable(err));
-                                    return Type::new_with_unknown();
+                                    return (Type::new_with_unknown(), Some(atom_type_obj));
                                 }
                             }
                         }
@@ -627,13 +691,15 @@ impl TypeChecker {
                                         params,
                                     );
                                     match result {
-                                        ParamsTypeNCountResult::OK => return return_type.clone(),
+                                        ParamsTypeNCountResult::OK => {
+                                            return (return_type.clone(), Some(atom_type_obj))
+                                        }
                                         _ => {
                                             self.log_params_type_and_count_check_error(
                                                 method.range(),
                                                 result,
                                             );
-                                            return Type::new_with_unknown();
+                                            return (Type::new_with_unknown(), Some(atom_type_obj));
                                         }
                                     }
                                 }
@@ -645,42 +711,86 @@ impl TypeChecker {
                                         atom.range(),
                                     );
                                     self.errors.push(Diagnostics::PropertyDoesNotExist(err));
-                                    return Type::new_with_unknown();
+                                    return (Type::new_with_unknown(), Some(atom_type_obj));
                                 }
                             }
                         }
                         StructPropertyCheckResult::NON_STRUCT_TYPE => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::METHOD,
-                                atom_type_obj,
+                                atom_type_obj.clone(),
                                 method.range(),
                                 atom.range(),
                             );
                             self.errors.push(Diagnostics::PropertyDoesNotExist(err));
-                            return Type::new_with_unknown();
+                            return (Type::new_with_unknown(), Some(atom_type_obj));
                         }
                     }
                 }
-                Type::new_with_unknown()
+                (Type::new_with_unknown(), Some(atom_type_obj))
             }
             CoreAtomNode::INDEX_ACCESS(index_access) => {
                 let core_index_access = index_access.core_ref();
                 let atom = &core_index_access.atom;
-                let atom_type_obj = self.check_atom(atom);
-                let index = &core_index_access.index;
-                let index_type_obj = self.check_expr(index);
-                match self.is_indexable_with_type(&atom_type_obj, &index_type_obj) {
-                    Some(element_type) => return element_type.clone(),
+                let (atom_type_obj, _) = self.check_atom(atom);
+                let index_expr = &core_index_access.index;
+                let index_type_obj = self.check_expr(index_expr);
+                match atom_type_obj.0.as_ref() {
+                    CoreType::TUPLE(tuple) => {
+                        let sub_types = &tuple.sub_types;
+                        match index_expr.core_ref() {
+                            CoreExpressionNode::UNARY(index_unary_expr) => {
+                                match self.is_unary_expr_int_valued(index_unary_expr) {
+                                    Some(index_value) => {
+                                        match self
+                                            .is_valid_index_for_tuple(index_value, sub_types.len())
+                                        {
+                                            TupleIndexCheckResult::OK(index_value) => {
+                                                return (
+                                                    sub_types[index_value].clone(),
+                                                    Some(atom_type_obj),
+                                                )
+                                            }
+                                            TupleIndexCheckResult::POSITIVE_INDEX_OUT_OF_BOUND => {
+                                                todo!()
+                                            }
+                                            TupleIndexCheckResult::NEGATIVE_INDEX_OUT_OF_BOUND => {
+                                                todo!()
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        // TODO - raise error `the expr does not resolve to a valid integer value for indexing tuple`
+                                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                                    }
+                                }
+                            }
+                            CoreExpressionNode::BINARY(_)
+                            | CoreExpressionNode::COMPARISON(_)
+                            | CoreExpressionNode::MISSING_TOKENS(_) => {
+                                // TODO - raise error `not a valid expression for indexing tuple`
+                                return (Type::new_with_unknown(), Some(atom_type_obj));
+                            }
+                        }
+                    }
                     _ => {
-                        let err = ExpressionIndexingNotValidError::new(
-                            atom_type_obj,
-                            index_type_obj,
-                            atom.range(),
-                            index.range(),
-                        );
-                        self.errors
-                            .push(Diagnostics::ExpressionIndexingNotValid(err));
-                        return Type::new_with_unknown();
+                        // check for types other than tuple
+                        match self.is_indexable_with_type(&atom_type_obj, &index_type_obj) {
+                            Some(element_type) => {
+                                return (element_type.clone(), Some(atom_type_obj))
+                            }
+                            _ => {
+                                let err = ExpressionIndexingNotValidError::new(
+                                    atom_type_obj.clone(),
+                                    index_type_obj,
+                                    atom.range(),
+                                    index_expr.range(),
+                                );
+                                self.errors
+                                    .push(Diagnostics::ExpressionIndexingNotValid(err));
+                                return (Type::new_with_unknown(), Some(atom_type_obj));
+                            }
+                        }
                     }
                 }
             }
@@ -744,7 +854,7 @@ impl TypeChecker {
             CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(parenthesised_expr) => {
                 self.check_expr(&parenthesised_expr.core_ref().expr)
             }
-            CoreAtomicExpressionNode::ATOM(atom) => self.check_atom(atom),
+            CoreAtomicExpressionNode::ATOM(atom) => self.check_atom(atom).0,
             CoreAtomicExpressionNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
         }
     }
@@ -884,7 +994,9 @@ impl TypeChecker {
             CoreAssignmentNode::OK(ok_assignment) => {
                 let core_ok_assignment = ok_assignment.core_ref();
                 let l_expr = &core_ok_assignment.l_atom;
-                let l_type = self.check_atom(l_expr);
+                let (l_type, interior_atom_type) = self.check_atom(l_expr);
+                // TODO - check that l_expr is a atom with index type and if `interior_atom_type`
+                // is tuple or str then raise error `type is not assignable`
                 let r_assign = &core_ok_assignment.r_assign;
                 (l_type, r_assign, l_expr.range())
             }
