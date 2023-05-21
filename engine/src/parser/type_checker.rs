@@ -43,7 +43,10 @@ use crate::{
         core::{IdentifierKind, SymbolData},
         user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData},
     },
-    types::core::{AbstractType, CoreType, Type},
+    types::{
+        atomic::Atomic,
+        core::{AbstractType, CoreType, Type},
+    },
 };
 use std::rc::Rc;
 use text_size::TextRange;
@@ -205,6 +208,7 @@ impl TypeChecker {
     }
 
     pub fn is_indexable_with_type(&mut self, base_type: &Type, index_type: &Type) -> Option<Type> {
+        // TODO - add strings and tuples
         match base_type.0.as_ref() {
             CoreType::ARRAY(array) => {
                 if index_type.is_int() {
@@ -213,6 +217,16 @@ impl TypeChecker {
                     return None;
                 }
             }
+            CoreType::ATOMIC(atomic) => match atomic {
+                Atomic::STRING => {
+                    if index_type.is_int() {
+                        return Some(Type::new_with_atomic("str"));
+                    } else {
+                        return None;
+                    }
+                }
+                _ => return None,
+            },
             CoreType::HASHMAP(hashmap) => {
                 if index_type.is_eq(&hashmap.key_type) && index_type.is_hashable() {
                     return Some(hashmap.value_type.clone());

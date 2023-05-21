@@ -167,6 +167,10 @@ impl Type {
         }
     }
 
+    pub fn is_immutable(&self) -> bool {
+        self.is_string() || self.is_tuple()
+    }
+
     pub fn is_tuple(&self) -> bool {
         match self.0.as_ref() {
             CoreType::TUPLE(_) => true,
