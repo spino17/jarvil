@@ -62,31 +62,23 @@ pub const BLANK: &'static str                   = "<blank>";
 pub const NON_TYPED: &'static str               = "<non-typed>";
 pub const UNKNOWN: &'static str                 = "<unknown>";
 
-// KEYWORDS + ATOMIC_TYPES => RESERVED_WORDS
-pub const KEYWORDS: [&'static str; 21] = [
-    FOR,
-    WHILE,
-    CONTINUE,
-    BREAK,
-    IF,
-    ELIF,
-    ELSE,
-    TYPE_KEYWORD,
-    INTERFACE_KEYWORD,
-    DEF,
-    LET,
-    SELF,
-    IMPL,
-    AND,
-    NOT,
-    OR,
-    IN,
-    TRUE,
-    FALSE,
-    LAMBDA_KEYWORD,
-    RETURN,
-];
-
-pub const ATOMIC_TYPES: [&'static str; 4] = [INT, FLOAT, STRING, BOOL];
+// reserved keywords in Python
+pub const NONE: &'static str                    = "None";
+pub const AS: &'static str                      = "as";
+pub const ASSERT_KEYWORD: &'static str          = "assert";
+pub const CLASS_KEYWORD: &'static str           = "class";
+pub const DEL_KEYWORD: &'static str             = "del";
+pub const EXCEPT_KEYWORD: &'static str          = "except";
+pub const FINALLY_KEYWORD: &'static str         = "finally";
+pub const FORM_KEYWORD: &'static str            = "form";
+pub const GLOBAL_KEYWORD: &'static str          = "global";
+pub const IMPORT_KEYWORD: &'static str          = "import";
+pub const IS: &'static str                      = "is";
+pub const NONLOCAL_KEYWORD: &'static str        = "nonlocal";
+pub const PASS_KEYWORD: &'static str            = "pass";
+pub const RAISE_KEYWORD: &'static str           = "raise";
+pub const TRY_KEYWORD: &'static str             = "try";
+pub const WITH_KEYWORD: &'static str            = "with";
+pub const YIELD_KEYWORD: &'static str           = "yield";
 
 pub const EIGHT_BIT_MAX_VALUE: usize = 250;

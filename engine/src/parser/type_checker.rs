@@ -50,7 +50,7 @@ use crate::{
         core::{AbstractType, CoreType, Type},
     },
 };
-use std::{convert::TryInto, rc::Rc};
+use std::rc::Rc;
 use text_size::TextRange;
 
 use super::resolver::Resolver;
