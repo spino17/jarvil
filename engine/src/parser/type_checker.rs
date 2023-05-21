@@ -753,8 +753,6 @@ impl TypeChecker {
                                                 )
                                             }
                                             TupleIndexCheckResult::POSITIVE_INDEX_OUT_OF_BOUND => {
-                                                // TODO - raise error `index out of bound`
-                                                // index should be between 0 - (tuple_len - 1)
                                                 let err = TupleIndexOutOfBoundError::new(
                                                     sub_types.len(),
                                                     index_expr.range(),
@@ -767,8 +765,6 @@ impl TypeChecker {
                                                 );
                                             }
                                             TupleIndexCheckResult::NEGATIVE_INDEX_OUT_OF_BOUND => {
-                                                // TODO - raise error `index out of bound`
-                                                // index should be between -1 to -tuple_len
                                                 let err = TupleIndexOutOfBoundError::new(
                                                     sub_types.len(),
                                                     index_expr.range(),
@@ -783,7 +779,6 @@ impl TypeChecker {
                                         }
                                     }
                                     None => {
-                                        // TODO - raise error `the expr does not resolve to a valid integer value for indexing tuple`
                                         let err = UnresolvedIndexExpressionInTupleError::new(
                                             index_expr.range(),
                                         );
@@ -797,7 +792,6 @@ impl TypeChecker {
                             CoreExpressionNode::BINARY(_)
                             | CoreExpressionNode::COMPARISON(_)
                             | CoreExpressionNode::MISSING_TOKENS(_) => {
-                                // TODO - raise error `not a valid expression for indexing tuple`
                                 let err =
                                     InvalidIndexExpressionForTupleError::new(index_expr.range());
                                 self.errors
@@ -1030,6 +1024,14 @@ impl TypeChecker {
                 let (l_type, interior_atom_type) = self.check_atom(l_expr);
                 // TODO - check that l_expr is a atom with index type and if `interior_atom_type`
                 // is tuple or str then raise error `type is not assignable`
+                if let CoreAtomNode::INDEX_ACCESS(_) = l_expr.core_ref() {
+                    if let Some(interior_atom_type) = interior_atom_type {
+                        if interior_atom_type.is_immutable() {
+                            // TODO - raise error `immutable type cannot be assigned`
+                            println!("immutable not assignable");
+                        }
+                    }
+                }
                 let r_assign = &core_ok_assignment.r_assign;
                 (l_type, r_assign, l_expr.range())
             }
