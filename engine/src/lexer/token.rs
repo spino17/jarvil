@@ -8,7 +8,9 @@ use crate::constants::common::{
     INTERFACE_KEYWORD, LAMBDA_KEYWORD, LBRACE, LBRACKET, LESS_EQUAL, LET, LEXICAL_ERROR, LITERAL,
     LPAREN, LSQUARE, NEWLINE, NOT, NOT_EQUAL, OR, PLUS, RBRACE, RBRACKET, RETURN, RIGHT_ARROW,
     RPAREN, RSQUARE, SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, STRUCT_KEYWORD, TRUE,
-    TYPE_KEYWORD, WHILE,
+    TYPE_KEYWORD, WHILE, NONE, AS, ASSERT_KEYWORD, CLASS_KEYWORD, DEL_KEYWORD, EXCEPT_KEYWORD,
+    FINALLY_KEYWORD, FORM_KEYWORD, GLOBAL_KEYWORD, IMPORT_KEYWORD, IS, NONLOCAL_KEYWORD,
+    PASS_KEYWORD, RAISE_KEYWORD, TRY_KEYWORD, WITH_KEYWORD, YIELD_KEYWORD,
 };
 use std::fmt::Display;
 use std::rc::Rc;
@@ -101,6 +103,25 @@ pub enum CoreToken {
 
     // error
     LEXICAL_ERROR(LexicalErrorKind),
+
+    // reserved tokens in Python
+    NONE,             // 'None'
+    AS,               // 'as'
+    ASSERT_KEYWORD,   // 'assert'
+    CLASS_KEYWORD,    // 'class'
+    DEL_KEYWORD,      // 'del'
+    EXCEPT_KEYWORD,   // 'except'
+    FINALLY_KEYWORD,  // 'finally'
+    FORM_KEYWORD,     // 'form'
+    GLOBAL_KEYWORD,   // 'global'
+    IMPORT_KEYWORD,   // 'import'
+    IS,               // 'is'
+    NONLOCAL_KEYWORD, // 'nonlocal'
+    PASS_KEYWORD,     // 'pass'
+    RAISE_KEYWORD,    // 'raise'
+    TRY_KEYWORD,      // 'try'
+    WITH_KEYWORD,     // 'with'
+    YIELD_KEYWORD,    // 'yield'
 }
 
 #[derive(Debug, Clone)]
