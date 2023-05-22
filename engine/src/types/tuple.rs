@@ -1,11 +1,10 @@
-use std::cmp;
-
 use super::core::OperatorCompatiblity;
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
     types::core::{AbstractType, CoreType, Type},
 };
+use std::cmp;
 
 #[derive(Debug)]
 pub struct Tuple {

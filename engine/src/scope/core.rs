@@ -3,7 +3,6 @@ use super::user_defined_types::LambdaTypeData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::Type;
-use crate::types::lambda::Lambda;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::RefCell;
 use std::rc::Rc;

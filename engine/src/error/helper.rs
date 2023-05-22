@@ -1,5 +1,5 @@
+use std::fmt::Display;
 use std::fmt::{self};
-use std::fmt::{write, Display};
 use text_size::TextRange;
 
 #[derive(Clone, Debug)]

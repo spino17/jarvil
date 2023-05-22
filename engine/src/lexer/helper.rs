@@ -1,5 +1,5 @@
 use super::token::LexicalErrorKind;
-use crate::{ast::ast::CoreOkTokenNode, code::Code, lexer::token::CoreToken};
+use crate::{code::Code, lexer::token::CoreToken};
 
 pub fn is_letter(c: &char) -> bool {
     if c.is_ascii_alphabetic() || (*c == '_') {

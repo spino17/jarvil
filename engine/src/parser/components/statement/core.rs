@@ -1,6 +1,4 @@
-use crate::ast::ast::{
-    CallableKind, FunctionDeclarationNode, StatementNode, StructPropertyDeclarationNode,
-};
+use crate::ast::ast::{CallableKind, StatementNode, StructPropertyDeclarationNode};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::JarvilParser;

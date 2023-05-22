@@ -1,8 +1,7 @@
+use super::core::OperatorCompatiblity;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};
-
-use super::core::OperatorCompatiblity;
 
 #[derive(Debug)]
 pub struct Lambda {

@@ -2,7 +2,7 @@ use super::hashmap::HashMap;
 use super::lambda::Lambda;
 use super::r#struct::Struct;
 use super::tuple::Tuple;
-use crate::constants::common::{BOOL, NON_TYPED, UNKNOWN};
+use crate::constants::common::{BOOL, UNKNOWN};
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
