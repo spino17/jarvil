@@ -59,6 +59,7 @@ impl AbstractType for Tuple {
                     return true;
                 }
             }
+            CoreType::ANY => true,
             _ => false,
         }
     }

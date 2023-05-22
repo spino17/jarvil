@@ -42,9 +42,24 @@ pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<Rc<Vec<Token>>> {
 pub fn get_suffix_str_for_identifier(identifier: &OkIdentifierNode) -> &'static str {
     let suffix_str = match &identifier.0.as_ref().borrow().decl {
         Some((ident_kind, _)) => match ident_kind {
-            IdentifierKind::VARIABLE(_) => "_var",
-            IdentifierKind::FUNCTION(_) => "_func",
-            IdentifierKind::USER_DEFINED_TYPE(_) => "_ty",
+            IdentifierKind::VARIABLE(symbol_data) => {
+                if symbol_data.2 {
+                    return "_var";
+                }
+                ""
+            }
+            IdentifierKind::FUNCTION(symbol_data) => {
+                if symbol_data.2 {
+                    return "_func";
+                }
+                ""
+            }
+            IdentifierKind::USER_DEFINED_TYPE(symbol_data) => {
+                if symbol_data.2 {
+                    return "_ty";
+                }
+                ""
+            }
         },
         None => "",
     };

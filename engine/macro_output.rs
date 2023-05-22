@@ -35,7 +35,7 @@ pub const INTERFACE_KEYWORD: &'static str       = "interface";
 pub const DEF: &'static str                     = "def";
 pub const LET: &'static str                     = "let";
 pub const SELF: &'static str                    = "self";
-pub const IMPL: &'static str                    = "impl";
+pub const IMPLEMENTS_KEYWORD: &'static str      = "implements";
 pub const AND: &'static str                     = "and";
 pub const NOT: &'static str                     = "not";
 pub const OR: &'static str                      = "or";
@@ -61,6 +61,8 @@ pub const BLOCK_COMMENT: &'static str           = "<block-comment>";
 pub const BLANK: &'static str                   = "<blank>";
 pub const NON_TYPED: &'static str               = "<non-typed>";
 pub const UNKNOWN: &'static str                 = "<unknown>";
+pub const ANY: &'static str                     = "<any>";
+pub const UNSET: &'static str                   = "<unset>";
 
 // reserved keywords in Python (3.9.6)
 pub const NONE: &'static str                    = "None";

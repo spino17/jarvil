@@ -34,9 +34,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
             let variable_decl_node = parser.variable_decl();
             StatementNode::new_with_variable_declaration(&variable_decl_node)
         }
-        CoreToken::DEF => {
-            parser.function_stmt(CallableKind::FUNC)
-        }
+        CoreToken::DEF => parser.function_stmt(CallableKind::FUNC),
         CoreToken::FOR => todo!(),
         CoreToken::WHILE => todo!(),
         CoreToken::IF => todo!(),

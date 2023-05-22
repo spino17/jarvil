@@ -60,6 +60,7 @@ impl AbstractType for Lambda {
                 }
                 true
             }
+            CoreType::ANY => true,
             _ => false,
         }
     }

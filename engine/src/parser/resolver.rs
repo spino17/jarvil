@@ -12,6 +12,7 @@ use crate::error::diagnostics::{
     VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
+use crate::scope::builtin::print_meta_data;
 use crate::scope::core::VariableLookupResult;
 use crate::types::core::CoreType;
 use crate::{
@@ -84,6 +85,12 @@ impl Resolver {
         let code_block = ast.0.as_ref().borrow();
         // TODO - add global scope functions which are available in Python for example:
         // `print`, `range`, `len`
+        self.namespace.functions.force_insert(
+            &Rc::new("print".to_string()),
+            print_meta_data(),
+            TextRange::default(),
+            false,
+        );
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
@@ -527,6 +534,7 @@ impl Resolver {
                                     .core_ref()
                                     .lparen
                                     .range(),
+                                true,
                             ),
                         )
                     }

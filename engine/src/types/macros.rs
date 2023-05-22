@@ -10,6 +10,7 @@ macro_rules! impl_op_compatiblity {
             CoreType::UNKNOWN => return None,
             CoreType::VOID => return None,
             CoreType::UNSET => return None,
+            CoreType::ANY => return None,
         }
     };
 }

@@ -22,17 +22,21 @@ pub enum VariableLookupResult {
 }
 
 #[derive(Debug)]
-pub struct SymbolData<T>(pub Rc<RefCell<T>>, pub TextRange); // (identifier_meta_data, decl_line_number)
+pub struct SymbolData<T>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
 
 impl<T> SymbolData<T> {
-    pub fn new(core_data: T, decl_range: TextRange) -> Self {
-        SymbolData(Rc::new(RefCell::new(core_data)), decl_range)
+    pub fn new(core_data: T, decl_range: TextRange, is_suffix_required: bool) -> Self {
+        SymbolData(
+            Rc::new(RefCell::new(core_data)),
+            decl_range,
+            is_suffix_required,
+        )
     }
 }
 
 impl<T> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
-        SymbolData(self.0.clone(), self.1)
+        SymbolData(self.0.clone(), self.1, self.2)
     }
 }
 
@@ -44,8 +48,18 @@ pub struct CoreScope<T> {
 }
 
 impl<T> CoreScope<T> {
-    fn set(&mut self, name: &Rc<String>, meta_data: T, decl_range: TextRange) -> SymbolData<T> {
-        let symbol_data = SymbolData(Rc::new(RefCell::new(meta_data)), decl_range);
+    fn set(
+        &mut self,
+        name: &Rc<String>,
+        meta_data: T,
+        decl_range: TextRange,
+        is_suffix_required: bool,
+    ) -> SymbolData<T> {
+        let symbol_data = SymbolData(
+            Rc::new(RefCell::new(meta_data)),
+            decl_range,
+            is_suffix_required,
+        );
         self.symbol_table.insert(name.clone(), symbol_data.clone());
         symbol_data
     }
@@ -95,18 +109,35 @@ impl<T> Scope<T> {
         }
     }
 
+    pub fn force_insert(
+        &self,
+        key: &Rc<String>,
+        meta_data: T,
+        decl_range: TextRange,
+        is_suffix_required: bool,
+    ) -> SymbolData<T> {
+        // use this method only for builtin function where we know that no entry already exist in the scope
+        self.0
+            .borrow_mut()
+            .set(key, meta_data, decl_range, is_suffix_required)
+    }
+
     pub fn insert<U: Fn(Scope<T>, Rc<String>) -> Option<SymbolData<T>>>(
         &self,
         key: &Rc<String>,
         meta_data: T,
         decl_range: TextRange,
         lookup_fn: U,
+        is_suffix_required: bool,
     ) -> Result<SymbolData<T>, TextRange> {
         let scope = Scope(self.0.clone());
         if let Some(symbol_data) = lookup_fn(scope, key.clone()) {
             return Err(symbol_data.1);
         }
-        let symbol_data = self.0.borrow_mut().set(key, meta_data, decl_range);
+        let symbol_data = self
+            .0
+            .borrow_mut()
+            .set(key, meta_data, decl_range, is_suffix_required);
         Ok(symbol_data)
     }
 
@@ -233,7 +264,7 @@ impl Namespace {
                 None => None,
             };
         self.variables
-            .insert(name, VariableData::default(), decl_range, lookup_func)
+            .insert(name, VariableData::default(), decl_range, lookup_func, true)
     }
 
     pub fn declare_variable_with_type(
@@ -254,6 +285,7 @@ impl Namespace {
             VariableData::new(variable_type, is_init),
             decl_range,
             lookup_func,
+            true,
         )
     }
 
@@ -269,7 +301,7 @@ impl Namespace {
                 None => None,
             };
         self.functions
-            .insert(name, FunctionData::default(), decl_range, lookup_func)
+            .insert(name, FunctionData::default(), decl_range, lookup_func, true)
     }
 
     pub fn declare_struct_type(
@@ -287,6 +319,7 @@ impl Namespace {
             UserDefinedTypeData::default_with_struct(),
             decl_range,
             lookup_func,
+            true,
         )
     }
 
@@ -305,6 +338,7 @@ impl Namespace {
             UserDefinedTypeData::default_with_lambda(),
             decl_range,
             lookup_func,
+            true,
         )
     }
 
@@ -328,6 +362,7 @@ impl Namespace {
             }),
             decl_range,
             lookup_func,
+            true,
         )
     }
 

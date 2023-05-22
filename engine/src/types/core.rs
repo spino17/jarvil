@@ -2,7 +2,7 @@ use super::hashmap::HashMap;
 use super::lambda::Lambda;
 use super::r#struct::Struct;
 use super::tuple::Tuple;
-use crate::constants::common::{BOOL, UNKNOWN, UNSET};
+use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
@@ -55,6 +55,7 @@ pub enum CoreType {
     UNKNOWN,
     VOID,
     UNSET,
+    ANY,
     // TODO - add below types also
     // ANY // this type can be used to denote that any variable with this type can have any valid datatypes, will be useful in things like print(...)
     // ENUMERATION,
@@ -106,6 +107,10 @@ impl Type {
 
     pub fn new_with_void() -> Type {
         Type(Rc::new(CoreType::VOID))
+    }
+
+    pub fn new_with_any() -> Type {
+        Type(Rc::new(CoreType::ANY))
     }
 
     pub fn is_void(&self) -> bool {
@@ -265,7 +270,8 @@ impl AbstractType for Type {
                 CoreType::VOID => true,
                 _ => false,
             },
-            CoreType::UNSET => return false
+            CoreType::UNSET => return false,
+            CoreType::ANY => return true,
         }
     }
 }
@@ -282,6 +288,7 @@ impl std::fmt::Display for Type {
             CoreType::UNKNOWN => write!(f, "{}", UNKNOWN),
             CoreType::VOID => write!(f, "()"),
             CoreType::UNSET => write!(f, "{}", UNSET),
+            CoreType::ANY => write!(f, "{}", ANY),
         }
     }
 }

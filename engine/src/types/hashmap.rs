@@ -27,6 +27,7 @@ impl AbstractType for HashMap {
                 self.key_type.is_eq(&hashmap_data.key_type)
                     && self.value_type.is_eq(&hashmap_data.value_type)
             }
+            CoreType::ANY => true,
             _ => false,
         }
     }

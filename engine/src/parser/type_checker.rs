@@ -190,7 +190,7 @@ impl TypeChecker {
                     UserDefinedTypeData::LAMBDA(LambdaTypeData::new(params_vec, return_type));
                 let lambda_type_obj = Type::new_with_lambda(
                     None,
-                    &SymbolData::new(symbol_data, prototype.lparen.range()),
+                    &SymbolData::new(symbol_data, prototype.lparen.range(), true),
                 );
                 return lambda_type_obj;
             }
@@ -444,6 +444,7 @@ impl TypeChecker {
                                                     struct_symbol_data.clone(),
                                                 ),
                                                 type_decl_range,
+                                                true,
                                             ),
                                         );
                                         (

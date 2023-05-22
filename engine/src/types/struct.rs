@@ -20,6 +20,7 @@ impl AbstractType for Struct {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
             CoreType::STRUCT(struct_data) => struct_data.name.eq(&self.name),
+            CoreType::ANY => true,
             _ => false,
         }
     }

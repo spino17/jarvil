@@ -63,6 +63,7 @@ impl AbstractType for Atomic {
                 Atomic::STRING => self.is_string(),
                 Atomic::BOOL => self.is_bool(),
             },
+            CoreType::ANY => true,
             _ => false,
         }
     }
