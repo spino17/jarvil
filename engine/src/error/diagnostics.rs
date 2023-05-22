@@ -14,7 +14,6 @@ pub enum Diagnostics {
     InvalidTrailingTokens(InvalidTrailingTokensError),
     IncorrectlyIndentedBlock(IncorrectlyIndentedBlockError),
     InvalidLValue(InvalidLValueError),
-    InvalidRLambda(InvalidRLambdaError),
     IdentifierAlreadyDeclared(IdentifierAlreadyDeclaredError),
     ConstructorNotFoundInsideStructDeclaration(ConstructorNotFoundInsideStructDeclarationError),
     IdentifierFoundInNonLocals(IdentifierFoundInNonLocalsError),
@@ -60,7 +59,6 @@ impl Diagnostics {
             Diagnostics::InvalidTrailingTokens(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IncorrectlyIndentedBlock(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InvalidLValue(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::InvalidRLambda(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierAlreadyDeclared(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::ConstructorNotFoundInsideStructDeclaration(diagonstic) => {
                 Report::new(diagonstic.clone())
@@ -282,30 +280,6 @@ impl InvalidLValueError {
             span: range_to_span(range).into(),
             help: Some(
                 "any value derived from the output of a function call is not assignable"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
-        }
-    }
-}
-
-#[derive(Diagnostic, Debug, Error, Clone)]
-#[error("invalid r-lambda")]
-#[diagnostic(code("syntax error"))]
-pub struct InvalidRLambdaError {
-    #[label("expression cannot be assigned lambda")]
-    pub span: SourceSpan,
-    #[help]
-    pub help: Option<String>, // any value derived from a function call is not assignable
-}
-
-impl InvalidRLambdaError {
-    pub fn new(range: TextRange) -> Self {
-        InvalidRLambdaError {
-            span: range_to_span(range).into(),
-            help: Some(
-                "lambda expression is not allowed to be assigned to l-value expression directly\nyou can achieve the operation by declaring a new lambda variable and then using it in the assignment"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),

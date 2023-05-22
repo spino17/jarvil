@@ -14,7 +14,7 @@ use crate::code::Code;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::{
-    Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidRLambdaError,
+    Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError,
     InvalidTrailingTokensError, MissingTokenError,
 };
 use crate::lexer::token::{CoreToken, Token};
@@ -198,15 +198,6 @@ impl PackratParser {
         // -> TODO - check whether error on same line already exists
         let err = InvalidLValueError::new(range);
         self.errors.push(Diagnostics::InvalidLValue(err));
-    }
-
-    pub fn log_invalid_r_lambda_error(&mut self, range: TextRange) {
-        if self.ignore_all_errors {
-            return;
-        }
-        // -> TODO - check whether error on same line already exists
-        let err = InvalidRLambdaError::new(range);
-        self.errors.push(Diagnostics::InvalidRLambda(err));
     }
 
     // ------------------- parsing routines for terminals and block indentation -------------------
