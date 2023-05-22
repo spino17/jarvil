@@ -314,7 +314,6 @@ impl Visitor for PythonCodeGenerator {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::BLOCK(block) => {
-                // TODO - add nonlocal statement by analyzing from scope
                 self.open_block();
                 let core_block = block.0.as_ref().borrow();
                 self.print_token_node(&core_block.newline);
@@ -379,6 +378,7 @@ impl Visitor for PythonCodeGenerator {
                 return None;
             }
             ASTNode::NAME_TYPE_SPEC(name_type_spec) => {
+                // This is where type-annotations are evapored in the generated Python code
                 let core_name_type_spec = name_type_spec.core_ref();
                 let name = &core_name_type_spec.name;
                 self.print_identifier(name);
