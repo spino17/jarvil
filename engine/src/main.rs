@@ -45,9 +45,11 @@ fn compile(args: Vec<String>) {
             match output {
                 Ok(output) => {
                     let len = output.stdout.len();
-                    match str::from_utf8(&output.stdout[..len - 1]) {
-                        Ok(v) => println!("{}", v),
-                        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+                    if len > 0 {
+                        match str::from_utf8(&output.stdout[..len - 1]) {
+                            Ok(v) => println!("{}", v),
+                            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+                        }
                     }
                 }
                 Err(err) => {

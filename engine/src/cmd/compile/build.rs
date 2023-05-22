@@ -6,7 +6,6 @@ use crate::lexer::lexer::{CoreLexer, Lexer};
 use crate::parser::parser::{JarvilParser, Parser};
 use crate::parser::resolver::Resolver;
 use crate::parser::type_checker::TypeChecker;
-use std::fs;
 
 pub fn build_ast(code: &mut Code) -> (BlockNode, Vec<Diagnostics>) {
     let core_lexer = CoreLexer::new();

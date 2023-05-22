@@ -1040,7 +1040,8 @@ impl Visitor for Resolver {
                             match self.namespace.lookup_in_functions_namespace(&name) {
                                 Some((symbol_data, depth)) => {
                                     ok_identifier.bind_function_decl(&symbol_data, depth);
-                                    if depth > 0 {
+                                    // function is resolved to nonlocal scope and should be non-builtin
+                                    if depth > 0 && symbol_data.2 {
                                         self.namespace.set_to_function_non_locals(&name);
                                     }
                                 }
