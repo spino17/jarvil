@@ -59,7 +59,7 @@ fn test_break() {
 
 #[test]
 fn test_if() {
-    let alt_vec = vec!["i", "if", "is", "ifconfig"];
+    let alt_vec = vec!["i", "if", "iso", "ifconfig"];
     assert_token_for_identifier(alt_vec, "if", CoreToken::IF)
 }
 
@@ -137,7 +137,7 @@ fn test_or() {
 
 #[test]
 fn test_in() {
-    let alt_vec = vec!["i", "in", "is", "inter"];
+    let alt_vec = vec!["i", "in", "iso", "inter"];
     assert_token_for_identifier(alt_vec, "in", CoreToken::IN)
 }
 
@@ -161,7 +161,7 @@ fn test_return() {
 
 #[test]
 fn test_int() {
-    let alt_vec = vec!["i", "is", "ice", "int", "inter", "international"];
+    let alt_vec = vec!["i", "iso", "ice", "int", "inter", "international"];
     assert_token_for_identifier(alt_vec, "int", CoreToken::ATOMIC_TYPE)
 }
 
@@ -189,4 +189,124 @@ fn test_struct() {
 fn test_bool() {
     let alt_vec = vec!["b", "bob", "bolt", "bool", "booling", "boost"];
     assert_token_for_identifier(alt_vec, "bool", CoreToken::ATOMIC_TYPE)
+}
+
+#[test]
+fn test_None() {
+    let alt_vec = vec!["N", "Non", "Nones", "None", "Nont"];
+    assert_token_for_identifier(alt_vec, "None", CoreToken::NONE)
+}
+
+#[test]
+fn test_as() {
+    let alt_vec = vec!["a", "ast", "as", "ai", "astro"];
+    assert_token_for_identifier(alt_vec, "as", CoreToken::AS)
+}
+
+#[test]
+fn test_assert() {
+    let alt_vec = vec!["a", "ass", "assert", "asserting", "astro"];
+    assert_token_for_identifier(alt_vec, "assert", CoreToken::ASSERT_KEYWORD)
+}
+
+#[test]
+fn test_class() {
+    let alt_vec = vec!["c", "clone", "clas", "class", "classic"];
+    assert_token_for_identifier(alt_vec, "class", CoreToken::CLASS_KEYWORD)
+}
+
+#[test]
+fn test_del() {
+    let alt_vec = vec!["d", "del", "dell", "det"];
+    assert_token_for_identifier(alt_vec, "del", CoreToken::DEL_KEYWORD)
+}
+
+#[test]
+fn test_except() {
+    let alt_vec = vec!["e", "expert", "except", "excepted"];
+    assert_token_for_identifier(alt_vec, "except", CoreToken::EXCEPT_KEYWORD)
+}
+
+#[test]
+fn test_finally() {
+    let alt_vec = vec!["f", "final", "finale", "finally", "finallya"];
+    assert_token_for_identifier(alt_vec, "finally", CoreToken::FINALLY_KEYWORD)
+}
+
+#[test]
+fn test_from() {
+    let alt_vec = vec!["f", "fry", "frost", "from", "froms"];
+    assert_token_for_identifier(alt_vec, "from", CoreToken::FROM_KEYWORD)
+}
+
+#[test]
+fn test_global() {
+    let alt_vec = vec!["g", "globe", "global", "globally"];
+    assert_token_for_identifier(alt_vec, "global", CoreToken::GLOBAL_KEYWORD)
+}
+
+#[test]
+fn test_import() {
+    let alt_vec = vec!["i", "imported", "import", "important", "impor"];
+    assert_token_for_identifier(alt_vec, "import", CoreToken::IMPORT_KEYWORD)
+}
+
+#[test]
+fn test_is() {
+    let alt_vec = vec!["i", "is", "iso", "it"];
+    assert_token_for_identifier(alt_vec, "is", CoreToken::IS)
+}
+
+#[test]
+fn test_nonlocal() {
+    let alt_vec = vec!["n", "non", "nonlocalization", "nonlocal", "notice"];
+    assert_token_for_identifier(alt_vec, "nonlocal", CoreToken::NONLOCAL_KEYWORD)
+}
+
+#[test]
+fn test_pass() {
+    let alt_vec = vec!["p", "past", "passed", "pass"];
+    assert_token_for_identifier(alt_vec, "pass", CoreToken::PASS_KEYWORD)
+}
+
+#[test]
+fn test_raise() {
+    let alt_vec = vec!["r", "rat", "raisen", "raise", "raised"];
+    assert_token_for_identifier(alt_vec, "raise", CoreToken::RAISE_KEYWORD)
+}
+
+#[test]
+fn test_try() {
+    let alt_vec = vec!["t", "trying", "try", "tri"];
+    assert_token_for_identifier(alt_vec, "try", CoreToken::TRY_KEYWORD)
+}
+
+#[test]
+fn test_with() {
+    let alt_vec = vec!["w", "witty", "whiting", "with", "witha"];
+    assert_token_for_identifier(alt_vec, "with", CoreToken::WITH_KEYWORD)
+}
+
+#[test]
+fn test_yield() {
+    let alt_vec = vec!["y", "yielding", "yield", "yikes"];
+    assert_token_for_identifier(alt_vec, "yield", CoreToken::YIELD_KEYWORD)
+}
+
+#[test]
+fn test_async() {
+    let alt_vec = vec!["a", "async", "asyncronization", "ast"];
+    assert_token_for_identifier(alt_vec, "async", CoreToken::ASYNC_KEYWORD)
+}
+
+#[test]
+fn test_await() {
+    let alt_vec = vec!["a", "awaiting", "await", "awful"];
+    assert_token_for_identifier(alt_vec, "await", CoreToken::AWAIT_KEYWORD)
+}
+
+#[test]
+fn test_peg_parser() {
+    let alt_vec = vec!["_", "__peg_", "__peg_parser__", "__peg_parser___"];
+    assert_token_for_identifier(alt_vec, "__peg_parser__", CoreToken::PEG_PARSER)
 }
