@@ -550,6 +550,11 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                 'T' => check_keyword("rue", value_iter, CoreToken::TRUE),   // True
                 'F' => check_keyword("alse", value_iter, CoreToken::FALSE), // False
                 'r' => check_keyword("eturn", value_iter, CoreToken::RETURN), // return
+                'N' => check_keyword("one", value_iter, CoreToken::NONE),   // None
+                'g' => check_keyword("lobal", value_iter, CoreToken::GLOBAL_KEYWORD), // global
+                'p' => check_keyword("ass", value_iter, CoreToken::PASS_KEYWORD), // pass
+                'y' => check_keyword("ield", value_iter, CoreToken::YIELD_KEYWORD), // yield
+                '_' => check_keyword("_peg_parser__", value_iter, CoreToken::PEG_PARSER), // __peg_parser__
                 _ => CoreToken::IDENTIFIER,
             }
         }

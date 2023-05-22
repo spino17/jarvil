@@ -939,12 +939,20 @@ impl InvalidIndexExpressionForTupleError {
 pub struct UnresolvedIndexExpressionInTupleError {
     #[label("expression does not resolve to a valid integer value for indexing tuple")]
     pub index_span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
 }
 
 impl UnresolvedIndexExpressionInTupleError {
     pub fn new(index_span: TextRange) -> Self {
         UnresolvedIndexExpressionInTupleError {
             index_span: range_to_span(index_span).into(),
+            help: Some(
+                "tuple index should be a fixed integer value"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }
