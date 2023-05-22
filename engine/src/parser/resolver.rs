@@ -12,7 +12,7 @@ use crate::error::diagnostics::{
     SingleSubTypeFoundInTupleError, VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
-use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data};
+use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
 use crate::scope::core::VariableLookupResult;
 use crate::types::core::CoreType;
 use crate::{
@@ -85,11 +85,16 @@ impl Resolver {
 
     pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
         let code_block = ast.0.as_ref().borrow();
-        // TODO - add global scope functions which are available in Python for example:
-        // `print`, `range`, `len`
+        // setting builtin functions to global scope
         self.namespace.functions.force_insert(
             &Rc::new("print".to_string()),
             print_meta_data(),
+            TextRange::default(),
+            false,
+        );
+        self.namespace.functions.force_insert(
+            &Rc::new("range".to_string()),
+            range_meta_data(),
             TextRange::default(),
             false,
         );
