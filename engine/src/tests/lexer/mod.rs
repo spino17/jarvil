@@ -113,8 +113,8 @@ fn test_self() {
 
 #[test]
 fn test_impl() {
-    let alt_vec = vec!["i", "im", "impl", "iota", "imply", "implementation"];
-    assert_token_for_identifier(alt_vec, "impl", CoreToken::IMPL)
+    let alt_vec = vec!["i", "im", "implements", "iota", "imply", "implementation"];
+    assert_token_for_identifier(alt_vec, "implements", CoreToken::IMPLEMENTS_KEYWORD)
 }
 
 #[test]

@@ -35,18 +35,6 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
             StatementNode::new_with_variable_declaration(&variable_decl_node)
         }
         CoreToken::DEF => {
-            /*
-            let def_keyword_node = parser.expect("def");
-            let func_name_node = parser.expect_ident();
-            let callable_body = parser.callable_body();
-            let func_decl_node = FunctionDeclarationNode::new(
-                &func_name_node,
-                &def_keyword_node,
-                CallableKind::FUNC,
-                &callable_body,
-            );
-            StatementNode::new_with_function_declaration(&func_decl_node)
-             */
             parser.function_stmt(CallableKind::FUNC)
         }
         CoreToken::FOR => todo!(),

@@ -80,6 +80,16 @@ impl Resolver {
         }
     }
 
+    pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
+        let code_block = ast.0.as_ref().borrow();
+        // TODO - add global scope functions which are available in Python for example:
+        // `print`, `range`, `len`
+        for stmt in &code_block.stmts {
+            self.walk_stmt_indent_wrapper(stmt);
+        }
+        (self.namespace, self.errors)
+    }
+
     pub fn open_block(&mut self) {
         self.namespace.open_scope();
     }
@@ -131,14 +141,6 @@ impl Resolver {
             return false;
         }
         self.context.class_context_stack[len - 1].is_traversing_constructor
-    }
-
-    pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
-        let code_block = ast.0.as_ref().borrow();
-        for stmt in &code_block.stmts {
-            self.walk_stmt_indent_wrapper(stmt);
-        }
-        (self.namespace, self.errors)
     }
 
     pub fn try_resolving<

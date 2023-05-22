@@ -504,9 +504,9 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                             match next_next_next_c {
                                                 Some(next_next_next_c) => match next_next_next_c {
                                                     'l' => check_keyword(
-                                                        "",
+                                                        "ements",
                                                         value_iter,
-                                                        CoreToken::IMPL,
+                                                        CoreToken::IMPLEMENTS_KEYWORD,
                                                     ),
                                                     'o' => check_keyword(
                                                         "rt",
