@@ -2,7 +2,7 @@ use super::hashmap::HashMap;
 use super::lambda::Lambda;
 use super::r#struct::Struct;
 use super::tuple::Tuple;
-use crate::constants::common::{BOOL, UNKNOWN};
+use crate::constants::common::{BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
@@ -54,6 +54,7 @@ pub enum CoreType {
     HASHMAP(HashMap),
     UNKNOWN,
     VOID,
+    UNSET,
     // TODO - add below types also
     // ANY // this type can be used to denote that any variable with this type can have any valid datatypes, will be useful in things like print(...)
     // ENUMERATION,
@@ -97,6 +98,10 @@ impl Type {
 
     pub fn new_with_unknown() -> Type {
         Type(Rc::new(CoreType::UNKNOWN))
+    }
+
+    pub fn new_with_unset() -> Type {
+        Type(Rc::new(CoreType::UNSET))
     }
 
     pub fn new_with_void() -> Type {
@@ -255,14 +260,12 @@ impl AbstractType for Type {
             CoreType::ARRAY(array_type) => array_type.is_eq(base_type),
             CoreType::TUPLE(tuple_type) => tuple_type.is_eq(base_type),
             CoreType::HASHMAP(hashmap_type) => hashmap_type.is_eq(base_type),
-            CoreType::UNKNOWN => match base_type.0.as_ref() {
-                CoreType::UNKNOWN => true,
-                _ => false,
-            },
+            CoreType::UNKNOWN => return false,
             CoreType::VOID => match base_type.0.as_ref() {
                 CoreType::VOID => true,
                 _ => false,
             },
+            CoreType::UNSET => return false
         }
     }
 }
@@ -278,6 +281,7 @@ impl std::fmt::Display for Type {
             CoreType::HASHMAP(hashmap_type) => write!(f, "{}", hashmap_type.to_string()),
             CoreType::UNKNOWN => write!(f, "{}", UNKNOWN),
             CoreType::VOID => write!(f, "()"),
+            CoreType::UNSET => write!(f, "{}", UNSET),
         }
     }
 }

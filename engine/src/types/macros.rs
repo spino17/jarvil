@@ -9,6 +9,7 @@ macro_rules! impl_op_compatiblity {
             CoreType::LAMBDA(lambda_type) => lambda_type.$t($u),
             CoreType::UNKNOWN => return None,
             CoreType::VOID => return None,
+            CoreType::UNSET => return None,
         }
     };
 }

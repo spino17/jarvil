@@ -112,7 +112,7 @@ impl Default for LambdaTypeData {
     fn default() -> Self {
         LambdaTypeData {
             param_types: Rc::new(vec![]),
-            return_type: Type::new_with_unknown(),
+            return_type: Type::new_with_unset(),
         }
     }
 }

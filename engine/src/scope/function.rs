@@ -25,7 +25,7 @@ impl Default for FunctionData {
     fn default() -> Self {
         FunctionData {
             params: Rc::new(vec![]),
-            return_type: Type::new_with_void(),
+            return_type: Type::new_with_unset(),
         }
     }
 }

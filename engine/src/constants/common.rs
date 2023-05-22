@@ -61,6 +61,7 @@ pub const BLOCK_COMMENT: &'static str           = "<block-comment>";
 pub const BLANK: &'static str                   = "<blank>";
 pub const NON_TYPED: &'static str               = "<non-typed>";
 pub const UNKNOWN: &'static str                 = "<unknown>";
+pub const UNSET: &'static str                   = "<unset>";
 
 // reserved keywords in Python (3.9.6)
 pub const NONE: &'static str                    = "None";
