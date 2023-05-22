@@ -8,7 +8,8 @@ use crate::error::diagnostics::{
     ConstructorNotFoundInsideStructDeclarationError, FieldsNotInitializedInConstructorError,
     IdentifierFoundInNonLocalsError, IdentifierNotFoundInAnyNamespaceError,
     MoreThanMaxLimitParamsPassedError, NonHashableTypeInIndexError,
-    NonVoidConstructorReturnTypeError, SelfNotFoundError, VariableReferencedBeforeAssignmentError,
+    NonVoidConstructorReturnTypeError, SelfNotFoundError, SingleSubTypeFoundInTupleError,
+    VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::core::VariableLookupResult;
@@ -46,6 +47,11 @@ use text_size::TextRange;
 pub enum ResolveResult {
     OK(usize),       // depth
     Err(Rc<String>), // name of the identifier
+}
+
+pub enum ErrorLoggingTypeKind {
+    HASHMAP,
+    TUPLE,
 }
 
 pub struct ClassContext {
@@ -300,7 +306,7 @@ impl Resolver {
         self.try_declare_and_bind(identifier, declare_fn, bind_fn)
     }
 
-    pub fn check_if_type_is_hashmap_with_hashable_index<T: Fn(&mut Resolver, TextRange)>(
+    pub fn pre_type_checking<T: Fn(&mut Resolver, TextRange, ErrorLoggingTypeKind)>(
         type_obj: &Type,
         type_expr: &TypeExpressionNode,
         is_log_error: Option<(T, &mut Resolver)>,
@@ -313,14 +319,22 @@ impl Resolver {
                     }
                     _ => unreachable!(),
                 };
-                if hashmap.key_type.is_hashable() {
-                    return type_obj.clone();
-                } else {
+                if !hashmap.key_type.is_hashable() {
                     if let Some((log_error_fn, resolver)) = is_log_error {
-                        log_error_fn(resolver, index_span)
+                        log_error_fn(resolver, index_span, ErrorLoggingTypeKind::HASHMAP)
                     }
                     return Type::new_with_unknown();
                 }
+                return type_obj.clone();
+            }
+            CoreType::TUPLE(tuple) => {
+                if tuple.sub_types.len() <= 1 {
+                    if let Some((log_error_fn, resolver)) = is_log_error {
+                        log_error_fn(resolver, type_expr.range(), ErrorLoggingTypeKind::TUPLE)
+                    }
+                    return Type::new_with_unknown();
+                }
+                return type_obj.clone();
             }
             _ => return type_obj.clone(),
         }
@@ -329,17 +343,27 @@ impl Resolver {
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_before_resolved(&self.namespace, &self.code) {
             TypeResolveKind::RESOLVED(type_obj) => {
-                let log_error_fn = |resolver: &mut Resolver, index_span: TextRange| {
-                    let err = NonHashableTypeInIndexError::new(index_span);
-                    resolver
-                        .errors
-                        .push(Diagnostics::NonHashableTypeInIndex(err));
-                };
-                return Self::check_if_type_is_hashmap_with_hashable_index(
-                    &type_obj,
-                    type_expr,
-                    Some((log_error_fn, self)),
-                );
+                let log_error_fn =
+                    |resolver: &mut Resolver, span: TextRange, type_kind: ErrorLoggingTypeKind| {
+                        match type_kind {
+                            ErrorLoggingTypeKind::HASHMAP => {
+                                let err = NonHashableTypeInIndexError::new(span);
+                                resolver
+                                    .errors
+                                    .push(Diagnostics::NonHashableTypeInIndex(err));
+                            }
+                            ErrorLoggingTypeKind::TUPLE => {
+                                let err = SingleSubTypeFoundInTupleError::new(span);
+                                resolver
+                                    .errors
+                                    .push(Diagnostics::SingleSubTypeFoundInTuple(err));
+                            }
+                        }
+                    };
+                // This is type-checking prior to type-checking phase to
+                // catch some early errors related to name resolution and
+                // structure of the type.
+                return Self::pre_type_checking(&type_obj, type_expr, Some((log_error_fn, self)));
             }
             TypeResolveKind::UNRESOLVED(identifier) => {
                 for unresolved_identifier in identifier {

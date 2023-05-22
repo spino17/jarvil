@@ -41,6 +41,7 @@ use crate::{
         helper::PropertyKind,
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
+    parser::resolver::ErrorLoggingTypeKind,
     scope::{
         core::{IdentifierKind, SymbolData},
         user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData},
@@ -127,10 +128,8 @@ impl TypeChecker {
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_after_resolved(&self.code) {
             TypeResolveKind::RESOLVED(type_obj) => {
-                type DummyFnType = fn(&mut Resolver, TextRange);
-                return Resolver::check_if_type_is_hashmap_with_hashable_index::<DummyFnType>(
-                    &type_obj, type_expr, None,
-                );
+                type DummyFnType = fn(&mut Resolver, TextRange, ErrorLoggingTypeKind);
+                return Resolver::pre_type_checking::<DummyFnType>(&type_obj, type_expr, None);
             }
             TypeResolveKind::UNRESOLVED(_) => return Type::new_with_unknown(),
             TypeResolveKind::INVALID => Type::new_with_unknown(),

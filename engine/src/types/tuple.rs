@@ -33,7 +33,7 @@ impl Tuple {
                     if self.sub_types[i]
                         .check_operator(&other_tuple.sub_types[i], operator_kind)
                         .is_none()
-                    {   
+                    {
                         return None;
                     }
                 }

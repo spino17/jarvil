@@ -48,6 +48,7 @@ pub enum Diagnostics {
     UnresolvedIndexExpressionInTuple(UnresolvedIndexExpressionInTupleError),
     InvalidIndexExpressionForTuple(InvalidIndexExpressionForTupleError),
     ImmutableTypeNotAssignable(ImmutableTypeNotAssignableError),
+    SingleSubTypeFoundInTuple(SingleSubTypeFoundInTupleError),
 }
 
 impl Diagnostics {
@@ -115,6 +116,7 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::ImmutableTypeNotAssignable(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::SingleSubTypeFoundInTuple(diagnostic) => Report::new(diagnostic.clone()),
         }
     }
 }
@@ -1149,6 +1151,30 @@ impl NonHashableTypeInIndexError {
             index_span: range_to_span(index_span).into(),
             help: Some(
                 "only `int`, `float` and `str` are hashable types"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("single sub-type in tuple")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct SingleSubTypeFoundInTupleError {
+    #[label("only one sub-type in tuple")]
+    pub index_span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl SingleSubTypeFoundInTupleError {
+    pub fn new(index_span: TextRange) -> Self {
+        SingleSubTypeFoundInTupleError {
+            index_span: range_to_span(index_span).into(),
+            help: Some(
+                "tuple should have more than one sub-type"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),
