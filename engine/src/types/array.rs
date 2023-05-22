@@ -17,7 +17,11 @@ impl Array {
         }
     }
 
-    fn check_operator_for_array(&self, other: &Type, operator_kind: &BinaryOperatorKind) -> Option<Type> {
+    fn check_operator_for_array(
+        &self,
+        other: &Type,
+        operator_kind: &BinaryOperatorKind,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::ARRAY(other_array) => {
                 if self

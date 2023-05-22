@@ -6,16 +6,16 @@
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockKind, BlockNode,
     CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode,
-    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, OkTokenNode,
-    ParamsNode, SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
+    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, OkTokenNode, ParamsNode,
+    SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
     TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::code::Code;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::{
-    Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError,
-    InvalidTrailingTokensError, MissingTokenError,
+    Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
+    MissingTokenError,
 };
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;

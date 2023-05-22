@@ -1,5 +1,11 @@
+use std::cmp;
+
 use super::core::OperatorCompatiblity;
-use crate::types::core::{AbstractType, CoreType, Type};
+use crate::{
+    constants::common::BOOL,
+    lexer::token::BinaryOperatorKind,
+    types::core::{AbstractType, CoreType, Type},
+};
 
 #[derive(Debug)]
 pub struct Tuple {
@@ -10,6 +16,30 @@ impl Tuple {
     pub fn new(sub_types: Vec<Type>) -> Tuple {
         Tuple {
             sub_types: sub_types.clone(),
+        }
+    }
+
+    fn check_operator_for_tuple(
+        &self,
+        other: &Type,
+        operator_kind: &BinaryOperatorKind,
+    ) -> Option<Type> {
+        match other.0.as_ref() {
+            CoreType::TUPLE(other_tuple) => {
+                let other_len = other_tuple.sub_types.len();
+                let self_len = self.sub_types.len();
+                let min_len = cmp::min(self_len, other_len);
+                for i in 0..min_len {
+                    if self.sub_types[i]
+                        .check_operator(&other_tuple.sub_types[i], operator_kind)
+                        .is_none()
+                    {
+                        return None;
+                    }
+                }
+                return Some(Type::new_with_atomic(BOOL));
+            }
+            _ => None,
         }
     }
 }
@@ -46,9 +76,22 @@ impl ToString for Tuple {
 }
 
 impl OperatorCompatiblity for Tuple {
-    fn check_add(&self, _other: &Type) -> Option<Type> {
-        // TODO - add logic to type-check
-        None
+    fn check_add(&self, other: &Type) -> Option<Type> {
+        match other.0.as_ref() {
+            CoreType::TUPLE(other_tuple) => {
+                let self_sub_types = &self.sub_types;
+                let other_sub_types = &other_tuple.sub_types;
+                let mut combined_sub_types: Vec<Type> = vec![];
+                for ty in self_sub_types {
+                    combined_sub_types.push(ty.clone());
+                }
+                for ty in other_sub_types {
+                    combined_sub_types.push(ty.clone())
+                }
+                return Some(Type::new_with_tuple(combined_sub_types));
+            }
+            _ => return None,
+        }
     }
 
     fn check_subtract(&self, _other: &Type) -> Option<Type> {
@@ -63,19 +106,16 @@ impl OperatorCompatiblity for Tuple {
         None
     }
 
-    fn check_double_equal(&self, _other: &Type) -> Option<Type> {
-        // TODO - add logic to type-check
-        None
+    fn check_double_equal(&self, other: &Type) -> Option<Type> {
+        self.check_operator_for_tuple(other, &BinaryOperatorKind::DoubleEqual)
     }
 
-    fn check_greater(&self, _other: &Type) -> Option<Type> {
-        // TODO - add logic to type-check
-        None
+    fn check_greater(&self, other: &Type) -> Option<Type> {
+        self.check_operator_for_tuple(other, &BinaryOperatorKind::Greater)
     }
 
-    fn check_less(&self, _other: &Type) -> Option<Type> {
-        // TODO - add logic to type-check
-        None
+    fn check_less(&self, other: &Type) -> Option<Type> {
+        self.check_operator_for_tuple(other, &BinaryOperatorKind::Less)
     }
 
     fn check_and(&self, _other: &Type) -> Option<Type> {

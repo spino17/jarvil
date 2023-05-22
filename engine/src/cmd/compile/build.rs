@@ -29,7 +29,7 @@ pub fn build(code_vec: Vec<char>) -> Result<(), Diagnostics> {
     let type_checker = TypeChecker::new(&code);
     let mut type_errors = type_checker.check_ast(&ast);
     errors.append(&mut type_errors);
-    
+
     if errors.len() > 0 {
         return Err(errors[0].clone());
     }

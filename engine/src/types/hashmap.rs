@@ -1,5 +1,9 @@
 use super::core::OperatorCompatiblity;
-use crate::types::core::{AbstractType, CoreType, Type};
+use crate::{
+    constants::common::BOOL,
+    lexer::token::BinaryOperatorKind,
+    types::core::{AbstractType, CoreType, Type},
+};
 
 #[derive(Debug)]
 pub struct HashMap {
@@ -55,9 +59,24 @@ impl OperatorCompatiblity for HashMap {
         None
     }
 
-    fn check_double_equal(&self, _other: &Type) -> Option<Type> {
-        // TODO - add logic to type-check
-        None
+    fn check_double_equal(&self, other: &Type) -> Option<Type> {
+        match other.0.as_ref() {
+            CoreType::HASHMAP(other_hashmap) => {
+                if self
+                    .key_type
+                    .check_operator(&other_hashmap.key_type, &BinaryOperatorKind::DoubleEqual)
+                    .is_some()
+                    && self
+                        .value_type
+                        .check_operator(&other_hashmap.value_type, &BinaryOperatorKind::DoubleEqual)
+                        .is_some()
+                {
+                    return Some(Type::new_with_atomic(BOOL));
+                }
+                return None;
+            }
+            _ => return None,
+        }
     }
 
     fn check_greater(&self, _other: &Type) -> Option<Type> {
