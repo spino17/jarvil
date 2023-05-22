@@ -199,7 +199,14 @@ impl OperatorCompatiblity for Atomic {
                     Atomic::FLOAT => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                _ => return None,
+                Atomic::STRING => match other_atomic {
+                    Atomic::STRING => return Some(Type::new_with_atomic(BOOL)),
+                    _ => return None
+                }
+                Atomic::BOOL => match other_atomic {
+                    Atomic::BOOL => return Some(Type::new_with_atomic(BOOL)),
+                    _ => return None
+                }
             },
             _ => None,
         }
@@ -218,7 +225,14 @@ impl OperatorCompatiblity for Atomic {
                     Atomic::FLOAT => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                _ => return None,
+                Atomic::STRING => match other_atomic {
+                    Atomic::STRING => return Some(Type::new_with_atomic(BOOL)),
+                    _ => return None
+                }
+                Atomic::BOOL => match other_atomic {
+                    Atomic::BOOL => return Some(Type::new_with_atomic(BOOL)),
+                    _ => return None
+                }
             },
             _ => None,
         }
