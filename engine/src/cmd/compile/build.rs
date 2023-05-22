@@ -17,7 +17,7 @@ pub fn build_ast(code: &mut Code) -> (BlockNode, Vec<Diagnostics>) {
     (ast, lexical_errors)
 }
 
-pub fn build(code_vec: Vec<char>) -> Result<(), Diagnostics> {
+pub fn build(code_vec: Vec<char>) -> Result<String, Diagnostics> {
     let mut code = Code::new(code_vec);
     let (ast, mut errors) = build_ast(&mut code);
 
@@ -35,10 +35,5 @@ pub fn build(code_vec: Vec<char>) -> Result<(), Diagnostics> {
     }
     let py_generator = PythonCodeGenerator::new(&code);
     let py_code = py_generator.generate_python_code(&ast);
-    fs::write(
-        "/Users/bhavyabhatt/Desktop/generated-python-file.py",
-        py_code,
-    )
-    .expect("file write failed");
-    Ok(())
+    Ok(py_code)
 }

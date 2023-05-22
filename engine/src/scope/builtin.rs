@@ -2,7 +2,7 @@ use super::function::FunctionData;
 use crate::{constants::common::INT, types::core::Type};
 use std::{rc::Rc, slice::Iter, str::Chars};
 
-// print(obj: <any>)
+// print(_obj: <any>)
 pub fn print_meta_data() -> FunctionData {
     FunctionData {
         params: Rc::new(vec![(Rc::new("_obj".to_string()), Type::new_with_any())]),

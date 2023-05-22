@@ -18,7 +18,8 @@ use crate::cmd::compile::build::build;
 use crate::reader::read_file;
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
-use std::env::args;
+use std::str;
+use std::{env::args, fs, process::Command};
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -31,10 +32,35 @@ fn attach_source_code(err: Report, source: String) -> Report {
 fn compile(args: Vec<String>) {
     let (code_vec, code_str) = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
     let result = build(code_vec);
-    if let Err(err) = result {
-        let err = attach_source_code(err.report(), code_str);
-        // TODO - later give option to the user to display all errors
-        println!("{:?}", err);
+    match result {
+        Ok(py_code) => {
+            fs::write(
+                "/Users/bhavyabhatt/Desktop/__transpiled_python_code__.py",
+                py_code,
+            )
+            .expect("file write failed");
+            let output = Command::new("python3")
+                .arg("/Users/bhavyabhatt/Desktop/__transpiled_python_code__.py")
+                .output();
+            match output {
+                Ok(output) => {
+                    let len = output.stdout.len();
+                    match str::from_utf8(&output.stdout[..len - 1]) {
+                        Ok(v) => println!("{}", v),
+                        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+                    }
+                }
+                Err(err) => {
+                    // TODO - have a wrapper denoting that this error is Python generated runtime error
+                    println!("{:?}", err)
+                }
+            }
+        }
+        Err(err) => {
+            let err = attach_source_code(err.report(), code_str);
+            // TODO - later give option to the user to display all errors
+            println!("{:?}", err);
+        }
     }
 }
 
