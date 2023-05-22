@@ -35,7 +35,7 @@ pub enum CoreToken {
     LAMBDA_KEYWORD, // 'lambda'
 
     // types
-    TYPE_KEYWORD, // 'type'
+    TYPE_KEYWORD,      // 'type'
     ATOMIC_TYPE,
     LET,               // 'let'
     SELF,              // 'self'
@@ -76,8 +76,8 @@ pub enum CoreToken {
     COMMA,        // ','
     DOT,          // '.'
     BLANK,        // ' '
-    // TAB,                             // '\t'
-    NEWLINE, // '\n'
+    // TAB,       // '\t'
+    NEWLINE,      // '\n'
 
     // comparison
     EQUAL,         // '='
