@@ -7,17 +7,17 @@ use crate::ast::ast::{
     NameTypeSpecsNode, OkNameTypeSpecsNode, OkTypeTupleNode, StatementNode, TypeTupleNode,
 };
 use crate::lexer::token::CoreToken;
-use crate::parser::parser::PackratParser;
+use crate::parser::parser::JarvilParser;
 use std::rc::Rc;
 
-pub fn name_type_spec(parser: &mut PackratParser) -> NameTypeSpecNode {
+pub fn name_type_spec(parser: &mut JarvilParser) -> NameTypeSpecNode {
     let name_node = parser.expect_ident();
     let colon_node = parser.expect(":");
     let type_expr_node = parser.type_expr();
     NameTypeSpecNode::new(&name_node, &type_expr_node, &colon_node)
 }
 
-pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
+pub fn name_type_specs(parser: &mut JarvilParser) -> NameTypeSpecsNode {
     let first_arg_node = parser.name_type_spec();
     let token = &parser.curr_token();
     match token.core_token {
@@ -45,7 +45,7 @@ pub fn name_type_specs(parser: &mut PackratParser) -> NameTypeSpecsNode {
     }
 }
 
-pub fn type_tuple(parser: &mut PackratParser) -> TypeTupleNode {
+pub fn type_tuple(parser: &mut JarvilParser) -> TypeTupleNode {
     let first_type_node = parser.type_expr();
     let token = &parser.curr_token();
     match token.core_token {
@@ -70,7 +70,7 @@ pub fn type_tuple(parser: &mut PackratParser) -> TypeTupleNode {
     }
 }
 
-pub fn callable_prototype(parser: &mut PackratParser) -> CallablePrototypeNode {
+pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
     let mut args_node: Option<&NameTypeSpecsNode> = None;
     let name_type_specs_node: NameTypeSpecsNode;
     let lparen_node = parser.expect("(");
@@ -94,7 +94,7 @@ pub fn callable_prototype(parser: &mut PackratParser) -> CallablePrototypeNode {
     }
 }
 
-pub fn callable_body(parser: &mut PackratParser) -> CallableBodyNode {
+pub fn callable_body(parser: &mut JarvilParser) -> CallableBodyNode {
     let callable_prototype = parser.callable_prototype();
     let token = &parser.curr_token();
     match token.core_token {
@@ -115,7 +115,7 @@ pub fn callable_body(parser: &mut PackratParser) -> CallableBodyNode {
     }
 }
 
-pub fn function_stmt(parser: &mut PackratParser, callable_kind: CallableKind) -> StatementNode {
+pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> StatementNode {
     let def_keyword_node = parser.expect("def");
     let func_name_node = parser.expect_ident();
     let callable_body = parser.callable_body();

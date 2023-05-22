@@ -1,10 +1,10 @@
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::{OkParamsNode, ParamsNode};
 use crate::lexer::token::CoreToken;
-use crate::parser::parser::PackratParser;
+use crate::parser::parser::JarvilParser;
 use std::rc::Rc;
 
-pub fn params(parser: &mut PackratParser) -> ParamsNode {
+pub fn params(parser: &mut JarvilParser) -> ParamsNode {
     let first_param_node = parser.expr();
     let token = &parser.curr_token();
     match token.core_token {

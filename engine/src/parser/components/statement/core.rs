@@ -3,7 +3,7 @@ use crate::ast::ast::{
 };
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
-use crate::parser::parser::PackratParser;
+use crate::parser::parser::JarvilParser;
 
 pub fn is_statement_starting_with(token: &Token) -> bool {
     match token.core_token {
@@ -29,7 +29,7 @@ pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 8] = [
     "<expression>",
 ];
 
-pub fn stmt(parser: &mut PackratParser) -> StatementNode {
+pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = &parser.curr_token();
     let statement_node = match token.core_token {
         CoreToken::LET => {
@@ -117,7 +117,7 @@ pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
     }
 }
 
-pub fn struct_stmt(parser: &mut PackratParser) -> StatementNode {
+pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::IDENTIFIER => {

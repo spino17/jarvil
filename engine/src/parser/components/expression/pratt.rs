@@ -8,10 +8,10 @@
 
 use crate::{
     ast::ast::{ExpressionNode, TokenNode},
-    parser::parser::PackratParser,
+    parser::parser::JarvilParser,
 };
 
-pub fn pratt_expr(parser: &mut PackratParser, precedence: u8) -> ExpressionNode {
+pub fn pratt_expr(parser: &mut JarvilParser, precedence: u8) -> ExpressionNode {
     let prefix_node = parser.unary_expr();
     let mut left_expr_node: ExpressionNode = ExpressionNode::new_with_unary(&prefix_node);
     loop {
@@ -27,7 +27,7 @@ pub fn pratt_expr(parser: &mut PackratParser, precedence: u8) -> ExpressionNode 
 }
 
 pub fn infix(
-    parser: &mut PackratParser,
+    parser: &mut JarvilParser,
     left_expr_node: &ExpressionNode,
     operator_node: &TokenNode,
     operator_precedence: u8,
@@ -40,7 +40,7 @@ pub fn infix(
 }
 
 pub fn infix_comparison_expr(
-    parser: &mut PackratParser,
+    parser: &mut JarvilParser,
     left_expr_node: &ExpressionNode,
     operator_node: &TokenNode,
     operator_precedence: u8,
@@ -66,7 +66,7 @@ pub fn infix_comparison_expr(
 }
 
 pub fn infix_binary_expr(
-    parser: &mut PackratParser,
+    parser: &mut JarvilParser,
     left_expr_node: &ExpressionNode,
     operator_node: &TokenNode,
     operator_precedence: u8,

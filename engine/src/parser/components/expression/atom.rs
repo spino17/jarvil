@@ -1,8 +1,8 @@
 use crate::ast::ast::{AtomNode, AtomStartNode, CallExpressionNode, ParamsNode};
 use crate::lexer::token::CoreToken;
-use crate::parser::parser::PackratParser;
+use crate::parser::parser::JarvilParser;
 
-pub fn trailing_atom(parser: &mut PackratParser, atom_start_node: AtomNode) -> AtomNode {
+pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> AtomNode {
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::DOT => {
@@ -69,7 +69,7 @@ pub fn trailing_atom(parser: &mut PackratParser, atom_start_node: AtomNode) -> A
     }
 }
 
-pub fn atom_start(parser: &mut PackratParser) -> AtomStartNode {
+pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::IDENTIFIER => {
@@ -124,7 +124,7 @@ pub fn atom_start(parser: &mut PackratParser) -> AtomStartNode {
     }
 }
 
-pub fn atom(parser: &mut PackratParser) -> AtomNode {
+pub fn atom(parser: &mut JarvilParser) -> AtomNode {
     let atom_start_node = parser.atom_start();
     let atom_node = AtomNode::new_with_atom_start(&atom_start_node);
     return parser.trailing_atom(atom_node);

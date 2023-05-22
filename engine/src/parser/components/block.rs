@@ -16,11 +16,11 @@ use crate::ast::ast::{
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
 use crate::parser::helper::IndentResultKind;
-use crate::parser::parser::PackratParser;
+use crate::parser::parser::JarvilParser;
 use std::mem;
 
-pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
-    parser: &mut PackratParser,
+pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
+    parser: &mut JarvilParser,
     is_starting_with_fn: F,
     statement_parsing_fn: G,
     expected_symbols: &[&'static str],

@@ -4,7 +4,7 @@ use crate::{
     constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, NOT, TRUE},
     lexer::token::UnaryOperatorKind,
     lexer::token::{CoreToken, Token},
-    parser::parser::PackratParser,
+    parser::parser::JarvilParser,
 };
 use std::rc::Rc;
 
@@ -26,7 +26,7 @@ pub fn is_expression_starting_with(token: &Token) -> bool {
 pub const EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 11] =
     UNARY_EXPRESSION_STARTING_SYMBOLS;
 
-pub fn expr(parser: &mut PackratParser) -> ExpressionNode {
+pub fn expr(parser: &mut JarvilParser) -> ExpressionNode {
     let token = &parser.curr_token();
     if !is_expression_starting_with(token) {
         parser.log_missing_token_error(&EXPRESSION_EXPECTED_STARTING_SYMBOLS, token);
@@ -61,7 +61,7 @@ pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 11] = [
     "(",
 ];
 
-pub fn unary_expr(parser: &mut PackratParser) -> UnaryExpressionNode {
+pub fn unary_expr(parser: &mut JarvilParser) -> UnaryExpressionNode {
     let token = &parser.curr_token();
     if !is_unary_expression_starting_with(token) {
         parser.log_missing_token_error(&UNARY_EXPRESSION_STARTING_SYMBOLS, token);
@@ -127,7 +127,7 @@ pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 8] = [
     "(",
 ];
 
-pub fn atomic_expr(parser: &mut PackratParser) -> AtomicExpressionNode {
+pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
     let token = &parser.curr_token();
     if !is_atomic_expression_starting_with(token) {
         parser.log_missing_token_error(&ATOMIC_EXPRESSION_STARTING_SYMBOLS, token);

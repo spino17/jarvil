@@ -2,13 +2,13 @@ use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::TypeExpressionNode;
 use crate::constants::common::{ATOMIC_TYPE, IDENTIFIER};
 use crate::lexer::token::CoreToken;
-use crate::parser::parser::PackratParser;
+use crate::parser::parser::JarvilParser;
 use std::rc::Rc;
 
 pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 5] =
     [ATOMIC_TYPE, IDENTIFIER, "[", "{", "("];
 
-pub fn type_expr(parser: &mut PackratParser) -> TypeExpressionNode {
+pub fn type_expr(parser: &mut JarvilParser) -> TypeExpressionNode {
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::ATOMIC_TYPE => {

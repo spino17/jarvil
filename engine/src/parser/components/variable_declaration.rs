@@ -5,7 +5,7 @@ use crate::{
     ast::ast::RVariableDeclarationNode,
     lexer::token::{CoreToken, Token},
 };
-use crate::{ast::ast::VariableDeclarationNode, parser::parser::PackratParser};
+use crate::{ast::ast::VariableDeclarationNode, parser::parser::JarvilParser};
 use std::rc::Rc;
 
 pub const R_VARIABLE_DECLARATION_STARTING_SYMBOLS: [&'static str; 2] = ["<expression>", "lambda"];
@@ -17,7 +17,7 @@ pub fn is_r_variable_declaration_starting_with(token: &Token) -> bool {
     }
 }
 
-pub fn variable_decl(parser: &mut PackratParser) -> VariableDeclarationNode {
+pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
     let let_keyword_node = parser.expect("let");
     let identifier_node = parser.expect_ident();
     let equal_node = parser.expect("=");

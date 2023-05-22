@@ -3,7 +3,7 @@ use crate::code::Code;
 use crate::codegen::python::PythonCodeGenerator;
 use crate::error::diagnostics::Diagnostics;
 use crate::lexer::lexer::{CoreLexer, Lexer};
-use crate::parser::parser::{PackratParser, Parser};
+use crate::parser::parser::{JarvilParser, Parser};
 use crate::parser::resolver::Resolver;
 use crate::parser::type_checker::TypeChecker;
 use std::fs;
@@ -11,7 +11,7 @@ use std::fs;
 pub fn build_ast(code: &mut Code) -> (BlockNode, Vec<Diagnostics>) {
     let core_lexer = CoreLexer::new();
     let (token_vec, mut lexical_errors) = core_lexer.tokenize(code);
-    let parser = PackratParser::new(&*code);
+    let parser = JarvilParser::new(&*code);
     let (ast, mut parse_errors) = parser.parse(token_vec);
     lexical_errors.append(&mut parse_errors);
     (ast, lexical_errors)

@@ -1,8 +1,3 @@
-// Default parser for jarvil uses Packrat approach, first given by Bryan Ford in his master thesis at MIT. It is essentially a
-// top down recursive descent parsing with lazy memoization in order to avoid exponential parse time and provide reliable
-// linear time parsing!
-// See `https://pdos.csail.mit.edu/~baford/packrat/thesis/` for more information.
-
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockKind, BlockNode,
     CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode,
@@ -27,7 +22,7 @@ pub trait Parser {
     fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>);
 }
 
-pub struct PackratParser {
+pub struct JarvilParser {
     token_vec: Vec<Token>,
     lookahead: usize,
     indent_level: i64,
@@ -37,9 +32,9 @@ pub struct PackratParser {
     errors: Vec<Diagnostics>,
 }
 
-impl PackratParser {
+impl JarvilParser {
     pub fn new(code: &Code) -> Self {
-        PackratParser {
+        JarvilParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
@@ -51,14 +46,14 @@ impl PackratParser {
     }
 }
 
-impl Parser for PackratParser {
+impl Parser for JarvilParser {
     fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>) {
         let code_node = self.code(token_vec);
         (code_node, self.errors)
     }
 }
 
-impl PackratParser {
+impl JarvilParser {
     // ------------------- parsing utilities -------------------
     pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
         self.token_vec = token_vec;
@@ -324,7 +319,7 @@ impl PackratParser {
         components::code::code(self, token_vec)
     }
 
-    pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut PackratParser) -> StatementNode>(
+    pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
         &mut self,
         is_starting_with_fn: F,
         statement_parsing_fn: G,

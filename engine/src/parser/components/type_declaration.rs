@@ -2,10 +2,10 @@ use crate::ast::ast::{BlockKind, ErrornousNode, TokenNode, TypeExpressionNode, T
 use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::constants::common::DEF;
 use crate::lexer::token::CoreToken;
-use crate::{constants::common::IDENTIFIER, parser::parser::PackratParser};
+use crate::{constants::common::IDENTIFIER, parser::parser::JarvilParser};
 use std::rc::Rc;
 
-pub fn type_decl(parser: &mut PackratParser) -> TypeDeclarationNode {
+pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
     let type_keyword_node = parser.expect("type");
     let type_name_node = parser.expect_ident();
     let token = &parser.curr_token();
