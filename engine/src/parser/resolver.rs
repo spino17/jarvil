@@ -5,14 +5,14 @@ use crate::ast::ast::{
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
-    ConstructorNotFoundInsideStructDeclarationError, FieldsNotInitializedInConstructorError,
-    IdentifierFoundInNonLocalsError, IdentifierNotFoundInAnyNamespaceError,
-    MoreThanMaxLimitParamsPassedError, NonHashableTypeInIndexError,
-    NonVoidConstructorReturnTypeError, SelfNotFoundError, SingleSubTypeFoundInTupleError,
-    VariableReferencedBeforeAssignmentError,
+    BuiltinFunctionNameOverlapError, ConstructorNotFoundInsideStructDeclarationError,
+    FieldsNotInitializedInConstructorError, IdentifierFoundInNonLocalsError,
+    IdentifierNotFoundInAnyNamespaceError, MoreThanMaxLimitParamsPassedError,
+    NonHashableTypeInIndexError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
+    SingleSubTypeFoundInTupleError, VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
-use crate::scope::builtin::print_meta_data;
+use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data};
 use crate::scope::core::VariableLookupResult;
 use crate::types::core::CoreType;
 use crate::{
@@ -67,6 +67,7 @@ pub struct Resolver {
     pub code: Code,
     errors: Vec<Diagnostics>,
     context: Context,
+    indent_level: usize,
 }
 
 impl Resolver {
@@ -78,6 +79,7 @@ impl Resolver {
             context: Context {
                 class_context_stack: vec![],
             },
+            indent_level: 0,
         }
     }
 
@@ -99,11 +101,13 @@ impl Resolver {
 
     pub fn open_block(&mut self) {
         self.namespace.open_scope();
+        self.indent_level = self.indent_level + 1;
     }
 
     pub fn close_block(&mut self, body: &BlockNode) {
         body.set_scope(&self.namespace);
         self.namespace.close_scope();
+        self.indent_level = self.indent_level - 1;
     }
 
     pub fn set_curr_class_context_is_containing_self(&mut self, value: bool) {
@@ -581,6 +585,10 @@ impl Resolver {
                 );
                 self.errors
                     .push(Diagnostics::IdentifierFoundInNonLocals(err));
+            } else if self.indent_level == 0 && is_name_in_builtin_func(&name) {
+                let err = BuiltinFunctionNameOverlapError::new(ok_identifier.range());
+                self.errors
+                    .push(Diagnostics::BuiltinFunctionNameOverlap(err));
             } else {
                 if let Some((name, previous_decl_range)) =
                     self.try_declare_and_bind_function(ok_identifier)

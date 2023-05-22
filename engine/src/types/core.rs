@@ -56,12 +56,6 @@ pub enum CoreType {
     VOID,
     UNSET,
     ANY,
-    // TODO - add below types also
-    // ANY // this type can be used to denote that any variable with this type can have any valid datatypes, will be useful in things like print(...)
-    // ENUMERATION,
-    // TUPLES,
-    // REFERENCE,
-    // GENERIC
 }
 
 #[derive(Debug, Clone)]

@@ -49,6 +49,7 @@ pub enum Diagnostics {
     InvalidIndexExpressionForTuple(InvalidIndexExpressionForTupleError),
     ImmutableTypeNotAssignable(ImmutableTypeNotAssignableError),
     SingleSubTypeFoundInTuple(SingleSubTypeFoundInTupleError),
+    BuiltinFunctionNameOverlap(BuiltinFunctionNameOverlapError),
 }
 
 impl Diagnostics {
@@ -117,6 +118,7 @@ impl Diagnostics {
             }
             Diagnostics::ImmutableTypeNotAssignable(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::SingleSubTypeFoundInTuple(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::BuiltinFunctionNameOverlap(diagnotic) => Report::new(diagnotic.clone()),
         }
     }
 }
@@ -370,6 +372,30 @@ impl IdentifierAlreadyDeclaredError {
             previous_decl_span: range_to_span(previous_decl_range).into(),
             redecl_span: range_to_span(redecl_range).into(),
             help: Some(help_str.style(Style::new().yellow()).to_string()),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("builtin function name overlap")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct BuiltinFunctionNameOverlapError {
+    #[label("there is a builtin function with same name")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl BuiltinFunctionNameOverlapError {
+    pub fn new(range: TextRange) -> Self {
+        BuiltinFunctionNameOverlapError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "functions with same name as builtin functions cannot be declared in global scope"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }
