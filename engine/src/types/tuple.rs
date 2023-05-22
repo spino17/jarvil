@@ -47,6 +47,7 @@ impl ToString for Tuple {
 
 impl OperatorCompatiblity for Tuple {
     fn check_add(&self, _other: &Type) -> Option<Type> {
+        // TODO - add logic to type-check
         None
     }
 
@@ -63,14 +64,17 @@ impl OperatorCompatiblity for Tuple {
     }
 
     fn check_double_equal(&self, _other: &Type) -> Option<Type> {
+        // TODO - add logic to type-check
         None
     }
 
     fn check_greater(&self, _other: &Type) -> Option<Type> {
+        // TODO - add logic to type-check
         None
     }
 
     fn check_less(&self, _other: &Type) -> Option<Type> {
+        // TODO - add logic to type-check
         None
     }
 

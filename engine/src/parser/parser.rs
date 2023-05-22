@@ -6,7 +6,7 @@
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockKind, BlockNode,
     CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode,
-    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, OkSelfKeywordNode, OkTokenNode,
+    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, OkTokenNode,
     ParamsNode, SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
     TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
 };

@@ -32,6 +32,7 @@ impl ToString for Struct {
 }
 
 // TODO: operator compatiblity for struct types can be defined using interfaces
+// This is called `operator-overloading`
 impl OperatorCompatiblity for Struct {
     fn check_add(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {

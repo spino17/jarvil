@@ -56,6 +56,7 @@ impl OperatorCompatiblity for HashMap {
     }
 
     fn check_double_equal(&self, _other: &Type) -> Option<Type> {
+        // TODO - add logic to type-check
         None
     }
 

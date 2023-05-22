@@ -16,6 +16,22 @@ impl Array {
             element_type: element_type.clone(),
         }
     }
+
+    fn check_operator_for_array(&self, other: &Type, operator_kind: &BinaryOperatorKind) -> Option<Type> {
+        match other.0.as_ref() {
+            CoreType::ARRAY(other_array) => {
+                if self
+                    .element_type
+                    .check_operator(&other_array.element_type, operator_kind)
+                    .is_some()
+                {
+                    return Some(Type::new_with_atomic(BOOL));
+                }
+                return None;
+            }
+            _ => None,
+        }
+    }
 }
 
 impl AbstractType for Array {
@@ -61,27 +77,15 @@ impl OperatorCompatiblity for Array {
     }
 
     fn check_double_equal(&self, other: &Type) -> Option<Type> {
-        match other.0.as_ref() {
-            CoreType::ARRAY(other_array) => {
-                if self
-                    .element_type
-                    .check_operator(&other_array.element_type, &BinaryOperatorKind::DoubleEqual)
-                    .is_some()
-                {
-                    return Some(Type::new_with_atomic(BOOL));
-                }
-                return None;
-            }
-            _ => None,
-        }
+        self.check_operator_for_array(other, &BinaryOperatorKind::DoubleEqual)
     }
 
-    fn check_greater(&self, _other: &Type) -> Option<Type> {
-        None
+    fn check_greater(&self, other: &Type) -> Option<Type> {
+        self.check_operator_for_array(other, &BinaryOperatorKind::Greater)
     }
 
-    fn check_less(&self, _other: &Type) -> Option<Type> {
-        None
+    fn check_less(&self, other: &Type) -> Option<Type> {
+        self.check_operator_for_array(other, &BinaryOperatorKind::Less)
     }
 
     fn check_and(&self, _other: &Type) -> Option<Type> {
