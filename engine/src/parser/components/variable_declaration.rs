@@ -20,6 +20,7 @@ pub fn is_r_variable_declaration_starting_with(token: &Token) -> bool {
 pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
     let let_keyword_node = parser.expect("let");
     let identifier_node = parser.expect_ident();
+    // TODO - add optional type-casting expression here
     let equal_node = parser.expect("=");
     let token = &parser.curr_token();
     if !is_r_variable_declaration_starting_with(token) {
