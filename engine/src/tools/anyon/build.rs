@@ -1,4 +1,5 @@
-use super::core::CheckCommand;
+use super::core::AbstractCommand;
+use super::error::AnyonError;
 use crate::ast::ast::BlockNode;
 use crate::code::JarvilCode;
 use crate::codegen::python::PythonCodeGenerator;
@@ -8,6 +9,7 @@ use crate::parser::parser::{JarvilParser, Parser};
 use crate::parser::resolver::Resolver;
 use crate::parser::type_checker::TypeChecker;
 
+#[derive(Debug)]
 pub struct BuildDriver {
     command_line_args: Vec<String>,
 }
@@ -51,12 +53,15 @@ impl BuildDriver {
     }
 }
 
-impl CheckCommand for BuildDriver {
-    fn check_cmd(&self) -> Result<(), ()> {
+impl AbstractCommand for BuildDriver {
+    fn check_cmd(&self) -> Result<(), AnyonError> {
+        todo!()
+    }
+
+    fn execute_cmd(&self) {
         todo!()
     }
 }
-
 
 // TODO - remove this in favour of new driver design pattern
 pub fn build_ast(code: &mut JarvilCode) -> (BlockNode, Vec<Diagnostics>) {
@@ -67,7 +72,6 @@ pub fn build_ast(code: &mut JarvilCode) -> (BlockNode, Vec<Diagnostics>) {
     errors.append(&mut parse_errors);
     (ast, errors)
 }
-
 
 pub fn build(mut code: JarvilCode) -> Result<String, Diagnostics> {
     let (ast, mut errors) = build_ast(&mut code);

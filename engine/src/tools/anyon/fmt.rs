@@ -1,6 +1,7 @@
-use super::core::CheckCommand;
+use super::{core::AbstractCommand, error::AnyonError};
 use crate::{code::JarvilCode, error::diagnostics::Diagnostics};
 
+#[derive(Debug)]
 pub struct FmtDriver {
     command_line_args: Vec<String>,
 }
@@ -15,8 +16,12 @@ impl FmtDriver {
     }
 }
 
-impl CheckCommand for FmtDriver {
-    fn check_cmd(&self) -> Result<(), ()> {
+impl AbstractCommand for FmtDriver {
+    fn check_cmd(&self) -> Result<(), AnyonError> {
+        todo!()
+    }
+
+    fn execute_cmd(&self) {
         todo!()
     }
 }
