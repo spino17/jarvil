@@ -4,16 +4,18 @@ use super::{
     error::AnyonError,
     fmt::FmtDriver,
     help::HelpDriver,
+    new::NewDriver,
     version::VersionDriver,
 };
 
 pub trait AbstractCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError>;
-    fn execute_cmd(&self);
+    fn execute_cmd(&self) -> Result<(), AnyonError>;
 }
 
 #[derive(Debug)]
 pub enum AnyonCommand {
+    NEW(NewDriver),
     BUILD(BuildDriver),
     FMT(FmtDriver),
     VERSION(VersionDriver),
@@ -23,6 +25,7 @@ pub enum AnyonCommand {
 impl AbstractCommand for AnyonCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         match self {
+            AnyonCommand::NEW(new_driver) => new_driver.check_cmd(),
             AnyonCommand::BUILD(build_driver) => build_driver.check_cmd(),
             AnyonCommand::FMT(fmt_driver) => fmt_driver.check_cmd(),
             AnyonCommand::VERSION(version_driver) => version_driver.check_cmd(),
@@ -30,8 +33,9 @@ impl AbstractCommand for AnyonCommand {
         }
     }
 
-    fn execute_cmd(&self) {
+    fn execute_cmd(&self) -> Result<(), AnyonError> {
         match self {
+            AnyonCommand::NEW(new_driver) => new_driver.execute_cmd(),
             AnyonCommand::BUILD(build_driver) => build_driver.execute_cmd(),
             AnyonCommand::FMT(fmt_driver) => fmt_driver.execute_cmd(),
             AnyonCommand::VERSION(version_driver) => version_driver.execute_cmd(),
@@ -45,7 +49,9 @@ pub fn get_cmd_from_command_line_args(args: Vec<String>) -> Result<AnyonCommand,
         return Ok(AnyonCommand::HELP(HelpDriver::new(args)));
     } else {
         let core_cmd = &args[1];
-        if core_cmd.eq("build") {
+        if core_cmd.eq("new") {
+            return Ok(AnyonCommand::NEW(NewDriver::new(args)));
+        } else if core_cmd.eq("build") {
             return Ok(AnyonCommand::BUILD(BuildDriver::new(
                 args,
                 BuildMode::BUILD,
@@ -57,7 +63,9 @@ pub fn get_cmd_from_command_line_args(args: Vec<String>) -> Result<AnyonCommand,
         } else if core_cmd.eq("help") {
             return Ok(AnyonCommand::HELP(HelpDriver::new(args)));
         } else {
-            return Err(AnyonError::new(format!("no such command: `{}`", core_cmd)));
+            return Err(AnyonError::new_with_vanilla(
+                "command not found".to_string(),
+            ));
         }
     }
 }

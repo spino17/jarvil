@@ -5,6 +5,7 @@ scratch
 configure.ac
 Makefile.am
 py_test.ipynb
+/package/
 
 # ignores from my local machine
 main.jv

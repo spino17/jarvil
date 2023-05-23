@@ -52,7 +52,7 @@ impl BuildDriver {
         (ast, errors)
     }
 
-    pub fn build_code(&self, mut code: JarvilCode) -> Result<String, Diagnostics> {
+    pub fn build_code(&self, mut code: JarvilCode, code_str: String) -> Result<String, Report> {
         let (ast, mut errors) = self.build_ast(&mut code);
 
         // name-resolver
@@ -67,7 +67,8 @@ impl BuildDriver {
 
         errors.append(&mut type_errors);
         if errors.len() > 0 {
-            return Err(errors[0].clone());
+            let err = errors[0].clone();
+            return Err(attach_source_code(err.report(), code_str));
         }
 
         // python code-generation
@@ -83,44 +84,27 @@ impl AbstractCommand for BuildDriver {
         Ok(())
     }
 
-    fn execute_cmd(&self) {
+    fn execute_cmd(&self) -> Result<(), AnyonError> {
         let curr_dir_path = context::curr_dir_path();
         let jarvil_code_file_path = format!("{}/main.jv", curr_dir_path);
         let transpiled_py_code_file_path = format!("{}/__transpiled_py_code__.py", curr_dir_path);
-        // TODO - handle err case when main.jv does not exist
-        let (code_vec, code_str) = read_file(&jarvil_code_file_path).unwrap();
+        let (code_vec, code_str) = read_file(&jarvil_code_file_path)?;
         let code = JarvilCode::new(code_vec);
-        match self.build_code(code) {
-            Ok(py_code) => {
-                fs::write(&transpiled_py_code_file_path, py_code).expect("file write failed");
-                match self.mode {
-                    BuildMode::RUN => {
-                        let output = Command::new("python3")
-                            .arg(transpiled_py_code_file_path)
-                            .output();
-                        match output {
-                            Ok(output) => {
-                                let len = output.stdout.len();
-                                if len > 0 {
-                                    match str::from_utf8(&output.stdout[..len - 1]) {
-                                        Ok(v) => println!("{}", v),
-                                        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-                                    }
-                                }
-                            }
-                            Err(err) => {
-                                // TODO - have a wrapper denoting that this error is Python generated runtime error
-                                println!("{:?}", err)
-                            }
-                        }
-                    }
-                    BuildMode::BUILD => {}
+        let py_code = self.build_code(code, code_str)?;
+        fs::write(&transpiled_py_code_file_path, py_code)?;
+        match self.mode {
+            BuildMode::RUN => {
+                let output = Command::new("python3")
+                    .arg(transpiled_py_code_file_path)
+                    .output()?;
+                let len = output.stdout.len();
+                if len > 0 {
+                    let std_output_str = str::from_utf8(&output.stdout[..len - 1])?;
+                    println!("{}", std_output_str)
                 }
             }
-            Err(err) => {
-                let err = attach_source_code(err.report(), code_str);
-                println!("{:?}", err);
-            }
+            BuildMode::BUILD => {}
         }
+        Ok(())
     }
 }

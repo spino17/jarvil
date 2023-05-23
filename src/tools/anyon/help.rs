@@ -20,7 +20,7 @@ impl AbstractCommand for HelpDriver {
         todo!()
     }
 
-    fn execute_cmd(&self) {
+    fn execute_cmd(&self) -> Result<(), AnyonError> {
         todo!()
     }
 }

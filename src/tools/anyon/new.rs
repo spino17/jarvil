@@ -1,22 +1,21 @@
 use super::{core::AbstractCommand, error::AnyonError};
-use crate::error::diagnostics::Diagnostics;
 
 #[derive(Debug)]
-pub struct VersionDriver {
+pub struct NewDriver {
     command_line_args: Vec<String>,
 }
 
-impl VersionDriver {
+impl NewDriver {
     pub fn new(command_line_args: Vec<String>) -> Self {
-        VersionDriver { command_line_args }
+        NewDriver { command_line_args }
     }
 
-    pub fn get_version(&self) -> String {
+    pub fn setup_new_project(&self) -> String {
         todo!()
     }
 }
 
-impl AbstractCommand for VersionDriver {
+impl AbstractCommand for NewDriver {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         todo!()
     }
