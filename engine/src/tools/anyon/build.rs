@@ -79,14 +79,15 @@ impl BuildDriver {
 
 impl AbstractCommand for BuildDriver {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
+        // TODO - add logic to check the command
         Ok(())
     }
 
     fn execute_cmd(&self) {
         let curr_dir_path = context::curr_dir_path();
-        // TODO - handle err case when main.jv does not exist
         let jarvil_code_file_path = format!("{}/main.jv", curr_dir_path);
         let transpiled_py_code_file_path = format!("{}/__transpiled_py_code__.py", curr_dir_path);
+        // TODO - handle err case when main.jv does not exist
         let (code_vec, code_str) = read_file(&jarvil_code_file_path).unwrap();
         let code = JarvilCode::new(code_vec);
         match self.build_code(code) {
@@ -122,35 +123,4 @@ impl AbstractCommand for BuildDriver {
             }
         }
     }
-}
-
-// TODO - remove this in favour of new driver design pattern
-pub fn build_ast(code: &mut JarvilCode) -> (BlockNode, Vec<Diagnostics>) {
-    let core_lexer = CoreLexer::new();
-    let (token_vec, mut errors) = core_lexer.tokenize(code);
-    let parser = JarvilParser::new(&*code);
-    let (ast, mut parse_errors) = parser.parse(token_vec);
-    errors.append(&mut parse_errors);
-    (ast, errors)
-}
-
-pub fn build(mut code: JarvilCode) -> Result<String, Diagnostics> {
-    let (ast, mut errors) = build_ast(&mut code);
-
-    let resolver = Resolver::new(&code);
-    let (scope_table, mut semantic_errors) = resolver.resolve_ast(&ast);
-    ast.set_scope(&scope_table);
-    errors.append(&mut semantic_errors);
-
-    let type_checker = TypeChecker::new(&code);
-    let mut type_errors = type_checker.check_ast(&ast);
-
-    errors.append(&mut type_errors);
-    if errors.len() > 0 {
-        return Err(errors[0].clone());
-    }
-
-    let py_generator = PythonCodeGenerator::new(&code);
-    let py_code = py_generator.generate_python_code(&ast);
-    Ok(py_code)
 }

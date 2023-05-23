@@ -14,60 +14,10 @@ mod server;
 mod tools;
 mod types;
 
-use crate::reader::read_file;
-use crate::tools::anyon::build::build;
-use code::JarvilCode;
-use miette::{GraphicalReportHandler, GraphicalTheme, Report};
+use miette::{GraphicalReportHandler, GraphicalTheme};
 use owo_colors::Style;
-use std::str;
-use std::{env::args, fs, process::Command};
+use std::env::args;
 use tools::anyon::core::{get_cmd_from_command_line_args, AbstractCommand};
-
-fn attach_source_code(err: Report, source: String) -> Report {
-    let result: miette::Result<()> = Err(err);
-    match result.map_err(|error| error.with_source_code(source)).err() {
-        Some(err) => return err,
-        None => unreachable!("the result should always unwrap to an error"),
-    }
-}
-
-fn compile(args: Vec<String>) {
-    let (code_vec, code_str) = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
-    let code = JarvilCode::new(code_vec);
-    let result = build(code);
-    match result {
-        Ok(py_code) => {
-            fs::write(
-                "/Users/bhavyabhatt/Desktop/__transpiled_python_code__.py",
-                py_code,
-            )
-            .expect("file write failed");
-            let output = Command::new("python3")
-                .arg("/Users/bhavyabhatt/Desktop/__transpiled_python_code__.py")
-                .output();
-            match output {
-                Ok(output) => {
-                    let len = output.stdout.len();
-                    if len > 0 {
-                        match str::from_utf8(&output.stdout[..len - 1]) {
-                            Ok(v) => println!("{}", v),
-                            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-                        }
-                    }
-                }
-                Err(err) => {
-                    // TODO - have a wrapper denoting that this error is Python generated runtime error
-                    println!("{:?}", err)
-                }
-            }
-        }
-        Err(err) => {
-            let err = attach_source_code(err.report(), code_str);
-            // TODO - later give option to the user to display all errors
-            println!("{:?}", err);
-        }
-    }
-}
 
 fn main() {
     // hook for styling of the error messages
@@ -92,5 +42,4 @@ fn main() {
             println!("{}", err)
         }
     }
-    // compile(args);
 }
