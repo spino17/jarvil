@@ -16,7 +16,7 @@ impl HelpDriver {
 }
 
 impl AbstractCommand for HelpDriver {
-    fn check_cmd(&self) -> Result<(), AnyonError> {
+    fn check_cmd(&mut self) -> Result<(), AnyonError> {
         todo!()
     }
 

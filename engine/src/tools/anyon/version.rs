@@ -17,7 +17,7 @@ impl VersionDriver {
 }
 
 impl AbstractCommand for VersionDriver {
-    fn check_cmd(&self) -> Result<(), AnyonError> {
+    fn check_cmd(&mut self) -> Result<(), AnyonError> {
         todo!()
     }
 

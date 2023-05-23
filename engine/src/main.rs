@@ -21,6 +21,7 @@ use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
 use std::str;
 use std::{env::args, fs, process::Command};
+use tools::anyon::core::{get_cmd_from_command_line_args, AbstractCommand};
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -81,5 +82,15 @@ fn main() {
     }));
 
     let args: Vec<String> = args().collect();
-    compile(args);
+    let anyon_obj = get_cmd_from_command_line_args(args);
+    match anyon_obj {
+        Ok(mut ok_anyon_obj) => match ok_anyon_obj.check_cmd() {
+            Ok(_) => ok_anyon_obj.execute_cmd(),
+            Err(err) => println!("{}", err),
+        },
+        Err(err) => {
+            println!("{}", err)
+        }
+    }
+    // compile(args);
 }

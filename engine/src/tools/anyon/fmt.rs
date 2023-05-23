@@ -17,7 +17,7 @@ impl FmtDriver {
 }
 
 impl AbstractCommand for FmtDriver {
-    fn check_cmd(&self) -> Result<(), AnyonError> {
+    fn check_cmd(&mut self) -> Result<(), AnyonError> {
         todo!()
     }
 

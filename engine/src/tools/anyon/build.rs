@@ -3,20 +3,44 @@ use super::error::AnyonError;
 use crate::ast::ast::BlockNode;
 use crate::code::JarvilCode;
 use crate::codegen::python::PythonCodeGenerator;
+use crate::context;
 use crate::error::diagnostics::Diagnostics;
 use crate::lexer::lexer::{CoreLexer, Lexer};
 use crate::parser::parser::{JarvilParser, Parser};
 use crate::parser::resolver::Resolver;
 use crate::parser::type_checker::TypeChecker;
+use crate::reader::read_file;
+use miette::Report;
+use std::fs;
+use std::process::Command;
+use std::str;
+
+fn attach_source_code(err: Report, source: String) -> Report {
+    let result: miette::Result<()> = Err(err);
+    match result.map_err(|error| error.with_source_code(source)).err() {
+        Some(err) => return err,
+        None => unreachable!("the result should always unwrap to an error"),
+    }
+}
+
+#[derive(Debug)]
+pub enum BuildMode {
+    BUILD,
+    RUN,
+}
 
 #[derive(Debug)]
 pub struct BuildDriver {
     command_line_args: Vec<String>,
+    mode: BuildMode,
 }
 
 impl BuildDriver {
-    pub fn new(command_line_args: Vec<String>) -> Self {
-        BuildDriver { command_line_args }
+    pub fn new(command_line_args: Vec<String>, mode: BuildMode) -> Self {
+        BuildDriver {
+            command_line_args,
+            mode,
+        }
     }
 
     pub fn build_ast(&self, code: &mut JarvilCode) -> (BlockNode, Vec<Diagnostics>) {
@@ -54,12 +78,49 @@ impl BuildDriver {
 }
 
 impl AbstractCommand for BuildDriver {
-    fn check_cmd(&self) -> Result<(), AnyonError> {
-        todo!()
+    fn check_cmd(&mut self) -> Result<(), AnyonError> {
+        Ok(())
     }
 
     fn execute_cmd(&self) {
-        todo!()
+        let curr_dir_path = context::curr_dir_path();
+        // TODO - handle err case when main.jv does not exist
+        let jarvil_code_file_path = format!("{}/main.jv", curr_dir_path);
+        let transpiled_py_code_file_path = format!("{}/__transpiled_py_code__.py", curr_dir_path);
+        let (code_vec, code_str) = read_file(&jarvil_code_file_path).unwrap();
+        let code = JarvilCode::new(code_vec);
+        match self.build_code(code) {
+            Ok(py_code) => {
+                fs::write(&transpiled_py_code_file_path, py_code).expect("file write failed");
+                match self.mode {
+                    BuildMode::RUN => {
+                        let output = Command::new("python3")
+                            .arg(transpiled_py_code_file_path)
+                            .output();
+                        match output {
+                            Ok(output) => {
+                                let len = output.stdout.len();
+                                if len > 0 {
+                                    match str::from_utf8(&output.stdout[..len - 1]) {
+                                        Ok(v) => println!("{}", v),
+                                        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+                                    }
+                                }
+                            }
+                            Err(err) => {
+                                // TODO - have a wrapper denoting that this error is Python generated runtime error
+                                println!("{:?}", err)
+                            }
+                        }
+                    }
+                    BuildMode::BUILD => {}
+                }
+            }
+            Err(err) => {
+                let err = attach_source_code(err.report(), code_str);
+                println!("{:?}", err);
+            }
+        }
     }
 }
 
