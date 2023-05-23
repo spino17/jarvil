@@ -9,7 +9,7 @@ use crate::{
         },
         walk::Visitor,
     },
-    code::Code,
+    code::JarvilCode,
     context,
     lexer::token::{CoreToken, Token},
     scope::core::IdentifierKind,
@@ -69,11 +69,11 @@ pub fn get_suffix_str_for_identifier(identifier: &OkIdentifierNode) -> &'static 
 pub struct PythonCodeGenerator {
     indent_level: usize,
     generate_code: String,
-    code: Code,
+    code: JarvilCode,
 }
 
 impl PythonCodeGenerator {
-    pub fn new(code: &Code) -> PythonCodeGenerator {
+    pub fn new(code: &JarvilCode) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
             generate_code: "".to_string(),

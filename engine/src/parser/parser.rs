@@ -5,7 +5,7 @@ use crate::ast::ast::{
     SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
     TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
 };
-use crate::code::Code;
+use crate::code::JarvilCode;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::{
@@ -26,14 +26,14 @@ pub struct JarvilParser {
     token_vec: Vec<Token>,
     lookahead: usize,
     indent_level: i64,
-    code: Code,
+    code: JarvilCode,
     ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
     errors: Vec<Diagnostics>,
 }
 
 impl JarvilParser {
-    pub fn new(code: &Code) -> Self {
+    pub fn new(code: &JarvilCode) -> Self {
         JarvilParser {
             token_vec: Vec::new(),
             lookahead: 0,

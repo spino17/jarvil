@@ -1,5 +1,5 @@
 use super::token::LexicalErrorKind;
-use crate::{code::Code, lexer::token::CoreToken};
+use crate::{code::JarvilCode, lexer::token::CoreToken};
 
 pub fn is_letter(c: &char) -> bool {
     if c.is_ascii_alphabetic() || (*c == '_') {
@@ -10,7 +10,7 @@ pub fn is_letter(c: &char) -> bool {
 }
 
 // ' ' -> '...'
-pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
@@ -25,7 +25,7 @@ pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Cor
 }
 
 // - -> -, ->
-pub fn extract_dash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_dash_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
@@ -46,7 +46,7 @@ pub fn extract_dash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Core
 }
 
 // * -> *, **
-pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
@@ -70,7 +70,7 @@ pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Core
 pub fn extract_slash_prefix_lexeme(
     begin_lexeme: &mut usize,
     line_number: &mut usize,
-    code: &Code,
+    code: &JarvilCode,
     code_lines: &mut Vec<usize>,
     line_start_index: &mut usize,
 ) -> CoreToken {
@@ -146,7 +146,7 @@ pub fn extract_slash_prefix_lexeme(
 }
 
 // # -> #...\n
-pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
@@ -164,7 +164,7 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Core
 }
 
 // = -> =, ==
-pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
@@ -185,7 +185,7 @@ pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Cor
 }
 
 // > -> >, >=
-pub fn extract_rbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_rbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
@@ -206,7 +206,7 @@ pub fn extract_rbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> 
 }
 
 // < -> <, <=
-pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
@@ -227,7 +227,10 @@ pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> 
 }
 
 // ! -> !=
-pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_exclaimation_prefix_lexeme(
+    begin_lexeme: &mut usize,
+    code: &JarvilCode,
+) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
@@ -251,7 +254,7 @@ pub fn extract_exclaimation_prefix_lexeme(begin_lexeme: &mut usize, code: &Code)
 pub fn extract_single_quote_prefix_lexeme(
     begin_lexeme: &mut usize,
     line_number: &mut usize,
-    code: &Code,
+    code: &JarvilCode,
     code_lines: &mut Vec<usize>,
     line_start_index: &mut usize,
 ) -> CoreToken {
@@ -280,7 +283,7 @@ pub fn extract_single_quote_prefix_lexeme(
 pub fn extract_double_quote_prefix_lexeme(
     begin_lexeme: &mut usize,
     line_number: &mut usize,
-    code: &Code,
+    code: &JarvilCode,
     code_lines: &mut Vec<usize>,
     line_start_index: &mut usize,
 ) -> CoreToken {
@@ -306,7 +309,7 @@ pub fn extract_double_quote_prefix_lexeme(
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type
-pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
@@ -325,7 +328,7 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Co
 }
 
 // digit -> digit((digit)*(.digit(digit*)|empty))
-pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -> CoreToken {
     let mut forward_lexeme = *begin_lexeme + 1;
     let mut state: usize = 0;
     while forward_lexeme < code.len() {
@@ -381,7 +384,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> Cor
 }
 
 // : -> :, ::
-pub fn extract_colon_prefix_lexeme(begin_lexeme: &mut usize, code: &Code) -> CoreToken {
+pub fn extract_colon_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -> CoreToken {
     let forward_lexeme = *begin_lexeme + 1;
     if forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);

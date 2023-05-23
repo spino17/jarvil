@@ -1,14 +1,14 @@
 use std::rc::Rc;
 use text_size::TextRange;
 
-pub struct Code {
+pub struct JarvilCode {
     code_vec: Rc<Vec<char>>,
     code_lines: Option<Rc<Vec<usize>>>,
 }
 
-impl Code {
+impl JarvilCode {
     pub fn new(code_vec: Vec<char>) -> Self {
-        Code {
+        JarvilCode {
             code_vec: Rc::new(code_vec),
             code_lines: None,
         }
@@ -63,9 +63,9 @@ impl Code {
     }
 }
 
-impl Clone for Code {
+impl Clone for JarvilCode {
     fn clone(&self) -> Self {
-        Code {
+        JarvilCode {
             code_vec: self.code_vec.clone(),
             code_lines: match &self.code_lines {
                 Some(code_lines) => Some(code_lines.clone()),

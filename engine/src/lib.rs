@@ -1,5 +1,4 @@
 pub mod ast;
-pub mod cmd;
 pub mod code;
 pub mod codegen;
 pub mod constants;
@@ -12,4 +11,5 @@ pub mod scope;
 pub mod server;
 #[cfg(test)]
 pub mod tests;
+pub mod tools;
 pub mod types;

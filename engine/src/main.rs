@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate jarvil_macros;
 mod ast;
-mod cmd;
 mod code;
 mod codegen;
 mod constants;
@@ -12,15 +11,16 @@ mod parser;
 mod reader;
 mod scope;
 mod server;
+mod tools;
 mod types;
 
-use crate::cmd::compile::build::build;
 use crate::reader::read_file;
+use crate::tools::anyon::build::build;
+use code::JarvilCode;
 use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
 use std::str;
 use std::{env::args, fs, process::Command};
-use std::env;
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -32,7 +32,8 @@ fn attach_source_code(err: Report, source: String) -> Report {
 
 fn compile(args: Vec<String>) {
     let (code_vec, code_str) = read_file("/Users/bhavyabhatt/Desktop/main.jv").unwrap();
-    let result = build(code_vec);
+    let code = JarvilCode::new(code_vec);
+    let result = build(code);
     match result {
         Ok(py_code) => {
             fs::write(

@@ -36,7 +36,7 @@ use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
 use crate::ast::ast::SkippedTokensNode;
-use crate::code::Code;
+use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::scope::core::IdentifierKind;
 use crate::scope::core::{Namespace, SymbolData};
@@ -920,7 +920,11 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
-    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(
+        &self,
+        scope: &Namespace,
+        code: &JarvilCode,
+    ) -> TypeResolveKind {
         match self.core_ref() {
             CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_before_resolved(scope, code),
             CoreTypeExpressionNode::ARRAY(array) => array.type_obj_before_resolved(scope, code),
@@ -935,7 +939,7 @@ impl TypeExpressionNode {
         }
     }
 
-    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
         match self.core_ref() {
             CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_after_resolved(code),
             CoreTypeExpressionNode::ARRAY(array) => array.type_obj_after_resolved(code),
@@ -960,11 +964,15 @@ impl AtomicTypeNode {
         AtomicTypeNode(node)
     }
 
-    pub fn type_obj_before_resolved(&self, _scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(
+        &self,
+        _scope: &Namespace,
+        code: &JarvilCode,
+    ) -> TypeResolveKind {
         self.type_obj_after_resolved(code)
     }
 
-    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
         match self.core_ref().kind.core_ref() {
             CoreTokenNode::OK(ok_token) => {
                 return TypeResolveKind::RESOLVED(Type::new_with_atomic(
@@ -997,7 +1005,11 @@ impl ArrayTypeNode {
         ArrayTypeNode(node)
     }
 
-    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(
+        &self,
+        scope: &Namespace,
+        code: &JarvilCode,
+    ) -> TypeResolveKind {
         match self
             .core_ref()
             .sub_type
@@ -1013,7 +1025,7 @@ impl ArrayTypeNode {
         }
     }
 
-    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
         match self.core_ref().sub_type.type_obj_after_resolved(code) {
             TypeResolveKind::RESOLVED(element_type) => {
                 return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
@@ -1047,7 +1059,11 @@ impl TupleTypeNode {
         TupleTypeNode(node)
     }
 
-    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(
+        &self,
+        scope: &Namespace,
+        code: &JarvilCode,
+    ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<OkIdentifierNode> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
@@ -1068,7 +1084,7 @@ impl TupleTypeNode {
         }
     }
 
-    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<OkIdentifierNode> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
@@ -1167,7 +1183,11 @@ impl HashMapTypeNode {
         }
     }
 
-    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(
+        &self,
+        scope: &Namespace,
+        code: &JarvilCode,
+    ) -> TypeResolveKind {
         let key_result = self
             .core_ref()
             .key_type
@@ -1179,7 +1199,7 @@ impl HashMapTypeNode {
         return self.aggregate_key_value_result(key_result, value_result);
     }
 
-    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
         let key_result = self.core_ref().key_type.type_obj_after_resolved(code);
         let value_result = self.core_ref().value_type.type_obj_after_resolved(code);
         return self.aggregate_key_value_result(key_result, value_result);
@@ -1205,7 +1225,11 @@ impl UserDefinedTypeNode {
         UserDefinedTypeNode(node)
     }
 
-    pub fn type_obj_before_resolved(&self, scope: &Namespace, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(
+        &self,
+        scope: &Namespace,
+        code: &JarvilCode,
+    ) -> TypeResolveKind {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(code));
             match scope.lookup_in_types_namespace(&name) {
@@ -1233,7 +1257,7 @@ impl UserDefinedTypeNode {
         return TypeResolveKind::INVALID;
     }
 
-    pub fn type_obj_after_resolved(&self, code: &Code) -> TypeResolveKind {
+    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(code));
             match ok_identifier.user_defined_type_symbol_data(
@@ -1898,7 +1922,7 @@ impl OkIdentifierNode {
         OkIdentifierNode(node)
     }
 
-    pub fn token_value(&self, code: &Code) -> String {
+    pub fn token_value(&self, code: &JarvilCode) -> String {
         self.0.as_ref().borrow().token.token_value(code)
     }
 
@@ -2009,7 +2033,7 @@ impl OkSelfKeywordNode {
         OkSelfKeywordNode(node)
     }
 
-    pub fn token_value(&self, code: &Code) -> String {
+    pub fn token_value(&self, code: &JarvilCode) -> String {
         self.0.as_ref().borrow().token.token_value(code)
     }
 
@@ -2083,7 +2107,7 @@ impl OkTokenNode {
         self.core_ref().token.try_as_binary_operator()
     }
 
-    pub fn token_value(&self, code: &Code) -> String {
+    pub fn token_value(&self, code: &JarvilCode) -> String {
         self.0.as_ref().token.token_value(code)
     }
 

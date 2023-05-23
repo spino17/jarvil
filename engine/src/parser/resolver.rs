@@ -25,7 +25,7 @@ use crate::{
         },
         walk::Visitor,
     },
-    code::Code,
+    code::JarvilCode,
     error::{
         constants::STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
         diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
@@ -64,14 +64,14 @@ pub struct Context {
 
 pub struct Resolver {
     namespace: Namespace,
-    pub code: Code,
+    pub code: JarvilCode,
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
 }
 
 impl Resolver {
-    pub fn new(code: &Code) -> Self {
+    pub fn new(code: &JarvilCode) -> Self {
         Resolver {
             namespace: Namespace::new(),
             code: code.clone(),

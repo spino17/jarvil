@@ -1,6 +1,6 @@
 #[macro_use]
 use jarvil_macros::Tokenify;
-use crate::code::Code;
+use crate::code::JarvilCode;
 use crate::constants::common::{
     AND, AS, ASSERT_KEYWORD, ASYNC_KEYWORD, ATOMIC_TYPE, AWAIT_KEYWORD, BLANK, BLOCK_COMMENT,
     BREAK, CLASS_KEYWORD, COLON, COMMA, CONTINUE, DASH, DEF, DEL_KEYWORD, DOT, DOUBLE_COLON,
@@ -235,7 +235,7 @@ impl Token {
         String::from(self.core_token.to_string())
     }
 
-    pub fn token_value(&self, code: &Code) -> String {
+    pub fn token_value(&self, code: &JarvilCode) -> String {
         code.token_from_range(self.range)
     }
 

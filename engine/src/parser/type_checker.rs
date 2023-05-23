@@ -18,7 +18,7 @@ use crate::{
         },
         walk::Visitor,
     },
-    code::Code,
+    code::JarvilCode,
     constants::common::{BOOL, FLOAT, INT, STRING},
     error::{
         constants::{
@@ -89,7 +89,7 @@ pub enum TupleIndexCheckResult {
 }
 
 pub struct TypeChecker {
-    code: Code,
+    code: JarvilCode,
     errors: Vec<Diagnostics>,
     context: Context,
 }
@@ -109,7 +109,7 @@ impl CallableParamsData {
 }
 
 impl TypeChecker {
-    pub fn new(code: &Code) -> Self {
+    pub fn new(code: &JarvilCode) -> Self {
         TypeChecker {
             code: code.clone(),
             errors: vec![],

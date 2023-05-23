@@ -1,5 +1,5 @@
 use super::token::LexicalErrorKind;
-use crate::code::Code;
+use crate::code::JarvilCode;
 use crate::error::diagnostics::{Diagnostics, InvalidCharError, NoClosingSymbolError};
 use crate::lexer::helper;
 use crate::lexer::token::CoreToken;
@@ -11,7 +11,7 @@ use text_size::TextRange;
 use text_size::TextSize;
 
 pub trait Lexer {
-    fn tokenize(self, code: &mut Code) -> (Vec<Token>, Vec<Diagnostics>);
+    fn tokenize(self, code: &mut JarvilCode) -> (Vec<Token>, Vec<Diagnostics>);
 }
 
 pub struct CoreLexer {
@@ -23,7 +23,7 @@ pub struct CoreLexer {
 }
 
 impl Lexer for CoreLexer {
-    fn tokenize(mut self, code: &mut Code) -> (Vec<Token>, Vec<Diagnostics>) {
+    fn tokenize(mut self, code: &mut JarvilCode) -> (Vec<Token>, Vec<Diagnostics>) {
         let mut token_vec: Vec<Token> = Vec::new();
         token_vec.push(Token {
             line_number: self.line_number,
@@ -79,7 +79,7 @@ impl CoreLexer {
         }
     }
 
-    fn extract_lexeme(&mut self, code: &Code) -> Token {
+    fn extract_lexeme(&mut self, code: &JarvilCode) -> Token {
         let begin_lexeme = &mut self.begin_lexeme;
         let line_number = &mut self.line_number;
         let code_lines = &mut self.code_lines;
