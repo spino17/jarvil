@@ -1176,7 +1176,7 @@ impl NonHashableTypeInIndexError {
         NonHashableTypeInIndexError {
             index_span: range_to_span(index_span).into(),
             help: Some(
-                "only `int`, `float` and `str` are hashable types"
+                "only `int`, `float`, `str` and `tuple` with hashable sub-types are hashable types"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),

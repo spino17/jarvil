@@ -20,6 +20,7 @@ use miette::{GraphicalReportHandler, GraphicalTheme, Report};
 use owo_colors::Style;
 use std::str;
 use std::{env::args, fs, process::Command};
+use std::env;
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -67,6 +68,7 @@ fn compile(args: Vec<String>) {
 }
 
 fn main() {
+    // hook for styling of the error messages
     miette::set_hook(Box::new(|err| {
         let mut my_theme = GraphicalTheme::default();
         my_theme.styles.linum = Style::new().bright_blue();
