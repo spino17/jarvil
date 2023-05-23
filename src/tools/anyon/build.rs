@@ -71,7 +71,7 @@ impl BuildDriver {
             return Err(attach_source_code(err.report(), code_str));
         }
 
-        // python code-generation
+        // Python code-generation
         let py_generator = PythonCodeGenerator::new(&code);
         let py_code = py_generator.generate_python_code(&ast);
         Ok(py_code)

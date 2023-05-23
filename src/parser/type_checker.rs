@@ -649,7 +649,7 @@ impl TypeChecker {
                 if let CoreIdentifierNode::OK(ok_identifier) = method.core_ref() {
                     // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
                     // (for example: a field with lambda type) and then it goes on to find it in methods.
-                    // This is sync with what python does.
+                    // This is sync with what Python does.
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     let method_name = ok_identifier.token_value(&self.code);
                     match result {

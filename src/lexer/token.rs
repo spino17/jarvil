@@ -107,7 +107,7 @@ pub enum CoreToken {
 
     // reserved tokens in Python (3.9.6)
     // NOTE: it may be possible that many of the below keywords are not used in
-    // Jarvil but to avoid keyword clashes in generated python code they have
+    // Jarvil but to avoid keyword clashes in generated Python code they have
     // their own token in order to exlude them from identifiers and prevent
     // their normal usage as variable names
     NONE,             // 'None'
