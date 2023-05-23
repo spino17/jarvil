@@ -1,4 +1,7 @@
-// Anyon is the package manager for Jarvil
+// Anyon is the official build system and package manager for the Jarvil programming language. 
+// It is a command-line tool that provides a set of commands and features to manage Jarvil projects, including building, 
+// testing, and managing dependencies.
+
 use super::{
     build::{BuildDriver, BuildMode},
     error::AnyonError,

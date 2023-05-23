@@ -4,7 +4,7 @@
 // See following for more information:
 // 1. `http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/`
 // 2. `https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html`
-// NOTE: By default jarvil uses this implementation
+// NOTE: By default Jarvil uses this implementation
 
 use crate::{
     ast::ast::{ExpressionNode, TokenNode},

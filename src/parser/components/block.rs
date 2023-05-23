@@ -1,4 +1,4 @@
-// jarvil parser is designed to be IDE-first (and not terminal-first), meaning it always build the AST even if there are errors
+// Jarvil parser is designed to be IDE-first (and not terminal-first), meaning it always build the AST even if there are errors
 // in the code. To deal with such kind of robust error-tolerant recovery while parsing we use an approach which is popularized by
 // Microsoft and has been used in their technologies like Roslyn, TypeScript and tolerant-php-parser.
 // See `https://github.com/microsoft/tolerant-php-parser/blob/main/docs/HowItWorks.md` for more information.
