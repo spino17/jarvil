@@ -232,7 +232,7 @@ impl Token {
     }
 
     pub fn name(&self) -> String {
-        String::from(self.core_token.to_string())
+        self.core_token.to_string().to_string()
     }
 
     pub fn token_value(&self, code: &JarvilCode) -> String {

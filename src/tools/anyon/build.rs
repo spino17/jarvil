@@ -1,5 +1,6 @@
 use super::core::AbstractCommand;
 use super::error::AnyonError;
+use super::helper::check_jarvil_code_file_extension;
 use crate::ast::ast::BlockNode;
 use crate::code::JarvilCode;
 use crate::codegen::python::PythonCodeGenerator;
@@ -11,9 +12,10 @@ use crate::parser::resolver::Resolver;
 use crate::parser::type_checker::TypeChecker;
 use crate::reader::read_file;
 use miette::Report;
-use std::fs;
 use std::process::Command;
+use std::rc::Rc;
 use std::str;
+use std::{fs, mem};
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -33,6 +35,7 @@ pub enum BuildMode {
 pub struct BuildDriver {
     command_line_args: Vec<String>,
     mode: BuildMode,
+    alternate_code_file_name: Option<Rc<String>>,
 }
 
 impl BuildDriver {
@@ -40,6 +43,14 @@ impl BuildDriver {
         BuildDriver {
             command_line_args,
             mode,
+            alternate_code_file_name: None,
+        }
+    }
+
+    pub fn get_code_file_name(&self) -> Rc<String> {
+        match &self.alternate_code_file_name {
+            Some(file_name) => file_name.clone(),
+            None => Rc::new("main".to_string()),
         }
     }
 
@@ -80,15 +91,28 @@ impl BuildDriver {
 
 impl AbstractCommand for BuildDriver {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
-        // TODO - add logic to check the command
-        // we can optionally except files with other names to execute
-        Ok(())
+        let len = self.command_line_args.len();
+        if len == 2 {
+            return Ok(());
+        } else if len == 3 {
+            let file_name = check_jarvil_code_file_extension(&self.command_line_args[2])?;
+            self.alternate_code_file_name = Some(Rc::new(file_name));
+            return Ok(());
+        } else {
+            return Err(AnyonError::new_with_vanilla(
+                "too many command line arguments passed".to_string(),
+            ));
+        }
     }
 
     fn execute_cmd(&self) -> Result<(), AnyonError> {
         let curr_dir_path = context::curr_dir_path();
-        let jarvil_code_file_path = format!("{}/main.jv", curr_dir_path);
-        let transpiled_py_code_file_path = format!("{}/__transpiled_py_code__.py", curr_dir_path);
+        let code_file_name = self.get_code_file_name();
+        let jarvil_code_file_path = format!("{}/{}.jv", curr_dir_path, code_file_name);
+        let transpiled_py_code_file_path = format!(
+            "{}/__transpiled_{}_py_code__.py",
+            curr_dir_path, code_file_name
+        );
         let (code_vec, code_str) = read_file(&jarvil_code_file_path)?;
         let code = JarvilCode::new(code_vec);
         let py_code = self.build_code(code, code_str)?;

@@ -680,7 +680,7 @@ impl Resolver {
         };
         self.open_block();
         let result = self.namespace.declare_variable_with_type(
-            &Rc::new(String::from("self")),
+            &Rc::new("self".to_string()),
             &struct_type_obj,
             core_struct_decl.name.range(),
             true,

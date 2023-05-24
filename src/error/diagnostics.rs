@@ -207,7 +207,7 @@ impl Diagnostic for MissingTokenError {
                 self.received_token
             )
         } else {
-            let mut err_str = String::from("expected ");
+            let mut err_str = "expected ".to_string();
             let mut flag = false;
             let symbols_len = self.expected_symbols.len();
             for index in 0..symbols_len - 1 {
