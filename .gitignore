@@ -12,8 +12,8 @@ py_test.ipynb
 .DS_Store/
 
 # ignores from my local machine
-main.jv
-__transpiled_py_code__.py
+*.jv
+__*
 macro_output.rs
 scratch.ipynb
 
