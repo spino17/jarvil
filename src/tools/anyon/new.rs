@@ -17,10 +17,6 @@ impl NewDriver {
             project_name: None,
         }
     }
-
-    pub fn setup_new_project(&self) -> String {
-        todo!()
-    }
 }
 
 impl AbstractCommand for NewDriver {

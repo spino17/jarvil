@@ -81,6 +81,7 @@ impl BuildDriver {
 impl AbstractCommand for BuildDriver {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         // TODO - add logic to check the command
+        // we can optionally except files with other names to execute
         Ok(())
     }
 
@@ -92,6 +93,12 @@ impl AbstractCommand for BuildDriver {
         let code = JarvilCode::new(code_vec);
         let py_code = self.build_code(code, code_str)?;
         fs::write(&transpiled_py_code_file_path, py_code)?;
+        // format the code using `black`
+        let _ = Command::new("python3")
+            .arg("-m")
+            .arg("black")
+            .arg(&transpiled_py_code_file_path)
+            .output()?;
         match self.mode {
             BuildMode::RUN => {
                 let output = Command::new("python3")

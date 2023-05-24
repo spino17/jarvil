@@ -91,7 +91,6 @@ impl PythonCodeGenerator {
 
     pub fn generate_python_code(mut self, ast: &BlockNode) -> String {
         let code_block = ast.0.as_ref().borrow();
-        // self.add_str_to_python_code("def main():\n");
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
