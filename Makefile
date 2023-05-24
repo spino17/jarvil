@@ -1,5 +1,8 @@
 # This Makefile is used to install the binary on systems with `cargo` and `rustc`.
 
+# NOTE - currently we have to manually set path of the binary in the appropiate
+# shell scripts
+
 # Below commands can be used to update the path in shell scripts
 # @echo "Updating shell script path variable..."
 # @echo 'export PATH="$(INSTALL_DIR)/bin:$$PATH"' >> ~/.bashrc
