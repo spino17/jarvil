@@ -1,5 +1,5 @@
-// Anyon is the official build system and package manager for the Jarvil programming language. 
-// It is a command-line tool that provides a set of commands and features to manage Jarvil projects, including building, 
+// Anyon is the official build system and package manager for the Jarvil programming language.
+// It is a command-line tool that provides a set of commands and features to manage Jarvil projects, including building,
 // testing, and managing dependencies.
 
 use super::{
@@ -14,6 +14,7 @@ use super::{
 pub trait AbstractCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError>;
     fn execute_cmd(&self) -> Result<(), AnyonError>;
+    fn help_str(&self) -> String;
 }
 
 #[derive(Debug)]
@@ -27,23 +28,15 @@ pub enum AnyonCommand {
 
 impl AbstractCommand for AnyonCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
-        match self {
-            AnyonCommand::NEW(new_driver) => new_driver.check_cmd(),
-            AnyonCommand::BUILD(build_driver) => build_driver.check_cmd(),
-            AnyonCommand::FMT(fmt_driver) => fmt_driver.check_cmd(),
-            AnyonCommand::VERSION(version_driver) => version_driver.check_cmd(),
-            AnyonCommand::HELP(help_driver) => help_driver.check_cmd(),
-        }
+        impl_variants!(self, check_cmd)
     }
 
     fn execute_cmd(&self) -> Result<(), AnyonError> {
-        match self {
-            AnyonCommand::NEW(new_driver) => new_driver.execute_cmd(),
-            AnyonCommand::BUILD(build_driver) => build_driver.execute_cmd(),
-            AnyonCommand::FMT(fmt_driver) => fmt_driver.execute_cmd(),
-            AnyonCommand::VERSION(version_driver) => version_driver.execute_cmd(),
-            AnyonCommand::HELP(help_driver) => help_driver.execute_cmd(),
-        }
+        impl_variants!(self, execute_cmd)
+    }
+
+    fn help_str(&self) -> String {
+        impl_variants!(self, help_str)
     }
 }
 

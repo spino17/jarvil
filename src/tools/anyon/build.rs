@@ -107,4 +107,8 @@ impl AbstractCommand for BuildDriver {
         }
         Ok(())
     }
+
+    fn help_str(&self) -> String {
+        todo!()
+    }
 }

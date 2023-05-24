@@ -24,4 +24,8 @@ impl AbstractCommand for FmtDriver {
     fn execute_cmd(&self) -> Result<(), AnyonError> {
         todo!()
     }
+
+    fn help_str(&self) -> String {
+        todo!()
+    }
 }
