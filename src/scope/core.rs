@@ -44,7 +44,8 @@ impl<T> Clone for SymbolData<T> {
 pub struct CoreScope<T> {
     symbol_table: FxHashMap<Rc<String>, SymbolData<T>>,
     parent_scope: Option<Scope<T>>,
-    non_locals: Rc<RefCell<FxHashSet<Rc<String>>>>,
+    non_locals: Rc<RefCell<FxHashMap<Rc<String>, Option<bool>>>>,
+    is_global: bool,
 }
 
 impl<T> CoreScope<T> {
@@ -68,15 +69,18 @@ impl<T> CoreScope<T> {
         self.symbol_table.get(name)
     }
 
-    pub fn set_to_non_locals(&self, name: &Rc<String>) {
-        self.non_locals.as_ref().borrow_mut().insert(name.clone());
+    pub fn set_to_non_locals(&self, name: &Rc<String>, is_global: Option<bool>) {
+        self.non_locals
+            .as_ref()
+            .borrow_mut()
+            .insert(name.clone(), is_global);
     }
 
     pub fn is_in_non_locals(&self, name: &Rc<String>) -> bool {
         self.non_locals.as_ref().borrow().get(name).is_some()
     }
 
-    pub fn get_non_locals(&self) -> Rc<RefCell<FxHashSet<Rc<String>>>> {
+    pub fn get_non_locals(&self) -> Rc<RefCell<FxHashMap<Rc<String>, Option<bool>>>> {
         self.non_locals.clone()
     }
 }
@@ -89,8 +93,13 @@ impl<T> Scope<T> {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_scope: None,
-            non_locals: Rc::new(RefCell::new(FxHashSet::default())),
+            non_locals: Rc::new(RefCell::new(FxHashMap::default())),
+            is_global: true,
         })))
+    }
+
+    fn is_global(&self) -> bool {
+        self.0.as_ref().borrow().is_global
     }
 
     fn new_with_parent_scope(parent_scope: &Scope<T>) -> Self {
@@ -98,7 +107,8 @@ impl<T> Scope<T> {
         Scope(Rc::new(RefCell::new(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_scope: Some(Scope(scope)),
-            non_locals: Rc::new(RefCell::new(FxHashSet::default())),
+            non_locals: Rc::new(RefCell::new(FxHashMap::default())),
+            is_global: false,
         })))
     }
 
@@ -149,14 +159,14 @@ impl<T> Scope<T> {
     }
 
     // returns symbol table entry and depth of the scope starting from local scope up to parents
-    fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData<T>, usize)> {
+    fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData<T>, usize, bool)> {
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
-            Some(value) => Some((value.clone(), 0)),
+            Some(value) => Some((value.clone(), 0, self.is_global())),
             None => {
                 if let Some(parent_env) = &scope_ref.parent_scope {
                     match &parent_env.lookup(key) {
-                        Some(result) => Some((result.0.clone(), result.1 + 1)),
+                        Some(result) => Some((result.0.clone(), result.1 + 1, result.2)),
                         None => None,
                     }
                 } else {
@@ -166,8 +176,11 @@ impl<T> Scope<T> {
         }
     }
 
-    fn set_to_non_locals(&self, name: &Rc<String>) {
-        self.0.as_ref().borrow_mut().set_to_non_locals(name);
+    fn set_to_non_locals(&self, name: &Rc<String>, is_global: Option<bool>) {
+        self.0
+            .as_ref()
+            .borrow_mut()
+            .set_to_non_locals(name, is_global);
     }
 
     fn is_in_non_locals(&self, name: &Rc<String>) -> bool {
@@ -218,7 +231,7 @@ impl Namespace {
     pub fn lookup_in_variables_namespace(
         &self,
         key: &Rc<String>,
-    ) -> Option<(SymbolData<VariableData>, usize)> {
+    ) -> Option<(SymbolData<VariableData>, usize, bool)> {
         self.variables.lookup(key)
     }
 
@@ -227,7 +240,7 @@ impl Namespace {
         key: &Rc<String>,
     ) -> VariableLookupResult {
         match self.variables.lookup(key) {
-            Some((symbol_data, depth)) => {
+            Some((symbol_data, depth, is_global)) => {
                 if symbol_data.0.as_ref().borrow().is_initialized() {
                     return VariableLookupResult::OK((symbol_data, depth));
                 } else {
@@ -241,14 +254,15 @@ impl Namespace {
     pub fn lookup_in_types_namespace(
         &self,
         key: &Rc<String>,
-    ) -> Option<(SymbolData<UserDefinedTypeData>, usize)> {
+    ) -> Option<(SymbolData<UserDefinedTypeData>, usize, bool)> {
         self.types.lookup(key)
     }
 
     pub fn lookup_in_functions_namespace(
         &self,
         key: &Rc<String>,
-    ) -> Option<(SymbolData<FunctionData>, usize)> {
+    ) -> Option<(SymbolData<FunctionData>, usize, bool)> {
+        // last on `is_global`
         self.functions.lookup(key)
     }
 
@@ -311,7 +325,7 @@ impl Namespace {
     ) -> Result<SymbolData<UserDefinedTypeData>, TextRange> {
         let lookup_func =
             |scope: Scope<UserDefinedTypeData>, key: Rc<String>| match scope.lookup(&key) {
-                Some((symbol_data, _)) => Some(symbol_data),
+                Some((symbol_data, _, _)) => Some(symbol_data),
                 None => None,
             };
         self.types.insert(
@@ -330,7 +344,7 @@ impl Namespace {
     ) -> Result<SymbolData<UserDefinedTypeData>, TextRange> {
         let lookup_func =
             |scope: Scope<UserDefinedTypeData>, key: Rc<String>| match scope.lookup(&key) {
-                Some((symbol_data, _)) => Some(symbol_data),
+                Some((symbol_data, _, _)) => Some(symbol_data),
                 None => None,
             };
         self.types.insert(
@@ -351,7 +365,7 @@ impl Namespace {
     ) -> Result<SymbolData<UserDefinedTypeData>, TextRange> {
         let lookup_func =
             |scope: Scope<UserDefinedTypeData>, key: Rc<String>| match scope.lookup(&key) {
-                Some((symbol_data, _)) => Some(symbol_data),
+                Some((symbol_data, _, _)) => Some(symbol_data),
                 None => None,
             };
         self.types.insert(
@@ -367,15 +381,16 @@ impl Namespace {
     }
 
     pub fn set_to_variable_non_locals(&self, name: &Rc<String>) {
-        self.variables.set_to_non_locals(name);
+        // variables are never resolved to global declarations as they are not allowed in Jarvil
+        self.variables.set_to_non_locals(name, None);
     }
 
     pub fn is_variable_in_non_locals(&self, name: &Rc<String>) -> bool {
         self.variables.is_in_non_locals(name)
     }
 
-    pub fn set_to_function_non_locals(&self, name: &Rc<String>) {
-        self.functions.set_to_non_locals(name);
+    pub fn set_to_function_non_locals(&self, name: &Rc<String>, is_global: bool) {
+        self.functions.set_to_non_locals(name, Some(is_global));
     }
 
     pub fn is_function_in_non_locals(&self, name: &Rc<String>) -> bool {

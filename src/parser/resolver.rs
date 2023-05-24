@@ -7,9 +7,10 @@ use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
     BuiltinFunctionNameOverlapError, ConstructorNotFoundInsideStructDeclarationError,
     FieldsNotInitializedInConstructorError, IdentifierFoundInNonLocalsError,
-    IdentifierNotFoundInAnyNamespaceError, MoreThanMaxLimitParamsPassedError,
-    NonHashableTypeInIndexError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
-    SingleSubTypeFoundInTupleError, VariableReferencedBeforeAssignmentError, MainFunctionNotFoundError, MainFunctionWrongTypeError,
+    IdentifierNotFoundInAnyNamespaceError, MainFunctionNotFoundError, MainFunctionWrongTypeError,
+    MoreThanMaxLimitParamsPassedError, NonHashableTypeInIndexError,
+    NonVoidConstructorReturnTypeError, SelfNotFoundError, SingleSubTypeFoundInTupleError,
+    VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
@@ -73,7 +74,7 @@ pub struct Resolver {
 impl Resolver {
     pub fn new(code: &JarvilCode) -> Self {
         Resolver {
-            namespace: Namespace::new(),
+            namespace: Namespace::new(), // `is_global` will be `true` for this namespace
             code: code.clone(),
             errors: vec![],
             context: Context {
@@ -177,7 +178,7 @@ impl Resolver {
 
     pub fn try_resolving<
         T,
-        U: Fn(&Namespace, &Rc<String>) -> Option<(SymbolData<T>, usize)>,
+        U: Fn(&Namespace, &Rc<String>) -> Option<(SymbolData<T>, usize, bool)>,
         V: Fn(&OkIdentifierNode, &SymbolData<T>, usize),
     >(
         &mut self,
@@ -187,7 +188,7 @@ impl Resolver {
     ) -> ResolveResult {
         let name = Rc::new(identifier.token_value(&self.code));
         match lookup_fn(&self.namespace, &name) {
-            Some((symbol_data, depth)) => {
+            Some((symbol_data, depth, is_global)) => {
                 bind_fn(identifier, &symbol_data, depth);
                 ResolveResult::OK(depth)
             }
@@ -222,7 +223,7 @@ impl Resolver {
         let name = Rc::new(self_keyword.token_value(&self.code));
         assert!(name == Rc::new("self".to_string()));
         match self.namespace.lookup_in_variables_namespace(&name) {
-            Some((symbol_data, depth)) => {
+            Some((symbol_data, depth, _)) => {
                 self_keyword.bind_decl(&symbol_data, depth);
                 return Some((symbol_data, depth));
             }
@@ -1054,15 +1055,15 @@ impl Visitor for Resolver {
                             // order of namespace search: function => type => variable
                             let name = Rc::new(ok_identifier.token_value(&self.code));
                             match self.namespace.lookup_in_functions_namespace(&name) {
-                                Some((symbol_data, depth)) => {
+                                Some((symbol_data, depth, is_global)) => {
                                     ok_identifier.bind_function_decl(&symbol_data, depth);
                                     // function is resolved to nonlocal scope and should be non-builtin
                                     if depth > 0 && symbol_data.2 {
-                                        self.namespace.set_to_function_non_locals(&name);
+                                        self.namespace.set_to_function_non_locals(&name, is_global);
                                     }
                                 }
                                 None => match self.namespace.lookup_in_types_namespace(&name) {
-                                    Some((symbol_data, depth)) => {
+                                    Some((symbol_data, depth, _)) => {
                                         ok_identifier
                                             .bind_user_defined_type_decl(&symbol_data, depth);
                                     }

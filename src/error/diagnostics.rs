@@ -1226,10 +1226,10 @@ impl MainFunctionNotFoundError {
         MainFunctionNotFoundError {
             help: Some(
                 "the entry point to the code is through `main` function"
-                .to_string()
-                .style(Style::new().yellow())
-                .to_string()
-            )
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }

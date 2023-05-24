@@ -3,11 +3,8 @@ use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::JarvilParser;
 
-pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&'static str; 3] = [
-    "def",
-    "type",
-    "interface",
-];
+pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&'static str; 3] =
+    ["def", "type", "interface"];
 
 pub const STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS: [&'static str; 9] = [
     "let",
@@ -26,7 +23,7 @@ pub fn is_statement_at_global_scope_starting_with(token: &Token) -> bool {
         CoreToken::DEF => true,
         CoreToken::TYPE_KEYWORD => true,
         CoreToken::INTERFACE_KEYWORD => true,
-        _ => false
+        _ => false,
     }
 }
 

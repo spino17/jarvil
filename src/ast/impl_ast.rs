@@ -1233,7 +1233,7 @@ impl UserDefinedTypeNode {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(code));
             match scope.lookup_in_types_namespace(&name) {
-                Some((symbol_data, depth)) => {
+                Some((symbol_data, depth, _)) => {
                     let temp_symbol_data = symbol_data.clone();
                     ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
                     match &*symbol_data.0.as_ref().borrow() {

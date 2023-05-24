@@ -14,7 +14,7 @@ use crate::{
     lexer::token::{CoreToken, Token},
     scope::core::IdentifierKind,
 };
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::{cell::RefCell, convert::TryInto, rc::Rc};
 
 // Utility functions
@@ -91,11 +91,11 @@ impl PythonCodeGenerator {
 
     pub fn generate_python_code(mut self, ast: &BlockNode) -> String {
         let code_block = ast.0.as_ref().borrow();
-        self.add_str_to_python_code("def main():\n");
+        // self.add_str_to_python_code("def main():\n");
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        self.add_str_to_python_code("\n\nif __name__ == \"__main__\":\n    main()");
+        self.add_str_to_python_code("\n\nif __name__ == \"__main__\":\n    main_func()");
         self.generate_code
     }
 
@@ -107,8 +107,8 @@ impl PythonCodeGenerator {
         &self,
         block: &BlockNode,
     ) -> (
-        Rc<RefCell<FxHashSet<Rc<String>>>>,
-        Rc<RefCell<FxHashSet<Rc<String>>>>,
+        Rc<RefCell<FxHashMap<Rc<String>, Option<bool>>>>,
+        Rc<RefCell<FxHashMap<Rc<String>, Option<bool>>>>,
     ) {
         let block_scope = match &block.0.as_ref().borrow().scope {
             Some(scope) => scope.clone(),
@@ -330,21 +330,35 @@ impl Visitor for PythonCodeGenerator {
                 let core_block = block.0.as_ref().borrow();
                 self.print_token_node(&core_block.newline);
                 let (variable_non_locals, func_non_locals) = self.get_non_locals(block);
-                for entry in variable_non_locals.as_ref().borrow().iter() {
+                for (entry, _) in variable_non_locals.as_ref().borrow().iter() {
                     let mut variable_name = entry.to_string();
                     variable_name.push_str("_var");
                     self.add_str_to_python_code(&get_whitespaces_from_indent_level(
-                        self.indent_level + 1,
+                        self.indent_level,
                     ));
                     self.add_str_to_python_code(&format!("nonlocal {}\n", variable_name));
                 }
-                for entry in func_non_locals.as_ref().borrow().iter() {
+                for (entry, is_global) in func_non_locals.as_ref().borrow().iter() {
                     let mut func_name = entry.to_string();
                     func_name.push_str("_func");
                     self.add_str_to_python_code(&get_whitespaces_from_indent_level(
-                        self.indent_level + 1,
+                        self.indent_level,
                     ));
-                    self.add_str_to_python_code(&format!("nonlocal {}\n", func_name));
+                    match is_global {
+                        Some(is_global) => {
+                            if *is_global {
+                                // TODO - if declarations are in global we can completely remove this
+                                // as there are no variable declarations which needs to have proper
+                                // behaviour of non-local assignments but global scope does not have
+                                // any variable declarartions and functions cannot be assigned so
+                                // we can safely remove explicit global statement here
+                                self.add_str_to_python_code(&format!("global {}\n", func_name));
+                            } else {
+                                self.add_str_to_python_code(&format!("nonlocal {}\n", func_name));
+                            }
+                        }
+                        None => unreachable!(),
+                    }
                 }
                 for stmt in &core_block.stmts {
                     self.walk_stmt_indent_wrapper(stmt);
@@ -356,14 +370,14 @@ impl Visitor for PythonCodeGenerator {
                 let core_stmt_wrapper = stmt_wrapper.core_ref();
                 match core_stmt_wrapper {
                     CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(ok_stmt) => {
-                        self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
+                        // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                         self.walk_stmt(ok_stmt);
                     }
                     CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(extra_newlines) => {
                         let core_extra_newlines = extra_newlines.core_ref();
                         for extra_newline in &core_extra_newlines.skipped_tokens {
                             let core_token = &extra_newline.core_ref().skipped_token;
-                            self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
+                            // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                             self.print_token(core_token);
                         }
                     }
