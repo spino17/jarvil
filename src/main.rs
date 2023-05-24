@@ -42,7 +42,6 @@ fn main() {
     }));
 
     let args: Vec<String> = args().collect();
-
     let result = check_and_execute_cmd(args);
     if let Err(err) = result {
         println!("{:?}", err);
