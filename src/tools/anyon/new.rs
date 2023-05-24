@@ -1,5 +1,8 @@
 use super::{core::AbstractCommand, error::AnyonError};
-use crate::{codegen::python::get_whitespaces_from_indent_level, context};
+use crate::{
+    codegen::python::get_whitespaces_from_indent_level, context,
+    error::constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG,
+};
 use std::{fs, mem, process::Command};
 
 #[derive(Debug)]
@@ -19,9 +22,18 @@ impl NewDriver {
 
 impl AbstractCommand for NewDriver {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
-        // TODO - add logic to check the command
-        // argument at index `2` should exist
-        self.project_name = Some(mem::take(&mut self.command_line_args[2]));
+        let len = self.command_line_args.len();
+        if len < 3 {
+            return Err(AnyonError::new_with_vanilla(
+                "project name is missing".to_string(),
+            ));
+        } else if len == 3 {
+            self.project_name = Some(mem::take(&mut self.command_line_args[2]));
+        } else {
+            return Err(AnyonError::new_with_vanilla(
+                TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG.to_string(),
+            ));
+        }
         Ok(())
     }
 

@@ -5,6 +5,7 @@ use crate::ast::ast::BlockNode;
 use crate::code::JarvilCode;
 use crate::codegen::python::PythonCodeGenerator;
 use crate::context;
+use crate::error::constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG;
 use crate::error::diagnostics::Diagnostics;
 use crate::lexer::lexer::{CoreLexer, Lexer};
 use crate::parser::parser::{JarvilParser, Parser};
@@ -12,10 +13,10 @@ use crate::parser::resolver::Resolver;
 use crate::parser::type_checker::TypeChecker;
 use crate::reader::read_file;
 use miette::Report;
+use std::fs;
 use std::process::Command;
 use std::rc::Rc;
 use std::str;
-use std::{fs, mem};
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
@@ -100,7 +101,7 @@ impl AbstractCommand for BuildDriver {
             return Ok(());
         } else {
             return Err(AnyonError::new_with_vanilla(
-                "too many command line arguments passed".to_string(),
+                TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG.to_string(),
             ));
         }
     }
@@ -117,7 +118,7 @@ impl AbstractCommand for BuildDriver {
         let code = JarvilCode::new(code_vec);
         let py_code = self.build_code(code, code_str)?;
         fs::write(&transpiled_py_code_file_path, py_code)?;
-        // format the code using `black`
+        // format the Python code using `black`
         let _ = Command::new("python3")
             .arg("-m")
             .arg("black")
