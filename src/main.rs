@@ -10,7 +10,6 @@ mod lexer;
 mod parser;
 mod reader;
 mod scope;
-mod server;
 mod tools;
 mod types;
 

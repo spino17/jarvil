@@ -45,7 +45,6 @@ impl AbstractCommand for NewDriver {
         };
         let main_file_path = format!("{}/{}/main.jv", curr_dir_path, project_name);
         let _ = Command::new("mkdir").arg(project_name).output()?;
-        // let _ = Command::new("touch").arg(&main_file_path).output()?;
         let default_main_func = format!(
             "def main():\n{}print(\"Hello, World!\")",
             get_whitespaces_from_indent_level(1)
