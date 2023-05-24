@@ -95,7 +95,11 @@ impl PythonCodeGenerator {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        self.add_str_to_python_code("\n\nif __name__ == \"__main__\":\n    main_func()");
+        let main_call_str = format!(
+            "\n\nif __name__ == \"__main__\":\n{}main_func()",
+            get_whitespaces_from_indent_level(1)
+        );
+        self.add_str_to_python_code(&main_call_str);
         self.generate_code
     }
 
@@ -370,14 +374,12 @@ impl Visitor for PythonCodeGenerator {
                 let core_stmt_wrapper = stmt_wrapper.core_ref();
                 match core_stmt_wrapper {
                     CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(ok_stmt) => {
-                        // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                         self.walk_stmt(ok_stmt);
                     }
                     CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(extra_newlines) => {
                         let core_extra_newlines = extra_newlines.core_ref();
                         for extra_newline in &core_extra_newlines.skipped_tokens {
                             let core_token = &extra_newline.core_ref().skipped_token;
-                            // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                             self.print_token(core_token);
                         }
                     }
