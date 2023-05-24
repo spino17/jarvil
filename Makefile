@@ -1,4 +1,39 @@
-# clean for any existing build
-# execute `cargo build --release --manifest-path engine/Cargo.toml` to get the build files
-# set system wide PATH variable pointing to `${BASE_DIR}/engine/target/release` dir containing all essential build files
-# test the installation using jarvil --version
+# This Makefile is used to install the binary on systems with `cargo` and `rustc`.
+
+# NOTE - currently we have to manually set path of the binary in the appropiate
+# shell scripts
+
+# Below commands can be used to update the path in shell scripts
+# @echo "Updating shell script path variable..."
+# @echo 'export PATH="$(INSTALL_DIR)/bin:$$PATH"' >> ~/.bashrc
+# @echo 'export PATH="$(INSTALL_DIR)/bin:$$PATH"' >> ~/.bash_profile
+
+BINARY_NAME := jarvil
+INSTALL_DIR := /Users/bhavyabhatt/.jarvil
+VERSION := 0.1.0
+APP_NAME := jarvil ${VERSION}
+
+.PHONY: all build install uninstall clean
+
+all: build
+
+build:
+	@echo "Building ${APP_NAME} ..."
+	@cargo build --release
+
+install: build
+	@echo "Installing ${APP_NAME} ..."
+	@install -d $(INSTALL_DIR)/bin
+	@install -m 755 target/release/$(BINARY_NAME) $(INSTALL_DIR)/bin
+	@echo "${APP_NAME} installed successfully"
+
+uninstall:
+	@echo "Uninstalling ${APP_NAME} ..."
+	@rm -f $(INSTALL_DIR)/bin/$(BINARY_NAME)
+	@rmdir $(INSTALL_DIR)/bin
+	@rmdir $(INSTALL_DIR)
+	@echo "${APP_NAME} uninstalled successfully"
+
+clean:
+	@echo "Cleaning the project..."
+	@cargo
