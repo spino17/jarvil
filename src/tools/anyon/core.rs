@@ -42,8 +42,7 @@ impl AbstractCommand for AnyonCommand {
 
 pub fn get_cmd_from_command_line_args(args: Vec<String>) -> Result<AnyonCommand, AnyonError> {
     if args.len() < 2 {
-        // TODO - change this! to HELP
-        return Ok(AnyonCommand::BUILD(BuildDriver::new(args, BuildMode::RUN)));
+        return Ok(AnyonCommand::HELP(HelpDriver::new(args)));
     } else {
         let core_cmd = &args[1];
         if core_cmd.eq("new") {

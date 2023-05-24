@@ -1,5 +1,7 @@
 use super::{core::AbstractCommand, error::AnyonError};
-use crate::error::{diagnostics::Diagnostics, constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG};
+use crate::error::{
+    constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG, diagnostics::Diagnostics,
+};
 
 #[derive(Debug)]
 pub struct VersionDriver {
@@ -16,7 +18,9 @@ impl AbstractCommand for VersionDriver {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         let len = self.command_line_args.len();
         if len > 2 {
-            return Err(AnyonError::new_with_vanilla(TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG.to_string()))
+            return Err(AnyonError::new_with_vanilla(
+                TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG.to_string(),
+            ));
         }
         Ok(())
     }
