@@ -15,6 +15,7 @@ pub enum AnyonError {
     IO(Error),
     VANILLA(VanillaError),
     UTF8(Utf8Error),
+    COMMAND(VanillaError),
 }
 
 impl AnyonError {
@@ -32,6 +33,10 @@ impl AnyonError {
 
     pub fn new_with_vanilla(msg: String) -> Self {
         AnyonError::VANILLA(VanillaError { msg })
+    }
+
+    pub fn new_with_command(msg: String) -> Self {
+        AnyonError::COMMAND(VanillaError { msg })
     }
 }
 
@@ -60,6 +65,7 @@ impl Debug for AnyonError {
             AnyonError::VANILLA(vanilla) => write!(f, "{}", vanilla.msg),
             AnyonError::IO(io) => write!(f, "{}", io.to_string()),
             AnyonError::UTF8(utf8) => write!(f, "{}", utf8.to_string()),
+            AnyonError::COMMAND(command) => write!(f, "{}\nView all commands with `jarvil help`", command.msg)
         }
     }
 }

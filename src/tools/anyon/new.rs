@@ -24,7 +24,7 @@ impl AbstractCommand for NewDriver {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         let len = self.command_line_args.len();
         if len < 3 {
-            return Err(AnyonError::new_with_vanilla(
+            return Err(AnyonError::new_with_command(
                 "project name is missing".to_string(),
             ));
         } else if len == 3 {

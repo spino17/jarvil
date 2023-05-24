@@ -100,7 +100,7 @@ impl AbstractCommand for BuildDriver {
             self.alternate_code_file_name = Some(Rc::new(file_name));
             return Ok(());
         } else {
-            return Err(AnyonError::new_with_vanilla(
+            return Err(AnyonError::new_with_command(
                 TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG.to_string(),
             ));
         }

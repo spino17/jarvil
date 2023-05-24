@@ -1,5 +1,4 @@
 use crate::error::constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG;
-
 use super::{core::AbstractCommand, error::AnyonError};
 
 #[derive(Debug)]
@@ -17,7 +16,7 @@ impl AbstractCommand for HelpDriver {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         let len = self.command_line_args.len();
         if len > 2 {
-            return Err(AnyonError::new_with_vanilla(
+            return Err(AnyonError::new_with_command(
                 TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG.to_string(),
             ));
         }

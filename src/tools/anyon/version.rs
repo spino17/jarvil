@@ -18,7 +18,7 @@ impl AbstractCommand for VersionDriver {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         let len = self.command_line_args.len();
         if len > 2 {
-            return Err(AnyonError::new_with_vanilla(
+            return Err(AnyonError::new_with_command(
                 TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG.to_string(),
             ));
         }
