@@ -9,7 +9,7 @@ py_test.ipynb
 .idea/
 .mypy_cache/
 .vscode/
-.DS_Store/
+.DS_Store
 
 # ignores from my local machine
 *.jv

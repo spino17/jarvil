@@ -122,7 +122,7 @@ impl AbstractCommand for BuildDriver {
         let _ = Command::new("python3")
             .arg("-m")
             .arg("black")
-            .arg(".")
+            .arg(&transpiled_py_code_file_path)
             .output()?;
         match self.mode {
             BuildMode::RUN => {
