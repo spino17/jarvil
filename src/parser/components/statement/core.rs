@@ -3,20 +3,13 @@ use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::JarvilParser;
 
-pub fn is_statement_starting_with(token: &Token) -> bool {
-    match token.core_token {
-        CoreToken::LET => true,
-        CoreToken::DEF => true,
-        CoreToken::FOR => true,
-        CoreToken::WHILE => true,
-        CoreToken::IF => true,
-        CoreToken::TYPE_KEYWORD => true,
-        CoreToken::INTERFACE_KEYWORD => true,
-        _ => is_expression_starting_with(token),
-    }
-}
+pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&'static str; 3] = [
+    "def",
+    "type",
+    "interface",
+];
 
-pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 8] = [
+pub const STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS: [&'static str; 9] = [
     "let",
     "def",
     "for",
@@ -25,8 +18,36 @@ pub const STATEMENT_EXPECTED_STARTING_SYMBOLS: [&'static str; 8] = [
     "type",
     "interface",
     "<expression>",
+    "return",
 ];
 
+pub fn is_statement_at_global_scope_starting_with(token: &Token) -> bool {
+    match token.core_token {
+        CoreToken::DEF => true,
+        CoreToken::TYPE_KEYWORD => true,
+        CoreToken::INTERFACE_KEYWORD => true,
+        _ => false
+    }
+}
+
+pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
+    match token.core_token {
+        CoreToken::LET => true,
+        CoreToken::DEF => true,
+        CoreToken::FOR => true,
+        CoreToken::WHILE => true,
+        CoreToken::IF => true,
+        CoreToken::TYPE_KEYWORD => true,
+        CoreToken::INTERFACE_KEYWORD => true,
+        CoreToken::RETURN => true,
+        _ => is_expression_starting_with(token),
+    }
+}
+
+// Below method parsers every possible statement in Jarvil.
+// It is the responsiblity of the `is_starting_with_fn` passed into `block` parsing
+// method to allow or disallow certain statements inside the block for example: in struct block
+// no other statement is allowed except ones starting with `<identifier>` and `def`.
 pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = &parser.curr_token();
     let statement_node = match token.core_token {
@@ -80,25 +101,6 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         }
     };
     statement_node
-}
-
-pub const STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS: [&'static str; 9] = [
-    "let",
-    "def",
-    "for",
-    "while",
-    "if",
-    "type",
-    "interface",
-    "<expression>",
-    "return",
-];
-
-pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
-    match token.core_token {
-        CoreToken::RETURN => true,
-        _ => is_statement_starting_with(token),
-    }
 }
 
 pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {

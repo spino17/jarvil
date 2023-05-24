@@ -9,7 +9,7 @@ use crate::error::diagnostics::{
     FieldsNotInitializedInConstructorError, IdentifierFoundInNonLocalsError,
     IdentifierNotFoundInAnyNamespaceError, MoreThanMaxLimitParamsPassedError,
     NonHashableTypeInIndexError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
-    SingleSubTypeFoundInTupleError, VariableReferencedBeforeAssignmentError,
+    SingleSubTypeFoundInTupleError, VariableReferencedBeforeAssignmentError, MainFunctionNotFoundError, MainFunctionWrongTypeError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
@@ -100,6 +100,22 @@ impl Resolver {
         );
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
+        }
+        match self.namespace.functions.get(&Rc::new("main".to_string())) {
+            Some(symbol_data) => {
+                let func_meta_data = &*symbol_data.0.as_ref().borrow();
+                let params = &func_meta_data.params;
+                let return_type = &func_meta_data.return_type;
+                if params.as_ref().len() > 0 || !return_type.is_void() {
+                    let span = symbol_data.1;
+                    let err = MainFunctionWrongTypeError::new(span);
+                    self.errors.push(Diagnostics::MainFunctionWrongType(err));
+                }
+            }
+            None => {
+                let err = MainFunctionNotFoundError::new();
+                self.errors.push(Diagnostics::MainFunctionNotFound(err));
+            }
         }
         (self.namespace, self.errors)
     }

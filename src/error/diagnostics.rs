@@ -50,6 +50,8 @@ pub enum Diagnostics {
     ImmutableTypeNotAssignable(ImmutableTypeNotAssignableError),
     SingleSubTypeFoundInTuple(SingleSubTypeFoundInTupleError),
     BuiltinFunctionNameOverlap(BuiltinFunctionNameOverlapError),
+    MainFunctionNotFound(MainFunctionNotFoundError),
+    MainFunctionWrongType(MainFunctionWrongTypeError),
 }
 
 impl Diagnostics {
@@ -119,6 +121,8 @@ impl Diagnostics {
             Diagnostics::ImmutableTypeNotAssignable(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::SingleSubTypeFoundInTuple(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::BuiltinFunctionNameOverlap(diagnotic) => Report::new(diagnotic.clone()),
+            Diagnostics::MainFunctionNotFound(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::MainFunctionWrongType(diagnostic) => Report::new(diagnostic.clone()),
         }
     }
 }
@@ -1201,6 +1205,51 @@ impl SingleSubTypeFoundInTupleError {
             index_span: range_to_span(index_span).into(),
             help: Some(
                 "tuple should have more than one sub-type"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("`main` function not found")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct MainFunctionNotFoundError {
+    #[help]
+    help: Option<String>,
+}
+
+impl MainFunctionNotFoundError {
+    pub fn new() -> Self {
+        MainFunctionNotFoundError {
+            help: Some(
+                "the entry point to the code is through `main` function"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("`main` function has wrong type")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct MainFunctionWrongTypeError {
+    #[label("wrong structure of params and return type")]
+    pub index_span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl MainFunctionWrongTypeError {
+    pub fn new(span: TextRange) -> Self {
+        MainFunctionWrongTypeError {
+            index_span: range_to_span(span).into(),
+            help: Some(
+                "`main` function should have no params and no return type"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),

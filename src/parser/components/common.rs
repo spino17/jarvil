@@ -1,5 +1,5 @@
 use super::statement::core::{
-    is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS,
+    is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
 };
 use crate::ast::ast::{
     BlockKind, BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode,
@@ -103,7 +103,7 @@ pub fn callable_body(parser: &mut JarvilParser) -> CallableBodyNode {
             let func_block_node = parser.block(
                 |token| is_statement_within_function_starting_with(token),
                 |parser| parser.stmt(),
-                &STATEMENT_WITHIN_FUNCTION_EXPECTED_STARTING_SYMBOLS,
+                &STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
                 BlockKind::FUNC,
             );
             return CallableBodyNode::new(&func_block_node, &colon_node, &callable_prototype);
