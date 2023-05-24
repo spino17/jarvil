@@ -118,11 +118,12 @@ impl AbstractCommand for BuildDriver {
         let code = JarvilCode::new(code_vec);
         let py_code = self.build_code(code, code_str)?;
         fs::write(&transpiled_py_code_file_path, py_code)?;
-        // format the Python code using `black`
+        // format the Python code using `black` if available
         let _ = Command::new("python3")
             .arg("-m")
             .arg("black")
-            .arg(&transpiled_py_code_file_path)
+            // .arg(&transpiled_py_code_file_path)
+            .arg(".")
             .output()?;
         match self.mode {
             BuildMode::RUN => {

@@ -6,6 +6,10 @@ configure.ac
 Makefile.am
 py_test.ipynb
 /package/
+.idea
+.mypy_cache
+.vscode
+.DS_Store
 
 # ignores from my local machine
 main.jv
