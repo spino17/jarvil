@@ -112,8 +112,8 @@ impl PythonCodeGenerator {
         &self,
         block: &BlockNode,
     ) -> (
-        Rc<RefCell<FxHashMap<Rc<String>, Option<bool>>>>,
-        Rc<RefCell<FxHashMap<Rc<String>, Option<bool>>>>,
+        Rc<RefCell<FxHashMap<String, Option<bool>>>>,
+        Rc<RefCell<FxHashMap<String, Option<bool>>>>,
     ) {
         let block_scope = match &block.0.as_ref().borrow().scope {
             Some(scope) => scope.clone(),

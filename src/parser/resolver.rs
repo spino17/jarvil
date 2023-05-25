@@ -88,13 +88,13 @@ impl Resolver {
         let code_block = ast.0.as_ref().borrow();
         // setting builtin functions to global scope
         self.namespace.functions.force_insert(
-            &Rc::new("print".to_string()),
+            "print".to_string(),
             print_meta_data(),
             TextRange::default(),
             false,
         );
         self.namespace.functions.force_insert(
-            &Rc::new("range".to_string()),
+            "range".to_string(),
             range_meta_data(),
             TextRange::default(),
             false,
@@ -257,51 +257,51 @@ impl Resolver {
 
     pub fn try_declare_and_bind<
         T,
-        U: Fn(&Namespace, &Rc<String>, TextRange) -> Result<SymbolData<T>, TextRange>,
+        U: Fn(&Namespace, String, TextRange) -> Result<SymbolData<T>, (String, TextRange)>,
         V: Fn(&OkIdentifierNode, &SymbolData<T>),
     >(
         &mut self,
         identifier: &OkIdentifierNode,
         declare_fn: U,
         bind_fn: V,
-    ) -> Option<(Rc<String>, TextRange)> {
-        let name = Rc::new(identifier.token_value(&self.code));
-        let symbol_data = declare_fn(&self.namespace, &name, identifier.range());
+    ) -> Option<(String, TextRange)> {
+        let name = identifier.token_value(&self.code);
+        let symbol_data = declare_fn(&self.namespace, name, identifier.range());
         match symbol_data {
             Ok(symbol_data) => {
                 bind_fn(identifier, &symbol_data);
                 None
             }
-            Err(previous_decl_range) => Some((name, previous_decl_range)),
+            Err((name, previous_decl_range)) => Some((name, previous_decl_range)),
         }
     }
 
     pub fn try_declare_and_bind_variable(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(Rc<String>, TextRange)> {
-        let declare_fn = |namespace: &Namespace, name: &Rc<String>, decl_range: TextRange| {
+    ) -> Option<(String, TextRange)> {
+        let declare_fn = |namespace: &Namespace, name: String, decl_range: TextRange| {
             namespace.declare_variable(name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
             identifier.bind_variable_decl(symbol_data, 0)
         };
-        let name = Rc::new(identifier.token_value(&self.code));
-        let symbol_data = declare_fn(&self.namespace, &name, identifier.range());
+        let name = identifier.token_value(&self.code);
+        let symbol_data = declare_fn(&self.namespace, name, identifier.range());
         match symbol_data {
             Ok(symbol_data) => {
                 bind_fn(identifier, &symbol_data);
                 return None;
             }
-            Err(previous_decl_range) => return Some((name, previous_decl_range)),
+            Err((name, previous_decl_range)) => return Some((name, previous_decl_range)),
         }
     }
 
     pub fn try_declare_and_bind_function(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(Rc<String>, TextRange)> {
-        let declare_fn = |namespace: &Namespace, name: &Rc<String>, decl_range: TextRange| {
+    ) -> Option<(String, TextRange)> {
+        let declare_fn = |namespace: &Namespace, name: String, decl_range: TextRange| {
             namespace.declare_function(name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<FunctionData>| {
@@ -313,8 +313,8 @@ impl Resolver {
     pub fn try_declare_and_bind_struct_type(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(Rc<String>, TextRange)> {
-        let declare_fn = |namespace: &Namespace, name: &Rc<String>, decl_range: TextRange| {
+    ) -> Option<(String, TextRange)> {
+        let declare_fn = |namespace: &Namespace, name: String, decl_range: TextRange| {
             namespace.declare_struct_type(name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode,
@@ -327,8 +327,8 @@ impl Resolver {
     pub fn try_declare_and_bind_lambda_type(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(Rc<String>, TextRange)> {
-        let declare_fn = |namespace: &Namespace, name: &Rc<String>, decl_range: TextRange| {
+    ) -> Option<(String, TextRange)> {
+        let declare_fn = |namespace: &Namespace, name: String, decl_range: TextRange| {
             namespace.declare_lambda_type(name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode,
@@ -440,7 +440,7 @@ impl Resolver {
                     let param_name = ok_identifier.token_value(&self.code);
                     let param_type = self.type_obj_from_expression(&core_param.data_type);
                     let symbol_data = self.namespace.declare_variable_with_type(
-                        &Rc::new(param_name.to_string()),
+                        param_name.to_string(),
                         &param_type,
                         ok_identifier.range(),
                         true,
@@ -452,7 +452,7 @@ impl Resolver {
                             param_types_vec.push(param_type);
                             params_count += 1;
                         }
-                        Err(previous_decl_range) => {
+                        Err((param_name, previous_decl_range)) => {
                             let err = IdentifierAlreadyDeclaredError::new(
                                 IdentKind::VARIABLE,
                                 param_name.to_string(),
@@ -680,7 +680,7 @@ impl Resolver {
         };
         self.open_block();
         let result = self.namespace.declare_variable_with_type(
-            &Rc::new("self".to_string()),
+            "self".to_string(),
             &struct_type_obj,
             core_struct_decl.name.range(),
             true,
@@ -921,9 +921,9 @@ impl Resolver {
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
-            let name = Rc::new(ok_identifier.token_value(&self.code));
+            let name = ok_identifier.token_value(&self.code);
             let symbol_data = self.namespace.declare_lambda_type_with_meta_data(
-                &name,
+                name,
                 types_vec,
                 return_type,
                 ok_identifier.range(),
@@ -932,10 +932,10 @@ impl Resolver {
                 Ok(symbol_data) => {
                     ok_identifier.bind_user_defined_type_decl(&symbol_data, 0);
                 }
-                Err(previous_decl_range) => {
+                Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::TYPE,
-                        name.to_string(),
+                        name,
                         previous_decl_range,
                         ok_identifier.range(),
                     );
@@ -1008,11 +1008,11 @@ impl Visitor for Resolver {
                 match atom_start.core_ref() {
                     CoreAtomStartNode::IDENTIFIER(identifier) => {
                         if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
-                            let name = Rc::new(ok_identifier.token_value(&self.code));
+                            let name = ok_identifier.token_value(&self.code);
                             match self.try_resolving_variable(ok_identifier) {
                                 VariableLookupResult::OK((_, depth)) => {
                                     if depth > 0 {
-                                        self.namespace.set_to_variable_non_locals(&name);
+                                        self.namespace.set_to_variable_non_locals(name);
                                     }
                                 }
                                 VariableLookupResult::NOT_INITIALIZED(decl_range) => {
@@ -1053,13 +1053,13 @@ impl Visitor for Resolver {
                             core_func_call.function_name.core_ref()
                         {
                             // order of namespace search: function => type => variable
-                            let name = Rc::new(ok_identifier.token_value(&self.code));
+                            let name = ok_identifier.token_value(&self.code);
                             match self.namespace.lookup_in_functions_namespace(&name) {
                                 Some((symbol_data, depth, is_global)) => {
                                     ok_identifier.bind_function_decl(&symbol_data, depth);
                                     // function is resolved to nonlocal scope and should be non-builtin
                                     if depth > 0 && symbol_data.2 {
-                                        self.namespace.set_to_function_non_locals(&name, is_global);
+                                        self.namespace.set_to_function_non_locals(name, is_global);
                                     }
                                 }
                                 None => match self.namespace.lookup_in_types_namespace(&name) {
@@ -1070,12 +1070,12 @@ impl Visitor for Resolver {
                                     None => match self.try_resolving_variable(ok_identifier) {
                                         VariableLookupResult::OK((_, depth)) => {
                                             if depth > 0 {
-                                                self.namespace.set_to_variable_non_locals(&name);
+                                                self.namespace.set_to_variable_non_locals(name);
                                             }
                                         }
                                         VariableLookupResult::NOT_INITIALIZED(decl_range) => {
                                             let err = VariableReferencedBeforeAssignmentError::new(
-                                                name.to_string(),
+                                                name,
                                                 decl_range,
                                                 ok_identifier.range(),
                                             );

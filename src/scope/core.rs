@@ -42,16 +42,16 @@ impl<T> Clone for SymbolData<T> {
 
 #[derive(Debug)]
 pub struct CoreScope<T> {
-    symbol_table: FxHashMap<Rc<String>, SymbolData<T>>,
+    symbol_table: FxHashMap<String, SymbolData<T>>,
     parent_scope: Option<Scope<T>>,
-    non_locals: Rc<RefCell<FxHashMap<Rc<String>, Option<bool>>>>,
+    non_locals: Rc<RefCell<FxHashMap<String, Option<bool>>>>,
     is_global: bool,
 }
 
 impl<T> CoreScope<T> {
     fn set(
         &mut self,
-        name: &Rc<String>,
+        name: String,
         meta_data: T,
         decl_range: TextRange,
         is_suffix_required: bool,
@@ -61,26 +61,26 @@ impl<T> CoreScope<T> {
             decl_range,
             is_suffix_required,
         );
-        self.symbol_table.insert(name.clone(), symbol_data.clone());
+        self.symbol_table.insert(name, symbol_data.clone());
         symbol_data
     }
 
-    pub fn get(&self, name: &Rc<String>) -> Option<&SymbolData<T>> {
+    pub fn get(&self, name: &str) -> Option<&SymbolData<T>> {
         self.symbol_table.get(name)
     }
 
-    pub fn set_to_non_locals(&self, name: &Rc<String>, is_global: Option<bool>) {
+    pub fn set_to_non_locals(&self, name: String, is_global: Option<bool>) {
         self.non_locals
             .as_ref()
             .borrow_mut()
-            .insert(name.clone(), is_global);
+            .insert(name, is_global);
     }
 
-    pub fn is_in_non_locals(&self, name: &Rc<String>) -> bool {
+    pub fn is_in_non_locals(&self, name: &str) -> bool {
         self.non_locals.as_ref().borrow().get(name).is_some()
     }
 
-    pub fn get_non_locals(&self) -> Rc<RefCell<FxHashMap<Rc<String>, Option<bool>>>> {
+    pub fn get_non_locals(&self) -> Rc<RefCell<FxHashMap<String, Option<bool>>>> {
         self.non_locals.clone()
     }
 }
@@ -121,7 +121,7 @@ impl<T> Scope<T> {
 
     pub fn force_insert(
         &self,
-        key: &Rc<String>,
+        key: String,
         meta_data: T,
         decl_range: TextRange,
         is_suffix_required: bool,
@@ -132,17 +132,17 @@ impl<T> Scope<T> {
             .set(key, meta_data, decl_range, is_suffix_required)
     }
 
-    pub fn insert<U: Fn(Scope<T>, Rc<String>) -> Option<SymbolData<T>>>(
+    pub fn insert<U: Fn(Scope<T>, &str) -> Option<SymbolData<T>>> (
         &self,
-        key: &Rc<String>,
+        key: String,
         meta_data: T,
         decl_range: TextRange,
         lookup_fn: U,
         is_suffix_required: bool,
-    ) -> Result<SymbolData<T>, TextRange> {
+    ) -> Result<SymbolData<T>, (String, TextRange)> {
         let scope = Scope(self.0.clone());
-        if let Some(symbol_data) = lookup_fn(scope, key.clone()) {
-            return Err(symbol_data.1);
+        if let Some(symbol_data) = lookup_fn(scope, &key) {
+            return Err((key, symbol_data.1));
         }
         let symbol_data = self
             .0
@@ -151,7 +151,7 @@ impl<T> Scope<T> {
         Ok(symbol_data)
     }
 
-    pub fn get(&self, key: &Rc<String>) -> Option<SymbolData<T>> {
+    pub fn get(&self, key: &str) -> Option<SymbolData<T>> {
         match self.0.as_ref().borrow().get(key) {
             Some(symbol_data) => Some(symbol_data.clone()),
             None => None,
@@ -159,7 +159,7 @@ impl<T> Scope<T> {
     }
 
     // returns symbol table entry and depth of the scope starting from local scope up to parents
-    fn lookup(&self, key: &Rc<String>) -> Option<(SymbolData<T>, usize, bool)> {
+    fn lookup(&self, key: &str) -> Option<(SymbolData<T>, usize, bool)> {
         let scope_ref = self.0.borrow();
         match scope_ref.get(key) {
             Some(value) => Some((value.clone(), 0, self.is_global())),
@@ -176,14 +176,14 @@ impl<T> Scope<T> {
         }
     }
 
-    fn set_to_non_locals(&self, name: &Rc<String>, is_global: Option<bool>) {
+    fn set_to_non_locals(&self, name: String, is_global: Option<bool>) {
         self.0
             .as_ref()
             .borrow_mut()
             .set_to_non_locals(name, is_global);
     }
 
-    fn is_in_non_locals(&self, name: &Rc<String>) -> bool {
+    fn is_in_non_locals(&self, name: &str) -> bool {
         self.0.as_ref().borrow().is_in_non_locals(name)
     }
 }
@@ -230,17 +230,17 @@ impl Namespace {
 
     pub fn lookup_in_variables_namespace(
         &self,
-        key: &Rc<String>,
+        key: &str,
     ) -> Option<(SymbolData<VariableData>, usize, bool)> {
         self.variables.lookup(key)
     }
 
     pub fn lookup_in_variables_namespace_with_is_init(
         &self,
-        key: &Rc<String>,
+        key: &str,
     ) -> VariableLookupResult {
         match self.variables.lookup(key) {
-            Some((symbol_data, depth, is_global)) => {
+            Some((symbol_data, depth, _)) => {
                 if symbol_data.0.as_ref().borrow().is_initialized() {
                     return VariableLookupResult::OK((symbol_data, depth));
                 } else {
@@ -253,26 +253,25 @@ impl Namespace {
 
     pub fn lookup_in_types_namespace(
         &self,
-        key: &Rc<String>,
+        key: &str,
     ) -> Option<(SymbolData<UserDefinedTypeData>, usize, bool)> {
         self.types.lookup(key)
     }
 
     pub fn lookup_in_functions_namespace(
         &self,
-        key: &Rc<String>,
+        key: &str,
     ) -> Option<(SymbolData<FunctionData>, usize, bool)> {
-        // last on `is_global`
         self.functions.lookup(key)
     }
 
     pub fn declare_variable(
         &self,
-        name: &Rc<String>,
+        name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolData<VariableData>, TextRange> {
+    ) -> Result<SymbolData<VariableData>, (String, TextRange)> {
         let lookup_func =
-            |scope: Scope<VariableData>, key: Rc<String>| match scope.0.as_ref().borrow().get(&key)
+            |scope: Scope<VariableData>, key: &str| match scope.0.as_ref().borrow().get(key)
             {
                 Some(symbol_data) => Some(symbol_data.clone()),
                 None => None,
@@ -283,13 +282,13 @@ impl Namespace {
 
     pub fn declare_variable_with_type(
         &self,
-        name: &Rc<String>,
+        name: String,
         variable_type: &Type,
         decl_range: TextRange,
         is_init: bool,
-    ) -> Result<SymbolData<VariableData>, TextRange> {
+    ) -> Result<SymbolData<VariableData>, (String, TextRange)> {
         let lookup_func =
-            |scope: Scope<VariableData>, key: Rc<String>| match scope.0.as_ref().borrow().get(&key)
+            |scope: Scope<VariableData>, key: &str| match scope.0.as_ref().borrow().get(key)
             {
                 Some(symbol_data) => Some(symbol_data.clone()),
                 None => None,
@@ -305,11 +304,11 @@ impl Namespace {
 
     pub fn declare_function(
         &self,
-        name: &Rc<String>,
+        name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolData<FunctionData>, TextRange> {
+    ) -> Result<SymbolData<FunctionData>, (String, TextRange)> {
         let lookup_func =
-            |scope: Scope<FunctionData>, key: Rc<String>| match scope.0.as_ref().borrow().get(&key)
+            |scope: Scope<FunctionData>, key: &str| match scope.0.as_ref().borrow().get(key)
             {
                 Some(symbol_data) => Some(symbol_data.clone()),
                 None => None,
@@ -320,11 +319,11 @@ impl Namespace {
 
     pub fn declare_struct_type(
         &self,
-        name: &Rc<String>,
+        name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolData<UserDefinedTypeData>, TextRange> {
+    ) -> Result<SymbolData<UserDefinedTypeData>, (String, TextRange)> {
         let lookup_func =
-            |scope: Scope<UserDefinedTypeData>, key: Rc<String>| match scope.lookup(&key) {
+            |scope: Scope<UserDefinedTypeData>, key: &str| match scope.lookup(key) {
                 Some((symbol_data, _, _)) => Some(symbol_data),
                 None => None,
             };
@@ -339,11 +338,11 @@ impl Namespace {
 
     pub fn declare_lambda_type(
         &self,
-        name: &Rc<String>,
+        name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolData<UserDefinedTypeData>, TextRange> {
+    ) -> Result<SymbolData<UserDefinedTypeData>, (String, TextRange)> {
         let lookup_func =
-            |scope: Scope<UserDefinedTypeData>, key: Rc<String>| match scope.lookup(&key) {
+            |scope: Scope<UserDefinedTypeData>, key: &str| match scope.lookup(key) {
                 Some((symbol_data, _, _)) => Some(symbol_data),
                 None => None,
             };
@@ -358,13 +357,13 @@ impl Namespace {
 
     pub fn declare_lambda_type_with_meta_data(
         &self,
-        name: &Rc<String>,
+        name: String,
         param_types: Vec<Type>,
         return_type: Type,
         decl_range: TextRange,
-    ) -> Result<SymbolData<UserDefinedTypeData>, TextRange> {
+    ) -> Result<SymbolData<UserDefinedTypeData>, (String, TextRange)> {
         let lookup_func =
-            |scope: Scope<UserDefinedTypeData>, key: Rc<String>| match scope.lookup(&key) {
+            |scope: Scope<UserDefinedTypeData>, key: &str| match scope.lookup(key) {
                 Some((symbol_data, _, _)) => Some(symbol_data),
                 None => None,
             };
@@ -380,20 +379,20 @@ impl Namespace {
         )
     }
 
-    pub fn set_to_variable_non_locals(&self, name: &Rc<String>) {
+    pub fn set_to_variable_non_locals(&self, name: String) {
         // variables are never resolved to global declarations as they are not allowed in Jarvil
         self.variables.set_to_non_locals(name, None);
     }
 
-    pub fn is_variable_in_non_locals(&self, name: &Rc<String>) -> bool {
+    pub fn is_variable_in_non_locals(&self, name: &str) -> bool {
         self.variables.is_in_non_locals(name)
     }
 
-    pub fn set_to_function_non_locals(&self, name: &Rc<String>, is_global: bool) {
+    pub fn set_to_function_non_locals(&self, name: String, is_global: bool) {
         self.functions.set_to_non_locals(name, Some(is_global));
     }
 
-    pub fn is_function_in_non_locals(&self, name: &Rc<String>) -> bool {
+    pub fn is_function_in_non_locals(&self, name: &str) -> bool {
         self.functions.is_in_non_locals(name)
     }
 }
