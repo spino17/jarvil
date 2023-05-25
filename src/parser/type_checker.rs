@@ -96,7 +96,7 @@ pub struct TypeChecker {
 
 pub enum CallableParamsData {
     LAMBDA(Rc<Vec<Type>>),
-    OTHER(Rc<Vec<(Rc<String>, Type)>>),
+    OTHER(Rc<Vec<(String, Type)>>),
 }
 
 impl CallableParamsData {

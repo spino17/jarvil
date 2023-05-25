@@ -81,7 +81,7 @@ impl ToString for Lambda {
                             "lambda type should have reference to a lambda variant symbol entry"
                         ),
                     };
-                let mut params_str = String::from("");
+                let mut params_str = "".to_string();
                 let mut flag = false;
                 for param in self_param_types.as_ref() {
                     if flag {
