@@ -17,6 +17,7 @@ use crate::{
 use rustc_hash::FxHashMap;
 use std::{cell::RefCell, convert::TryInto, rc::Rc};
 
+
 // Utility functions
 pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
     let expected_indent_spaces = context::indent_spaces() * indent_level;
