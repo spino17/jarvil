@@ -14,7 +14,7 @@ use crate::{
     lexer::token::{CoreToken, Token},
     scope::core::IdentifierKind,
 };
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashMap;
 use std::{cell::RefCell, convert::TryInto, rc::Rc};
 
 // Utility functions
@@ -40,6 +40,7 @@ pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<Rc<Vec<Token>>> {
 }
 
 pub fn get_suffix_str_for_identifier(identifier: &OkIdentifierNode) -> &'static str {
+    // suffix are added to identifiers in order to model separate namespaces in Python
     let suffix_str = match &identifier.0.as_ref().borrow().decl {
         Some((ident_kind, _)) => match ident_kind {
             IdentifierKind::VARIABLE(symbol_data) => {
@@ -373,12 +374,14 @@ impl Visitor for PythonCodeGenerator {
                 let core_stmt_wrapper = stmt_wrapper.core_ref();
                 match core_stmt_wrapper {
                     CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(ok_stmt) => {
+                        // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                         self.walk_stmt(ok_stmt);
                     }
                     CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(extra_newlines) => {
                         let core_extra_newlines = extra_newlines.core_ref();
                         for extra_newline in &core_extra_newlines.skipped_tokens {
                             let core_token = &extra_newline.core_ref().skipped_token;
+                            // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                             self.print_token(core_token);
                         }
                     }
@@ -423,10 +426,12 @@ impl Visitor for PythonCodeGenerator {
                 self.print_identifier(identifier);
                 return None;
             }
+            /*
             ASTNode::TOKEN(token) => {
                 self.print_token_node(token);
                 return None;
             }
+             */
             ASTNode::OK_TOKEN(token) => {
                 self.print_token(&token.core_ref().token);
                 return None;
