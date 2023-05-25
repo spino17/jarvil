@@ -36,7 +36,7 @@ pub enum BuildMode {
 pub struct BuildDriver {
     command_line_args: Vec<String>,
     mode: BuildMode,
-    alternate_code_file_name: Option<Rc<String>>,
+    alternate_code_file_name: Option<String>,
 }
 
 impl BuildDriver {
@@ -48,10 +48,10 @@ impl BuildDriver {
         }
     }
 
-    pub fn get_code_file_name(&self) -> Rc<String> {
+    pub fn get_code_file_name(&self) -> String {
         match &self.alternate_code_file_name {
-            Some(file_name) => file_name.clone(),
-            None => Rc::new("main".to_string()),
+            Some(file_name) => file_name.to_string(),
+            None => "main".to_string(),
         }
     }
 
@@ -97,7 +97,7 @@ impl AbstractCommand for BuildDriver {
             return Ok(());
         } else if len == 3 {
             let file_name = check_jarvil_code_file_extension(&self.command_line_args[2])?;
-            self.alternate_code_file_name = Some(Rc::new(file_name));
+            self.alternate_code_file_name = Some(file_name.to_string());
             return Ok(());
         } else {
             return Err(AnyonError::new_with_command(

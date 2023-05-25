@@ -30,7 +30,7 @@ fn check_in_builtin_func_trie(remaining_str: &str, value: Chars) -> bool {
     }
 }
 
-pub fn is_name_in_builtin_func(name: &Rc<String>) -> bool {
+pub fn is_name_in_builtin_func(name: &str) -> bool {
     let mut iter = name.chars();
     match iter.next() {
         Some(c) => match c {

@@ -44,8 +44,8 @@ use std::{rc::Rc, vec};
 use text_size::TextRange;
 
 pub enum ResolveResult {
-    OK(usize),       // depth
-    Err(Rc<String>), // name of the identifier
+    OK(usize),   // depth
+    Err(String), // name of the identifier
 }
 
 pub enum ErrorLoggingTypeKind {
@@ -178,7 +178,7 @@ impl Resolver {
 
     pub fn try_resolving<
         T,
-        U: Fn(&Namespace, &Rc<String>) -> Option<(SymbolData<T>, usize, bool)>,
+        U: Fn(&Namespace, &str) -> Option<(SymbolData<T>, usize, bool)>,
         V: Fn(&OkIdentifierNode, &SymbolData<T>, usize),
     >(
         &mut self,
@@ -186,7 +186,7 @@ impl Resolver {
         lookup_fn: U,
         bind_fn: V,
     ) -> ResolveResult {
-        let name = Rc::new(identifier.token_value(&self.code));
+        let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace, &name) {
             Some((symbol_data, depth, is_global)) => {
                 bind_fn(identifier, &symbol_data, depth);
@@ -233,7 +233,7 @@ impl Resolver {
 
     pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> ResolveResult {
         let lookup_fn =
-            |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_functions_namespace(key);
+            |namespace: &Namespace, key: &str| namespace.lookup_in_functions_namespace(key);
         let bind_fn =
             |identifier: &OkIdentifierNode,
              symbol_data: &SymbolData<FunctionData>,
@@ -246,7 +246,7 @@ impl Resolver {
         identifier: &OkIdentifierNode,
     ) -> ResolveResult {
         let lookup_fn =
-            |namespace: &Namespace, key: &Rc<String>| namespace.lookup_in_types_namespace(key);
+            |namespace: &Namespace, key: &str| namespace.lookup_in_types_namespace(key);
         let bind_fn = |identifier: &OkIdentifierNode,
                        symbol_data: &SymbolData<UserDefinedTypeData>,
                        depth: usize| {
@@ -599,7 +599,7 @@ impl Resolver {
         let func_name = &core_func_decl.name;
         let body = &core_func_decl.body;
         if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
-            let name = Rc::new(ok_identifier.token_value(&self.code));
+            let name = ok_identifier.token_value(&self.code);
             if self.namespace.is_function_in_non_locals(&name) {
                 let err = IdentifierFoundInNonLocalsError::new(
                     IdentKind::FUNCTION,
