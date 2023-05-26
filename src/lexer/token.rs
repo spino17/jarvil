@@ -206,12 +206,12 @@ pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
     pub range: TextRange,
-    pub trivia: Option<Rc<Vec<Token>>>,
+    pub trivia: Option<Vec<Token>>,
 }
 
 impl Token {
     pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
-        self.trivia = Some(Rc::new(trivia_vec));
+        self.trivia = Some(trivia_vec);
     }
 
     pub fn index(&self) -> usize {

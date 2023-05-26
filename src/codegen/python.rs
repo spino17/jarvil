@@ -30,10 +30,10 @@ pub fn get_newline() -> &'static str {
     return "\n";
 }
 
-pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<Rc<Vec<Token>>> {
+pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
     match token.core_ref() {
         CoreTokenNode::OK(ok_token_node) => match &ok_token_node.core_ref().token.trivia {
-            Some(trivia) => return Some(trivia.clone()),
+            Some(trivia) => return Some(trivia),
             None => return None,
         },
         _ => unreachable!(),
@@ -125,7 +125,10 @@ impl PythonCodeGenerator {
     }
 
     pub fn print_token(&mut self, token: &Token) {
-        let trivia = &token.trivia;
+        let trivia = match &token.trivia {
+            Some(trivia) => Some(trivia),
+            None => None
+        };
         self.print_trivia(trivia);
         let token_value = token.token_value(&self.code);
         match token.core_token {
@@ -152,9 +155,9 @@ impl PythonCodeGenerator {
         }
     }
 
-    pub fn print_trivia(&mut self, trivia: &Option<Rc<Vec<Token>>>) {
+    pub fn print_trivia(&mut self, trivia: Option<&Vec<Token>>) {
         if let Some(trivia) = trivia {
-            for trivia_entry in trivia.as_ref() {
+            for trivia_entry in trivia {
                 self.print_token(trivia_entry);
             }
         }
@@ -185,7 +188,10 @@ impl PythonCodeGenerator {
             .core_ref()
             .token
             .clone();
-        let trivia = &token.trivia;
+        let trivia = match &token.trivia {
+            Some(trivia) => Some(trivia),
+            None => None
+        };
         self.print_trivia(trivia);
         self.add_str_to_python_code(&token_value);
     }
@@ -208,7 +214,7 @@ impl PythonCodeGenerator {
         let equal = &core_variable_decl.equal;
         let r_node = &core_variable_decl.r_node;
         let trivia = get_trivia_from_token_node(let_keyword);
-        self.print_trivia(&trivia);
+        self.print_trivia(trivia);
         match r_node.core_ref() {
             CoreRVariableDeclarationNode::EXPRESSION(expr_stmt) => {
                 self.print_identifier_without_trivia(name);
@@ -247,7 +253,7 @@ impl PythonCodeGenerator {
                 let colon = &core_struct_decl.colon;
                 let block = &core_struct_decl.block;
                 let trivia = get_trivia_from_token_node(type_keyword);
-                self.print_trivia(&trivia);
+                self.print_trivia(trivia);
                 self.add_str_to_python_code("class");
                 self.print_identifier(struct_name);
                 self.print_token_node(colon);
