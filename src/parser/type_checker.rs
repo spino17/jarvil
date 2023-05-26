@@ -526,7 +526,7 @@ impl TypeChecker {
         atom_type_obj: &Type,
         property_name: &OkIdentifierNode,
     ) -> StructPropertyCheckResult {
-        let property_name_str = Rc::new(property_name.token_value(&self.code));
+        let property_name_str = property_name.token_value(&self.code);
         match atom_type_obj.0.as_ref() {
             CoreType::STRUCT(struct_type) => {
                 let struct_data = struct_type
@@ -658,7 +658,7 @@ impl TypeChecker {
                             }
                         }
                         StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(struct_data) => {
-                            match struct_data.try_method(&Rc::new(method_name)) {
+                            match struct_data.try_method(&method_name) {
                                 Some((func_data, _)) => {
                                     let expected_params = &func_data.params;
                                     let return_type = &func_data.return_type;

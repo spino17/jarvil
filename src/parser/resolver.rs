@@ -119,7 +119,7 @@ impl Resolver {
         match self
             .namespace
             .functions
-            .get(self.scope_index, &Rc::new("main".to_string()))
+            .get(self.scope_index, "main")
         {
             Some(symbol_data) => {
                 let func_meta_data = &*symbol_data.0.as_ref().borrow();
@@ -265,7 +265,7 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> VariableLookupResult {
-        let name = Rc::new(identifier.token_value(&self.code));
+        let name = identifier.token_value(&self.code);
         match self
             .namespace
             .lookup_in_variables_namespace_with_is_init(self.scope_index, &name)
@@ -285,8 +285,8 @@ impl Resolver {
         &mut self,
         self_keyword: &OkSelfKeywordNode,
     ) -> Option<(SymbolData<VariableData>, usize)> {
-        let name = Rc::new(self_keyword.token_value(&self.code));
-        assert!(name == Rc::new("self".to_string()));
+        let name = self_keyword.token_value(&self.code);
+        assert!(name == "self".to_string());
         match self
             .namespace
             .lookup_in_variables_namespace(self.scope_index, &name)
@@ -575,7 +575,7 @@ impl Resolver {
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            let name = Rc::new(ok_identifier.token_value(&self.code));
+            let name = ok_identifier.token_value(&self.code);
             if self.is_variable_in_non_locals(&name) {
                 let err = IdentifierFoundInNonLocalsError::new(
                     IdentKind::VARIABLE,
@@ -589,7 +589,7 @@ impl Resolver {
                 {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::VARIABLE,
-                        name.to_string(),
+                        name,
                         previous_decl_range,
                         ok_identifier.range(),
                     );
@@ -738,8 +738,8 @@ impl Resolver {
                             "struct name should be resolved to `SymbolData<UserDefinedTypeData>`"
                         ) {
                             Some(symbol_data) => {
-                                let name = Rc::new(ok_identifier.token_value(&self.code));
-                                Type::new_with_struct(name.to_string(), &symbol_data)
+                                let name = ok_identifier.token_value(&self.code);
+                                Type::new_with_struct(name, &symbol_data)
                             }
                             None => unreachable!()
                         }
