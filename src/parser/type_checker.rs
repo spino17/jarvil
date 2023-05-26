@@ -94,20 +94,6 @@ pub struct TypeChecker {
     context: Context,
 }
 
-pub enum CallableParamsData {
-    LAMBDA(Rc<Vec<Type>>),
-    OTHER(Rc<Vec<(String, Type)>>),
-}
-
-impl CallableParamsData {
-    fn len(&self) -> usize {
-        match self {
-            CallableParamsData::LAMBDA(lambda_params_data) => lambda_params_data.len(),
-            CallableParamsData::OTHER(other_params_data) => other_params_data.len(),
-        }
-    }
-}
-
 impl TypeChecker {
     pub fn new(code: &JarvilCode) -> Self {
         TypeChecker {
@@ -328,16 +314,6 @@ impl TypeChecker {
                     if index >= expected_params_len {
                         return ParamsTypeNCountResult::MORE_PARAMS(expected_params_len);
                     }
-                    /*
-                    let expected_params_type_obj = match &expected_param_data {
-                        CallableParamsData::LAMBDA(lambda_data) => {
-                            lambda_data.as_ref()[index].clone()
-                        }
-                        CallableParamsData::OTHER(other_data) => {
-                            other_data.as_ref()[index].1.clone()
-                        }
-                    };
-                     */
                     let expected_param_type = &expected_param_data.as_ref()[index];
                     if !param_type_obj.is_eq(expected_param_type) {
                         mismatch_types_vec.push((
