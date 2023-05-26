@@ -194,7 +194,10 @@ impl TypeChecker {
                     .borrow()
                     .lambda_data(LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG)
                     .clone();
-                return Some((lambda_data.meta_data.params, lambda_data.meta_data.return_type));
+                return Some((
+                    lambda_data.meta_data.params,
+                    lambda_data.meta_data.return_type,
+                ));
             }
             _ => None,
         }
@@ -426,10 +429,7 @@ impl TypeChecker {
                                                 true,
                                             ),
                                         );
-                                        (
-                                            constructor_meta_data.params,
-                                            return_type,
-                                        )
+                                        (constructor_meta_data.params, return_type)
                                     }
                                     UserDefinedTypeData::LAMBDA(_) => {
                                         let type_name = ok_identifier.token_value(&self.code);
@@ -444,7 +444,8 @@ impl TypeChecker {
                                 }
                             }
                         };
-                        let result = self.check_params_type_and_count(&expected_params_data, params);
+                        let result =
+                            self.check_params_type_and_count(&expected_params_data, params);
                         match result {
                             ParamsTypeNCountResult::OK => return return_type,
                             _ => {
@@ -480,10 +481,8 @@ impl TypeChecker {
                                     Some((func_data, _)) => {
                                         let expected_params = func_data.params.clone();
                                         let return_type = func_data.return_type.clone();
-                                        let result = self.check_params_type_and_count(
-                                            &expected_params,
-                                            params,
-                                        );
+                                        let result = self
+                                            .check_params_type_and_count(&expected_params, params);
                                         match result {
                                             ParamsTypeNCountResult::OK => return return_type,
                                             _ => {
@@ -563,10 +562,8 @@ impl TypeChecker {
                 let (atom_type_obj, _) = self.check_atom(atom);
                 match self.is_callable(&atom_type_obj) {
                     Some((expected_param_types, return_type)) => {
-                        let result = self.check_params_type_and_count(
-                            &expected_param_types,
-                            params,
-                        );
+                        let result =
+                            self.check_params_type_and_count(&expected_param_types, params);
                         match result {
                             ParamsTypeNCountResult::OK => {
                                 return (return_type, Some(atom_type_obj))
@@ -635,10 +632,8 @@ impl TypeChecker {
                         StructPropertyCheckResult::PROPERTY_EXIST((_, type_obj)) => {
                             match self.is_callable(&type_obj) {
                                 Some((expected_param_types, return_type)) => {
-                                    let result = self.check_params_type_and_count(
-                                        &expected_param_types,
-                                        params,
-                                    );
+                                    let result = self
+                                        .check_params_type_and_count(&expected_param_types, params);
                                     match result {
                                         ParamsTypeNCountResult::OK => {
                                             return (return_type, Some(atom_type_obj))
@@ -667,10 +662,8 @@ impl TypeChecker {
                                 Some((func_data, _)) => {
                                     let expected_params = &func_data.params;
                                     let return_type = &func_data.return_type;
-                                    let result = self.check_params_type_and_count(
-                                        &expected_params,
-                                        params,
-                                    );
+                                    let result =
+                                        self.check_params_type_and_count(&expected_params, params);
                                     match result {
                                         ParamsTypeNCountResult::OK => {
                                             return (return_type.clone(), Some(atom_type_obj))

@@ -59,9 +59,10 @@ pub fn get_cmd_from_command_line_args(args: Vec<String>) -> Result<AnyonCommand,
         } else if core_cmd.eq("help") {
             return Ok(AnyonCommand::HELP(HelpDriver::new(args)));
         } else {
-            return Err(AnyonError::new_with_command(
-                format!("no such command: {}", core_cmd),
-            ));
+            return Err(AnyonError::new_with_command(format!(
+                "no such command: {}",
+                core_cmd
+            )));
         }
     }
 }

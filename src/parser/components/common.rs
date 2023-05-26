@@ -104,7 +104,6 @@ pub fn callable_body(parser: &mut JarvilParser) -> CallableBodyNode {
                 |token| is_statement_within_function_starting_with(token),
                 |parser| parser.stmt(),
                 &STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
-                BlockKind::FUNC,
             );
             return CallableBodyNode::new(&func_block_node, &colon_node, &callable_prototype);
         }

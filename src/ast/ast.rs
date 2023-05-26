@@ -10,13 +10,16 @@
 use jarvil_macros::Nodify;
 #[macro_use]
 use jarvil_macros::Node;
+use rustc_hash::FxHashMap;
+use rustc_hash::FxHashSet;
 
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
+use crate::parser::resolver::BlockContext;
 use crate::scope::core::IdentifierKind;
 use crate::scope::core::SymbolData;
 use crate::scope::variables::VariableData;
-use crate::{lexer::token::Token, scope::core::Namespace, types::core::Type};
+use crate::{lexer::token::Token, types::core::Type};
 use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
 use text_size::{TextRange, TextSize};
@@ -122,7 +125,7 @@ pub struct CoreBlockNode {
     pub newline: TokenNode,
     pub stmts: Vec<StatemenIndentWrapperNode>,
     // pub scope: Option<Namespace>,
-    pub kind: BlockKind,
+    pub non_locals: (Rc<FxHashSet<String>>, Rc<FxHashMap<String, bool>>), // (variable_non_locals, function_non_locals)
 }
 
 // STATEMENT_INDENT_WRAPPER

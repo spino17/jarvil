@@ -24,7 +24,6 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
     is_starting_with_fn: F,
     statement_parsing_fn: G,
     expected_symbols: &[&'static str],
-    kind: BlockKind,
 ) -> BlockNode {
     let newline_node = parser.expect_terminators();
     parser.set_indent_level(parser.curr_indent_level() + 1);
@@ -49,7 +48,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
             IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
             IndentResultKind::BLOCK_OVER => {
                 parser.set_indent_level(parser.curr_indent_level() - 1);
-                return BlockNode::new(stmts_vec, &newline_node, kind);
+                return BlockNode::new(stmts_vec, &newline_node);
             }
         };
         while !is_starting_with_fn(&parser.curr_token()) {
@@ -71,7 +70,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
         let token = &parser.curr_token();
         if token.is_eq(ENDMARKER) {
             parser.set_indent_level(parser.curr_indent_level() - 1);
-            return BlockNode::new(stmts_vec, &newline_node, kind);
+            return BlockNode::new(stmts_vec, &newline_node);
         }
         if token.is_eq("\n") {
             continue;

@@ -14,9 +14,8 @@ use crate::{
     lexer::token::{CoreToken, Token},
     scope::core::IdentifierKind,
 };
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::{cell::RefCell, convert::TryInto, rc::Rc};
-
 
 // Utility functions
 pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
@@ -111,26 +110,15 @@ impl PythonCodeGenerator {
     pub fn get_non_locals(
         &self,
         block: &BlockNode,
-    ) -> (
-        Rc<RefCell<FxHashMap<String, Option<bool>>>>,
-        Rc<RefCell<FxHashMap<String, Option<bool>>>>,
-    ) {
-        /*
-        let block_scope = match &block.0.as_ref().borrow().scope {
-            Some(scope) => scope.clone(),
-            None => unreachable!(),
-        };
-        let variable_non_locals = block_scope.variables.0.as_ref().borrow().get_non_locals();
-        let func_non_locals = block_scope.functions.0.as_ref().borrow().get_non_locals();
-        (variable_non_locals, func_non_locals)
-         */
-        todo!()
+    ) -> (Rc<FxHashSet<String>>, Rc<FxHashMap<String, bool>>) {
+        let non_locals = &block.0.as_ref().borrow().non_locals;
+        (non_locals.0.clone(), non_locals.1.clone())
     }
 
     pub fn print_token(&mut self, token: &Token) {
         let trivia = match &token.trivia {
             Some(trivia) => Some(trivia),
-            None => None
+            None => None,
         };
         self.print_trivia(trivia);
         let token_value = token.token_value(&self.code);
@@ -193,7 +181,7 @@ impl PythonCodeGenerator {
             .clone();
         let trivia = match &token.trivia {
             Some(trivia) => Some(trivia),
-            None => None
+            None => None,
         };
         self.print_trivia(trivia);
         self.add_str_to_python_code(&token_value);
@@ -344,7 +332,7 @@ impl Visitor for PythonCodeGenerator {
                 let core_block = block.0.as_ref().borrow();
                 self.print_token_node(&core_block.newline);
                 let (variable_non_locals, func_non_locals) = self.get_non_locals(block);
-                for (entry, _) in variable_non_locals.as_ref().borrow().iter() {
+                for entry in variable_non_locals.iter() {
                     let mut variable_name = entry.to_string();
                     variable_name.push_str("_var");
                     self.add_str_to_python_code(&get_whitespaces_from_indent_level(
@@ -352,26 +340,21 @@ impl Visitor for PythonCodeGenerator {
                     ));
                     self.add_str_to_python_code(&format!("nonlocal {}\n", variable_name));
                 }
-                for (entry, is_global) in func_non_locals.as_ref().borrow().iter() {
+                for (entry, &is_global) in func_non_locals.iter() {
                     let mut func_name = entry.to_string();
                     func_name.push_str("_func");
                     self.add_str_to_python_code(&get_whitespaces_from_indent_level(
                         self.indent_level,
                     ));
-                    match is_global {
-                        Some(is_global) => {
-                            if *is_global {
-                                // TODO - if declarations are in global we can completely remove this
-                                // as there are no variable declarations which needs to have proper
-                                // behaviour of non-local assignments but global scope does not have
-                                // any variable declarartions and functions cannot be assigned so
-                                // we can safely remove explicit global statement here
-                                self.add_str_to_python_code(&format!("global {}\n", func_name));
-                            } else {
-                                self.add_str_to_python_code(&format!("nonlocal {}\n", func_name));
-                            }
-                        }
-                        None => unreachable!(),
+                    if is_global {
+                        // TODO - if declarations are in global we can completely remove this
+                        // as there are no variable declarations which needs to have proper
+                        // behaviour of non-local assignments but global scope does not have
+                        // any variable declarartions and functions cannot be assigned so
+                        // we can safely remove explicit global statement here
+                        self.add_str_to_python_code(&format!("global {}\n", func_name));
+                    } else {
+                        self.add_str_to_python_code(&format!("nonlocal {}\n", func_name));
                     }
                 }
                 for stmt in &core_block.stmts {

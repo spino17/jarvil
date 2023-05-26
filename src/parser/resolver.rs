@@ -59,8 +59,14 @@ pub struct ClassContext {
     constructor_initialized_fields: FxHashSet<String>,
 }
 
+pub struct BlockContext {
+    variable_non_locals: FxHashSet<String>,
+    function_non_locals: FxHashMap<String, bool>,
+}
+
 pub struct Context {
     class_context_stack: Vec<ClassContext>,
+    block_context_stack: Vec<BlockContext>,
 }
 
 pub struct Resolver {
@@ -81,13 +87,17 @@ impl Resolver {
             errors: vec![],
             context: Context {
                 class_context_stack: vec![],
+                block_context_stack: vec![BlockContext {
+                    variable_non_locals: FxHashSet::default(),
+                    function_non_locals: FxHashMap::default(),
+                }],
             },
             indent_level: 0,
         }
     }
 
     pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
-        let code_block = ast.0.as_ref().borrow();
+        let code_block = &*ast.0.as_ref().borrow();
         // setting builtin functions to global scope
         self.namespace.functions.force_insert(
             self.scope_index,
@@ -106,7 +116,11 @@ impl Resolver {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        match self.namespace.functions.get(self.scope_index, &Rc::new("main".to_string())) {
+        match self
+            .namespace
+            .functions
+            .get(self.scope_index, &Rc::new("main".to_string()))
+        {
             Some(symbol_data) => {
                 let func_meta_data = &*symbol_data.0.as_ref().borrow();
                 let params = &func_meta_data.params;
@@ -129,15 +143,27 @@ impl Resolver {
         let new_scope_index = self.namespace.open_scope(self.scope_index);
         self.scope_index = new_scope_index;
         self.indent_level = self.indent_level + 1;
+        self.context.block_context_stack.push(BlockContext {
+            variable_non_locals: FxHashSet::default(),
+            function_non_locals: FxHashMap::default(),
+        });
     }
 
-    pub fn close_block(&mut self) {
+    pub fn close_block(&mut self, block: &BlockNode) {
         let parent_scope_index = match self.namespace.parent_scope_index(self.scope_index) {
             Some(parent_scope_index) => parent_scope_index,
-            None => unreachable!()
+            None => unreachable!(),
         };
         self.scope_index = parent_scope_index;
         self.indent_level = self.indent_level - 1;
+        let non_locals = match self.context.block_context_stack.pop() {
+            Some(block_context) => block_context,
+            None => unreachable!(),
+        };
+        block.set_non_locals(
+            non_locals.variable_non_locals,
+            non_locals.function_non_locals,
+        );
     }
 
     pub fn set_curr_class_context_is_containing_self(&mut self, value: bool) {
@@ -182,6 +208,37 @@ impl Resolver {
             return false;
         }
         self.context.class_context_stack[len - 1].is_traversing_constructor
+    }
+
+    pub fn set_to_variable_non_locals(&mut self, name: String) {
+        // variables are never resolved to global declarations as they are not allowed in Jarvil
+        let len = self.context.block_context_stack.len();
+        self.context.block_context_stack[len - 1]
+            .variable_non_locals
+            .insert(name);
+    }
+
+    pub fn is_variable_in_non_locals(&self, name: &str) -> bool {
+        let len = self.context.block_context_stack.len();
+        self.context.block_context_stack[len - 1]
+            .variable_non_locals
+            .get(name)
+            .is_some()
+    }
+
+    pub fn set_to_function_non_locals(&mut self, name: String, is_global: bool) {
+        let len = self.context.block_context_stack.len();
+        self.context.block_context_stack[len - 1]
+            .function_non_locals
+            .insert(name, is_global);
+    }
+
+    pub fn is_function_in_non_locals(&self, name: &str) -> bool {
+        let len = self.context.block_context_stack.len();
+        self.context.block_context_stack[len - 1]
+            .function_non_locals
+            .get(name)
+            .is_some()
     }
 
     pub fn try_resolving<
@@ -230,7 +287,10 @@ impl Resolver {
     ) -> Option<(SymbolData<VariableData>, usize)> {
         let name = Rc::new(self_keyword.token_value(&self.code));
         assert!(name == Rc::new("self".to_string()));
-        match self.namespace.lookup_in_variables_namespace(self.scope_index, &name) {
+        match self
+            .namespace
+            .lookup_in_variables_namespace(self.scope_index, &name)
+        {
             Some((symbol_data, depth, _)) => {
                 self_keyword.bind_decl(&symbol_data, depth);
                 return Some((symbol_data, depth));
@@ -240,8 +300,9 @@ impl Resolver {
     }
 
     pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> ResolveResult {
-        let lookup_fn =
-            |namespace: &Namespace, scope_index: usize, key: &str| namespace.lookup_in_functions_namespace(scope_index, key);
+        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
+            namespace.lookup_in_functions_namespace(scope_index, key)
+        };
         let bind_fn =
             |identifier: &OkIdentifierNode,
              symbol_data: &SymbolData<FunctionData>,
@@ -253,8 +314,9 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> ResolveResult {
-        let lookup_fn =
-            |namespace: &Namespace, scope_index: usize, key: &str| namespace.lookup_in_types_namespace(scope_index, key);
+        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
+            namespace.lookup_in_types_namespace(scope_index, key)
+        };
         let bind_fn = |identifier: &OkIdentifierNode,
                        symbol_data: &SymbolData<UserDefinedTypeData>,
                        depth: usize| {
@@ -274,7 +336,12 @@ impl Resolver {
         bind_fn: V,
     ) -> Option<(String, TextRange)> {
         let name = identifier.token_value(&self.code);
-        let symbol_data = declare_fn(&mut self.namespace, self.scope_index, name, identifier.range());
+        let symbol_data = declare_fn(
+            &mut self.namespace,
+            self.scope_index,
+            name,
+            identifier.range(),
+        );
         match symbol_data {
             Ok(symbol_data) => {
                 bind_fn(identifier, &symbol_data);
@@ -288,30 +355,24 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
-        let declare_fn = |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-            namespace.declare_variable(scope_index, name, decl_range)
-        };
+        let declare_fn =
+            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
+                namespace.declare_variable(scope_index, name, decl_range)
+            };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
             identifier.bind_variable_decl(symbol_data, 0)
         };
-        let name = identifier.token_value(&self.code);
-        let symbol_data = declare_fn(&mut self.namespace, self.scope_index, name, identifier.range());
-        match symbol_data {
-            Ok(symbol_data) => {
-                bind_fn(identifier, &symbol_data);
-                return None;
-            }
-            Err((name, previous_decl_range)) => return Some((name, previous_decl_range)),
-        }
+        self.try_declare_and_bind(identifier, declare_fn, bind_fn)
     }
 
     pub fn try_declare_and_bind_function(
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
-        let declare_fn = |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-            namespace.declare_function(scope_index, name, decl_range)
-        };
+        let declare_fn =
+            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
+                namespace.declare_function(scope_index, name, decl_range)
+            };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<FunctionData>| {
             identifier.bind_function_decl(symbol_data, 0)
         };
@@ -322,9 +383,10 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
-        let declare_fn = |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-            namespace.declare_struct_type(scope_index, name, decl_range)
-        };
+        let declare_fn =
+            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
+                namespace.declare_struct_type(scope_index, name, decl_range)
+            };
         let bind_fn = |identifier: &OkIdentifierNode,
                        symbol_data: &SymbolData<UserDefinedTypeData>| {
             identifier.bind_user_defined_type_decl(symbol_data, 0)
@@ -336,9 +398,10 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
-        let declare_fn = |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-            namespace.declare_lambda_type(scope_index, name, decl_range)
-        };
+        let declare_fn =
+            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
+                namespace.declare_lambda_type(scope_index, name, decl_range)
+            };
         let bind_fn = |identifier: &OkIdentifierNode,
                        symbol_data: &SymbolData<UserDefinedTypeData>| {
             identifier.bind_user_defined_type_decl(symbol_data, 0)
@@ -493,14 +556,14 @@ impl Resolver {
         match core_callable_body_decl {
             CoreCallableBodyNode::OK(ok_callable_body) => {
                 let core_ok_callable_body = ok_callable_body.core_ref();
+                let callable_body = &core_ok_callable_body.block;
                 self.open_block();
                 let (param_types_vec, return_type, return_type_range) =
                     self.declare_callable_prototype(&core_ok_callable_body.prototype);
-                let callable_body = &core_ok_callable_body.block;
                 for stmt in &callable_body.0.as_ref().borrow().stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
-                self.close_block();
+                self.close_block(callable_body);
                 (param_types_vec, return_type, return_type_range)
             }
             CoreCallableBodyNode::MISSING_TOKENS(_) => {
@@ -513,7 +576,7 @@ impl Resolver {
         let core_variable_decl = variable_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(&self.code));
-            if self.namespace.is_variable_in_non_locals(self.scope_index, &name) {
+            if self.is_variable_in_non_locals(&name) {
                 let err = IdentifierFoundInNonLocalsError::new(
                     IdentKind::VARIABLE,
                     ok_identifier.range(),
@@ -607,7 +670,7 @@ impl Resolver {
         let body = &core_func_decl.body;
         if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
-            if self.namespace.is_function_in_non_locals(self.scope_index, &name) {
+            if self.is_function_in_non_locals(&name) {
                 let err = IdentifierFoundInNonLocalsError::new(
                     IdentKind::FUNCTION,
                     ok_identifier.range(),
@@ -654,6 +717,7 @@ impl Resolver {
             constructor_initialized_fields: FxHashSet::default(),
         });
         let core_struct_decl = struct_decl.core_ref();
+        let struct_body = &core_struct_decl.block;
         let struct_type_obj = match core_struct_decl.name.core_ref() {
             CoreIdentifierNode::OK(ok_identifier) => {
                 let temp_struct_type_obj =
@@ -698,8 +762,7 @@ impl Resolver {
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let mut constructor: Option<(FunctionData, TextRange)> = None;
         let mut methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
-        let mut class_methods: FxHashMap<String, (FunctionData, TextRange)> =
-            FxHashMap::default();
+        let mut class_methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
 
         fn is_already_a_method(
             methods: &FxHashMap<String, (FunctionData, TextRange)>,
@@ -714,8 +777,6 @@ impl Resolver {
                 },
             }
         }
-
-        let struct_body = &core_struct_decl.block;
         for stmt in &struct_body.0.as_ref().borrow().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
@@ -745,8 +806,7 @@ impl Resolver {
                                     .push(Diagnostics::IdentifierAlreadyDeclared(err));
                             }
                             None => {
-                                fields_map
-                                    .insert(field_name, (type_obj, ok_identifier.range()));
+                                fields_map.insert(field_name, (type_obj, ok_identifier.range()));
                             }
                         }
                     }
@@ -841,7 +901,7 @@ impl Resolver {
                 _ => unreachable!(),
             }
         }
-        self.close_block();
+        self.close_block(struct_body);
         // TODO - check here whether any fields are missing in constructor_initialized_fields
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             match constructor {
@@ -990,7 +1050,7 @@ impl Visitor for Resolver {
                 for stmt in &core_block.stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
-                self.close_block();
+                self.close_block(block);
                 return None;
             }
             ASTNode::VARIABLE_DECLARATION(variable_decl) => {
@@ -1021,7 +1081,7 @@ impl Visitor for Resolver {
                             match self.try_resolving_variable(ok_identifier) {
                                 VariableLookupResult::OK((_, depth)) => {
                                     if depth > 0 {
-                                        self.namespace.set_to_variable_non_locals(self.scope_index, name);
+                                        self.set_to_variable_non_locals(name);
                                     }
                                 }
                                 VariableLookupResult::NOT_INITIALIZED(decl_range) => {
@@ -1063,15 +1123,21 @@ impl Visitor for Resolver {
                         {
                             // order of namespace search: function => type => variable
                             let name = ok_identifier.token_value(&self.code);
-                            match self.namespace.lookup_in_functions_namespace(self.scope_index, &name) {
+                            match self
+                                .namespace
+                                .lookup_in_functions_namespace(self.scope_index, &name)
+                            {
                                 Some((symbol_data, depth, is_global)) => {
                                     ok_identifier.bind_function_decl(&symbol_data, depth);
                                     // function is resolved to nonlocal scope and should be non-builtin
                                     if depth > 0 && symbol_data.2 {
-                                        self.namespace.set_to_function_non_locals(self.scope_index, name, is_global);
+                                        self.set_to_function_non_locals(name, is_global);
                                     }
                                 }
-                                None => match self.namespace.lookup_in_types_namespace(self.scope_index, &name) {
+                                None => match self
+                                    .namespace
+                                    .lookup_in_types_namespace(self.scope_index, &name)
+                                {
                                     Some((symbol_data, depth, _)) => {
                                         ok_identifier
                                             .bind_user_defined_type_decl(&symbol_data, depth);
@@ -1079,7 +1145,7 @@ impl Visitor for Resolver {
                                     None => match self.try_resolving_variable(ok_identifier) {
                                         VariableLookupResult::OK((_, depth)) => {
                                             if depth > 0 {
-                                                self.namespace.set_to_variable_non_locals(self.scope_index, name);
+                                                self.set_to_variable_non_locals(name);
                                             }
                                         }
                                         VariableLookupResult::NOT_INITIALIZED(decl_range) => {

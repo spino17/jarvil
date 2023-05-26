@@ -324,14 +324,12 @@ impl JarvilParser {
         is_starting_with_fn: F,
         statement_parsing_fn: G,
         expected_symbols: &[&'static str],
-        kind: BlockKind,
     ) -> BlockNode {
         components::block::block(
             self,
             is_starting_with_fn,
             statement_parsing_fn,
             expected_symbols,
-            kind,
         )
     }
 

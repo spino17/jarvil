@@ -460,7 +460,7 @@ impl<T> Clone for SymbolData<T> {
 pub struct CoreScope<T> {
     symbol_table: FxHashMap<String, SymbolData<T>>,
     parent_scope: Option<usize>, // points to the index in the global flattened scope vec
-    non_locals: Rc<RefCell<FxHashMap<String, Option<bool>>>>,
+    // non_locals: Rc<RefCell<FxHashMap<String, Option<bool>>>>,
     is_global: bool,
 }
 
@@ -485,7 +485,11 @@ impl<T> CoreScope<T> {
         self.symbol_table.get(name)
     }
 
-    fn lookup(&self, key: &str, global_scope_vec: &Vec<CoreScope<T>>) -> Option<(SymbolData<T>, usize, bool)> {
+    fn lookup(
+        &self,
+        key: &str,
+        global_scope_vec: &Vec<CoreScope<T>>,
+    ) -> Option<(SymbolData<T>, usize, bool)> {
         match self.get(key) {
             Some(value) => Some((value.clone(), 0, self.is_global)),
             None => {
@@ -501,6 +505,7 @@ impl<T> CoreScope<T> {
         }
     }
 
+    /*
     pub fn set_to_non_locals(&self, name: String, is_global: Option<bool>) {
         self.non_locals
             .as_ref()
@@ -515,12 +520,13 @@ impl<T> CoreScope<T> {
     pub fn get_non_locals(&self) -> Rc<RefCell<FxHashMap<String, Option<bool>>>> {
         self.non_locals.clone()
     }
+     */
 }
 
 #[derive(Debug)]
 // pub struct Scope<T>(pub Rc<RefCell<CoreScope<T>>>);
 pub struct Scope<T> {
-    flattened_vec: Vec<CoreScope<T>>
+    flattened_vec: Vec<CoreScope<T>>,
 }
 
 impl<T> Scope<T> {
@@ -529,9 +535,9 @@ impl<T> Scope<T> {
             flattened_vec: vec![CoreScope {
                 symbol_table: FxHashMap::default(),
                 parent_scope: None,
-                non_locals: Rc::new(RefCell::new(FxHashMap::default())),
+                // non_locals: Rc::new(RefCell::new(FxHashMap::default())),
                 is_global: true,
-            }]
+            }],
         }
     }
 
@@ -541,10 +547,10 @@ impl<T> Scope<T> {
         self.flattened_vec.push(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_scope: Some(parent_scope_index),
-            non_locals: Rc::new(RefCell::new(FxHashMap::default())),
-            is_global: false
+            // non_locals: Rc::new(RefCell::new(FxHashMap::default())),
+            is_global: false,
         });
-        return new_scope_index
+        return new_scope_index;
     }
 
     fn is_global(&self, scope_index: usize) -> bool {
@@ -570,7 +576,7 @@ impl<T> Scope<T> {
         self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required)
     }
 
-    pub fn insert<U: Fn(&Scope<T>, usize, &str) -> Option<SymbolData<T>>> (
+    pub fn insert<U: Fn(&Scope<T>, usize, &str) -> Option<SymbolData<T>>>(
         &mut self,
         scope_index: usize,
         key: String,
@@ -582,7 +588,8 @@ impl<T> Scope<T> {
         if let Some(symbol_data) = lookup_fn(self, scope_index, &key) {
             return Err((key, symbol_data.1));
         }
-        let symbol_data = self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
+        let symbol_data =
+            self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
         Ok(symbol_data)
     }
 
@@ -597,6 +604,7 @@ impl<T> Scope<T> {
         self.flattened_vec[scope_index].lookup(key, &self.flattened_vec)
     }
 
+    /*
     fn set_to_non_locals(&self, scope_index: usize, name: String, is_global: Option<bool>) {
         self.flattened_vec[scope_index].set_to_non_locals(name, is_global);
     }
@@ -604,6 +612,7 @@ impl<T> Scope<T> {
     fn is_in_non_locals(&self, scope_index: usize, name: &str) -> bool {
         self.flattened_vec[scope_index].is_in_non_locals(name)
     }
+     */
 }
 
 #[derive(Debug)]
@@ -691,14 +700,21 @@ impl Namespace {
         name: String,
         decl_range: TextRange,
     ) -> Result<SymbolData<VariableData>, (String, TextRange)> {
-        let lookup_func =
-            |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope.flattened_vec[scope_index].get(key)
-            {
-                Some(symbol_data) => Some(symbol_data.clone()),
-                None => None,
-            };
-        self.variables
-            .insert(scope_index, name, VariableData::default(), decl_range, lookup_func, true)
+        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
+            .flattened_vec[scope_index]
+            .get(key)
+        {
+            Some(symbol_data) => Some(symbol_data.clone()),
+            None => None,
+        };
+        self.variables.insert(
+            scope_index,
+            name,
+            VariableData::default(),
+            decl_range,
+            lookup_func,
+            true,
+        )
     }
 
     pub fn declare_variable_with_type(
@@ -709,12 +725,13 @@ impl Namespace {
         decl_range: TextRange,
         is_init: bool,
     ) -> Result<SymbolData<VariableData>, (String, TextRange)> {
-        let lookup_func =
-            |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope.flattened_vec[scope_index].get(key)
-            {
-                Some(symbol_data) => Some(symbol_data.clone()),
-                None => None,
-            };
+        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
+            .flattened_vec[scope_index]
+            .get(key)
+        {
+            Some(symbol_data) => Some(symbol_data.clone()),
+            None => None,
+        };
         self.variables.insert(
             scope_index,
             name,
@@ -731,14 +748,21 @@ impl Namespace {
         name: String,
         decl_range: TextRange,
     ) -> Result<SymbolData<FunctionData>, (String, TextRange)> {
-        let lookup_func =
-            |scope: &Scope<FunctionData>, scope_index: usize, key: &str| match scope.flattened_vec[scope_index].get(key)
-            {
-                Some(symbol_data) => Some(symbol_data.clone()),
-                None => None,
-            };
-        self.functions
-            .insert(scope_index, name, FunctionData::default(), decl_range, lookup_func, true)
+        let lookup_func = |scope: &Scope<FunctionData>, scope_index: usize, key: &str| match scope
+            .flattened_vec[scope_index]
+            .get(key)
+        {
+            Some(symbol_data) => Some(symbol_data.clone()),
+            None => None,
+        };
+        self.functions.insert(
+            scope_index,
+            name,
+            FunctionData::default(),
+            decl_range,
+            lookup_func,
+            true,
+        )
     }
 
     pub fn declare_struct_type(
@@ -748,7 +772,9 @@ impl Namespace {
         decl_range: TextRange,
     ) -> Result<SymbolData<UserDefinedTypeData>, (String, TextRange)> {
         let lookup_func =
-            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope.lookup(scope_index, key) {
+            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
+                .lookup(scope_index, key)
+            {
                 Some((symbol_data, _, _)) => Some(symbol_data),
                 None => None,
             };
@@ -769,7 +795,9 @@ impl Namespace {
         decl_range: TextRange,
     ) -> Result<SymbolData<UserDefinedTypeData>, (String, TextRange)> {
         let lookup_func =
-            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope.lookup(scope_index, key) {
+            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
+                .lookup(scope_index, key)
+            {
                 Some((symbol_data, _, _)) => Some(symbol_data),
                 None => None,
             };
@@ -792,7 +820,9 @@ impl Namespace {
         decl_range: TextRange,
     ) -> Result<SymbolData<UserDefinedTypeData>, (String, TextRange)> {
         let lookup_func =
-            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope.lookup(scope_index, key) {
+            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
+                .lookup(scope_index, key)
+            {
                 Some((symbol_data, _, _)) => Some(symbol_data),
                 None => None,
             };
@@ -803,7 +833,7 @@ impl Namespace {
                 meta_data: FunctionData {
                     params: Rc::new(param_types),
                     return_type,
-                }
+                },
             }),
             decl_range,
             lookup_func,
@@ -811,6 +841,7 @@ impl Namespace {
         )
     }
 
+    /*
     pub fn set_to_variable_non_locals(&self, scope_index: usize, name: String) {
         // variables are never resolved to global declarations as they are not allowed in Jarvil
         self.variables.set_to_non_locals(scope_index, name, None);
@@ -827,6 +858,7 @@ impl Namespace {
     pub fn is_function_in_non_locals(&self, scope_index: usize, name: &str) -> bool {
         self.functions.is_in_non_locals(scope_index, name)
     }
+     */
 }
 
 impl Default for Namespace {

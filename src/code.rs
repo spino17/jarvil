@@ -2,7 +2,7 @@ use text_size::TextRange;
 
 pub struct JarvilCode {
     code_vec: Vec<char>,
-    code_lines: Option<Vec<usize>>
+    code_lines: Option<Vec<usize>>,
 }
 
 impl JarvilCode {

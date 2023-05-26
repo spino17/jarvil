@@ -12,7 +12,6 @@ pub fn code(parser: &mut JarvilParser, token_vec: Vec<Token>) -> BlockNode {
         |token| is_statement_at_global_scope_starting_with(token),
         |parser| parser.stmt(),
         &STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS,
-        BlockKind::TOP,
     );
     parser.expect(ENDMARKER);
     block_node

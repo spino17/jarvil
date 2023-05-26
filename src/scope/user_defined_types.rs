@@ -91,10 +91,7 @@ impl StructData {
         }
     }
 
-    pub fn try_class_method(
-        &self,
-        class_method_name: &str,
-    ) -> Option<(FunctionData, TextRange)> {
+    pub fn try_class_method(&self, class_method_name: &str) -> Option<(FunctionData, TextRange)> {
         match self.class_methods.as_ref().get(class_method_name) {
             Some(func_data) => Some(func_data.clone()),
             None => None,
@@ -104,7 +101,7 @@ impl StructData {
 
 #[derive(Debug, Clone, Default)]
 pub struct LambdaTypeData {
-    pub meta_data: FunctionData
+    pub meta_data: FunctionData,
 }
 
 impl LambdaTypeData {
@@ -113,7 +110,7 @@ impl LambdaTypeData {
             meta_data: FunctionData {
                 params: Rc::new(param_types),
                 return_type,
-            }
+            },
         }
     }
 

@@ -21,7 +21,6 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 },
                 |parser| parser.struct_stmt(),
                 &[IDENTIFIER, DEF],
-                BlockKind::STRUCT,
             );
             TypeDeclarationNode::new_with_struct(
                 &type_name_node,

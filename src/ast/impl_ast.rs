@@ -44,30 +44,29 @@ use crate::scope::function::FunctionData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::Type;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::{cell::RefCell, rc::Rc};
 use text_size::TextRange;
 use text_size::TextSize;
 
 impl BlockNode {
-    pub fn new(
-        stmts: Vec<StatemenIndentWrapperNode>,
-        newline: &TokenNode,
-        kind: BlockKind,
-    ) -> Self {
+    pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode {
             newline: newline.clone(),
             stmts,
-            // scope: None,
-            kind,
+            non_locals: (Rc::new(FxHashSet::default()), Rc::new(FxHashMap::default())),
         }));
         BlockNode(node)
     }
 
-    /*
-    pub fn set_scope(&self, scope: &Namespace) {
-        self.0.as_ref().borrow_mut().scope = Some(scope.clone());
+    pub fn set_non_locals(
+        &self,
+        variable_non_locals: FxHashSet<String>,
+        function_non_locals: FxHashMap<String, bool>,
+    ) {
+        self.0.as_ref().borrow_mut().non_locals =
+            (Rc::new(variable_non_locals), Rc::new(function_non_locals));
     }
-     */
 }
 
 impl Node for BlockNode {
@@ -912,8 +911,12 @@ impl TypeExpressionNode {
     ) -> TypeResolveKind {
         match self.core_ref() {
             CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_before_resolved(scope, code),
-            CoreTypeExpressionNode::ARRAY(array) => array.type_obj_before_resolved(scope, scope_index, code),
-            CoreTypeExpressionNode::TUPLE(tuple) => tuple.type_obj_before_resolved(scope, scope_index, code),
+            CoreTypeExpressionNode::ARRAY(array) => {
+                array.type_obj_before_resolved(scope, scope_index, code)
+            }
+            CoreTypeExpressionNode::TUPLE(tuple) => {
+                tuple.type_obj_before_resolved(scope, scope_index, code)
+            }
             CoreTypeExpressionNode::HASHMAP(hashmap) => {
                 hashmap.type_obj_before_resolved(scope, scope_index, code)
             }
@@ -1176,14 +1179,14 @@ impl HashMapTypeNode {
         scope_index: usize,
         code: &JarvilCode,
     ) -> TypeResolveKind {
-        let key_result = self
-            .core_ref()
-            .key_type
-            .type_obj_before_resolved(scope, scope_index, code);
-        let value_result = self
-            .core_ref()
-            .value_type
-            .type_obj_before_resolved(scope, scope_index, code);
+        let key_result =
+            self.core_ref()
+                .key_type
+                .type_obj_before_resolved(scope, scope_index, code);
+        let value_result =
+            self.core_ref()
+                .value_type
+                .type_obj_before_resolved(scope, scope_index, code);
         return self.aggregate_key_value_result(key_result, value_result);
     }
 
