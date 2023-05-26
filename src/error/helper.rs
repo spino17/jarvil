@@ -12,6 +12,7 @@ pub enum IdentifierKind {
     METHOD,
     CONSTRUCTOR,
 }
+
 impl Display for IdentifierKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

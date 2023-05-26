@@ -14,7 +14,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
-use crate::scope::core::VariableLookupResult;
+use crate::scope::core::{VariableLookupResult, NamespaceKind};
 use crate::types::core::CoreType;
 use crate::{
     ast::{
@@ -76,8 +76,8 @@ pub struct Resolver {
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
-    ident_binding_table: FxHashMap<OkIdentifierNode, usize>, // binding mapping between `OkIdentifierNode` and `scope_index`
-    self_binding_table: FxHashMap<OkSelfKeywordNode, usize>, // binding mapping between `OkSelfKeywordNode` and `scope_index`
+    identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
+    self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
 }
 
 impl Resolver {
@@ -95,7 +95,7 @@ impl Resolver {
                 }],
             },
             indent_level: 0,
-            ident_binding_table: FxHashMap::default(),
+            identifier_binding_table: FxHashMap::default(),
             self_binding_table: FxHashMap::default(),
         }
     }

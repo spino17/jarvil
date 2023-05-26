@@ -169,6 +169,13 @@ impl<T> Scope<T> {
 }
 
 #[derive(Debug)]
+pub enum NamespaceKind {
+    VARIABLE,
+    TYPE,
+    FUNCTION,
+}
+
+#[derive(Debug)]
 pub struct Namespace {
     pub variables: Scope<VariableData>,
     pub types: Scope<UserDefinedTypeData>,
