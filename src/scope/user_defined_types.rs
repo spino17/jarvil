@@ -102,31 +102,23 @@ impl StructData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct LambdaTypeData {
-    pub param_types: Rc<Vec<Type>>,
-    pub return_type: Type,
-}
-
-impl Default for LambdaTypeData {
-    fn default() -> Self {
-        LambdaTypeData {
-            param_types: Rc::new(vec![]),
-            return_type: Type::new_with_unset(),
-        }
-    }
+    pub meta_data: FunctionData
 }
 
 impl LambdaTypeData {
     pub fn new(param_types: Vec<Type>, return_type: Type) -> Self {
         LambdaTypeData {
-            param_types: Rc::new(param_types),
-            return_type: return_type,
+            meta_data: FunctionData {
+                params: Rc::new(param_types),
+                return_type,
+            }
         }
     }
 
     pub fn set_params_and_return_type(&mut self, param_types: Vec<Type>, return_type: Type) {
-        self.param_types = Rc::new(param_types);
-        self.return_type = return_type;
+        self.meta_data.params = Rc::new(param_types);
+        self.meta_data.return_type = return_type
     }
 }

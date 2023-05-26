@@ -370,8 +370,10 @@ impl Namespace {
         self.types.insert(
             name,
             UserDefinedTypeData::LAMBDA(LambdaTypeData {
-                param_types: Rc::new(param_types),
-                return_type,
+                meta_data: FunctionData {
+                    params: Rc::new(param_types),
+                    return_type,
+                }
             }),
             decl_range,
             lookup_func,

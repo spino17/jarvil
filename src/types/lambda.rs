@@ -28,8 +28,8 @@ impl AbstractType for Lambda {
                 let (self_param_types, self_return_type) =
                     match &*self.symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::LAMBDA(lambda_data) => (
-                            lambda_data.param_types.clone(),
-                            lambda_data.return_type.clone(),
+                            lambda_data.meta_data.params.clone(),
+                            lambda_data.meta_data.return_type.clone(),
                         ),
                         _ => unreachable!(
                             "lambda type should have reference to a lambda variant symbol entry"
@@ -38,8 +38,8 @@ impl AbstractType for Lambda {
                 let (base_param_types, base_return_type) =
                     match &*lambda_data.symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::LAMBDA(lambda_data) => (
-                            lambda_data.param_types.clone(),
-                            lambda_data.return_type.clone(),
+                            lambda_data.meta_data.params.clone(),
+                            lambda_data.meta_data.return_type.clone(),
                         ),
                         _ => unreachable!(
                             "lambda type should have reference to a lambda variant symbol entry"
@@ -74,8 +74,8 @@ impl ToString for Lambda {
                 let (self_param_types, self_return_type) =
                     match &*self.symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::LAMBDA(lambda_data) => (
-                            lambda_data.param_types.clone(),
-                            lambda_data.return_type.clone(),
+                            lambda_data.meta_data.params.clone(),
+                            lambda_data.meta_data.return_type.clone(),
                         ),
                         _ => unreachable!(
                             "lambda type should have reference to a lambda variant symbol entry"

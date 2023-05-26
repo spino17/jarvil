@@ -208,7 +208,7 @@ impl TypeChecker {
                     .borrow()
                     .lambda_data(LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG)
                     .clone();
-                return Some((lambda_data.param_types, lambda_data.return_type));
+                return Some((lambda_data.meta_data.params, lambda_data.meta_data.return_type));
             }
             _ => None,
         }
@@ -314,7 +314,7 @@ impl TypeChecker {
 
     pub fn check_params_type_and_count(
         &mut self,
-        expected_param_data: CallableParamsData,
+        expected_param_data: &Rc<Vec<Type>>,
         received_params: &Option<ParamsNode>,
     ) -> ParamsTypeNCountResult {
         let expected_params_len = expected_param_data.len();
@@ -328,6 +328,7 @@ impl TypeChecker {
                     if index >= expected_params_len {
                         return ParamsTypeNCountResult::MORE_PARAMS(expected_params_len);
                     }
+                    /*
                     let expected_params_type_obj = match &expected_param_data {
                         CallableParamsData::LAMBDA(lambda_data) => {
                             lambda_data.as_ref()[index].clone()
@@ -336,9 +337,11 @@ impl TypeChecker {
                             other_data.as_ref()[index].1.clone()
                         }
                     };
-                    if !param_type_obj.is_eq(&expected_params_type_obj) {
+                     */
+                    let expected_param_type = &expected_param_data.as_ref()[index];
+                    if !param_type_obj.is_eq(expected_param_type) {
                         mismatch_types_vec.push((
-                            expected_params_type_obj.to_string(),
+                            expected_param_type.to_string(),
                             param_type_obj.clone().to_string(),
                             index + 1,
                             received_param.range(),
@@ -405,7 +408,7 @@ impl TypeChecker {
                                 let func_data = func_symbol_data.0.as_ref().borrow().clone();
                                 let expected_params = func_data.params;
                                 let return_type = func_data.return_type;
-                                (CallableParamsData::OTHER(expected_params), return_type)
+                                (expected_params, return_type)
                             }
                             IdentifierKind::VARIABLE(variable_symbol_data) => {
                                 let lambda_type =
@@ -416,8 +419,8 @@ impl TypeChecker {
                                             LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG
                                         ).clone();
                                         (
-                                            CallableParamsData::LAMBDA(lambda_data.param_types),
-                                            lambda_data.return_type,
+                                            lambda_data.meta_data.params,
+                                            lambda_data.meta_data.return_type,
                                         )
                                     }
                                     _ => {
@@ -448,7 +451,7 @@ impl TypeChecker {
                                             ),
                                         );
                                         (
-                                            CallableParamsData::OTHER(constructor_meta_data.params),
+                                            constructor_meta_data.params,
                                             return_type,
                                         )
                                     }
@@ -465,7 +468,7 @@ impl TypeChecker {
                                 }
                             }
                         };
-                        let result = self.check_params_type_and_count(expected_params_data, params);
+                        let result = self.check_params_type_and_count(&expected_params_data, params);
                         match result {
                             ParamsTypeNCountResult::OK => return return_type,
                             _ => {
@@ -502,7 +505,7 @@ impl TypeChecker {
                                         let expected_params = func_data.params.clone();
                                         let return_type = func_data.return_type.clone();
                                         let result = self.check_params_type_and_count(
-                                            CallableParamsData::OTHER(expected_params),
+                                            &expected_params,
                                             params,
                                         );
                                         match result {
@@ -585,7 +588,7 @@ impl TypeChecker {
                 match self.is_callable(&atom_type_obj) {
                     Some((expected_param_types, return_type)) => {
                         let result = self.check_params_type_and_count(
-                            CallableParamsData::LAMBDA(expected_param_types),
+                            &expected_param_types,
                             params,
                         );
                         match result {
@@ -657,7 +660,7 @@ impl TypeChecker {
                             match self.is_callable(&type_obj) {
                                 Some((expected_param_types, return_type)) => {
                                     let result = self.check_params_type_and_count(
-                                        CallableParamsData::LAMBDA(expected_param_types),
+                                        &expected_param_types,
                                         params,
                                     );
                                     match result {
@@ -689,7 +692,7 @@ impl TypeChecker {
                                     let expected_params = &func_data.params;
                                     let return_type = &func_data.return_type;
                                     let result = self.check_params_type_and_count(
-                                        CallableParamsData::OTHER(expected_params.clone()),
+                                        &expected_params,
                                         params,
                                     );
                                     match result {
