@@ -15,7 +15,7 @@ use crate::{
     scope::core::IdentifierKind,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::{cell::RefCell, convert::TryInto, rc::Rc};
+use std::{convert::TryInto, rc::Rc};
 
 // Utility functions
 pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
