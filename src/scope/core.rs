@@ -70,15 +70,16 @@ impl<T> CoreScope<T> {
 
     fn lookup(
         &self,
+        scope_index: usize,
         key: &str,
         global_scope_vec: &Vec<CoreScope<T>>,
-    ) -> Option<(SymbolData<T>, usize, bool)> {
+    ) -> Option<(SymbolData<T>, usize, usize, bool)> {  // (symbol_data, scope_index, depth, is_global)
         match self.get(key) {
-            Some(value) => Some((value.clone(), 0, self.is_global)),
+            Some(value) => Some((value.clone(), scope_index, 0, self.is_global)),
             None => {
                 if let Some(parent_scope_index) = self.parent_scope {
-                    match &global_scope_vec[parent_scope_index].lookup(key, global_scope_vec) {
-                        Some(result) => Some((result.0.clone(), result.1 + 1, result.2)),
+                    match &global_scope_vec[parent_scope_index].lookup(parent_scope_index, key, global_scope_vec) {
+                        Some(result) => Some((result.0.clone(), result.1, result.2 + 1, result.3)),
                         None => None,
                     }
                 } else {
@@ -162,8 +163,8 @@ impl<T> Scope<T> {
         }
     }
 
-    fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, bool)> {
-        self.flattened_vec[scope_index].lookup(key, &self.flattened_vec)
+    fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, usize, bool)> {
+        self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
     }
 }
 
@@ -197,7 +198,7 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<VariableData>, usize, bool)> {
+    ) -> Option<(SymbolData<VariableData>, usize, usize, bool)> {
         self.variables.lookup(scope_index, key)
     }
 
@@ -207,7 +208,7 @@ impl Namespace {
         key: &str,
     ) -> VariableLookupResult {
         match self.variables.lookup(scope_index, key) {
-            Some((symbol_data, depth, _)) => {
+            Some((symbol_data, _, depth, _)) => {
                 if symbol_data.0.as_ref().borrow().is_initialized() {
                     return VariableLookupResult::OK((symbol_data, depth));
                 } else {
@@ -222,7 +223,7 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<UserDefinedTypeData>, usize, bool)> {
+    ) -> Option<(SymbolData<UserDefinedTypeData>, usize, usize, bool)> {
         self.types.lookup(scope_index, key)
     }
 
@@ -230,7 +231,7 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<FunctionData>, usize, bool)> {
+    ) -> Option<(SymbolData<FunctionData>, usize, usize, bool)> {
         self.functions.lookup(scope_index, key)
     }
 
@@ -315,7 +316,7 @@ impl Namespace {
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
             {
-                Some((symbol_data, _, _)) => Some(symbol_data),
+                Some((symbol_data, _, _, _)) => Some(symbol_data),
                 None => None,
             };
         self.types.insert(
@@ -338,7 +339,7 @@ impl Namespace {
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
             {
-                Some((symbol_data, _, _)) => Some(symbol_data),
+                Some((symbol_data, _, _, _)) => Some(symbol_data),
                 None => None,
             };
         self.types.insert(
@@ -363,7 +364,7 @@ impl Namespace {
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
             {
-                Some((symbol_data, _, _)) => Some(symbol_data),
+                Some((symbol_data, _, _, _)) => Some(symbol_data),
                 None => None,
             };
         self.types.insert(

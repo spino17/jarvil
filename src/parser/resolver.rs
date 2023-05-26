@@ -76,6 +76,8 @@ pub struct Resolver {
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
+    ident_binding_table: FxHashMap<OkIdentifierNode, usize>, // binding mapping between `OkIdentifierNode` and `scope_index`
+    self_binding_table: FxHashMap<OkSelfKeywordNode, usize>, // binding mapping between `OkSelfKeywordNode` and `scope_index`
 }
 
 impl Resolver {
@@ -93,6 +95,8 @@ impl Resolver {
                 }],
             },
             indent_level: 0,
+            ident_binding_table: FxHashMap::default(),
+            self_binding_table: FxHashMap::default(),
         }
     }
 
@@ -243,7 +247,7 @@ impl Resolver {
 
     pub fn try_resolving<
         T,
-        U: Fn(&Namespace, usize, &str) -> Option<(SymbolData<T>, usize, bool)>,
+        U: Fn(&Namespace, usize, &str) -> Option<(SymbolData<T>, usize, usize, bool)>,
         V: Fn(&OkIdentifierNode, &SymbolData<T>, usize),
     >(
         &mut self,
@@ -253,7 +257,7 @@ impl Resolver {
     ) -> ResolveResult {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace, self.scope_index, &name) {
-            Some((symbol_data, depth, is_global)) => {
+            Some((symbol_data, _, depth, is_global)) => {
                 bind_fn(identifier, &symbol_data, depth);
                 ResolveResult::OK(depth)
             }
@@ -291,7 +295,7 @@ impl Resolver {
             .namespace
             .lookup_in_variables_namespace(self.scope_index, &name)
         {
-            Some((symbol_data, depth, _)) => {
+            Some((symbol_data, _, depth, _)) => {
                 self_keyword.bind_decl(&symbol_data, depth);
                 return Some((symbol_data, depth));
             }
@@ -1127,7 +1131,7 @@ impl Visitor for Resolver {
                                 .namespace
                                 .lookup_in_functions_namespace(self.scope_index, &name)
                             {
-                                Some((symbol_data, depth, is_global)) => {
+                                Some((symbol_data, _, depth, is_global)) => {
                                     ok_identifier.bind_function_decl(&symbol_data, depth);
                                     // function is resolved to nonlocal scope and should be non-builtin
                                     if depth > 0 && symbol_data.2 {
@@ -1138,7 +1142,7 @@ impl Visitor for Resolver {
                                     .namespace
                                     .lookup_in_types_namespace(self.scope_index, &name)
                                 {
-                                    Some((symbol_data, depth, _)) => {
+                                    Some((symbol_data, _, depth, _)) => {
                                         ok_identifier
                                             .bind_user_defined_type_decl(&symbol_data, depth);
                                     }
