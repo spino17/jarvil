@@ -177,26 +177,6 @@ impl<T> Scope<T> {
         }
     }
 
-    // returns symbol table entry and depth of the scope starting from local scope up to parents
-    /*
-    fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, bool)> {
-        let scope_ref = self.flattened_vec[scope_index];
-        match scope_ref.get(key) {
-            Some(value) => Some((value.clone(), 0, self.is_global(scope_index))),
-            None => {
-                if let Some(parent_scope_index) = &scope_ref.parent_scope {
-                    match &self.flattened_vec[*parent_scope_index].lookup(key) {
-                        Some(result) => Some((result.0.clone(), result.1 + 1, result.2)),
-                        None => None,
-                    }
-                } else {
-                    None
-                }
-            }
-        }
-    }
-     */
-
     fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, bool)> {
         self.flattened_vec[scope_index].lookup(key, &self.flattened_vec)
     }
@@ -227,21 +207,10 @@ impl Namespace {
     }
 
     pub fn open_scope(&mut self, curr_scope_index: usize) -> usize {
-        // self.variables = Scope::new_with_parent_scope(&self.variables);
-        // self.types = Scope::new_with_parent_scope(&self.types);
-        // self.functions = Scope::new_with_parent_scope(&self.functions);
         self.variables.add_new_scope(curr_scope_index);
         self.types.add_new_scope(curr_scope_index);
         self.functions.add_new_scope(curr_scope_index)
     }
-
-    /*
-    pub fn close_scope(&mut self) {
-        set_to_parent_scope!(variables, self);
-        set_to_parent_scope!(types, self);
-        set_to_parent_scope!(functions, self);
-    }
-     */
 
     pub fn variable_scope(&self) -> &Scope<VariableData> {
         &self.variables
@@ -439,18 +408,6 @@ impl Namespace {
         self.functions.is_in_non_locals(scope_index, name)
     }
 }
-
-/*
-impl Clone for Namespace {
-    fn clone(&self) -> Self {
-        Namespace {
-            variables: self.variables.clone(),
-            types: self.types.clone(),
-            functions: self.functions.clone(),
-        }
-    }
-}
- */
 
 impl Default for Namespace {
     fn default() -> Self {

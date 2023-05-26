@@ -121,7 +121,7 @@ pub enum ASTNode {
 pub struct CoreBlockNode {
     pub newline: TokenNode,
     pub stmts: Vec<StatemenIndentWrapperNode>,
-    pub scope: Option<Namespace>,
+    // pub scope: Option<Namespace>,
     pub kind: BlockKind,
 }
 

@@ -115,6 +115,7 @@ impl PythonCodeGenerator {
         Rc<RefCell<FxHashMap<String, Option<bool>>>>,
         Rc<RefCell<FxHashMap<String, Option<bool>>>>,
     ) {
+        /*
         let block_scope = match &block.0.as_ref().borrow().scope {
             Some(scope) => scope.clone(),
             None => unreachable!(),
@@ -122,6 +123,8 @@ impl PythonCodeGenerator {
         let variable_non_locals = block_scope.variables.0.as_ref().borrow().get_non_locals();
         let func_non_locals = block_scope.functions.0.as_ref().borrow().get_non_locals();
         (variable_non_locals, func_non_locals)
+         */
+        todo!()
     }
 
     pub fn print_token(&mut self, token: &Token) {

@@ -70,7 +70,7 @@ impl BuildDriver {
         // name-resolver
         let resolver = Resolver::new(&code);
         let (scope_table, mut semantic_errors) = resolver.resolve_ast(&ast);
-        ast.set_scope(&scope_table);
+        // ast.set_scope(&scope_table);
         errors.append(&mut semantic_errors);
 
         // type-checker

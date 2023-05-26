@@ -65,6 +65,7 @@ pub struct Context {
 
 pub struct Resolver {
     namespace: Namespace,
+    scope_index: usize,
     pub code: JarvilCode,
     errors: Vec<Diagnostics>,
     context: Context,
@@ -75,6 +76,7 @@ impl Resolver {
     pub fn new(code: &JarvilCode) -> Self {
         Resolver {
             namespace: Namespace::new(), // `is_global` will be `true` for this namespace
+            scope_index: 0,
             code: code.clone(),
             errors: vec![],
             context: Context {
@@ -88,12 +90,14 @@ impl Resolver {
         let code_block = ast.0.as_ref().borrow();
         // setting builtin functions to global scope
         self.namespace.functions.force_insert(
+            self.scope_index,
             "print".to_string(),
             print_meta_data(),
             TextRange::default(),
             false,
         );
         self.namespace.functions.force_insert(
+            self.scope_index,
             "range".to_string(),
             range_meta_data(),
             TextRange::default(),
@@ -102,7 +106,7 @@ impl Resolver {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        match self.namespace.functions.get(&Rc::new("main".to_string())) {
+        match self.namespace.functions.get(self.scope_index, &Rc::new("main".to_string())) {
             Some(symbol_data) => {
                 let func_meta_data = &*symbol_data.0.as_ref().borrow();
                 let params = &func_meta_data.params;
@@ -122,13 +126,17 @@ impl Resolver {
     }
 
     pub fn open_block(&mut self) {
-        self.namespace.open_scope();
+        let new_scope_index = self.namespace.open_scope(self.scope_index);
+        self.scope_index = new_scope_index;
         self.indent_level = self.indent_level + 1;
     }
 
-    pub fn close_block(&mut self, body: &BlockNode) {
-        body.set_scope(&self.namespace);
-        self.namespace.close_scope();
+    pub fn close_block(&mut self) {
+        let parent_scope_index = match self.namespace.parent_scope_index(self.scope_index) {
+            Some(parent_scope_index) => parent_scope_index,
+            None => unreachable!()
+        };
+        self.scope_index = parent_scope_index;
         self.indent_level = self.indent_level - 1;
     }
 
@@ -178,7 +186,7 @@ impl Resolver {
 
     pub fn try_resolving<
         T,
-        U: Fn(&Namespace, &str) -> Option<(SymbolData<T>, usize, bool)>,
+        U: Fn(&Namespace, usize, &str) -> Option<(SymbolData<T>, usize, bool)>,
         V: Fn(&OkIdentifierNode, &SymbolData<T>, usize),
     >(
         &mut self,
@@ -187,7 +195,7 @@ impl Resolver {
         bind_fn: V,
     ) -> ResolveResult {
         let name = identifier.token_value(&self.code);
-        match lookup_fn(&self.namespace, &name) {
+        match lookup_fn(&self.namespace, self.scope_index, &name) {
             Some((symbol_data, depth, is_global)) => {
                 bind_fn(identifier, &symbol_data, depth);
                 ResolveResult::OK(depth)
@@ -203,7 +211,7 @@ impl Resolver {
         let name = Rc::new(identifier.token_value(&self.code));
         match self
             .namespace
-            .lookup_in_variables_namespace_with_is_init(&name)
+            .lookup_in_variables_namespace_with_is_init(self.scope_index, &name)
         {
             VariableLookupResult::OK((symbol_data, depth)) => {
                 identifier.bind_variable_decl(&symbol_data, depth);
@@ -222,7 +230,7 @@ impl Resolver {
     ) -> Option<(SymbolData<VariableData>, usize)> {
         let name = Rc::new(self_keyword.token_value(&self.code));
         assert!(name == Rc::new("self".to_string()));
-        match self.namespace.lookup_in_variables_namespace(&name) {
+        match self.namespace.lookup_in_variables_namespace(self.scope_index, &name) {
             Some((symbol_data, depth, _)) => {
                 self_keyword.bind_decl(&symbol_data, depth);
                 return Some((symbol_data, depth));
@@ -233,7 +241,7 @@ impl Resolver {
 
     pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> ResolveResult {
         let lookup_fn =
-            |namespace: &Namespace, key: &str| namespace.lookup_in_functions_namespace(key);
+            |namespace: &Namespace, scope_index: usize, key: &str| namespace.lookup_in_functions_namespace(scope_index, key);
         let bind_fn =
             |identifier: &OkIdentifierNode,
              symbol_data: &SymbolData<FunctionData>,
@@ -246,7 +254,7 @@ impl Resolver {
         identifier: &OkIdentifierNode,
     ) -> ResolveResult {
         let lookup_fn =
-            |namespace: &Namespace, key: &str| namespace.lookup_in_types_namespace(key);
+            |namespace: &Namespace, scope_index: usize, key: &str| namespace.lookup_in_types_namespace(scope_index, key);
         let bind_fn = |identifier: &OkIdentifierNode,
                        symbol_data: &SymbolData<UserDefinedTypeData>,
                        depth: usize| {
@@ -257,7 +265,7 @@ impl Resolver {
 
     pub fn try_declare_and_bind<
         T,
-        U: Fn(&Namespace, String, TextRange) -> Result<SymbolData<T>, (String, TextRange)>,
+        U: Fn(&mut Namespace, usize, String, TextRange) -> Result<SymbolData<T>, (String, TextRange)>,
         V: Fn(&OkIdentifierNode, &SymbolData<T>),
     >(
         &mut self,
@@ -266,7 +274,7 @@ impl Resolver {
         bind_fn: V,
     ) -> Option<(String, TextRange)> {
         let name = identifier.token_value(&self.code);
-        let symbol_data = declare_fn(&self.namespace, name, identifier.range());
+        let symbol_data = declare_fn(&mut self.namespace, self.scope_index, name, identifier.range());
         match symbol_data {
             Ok(symbol_data) => {
                 bind_fn(identifier, &symbol_data);
@@ -280,14 +288,14 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
-        let declare_fn = |namespace: &Namespace, name: String, decl_range: TextRange| {
-            namespace.declare_variable(name, decl_range)
+        let declare_fn = |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
+            namespace.declare_variable(scope_index, name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<VariableData>| {
             identifier.bind_variable_decl(symbol_data, 0)
         };
         let name = identifier.token_value(&self.code);
-        let symbol_data = declare_fn(&self.namespace, name, identifier.range());
+        let symbol_data = declare_fn(&mut self.namespace, self.scope_index, name, identifier.range());
         match symbol_data {
             Ok(symbol_data) => {
                 bind_fn(identifier, &symbol_data);
@@ -301,8 +309,8 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
-        let declare_fn = |namespace: &Namespace, name: String, decl_range: TextRange| {
-            namespace.declare_function(name, decl_range)
+        let declare_fn = |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
+            namespace.declare_function(scope_index, name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode, symbol_data: &SymbolData<FunctionData>| {
             identifier.bind_function_decl(symbol_data, 0)
@@ -314,8 +322,8 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
-        let declare_fn = |namespace: &Namespace, name: String, decl_range: TextRange| {
-            namespace.declare_struct_type(name, decl_range)
+        let declare_fn = |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
+            namespace.declare_struct_type(scope_index, name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode,
                        symbol_data: &SymbolData<UserDefinedTypeData>| {
@@ -328,8 +336,8 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
-        let declare_fn = |namespace: &Namespace, name: String, decl_range: TextRange| {
-            namespace.declare_lambda_type(name, decl_range)
+        let declare_fn = |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
+            namespace.declare_lambda_type(scope_index, name, decl_range)
         };
         let bind_fn = |identifier: &OkIdentifierNode,
                        symbol_data: &SymbolData<UserDefinedTypeData>| {
@@ -373,7 +381,7 @@ impl Resolver {
     }
 
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
-        match type_expr.type_obj_before_resolved(&self.namespace, &self.code) {
+        match type_expr.type_obj_before_resolved(&self.namespace, self.scope_index, &self.code) {
             TypeResolveKind::RESOLVED(type_obj) => {
                 let log_error_fn =
                     |resolver: &mut Resolver, span: TextRange, type_kind: ErrorLoggingTypeKind| {
@@ -439,6 +447,7 @@ impl Resolver {
                     let param_name = ok_identifier.token_value(&self.code);
                     let param_type = self.type_obj_from_expression(&core_param.data_type);
                     let symbol_data = self.namespace.declare_variable_with_type(
+                        self.scope_index,
                         param_name,
                         &param_type,
                         ok_identifier.range(),
@@ -491,7 +500,7 @@ impl Resolver {
                 for stmt in &callable_body.0.as_ref().borrow().stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
-                self.close_block(callable_body);
+                self.close_block();
                 (param_types_vec, return_type, return_type_range)
             }
             CoreCallableBodyNode::MISSING_TOKENS(_) => {
@@ -504,7 +513,7 @@ impl Resolver {
         let core_variable_decl = variable_decl.core_ref();
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(&self.code));
-            if self.namespace.is_variable_in_non_locals(&name) {
+            if self.namespace.is_variable_in_non_locals(self.scope_index, &name) {
                 let err = IdentifierFoundInNonLocalsError::new(
                     IdentKind::VARIABLE,
                     ok_identifier.range(),
@@ -598,7 +607,7 @@ impl Resolver {
         let body = &core_func_decl.body;
         if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
-            if self.namespace.is_function_in_non_locals(&name) {
+            if self.namespace.is_function_in_non_locals(self.scope_index, &name) {
                 let err = IdentifierFoundInNonLocalsError::new(
                     IdentKind::FUNCTION,
                     ok_identifier.range(),
@@ -678,6 +687,7 @@ impl Resolver {
         };
         self.open_block();
         let result = self.namespace.declare_variable_with_type(
+            self.scope_index,
             "self".to_string(),
             &struct_type_obj,
             core_struct_decl.name.range(),
@@ -831,7 +841,7 @@ impl Resolver {
                 _ => unreachable!(),
             }
         }
-        self.close_block(struct_body);
+        self.close_block();
         // TODO - check here whether any fields are missing in constructor_initialized_fields
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             match constructor {
@@ -921,6 +931,7 @@ impl Resolver {
         if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
             let symbol_data = self.namespace.declare_lambda_type_with_meta_data(
+                self.scope_index,
                 name,
                 types_vec,
                 return_type,
@@ -979,7 +990,7 @@ impl Visitor for Resolver {
                 for stmt in &core_block.stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
-                self.close_block(block);
+                self.close_block();
                 return None;
             }
             ASTNode::VARIABLE_DECLARATION(variable_decl) => {
@@ -1010,7 +1021,7 @@ impl Visitor for Resolver {
                             match self.try_resolving_variable(ok_identifier) {
                                 VariableLookupResult::OK((_, depth)) => {
                                     if depth > 0 {
-                                        self.namespace.set_to_variable_non_locals(name);
+                                        self.namespace.set_to_variable_non_locals(self.scope_index, name);
                                     }
                                 }
                                 VariableLookupResult::NOT_INITIALIZED(decl_range) => {
@@ -1052,15 +1063,15 @@ impl Visitor for Resolver {
                         {
                             // order of namespace search: function => type => variable
                             let name = ok_identifier.token_value(&self.code);
-                            match self.namespace.lookup_in_functions_namespace(&name) {
+                            match self.namespace.lookup_in_functions_namespace(self.scope_index, &name) {
                                 Some((symbol_data, depth, is_global)) => {
                                     ok_identifier.bind_function_decl(&symbol_data, depth);
                                     // function is resolved to nonlocal scope and should be non-builtin
                                     if depth > 0 && symbol_data.2 {
-                                        self.namespace.set_to_function_non_locals(name, is_global);
+                                        self.namespace.set_to_function_non_locals(self.scope_index, name, is_global);
                                     }
                                 }
-                                None => match self.namespace.lookup_in_types_namespace(&name) {
+                                None => match self.namespace.lookup_in_types_namespace(self.scope_index, &name) {
                                     Some((symbol_data, depth, _)) => {
                                         ok_identifier
                                             .bind_user_defined_type_decl(&symbol_data, depth);
@@ -1068,7 +1079,7 @@ impl Visitor for Resolver {
                                     None => match self.try_resolving_variable(ok_identifier) {
                                         VariableLookupResult::OK((_, depth)) => {
                                             if depth > 0 {
-                                                self.namespace.set_to_variable_non_locals(name);
+                                                self.namespace.set_to_variable_non_locals(self.scope_index, name);
                                             }
                                         }
                                         VariableLookupResult::NOT_INITIALIZED(decl_range) => {

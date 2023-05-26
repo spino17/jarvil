@@ -57,15 +57,17 @@ impl BlockNode {
         let node = Rc::new(RefCell::new(CoreBlockNode {
             newline: newline.clone(),
             stmts,
-            scope: None,
+            // scope: None,
             kind,
         }));
         BlockNode(node)
     }
 
+    /*
     pub fn set_scope(&self, scope: &Namespace) {
         self.0.as_ref().borrow_mut().scope = Some(scope.clone());
     }
+     */
 }
 
 impl Node for BlockNode {
@@ -905,17 +907,18 @@ impl TypeExpressionNode {
     pub fn type_obj_before_resolved(
         &self,
         scope: &Namespace,
+        scope_index: usize,
         code: &JarvilCode,
     ) -> TypeResolveKind {
         match self.core_ref() {
             CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_before_resolved(scope, code),
-            CoreTypeExpressionNode::ARRAY(array) => array.type_obj_before_resolved(scope, code),
-            CoreTypeExpressionNode::TUPLE(tuple) => tuple.type_obj_before_resolved(scope, code),
+            CoreTypeExpressionNode::ARRAY(array) => array.type_obj_before_resolved(scope, scope_index, code),
+            CoreTypeExpressionNode::TUPLE(tuple) => tuple.type_obj_before_resolved(scope, scope_index, code),
             CoreTypeExpressionNode::HASHMAP(hashmap) => {
-                hashmap.type_obj_before_resolved(scope, code)
+                hashmap.type_obj_before_resolved(scope, scope_index, code)
             }
             CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
-                user_defined.type_obj_before_resolved(scope, code)
+                user_defined.type_obj_before_resolved(scope, scope_index, code)
             }
             CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID,
         }
@@ -990,12 +993,13 @@ impl ArrayTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         scope: &Namespace,
+        scope_index: usize,
         code: &JarvilCode,
     ) -> TypeResolveKind {
         match self
             .core_ref()
             .sub_type
-            .type_obj_before_resolved(scope, code)
+            .type_obj_before_resolved(scope, scope_index, code)
         {
             TypeResolveKind::RESOLVED(element_type) => {
                 return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
@@ -1044,12 +1048,13 @@ impl TupleTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         scope: &Namespace,
+        scope_index: usize,
         code: &JarvilCode,
     ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<OkIdentifierNode> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
-            match ty.type_obj_before_resolved(scope, code) {
+            match ty.type_obj_before_resolved(scope, scope_index, code) {
                 TypeResolveKind::RESOLVED(type_obj) => resolved_types.push(type_obj),
                 TypeResolveKind::UNRESOLVED(mut identifier) => {
                     unresolved_identifiers.append(&mut identifier)
@@ -1168,16 +1173,17 @@ impl HashMapTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         scope: &Namespace,
+        scope_index: usize,
         code: &JarvilCode,
     ) -> TypeResolveKind {
         let key_result = self
             .core_ref()
             .key_type
-            .type_obj_before_resolved(scope, code);
+            .type_obj_before_resolved(scope, scope_index, code);
         let value_result = self
             .core_ref()
             .value_type
-            .type_obj_before_resolved(scope, code);
+            .type_obj_before_resolved(scope, scope_index, code);
         return self.aggregate_key_value_result(key_result, value_result);
     }
 
@@ -1210,11 +1216,12 @@ impl UserDefinedTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         scope: &Namespace,
+        scope_index: usize,
         code: &JarvilCode,
     ) -> TypeResolveKind {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
             let name = Rc::new(ok_identifier.token_value(code));
-            match scope.lookup_in_types_namespace(&name) {
+            match scope.lookup_in_types_namespace(scope_index, &name) {
                 Some((symbol_data, depth, _)) => {
                     let temp_symbol_data = symbol_data.clone();
                     ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
