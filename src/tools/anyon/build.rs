@@ -69,19 +69,12 @@ impl BuildDriver {
 
         // name-resolver
         let resolver = Resolver::new(&code);
-        let (namespace, mut semantic_errors, identifier_binding_table, self_binding_table) =
-            resolver.resolve_ast(&ast);
+        let (namespace_handler, mut semantic_errors) = resolver.resolve_ast(&ast);
         errors.append(&mut semantic_errors);
 
         // type-checker
-        let type_checker = TypeChecker::new(
-            &code,
-            namespace,
-            identifier_binding_table,
-            self_binding_table,
-        );
-        let (mut type_errors, namespace, identifier_binding_table, self_binding_table) =
-            type_checker.check_ast(&ast);
+        let type_checker = TypeChecker::new(&code, namespace_handler);
+        let (mut type_errors, namespace_handler) = type_checker.check_ast(&ast);
 
         errors.append(&mut type_errors);
         if errors.len() > 0 {
@@ -90,12 +83,7 @@ impl BuildDriver {
         }
 
         // Python code-generation
-        let py_generator = PythonCodeGenerator::new(
-            &code,
-            namespace,
-            identifier_binding_table,
-            self_binding_table,
-        );
+        let py_generator = PythonCodeGenerator::new(&code, namespace_handler);
         let py_code = py_generator.generate_python_code(&ast);
         Ok(py_code)
     }

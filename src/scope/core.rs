@@ -16,7 +16,7 @@ pub enum IdentifierKind {
 }
 
 pub enum VariableLookupResult {
-    OK((SymbolData<VariableData>, usize)),
+    OK((SymbolData<VariableData>, usize, usize)),
     NOT_INITIALIZED(TextRange),
     Err,
 }
@@ -48,20 +48,14 @@ pub struct CoreScope<T> {
 }
 
 impl<T> CoreScope<T> {
-    fn set(
-        &mut self,
-        name: String,
-        meta_data: T,
-        decl_range: TextRange,
-        is_suffix_required: bool,
-    ) -> SymbolData<T> {
+    fn set(&mut self, name: String, meta_data: T, decl_range: TextRange, is_suffix_required: bool) {
         let symbol_data = SymbolData(
             Rc::new(RefCell::new(meta_data)),
             decl_range,
             is_suffix_required,
         );
         self.symbol_table.insert(name, symbol_data.clone());
-        symbol_data
+        // symbol_data
     }
 
     pub fn get(&self, name: &str) -> Option<&SymbolData<T>> {
@@ -169,9 +163,9 @@ impl<T> Scope<T> {
         meta_data: T,
         decl_range: TextRange,
         is_suffix_required: bool,
-    ) -> SymbolData<T> {
+    ) {
         // use this method only for builtin function where we know that no entry already exist in the scope
-        self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required)
+        self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
     }
 
     pub fn insert<U: Fn(&Scope<T>, usize, &str) -> Option<TextRange>>(
@@ -182,20 +176,16 @@ impl<T> Scope<T> {
         decl_range: TextRange,
         lookup_fn: U,
         is_suffix_required: bool,
-    ) -> Result<SymbolData<T>, (String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         if let Some(previous_decl_range) = lookup_fn(self, scope_index, &key) {
             return Err((key, previous_decl_range));
         }
-        let symbol_data =
-            self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
-        Ok(symbol_data)
+        self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
+        Ok(())
     }
 
     pub fn get(&self, scope_index: usize, key: &str) -> Option<&SymbolData<T>> {
-        match self.flattened_vec[scope_index].get(key) {
-            Some(symbol_data) => Some(symbol_data),
-            None => None,
-        }
+        self.flattened_vec[scope_index].get(key)
     }
 
     fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, usize, bool)> {
@@ -206,12 +196,17 @@ impl<T> Scope<T> {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(&SymbolData<T>, usize, usize, bool)> {
-        self.flattened_vec[scope_index].lookup_and_get_symbol_data_ref(
+    ) -> Option<(SymbolData<T>, usize, usize, bool)> {
+        match self.flattened_vec[scope_index].lookup_and_get_symbol_data_ref(
             scope_index,
             key,
             &self.flattened_vec,
-        )
+        ) {
+            Some((symbol_data, scope_index, depth, is_global)) => {
+                Some((symbol_data.clone(), scope_index, depth, is_global))
+            }
+            None => None,
+        }
     }
 }
 
@@ -286,9 +281,9 @@ impl Namespace {
         key: &str,
     ) -> VariableLookupResult {
         match self.variables.lookup(scope_index, key) {
-            Some((symbol_data, _, depth, _)) => {
+            Some((symbol_data, resolved_scope_index, depth, _)) => {
                 if symbol_data.0.as_ref().borrow().is_initialized() {
-                    return VariableLookupResult::OK((symbol_data, depth));
+                    return VariableLookupResult::OK((symbol_data, resolved_scope_index, depth));
                 } else {
                     return VariableLookupResult::NOT_INITIALIZED(symbol_data.1.clone());
                 }
@@ -318,7 +313,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolData<VariableData>, (String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
             .flattened_vec[scope_index]
             .get(key)
@@ -343,7 +338,7 @@ impl Namespace {
         variable_type: &Type,
         decl_range: TextRange,
         is_init: bool,
-    ) -> Result<SymbolData<VariableData>, (String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
             .flattened_vec[scope_index]
             .get(key)
@@ -366,7 +361,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolData<FunctionData>, (String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let lookup_func = |scope: &Scope<FunctionData>, scope_index: usize, key: &str| match scope
             .flattened_vec[scope_index]
             .get(key)
@@ -389,7 +384,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolData<UserDefinedTypeData>, (String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let lookup_func =
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
@@ -412,7 +407,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolData<UserDefinedTypeData>, (String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let lookup_func =
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
@@ -437,7 +432,7 @@ impl Namespace {
         param_types: Vec<Type>,
         return_type: Type,
         decl_range: TextRange,
-    ) -> Result<SymbolData<UserDefinedTypeData>, (String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let lookup_func =
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)

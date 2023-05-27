@@ -12,7 +12,10 @@ use crate::{
     code::JarvilCode,
     context,
     lexer::token::{CoreToken, Token},
-    scope::core::{Namespace, NamespaceKind},
+    scope::{
+        core::{Namespace, NamespaceKind},
+        handler::NamespaceHandler,
+    },
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::{convert::TryInto, rc::Rc};
@@ -43,25 +46,16 @@ pub struct PythonCodeGenerator {
     indent_level: usize,
     generate_code: String,
     code: JarvilCode,
-    namespace: Namespace,
-    identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
-    self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
+    namespace_handler: NamespaceHandler,
 }
 
 impl PythonCodeGenerator {
-    pub fn new(
-        code: &JarvilCode,
-        namespace: Namespace,
-        identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
-        self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
-    ) -> PythonCodeGenerator {
+    pub fn new(code: &JarvilCode, namespace_handler: NamespaceHandler) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
             generate_code: "".to_string(),
             code: code.clone(),
-            namespace,
-            identifier_binding_table,
-            self_binding_table,
+            namespace_handler,
         }
     }
 
@@ -99,12 +93,17 @@ impl PythonCodeGenerator {
     }
 
     pub fn get_suffix_str_for_identifier(&self, identifier: &OkIdentifierNode) -> &'static str {
-        match self.identifier_binding_table.get(identifier) {
+        match self
+            .namespace_handler
+            .identifier_binding_table
+            .get(identifier)
+        {
             Some((scope_index, namespace_kind)) => {
                 let name = identifier.token_value(&self.code);
                 match namespace_kind {
                     NamespaceKind::VARIABLE => {
                         match self
+                            .namespace_handler
                             .namespace
                             .get_from_variables_namespace(*scope_index, &name)
                         {
@@ -119,6 +118,7 @@ impl PythonCodeGenerator {
                     }
                     NamespaceKind::FUNCTION => {
                         match self
+                            .namespace_handler
                             .namespace
                             .get_from_functions_namespace(*scope_index, &name)
                         {
@@ -132,7 +132,11 @@ impl PythonCodeGenerator {
                         }
                     }
                     NamespaceKind::TYPE => {
-                        match self.namespace.get_from_types_namespace(*scope_index, &name) {
+                        match self
+                            .namespace_handler
+                            .namespace
+                            .get_from_types_namespace(*scope_index, &name)
+                        {
                             Some(symbol_data) => {
                                 if symbol_data.2 {
                                     return "_ty";

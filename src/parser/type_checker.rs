@@ -44,6 +44,7 @@ use crate::{
     parser::resolver::ErrorLoggingTypeKind,
     scope::{
         core::{IdentifierKind, Namespace, NamespaceKind, SymbolData},
+        handler::{NamespaceHandler, SymbolDataRef},
         user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData},
         variables::VariableData,
     },
@@ -94,65 +95,39 @@ pub struct TypeChecker {
     code: JarvilCode,
     errors: Vec<Diagnostics>,
     context: Context,
-    namespace: Namespace,
-    identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
-    self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
+    // namespace: Namespace,
+    // identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
+    // self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
+    namespace_handler: NamespaceHandler,
 }
 
 impl TypeChecker {
-    pub fn new(
-        code: &JarvilCode,
-        namespace: Namespace,
-        identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
-        self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
-    ) -> Self {
+    pub fn new(code: &JarvilCode, namespace_handler: NamespaceHandler) -> Self {
         TypeChecker {
             code: code.clone(),
             errors: vec![],
             context: Context { func_stack: vec![] },
-            namespace,
-            identifier_binding_table,
-            self_binding_table,
+            namespace_handler,
         }
     }
 
-    pub fn check_ast(
-        mut self,
-        ast: &BlockNode,
-    ) -> (
-        Vec<Diagnostics>,
-        Namespace,
-        FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
-        FxHashMap<OkSelfKeywordNode, usize>,
-    ) {
+    pub fn check_ast(mut self, ast: &BlockNode) -> (Vec<Diagnostics>, NamespaceHandler) {
         let core_block = ast.0.as_ref().borrow();
         for stmt in &core_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        (
-            self.errors,
-            self.namespace,
-            self.identifier_binding_table,
-            self.self_binding_table,
-        )
+        (self.errors, self.namespace_handler)
     }
 
-    pub fn self_keyword_symbol_data(
-        &self,
-        node: &OkSelfKeywordNode,
-    ) -> Option<&SymbolData<VariableData>> {
-        let scope_index = self.self_binding_table.get(node);
-        match scope_index {
-            Some(&scope_index) => match self.namespace.variables.get(scope_index, "self") {
-                Some(symbol_data) => return Some(symbol_data),
-                None => unreachable!(),
-            },
-            None => return None,
-        }
+    pub fn is_resolved(&self, node: &OkIdentifierNode) -> bool {
+        self.namespace_handler
+            .identifier_binding_table
+            .get(node)
+            .is_some()
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
-        match type_expr.type_obj_after_resolved(&self.code) {
+        match type_expr.type_obj_after_resolved(&self.code, &self.namespace_handler) {
             TypeResolveKind::RESOLVED(type_obj) => {
                 type DummyFnType = fn(&mut Resolver, TextRange, ErrorLoggingTypeKind);
                 return Resolver::pre_type_checking::<DummyFnType>(&type_obj, type_expr, None);
@@ -181,7 +156,7 @@ impl TypeChecker {
                 let core_param = param.core_ref();
                 let name = &core_param.name;
                 if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
-                    if ok_identifier.is_resolved() {
+                    if self.is_resolved(ok_identifier) {
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         params_vec.push(type_obj);
                     }
@@ -201,10 +176,10 @@ impl TypeChecker {
                 let params = &prototype.params;
                 let return_type = &prototype.return_type;
                 let (params_vec, return_type) = match lambda_name.core_ref() {
-                    CoreIdentifierNode::OK(ok_identifier) => match ok_identifier
-                        .variable_symbol_data(
-                            "lambda name should be resolved to `SymbolData<VariableData>`",
-                        ) {
+                    CoreIdentifierNode::OK(ok_identifier) => match self
+                        .namespace_handler
+                        .get_variable_symbol_data_ref(ok_identifier, &self.code)
+                    {
                         Some(symbol_data) => {
                             return symbol_data.0.as_ref().borrow().data_type.clone()
                         }
@@ -391,9 +366,10 @@ impl TypeChecker {
         match core_atom_start {
             CoreAtomStartNode::IDENTIFIER(token) => match token.core_ref() {
                 CoreIdentifierNode::OK(ok_identifier) => {
-                    match ok_identifier.variable_symbol_data(
-                        "variable name should be resolved to `SymbolData<VariableData>`",
-                    ) {
+                    match self
+                        .namespace_handler
+                        .get_variable_symbol_data_ref(ok_identifier, &self.code)
+                    {
                         Some(variable_symbol_data) => {
                             return variable_symbol_data.0.as_ref().borrow().data_type.clone()
                         }
@@ -406,7 +382,10 @@ impl TypeChecker {
                 let core_self_keyword = self_keyword.core_ref();
                 match core_self_keyword {
                     CoreSelfKeywordNode::OK(ok_self_keyword) => {
-                        match self.self_keyword_symbol_data(ok_self_keyword) {
+                        match self
+                            .namespace_handler
+                            .get_self_keyword_symbol_data_ref(ok_self_keyword)
+                        {
                             Some(symbol_data) => {
                                 return symbol_data.0.as_ref().borrow().data_type.clone()
                             }
@@ -421,15 +400,18 @@ impl TypeChecker {
                 let func_name = &core_call_expr.function_name;
                 let params = &core_call_expr.params;
                 if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
-                    if let Some(symbol_data) = ok_identifier.symbol_data() {
-                        let (expected_params_data, return_type) = match symbol_data.0 {
-                            IdentifierKind::FUNCTION(func_symbol_data) => {
+                    if let Some(symbol_data) = self
+                        .namespace_handler
+                        .get_symbol_data_ref(ok_identifier, &self.code)
+                    {
+                        let (expected_params_data, return_type) = match symbol_data {
+                            SymbolDataRef::FUNCTION(func_symbol_data) => {
                                 let func_data = func_symbol_data.0.as_ref().borrow().clone();
                                 let expected_params = func_data.params;
                                 let return_type = func_data.return_type;
                                 (expected_params, return_type)
                             }
-                            IdentifierKind::VARIABLE(variable_symbol_data) => {
+                            SymbolDataRef::VARIABLE(variable_symbol_data) => {
                                 let lambda_type =
                                     variable_symbol_data.0.as_ref().borrow().data_type.clone();
                                 match lambda_type.0.as_ref() {
@@ -452,7 +434,7 @@ impl TypeChecker {
                                     }
                                 }
                             }
-                            IdentifierKind::USER_DEFINED_TYPE(user_defined_type_symbol_Data) => {
+                            SymbolDataRef::TYPE(user_defined_type_symbol_Data) => {
                                 let type_decl_range = user_defined_type_symbol_Data.1;
                                 let name = ok_identifier.token_value(&self.code);
                                 match &*user_defined_type_symbol_Data.0.as_ref().borrow() {
@@ -506,9 +488,10 @@ impl TypeChecker {
                 let params = &core_class_method.params;
                 if let CoreIdentifierNode::OK(ok_identifier) = class.core_ref() {
                     let class_name = ok_identifier.token_value(&self.code);
-                    match ok_identifier.user_defined_type_symbol_data(
-                        "classname should be resolved to `SymbolData<UserDefinedTypeData>`",
-                    ) {
+                    match self
+                        .namespace_handler
+                        .get_type_symbol_data_ref(ok_identifier, &self.code)
+                    {
                         Some(type_symbol_data) => match &*type_symbol_data.0.as_ref().borrow() {
                             UserDefinedTypeData::STRUCT(struct_data) => {
                                 let class_method_name = match class_method.core_ref() {
@@ -1082,9 +1065,10 @@ impl TypeChecker {
                 .push(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
         }
         if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-            if let Some(symbol_data) = ok_identifier.variable_symbol_data(
-                "variable name should be resolved to `SymbolData<VariableData>`",
-            ) {
+            if let Some(symbol_data) = self
+                .namespace_handler
+                .get_variable_symbol_data_ref(ok_identifier, &self.code)
+            {
                 symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
             }
         };

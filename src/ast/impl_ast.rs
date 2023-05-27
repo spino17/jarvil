@@ -38,9 +38,11 @@ use crate::ast::ast::Node;
 use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
-use crate::scope::core::IdentifierKind;
+use crate::parser::resolver::Resolver;
+use crate::scope::core::{IdentifierKind, NamespaceKind};
 use crate::scope::core::{Namespace, SymbolData};
 use crate::scope::function::FunctionData;
+use crate::scope::handler::NamespaceHandler;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::Type;
@@ -906,36 +908,47 @@ impl TypeExpressionNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        scope: &Namespace,
+        resolver: &mut Resolver,
         scope_index: usize,
-        code: &JarvilCode,
     ) -> TypeResolveKind {
         match self.core_ref() {
-            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_before_resolved(scope, code),
+            CoreTypeExpressionNode::ATOMIC(atomic) => {
+                atomic.type_obj_before_resolved(&resolver.code)
+            }
             CoreTypeExpressionNode::ARRAY(array) => {
-                array.type_obj_before_resolved(scope, scope_index, code)
+                array.type_obj_before_resolved(resolver, scope_index)
             }
             CoreTypeExpressionNode::TUPLE(tuple) => {
-                tuple.type_obj_before_resolved(scope, scope_index, code)
+                tuple.type_obj_before_resolved(resolver, scope_index)
             }
             CoreTypeExpressionNode::HASHMAP(hashmap) => {
-                hashmap.type_obj_before_resolved(scope, scope_index, code)
+                hashmap.type_obj_before_resolved(resolver, scope_index)
             }
             CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
-                user_defined.type_obj_before_resolved(scope, scope_index, code)
+                user_defined.type_obj_before_resolved(resolver, scope_index)
             }
             CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID,
         }
     }
 
-    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
+    pub fn type_obj_after_resolved(
+        &self,
+        code: &JarvilCode,
+        namespace_handler: &NamespaceHandler,
+    ) -> TypeResolveKind {
         match self.core_ref() {
             CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_after_resolved(code),
-            CoreTypeExpressionNode::ARRAY(array) => array.type_obj_after_resolved(code),
-            CoreTypeExpressionNode::TUPLE(tuple) => tuple.type_obj_after_resolved(code),
-            CoreTypeExpressionNode::HASHMAP(hashmap) => hashmap.type_obj_after_resolved(code),
+            CoreTypeExpressionNode::ARRAY(array) => {
+                array.type_obj_after_resolved(code, namespace_handler)
+            }
+            CoreTypeExpressionNode::TUPLE(tuple) => {
+                tuple.type_obj_after_resolved(code, namespace_handler)
+            }
+            CoreTypeExpressionNode::HASHMAP(hashmap) => {
+                hashmap.type_obj_after_resolved(code, namespace_handler)
+            }
             CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
-                user_defined.type_obj_after_resolved(code)
+                user_defined.type_obj_after_resolved(code, namespace_handler)
             }
             CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID,
         }
@@ -953,11 +966,7 @@ impl AtomicTypeNode {
         AtomicTypeNode(node)
     }
 
-    pub fn type_obj_before_resolved(
-        &self,
-        _scope: &Namespace,
-        code: &JarvilCode,
-    ) -> TypeResolveKind {
+    pub fn type_obj_before_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
         self.type_obj_after_resolved(code)
     }
 
@@ -996,14 +1005,13 @@ impl ArrayTypeNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        scope: &Namespace,
+        resolver: &mut Resolver,
         scope_index: usize,
-        code: &JarvilCode,
     ) -> TypeResolveKind {
         match self
             .core_ref()
             .sub_type
-            .type_obj_before_resolved(scope, scope_index, code)
+            .type_obj_before_resolved(resolver, scope_index)
         {
             TypeResolveKind::RESOLVED(element_type) => {
                 return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
@@ -1015,8 +1023,16 @@ impl ArrayTypeNode {
         }
     }
 
-    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
-        match self.core_ref().sub_type.type_obj_after_resolved(code) {
+    pub fn type_obj_after_resolved(
+        &self,
+        code: &JarvilCode,
+        namespace_handler: &NamespaceHandler,
+    ) -> TypeResolveKind {
+        match self
+            .core_ref()
+            .sub_type
+            .type_obj_after_resolved(code, namespace_handler)
+        {
             TypeResolveKind::RESOLVED(element_type) => {
                 return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
             }
@@ -1051,14 +1067,13 @@ impl TupleTypeNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        scope: &Namespace,
+        resolver: &mut Resolver,
         scope_index: usize,
-        code: &JarvilCode,
     ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<OkIdentifierNode> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
-            match ty.type_obj_before_resolved(scope, scope_index, code) {
+            match ty.type_obj_before_resolved(resolver, scope_index) {
                 TypeResolveKind::RESOLVED(type_obj) => resolved_types.push(type_obj),
                 TypeResolveKind::UNRESOLVED(mut identifier) => {
                     unresolved_identifiers.append(&mut identifier)
@@ -1075,11 +1090,15 @@ impl TupleTypeNode {
         }
     }
 
-    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
+    pub fn type_obj_after_resolved(
+        &self,
+        code: &JarvilCode,
+        namespace_handler: &NamespaceHandler,
+    ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<OkIdentifierNode> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
-            match ty.type_obj_after_resolved(code) {
+            match ty.type_obj_after_resolved(code, namespace_handler) {
                 TypeResolveKind::RESOLVED(type_obj) => resolved_types.push(type_obj),
                 TypeResolveKind::UNRESOLVED(mut identifier) => {
                     unresolved_identifiers.append(&mut identifier)
@@ -1176,24 +1195,33 @@ impl HashMapTypeNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        scope: &Namespace,
+        resolver: &mut Resolver,
         scope_index: usize,
-        code: &JarvilCode,
     ) -> TypeResolveKind {
-        let key_result =
-            self.core_ref()
-                .key_type
-                .type_obj_before_resolved(scope, scope_index, code);
-        let value_result =
-            self.core_ref()
-                .value_type
-                .type_obj_before_resolved(scope, scope_index, code);
+        let key_result = self
+            .core_ref()
+            .key_type
+            .type_obj_before_resolved(resolver, scope_index);
+        let value_result = self
+            .core_ref()
+            .value_type
+            .type_obj_before_resolved(resolver, scope_index);
         return self.aggregate_key_value_result(key_result, value_result);
     }
 
-    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
-        let key_result = self.core_ref().key_type.type_obj_after_resolved(code);
-        let value_result = self.core_ref().value_type.type_obj_after_resolved(code);
+    pub fn type_obj_after_resolved(
+        &self,
+        code: &JarvilCode,
+        namespace_handler: &NamespaceHandler,
+    ) -> TypeResolveKind {
+        let key_result = self
+            .core_ref()
+            .key_type
+            .type_obj_after_resolved(code, namespace_handler);
+        let value_result = self
+            .core_ref()
+            .value_type
+            .type_obj_after_resolved(code, namespace_handler);
         return self.aggregate_key_value_result(key_result, value_result);
     }
 
@@ -1219,29 +1247,34 @@ impl UserDefinedTypeNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        scope: &Namespace,
+        resolver: &mut Resolver,
         scope_index: usize,
-        code: &JarvilCode,
     ) -> TypeResolveKind {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
-            let name = ok_identifier.token_value(code);
-            match scope
+            let name = ok_identifier.token_value(&resolver.code);
+            match resolver
+                .namespace_handler
+                .namespace
                 .types
                 .lookup_and_get_symbol_data_ref(scope_index, &name)
             {
                 Some((symbol_data, resolved_scope_index, depth, _)) => {
-                    ok_identifier.bind_user_defined_type_decl(symbol_data, depth);
+                    resolver.bind_decl_to_identifier(
+                        ok_identifier,
+                        resolved_scope_index,
+                        NamespaceKind::TYPE,
+                    );
                     match &*symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::STRUCT(_) => {
                             return TypeResolveKind::RESOLVED(Type::new_with_struct(
                                 name,
-                                symbol_data,
+                                &symbol_data,
                             ));
                         }
                         UserDefinedTypeData::LAMBDA(_) => {
                             return TypeResolveKind::RESOLVED(Type::new_with_lambda(
                                 Some(name),
-                                symbol_data,
+                                &symbol_data,
                             ));
                         }
                     }
@@ -1252,9 +1285,45 @@ impl UserDefinedTypeNode {
         return TypeResolveKind::INVALID;
     }
 
-    pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
+    pub fn type_obj_after_resolved(
+        &self,
+        code: &JarvilCode,
+        namespace_handler: &NamespaceHandler,
+    ) -> TypeResolveKind {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(code);
+            match namespace_handler
+                .identifier_binding_table
+                .get(ok_identifier)
+            {
+                Some((scope_index, namespace_kind)) => match namespace_kind {
+                    NamespaceKind::TYPE => {
+                        let symbol_data = namespace_handler
+                            .namespace
+                            .get_from_types_namespace(*scope_index, &name);
+                        match symbol_data {
+                            Some(symbol_data) => match &*symbol_data.0.as_ref().borrow() {
+                                UserDefinedTypeData::STRUCT(_) => {
+                                    return TypeResolveKind::RESOLVED(Type::new_with_struct(
+                                        name,
+                                        &symbol_data,
+                                    ));
+                                }
+                                UserDefinedTypeData::LAMBDA(_) => {
+                                    return TypeResolveKind::RESOLVED(Type::new_with_lambda(
+                                        Some(name),
+                                        &symbol_data,
+                                    ));
+                                }
+                            },
+                            None => unreachable!(),
+                        }
+                    }
+                    _ => unreachable!(),
+                },
+                None => return TypeResolveKind::UNRESOLVED(vec![ok_identifier.clone()]),
+            }
+            /*
             match ok_identifier.user_defined_type_symbol_data(
                 "identifier should be resolved to `SymbolData<UserDefinedTypeData>`",
             ) {
@@ -1274,6 +1343,7 @@ impl UserDefinedTypeNode {
                 },
                 None => return TypeResolveKind::UNRESOLVED(vec![ok_identifier.clone()]),
             }
+             */
         }
         return TypeResolveKind::INVALID;
     }
@@ -1920,6 +1990,7 @@ impl OkIdentifierNode {
         self.0.as_ref().token.token_value(code)
     }
 
+    /*
     pub fn bind_variable_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
         todo!()
     }
@@ -1964,6 +2035,7 @@ impl OkIdentifierNode {
     pub fn is_resolved(&self) -> bool {
         todo!()
     }
+     */
 }
 
 impl Node for OkIdentifierNode {
