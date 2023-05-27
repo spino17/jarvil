@@ -69,12 +69,17 @@ impl BuildDriver {
 
         // name-resolver
         let resolver = Resolver::new(&code);
-        let (scope_table, mut semantic_errors) = resolver.resolve_ast(&ast);
-        // ast.set_scope(&scope_table);
+        let (namespace, mut semantic_errors, identifier_binding_table, self_binding_table) =
+            resolver.resolve_ast(&ast);
         errors.append(&mut semantic_errors);
 
         // type-checker
-        let type_checker = TypeChecker::new(&code);
+        let type_checker = TypeChecker::new(
+            &code,
+            namespace,
+            identifier_binding_table,
+            self_binding_table,
+        );
         let mut type_errors = type_checker.check_ast(&ast);
 
         errors.append(&mut type_errors);

@@ -11,7 +11,7 @@ use crate::{
             CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
-            LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode,
+            LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode, OkSelfKeywordNode,
             OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
             ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
             UnaryExpressionNode, VariableDeclarationNode,
@@ -43,14 +43,15 @@ use crate::{
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     parser::resolver::ErrorLoggingTypeKind,
     scope::{
-        core::{IdentifierKind, SymbolData},
-        user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData},
+        core::{IdentifierKind, Namespace, NamespaceKind, SymbolData},
+        user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData}, variables::VariableData,
     },
     types::{
         atomic::Atomic,
         core::{AbstractType, CoreType, Type},
     },
 };
+use rustc_hash::FxHashMap;
 use std::rc::Rc;
 use text_size::TextRange;
 
@@ -92,14 +93,25 @@ pub struct TypeChecker {
     code: JarvilCode,
     errors: Vec<Diagnostics>,
     context: Context,
+    namespace: Namespace,
+    identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
+    self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
 }
 
 impl TypeChecker {
-    pub fn new(code: &JarvilCode) -> Self {
+    pub fn new(
+        code: &JarvilCode,
+        namespace: Namespace,
+        identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
+        self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
+    ) -> Self {
         TypeChecker {
             code: code.clone(),
             errors: vec![],
             context: Context { func_stack: vec![] },
+            namespace,
+            identifier_binding_table,
+            self_binding_table,
         }
     }
 
@@ -109,6 +121,19 @@ impl TypeChecker {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.errors
+    }
+
+    pub fn self_keyword_symbol_data(&self, node: &OkSelfKeywordNode) -> Option<&SymbolData<VariableData>> {
+        let scope_index = self.self_binding_table.get(node);
+        match scope_index {
+            Some(&scope_index) => {
+                match self.namespace.variables.get(scope_index, "self") {
+                    Some(symbol_data) => return Some(symbol_data),
+                    None => unreachable!()
+                }
+            }
+            None => return None
+        }
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
@@ -366,7 +391,7 @@ impl TypeChecker {
                 let core_self_keyword = self_keyword.core_ref();
                 match core_self_keyword {
                     CoreSelfKeywordNode::OK(ok_self_keyword) => {
-                        match ok_self_keyword.symbol_data() {
+                        match self.self_keyword_symbol_data(ok_self_keyword) {
                             Some(symbol_data) => {
                                 return symbol_data.0.as_ref().borrow().data_type.clone()
                             }

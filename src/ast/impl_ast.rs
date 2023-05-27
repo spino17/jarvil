@@ -2017,6 +2017,7 @@ impl OkSelfKeywordNode {
         self.0.as_ref().token.token_value(code)
     }
 
+    /*
     pub fn bind_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
         todo!()
     }
@@ -2027,6 +2028,16 @@ impl OkSelfKeywordNode {
 
     pub fn is_resolved(&self) -> bool {
         todo!()
+    }
+     */
+}
+
+impl Node for OkSelfKeywordNode {
+    fn range(&self) -> TextRange {
+        self.0.as_ref().token.range()
+    }
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().token.start_line_number()
     }
 }
 
@@ -2042,15 +2053,6 @@ impl Hash for OkSelfKeywordNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let ptr = Rc::as_ptr(&self.0);
         ptr.hash(state);
-    }
-}
-
-impl Node for OkSelfKeywordNode {
-    fn range(&self) -> TextRange {
-        self.0.as_ref().token.range()
-    }
-    fn start_line_number(&self) -> usize {
-        self.0.as_ref().token.start_line_number()
     }
 }
 

@@ -161,9 +161,9 @@ impl<T> Scope<T> {
         Ok(symbol_data)
     }
 
-    pub fn get(&self, scope_index: usize, key: &str) -> Option<SymbolData<T>> {
+    pub fn get(&self, scope_index: usize, key: &str) -> Option<&SymbolData<T>> {
         match self.flattened_vec[scope_index].get(key) {
-            Some(symbol_data) => Some(symbol_data.clone()),
+            Some(symbol_data) => Some(symbol_data),
             None => None,
         }
     }

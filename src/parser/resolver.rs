@@ -100,7 +100,15 @@ impl Resolver {
         }
     }
 
-    pub fn resolve_ast(mut self, ast: &BlockNode) -> (Namespace, Vec<Diagnostics>) {
+    pub fn resolve_ast(
+        mut self,
+        ast: &BlockNode,
+    ) -> (
+        Namespace,
+        Vec<Diagnostics>,
+        FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
+        FxHashMap<OkSelfKeywordNode, usize>,
+    ) {
         let code_block = &*ast.0.as_ref().borrow();
         // setting builtin functions to global scope
         self.namespace.functions.force_insert(
@@ -136,7 +144,12 @@ impl Resolver {
                 self.errors.push(Diagnostics::MainFunctionNotFound(err));
             }
         }
-        (self.namespace, self.errors)
+        (
+            self.namespace,
+            self.errors,
+            self.identifier_binding_table,
+            self.self_binding_table,
+        )
     }
 
     pub fn open_block(&mut self) {
@@ -305,8 +318,9 @@ impl Resolver {
             .namespace
             .lookup_in_variables_namespace(self.scope_index, &name)
         {
-            Some((symbol_data, _, depth, _)) => {
-                self_keyword.bind_decl(&symbol_data, depth);
+            Some((symbol_data, scope_index, depth, _)) => {
+                // self_keyword.bind_decl(&symbol_data, depth);
+                self.bind_decl_to_self_keyword(self_keyword, scope_index);
                 return Some((symbol_data, depth));
             }
             None => return None,
