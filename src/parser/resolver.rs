@@ -14,7 +14,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
-use crate::scope::core::{VariableLookupResult, NamespaceKind};
+use crate::scope::core::{NamespaceKind, VariableLookupResult};
 use crate::types::core::CoreType;
 use crate::{
     ast::{
@@ -120,11 +120,7 @@ impl Resolver {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        match self
-            .namespace
-            .functions
-            .get(self.scope_index, "main")
-        {
+        match self.namespace.functions.get(self.scope_index, "main") {
             Some(symbol_data) => {
                 let func_meta_data = &*symbol_data.0.as_ref().borrow();
                 let params = &func_meta_data.params;
@@ -243,6 +239,20 @@ impl Resolver {
             .function_non_locals
             .get(name)
             .is_some()
+    }
+
+    pub fn bind_decl_to_identifier(
+        &mut self,
+        node: &OkIdentifierNode,
+        scope_index: usize,
+        namespace_kind: NamespaceKind,
+    ) {
+        self.identifier_binding_table
+            .insert(node.clone(), (scope_index, namespace_kind));
+    }
+
+    pub fn bind_decl_to_self_keyword(&mut self, node: &OkSelfKeywordNode, scope_index: usize) {
+        self.self_binding_table.insert(node.clone(), scope_index);
     }
 
     pub fn try_resolving<

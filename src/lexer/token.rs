@@ -189,7 +189,7 @@ impl Display for BinaryOperatorKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LexicalErrorKind {
     INVALID_CHAR,
     NO_CLOSING_SYMBOLS(&'static str),

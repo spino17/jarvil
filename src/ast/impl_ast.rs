@@ -45,6 +45,7 @@ use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::Type;
 use rustc_hash::{FxHashMap, FxHashSet};
+use std::hash::{Hash, Hasher};
 use std::{cell::RefCell, rc::Rc};
 use text_size::TextRange;
 use text_size::TextSize;
@@ -1907,20 +1908,18 @@ default_errornous_node_impl!(IdentifierNode, CoreIdentifierNode);
 
 impl OkIdentifierNode {
     pub fn new(token: &OkTokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreOkIdentifierNode {
+        let node = Rc::new(CoreOkIdentifierNode {
             token: token.clone(),
-            decl: None,
-        }));
+        });
         OkIdentifierNode(node)
     }
 
     pub fn token_value(&self, code: &JarvilCode) -> String {
-        self.0.as_ref().borrow().token.token_value(code)
+        self.0.as_ref().token.token_value(code)
     }
 
     pub fn bind_variable_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
-        self.0.as_ref().borrow_mut().decl =
-            Some((IdentifierKind::VARIABLE(symbol_data.clone()), depth));
+        todo!()
     }
 
     pub fn bind_user_defined_type_decl(
@@ -1928,74 +1927,64 @@ impl OkIdentifierNode {
         symbol_data: &SymbolData<UserDefinedTypeData>,
         depth: usize,
     ) {
-        self.0.as_ref().borrow_mut().decl = Some((
-            IdentifierKind::USER_DEFINED_TYPE(symbol_data.clone()),
-            depth,
-        ));
+        todo!()
     }
 
     pub fn bind_function_decl(&self, symbol_data: &SymbolData<FunctionData>, depth: usize) {
-        self.0.as_ref().borrow_mut().decl =
-            Some((IdentifierKind::FUNCTION(symbol_data.clone()), depth));
+        todo!()
     }
 
     pub fn symbol_data(&self) -> Option<(IdentifierKind, usize)> {
-        match &self.0.as_ref().borrow().decl {
-            Some(symbol_data) => Some((symbol_data.0.clone(), symbol_data.1)),
-            None => None,
-        }
+        todo!()
     }
 
     pub fn variable_symbol_data(
         &self,
         panic_message: &'static str,
     ) -> Option<SymbolData<VariableData>> {
-        match &self.0.as_ref().borrow().decl {
-            Some(symbol_data) => match &symbol_data.0 {
-                IdentifierKind::VARIABLE(x) => return Some(x.clone()),
-                _ => unreachable!("{}", panic_message),
-            },
-            None => None,
-        }
+        todo!()
     }
 
     pub fn function_symbol_data(
         &self,
         panic_message: &'static str,
     ) -> Option<SymbolData<FunctionData>> {
-        match &self.0.as_ref().borrow().decl {
-            Some(symbol_data) => match &symbol_data.0 {
-                IdentifierKind::FUNCTION(x) => return Some(x.clone()),
-                _ => unreachable!("{}", panic_message),
-            },
-            None => None,
-        }
+        todo!()
     }
 
     pub fn user_defined_type_symbol_data(
         &self,
         panic_message: &'static str,
     ) -> Option<SymbolData<UserDefinedTypeData>> {
-        match &self.0.as_ref().borrow().decl {
-            Some(symbol_data) => match &symbol_data.0 {
-                IdentifierKind::USER_DEFINED_TYPE(x) => return Some(x.clone()),
-                _ => unreachable!("{}", panic_message),
-            },
-            None => None,
-        }
+        todo!()
     }
 
     pub fn is_resolved(&self) -> bool {
-        self.0.as_ref().borrow().decl.is_some()
+        todo!()
     }
 }
 
 impl Node for OkIdentifierNode {
     fn range(&self) -> TextRange {
-        self.0.as_ref().borrow().token.range()
+        self.0.as_ref().token.range()
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().borrow().token.start_line_number()
+        self.0.as_ref().token.start_line_number()
+    }
+}
+
+impl PartialEq for OkIdentifierNode {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for OkIdentifierNode {}
+
+impl Hash for OkIdentifierNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
     }
 }
 
@@ -2018,39 +2007,50 @@ default_errornous_node_impl!(SelfKeywordNode, CoreSelfKeywordNode);
 
 impl OkSelfKeywordNode {
     pub fn new(token: &OkTokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreOkSelfKeywordNode {
+        let node = Rc::new(CoreOkSelfKeywordNode {
             token: token.clone(),
-            decl: None,
-        }));
+        });
         OkSelfKeywordNode(node)
     }
 
     pub fn token_value(&self, code: &JarvilCode) -> String {
-        self.0.as_ref().borrow().token.token_value(code)
+        self.0.as_ref().token.token_value(code)
     }
 
     pub fn bind_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
-        self.0.as_ref().borrow_mut().decl = Some((symbol_data.clone(), depth));
+        todo!()
     }
 
     pub fn symbol_data(&self) -> Option<SymbolData<VariableData>> {
-        match &self.0.as_ref().borrow().decl {
-            Some((symbol_data, _)) => return Some(symbol_data.clone()),
-            None => return None,
-        }
+        todo!()
     }
 
     pub fn is_resolved(&self) -> bool {
-        self.0.as_ref().borrow().decl.is_some()
+        todo!()
+    }
+}
+
+impl PartialEq for OkSelfKeywordNode {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for OkSelfKeywordNode {}
+
+impl Hash for OkSelfKeywordNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
     }
 }
 
 impl Node for OkSelfKeywordNode {
     fn range(&self) -> TextRange {
-        self.0.as_ref().borrow().token.range()
+        self.0.as_ref().token.range()
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().borrow().token.start_line_number()
+        self.0.as_ref().token.start_line_number()
     }
 }
 

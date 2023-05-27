@@ -802,7 +802,7 @@ pub trait Visitor {
                 }
             }
             ASTNode::OK_IDENTIFIER(ok_identifier) => {
-                self.walk_ok_token(&ok_identifier.0.as_ref().borrow().token);
+                self.walk_ok_token(&ok_identifier.0.as_ref().token);
             }
             ASTNode::SELF_KEYWORD(self_keyword) => {
                 let core_self_keyword = self_keyword.core_ref();
@@ -816,7 +816,7 @@ pub trait Visitor {
                 }
             }
             ASTNode::OK_SELF_KEYWORD(ok_self_keyword) => {
-                self.walk_ok_token(&ok_self_keyword.0.as_ref().borrow().token);
+                self.walk_ok_token(&ok_self_keyword.0.as_ref().token);
             }
             ASTNode::OK_TOKEN(_) => {
                 // do nothing

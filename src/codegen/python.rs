@@ -40,8 +40,9 @@ pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
 }
 
 pub fn get_suffix_str_for_identifier(identifier: &OkIdentifierNode) -> &'static str {
+    /*
     // suffix are added to identifiers in order to model separate namespaces in Python
-    let suffix_str = match &identifier.0.as_ref().borrow().decl {
+    let suffix_str = match &identifier.0.as_ref().decl {
         Some((ident_kind, _)) => match ident_kind {
             IdentifierKind::VARIABLE(symbol_data) => {
                 if symbol_data.2 {
@@ -65,6 +66,8 @@ pub fn get_suffix_str_for_identifier(identifier: &OkIdentifierNode) -> &'static 
         None => "",
     };
     suffix_str
+     */
+    todo!()
 }
 
 pub struct PythonCodeGenerator {
@@ -171,14 +174,7 @@ impl PythonCodeGenerator {
         let suffix_str = get_suffix_str_for_identifier(identifier);
         let mut token_value = identifier.token_value(&self.code);
         token_value.push_str(suffix_str);
-        let token = identifier
-            .0
-            .as_ref()
-            .borrow()
-            .token
-            .core_ref()
-            .token
-            .clone();
+        let token = identifier.0.as_ref().token.core_ref().token.clone();
         let trivia = match &token.trivia {
             Some(trivia) => Some(trivia),
             None => None,

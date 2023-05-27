@@ -605,7 +605,6 @@ pub enum CoreIdentifierNode {
 #[derive(Debug, Clone)]
 pub struct CoreOkIdentifierNode {
     pub token: OkTokenNode,
-    pub decl: Option<(IdentifierKind, usize)>, // (symbol data reference, depth)
 }
 
 #[derive(Debug, Clone, Node)]
@@ -617,7 +616,6 @@ pub enum CoreSelfKeywordNode {
 #[derive(Debug, Clone)]
 pub struct CoreOkSelfKeywordNode {
     pub token: OkTokenNode,
-    pub decl: Option<(SymbolData<VariableData>, usize)>,
 }
 
 // TOKEN
@@ -756,11 +754,11 @@ pub struct OkParamsNode(pub Rc<CoreOkParamsNode>);
 #[derive(Debug, Clone)]
 pub struct IdentifierNode(pub Rc<CoreIdentifierNode>);
 #[derive(Debug, Clone)]
-pub struct OkIdentifierNode(pub Rc<RefCell<CoreOkIdentifierNode>>);
+pub struct OkIdentifierNode(pub Rc<CoreOkIdentifierNode>);
 #[derive(Debug, Clone)]
 pub struct SelfKeywordNode(pub Rc<CoreSelfKeywordNode>);
 #[derive(Debug, Clone)]
-pub struct OkSelfKeywordNode(pub Rc<RefCell<CoreOkSelfKeywordNode>>);
+pub struct OkSelfKeywordNode(pub Rc<CoreOkSelfKeywordNode>);
 #[derive(Debug, Clone)]
 pub struct TokenNode(pub Rc<CoreTokenNode>);
 #[derive(Debug, Clone)]

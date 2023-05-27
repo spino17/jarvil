@@ -73,12 +73,17 @@ impl<T> CoreScope<T> {
         scope_index: usize,
         key: &str,
         global_scope_vec: &Vec<CoreScope<T>>,
-    ) -> Option<(SymbolData<T>, usize, usize, bool)> {  // (symbol_data, scope_index, depth, is_global)
+    ) -> Option<(SymbolData<T>, usize, usize, bool)> {
+        // (symbol_data, scope_index, depth, is_global)
         match self.get(key) {
             Some(value) => Some((value.clone(), scope_index, 0, self.is_global)),
             None => {
                 if let Some(parent_scope_index) = self.parent_scope {
-                    match &global_scope_vec[parent_scope_index].lookup(parent_scope_index, key, global_scope_vec) {
+                    match &global_scope_vec[parent_scope_index].lookup(
+                        parent_scope_index,
+                        key,
+                        global_scope_vec,
+                    ) {
                         Some(result) => Some((result.0.clone(), result.1, result.2 + 1, result.3)),
                         None => None,
                     }
