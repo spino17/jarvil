@@ -10,16 +10,11 @@
 use jarvil_macros::Nodify;
 #[macro_use]
 use jarvil_macros::Node;
-use rustc_hash::FxHashMap;
-use rustc_hash::FxHashSet;
-
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
-use crate::parser::resolver::BlockContext;
-use crate::scope::core::IdentifierKind;
-use crate::scope::core::SymbolData;
-use crate::scope::variables::VariableData;
 use crate::{lexer::token::Token, types::core::Type};
+use rustc_hash::FxHashMap;
+use rustc_hash::FxHashSet;
 use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
 use text_size::{TextRange, TextSize};

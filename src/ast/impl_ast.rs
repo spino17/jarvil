@@ -1225,27 +1225,29 @@ impl UserDefinedTypeNode {
     ) -> TypeResolveKind {
         if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(code);
-            match scope.lookup_in_types_namespace(scope_index, &name) {
-                Some((symbol_data, _, depth, _)) => {
-                    let temp_symbol_data = symbol_data.clone();
-                    ok_identifier.bind_user_defined_type_decl(&temp_symbol_data, depth);
+            match scope
+                .types
+                .lookup_and_get_symbol_data_ref(scope_index, &name)
+            {
+                Some((symbol_data, resolved_scope_index, depth, _)) => {
+                    ok_identifier.bind_user_defined_type_decl(symbol_data, depth);
                     match &*symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::STRUCT(_) => {
                             return TypeResolveKind::RESOLVED(Type::new_with_struct(
                                 name,
-                                &temp_symbol_data,
+                                symbol_data,
                             ));
                         }
                         UserDefinedTypeData::LAMBDA(_) => {
                             return TypeResolveKind::RESOLVED(Type::new_with_lambda(
                                 Some(name),
-                                &temp_symbol_data,
+                                symbol_data,
                             ));
                         }
                     }
                 }
                 None => return TypeResolveKind::UNRESOLVED(vec![ok_identifier.clone()]),
-            };
+            }
         }
         return TypeResolveKind::INVALID;
     }

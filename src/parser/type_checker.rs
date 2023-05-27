@@ -343,7 +343,7 @@ impl TypeChecker {
 
     pub fn check_params_type_and_count(
         &mut self,
-        expected_param_data: &Rc<Vec<Type>>,
+        expected_param_data: &Vec<Type>,
         received_params: &Option<ParamsNode>,
     ) -> ParamsTypeNCountResult {
         let expected_params_len = expected_param_data.len();
@@ -357,7 +357,7 @@ impl TypeChecker {
                     if index >= expected_params_len {
                         return ParamsTypeNCountResult::MORE_PARAMS(expected_params_len);
                     }
-                    let expected_param_type = &expected_param_data.as_ref()[index];
+                    let expected_param_type = &expected_param_data[index];
                     if !param_type_obj.is_eq(expected_param_type) {
                         mismatch_types_vec.push((
                             expected_param_type.to_string(),

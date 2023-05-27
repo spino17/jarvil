@@ -43,7 +43,7 @@ impl<T> Clone for SymbolData<T> {
 #[derive(Debug)]
 pub struct CoreScope<T> {
     symbol_table: FxHashMap<String, SymbolData<T>>,
-    parent_scope: Option<usize>, // points to the index in the global flattened scope vec
+    pub parent_scope: Option<usize>, // points to the index in the global flattened scope vec
     is_global: bool,
 }
 
@@ -68,7 +68,7 @@ impl<T> CoreScope<T> {
         self.symbol_table.get(name)
     }
 
-    fn lookup(
+    pub fn lookup(
         &self,
         scope_index: usize,
         key: &str,
@@ -79,12 +79,14 @@ impl<T> CoreScope<T> {
             Some(value) => Some((value.clone(), scope_index, 0, self.is_global)),
             None => {
                 if let Some(parent_scope_index) = self.parent_scope {
-                    match &global_scope_vec[parent_scope_index].lookup(
+                    match global_scope_vec[parent_scope_index].lookup(
                         parent_scope_index,
                         key,
                         global_scope_vec,
                     ) {
-                        Some(result) => Some((result.0.clone(), result.1, result.2 + 1, result.3)),
+                        Some((symbol_data, resolved_scope_index, depth, range)) => {
+                            Some((symbol_data, resolved_scope_index, depth + 1, range))
+                        }
                         None => None,
                     }
                 } else {
@@ -93,11 +95,39 @@ impl<T> CoreScope<T> {
             }
         }
     }
+
+    pub fn lookup_and_get_symbol_data_ref<'a>(
+        &'a self,
+        scope_index: usize,
+        key: &str,
+        global_scope_vec: &'a Vec<CoreScope<T>>,
+    ) -> Option<(&SymbolData<T>, usize, usize, bool)> {
+        match self.get(key) {
+            Some(value) => return Some((value, scope_index, 0, self.is_global)),
+            None => {
+                let mut curr_scope = self;
+                let mut depth: usize = 1;
+                while let Some(parent_scope_index) = curr_scope.parent_scope {
+                    curr_scope = &global_scope_vec[parent_scope_index];
+                    if let Some(symbol_data) = curr_scope.get(key) {
+                        return Some((
+                            symbol_data,
+                            parent_scope_index,
+                            depth,
+                            curr_scope.is_global,
+                        ));
+                    }
+                    depth = depth + 1;
+                }
+                return None;
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct Scope<T> {
-    flattened_vec: Vec<CoreScope<T>>,
+    pub flattened_vec: Vec<CoreScope<T>>,
 }
 
 impl<T> Scope<T> {
@@ -144,7 +174,7 @@ impl<T> Scope<T> {
         self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required)
     }
 
-    pub fn insert<U: Fn(&Scope<T>, usize, &str) -> Option<SymbolData<T>>>(
+    pub fn insert<U: Fn(&Scope<T>, usize, &str) -> Option<TextRange>>(
         &mut self,
         scope_index: usize,
         key: String,
@@ -153,8 +183,8 @@ impl<T> Scope<T> {
         lookup_fn: U,
         is_suffix_required: bool,
     ) -> Result<SymbolData<T>, (String, TextRange)> {
-        if let Some(symbol_data) = lookup_fn(self, scope_index, &key) {
-            return Err((key, symbol_data.1));
+        if let Some(previous_decl_range) = lookup_fn(self, scope_index, &key) {
+            return Err((key, previous_decl_range));
         }
         let symbol_data =
             self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
@@ -170,6 +200,18 @@ impl<T> Scope<T> {
 
     fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, usize, bool)> {
         self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
+    }
+
+    pub fn lookup_and_get_symbol_data_ref(
+        &self,
+        scope_index: usize,
+        key: &str,
+    ) -> Option<(&SymbolData<T>, usize, usize, bool)> {
+        self.flattened_vec[scope_index].lookup_and_get_symbol_data_ref(
+            scope_index,
+            key,
+            &self.flattened_vec,
+        )
     }
 }
 
@@ -281,7 +323,7 @@ impl Namespace {
             .flattened_vec[scope_index]
             .get(key)
         {
-            Some(symbol_data) => Some(symbol_data.clone()),
+            Some(symbol_data) => Some(symbol_data.1),
             None => None,
         };
         self.variables.insert(
@@ -306,7 +348,7 @@ impl Namespace {
             .flattened_vec[scope_index]
             .get(key)
         {
-            Some(symbol_data) => Some(symbol_data.clone()),
+            Some(symbol_data) => Some(symbol_data.1),
             None => None,
         };
         self.variables.insert(
@@ -329,7 +371,7 @@ impl Namespace {
             .flattened_vec[scope_index]
             .get(key)
         {
-            Some(symbol_data) => Some(symbol_data.clone()),
+            Some(symbol_data) => Some(symbol_data.1),
             None => None,
         };
         self.functions.insert(
@@ -352,7 +394,7 @@ impl Namespace {
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
             {
-                Some((symbol_data, _, _, _)) => Some(symbol_data),
+                Some((symbol_data, _, _, _)) => Some(symbol_data.1),
                 None => None,
             };
         self.types.insert(
@@ -375,7 +417,7 @@ impl Namespace {
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
             {
-                Some((symbol_data, _, _, _)) => Some(symbol_data),
+                Some((symbol_data, _, _, _)) => Some(symbol_data.1),
                 None => None,
             };
         self.types.insert(
@@ -400,7 +442,7 @@ impl Namespace {
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
             {
-                Some((symbol_data, _, _, _)) => Some(symbol_data),
+                Some((symbol_data, _, _, _)) => Some(symbol_data.1),
                 None => None,
             };
         self.types.insert(
