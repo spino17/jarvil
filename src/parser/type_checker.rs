@@ -43,7 +43,7 @@ use crate::{
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     parser::resolver::ErrorLoggingTypeKind,
     scope::{
-        core::{IdentifierKind, Namespace, NamespaceKind, SymbolData},
+        core::{Namespace, NamespaceKind, SymbolData},
         handler::{NamespaceHandler, SymbolDataRef},
         user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData},
         variables::VariableData,
@@ -53,7 +53,6 @@ use crate::{
         core::{AbstractType, CoreType, Type},
     },
 };
-use rustc_hash::FxHashMap;
 use std::rc::Rc;
 use text_size::TextRange;
 
@@ -72,8 +71,8 @@ pub enum AtomicTokenExprKind {
 }
 
 pub enum StructPropertyCheckResult {
-    PROPERTY_EXIST((StructData, Type)),
-    PROPERTY_DOES_NOT_EXIST(StructData),
+    PROPERTY_EXIST(Type),
+    PROPERTY_DOES_NOT_EXIST,
     NON_STRUCT_TYPE,
 }
 
@@ -551,25 +550,17 @@ impl TypeChecker {
     ) -> StructPropertyCheckResult {
         let property_name_str = property_name.token_value(&self.code);
         match atom_type_obj.0.as_ref() {
-            CoreType::STRUCT(struct_type) => {
-                let struct_data = struct_type
-                    .symbol_data
-                    .0
-                    .as_ref()
-                    .borrow()
-                    .struct_data(STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG)
-                    .clone();
-                match struct_data.try_field(&property_name_str) {
-                    Some((type_obj, _)) => {
-                        return StructPropertyCheckResult::PROPERTY_EXIST((struct_data, type_obj))
-                    }
-                    None => {
-                        return StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(
-                            struct_data.clone(),
-                        )
+            CoreType::STRUCT(struct_type) => match &*struct_type.symbol_data.0.as_ref().borrow() {
+                UserDefinedTypeData::STRUCT(struct_data) => {
+                    match struct_data.try_field(&property_name_str) {
+                        Some((type_obj, _)) => {
+                            return StructPropertyCheckResult::PROPERTY_EXIST(type_obj)
+                        }
+                        None => return StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST,
                     }
                 }
-            }
+                _ => unreachable!(),
+            },
             _ => return StructPropertyCheckResult::NON_STRUCT_TYPE,
         }
     }
@@ -612,10 +603,10 @@ impl TypeChecker {
                 if let CoreIdentifierNode::OK(ok_identifier) = property.core_ref() {
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     match result {
-                        StructPropertyCheckResult::PROPERTY_EXIST((_, type_obj)) => {
+                        StructPropertyCheckResult::PROPERTY_EXIST(type_obj) => {
                             return (type_obj, Some(atom_type_obj))
                         }
-                        StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(_) => {
+                        StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::FIELD,
                                 atom_type_obj.clone(),
@@ -652,7 +643,7 @@ impl TypeChecker {
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     let method_name = ok_identifier.token_value(&self.code);
                     match result {
-                        StructPropertyCheckResult::PROPERTY_EXIST((_, type_obj)) => {
+                        StructPropertyCheckResult::PROPERTY_EXIST(type_obj) => {
                             match self.is_callable(&type_obj) {
                                 Some((expected_param_types, return_type)) => {
                                     let result = self
@@ -680,36 +671,59 @@ impl TypeChecker {
                                 }
                             }
                         }
-                        StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST(struct_data) => {
-                            match struct_data.try_method(&method_name) {
-                                Some((func_data, _)) => {
-                                    let expected_params = &func_data.params;
-                                    let return_type = &func_data.return_type;
-                                    let result =
-                                        self.check_params_type_and_count(&expected_params, params);
-                                    match result {
-                                        ParamsTypeNCountResult::OK => {
-                                            return (return_type.clone(), Some(atom_type_obj))
+                        StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST => {
+                            match atom_type_obj.0.as_ref() {
+                                CoreType::STRUCT(struct_type) => {
+                                    match &*struct_type.symbol_data.0.as_ref().borrow() {
+                                        UserDefinedTypeData::STRUCT(struct_data) => {
+                                            match struct_data.try_method(&method_name) {
+                                                Some((func_data, _)) => {
+                                                    let expected_params = &func_data.params;
+                                                    let return_type = &func_data.return_type;
+                                                    let result = self.check_params_type_and_count(
+                                                        &expected_params,
+                                                        params,
+                                                    );
+                                                    match result {
+                                                        ParamsTypeNCountResult::OK => {
+                                                            return (
+                                                                return_type.clone(),
+                                                                Some(atom_type_obj.clone()),
+                                                            )
+                                                        }
+                                                        _ => {
+                                                            self.log_params_type_and_count_check_error(
+                                                                method.range(),
+                                                                result,
+                                                            );
+                                                            return (
+                                                                Type::new_with_unknown(),
+                                                                Some(atom_type_obj.clone()),
+                                                            );
+                                                        }
+                                                    }
+                                                }
+                                                None => {
+                                                    let err = PropertyDoesNotExistError::new(
+                                                        PropertyKind::METHOD,
+                                                        atom_type_obj.clone(),
+                                                        method.range(),
+                                                        atom.range(),
+                                                    );
+                                                    self.errors.push(
+                                                        Diagnostics::PropertyDoesNotExist(err),
+                                                    );
+                                                    return (
+                                                        Type::new_with_unknown(),
+                                                        Some(atom_type_obj.clone()),
+                                                    );
+                                                }
+                                            }
                                         }
-                                        _ => {
-                                            self.log_params_type_and_count_check_error(
-                                                method.range(),
-                                                result,
-                                            );
-                                            return (Type::new_with_unknown(), Some(atom_type_obj));
-                                        }
+                                        _ => unreachable!(),
                                     }
                                 }
-                                None => {
-                                    let err = PropertyDoesNotExistError::new(
-                                        PropertyKind::METHOD,
-                                        atom_type_obj.clone(),
-                                        method.range(),
-                                        atom.range(),
-                                    );
-                                    self.errors.push(Diagnostics::PropertyDoesNotExist(err));
-                                    return (Type::new_with_unknown(), Some(atom_type_obj));
-                                }
+                                _ => unreachable!(),
                             }
                         }
                         StructPropertyCheckResult::NON_STRUCT_TYPE => {

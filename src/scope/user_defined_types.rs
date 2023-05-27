@@ -4,7 +4,7 @@ use rustc_hash::FxHashMap;
 use std::rc::Rc;
 use text_size::TextRange;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum UserDefinedTypeData {
     STRUCT(StructData),
     LAMBDA(LambdaTypeData),

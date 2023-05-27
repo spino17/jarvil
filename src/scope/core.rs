@@ -8,13 +8,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use text_size::TextRange;
 
-#[derive(Debug, Clone)]
-pub enum IdentifierKind {
-    VARIABLE(SymbolData<VariableData>),
-    USER_DEFINED_TYPE(SymbolData<UserDefinedTypeData>),
-    FUNCTION(SymbolData<FunctionData>),
-}
-
 pub enum VariableLookupResult {
     OK((SymbolData<VariableData>, usize, usize)),
     NOT_INITIALIZED(TextRange),
