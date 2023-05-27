@@ -4,15 +4,15 @@ use crate::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
             ClassMethodCallNode, CoreCallableBodyNode, CoreIdentifierNode,
             CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode, CoreTokenNode,
-            CoreTypeDeclarationNode, IdentifierNode, OkIdentifierNode, TokenNode,
-            TypeDeclarationNode, VariableDeclarationNode,
+            CoreTypeDeclarationNode, IdentifierNode, OkIdentifierNode, OkSelfKeywordNode,
+            TokenNode, TypeDeclarationNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
     code::JarvilCode,
     context,
     lexer::token::{CoreToken, Token},
-    scope::core::IdentifierKind,
+    scope::core::{Namespace, NamespaceKind},
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::{convert::TryInto, rc::Rc};
@@ -39,49 +39,29 @@ pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
     }
 }
 
-pub fn get_suffix_str_for_identifier(identifier: &OkIdentifierNode) -> &'static str {
-    /*
-    // suffix are added to identifiers in order to model separate namespaces in Python
-    let suffix_str = match &identifier.0.as_ref().decl {
-        Some((ident_kind, _)) => match ident_kind {
-            IdentifierKind::VARIABLE(symbol_data) => {
-                if symbol_data.2 {
-                    return "_var";
-                }
-                ""
-            }
-            IdentifierKind::FUNCTION(symbol_data) => {
-                if symbol_data.2 {
-                    return "_func";
-                }
-                ""
-            }
-            IdentifierKind::USER_DEFINED_TYPE(symbol_data) => {
-                if symbol_data.2 {
-                    return "_ty";
-                }
-                ""
-            }
-        },
-        None => "",
-    };
-    suffix_str
-     */
-    todo!()
-}
-
 pub struct PythonCodeGenerator {
     indent_level: usize,
     generate_code: String,
     code: JarvilCode,
+    namespace: Namespace,
+    identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
+    self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
 }
 
 impl PythonCodeGenerator {
-    pub fn new(code: &JarvilCode) -> PythonCodeGenerator {
+    pub fn new(
+        code: &JarvilCode,
+        namespace: Namespace,
+        identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
+        self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
+    ) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
             generate_code: "".to_string(),
             code: code.clone(),
+            namespace,
+            identifier_binding_table,
+            self_binding_table,
         }
     }
 
@@ -116,6 +96,83 @@ impl PythonCodeGenerator {
     ) -> (Rc<FxHashSet<String>>, Rc<FxHashMap<String, bool>>) {
         let non_locals = &block.0.as_ref().borrow().non_locals;
         (non_locals.0.clone(), non_locals.1.clone())
+    }
+
+    pub fn get_suffix_str_for_identifier(&self, identifier: &OkIdentifierNode) -> &'static str {
+        match self.identifier_binding_table.get(identifier) {
+            Some((scope_index, namespace_kind)) => {
+                let name = identifier.token_value(&self.code);
+                match namespace_kind {
+                    NamespaceKind::VARIABLE => {
+                        match self
+                            .namespace
+                            .get_from_variables_namespace(*scope_index, &name)
+                        {
+                            Some(symbol_data) => {
+                                if symbol_data.2 {
+                                    return "_var";
+                                }
+                                return "";
+                            }
+                            None => unreachable!(),
+                        }
+                    }
+                    NamespaceKind::FUNCTION => {
+                        match self
+                            .namespace
+                            .get_from_functions_namespace(*scope_index, &name)
+                        {
+                            Some(symbol_data) => {
+                                if symbol_data.2 {
+                                    return "_func";
+                                }
+                                return "";
+                            }
+                            None => unreachable!(),
+                        }
+                    }
+                    NamespaceKind::TYPE => {
+                        match self.namespace.get_from_types_namespace(*scope_index, &name) {
+                            Some(symbol_data) => {
+                                if symbol_data.2 {
+                                    return "_ty";
+                                }
+                                return "";
+                            }
+                            None => unreachable!(),
+                        }
+                    }
+                };
+            }
+            None => return "",
+        };
+        /*
+        // suffix are added to identifiers in order to model separate namespaces in Python
+        let suffix_str = match &identifier.0.as_ref().decl {
+            Some((ident_kind, _)) => match ident_kind {
+                IdentifierKind::VARIABLE(symbol_data) => {
+                    if symbol_data.2 {
+                        return "_var";
+                    }
+                    ""
+                }
+                IdentifierKind::FUNCTION(symbol_data) => {
+                    if symbol_data.2 {
+                        return "_func";
+                    }
+                    ""
+                }
+                IdentifierKind::USER_DEFINED_TYPE(symbol_data) => {
+                    if symbol_data.2 {
+                        return "_ty";
+                    }
+                    ""
+                }
+            },
+            None => "",
+        };
+        suffix_str
+         */
     }
 
     pub fn print_token(&mut self, token: &Token) {
@@ -171,7 +228,7 @@ impl PythonCodeGenerator {
             CoreIdentifierNode::OK(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
-        let suffix_str = get_suffix_str_for_identifier(identifier);
+        let suffix_str = self.get_suffix_str_for_identifier(identifier);
         let mut token_value = identifier.token_value(&self.code);
         token_value.push_str(suffix_str);
         let token = identifier.0.as_ref().token.core_ref().token.clone();
@@ -188,7 +245,7 @@ impl PythonCodeGenerator {
             CoreIdentifierNode::OK(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
-        let suffix_str = get_suffix_str_for_identifier(identifier);
+        let suffix_str = self.get_suffix_str_for_identifier(identifier);
         let mut token_value = identifier.token_value(&self.code);
         token_value.push_str(suffix_str);
         self.add_str_to_python_code(&token_value);

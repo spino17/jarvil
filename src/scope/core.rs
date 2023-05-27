@@ -206,6 +206,30 @@ impl Namespace {
         self.functions.add_new_scope(curr_scope_index)
     }
 
+    pub fn get_from_variables_namespace(
+        &self,
+        scope_index: usize,
+        key: &str,
+    ) -> Option<&SymbolData<VariableData>> {
+        self.variables.get(scope_index, key)
+    }
+
+    pub fn get_from_functions_namespace(
+        &self,
+        scope_index: usize,
+        key: &str,
+    ) -> Option<&SymbolData<FunctionData>> {
+        self.functions.get(scope_index, key)
+    }
+
+    pub fn get_from_types_namespace(
+        &self,
+        scope_index: usize,
+        key: &str,
+    ) -> Option<&SymbolData<UserDefinedTypeData>> {
+        self.types.get(scope_index, key)
+    }
+
     pub fn lookup_in_variables_namespace(
         &self,
         scope_index: usize,

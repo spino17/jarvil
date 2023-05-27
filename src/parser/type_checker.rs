@@ -44,7 +44,8 @@ use crate::{
     parser::resolver::ErrorLoggingTypeKind,
     scope::{
         core::{IdentifierKind, Namespace, NamespaceKind, SymbolData},
-        user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData}, variables::VariableData,
+        user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData},
+        variables::VariableData,
     },
     types::{
         atomic::Atomic,
@@ -115,24 +116,38 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_ast(mut self, ast: &BlockNode) -> Vec<Diagnostics> {
+    pub fn check_ast(
+        mut self,
+        ast: &BlockNode,
+    ) -> (
+        Vec<Diagnostics>,
+        Namespace,
+        FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
+        FxHashMap<OkSelfKeywordNode, usize>,
+    ) {
         let core_block = ast.0.as_ref().borrow();
         for stmt in &core_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        self.errors
+        (
+            self.errors,
+            self.namespace,
+            self.identifier_binding_table,
+            self.self_binding_table,
+        )
     }
 
-    pub fn self_keyword_symbol_data(&self, node: &OkSelfKeywordNode) -> Option<&SymbolData<VariableData>> {
+    pub fn self_keyword_symbol_data(
+        &self,
+        node: &OkSelfKeywordNode,
+    ) -> Option<&SymbolData<VariableData>> {
         let scope_index = self.self_binding_table.get(node);
         match scope_index {
-            Some(&scope_index) => {
-                match self.namespace.variables.get(scope_index, "self") {
-                    Some(symbol_data) => return Some(symbol_data),
-                    None => unreachable!()
-                }
-            }
-            None => return None
+            Some(&scope_index) => match self.namespace.variables.get(scope_index, "self") {
+                Some(symbol_data) => return Some(symbol_data),
+                None => unreachable!(),
+            },
+            None => return None,
         }
     }
 

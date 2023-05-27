@@ -80,7 +80,8 @@ impl BuildDriver {
             identifier_binding_table,
             self_binding_table,
         );
-        let mut type_errors = type_checker.check_ast(&ast);
+        let (mut type_errors, namespace, identifier_binding_table, self_binding_table) =
+            type_checker.check_ast(&ast);
 
         errors.append(&mut type_errors);
         if errors.len() > 0 {
@@ -89,7 +90,12 @@ impl BuildDriver {
         }
 
         // Python code-generation
-        let py_generator = PythonCodeGenerator::new(&code);
+        let py_generator = PythonCodeGenerator::new(
+            &code,
+            namespace,
+            identifier_binding_table,
+            self_binding_table,
+        );
         let py_code = py_generator.generate_python_code(&ast);
         Ok(py_code)
     }
