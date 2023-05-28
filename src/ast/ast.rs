@@ -118,7 +118,7 @@ pub enum ASTNode {
 #[derive(Debug, Clone)]
 pub struct CoreBlockNode {
     pub newline: TokenNode,
-    pub stmts: Vec<StatemenIndentWrapperNode>,
+    pub stmts: Rc<Vec<StatemenIndentWrapperNode>>,
     pub non_locals: (Rc<FxHashSet<String>>, Rc<FxHashMap<String, bool>>), // (variable_non_locals, function_non_locals)
 }
 

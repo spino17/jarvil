@@ -69,7 +69,7 @@ impl PythonCodeGenerator {
 
     pub fn generate_python_code(mut self, ast: &BlockNode) -> String {
         let code_block = ast.0.as_ref().borrow();
-        for stmt in &code_block.stmts {
+        for stmt in &*code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
         let main_call_str = format!(
@@ -414,7 +414,7 @@ impl Visitor for PythonCodeGenerator {
                         self.add_str_to_python_code(&format!("nonlocal {}\n", func_name));
                     }
                 }
-                for stmt in &core_block.stmts {
+                for stmt in &*core_block.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block();

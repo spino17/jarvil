@@ -53,7 +53,7 @@ impl BlockNode {
     pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: &TokenNode) -> Self {
         let node = Rc::new(RefCell::new(CoreBlockNode {
             newline: newline.clone(),
-            stmts,
+            stmts: Rc::new(stmts),
             non_locals: (Rc::new(FxHashSet::default()), Rc::new(FxHashMap::default())),
         }));
         BlockNode(node)

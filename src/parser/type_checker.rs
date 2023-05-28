@@ -106,7 +106,7 @@ impl TypeChecker {
         ast: &BlockNode,
     ) -> (Vec<Diagnostics>, NamespaceHandler, JarvilCode) {
         let core_block = ast.0.as_ref().borrow();
-        for stmt in &core_block.stmts {
+        for stmt in &*core_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
         (self.errors, self.namespace_handler, self.code)
@@ -1098,7 +1098,14 @@ impl TypeChecker {
                     .func_stack
                     .push((is_constructor, return_type_obj.clone()));
                 let mut has_return_stmt: Option<TextRange> = None;
-                for stmt in &core_ok_callable_body.block.0.as_ref().borrow().stmts {
+                for stmt in &*core_ok_callable_body
+                    .block
+                    .0
+                    .as_ref()
+                    .borrow()
+                    .stmts
+                    .as_ref()
+                {
                     let stmt = match stmt.core_ref() {
                         CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
                         CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {

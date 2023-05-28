@@ -113,7 +113,7 @@ impl Resolver {
             TextRange::default(),
             false,
         );
-        for stmt in &code_block.stmts {
+        for stmt in &*code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
         match self
@@ -549,7 +549,7 @@ impl Resolver {
                 self.open_block();
                 let (param_types_vec, return_type, return_type_range) =
                     self.declare_callable_prototype(&core_ok_callable_body.prototype);
-                for stmt in &callable_body.0.as_ref().borrow().stmts {
+                for stmt in &*callable_body.0.as_ref().borrow().stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block(callable_body);
@@ -574,7 +574,7 @@ impl Resolver {
                 self.open_block();
                 let (param_types_vec, return_type, return_type_range) =
                     self.declare_callable_prototype(&core_ok_callable_body.prototype);
-                for stmt in &callable_body.0.as_ref().borrow().stmts {
+                for stmt in &*callable_body.0.as_ref().borrow().stmts.as_ref() {
                     let stmt = match stmt.core_ref() {
                         CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
                         CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
@@ -828,7 +828,7 @@ impl Resolver {
         let mut methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
-        for stmt in &struct_body.0.as_ref().borrow().stmts {
+        for stmt in &*struct_body.0.as_ref().borrow().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
                 CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
@@ -1146,7 +1146,7 @@ impl Visitor for Resolver {
             ASTNode::BLOCK(block) => {
                 self.open_block();
                 let core_block = block.0.as_ref().borrow();
-                for stmt in &core_block.stmts {
+                for stmt in &*core_block.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block(block);
