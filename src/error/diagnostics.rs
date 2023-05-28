@@ -19,7 +19,9 @@ pub enum Diagnostics {
     IdentifierFoundInNonLocals(IdentifierFoundInNonLocalsError),
     IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
-    NonVoidConstructorReturnType(NonVoidConstructorReturnTypeError),
+    VoidConstructorReturnType(VoidConstructorReturnTypeError),
+    NonStructConstructorReturnType(NonStructConstructorReturnTypeError),
+    MismatchedConstructorReturnType(MismatchedConstructorReturnTypeError),
     SelfNotFound(SelfNotFoundError),
     VariableReferencedBeforeAssignment(VariableReferencedBeforeAssignmentError),
     RightSideWithVoidTypeNotAllowed(RightSideWithVoidTypeNotAllowedError),
@@ -38,7 +40,7 @@ pub enum Diagnostics {
     UnaryOperatorInvalidUse(UnaryOperatorInvalidUseError),
     BinaryOperatorInvalidOperands(BinaryOperatorInvalidOperandsError),
     MismatchedTypesOnLeftRight(MismatchedTypesOnLeftRightError),
-    NoValidStatementInsideFunctionBody(NoValidStatementInsideFunctionBody),
+    NoValidStatementFoundInsideBlockBody(NoValidStatementFoundInsideBlockBodyError),
     NoReturnStatementInFunction(NoReturnStatementInFunctionError),
     InvalidReturnStatement(InvalidReturnStatementError),
     MismatchedReturnType(MismatchedReturnTypeError),
@@ -75,8 +77,12 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::NonVoidConstructorReturnType(diagonstic) => {
-                Report::new(diagonstic.clone())
+            Diagnostics::VoidConstructorReturnType(diagonstic) => Report::new(diagonstic.clone()),
+            Diagnostics::NonStructConstructorReturnType(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::MismatchedConstructorReturnType(diagnostic) => {
+                Report::new(diagnostic.clone())
             }
             Diagnostics::SelfNotFound(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::VariableReferencedBeforeAssignment(diagnostic) => {
@@ -102,7 +108,7 @@ impl Diagnostics {
             }
             Diagnostics::MismatchedTypesOnLeftRight(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::NoReturnStatementInFunction(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::NoValidStatementInsideFunctionBody(diagnostic) => {
+            Diagnostics::NoValidStatementFoundInsideBlockBody(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::InvalidReturnStatement(diagnostic) => Report::new(diagnostic.clone()),
@@ -297,21 +303,71 @@ impl InvalidLValueError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("non-void constructor return type")]
-#[diagnostic(code("syntax error"))]
-pub struct NonVoidConstructorReturnTypeError {
-    #[label("constructor cannot have a return type")]
+#[error("void constructor return-type")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct VoidConstructorReturnTypeError {
+    #[label("constructor cannot have a void return-type")]
     pub span: SourceSpan,
     #[help]
     pub help: Option<String>, // any value derived from a function call is not assignable
 }
 
-impl NonVoidConstructorReturnTypeError {
+impl VoidConstructorReturnTypeError {
     pub fn new(range: TextRange) -> Self {
-        NonVoidConstructorReturnTypeError {
+        VoidConstructorReturnTypeError {
             span: range_to_span(range).into(),
             help: Some(
-                "developer is not supposed to explicitly provide return type for the constructor"
+                "constructor should have return-type same as the struct it is defined in"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("mismatched constructor return-type")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct MismatchedConstructorReturnTypeError {
+    pub struct_name: String,
+    #[label("constructor return-type should be `{}`", self.struct_name)]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>, // any value derived from a function call is not assignable
+}
+
+impl MismatchedConstructorReturnTypeError {
+    pub fn new(struct_name: String, range: TextRange) -> Self {
+        MismatchedConstructorReturnTypeError {
+            struct_name,
+            span: range_to_span(range).into(),
+            help: Some(
+                "constructor should have return-type same as the struct it is defined in"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("non-struct constructor return-type")]
+#[diagnostic(code("semantic error (resolving phase)"))]
+pub struct NonStructConstructorReturnTypeError {
+    #[label("constructor return-type should be a struct")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>, // any value derived from a function call is not assignable
+}
+
+impl NonStructConstructorReturnTypeError {
+    pub fn new(range: TextRange) -> Self {
+        NonStructConstructorReturnTypeError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "constructor should have return-type same as the struct it is defined in"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),
@@ -1098,21 +1154,21 @@ impl NoReturnStatementInFunctionError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("no valid statement found")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
-pub struct NoValidStatementInsideFunctionBody {
-    #[label("function body has no valid statement")]
+#[error("no valid statement found inside the block")]
+#[diagnostic(code("syntax error"))]
+pub struct NoValidStatementFoundInsideBlockBodyError {
+    #[label("expected atleast one statement inside the block")]
     pub span: SourceSpan,
     #[help]
     pub help: Option<String>,
 }
 
-impl NoValidStatementInsideFunctionBody {
+impl NoValidStatementFoundInsideBlockBodyError {
     pub fn new(range: TextRange) -> Self {
-        NoValidStatementInsideFunctionBody {
+        NoValidStatementFoundInsideBlockBodyError {
             span: range_to_span(range).into(),
             help: Some(
-                "function body should have atleast one statement"
+                "block body should have atleast one valid statement"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),

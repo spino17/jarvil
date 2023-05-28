@@ -8,9 +8,10 @@ use crate::error::diagnostics::{
     BuiltinFunctionNameOverlapError, ConstructorNotFoundInsideStructDeclarationError,
     FieldsNotInitializedInConstructorError, IdentifierFoundInNonLocalsError,
     IdentifierNotFoundInAnyNamespaceError, MainFunctionNotFoundError, MainFunctionWrongTypeError,
-    MoreThanMaxLimitParamsPassedError, NonHashableTypeInIndexError,
-    NonVoidConstructorReturnTypeError, SelfNotFoundError, SingleSubTypeFoundInTupleError,
-    VariableReferencedBeforeAssignmentError,
+    MismatchedConstructorReturnTypeError, MoreThanMaxLimitParamsPassedError,
+    NonHashableTypeInIndexError, NonStructConstructorReturnTypeError, SelfNotFoundError,
+    SingleSubTypeFoundInTupleError, VariableReferencedBeforeAssignmentError,
+    VoidConstructorReturnTypeError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
@@ -71,21 +72,17 @@ pub struct Context {
 }
 
 pub struct Resolver {
-    // pub namespace: Namespace,
     scope_index: usize,
     pub code: JarvilCode,
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
-    // identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
-    // self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
     pub namespace_handler: NamespaceHandler,
 }
 
 impl Resolver {
     pub fn new(code: &JarvilCode) -> Self {
         Resolver {
-            // namespace: Namespace::new(), // `is_global` will be `true` for this namespace
             scope_index: 0,
             code: code.clone(),
             errors: vec![],
@@ -98,8 +95,6 @@ impl Resolver {
             },
             indent_level: 0,
             namespace_handler: NamespaceHandler::new(),
-            // identifier_binding_table: FxHashMap::default(),
-            // self_binding_table: FxHashMap::default(),
         }
     }
 
@@ -284,8 +279,7 @@ impl Resolver {
     ) -> ResolveResult {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
-            Some((symbol_data, resolved_scope_index, depth, is_global)) => {
-                // bind_fn(self, identifier, resolved_scope_index, namespace_kind);
+            Some((_, resolved_scope_index, depth, _)) => {
                 self.bind_decl_to_identifier(identifier, resolved_scope_index, namespace_kind);
                 ResolveResult::OK(depth)
             }
@@ -304,7 +298,6 @@ impl Resolver {
             .lookup_in_variables_namespace_with_is_init(self.scope_index, &name)
         {
             VariableLookupResult::OK((symbol_data, resolved_scope_index, depth)) => {
-                // identifier.bind_variable_decl(&symbol_data, depth);
                 self.bind_decl_to_identifier(
                     identifier,
                     resolved_scope_index,
@@ -331,7 +324,6 @@ impl Resolver {
             .lookup_in_variables_namespace(self.scope_index, &name)
         {
             Some((symbol_data, scope_index, depth, _)) => {
-                // self_keyword.bind_decl(&symbol_data, depth);
                 self.bind_decl_to_self_keyword(self_keyword, scope_index);
                 return Some((symbol_data, depth));
             }
@@ -372,8 +364,7 @@ impl Resolver {
             identifier.range(),
         );
         match symbol_data {
-            Ok(symbol_data) => {
-                // bind_fn(self, identifier, self.scope_index, namespace_kind);
+            Ok(()) => {
                 self.bind_decl_to_identifier(identifier, self.scope_index, namespace_kind);
                 None
             }
@@ -534,7 +525,6 @@ impl Resolver {
                     );
                     match result {
                         Ok(()) => {
-                            // ok_identifier.bind_variable_decl(&symbol_data, 0);
                             self.bind_decl_to_identifier(
                                 ok_identifier,
                                 self.scope_index,
@@ -626,7 +616,6 @@ impl Resolver {
                 // For case of lambda variable, it is allowed to be referenced inside the body to
                 // enable recursive definitions
                 if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
-                    let name = ok_identifier.token_value(&self.code);
                     if let Some(symbol_data) = self
                         .namespace_handler
                         .get_variable_symbol_data_ref(ok_identifier, &self.code)
@@ -744,7 +733,7 @@ impl Resolver {
         });
         let core_struct_decl = struct_decl.core_ref();
         let struct_body = &core_struct_decl.block;
-        let struct_type_obj = match core_struct_decl.name.core_ref() {
+        let (struct_type_obj, struct_name) = match core_struct_decl.name.core_ref() {
             CoreIdentifierNode::OK(ok_identifier) => {
                 let temp_struct_type_obj =
                     match self.try_declare_and_bind_struct_type(ok_identifier) {
@@ -772,9 +761,12 @@ impl Resolver {
                             }
                         }
                     };
-                temp_struct_type_obj
+                (
+                    temp_struct_type_obj,
+                    Some(ok_identifier.token_value(&self.code)),
+                )
             }
-            _ => Type::new_with_unknown(),
+            _ => (Type::new_with_unknown(), None),
         };
         self.open_block();
         let result = self.namespace_handler.namespace.declare_variable_with_type(
@@ -860,7 +852,8 @@ impl Resolver {
                     if let CoreIdentifierNode::OK(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
-                        let func_meta_data = FunctionData::new(param_types_vec, return_type);
+                        let func_meta_data =
+                            FunctionData::new(param_types_vec, return_type.clone());
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") {
                             match constructor {
@@ -875,13 +868,38 @@ impl Resolver {
                                         .push(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
                                 None => {
-                                    if let Some(return_type_range) = return_type_range {
-                                        assert!(!func_meta_data.return_type.is_void());
-                                        let err = NonVoidConstructorReturnTypeError::new(
-                                            return_type_range,
-                                        );
-                                        self.errors
-                                            .push(Diagnostics::NonVoidConstructorReturnType(err))
+                                    match return_type_range {
+                                        Some(return_type_range) => match return_type.0.as_ref() {
+                                            CoreType::STRUCT(struct_data) => {
+                                                if let Some(struct_name) = &struct_name {
+                                                    if !struct_data.name.eq(struct_name) {
+                                                        let err = MismatchedConstructorReturnTypeError::new(
+                                                                struct_name.to_string(),
+                                                                return_type_range
+                                                        );
+                                                        self.errors.push(Diagnostics::MismatchedConstructorReturnType(err));
+                                                    }
+                                                }
+                                            }
+                                            CoreType::VOID => unreachable!(),
+                                            _ => {
+                                                let err = NonStructConstructorReturnTypeError::new(
+                                                    return_type_range,
+                                                );
+                                                self.errors.push(
+                                                    Diagnostics::NonStructConstructorReturnType(
+                                                        err,
+                                                    ),
+                                                );
+                                            }
+                                        },
+                                        None => {
+                                            let err = VoidConstructorReturnTypeError::new(
+                                                ok_bounded_method_name.range(),
+                                            );
+                                            self.errors
+                                                .push(Diagnostics::VoidConstructorReturnType(err));
+                                        }
                                     }
                                     constructor =
                                         Some((func_meta_data, ok_bounded_method_name.range()));
@@ -929,7 +947,6 @@ impl Resolver {
             }
         }
         self.close_block(struct_body);
-        // TODO - check here whether any fields are missing in constructor_initialized_fields
         if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
             match constructor {
                 Some((_, construct_span)) => {
@@ -1030,7 +1047,6 @@ impl Resolver {
                 );
             match result {
                 Ok(()) => {
-                    // ok_identifier.bind_user_defined_type_decl(&symbol_data, 0);
                     self.bind_decl_to_identifier(
                         ok_identifier,
                         self.scope_index,
@@ -1057,6 +1073,7 @@ impl Resolver {
         let r_assign = &core_ok_assignment.r_assign;
         self.walk_atom(l_atom);
         self.walk_r_assignment(r_assign);
+        // TODO - add check to track conditional enclosing context also
         if self.get_curr_class_context_is_traversing_constructor() {
             if let CoreAtomNode::PROPERTRY_ACCESS(property_access) = l_atom.core_ref() {
                 let core_property_access = property_access.core_ref();
@@ -1165,7 +1182,6 @@ impl Visitor for Resolver {
                                 .lookup_in_functions_namespace(self.scope_index, &name)
                             {
                                 Some((symbol_data, resolved_scope_index, depth, is_global)) => {
-                                    // ok_identifier.bind_function_decl(&symbol_data, depth);
                                     self.bind_decl_to_identifier(
                                         ok_identifier,
                                         resolved_scope_index,
@@ -1181,9 +1197,7 @@ impl Visitor for Resolver {
                                     .namespace
                                     .lookup_in_types_namespace(self.scope_index, &name)
                                 {
-                                    Some((symbol_data, resolved_scope_index, depth, _)) => {
-                                        //ok_identifier
-                                        //    .bind_user_defined_type_decl(&symbol_data, depth);
+                                    Some((_, resolved_scope_index, _, _)) => {
                                         self.bind_decl_to_identifier(
                                             ok_identifier,
                                             resolved_scope_index,

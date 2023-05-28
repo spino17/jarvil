@@ -5,11 +5,11 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-            BinaryExpressionNode, BlockNode, CallableBodyNode, CallablePrototypeNode,
-            ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
-            CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode,
-            CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            BinaryExpressionNode, BlockNode, CallableBodyNode,
+            CallablePrototypeNode, ComparisonNode, CoreAssignmentNode, CoreAtomNode,
+            CoreAtomStartNode, CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode,
+            CoreIdentifierNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
+            CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
             LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode, OkSelfKeywordNode,
             OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
@@ -23,7 +23,6 @@ use crate::{
     error::{
         constants::{
             LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG,
-            STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
         },
         diagnostics::{
             BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError,
@@ -32,7 +31,7 @@ use crate::{
             ImmutableTypeNotAssignableError, InvalidIndexExpressionForTupleError,
             InvalidReturnStatementError, LessParamsCountError, MismatchedParamTypeError,
             MismatchedReturnTypeError, MismatchedTypesOnLeftRightError, MoreParamsCountError,
-            NoReturnStatementInFunctionError, NoValidStatementInsideFunctionBody,
+            NoReturnStatementInFunctionError,
             PropertyDoesNotExistError, PropertyNotSupportedError,
             RightSideWithVoidTypeNotAllowedError, StructFieldNotCallableError,
             TupleIndexOutOfBoundError, UnaryOperatorInvalidUseError,
@@ -43,10 +42,9 @@ use crate::{
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     parser::resolver::ErrorLoggingTypeKind,
     scope::{
-        core::{Namespace, NamespaceKind, SymbolData},
+        core::SymbolData,
         handler::{NamespaceHandler, SymbolDataRef},
-        user_defined_types::{LambdaTypeData, StructData, UserDefinedTypeData},
-        variables::VariableData,
+        user_defined_types::{LambdaTypeData, UserDefinedTypeData},
     },
     types::{
         atomic::Atomic,
@@ -55,7 +53,6 @@ use crate::{
 };
 use std::rc::Rc;
 use text_size::TextRange;
-
 use super::resolver::Resolver;
 
 #[derive(Debug)]
@@ -94,9 +91,6 @@ pub struct TypeChecker {
     code: JarvilCode,
     errors: Vec<Diagnostics>,
     context: Context,
-    // namespace: Namespace,
-    // identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
-    // self_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
     namespace_handler: NamespaceHandler,
 }
 
@@ -433,24 +427,15 @@ impl TypeChecker {
                                     }
                                 }
                             }
-                            SymbolDataRef::TYPE(user_defined_type_symbol_Data) => {
-                                let type_decl_range = user_defined_type_symbol_Data.1;
-                                let name = ok_identifier.token_value(&self.code);
-                                match &*user_defined_type_symbol_Data.0.as_ref().borrow() {
+                            SymbolDataRef::TYPE(user_defined_type_symbol_data) => {
+                                match &*user_defined_type_symbol_data.0.as_ref().borrow() {
                                     UserDefinedTypeData::STRUCT(struct_symbol_data) => {
                                         let constructor_meta_data =
                                             struct_symbol_data.constructor.clone();
-                                        let return_type = Type::new_with_struct(
-                                            name.to_string(),
-                                            &SymbolData::new(
-                                                UserDefinedTypeData::STRUCT(
-                                                    struct_symbol_data.clone(),
-                                                ),
-                                                type_decl_range,
-                                                true,
-                                            ),
-                                        );
-                                        (constructor_meta_data.params, return_type)
+                                        (
+                                            constructor_meta_data.params,
+                                            constructor_meta_data.return_type,
+                                        )
                                     }
                                     UserDefinedTypeData::LAMBDA(_) => {
                                         let type_name = ok_identifier.token_value(&self.code);
@@ -1107,7 +1092,6 @@ impl TypeChecker {
                     self.check_callable_prototype(&core_ok_callable_body.prototype);
                 self.context.func_stack.push(return_type_obj.clone());
                 let mut has_return_stmt = false;
-                let mut has_atleast_one_stmt = false;
                 for stmt in &core_ok_callable_body.block.0.as_ref().borrow().stmts {
                     let stmt = match stmt.core_ref() {
                         CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
@@ -1118,31 +1102,22 @@ impl TypeChecker {
                         _ => continue,
                     };
                     self.walk_stmt(&stmt);
-                    has_atleast_one_stmt = true;
                     if let CoreStatementNode::RETURN(_) = stmt.core_ref() {
                         has_return_stmt = true;
                         // TODO - we can break here as any statement following return statement is dead code
                     }
                 }
-                if !has_atleast_one_stmt {
-                    let err = NoValidStatementInsideFunctionBody::new(
-                        core_ok_callable_body.colon.range(),
-                    );
+                if !has_return_stmt && !return_type_obj.is_void() {
+                    let return_type_node = ok_callable_body
+                        .core_ref()
+                        .prototype
+                        .core_ref()
+                        .return_type
+                        .as_ref()
+                        .unwrap();
+                    let err = NoReturnStatementInFunctionError::new(return_type_node.range());
                     self.errors
-                        .push(Diagnostics::NoValidStatementInsideFunctionBody(err));
-                } else {
-                    if !has_return_stmt && !return_type_obj.is_void() {
-                        let return_type_node = ok_callable_body
-                            .core_ref()
-                            .prototype
-                            .core_ref()
-                            .return_type
-                            .as_ref()
-                            .unwrap();
-                        let err = NoReturnStatementInFunctionError::new(return_type_node.range());
-                        self.errors
-                            .push(Diagnostics::NoReturnStatementInFunction(err));
-                    }
+                        .push(Diagnostics::NoReturnStatementInFunction(err));
                 }
                 self.context.func_stack.pop();
             }
@@ -1189,14 +1164,9 @@ impl TypeChecker {
                 self.check_callable_body(&func_wrapper.core_ref().func_decl.core_ref().body);
             }
             CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+                let core_bounded_method_wrapper = &*bounded_method_wrapper.0.as_ref().borrow();
                 self.check_callable_body(
-                    &bounded_method_wrapper
-                        .0
-                        .as_ref()
-                        .borrow()
-                        .func_decl
-                        .core_ref()
-                        .body,
+                    &core_bounded_method_wrapper.func_decl.core_ref().body,
                 );
             }
             CoreStatementNode::RETURN(return_stmt) => {

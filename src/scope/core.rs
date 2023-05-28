@@ -48,7 +48,6 @@ impl<T> CoreScope<T> {
             is_suffix_required,
         );
         self.symbol_table.insert(name, symbol_data.clone());
-        // symbol_data
     }
 
     pub fn get(&self, name: &str) -> Option<&SymbolData<T>> {

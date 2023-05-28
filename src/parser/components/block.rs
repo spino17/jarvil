@@ -10,8 +10,7 @@
 
 use crate::ast::ast::Node;
 use crate::ast::ast::{
-    BlockKind, BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode,
-    StatementNode,
+    BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
 };
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
@@ -29,6 +28,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let mut stmts_vec: Vec<StatemenIndentWrapperNode> = vec![];
     let mut leading_skipped_tokens: Vec<SkippedTokenNode> = vec![];
+    let mut has_atleast_one_stmt = false;
     loop {
         let indent_result = parser.expect_indent_spaces();
         let skipped_tokens = indent_result.skipped_tokens;
@@ -48,6 +48,9 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
             IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
             IndentResultKind::BLOCK_OVER => {
                 parser.set_indent_level(parser.curr_indent_level() - 1);
+                if !has_atleast_one_stmt {
+                    parser.log_no_valid_statement_inside_block_error(newline_node.range());
+                }
                 return BlockNode::new(stmts_vec, &newline_node);
             }
         };
@@ -70,6 +73,9 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
         let token = &parser.curr_token();
         if token.is_eq(ENDMARKER) {
             parser.set_indent_level(parser.curr_indent_level() - 1);
+            if !has_atleast_one_stmt {
+                parser.log_no_valid_statement_inside_block_error(newline_node.range());
+            }
             return BlockNode::new(stmts_vec, &newline_node);
         }
         if token.is_eq("\n") {
@@ -108,12 +114,14 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
                     indent_data.0,
                     indent_data.1,
                 ));
+                has_atleast_one_stmt = true;
             }
             None => {
                 let stmt_node = statement_parsing_fn(parser);
                 stmts_vec.push(StatemenIndentWrapperNode::new_with_correctly_indented(
                     &stmt_node,
                 ));
+                has_atleast_one_stmt = true;
             }
         }
     }

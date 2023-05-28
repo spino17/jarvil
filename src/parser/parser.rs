@@ -10,7 +10,7 @@ use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::{
     Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
-    MissingTokenError,
+    MissingTokenError, NoValidStatementFoundInsideBlockBodyError,
 };
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
@@ -184,6 +184,15 @@ impl JarvilParser {
         // -> TODO - check whether error on same line already exists
         let err = IncorrectlyIndentedBlockError::new(expected_indent, received_indent, range);
         self.errors.push(Diagnostics::IncorrectlyIndentedBlock(err));
+    }
+
+    pub fn log_no_valid_statement_inside_block_error(&mut self, range: TextRange) {
+        if self.ignore_all_errors {
+            return;
+        }
+        let err = NoValidStatementFoundInsideBlockBodyError::new(range);
+        self.errors
+            .push(Diagnostics::NoValidStatementFoundInsideBlockBody(err));
     }
 
     pub fn log_invalid_l_value_error(&mut self, range: TextRange) {
