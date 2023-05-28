@@ -1,7 +1,7 @@
 use crate::ast::ast::{
-    BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAtomNode, CoreCallableBodyNode,
-    CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode,
-    OkAssignmentNode, OkSelfKeywordNode,
+    BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
+    CoreCallableBodyNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
+    CoreTypeExpressionNode, FunctionWrapperNode, OkAssignmentNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -54,8 +54,6 @@ pub enum ErrorLoggingTypeKind {
 
 pub struct ClassContext {
     is_containing_self: bool,
-    is_traversing_constructor: bool,
-    constructor_initialized_fields: FxHashSet<String>,
 }
 
 pub struct BlockContext {
@@ -184,40 +182,6 @@ impl Resolver {
     pub fn get_curr_class_context_is_containing_self(&self) -> bool {
         let len = self.context.class_context_stack.len();
         self.context.class_context_stack[len - 1].is_containing_self
-    }
-
-    pub fn set_curr_class_context_constructor_initialized_fields(&mut self, field_name: String) {
-        let len = self.context.class_context_stack.len();
-        self.context.class_context_stack[len - 1]
-            .constructor_initialized_fields
-            .insert(field_name);
-    }
-
-    pub fn is_field_in_class_context_constructor_initialized_fields(
-        &self,
-        field_name: &str,
-    ) -> bool {
-        let len = self.context.class_context_stack.len();
-        match self.context.class_context_stack[len - 1]
-            .constructor_initialized_fields
-            .get(field_name)
-        {
-            Some(_) => true,
-            None => false,
-        }
-    }
-
-    pub fn set_curr_class_context_is_traversing_constructor(&mut self, value: bool) {
-        let len = self.context.class_context_stack.len();
-        self.context.class_context_stack[len - 1].is_traversing_constructor = value;
-    }
-
-    pub fn get_curr_class_context_is_traversing_constructor(&self) -> bool {
-        let len = self.context.class_context_stack.len();
-        if len == 0 {
-            return false;
-        }
-        self.context.class_context_stack[len - 1].is_traversing_constructor
     }
 
     pub fn set_to_variable_non_locals(&mut self, name: String) {
@@ -489,6 +453,20 @@ impl Resolver {
         }
     }
 
+    fn is_already_a_method(
+        methods: &FxHashMap<String, (FunctionData, TextRange)>,
+        class_methods: &FxHashMap<String, (FunctionData, TextRange)>,
+        name: &str,
+    ) -> Option<TextRange> {
+        match methods.get(name) {
+            Some((_, previous_decl_range)) => return Some(previous_decl_range.clone()),
+            None => match class_methods.get(name) {
+                Some((_, previous_decl_range)) => return Some(previous_decl_range.clone()),
+                None => return None,
+            },
+        }
+    }
+
     pub fn declare_callable_prototype(
         &mut self,
         callable_prototype: &CallablePrototypeNode,
@@ -579,6 +557,75 @@ impl Resolver {
             }
             CoreCallableBodyNode::MISSING_TOKENS(_) => {
                 return (Vec::new(), Type::new_with_unknown(), None)
+            }
+        }
+    }
+
+    pub fn visit_constructor_body(
+        &mut self,
+        callable_body_decl: &CallableBodyNode,
+    ) -> (Vec<Type>, Type, Option<TextRange>, FxHashSet<String>) {
+        let core_callable_body_decl = callable_body_decl.core_ref();
+        let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
+        match core_callable_body_decl {
+            CoreCallableBodyNode::OK(ok_callable_body) => {
+                let core_ok_callable_body = ok_callable_body.core_ref();
+                let callable_body = &core_ok_callable_body.block;
+                self.open_block();
+                let (param_types_vec, return_type, return_type_range) =
+                    self.declare_callable_prototype(&core_ok_callable_body.prototype);
+                for stmt in &callable_body.0.as_ref().borrow().stmts {
+                    let stmt = match stmt.core_ref() {
+                        CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
+                        CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
+                            let core_stmt = stmt.core_ref();
+                            core_stmt.stmt.clone()
+                        }
+                        _ => continue,
+                    };
+                    self.walk_stmt(&stmt);
+                    if let CoreStatementNode::ASSIGNMENT(assignment) = stmt.core_ref() {
+                        if let CoreAssignmentNode::OK(ok_assignment) = assignment.core_ref() {
+                            let l_atom = &ok_assignment.core_ref().l_atom;
+                            if let CoreAtomNode::PROPERTRY_ACCESS(property_access) =
+                                l_atom.core_ref()
+                            {
+                                let core_property_access = property_access.core_ref();
+                                let property_name = &core_property_access.propertry;
+                                if let CoreIdentifierNode::OK(property_name) =
+                                    property_name.core_ref()
+                                {
+                                    let atom = &core_property_access.atom;
+                                    if let CoreAtomNode::ATOM_START(atom_start) = atom.core_ref() {
+                                        if let CoreAtomStartNode::SELF_KEYWORD(_) =
+                                            atom_start.core_ref()
+                                        {
+                                            // l_atom of the form `self.<property_name>`
+                                            let property_name_str =
+                                                property_name.token_value(&self.code);
+                                            initialized_fields.insert(property_name_str);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                self.close_block(callable_body);
+                (
+                    param_types_vec,
+                    return_type,
+                    return_type_range,
+                    initialized_fields,
+                )
+            }
+            CoreCallableBodyNode::MISSING_TOKENS(_) => {
+                return (
+                    Vec::new(),
+                    Type::new_with_unknown(),
+                    None,
+                    FxHashSet::default(),
+                )
             }
         }
     }
@@ -728,8 +775,6 @@ impl Resolver {
     pub fn declare_struct_type(&mut self, struct_decl: &StructDeclarationNode) {
         self.context.class_context_stack.push(ClassContext {
             is_containing_self: false,
-            is_traversing_constructor: false,
-            constructor_initialized_fields: FxHashSet::default(),
         });
         let core_struct_decl = struct_decl.core_ref();
         let struct_body = &core_struct_decl.block;
@@ -782,20 +827,7 @@ impl Resolver {
         let mut constructor: Option<(FunctionData, TextRange)> = None;
         let mut methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
-
-        fn is_already_a_method(
-            methods: &FxHashMap<String, (FunctionData, TextRange)>,
-            class_methods: &FxHashMap<String, (FunctionData, TextRange)>,
-            name: &str,
-        ) -> Option<TextRange> {
-            match methods.get(name) {
-                Some((_, previous_decl_range)) => return Some(previous_decl_range.clone()),
-                None => match class_methods.get(name) {
-                    Some((_, previous_decl_range)) => return Some(previous_decl_range.clone()),
-                    None => return None,
-                },
-            }
-        }
+        let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
         for stmt in &struct_body.0.as_ref().borrow().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
@@ -839,16 +871,27 @@ impl Resolver {
                         .func_decl
                         .core_ref()
                         .clone();
+                    let mut is_constructor = false;
                     if let CoreIdentifierNode::OK(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") && constructor.is_none() {
-                            self.set_curr_class_context_is_traversing_constructor(true);
+                            is_constructor = true;
                         }
                     }
-                    let (param_types_vec, return_type, return_type_range) =
-                        self.visit_callable_body(&core_func_decl.body);
+                    let (param_types_vec, return_type, return_type_range) = if is_constructor {
+                        let (
+                            param_types_vec,
+                            return_type,
+                            return_type_range,
+                            temp_initialized_fields,
+                        ) = self.visit_constructor_body(&core_func_decl.body);
+                        initialized_fields = temp_initialized_fields;
+                        (param_types_vec, return_type, return_type_range)
+                    } else {
+                        self.visit_callable_body(&core_func_decl.body)
+                    };
                     if let CoreIdentifierNode::OK(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
@@ -905,11 +948,14 @@ impl Resolver {
                                         Some((func_meta_data, ok_bounded_method_name.range()));
                                     bounded_method_wrappewr
                                         .set_bounded_kind(BoundedMethodKind::CONSTRUCTOR);
-                                    self.set_curr_class_context_is_traversing_constructor(false);
                                 }
                             }
                         } else {
-                            match is_already_a_method(&methods, &class_methods, &method_name_str) {
+                            match Resolver::is_already_a_method(
+                                &methods,
+                                &class_methods,
+                                &method_name_str,
+                            ) {
                                 Some(previous_decl_range) => {
                                     let err = IdentifierAlreadyDeclaredError::new(
                                         IdentKind::METHOD,
@@ -952,9 +998,7 @@ impl Resolver {
                 Some((_, construct_span)) => {
                     let mut missing_fields_from_constructor: Vec<&str> = vec![];
                     for (field_name, _) in fields_map.iter() {
-                        if !self
-                            .is_field_in_class_context_constructor_initialized_fields(field_name)
-                        {
+                        if initialized_fields.get(field_name).is_none() {
                             missing_fields_from_constructor.push(field_name);
                         }
                     }
@@ -1067,6 +1111,7 @@ impl Resolver {
         }
     }
 
+    /*
     pub fn visit_ok_assignment(&mut self, ok_assignment: &OkAssignmentNode) {
         let core_ok_assignment = ok_assignment.core_ref();
         let l_atom = &core_ok_assignment.l_atom;
@@ -1092,6 +1137,7 @@ impl Resolver {
             }
         }
     }
+     */
 }
 
 impl Visitor for Resolver {
@@ -1122,10 +1168,10 @@ impl Visitor for Resolver {
                 self.declare_lambda_type(lambda_type_decl);
                 return None;
             }
-            ASTNode::OK_ASSIGNMENT(ok_assignment) => {
-                self.visit_ok_assignment(ok_assignment);
-                return None;
-            }
+            //ASTNode::OK_ASSIGNMENT(ok_assignment) => {
+            //    self.visit_ok_assignment(ok_assignment);
+            //    return None;
+            //}
             ASTNode::ATOM_START(atom_start) => {
                 match atom_start.core_ref() {
                     CoreAtomStartNode::IDENTIFIER(identifier) => {

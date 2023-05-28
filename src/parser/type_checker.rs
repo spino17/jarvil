@@ -6,13 +6,13 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-            BinaryExpressionNode, BlockNode, BoundedMethodKind, CallableBodyNode,
-            CallablePrototypeNode, ComparisonNode, CoreAssignmentNode, CoreAtomNode,
-            CoreAtomStartNode, CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode,
-            CoreIdentifierNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
-            CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
-            LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode,
+            BinaryExpressionNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode,
+            CallableBodyNode, CallablePrototypeNode, ComparisonNode, CoreAssignmentNode,
+            CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreCallableBodyNode,
+            CoreExpressionNode, CoreIdentifierNode, CoreRAssignmentNode,
+            CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatemenIndentWrapperNode,
+            CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreUnaryExpressionNode,
+            ExpressionNode, LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode,
             OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
             ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
             UnaryExpressionNode, VariableDeclarationNode,
@@ -1144,6 +1144,21 @@ impl TypeChecker {
         }
     }
 
+    pub fn check_bounded_method(&mut self, bounded_method_wrapper: &BoundedMethodWrapperNode) {
+        let core_bounded_method_wrapper = &*bounded_method_wrapper.0.as_ref().borrow();
+        let is_constructor = match &core_bounded_method_wrapper.bounded_kind {
+            Some(bounded_kind) => match bounded_kind {
+                BoundedMethodKind::CONSTRUCTOR => true,
+                _ => false,
+            },
+            None => false,
+        };
+        self.check_callable_body(
+            &core_bounded_method_wrapper.func_decl.core_ref().body,
+            is_constructor,
+        );
+    }
+
     pub fn check_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {
         let core_return_stmt = return_stmt.core_ref();
         let func_stack_len = self.context.func_stack.len();
@@ -1192,18 +1207,7 @@ impl TypeChecker {
                 self.check_callable_body(&func_wrapper.core_ref().func_decl.core_ref().body, false);
             }
             CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
-                let core_bounded_method_wrapper = &*bounded_method_wrapper.0.as_ref().borrow();
-                let is_constructor = match &core_bounded_method_wrapper.bounded_kind {
-                    Some(bounded_kind) => match bounded_kind {
-                        BoundedMethodKind::CONSTRUCTOR => true,
-                        _ => false,
-                    },
-                    None => false,
-                };
-                self.check_callable_body(
-                    &core_bounded_method_wrapper.func_decl.core_ref().body,
-                    is_constructor,
-                );
+                self.check_bounded_method(bounded_method_wrapper);
             }
             CoreStatementNode::RETURN(return_stmt) => {
                 self.check_return_stmt(return_stmt);
