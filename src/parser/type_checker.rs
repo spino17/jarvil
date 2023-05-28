@@ -12,7 +12,7 @@ use crate::{
             CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
-            LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode, OkSelfKeywordNode,
+            LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode,
             OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
             ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
             UnaryExpressionNode, VariableDeclarationNode,
@@ -91,21 +91,24 @@ pub struct TypeChecker {
 }
 
 impl TypeChecker {
-    pub fn new(code: &JarvilCode, namespace_handler: NamespaceHandler) -> Self {
+    pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler) -> Self {
         TypeChecker {
-            code: code.clone(),
+            code,
             errors: vec![],
             context: Context { func_stack: vec![] },
             namespace_handler,
         }
     }
 
-    pub fn check_ast(mut self, ast: &BlockNode) -> (Vec<Diagnostics>, NamespaceHandler) {
+    pub fn check_ast(
+        mut self,
+        ast: &BlockNode,
+    ) -> (Vec<Diagnostics>, NamespaceHandler, JarvilCode) {
         let core_block = ast.0.as_ref().borrow();
         for stmt in &core_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        (self.errors, self.namespace_handler)
+        (self.errors, self.namespace_handler, self.code)
     }
 
     pub fn is_resolved(&self, node: &OkIdentifierNode) -> bool {

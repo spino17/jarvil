@@ -78,10 +78,10 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub fn new(code: &JarvilCode) -> Self {
+    pub fn new(code: JarvilCode) -> Self {
         Resolver {
             scope_index: 0,
-            code: code.clone(),
+            code: code,
             errors: vec![],
             context: Context {
                 class_context_stack: vec![],
@@ -95,7 +95,10 @@ impl Resolver {
         }
     }
 
-    pub fn resolve_ast(mut self, ast: &BlockNode) -> (NamespaceHandler, Vec<Diagnostics>) {
+    pub fn resolve_ast(
+        mut self,
+        ast: &BlockNode,
+    ) -> (NamespaceHandler, Vec<Diagnostics>, JarvilCode) {
         let code_block = &*ast.0.as_ref().borrow();
         // setting builtin functions to global scope
         self.namespace_handler.namespace.functions.force_insert(
@@ -136,7 +139,7 @@ impl Resolver {
                 self.errors.push(Diagnostics::MainFunctionNotFound(err));
             }
         }
-        (self.namespace_handler, self.errors)
+        (self.namespace_handler, self.errors, self.code)
     }
 
     pub fn open_block(&mut self) {

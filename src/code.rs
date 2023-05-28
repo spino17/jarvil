@@ -61,15 +61,3 @@ impl JarvilCode {
         }
     }
 }
-
-impl Clone for JarvilCode {
-    fn clone(&self) -> Self {
-        JarvilCode {
-            code_vec: self.code_vec.clone(),
-            code_lines: match &self.code_lines {
-                Some(code_lines) => Some(code_lines.clone()),
-                None => None,
-            },
-        }
-    }
-}

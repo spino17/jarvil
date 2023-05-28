@@ -19,7 +19,7 @@ use std::rc::Rc;
 use text_size::TextRange;
 
 pub trait Parser {
-    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>);
+    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCode);
 }
 
 pub struct JarvilParser {
@@ -33,12 +33,12 @@ pub struct JarvilParser {
 }
 
 impl JarvilParser {
-    pub fn new(code: &JarvilCode) -> Self {
+    pub fn new(code: JarvilCode) -> Self {
         JarvilParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
-            code: code.clone(),
+            code,
             ignore_all_errors: false,
             correction_indent: 0,
             errors: vec![],
@@ -47,9 +47,9 @@ impl JarvilParser {
 }
 
 impl Parser for JarvilParser {
-    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>) {
+    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCode) {
         let code_node = self.code(token_vec);
-        (code_node, self.errors)
+        (code_node, self.errors, self.code)
     }
 }
 

@@ -55,26 +55,26 @@ impl BuildDriver {
         }
     }
 
-    pub fn build_ast(&self, code: &mut JarvilCode) -> (BlockNode, Vec<Diagnostics>) {
+    pub fn build_ast(&self, mut code: JarvilCode) -> (BlockNode, Vec<Diagnostics>, JarvilCode) {
         let core_lexer = CoreLexer::new();
-        let (token_vec, mut errors) = core_lexer.tokenize(code);
-        let parser = JarvilParser::new(&*code);
-        let (ast, mut parse_errors) = parser.parse(token_vec);
+        let (token_vec, mut errors) = core_lexer.tokenize(&mut code);
+        let parser = JarvilParser::new(code);
+        let (ast, mut parse_errors, code) = parser.parse(token_vec);
         errors.append(&mut parse_errors);
-        (ast, errors)
+        (ast, errors, code)
     }
 
     pub fn build_code(&self, mut code: JarvilCode, code_str: String) -> Result<String, Report> {
-        let (ast, mut errors) = self.build_ast(&mut code);
+        let (ast, mut errors, code) = self.build_ast(code);
 
         // name-resolver
-        let resolver = Resolver::new(&code);
-        let (namespace_handler, mut semantic_errors) = resolver.resolve_ast(&ast);
+        let resolver = Resolver::new(code);
+        let (namespace_handler, mut semantic_errors, code) = resolver.resolve_ast(&ast);
         errors.append(&mut semantic_errors);
 
         // type-checker
-        let type_checker = TypeChecker::new(&code, namespace_handler);
-        let (mut type_errors, namespace_handler) = type_checker.check_ast(&ast);
+        let type_checker = TypeChecker::new(code, namespace_handler);
+        let (mut type_errors, namespace_handler, code) = type_checker.check_ast(&ast);
 
         errors.append(&mut type_errors);
         if errors.len() > 0 {
@@ -83,7 +83,7 @@ impl BuildDriver {
         }
 
         // Python code-generation
-        let py_generator = PythonCodeGenerator::new(&code, namespace_handler);
+        let py_generator = PythonCodeGenerator::new(code, namespace_handler);
         let py_code = py_generator.generate_python_code(&ast);
         Ok(py_code)
     }

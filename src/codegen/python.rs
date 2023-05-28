@@ -50,11 +50,11 @@ pub struct PythonCodeGenerator {
 }
 
 impl PythonCodeGenerator {
-    pub fn new(code: &JarvilCode, namespace_handler: NamespaceHandler) -> PythonCodeGenerator {
+    pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
             generate_code: "".to_string(),
-            code: code.clone(),
+            code: code,
             namespace_handler,
         }
     }

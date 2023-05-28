@@ -19,7 +19,7 @@ impl UserDefinedTypeData {
         UserDefinedTypeData::LAMBDA(LambdaTypeData::default())
     }
 
-    // below methods should only be called if getting the desired variant is guarenteed
+    // Below methods should only be called if getting the desired variant is guarenteed
     // that's why interally it uses `unreachable!()`
     pub fn get_struct_data_mut_ref(&mut self) -> &mut StructData {
         match self {
