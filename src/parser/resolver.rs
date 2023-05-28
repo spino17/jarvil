@@ -29,10 +29,7 @@ use crate::{
         walk::Visitor,
     },
     code::JarvilCode,
-    error::{
-        constants::STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG,
-        diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
-    },
+    error::diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
     scope::{
         core::{Namespace, SymbolData},
         function::FunctionData,
@@ -996,7 +993,7 @@ impl Resolver {
                     .0
                     .as_ref()
                     .borrow_mut()
-                    .struct_data_mut(STRUCT_NAME_NOT_BINDED_WITH_STRUCT_VARIANT_SYMBOL_DATA_MSG)
+                    .get_struct_data_mut_ref()
                     .set_meta_data(fields_map, constructor, methods, class_methods);
             }
         }

@@ -1,15 +1,16 @@
 // See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to
 // cover and the representation of type expressions in terms of type objects.
 
+use super::resolver::Resolver;
 use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-            BinaryExpressionNode, BlockNode, CallableBodyNode,
-            CallablePrototypeNode, ComparisonNode, CoreAssignmentNode, CoreAtomNode,
-            CoreAtomStartNode, CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode,
-            CoreIdentifierNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
-            CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            BinaryExpressionNode, BlockNode, CallableBodyNode, CallablePrototypeNode,
+            ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
+            CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode,
+            CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
             LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode, OkSelfKeywordNode,
             OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
@@ -21,9 +22,6 @@ use crate::{
     code::JarvilCode,
     constants::common::{BOOL, FLOAT, INT, STRING},
     error::{
-        constants::{
-            LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG,
-        },
         diagnostics::{
             BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError,
             ConstructorNotFoundForTypeError, Diagnostics, ExpressionIndexingNotValidError,
@@ -31,8 +29,7 @@ use crate::{
             ImmutableTypeNotAssignableError, InvalidIndexExpressionForTupleError,
             InvalidReturnStatementError, LessParamsCountError, MismatchedParamTypeError,
             MismatchedReturnTypeError, MismatchedTypesOnLeftRightError, MoreParamsCountError,
-            NoReturnStatementInFunctionError,
-            PropertyDoesNotExistError, PropertyNotSupportedError,
+            NoReturnStatementInFunctionError, PropertyDoesNotExistError, PropertyNotSupportedError,
             RightSideWithVoidTypeNotAllowedError, StructFieldNotCallableError,
             TupleIndexOutOfBoundError, UnaryOperatorInvalidUseError,
             UnresolvedIndexExpressionInTupleError,
@@ -53,7 +50,6 @@ use crate::{
 };
 use std::rc::Rc;
 use text_size::TextRange;
-use super::resolver::Resolver;
 
 #[derive(Debug)]
 struct Context {
@@ -200,7 +196,7 @@ impl TypeChecker {
                     .0
                     .as_ref()
                     .borrow()
-                    .lambda_data(LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG)
+                    .get_lambda_data_ref()
                     .clone();
                 return Some((
                     lambda_data.meta_data.params,
@@ -409,9 +405,13 @@ impl TypeChecker {
                                     variable_symbol_data.0.as_ref().borrow().data_type.clone();
                                 match lambda_type.0.as_ref() {
                                     CoreType::LAMBDA(lambda_data) => {
-                                        let lambda_data = lambda_data.symbol_data.0.as_ref().borrow().lambda_data(
-                                            LAMBDA_NAME_NOT_BINDED_WITH_LAMBDA_VARIANT_SYMBOL_DATA_MSG
-                                        ).clone();
+                                        let lambda_data = lambda_data
+                                            .symbol_data
+                                            .0
+                                            .as_ref()
+                                            .borrow()
+                                            .get_lambda_data_ref()
+                                            .clone();
                                         (
                                             lambda_data.meta_data.params,
                                             lambda_data.meta_data.return_type,
@@ -484,7 +484,7 @@ impl TypeChecker {
                                     }
                                     _ => return Type::new_with_unknown(),
                                 };
-                                match struct_data.class_methods.as_ref().get(&class_method_name) {
+                                match struct_data.class_methods.get(&class_method_name) {
                                     Some((func_data, _)) => {
                                         let expected_params = func_data.params.clone();
                                         let return_type = func_data.return_type.clone();
@@ -1165,9 +1165,7 @@ impl TypeChecker {
             }
             CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
                 let core_bounded_method_wrapper = &*bounded_method_wrapper.0.as_ref().borrow();
-                self.check_callable_body(
-                    &core_bounded_method_wrapper.func_decl.core_ref().body,
-                );
+                self.check_callable_body(&core_bounded_method_wrapper.func_decl.core_ref().body);
             }
             CoreStatementNode::RETURN(return_stmt) => {
                 self.check_return_stmt(return_stmt);
