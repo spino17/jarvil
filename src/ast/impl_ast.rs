@@ -51,27 +51,17 @@ use text_size::TextSize;
 
 impl BlockNode {
     pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: &TokenNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreBlockNode {
+        let node = Rc::new(CoreBlockNode {
             newline: newline.clone(),
             stmts: Rc::new(stmts),
-            non_locals: (Rc::new(FxHashSet::default()), Rc::new(FxHashMap::default())),
-        }));
+        });
         BlockNode(node)
-    }
-
-    pub fn set_non_locals(
-        &self,
-        variable_non_locals: FxHashSet<String>,
-        function_non_locals: FxHashMap<String, bool>,
-    ) {
-        self.0.as_ref().borrow_mut().non_locals =
-            (Rc::new(variable_non_locals), Rc::new(function_non_locals));
     }
 }
 
 impl Node for BlockNode {
     fn range(&self) -> TextRange {
-        let core_block = self.0.as_ref().borrow();
+        let core_block = self.0.as_ref();
         let stmts_len = core_block.stmts.len();
         if stmts_len > 0 {
             let mut index = stmts_len - 1;
@@ -88,25 +78,31 @@ impl Node for BlockNode {
                 index = index - 1;
             }
             if is_empty {
-                impl_range!(
-                    self.0.as_ref().borrow().newline,
-                    self.0.as_ref().borrow().newline
-                )
+                impl_range!(self.0.as_ref().newline, self.0.as_ref().newline)
             } else {
-                impl_range!(
-                    self.0.as_ref().borrow().newline,
-                    self.0.as_ref().borrow().stmts[index]
-                )
+                impl_range!(self.0.as_ref().newline, self.0.as_ref().stmts[index])
             }
         } else {
-            impl_range!(
-                self.0.as_ref().borrow().newline,
-                self.0.as_ref().borrow().newline
-            )
+            impl_range!(self.0.as_ref().newline, self.0.as_ref().newline)
         }
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().borrow().newline.start_line_number()
+        self.0.as_ref().newline.start_line_number()
+    }
+}
+
+impl PartialEq for BlockNode {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for BlockNode {}
+
+impl Hash for BlockNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
     }
 }
 

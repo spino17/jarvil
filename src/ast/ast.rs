@@ -119,7 +119,6 @@ pub enum ASTNode {
 pub struct CoreBlockNode {
     pub newline: TokenNode,
     pub stmts: Rc<Vec<StatemenIndentWrapperNode>>,
-    pub non_locals: (Rc<FxHashSet<String>>, Rc<FxHashMap<String, bool>>), // (variable_non_locals, function_non_locals)
 }
 
 // STATEMENT_INDENT_WRAPPER
@@ -640,7 +639,7 @@ pub struct CoreSkippedTokenNode {
 
 // core node wrapper
 #[derive(Debug, Clone)]
-pub struct BlockNode(pub Rc<RefCell<CoreBlockNode>>);
+pub struct BlockNode(pub Rc<CoreBlockNode>);
 #[derive(Debug, Clone)]
 pub struct StatemenIndentWrapperNode(pub Rc<CoreStatemenIndentWrapperNode>);
 #[derive(Debug, Clone)]

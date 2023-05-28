@@ -261,7 +261,7 @@ pub trait Visitor {
 
         match node {
             ASTNode::BLOCK(block_node) => {
-                let core_block_node = &block_node.0.as_ref().borrow();
+                let core_block_node = &block_node.0.as_ref();
                 self.walk_token(&core_block_node.newline);
                 for stmt in &*core_block_node.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);

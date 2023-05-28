@@ -5,10 +5,10 @@ use super::{
     variables::VariableData,
 };
 use crate::{
-    ast::ast::{OkIdentifierNode, OkSelfKeywordNode},
+    ast::ast::{BlockNode, OkIdentifierNode, OkSelfKeywordNode},
     code::JarvilCode,
 };
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 pub enum SymbolDataRef<'a> {
     VARIABLE(&'a SymbolData<VariableData>),
@@ -18,8 +18,9 @@ pub enum SymbolDataRef<'a> {
 
 pub struct NamespaceHandler {
     pub namespace: Namespace,
-    pub identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>,
-    pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, usize>,
+    pub identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>, // node -> (scope_index, namespace_kind)
+    pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, usize>, // `self` (node) -> scope_index
+    pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashMap<String, bool>)>, // block_node -> (non_locally resolved variables, (non_locally resolved functions -> is_in_global_scope))
 }
 
 impl NamespaceHandler {
@@ -28,6 +29,7 @@ impl NamespaceHandler {
             namespace: Namespace::new(),
             identifier_binding_table: FxHashMap::default(),
             self_keyword_binding_table: FxHashMap::default(),
+            block_non_locals: FxHashMap::default(),
         }
     }
 
@@ -139,6 +141,28 @@ impl NamespaceHandler {
                     .get_from_variables_namespace(scope_index, "self")
             }
             None => return None,
+        }
+    }
+
+    pub fn set_non_locals(
+        &mut self,
+        block: &BlockNode,
+        variable_non_locals: FxHashSet<String>,
+        function_non_locals: FxHashMap<String, bool>,
+    ) {
+        self.block_non_locals
+            .insert(block.clone(), (variable_non_locals, function_non_locals));
+    }
+
+    pub fn get_non_locals_ref(
+        &self,
+        block: &BlockNode,
+    ) -> (&FxHashSet<String>, &FxHashMap<String, bool>) {
+        match self.block_non_locals.get(block) {
+            Some((variable_non_locals, function_non_locals)) => {
+                (variable_non_locals, function_non_locals)
+            }
+            None => unreachable!(),
         }
     }
 }

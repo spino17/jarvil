@@ -68,7 +68,7 @@ impl PythonCodeGenerator {
     }
 
     pub fn generate_python_code(mut self, ast: &BlockNode) -> String {
-        let code_block = ast.0.as_ref().borrow();
+        let code_block = ast.0.as_ref();
         for stmt in &*code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
@@ -87,9 +87,8 @@ impl PythonCodeGenerator {
     pub fn get_non_locals(
         &self,
         block: &BlockNode,
-    ) -> (Rc<FxHashSet<String>>, Rc<FxHashMap<String, bool>>) {
-        let non_locals = &block.0.as_ref().borrow().non_locals;
-        (non_locals.0.clone(), non_locals.1.clone())
+    ) -> (&FxHashSet<String>, &FxHashMap<String, bool>) {
+        self.namespace_handler.get_non_locals_ref(block)
     }
 
     pub fn get_suffix_str_for_identifier(&self, identifier: &OkIdentifierNode) -> &'static str {
@@ -150,33 +149,6 @@ impl PythonCodeGenerator {
             }
             None => return "",
         };
-        /*
-        // suffix are added to identifiers in order to model separate namespaces in Python
-        let suffix_str = match &identifier.0.as_ref().decl {
-            Some((ident_kind, _)) => match ident_kind {
-                IdentifierKind::VARIABLE(symbol_data) => {
-                    if symbol_data.2 {
-                        return "_var";
-                    }
-                    ""
-                }
-                IdentifierKind::FUNCTION(symbol_data) => {
-                    if symbol_data.2 {
-                        return "_func";
-                    }
-                    ""
-                }
-                IdentifierKind::USER_DEFINED_TYPE(symbol_data) => {
-                    if symbol_data.2 {
-                        return "_ty";
-                    }
-                    ""
-                }
-            },
-            None => "",
-        };
-        suffix_str
-         */
     }
 
     pub fn print_token(&mut self, token: &Token) {
@@ -386,33 +358,40 @@ impl Visitor for PythonCodeGenerator {
         match node {
             ASTNode::BLOCK(block) => {
                 self.open_block();
-                let core_block = block.0.as_ref().borrow();
+                let core_block = block.0.as_ref();
                 self.print_token_node(&core_block.newline);
+                let mut nonlocal_strs = vec![];
                 let (variable_non_locals, func_non_locals) = self.get_non_locals(block);
-                for entry in variable_non_locals.iter() {
-                    let mut variable_name = entry.to_string();
-                    variable_name.push_str("_var");
-                    self.add_str_to_python_code(&get_whitespaces_from_indent_level(
-                        self.indent_level,
+                for variable_name in variable_non_locals.iter() {
+                    nonlocal_strs.push(format!(
+                        "{}nonlocal {}_var\n",
+                        get_whitespaces_from_indent_level(self.indent_level),
+                        variable_name
                     ));
-                    self.add_str_to_python_code(&format!("nonlocal {}\n", variable_name));
                 }
-                for (entry, &is_global) in func_non_locals.iter() {
-                    let mut func_name = entry.to_string();
-                    func_name.push_str("_func");
-                    self.add_str_to_python_code(&get_whitespaces_from_indent_level(
-                        self.indent_level,
-                    ));
+                for (func_name, &is_global) in func_non_locals.iter() {
                     if is_global {
                         // TODO - if declarations are in global we can completely remove this
                         // as there are no variable declarations which needs to have proper
                         // behaviour of non-local assignments but global scope does not have
                         // any variable declarartions and functions cannot be assigned so
                         // we can safely remove explicit global statement here
-                        self.add_str_to_python_code(&format!("global {}\n", func_name));
+                        // self.add_str_to_python_code(&format!("global {}\n", func_name));
+                        nonlocal_strs.push(format!(
+                            "{}global {}_func\n",
+                            get_whitespaces_from_indent_level(self.indent_level),
+                            func_name
+                        ))
                     } else {
-                        self.add_str_to_python_code(&format!("nonlocal {}\n", func_name));
+                        nonlocal_strs.push(format!(
+                            "{}nonlocal {}_func\n",
+                            get_whitespaces_from_indent_level(self.indent_level),
+                            func_name
+                        ))
                     }
+                }
+                for nonlocal_str in nonlocal_strs {
+                    self.add_str_to_python_code(&nonlocal_str);
                 }
                 for stmt in &*core_block.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
@@ -476,12 +455,6 @@ impl Visitor for PythonCodeGenerator {
                 self.print_identifier(identifier);
                 return None;
             }
-            /*
-            ASTNode::TOKEN(token) => {
-                self.print_token_node(token);
-                return None;
-            }
-             */
             ASTNode::OK_TOKEN(token) => {
                 self.print_token(&token.core_ref().token);
                 return None;

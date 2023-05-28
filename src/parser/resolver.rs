@@ -97,7 +97,7 @@ impl Resolver {
         mut self,
         ast: &BlockNode,
     ) -> (NamespaceHandler, Vec<Diagnostics>, JarvilCode) {
-        let code_block = &*ast.0.as_ref().borrow();
+        let code_block = &*ast.0.as_ref();
         // setting builtin functions to global scope
         self.namespace_handler.namespace.functions.force_insert(
             self.scope_index,
@@ -168,7 +168,14 @@ impl Resolver {
             Some(block_context) => block_context,
             None => unreachable!(),
         };
+        /*
         block.set_non_locals(
+            non_locals.variable_non_locals,
+            non_locals.function_non_locals,
+        );
+         */
+        self.namespace_handler.set_non_locals(
+            block,
             non_locals.variable_non_locals,
             non_locals.function_non_locals,
         );
@@ -549,7 +556,7 @@ impl Resolver {
                 self.open_block();
                 let (param_types_vec, return_type, return_type_range) =
                     self.declare_callable_prototype(&core_ok_callable_body.prototype);
-                for stmt in &*callable_body.0.as_ref().borrow().stmts.as_ref() {
+                for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block(callable_body);
@@ -574,7 +581,7 @@ impl Resolver {
                 self.open_block();
                 let (param_types_vec, return_type, return_type_range) =
                     self.declare_callable_prototype(&core_ok_callable_body.prototype);
-                for stmt in &*callable_body.0.as_ref().borrow().stmts.as_ref() {
+                for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
                     let stmt = match stmt.core_ref() {
                         CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
                         CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
@@ -828,7 +835,7 @@ impl Resolver {
         let mut methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
-        for stmt in &*struct_body.0.as_ref().borrow().stmts.as_ref() {
+        for stmt in &*struct_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
                 CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
@@ -1110,34 +1117,6 @@ impl Resolver {
             }
         }
     }
-
-    /*
-    pub fn visit_ok_assignment(&mut self, ok_assignment: &OkAssignmentNode) {
-        let core_ok_assignment = ok_assignment.core_ref();
-        let l_atom = &core_ok_assignment.l_atom;
-        let r_assign = &core_ok_assignment.r_assign;
-        self.walk_atom(l_atom);
-        self.walk_r_assignment(r_assign);
-        // TODO - add check to track conditional enclosing context also
-        if self.get_curr_class_context_is_traversing_constructor() {
-            if let CoreAtomNode::PROPERTRY_ACCESS(property_access) = l_atom.core_ref() {
-                let core_property_access = property_access.core_ref();
-                let property_name = &core_property_access.propertry;
-                if let CoreIdentifierNode::OK(property_name) = property_name.core_ref() {
-                    let atom = &core_property_access.atom;
-                    if let CoreAtomNode::ATOM_START(atom_start) = atom.core_ref() {
-                        if let CoreAtomStartNode::SELF_KEYWORD(_) = atom_start.core_ref() {
-                            let property_name_str = property_name.token_value(&self.code);
-                            self.set_curr_class_context_constructor_initialized_fields(
-                                property_name_str,
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
-     */
 }
 
 impl Visitor for Resolver {
@@ -1145,7 +1124,7 @@ impl Visitor for Resolver {
         match node {
             ASTNode::BLOCK(block) => {
                 self.open_block();
-                let core_block = block.0.as_ref().borrow();
+                let core_block = block.0.as_ref();
                 for stmt in &*core_block.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
@@ -1168,10 +1147,6 @@ impl Visitor for Resolver {
                 self.declare_lambda_type(lambda_type_decl);
                 return None;
             }
-            //ASTNode::OK_ASSIGNMENT(ok_assignment) => {
-            //    self.visit_ok_assignment(ok_assignment);
-            //    return None;
-            //}
             ASTNode::ATOM_START(atom_start) => {
                 match atom_start.core_ref() {
                     CoreAtomStartNode::IDENTIFIER(identifier) => {
