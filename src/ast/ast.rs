@@ -13,8 +13,6 @@ use jarvil_macros::Node;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
 use crate::{lexer::token::Token, types::core::Type};
-use rustc_hash::FxHashMap;
-use rustc_hash::FxHashSet;
 use std::sync::Weak;
 use std::{cell::RefCell, rc::Rc};
 use text_size::{TextRange, TextSize};
@@ -364,7 +362,6 @@ pub struct CoreFunctionWrapperNode {
 #[derive(Debug, Clone)]
 pub struct CoreBoundedMethodWrapperNode {
     pub func_decl: FunctionDeclarationNode,
-    pub bounded_kind: Option<BoundedMethodKind>,
 }
 
 // LAMBDA_DECLARATION
@@ -695,7 +692,7 @@ pub struct FunctionDeclarationNode(pub Rc<CoreFunctionDeclarationNode>);
 #[derive(Debug, Clone)]
 pub struct FunctionWrapperNode(pub Rc<CoreFunctionWrapperNode>);
 #[derive(Debug, Clone)]
-pub struct BoundedMethodWrapperNode(pub Rc<RefCell<CoreBoundedMethodWrapperNode>>);
+pub struct BoundedMethodWrapperNode(pub Rc<CoreBoundedMethodWrapperNode>);
 #[derive(Debug, Clone)]
 pub struct LambdaDeclarationNode(pub Rc<CoreLambdaDeclarationNode>);
 #[derive(Debug, Clone)]

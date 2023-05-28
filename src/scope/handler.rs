@@ -5,7 +5,9 @@ use super::{
     variables::VariableData,
 };
 use crate::{
-    ast::ast::{BlockNode, OkIdentifierNode, OkSelfKeywordNode},
+    ast::ast::{
+        BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierNode, OkSelfKeywordNode,
+    },
     code::JarvilCode,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -21,6 +23,7 @@ pub struct NamespaceHandler {
     pub identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>, // node -> (scope_index, namespace_kind)
     pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, usize>, // `self` (node) -> scope_index
     pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashMap<String, bool>)>, // block_node -> (non_locally resolved variables, (non_locally resolved functions -> is_in_global_scope))
+    pub bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
 }
 
 impl NamespaceHandler {
@@ -30,6 +33,7 @@ impl NamespaceHandler {
             identifier_binding_table: FxHashMap::default(),
             self_keyword_binding_table: FxHashMap::default(),
             block_non_locals: FxHashMap::default(),
+            bounded_method_kind: FxHashMap::default(),
         }
     }
 
@@ -164,5 +168,21 @@ impl NamespaceHandler {
             }
             None => unreachable!(),
         }
+    }
+
+    pub fn set_bounded_kind(
+        &mut self,
+        bounded_method_wrapper: &BoundedMethodWrapperNode,
+        bounded_kind: BoundedMethodKind,
+    ) {
+        self.bounded_method_kind
+            .insert(bounded_method_wrapper.clone(), bounded_kind);
+    }
+
+    pub fn get_bounded_kind_ref(
+        &self,
+        bounded_method_wrapper: &BoundedMethodWrapperNode,
+    ) -> Option<&BoundedMethodKind> {
+        self.bounded_method_kind.get(bounded_method_wrapper)
     }
 }

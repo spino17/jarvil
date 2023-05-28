@@ -307,20 +307,22 @@ impl PythonCodeGenerator {
         &mut self,
         bounded_method_wrapper: &BoundedMethodWrapperNode,
     ) {
-        let bounded_kind = match &bounded_method_wrapper.0.as_ref().borrow().bounded_kind {
+        let bounded_kind = match self
+            .namespace_handler
+            .get_bounded_kind_ref(bounded_method_wrapper)
+        {
             Some(bounded_kind) => bounded_kind.clone(),
             None => unreachable!(),
         };
         match bounded_kind {
             BoundedMethodKind::CLASS_METHOD => {
-                self.walk_func_decl(&bounded_method_wrapper.0.as_ref().borrow().func_decl);
+                self.walk_func_decl(&bounded_method_wrapper.0.as_ref().func_decl);
                 return;
             }
             BoundedMethodKind::METHOD | BoundedMethodKind::CONSTRUCTOR => {
                 let core_func_decl = &bounded_method_wrapper
                     .0
                     .as_ref()
-                    .borrow()
                     .func_decl
                     .core_ref()
                     .clone();

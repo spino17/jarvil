@@ -619,24 +619,34 @@ impl Node for FunctionWrapperNode {
 
 impl BoundedMethodWrapperNode {
     pub fn new(func_decl: &FunctionDeclarationNode) -> Self {
-        let node = Rc::new(RefCell::new(CoreBoundedMethodWrapperNode {
+        let node = Rc::new(CoreBoundedMethodWrapperNode {
             func_decl: func_decl.clone(),
-            bounded_kind: None,
-        }));
+        });
         BoundedMethodWrapperNode(node)
-    }
-
-    pub fn set_bounded_kind(&self, bounded_kind: BoundedMethodKind) {
-        self.0.as_ref().borrow_mut().bounded_kind = Some(bounded_kind);
     }
 }
 
 impl Node for BoundedMethodWrapperNode {
     fn range(&self) -> TextRange {
-        self.0.as_ref().borrow().func_decl.range()
+        self.0.as_ref().func_decl.range()
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().borrow().func_decl.start_line_number()
+        self.0.as_ref().func_decl.start_line_number()
+    }
+}
+
+impl PartialEq for BoundedMethodWrapperNode {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for BoundedMethodWrapperNode {}
+
+impl Hash for BoundedMethodWrapperNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
     }
 }
 

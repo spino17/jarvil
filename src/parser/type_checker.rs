@@ -1145,8 +1145,11 @@ impl TypeChecker {
     }
 
     pub fn check_bounded_method(&mut self, bounded_method_wrapper: &BoundedMethodWrapperNode) {
-        let core_bounded_method_wrapper = &*bounded_method_wrapper.0.as_ref().borrow();
-        let is_constructor = match &core_bounded_method_wrapper.bounded_kind {
+        let core_bounded_method_wrapper = &*bounded_method_wrapper.0.as_ref();
+        let is_constructor = match self
+            .namespace_handler
+            .get_bounded_kind_ref(bounded_method_wrapper)
+        {
             Some(bounded_kind) => match bounded_kind {
                 BoundedMethodKind::CONSTRUCTOR => true,
                 _ => false,

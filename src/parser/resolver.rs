@@ -869,12 +869,11 @@ impl Resolver {
                         }
                     }
                 }
-                CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrappewr) => {
+                CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
                     self.set_curr_class_context_is_containing_self(false);
-                    let core_func_decl = &bounded_method_wrappewr
+                    let core_func_decl = &bounded_method_wrapper
                         .0
                         .as_ref()
-                        .borrow()
                         .func_decl
                         .core_ref()
                         .clone();
@@ -953,8 +952,10 @@ impl Resolver {
                                     }
                                     constructor =
                                         Some((func_meta_data, ok_bounded_method_name.range()));
-                                    bounded_method_wrappewr
-                                        .set_bounded_kind(BoundedMethodKind::CONSTRUCTOR);
+                                    self.namespace_handler.set_bounded_kind(
+                                        bounded_method_wrapper,
+                                        BoundedMethodKind::CONSTRUCTOR,
+                                    );
                                 }
                             }
                         } else {
@@ -981,15 +982,19 @@ impl Resolver {
                                             method_name_str,
                                             (func_meta_data, ok_bounded_method_name.range()),
                                         );
-                                        bounded_method_wrappewr
-                                            .set_bounded_kind(BoundedMethodKind::METHOD);
+                                        self.namespace_handler.set_bounded_kind(
+                                            bounded_method_wrapper,
+                                            BoundedMethodKind::METHOD,
+                                        );
                                     } else {
                                         class_methods.insert(
                                             method_name_str,
                                             (func_meta_data, ok_bounded_method_name.range()),
                                         );
-                                        bounded_method_wrappewr
-                                            .set_bounded_kind(BoundedMethodKind::CLASS_METHOD);
+                                        self.namespace_handler.set_bounded_kind(
+                                            bounded_method_wrapper,
+                                            BoundedMethodKind::CLASS_METHOD,
+                                        );
                                     }
                                 }
                             }
