@@ -45,10 +45,6 @@ pub struct StructData {
 }
 
 impl StructData {
-    pub fn set_fields(&mut self, fields: FxHashMap<String, (Type, TextRange)>) {
-        self.fields = fields;
-    }
-
     pub fn set_meta_data(
         &mut self,
         fields: FxHashMap<String, (Type, TextRange)>,

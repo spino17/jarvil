@@ -54,7 +54,7 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 struct Context {
-    func_stack: Vec<Type>,
+    func_stack: Vec<(bool, Type)>, // (is_constructor, return_type)
 }
 
 pub enum AtomicTokenExprKind {
@@ -1094,7 +1094,9 @@ impl TypeChecker {
                 let core_ok_callable_body = ok_callable_body.core_ref();
                 let return_type_obj =
                     self.check_callable_prototype(&core_ok_callable_body.prototype);
-                self.context.func_stack.push(return_type_obj.clone());
+                self.context
+                    .func_stack
+                    .push((is_constructor, return_type_obj.clone()));
                 let mut has_return_stmt: Option<TextRange> = None;
                 for stmt in &core_ok_callable_body.block.0.as_ref().borrow().stmts {
                     let stmt = match stmt.core_ref() {
@@ -1154,14 +1156,23 @@ impl TypeChecker {
             Some(expr) => self.check_expr(expr),
             _ => Type::new_with_void(),
         };
-        let expected_type_obj = self.context.func_stack[func_stack_len - 1].clone();
-        if !expr_type_obj.is_eq(&expected_type_obj) {
-            let err = MismatchedReturnTypeError::new(
-                expected_type_obj,
-                expr_type_obj,
-                core_return_stmt.return_keyword.range(),
-            );
-            self.errors.push(Diagnostics::MismatchedReturnType(err));
+        let (is_constructor, expected_type_obj) =
+            self.context.func_stack[func_stack_len - 1].clone();
+        if is_constructor {
+            let err = ExplicitReturnStatementFoundInConstructorBodyError::new(return_stmt.range());
+            self.errors
+                .push(Diagnostics::ExplicitReturnStatementFoundInConstructorBody(
+                    err,
+                ));
+        } else {
+            if !expr_type_obj.is_eq(&expected_type_obj) {
+                let err = MismatchedReturnTypeError::new(
+                    expected_type_obj,
+                    expr_type_obj,
+                    core_return_stmt.return_keyword.range(),
+                );
+                self.errors.push(Diagnostics::MismatchedReturnType(err));
+            }
         }
     }
 
