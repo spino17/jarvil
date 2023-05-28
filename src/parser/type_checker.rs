@@ -6,11 +6,11 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-            BinaryExpressionNode, BlockNode, CallableBodyNode, CallablePrototypeNode,
-            ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
-            CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode,
-            CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            BinaryExpressionNode, BlockNode, BoundedMethodKind, CallableBodyNode,
+            CallablePrototypeNode, ComparisonNode, CoreAssignmentNode, CoreAtomNode,
+            CoreAtomStartNode, CoreAtomicExpressionNode, CoreCallableBodyNode, CoreExpressionNode,
+            CoreIdentifierNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
+            CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
             LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode,
             OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
@@ -24,7 +24,8 @@ use crate::{
     error::{
         diagnostics::{
             BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError,
-            ConstructorNotFoundForTypeError, Diagnostics, ExpressionIndexingNotValidError,
+            ConstructorNotFoundForTypeError, Diagnostics,
+            ExplicitReturnStatementFoundInConstructorBodyError, ExpressionIndexingNotValidError,
             ExpressionNotCallableError, IdentifierNotCallableError,
             ImmutableTypeNotAssignableError, InvalidIndexExpressionForTupleError,
             InvalidReturnStatementError, LessParamsCountError, MismatchedParamTypeError,
@@ -842,7 +843,7 @@ impl TypeChecker {
                 self.check_expr(&expr_stmt.core_ref().expr)
             }
             CoreRVariableDeclarationNode::LAMBDA(lambda) => {
-                self.check_callable_body(&lambda.core_ref().body);
+                self.check_callable_body(&lambda.core_ref().body, false);
                 return self.type_of_lambda(lambda);
             }
             CoreRVariableDeclarationNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
@@ -1086,7 +1087,7 @@ impl TypeChecker {
         return_type_obj
     }
 
-    pub fn check_callable_body(&mut self, callable_body: &CallableBodyNode) {
+    pub fn check_callable_body(&mut self, callable_body: &CallableBodyNode, is_constructor: bool) {
         let core_callable_body = callable_body.0.as_ref();
         match core_callable_body {
             CoreCallableBodyNode::OK(ok_callable_body) => {
@@ -1094,7 +1095,7 @@ impl TypeChecker {
                 let return_type_obj =
                     self.check_callable_prototype(&core_ok_callable_body.prototype);
                 self.context.func_stack.push(return_type_obj.clone());
-                let mut has_return_stmt = false;
+                let mut has_return_stmt: Option<TextRange> = None;
                 for stmt in &core_ok_callable_body.block.0.as_ref().borrow().stmts {
                     let stmt = match stmt.core_ref() {
                         CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
@@ -1105,22 +1106,35 @@ impl TypeChecker {
                         _ => continue,
                     };
                     self.walk_stmt(&stmt);
-                    if let CoreStatementNode::RETURN(_) = stmt.core_ref() {
-                        has_return_stmt = true;
-                        // TODO - we can break here as any statement following return statement is dead code
+                    if let CoreStatementNode::RETURN(return_stmt) = stmt.core_ref() {
+                        has_return_stmt = Some(return_stmt.range());
                     }
                 }
-                if !has_return_stmt && !return_type_obj.is_void() {
-                    let return_type_node = ok_callable_body
-                        .core_ref()
-                        .prototype
-                        .core_ref()
-                        .return_type
-                        .as_ref()
-                        .unwrap();
-                    let err = NoReturnStatementInFunctionError::new(return_type_node.range());
-                    self.errors
-                        .push(Diagnostics::NoReturnStatementInFunction(err));
+                if is_constructor {
+                    match has_return_stmt {
+                        Some(return_stmt_range) => {
+                            let err = ExplicitReturnStatementFoundInConstructorBodyError::new(
+                                return_stmt_range,
+                            );
+                            self.errors.push(
+                                Diagnostics::ExplicitReturnStatementFoundInConstructorBody(err),
+                            );
+                        }
+                        None => {}
+                    }
+                } else {
+                    if !has_return_stmt.is_some() && !return_type_obj.is_void() {
+                        let return_type_node = ok_callable_body
+                            .core_ref()
+                            .prototype
+                            .core_ref()
+                            .return_type
+                            .as_ref()
+                            .unwrap();
+                        let err = NoReturnStatementInFunctionError::new(return_type_node.range());
+                        self.errors
+                            .push(Diagnostics::NoReturnStatementInFunction(err));
+                    }
                 }
                 self.context.func_stack.pop();
             }
@@ -1164,11 +1178,21 @@ impl TypeChecker {
                 self.check_variable_decl(variable_decl);
             }
             CoreStatementNode::FUNCTION_WRAPPER(func_wrapper) => {
-                self.check_callable_body(&func_wrapper.core_ref().func_decl.core_ref().body);
+                self.check_callable_body(&func_wrapper.core_ref().func_decl.core_ref().body, false);
             }
             CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
                 let core_bounded_method_wrapper = &*bounded_method_wrapper.0.as_ref().borrow();
-                self.check_callable_body(&core_bounded_method_wrapper.func_decl.core_ref().body);
+                let is_constructor = match &core_bounded_method_wrapper.bounded_kind {
+                    Some(bounded_kind) => match bounded_kind {
+                        BoundedMethodKind::CONSTRUCTOR => true,
+                        _ => false,
+                    },
+                    None => false,
+                };
+                self.check_callable_body(
+                    &core_bounded_method_wrapper.func_decl.core_ref().body,
+                    is_constructor,
+                );
             }
             CoreStatementNode::RETURN(return_stmt) => {
                 self.check_return_stmt(return_stmt);

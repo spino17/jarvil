@@ -15,7 +15,6 @@ use crate::reader::read_file;
 use miette::Report;
 use std::fs;
 use std::process::Command;
-use std::rc::Rc;
 use std::str;
 
 fn attach_source_code(err: Report, source: String) -> Report {
