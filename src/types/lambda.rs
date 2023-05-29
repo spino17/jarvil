@@ -13,6 +13,10 @@ impl Lambda {
         Lambda {
             name,
             meta_data: FunctionData {
+                // NOTE: Below is traditionally an expensive clone but in our case, 
+                // mostly `params.len()` is less (that is number of arguments in a function definition)
+                // so we avoid runtime overhead of using `Rc` which ideally should be used if length is large
+                // for example: in `BlockNode`, see `stmts` field.
                 params: params.clone(),
                 return_type: return_type.clone(),
             },
