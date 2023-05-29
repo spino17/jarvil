@@ -49,7 +49,7 @@ use crate::{
         core::{AbstractType, CoreType, Type},
     },
 };
-use std::rc::Rc;
+use std::{mem, rc::Rc};
 use text_size::TextRange;
 
 #[derive(Debug)]
@@ -117,6 +117,21 @@ impl TypeChecker {
             .identifier_binding_table
             .get(node)
             .is_some()
+    }
+
+    // This method uses unsafe code! which is absolutely nessesary to bypass
+    // the borrow-checker for mutating errors while have immutable ref to `Resolver`.
+    // This is purely due to performance and can be completely replaced with safe
+    // alternatives exploiting `Interior Mutability` like `RefCell` along with which comes
+    // runtime overhead.
+    pub fn get_errors_mut_ref(&self) -> &mut Vec<Diagnostics> {
+        let errors_ref: *const Vec<Diagnostics> = &self.errors;
+        let errors_mut_ref = errors_ref.cast_mut();
+        unsafe { return mem::transmute(errors_mut_ref) }
+    }
+
+    pub fn log_errors(&self, err: Diagnostics) {
+        self.get_errors_mut_ref().push(err);
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {

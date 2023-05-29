@@ -1,7 +1,7 @@
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
     CoreCallableBodyNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-    CoreTypeExpressionNode, FunctionWrapperNode, OkAssignmentNode, OkSelfKeywordNode,
+    CoreTypeExpressionNode, FunctionWrapperNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -39,7 +39,7 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::{rc::Rc, vec};
+use std::vec;
 use text_size::TextRange;
 
 pub enum ResolveResult {
@@ -168,12 +168,6 @@ impl Resolver {
             Some(block_context) => block_context,
             None => unreachable!(),
         };
-        /*
-        block.set_non_locals(
-            non_locals.variable_non_locals,
-            non_locals.function_non_locals,
-        );
-         */
         self.namespace_handler.set_non_locals(
             block,
             non_locals.variable_non_locals,
