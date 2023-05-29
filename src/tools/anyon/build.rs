@@ -63,7 +63,7 @@ impl BuildDriver {
         (ast, errors, code)
     }
 
-    pub fn build_code(&self, mut code: JarvilCode, code_str: String) -> Result<String, Report> {
+    pub fn build_code(&self, code: JarvilCode, code_str: String) -> Result<String, Report> {
         let (ast, mut errors, code) = self.build_ast(code);
 
         // name-resolver
@@ -73,11 +73,11 @@ impl BuildDriver {
 
         // type-checker
         let type_checker = TypeChecker::new(code, namespace_handler);
-        let (mut type_errors, namespace_handler, code) = type_checker.check_ast(&ast);
+        let (namespace_handler, code) = type_checker.check_ast(&ast, &mut errors);
 
-        errors.append(&mut type_errors);
+        // errors.append(&mut type_errors);
         if errors.len() > 0 {
-            let err = errors[0].clone();
+            let err = &errors[0];
             return Err(attach_source_code(err.report(), code_str));
         }
 

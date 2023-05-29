@@ -577,10 +577,10 @@ impl Resolver {
                     self.declare_callable_prototype(&core_ok_callable_body.prototype);
                 for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
                     let stmt = match stmt.core_ref() {
-                        CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
+                        CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt,
                         CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
                             let core_stmt = stmt.core_ref();
-                            core_stmt.stmt.clone()
+                            &core_stmt.stmt
                         }
                         _ => continue,
                     };
@@ -831,10 +831,8 @@ impl Resolver {
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
         for stmt in &*struct_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
-                CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt.clone(),
-                CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
-                    stmt.core_ref().stmt.clone()
-                }
+                CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt,
+                CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => &stmt.core_ref().stmt,
                 _ => continue,
             };
             match stmt.core_ref() {
@@ -865,12 +863,7 @@ impl Resolver {
                 }
                 CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
                     self.set_curr_class_context_is_containing_self(false);
-                    let core_func_decl = &bounded_method_wrapper
-                        .0
-                        .as_ref()
-                        .func_decl
-                        .core_ref()
-                        .clone();
+                    let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
                     let mut is_constructor = false;
                     if let CoreIdentifierNode::OK(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()

@@ -15,8 +15,10 @@ mod types;
 
 use miette::{GraphicalReportHandler, GraphicalTheme};
 use owo_colors::Style;
-use std::env::args;
+use std::borrow::BorrowMut;
+use std::cell::UnsafeCell;
 use std::fmt::Write;
+use std::{cell::Cell, env::args};
 use tools::anyon::{
     core::{get_cmd_from_command_line_args, AbstractCommand},
     error::AnyonError,

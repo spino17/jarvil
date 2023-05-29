@@ -207,7 +207,7 @@ impl PythonCodeGenerator {
         let suffix_str = self.get_suffix_str_for_identifier(identifier);
         let mut token_value = identifier.token_value(&self.code);
         token_value.push_str(suffix_str);
-        let token = identifier.0.as_ref().token.core_ref().token.clone();
+        let token = &identifier.0.as_ref().token.core_ref().token;
         let trivia = match &token.trivia {
             Some(trivia) => Some(trivia),
             None => None,
@@ -311,7 +311,7 @@ impl PythonCodeGenerator {
             .namespace_handler
             .get_bounded_kind_ref(bounded_method_wrapper)
         {
-            Some(bounded_kind) => bounded_kind.clone(),
+            Some(bounded_kind) => bounded_kind,
             None => unreachable!(),
         };
         match bounded_kind {
@@ -320,12 +320,7 @@ impl PythonCodeGenerator {
                 return;
             }
             BoundedMethodKind::METHOD | BoundedMethodKind::CONSTRUCTOR => {
-                let core_func_decl = &bounded_method_wrapper
-                    .0
-                    .as_ref()
-                    .func_decl
-                    .core_ref()
-                    .clone();
+                let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
                 let def_keyword = &core_func_decl.def_keyword;
                 let name = &core_func_decl.name;
                 let body = match core_func_decl.body.core_ref() {

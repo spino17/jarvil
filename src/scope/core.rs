@@ -47,7 +47,7 @@ impl<T> CoreScope<T> {
             decl_range,
             is_suffix_required,
         );
-        self.symbol_table.insert(name, symbol_data.clone());
+        self.symbol_table.insert(name, symbol_data);
     }
 
     pub fn get(&self, name: &str) -> Option<&SymbolData<T>> {
@@ -277,7 +277,7 @@ impl Namespace {
                 if symbol_data.0.as_ref().borrow().is_initialized() {
                     return VariableLookupResult::OK((symbol_data, resolved_scope_index, depth));
                 } else {
-                    return VariableLookupResult::NOT_INITIALIZED(symbol_data.1.clone());
+                    return VariableLookupResult::NOT_INITIALIZED(symbol_data.1);
                 }
             }
             None => return VariableLookupResult::Err,

@@ -118,15 +118,12 @@ impl NamespaceHandler {
         &self,
         node: &OkIdentifierNode,
         code: &JarvilCode,
-    ) -> Option<SymbolData<UserDefinedTypeData>> {
+    ) -> Option<&SymbolData<UserDefinedTypeData>> {
         match self.identifier_binding_table.get(node) {
             Some((scope_index, namespace_kind)) => match namespace_kind {
                 NamespaceKind::TYPE => {
                     let name = node.token_value(code);
-                    return self
-                        .namespace
-                        .get_from_types_namespace(*scope_index, &name)
-                        .cloned();
+                    return self.namespace.get_from_types_namespace(*scope_index, &name);
                 }
                 _ => unreachable!(),
             },

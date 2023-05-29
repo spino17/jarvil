@@ -801,9 +801,9 @@ pub struct IdentifierNotCallableError {
 }
 
 impl IdentifierNotCallableError {
-    pub fn new(ty: Type, range: TextRange) -> Self {
+    pub fn new(ty: String, range: TextRange) -> Self {
         IdentifierNotCallableError {
-            ty: ty.to_string(),
+            ty,
             span: range_to_span(range).into(),
             help: Some(
                 "only variables with `lambda` types are callable"
@@ -874,13 +874,13 @@ pub struct PropertyDoesNotExistError {
 impl PropertyDoesNotExistError {
     pub fn new(
         property_kind: PropertyKind,
-        ty: Type,
+        ty: String,
         property_range: TextRange,
         expr_range: TextRange,
     ) -> Self {
         PropertyDoesNotExistError {
             property_kind,
-            ty: ty.to_string(),
+            ty,
             property_span: range_to_span(property_range).into(),
             expr_span: range_to_span(expr_range).into(),
         }
@@ -897,9 +897,9 @@ pub struct StructFieldNotCallableError {
 }
 
 impl StructFieldNotCallableError {
-    pub fn new(ty: Type, field_span: TextRange) -> Self {
+    pub fn new(ty: String, field_span: TextRange) -> Self {
         StructFieldNotCallableError {
-            ty: ty.to_string(),
+            ty,
             field_span: range_to_span(field_span).into(),
         }
     }
@@ -953,14 +953,14 @@ pub struct ExpressionIndexingNotValidError {
 
 impl ExpressionIndexingNotValidError {
     pub fn new(
-        expr_ty: Type,
-        index_ty: Type,
+        expr_type: String,
+        index_type: String,
         expr_range: TextRange,
         index_range: TextRange,
     ) -> Self {
         ExpressionIndexingNotValidError {
-            expr_type: expr_ty.to_string(),
-            index_type: index_ty.to_string(),
+            expr_type,
+            index_type,
             expr_span: range_to_span(expr_range).into(),
             index_span: range_to_span(index_range).into(),
         }
@@ -1042,7 +1042,7 @@ pub struct UnaryOperatorInvalidUseError {
 
 impl UnaryOperatorInvalidUseError {
     pub fn new(
-        ty: Type,
+        ty: String,
         valid_operand_type: &'static str,
         operator: &'static str,
         operand_range: TextRange,
@@ -1053,7 +1053,7 @@ impl UnaryOperatorInvalidUseError {
             operator, valid_operand_type
         );
         UnaryOperatorInvalidUseError {
-            ty: ty.to_string(),
+            ty,
             valid_operand_type: valid_operand_type.to_string(),
             operator: operator.to_string(),
             operand_span: range_to_span(operand_range).into(),
@@ -1081,16 +1081,16 @@ pub struct BinaryOperatorInvalidOperandsError {
 
 impl BinaryOperatorInvalidOperandsError {
     pub fn new(
-        left_type: Type,
-        right_type: Type,
+        left_type: String,
+        right_type: String,
         left_range: TextRange,
         right_range: TextRange,
         operator_range: TextRange,
     ) -> Self {
         // TODO - construct dynamic help message
         BinaryOperatorInvalidOperandsError {
-            left_type: left_type.to_string(),
-            right_type: right_type.to_string(),
+            left_type,
+            right_type,
             left_expr_span: range_to_span(left_range).into(),
             right_expr_span: range_to_span(right_range).into(),
             operator_span: range_to_span(operator_range).into(),
@@ -1115,14 +1115,14 @@ pub struct MismatchedTypesOnLeftRightError {
 
 impl MismatchedTypesOnLeftRightError {
     pub fn new(
-        left_type: Type,
-        right_type: Type,
+        left_type: String,
+        right_type: String,
         left_range: TextRange,
         right_range: TextRange,
     ) -> Self {
         MismatchedTypesOnLeftRightError {
-            left_type: left_type.to_string(),
-            right_type: right_type.to_string(),
+            left_type,
+            right_type,
             left_span: range_to_span(left_range).into(),
             right_span: range_to_span(right_range).into(),
             help: Some(
@@ -1242,10 +1242,10 @@ pub struct MismatchedReturnTypeError {
 }
 
 impl MismatchedReturnTypeError {
-    pub fn new(expected_type: Type, received_type: Type, range: TextRange) -> Self {
+    pub fn new(expected_type: String, received_type: String, range: TextRange) -> Self {
         MismatchedReturnTypeError {
-            expected_type: expected_type.to_string(),
-            received_type: received_type.to_string(),
+            expected_type: expected_type,
+            received_type: received_type,
             span: range_to_span(range).into(),
         }
     }
