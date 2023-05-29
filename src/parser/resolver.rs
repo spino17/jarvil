@@ -33,7 +33,6 @@ use crate::{
     scope::{
         core::{Namespace, SymbolData},
         function::FunctionData,
-        user_defined_types::{LambdaTypeData, UserDefinedTypeData},
         variables::VariableData,
     },
     types::core::Type,
@@ -296,13 +295,6 @@ impl Resolver {
         }
     }
 
-    pub fn try_resolving_function(&mut self, identifier: &OkIdentifierNode) -> ResolveResult {
-        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
-            namespace.lookup_in_functions_namespace(scope_index, key)
-        };
-        self.try_resolving(identifier, lookup_fn, NamespaceKind::FUNCTION)
-    }
-
     pub fn try_resolving_user_defined_type(
         &mut self,
         identifier: &OkIdentifierNode,
@@ -366,17 +358,6 @@ impl Resolver {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_struct_type(scope_index, name, decl_range)
-            };
-        self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::TYPE)
-    }
-
-    pub fn try_declare_and_bind_lambda_type(
-        &mut self,
-        identifier: &OkIdentifierNode,
-    ) -> Option<(String, TextRange)> {
-        let declare_fn =
-            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-                namespace.declare_lambda_type(scope_index, name, decl_range)
             };
         self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::TYPE)
     }

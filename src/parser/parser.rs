@@ -1,9 +1,9 @@
 use crate::ast::ast::{
-    AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockKind, BlockNode,
-    CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode,
-    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, OkTokenNode, ParamsNode,
-    SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
-    TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
+    AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
+    CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode, IdentifierNode,
+    NameTypeSpecNode, NameTypeSpecsNode, Node, OkTokenNode, ParamsNode, SelfKeywordNode,
+    SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::code::JarvilCode;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
@@ -89,10 +89,6 @@ impl JarvilParser {
 
     pub fn add_to_correction_indent(&mut self, addition: i64) {
         self.correction_indent = self.correction_indent + addition;
-    }
-
-    pub fn curr_line_number(&self) -> usize {
-        self.token_vec[self.lookahead].line_number
     }
 
     pub fn curr_token(&mut self) -> Token {
@@ -240,18 +236,6 @@ impl JarvilParser {
             self.log_missing_token_error(&[symbol], &token);
             SelfKeywordNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
         }
-    }
-
-    pub fn expects(&mut self, symbols: &[&'static str]) -> TokenNode {
-        let token = self.curr_token();
-        for &symbol in symbols {
-            if token.is_eq(symbol) {
-                self.scan_next_token();
-                return TokenNode::new_with_ok(&token);
-            }
-        }
-        self.log_missing_token_error(symbols, &token);
-        TokenNode::new_with_missing_tokens(&Rc::new(symbols.to_vec()), &token)
     }
 
     pub fn expect_terminators(&mut self) -> TokenNode {

@@ -14,7 +14,6 @@ use crate::constants::common::{
     WITH_KEYWORD, YIELD_KEYWORD,
 };
 use std::fmt::Display;
-use std::rc::Rc;
 use text_size::TextRange;
 
 #[derive(Debug, Clone, PartialEq, Tokenify)]

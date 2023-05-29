@@ -1,6 +1,6 @@
 use super::function::FunctionData;
 use crate::{constants::common::INT, types::core::Type};
-use std::{rc::Rc, str::Chars};
+use std::str::Chars;
 
 // print(_obj: <any>)
 pub fn print_meta_data() -> FunctionData {

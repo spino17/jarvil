@@ -137,17 +137,6 @@ impl<T> Scope<T> {
         return new_scope_index;
     }
 
-    fn is_global(&self, scope_index: usize) -> bool {
-        self.flattened_vec[scope_index].is_global
-    }
-
-    pub fn parent(&self, scope_index: usize) -> Option<usize> {
-        match self.flattened_vec[scope_index].parent_scope {
-            Some(parent_scope_index) => Some(parent_scope_index),
-            None => None,
-        }
-    }
-
     pub fn force_insert(
         &mut self,
         scope_index: usize,
@@ -388,29 +377,6 @@ impl Namespace {
             scope_index,
             name,
             UserDefinedTypeData::default_with_struct(),
-            decl_range,
-            lookup_func,
-            true,
-        )
-    }
-
-    pub fn declare_lambda_type(
-        &mut self,
-        scope_index: usize,
-        name: String,
-        decl_range: TextRange,
-    ) -> Result<(), (String, TextRange)> {
-        let lookup_func =
-            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
-                .lookup(scope_index, key)
-            {
-                Some((symbol_data, _, _, _)) => Some(symbol_data.1),
-                None => None,
-            };
-        self.types.insert(
-            scope_index,
-            name,
-            UserDefinedTypeData::default_with_lambda(),
             decl_range,
             lookup_func,
             true,

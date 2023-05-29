@@ -1,8 +1,8 @@
 use super::ast::{
     ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
-    BinaryExpressionNode, BlockKind, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode,
-    CallExpressionNode, CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode,
-    ComparisonNode, CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
+    BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode, CallNode,
+    CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
+    CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
     CoreAtomicExpressionNode, CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode,
     CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
     CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode, CoreExpressionNode,
@@ -43,9 +43,8 @@ use crate::scope::core::NamespaceKind;
 use crate::scope::handler::NamespaceHandler;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::core::Type;
-use rustc_hash::{FxHashMap, FxHashSet};
 use std::hash::{Hash, Hasher};
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 use text_size::TextRange;
 use text_size::TextSize;
 
@@ -1261,7 +1260,7 @@ impl UserDefinedTypeNode {
                 .types
                 .lookup_and_get_symbol_data_ref(scope_index, &name)
             {
-                Some((symbol_data, resolved_scope_index, depth, _)) => {
+                Some((symbol_data, resolved_scope_index, _, _)) => {
                     resolver.bind_decl_to_identifier(
                         ok_identifier,
                         resolved_scope_index,
@@ -1972,13 +1971,6 @@ impl IdentifierNode {
         IdentifierNode(node)
     }
 
-    pub fn get_ok(&self) -> Option<OkIdentifierNode> {
-        match &self.0.as_ref() {
-            CoreIdentifierNode::OK(ok_token_node) => Some(ok_token_node.clone()),
-            _ => None,
-        }
-    }
-
     impl_core_ref!(CoreIdentifierNode);
 }
 default_errornous_node_impl!(IdentifierNode, CoreIdentifierNode);
@@ -1994,53 +1986,6 @@ impl OkIdentifierNode {
     pub fn token_value(&self, code: &JarvilCode) -> String {
         self.0.as_ref().token.token_value(code)
     }
-
-    /*
-    pub fn bind_variable_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
-        todo!()
-    }
-
-    pub fn bind_user_defined_type_decl(
-        &self,
-        symbol_data: &SymbolData<UserDefinedTypeData>,
-        depth: usize,
-    ) {
-        todo!()
-    }
-
-    pub fn bind_function_decl(&self, symbol_data: &SymbolData<FunctionData>, depth: usize) {
-        todo!()
-    }
-
-    pub fn symbol_data(&self) -> Option<(IdentifierKind, usize)> {
-        todo!()
-    }
-
-    pub fn variable_symbol_data(
-        &self,
-        panic_message: &'static str,
-    ) -> Option<SymbolData<VariableData>> {
-        todo!()
-    }
-
-    pub fn function_symbol_data(
-        &self,
-        panic_message: &'static str,
-    ) -> Option<SymbolData<FunctionData>> {
-        todo!()
-    }
-
-    pub fn user_defined_type_symbol_data(
-        &self,
-        panic_message: &'static str,
-    ) -> Option<SymbolData<UserDefinedTypeData>> {
-        todo!()
-    }
-
-    pub fn is_resolved(&self) -> bool {
-        todo!()
-    }
-     */
 }
 
 impl Node for OkIdentifierNode {
@@ -2073,13 +2018,6 @@ impl SelfKeywordNode {
         SelfKeywordNode(node)
     }
 
-    pub fn get_ok(&self) -> Option<OkSelfKeywordNode> {
-        match &self.0.as_ref() {
-            CoreSelfKeywordNode::OK(ok_self_keyword_node) => Some(ok_self_keyword_node.clone()),
-            _ => None,
-        }
-    }
-
     impl_core_ref!(CoreSelfKeywordNode);
 }
 default_errornous_node_impl!(SelfKeywordNode, CoreSelfKeywordNode);
@@ -2095,20 +2033,6 @@ impl OkSelfKeywordNode {
     pub fn token_value(&self, code: &JarvilCode) -> String {
         self.0.as_ref().token.token_value(code)
     }
-
-    /*
-    pub fn bind_decl(&self, symbol_data: &SymbolData<VariableData>, depth: usize) {
-        todo!()
-    }
-
-    pub fn symbol_data(&self) -> Option<SymbolData<VariableData>> {
-        todo!()
-    }
-
-    pub fn is_resolved(&self) -> bool {
-        todo!()
-    }
-     */
 }
 
 impl Node for OkSelfKeywordNode {
@@ -2141,20 +2065,6 @@ impl TokenNode {
         TokenNode(node)
     }
 
-    pub fn is_ok(&self) -> Option<TokenNode> {
-        match &self.0.as_ref() {
-            CoreTokenNode::OK(_) => Some(self.clone()),
-            _ => None,
-        }
-    }
-
-    pub fn get_ok(&self) -> Option<OkTokenNode> {
-        match &self.0.as_ref() {
-            CoreTokenNode::OK(ok_token_node) => Some(ok_token_node.clone()),
-            _ => None,
-        }
-    }
-
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match &self.0.as_ref() {
             CoreTokenNode::OK(ok_token) => match ok_token.is_binary_operator() {
@@ -2182,10 +2092,6 @@ impl OkTokenNode {
 
     pub fn token_value(&self, code: &JarvilCode) -> String {
         self.0.as_ref().token.token_value(code)
-    }
-
-    pub fn is_identifier(&self) -> bool {
-        self.core_ref().token.is_identifier()
     }
 
     impl_core_ref!(CoreOkTokenNode);
@@ -2231,14 +2137,6 @@ impl SkippedTokenNode {
             skipped_token: skipped_token.clone(),
         });
         SkippedTokenNode(node)
-    }
-
-    pub fn index(&self) -> usize {
-        self.0.as_ref().skipped_token.index()
-    }
-
-    pub fn line_number(&self) -> usize {
-        self.0.as_ref().skipped_token.line_number
     }
 
     impl_core_ref!(CoreSkippedTokenNode);

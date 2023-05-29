@@ -4,21 +4,18 @@ use crate::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
             ClassMethodCallNode, CoreCallableBodyNode, CoreIdentifierNode,
             CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode, CoreTokenNode,
-            CoreTypeDeclarationNode, IdentifierNode, OkIdentifierNode, OkSelfKeywordNode,
-            TokenNode, TypeDeclarationNode, VariableDeclarationNode,
+            CoreTypeDeclarationNode, IdentifierNode, OkIdentifierNode, TokenNode,
+            TypeDeclarationNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
     code::JarvilCode,
     context,
     lexer::token::{CoreToken, Token},
-    scope::{
-        core::{Namespace, NamespaceKind},
-        handler::NamespaceHandler,
-    },
+    scope::{core::NamespaceKind, handler::NamespaceHandler},
 };
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::{convert::TryInto, rc::Rc};
+use std::convert::TryInto;
 
 // Utility functions
 pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
@@ -26,10 +23,6 @@ pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
     return " "
         .to_string()
         .repeat(expected_indent_spaces.try_into().unwrap());
-}
-
-pub fn get_newline() -> &'static str {
-    return "\n";
 }
 
 pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {

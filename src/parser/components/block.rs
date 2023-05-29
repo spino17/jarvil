@@ -93,15 +93,10 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
                 } else {
                     // the highest level incorrectly indented stmt
                     parser.set_ignore_all_errors(true);
-                    let before_line_number = parser.curr_line_number();
                     parser.set_correction_indent(indent_data.1 - indent_data.0);
                     let stmt_node = statement_parsing_fn(parser);
                     parser.set_ignore_all_errors(false);
-                    let mut after_line_number = parser.curr_line_number();
                     parser.set_correction_indent(0);
-                    if after_line_number > before_line_number {
-                        after_line_number = after_line_number - 1;
-                    }
                     parser.log_incorrectly_indented_block_error(
                         stmt_node.range(),
                         indent_data.0,

@@ -13,8 +13,8 @@ use jarvil_macros::Node;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
 use crate::{lexer::token::Token, types::core::Type};
-use std::sync::Weak;
 use std::rc::Rc;
+use std::sync::Weak;
 use text_size::{TextRange, TextSize};
 
 pub trait Node {

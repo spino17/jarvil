@@ -40,16 +40,15 @@ use crate::{
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     parser::resolver::ErrorLoggingTypeKind,
     scope::{
-        core::SymbolData,
         handler::{NamespaceHandler, SymbolDataRef},
-        user_defined_types::{LambdaTypeData, UserDefinedTypeData},
+        user_defined_types::UserDefinedTypeData,
     },
     types::{
         atomic::Atomic,
         core::{AbstractType, CoreType, Type},
     },
 };
-use std::{cell::UnsafeCell, mem, rc::Rc};
+use std::cell::UnsafeCell;
 use text_size::TextRange;
 
 #[derive(Debug)]

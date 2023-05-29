@@ -14,22 +14,11 @@ impl UserDefinedTypeData {
         UserDefinedTypeData::STRUCT(StructData::default())
     }
 
-    pub fn default_with_lambda() -> Self {
-        UserDefinedTypeData::LAMBDA(LambdaTypeData::default())
-    }
-
     // Below methods should only be called if getting the desired variant is guarenteed
     // that's why interally it uses `unreachable!()`
     pub fn get_struct_data_mut_ref(&mut self) -> &mut StructData {
         match self {
             UserDefinedTypeData::STRUCT(data) => data,
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn get_lambda_data_ref(&self) -> &LambdaTypeData {
-        match self {
-            UserDefinedTypeData::LAMBDA(data) => data,
             _ => unreachable!(),
         }
     }
