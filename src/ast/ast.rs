@@ -31,23 +31,17 @@ pub trait ErrornousNode {
 #[derive(Debug, Clone, Nodify)]
 pub enum ASTNode {
     Block(BlockNode),
-
-    // Statements
     StatementIndentWrapper(StatemenIndentWrapperNode),
     SkippedTokens(SkippedTokensNode),
     IncorrectlyIndentedStatement(IncorrectlyIndentedStatementNode),
     Statement(StatementNode),
     Return(ReturnStatementNode),
-
-    // Declaration `n` Assignment
     VariableDeclaration(VariableDeclarationNode),
     Assignment(AssignmentNode),
     OkAssignment(OkAssignmentNode),
     InvalidLValue(InvalidLValueNode),
     RAssignment(RAssignmentNode),
     RVariableDeclaration(RVariableDeclarationNode),
-
-    // Types
     TypeDeclaration(TypeDeclarationNode),
     StructDeclaration(StructDeclarationNode),
     StructPropertyDeclaration(StructPropertyDeclarationNode),
@@ -59,8 +53,6 @@ pub enum ASTNode {
     TupleType(TupleTypeNode),
     HashmapType(HashMapTypeNode),
     UserDefinedType(UserDefinedTypeNode),
-
-    // Callable
     CallablePrototype(CallablePrototypeNode),
     CallableBody(CallableBodyNode),
     OkCallableBody(OkCallableBodyNode),
@@ -68,8 +60,6 @@ pub enum ASTNode {
     FunctionWrapper(FunctionWrapperNode),
     BoundedMethodWrapper(BoundedMethodWrapperNode),
     LambdaDeclaration(LambdaDeclarationNode),
-
-    // Expression
     ExpressionStatement(ExpressionStatementNode),
     Expression(ExpressionNode),
     AtomicExpression(AtomicExpressionNode),
@@ -79,8 +69,6 @@ pub enum ASTNode {
     BinaryExpression(BinaryExpressionNode),
     Comparison(ComparisonNode),
     CallExpression(CallExpressionNode),
-
-    // Atom
     Atom(AtomNode),
     AtomStart(AtomStartNode),
     PropertyAccess(PropertyAccessNode),
@@ -88,8 +76,6 @@ pub enum ASTNode {
     IndexAccess(IndexAccessNode),
     Call(CallNode),
     ClassMethodCall(ClassMethodCallNode),
-
-    // General
     NameTypeSpecs(NameTypeSpecsNode),
     OkNameTypeSpecs(OkNameTypeSpecsNode),
     NameTypeSpec(NameTypeSpecNode),
@@ -97,8 +83,6 @@ pub enum ASTNode {
     OkTypeTuple(OkTypeTupleNode),
     Params(ParamsNode),
     OkParams(OkParamsNode),
-
-    // Basic
     Identifier(IdentifierNode),
     OkIdentifier(OkIdentifierNode),
     SelfKeyword(SelfKeywordNode),
@@ -112,14 +96,14 @@ pub enum ASTNode {
 // core nodes containing the structure for storing concrete syntax
 // BLOCK
 // `\n` <stmts>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreBlockNode {
     pub newline: TokenNode,
     pub stmts: Rc<Vec<StatemenIndentWrapperNode>>,
 }
 
 // STATEMENT_INDENT_WRAPPER
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreStatemenIndentWrapperNode {
     CorrectlyIndented(StatementNode),
     IncorrectlyIndented(IncorrectlyIndentedStatementNode),
@@ -129,13 +113,13 @@ pub enum CoreStatemenIndentWrapperNode {
 }
 
 // SKIPPED_TOKENS
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreSkippedTokensNode {
     pub skipped_tokens: Vec<SkippedTokenNode>,
 }
 
 // INCORRECTLY_INDENTED_STATEMENT
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreIncorrectlyIndentedStatementNode {
     pub stmt: StatementNode,
     pub expected_indent: i64,
@@ -143,7 +127,7 @@ pub struct CoreIncorrectlyIndentedStatementNode {
 }
 
 // STATEMENT
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreStatementNode {
     Expression(ExpressionStatementNode),
     Assignment(AssignmentNode),
@@ -158,7 +142,7 @@ pub enum CoreStatementNode {
 
 // RETURN
 // `return` <expr> `\n`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreReturnStatementNode {
     pub return_keyword: TokenNode,
     pub expr: Option<ExpressionNode>,
@@ -167,7 +151,7 @@ pub struct CoreReturnStatementNode {
 
 // VARIABLE_DECLARATION
 // `let` <name> `=` <r_assign>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreVariableDeclarationNode {
     pub let_keyword: TokenNode,
     pub equal: TokenNode,
@@ -176,7 +160,7 @@ pub struct CoreVariableDeclarationNode {
 }
 
 // ASSIGNMENT
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreAssignmentNode {
     Ok(OkAssignmentNode),
     InvalidLValue(InvalidLValueNode),
@@ -184,7 +168,7 @@ pub enum CoreAssignmentNode {
 
 // OK_ASSIGNMENT
 // <l_atom> `=` <r_assign>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreOkAssignmentNode {
     pub equal: TokenNode,
     pub l_atom: AtomNode,
@@ -193,7 +177,7 @@ pub struct CoreOkAssignmentNode {
 
 // INVALID_L_VALUE
 // <l_expr> `=` <r_assign>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreInvalidLValueNode {
     pub l_expr: ExpressionNode,
     pub equal: TokenNode,
@@ -201,13 +185,13 @@ pub struct CoreInvalidLValueNode {
 }
 
 // R_ASSIGNMENT
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreRAssignmentNode {
     Expression(ExpressionStatementNode),
     MissingTokens(MissingTokenNode),
 }
 
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreRVariableDeclarationNode {
     Lambda(LambdaDeclarationNode),
     Expression(ExpressionStatementNode),
@@ -215,7 +199,7 @@ pub enum CoreRVariableDeclarationNode {
 }
 
 // TYPE_DECLARATION
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreTypeDeclarationNode {
     Struct(StructDeclarationNode),
     Lambda(LambdaTypeDeclarationNode),
@@ -224,7 +208,7 @@ pub enum CoreTypeDeclarationNode {
 
 // STRUCT_DECLARATION
 // `type` <name> struct `:` <block>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreStructDeclarationNode {
     pub type_keyword: TokenNode,
     pub colon: TokenNode,
@@ -235,14 +219,14 @@ pub struct CoreStructDeclarationNode {
 
 // STRUCT_STATEMENT
 // <name_type_spec> `\n`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreStructPropertyDeclarationNode {
     pub newline: TokenNode,
     pub name_type_spec: NameTypeSpecNode,
 }
 
 // LAMBDA_TYPE_DECLARATION
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreLambdaTypeDeclarationNode {
     Ok(OkLambdaTypeDeclarationNode),
     MissingTokens(MissingTokenNode),
@@ -250,7 +234,7 @@ pub enum CoreLambdaTypeDeclarationNode {
 
 // OK_LAMBDA_TYPE_DECLARATION
 // `type` <name> `:` <prototype> `\n`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreOkLambdaTypeDeclarationNode {
     pub type_keyword: TokenNode,
     pub lambda_keyword: TokenNode,
@@ -265,7 +249,7 @@ pub struct CoreOkLambdaTypeDeclarationNode {
 }
 
 // TYPE_EXPRESSION
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreTypeExpressionNode {
     Atomic(AtomicTypeNode),
     UserDefined(UserDefinedTypeNode),
@@ -277,14 +261,14 @@ pub enum CoreTypeExpressionNode {
 
 // ATOMIC_TYPE
 // `int` | `float` | `string` | `bool` ...
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreAtomicTypeNode {
     pub kind: TokenNode,
 }
 
 // ARRAY_TYPE
 // `[` <sub_type> `]`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreArrayTypeNode {
     pub lsquare: TokenNode,
     pub rsquare: TokenNode,
@@ -293,7 +277,7 @@ pub struct CoreArrayTypeNode {
 
 // TUPLE_TYPE
 // `(` <types> `)`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreTupleTypeNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
@@ -302,7 +286,7 @@ pub struct CoreTupleTypeNode {
 
 // DICTIONARY_TYPE
 // `{` <key_type> `:` <value_type> `}`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreHashMapTypeNode {
     pub lcurly: TokenNode,
     pub rcurly: TokenNode,
@@ -312,14 +296,14 @@ pub struct CoreHashMapTypeNode {
 }
 
 // USER_DEFINED_TYPE
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreUserDefinedTypeNode {
     pub name: IdentifierNode,
 }
 
 // CALLABLE_PROTOTYPE
 // `(` [<params>] `)` [`->` <return_type>]
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreCallablePrototypeNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
@@ -329,7 +313,7 @@ pub struct CoreCallablePrototypeNode {
 }
 
 // CALLABLE_BODY
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreCallableBodyNode {
     Ok(OkCallableBodyNode),
     MissingTokens(MissingTokenNode),
@@ -337,7 +321,7 @@ pub enum CoreCallableBodyNode {
 
 // OK_CALLABLE_BODY
 // `(` [<params>] `)` [`->`] [<return_type>] `:` <block>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreOkCallableBodyNode {
     pub colon: TokenNode,
     pub block: BlockNode,
@@ -346,26 +330,26 @@ pub struct CoreOkCallableBodyNode {
 
 // FUNCTION_DECLARATION
 // `def` <name> <body>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreFunctionDeclarationNode {
     pub def_keyword: TokenNode,
     pub name: IdentifierNode,
     pub body: CallableBodyNode,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreFunctionWrapperNode {
     pub func_decl: FunctionDeclarationNode,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreBoundedMethodWrapperNode {
     pub func_decl: FunctionDeclarationNode,
 }
 
 // LAMBDA_DECLARATION
 // `lambda` `(` [<params>] `)` [`->`] [<return_type>] `:` <block>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreLambdaDeclarationNode {
     pub lambda_keyword: TokenNode,
     pub name: IdentifierNode,
@@ -374,14 +358,14 @@ pub struct CoreLambdaDeclarationNode {
 
 // EXPRESSION_STATEMENT
 // <expr> `\n`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreExpressionStatementNode {
     pub expr: ExpressionNode,
     pub newline: TokenNode,
 }
 
 // EXPRESSION
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreExpressionNode {
     Unary(UnaryExpressionNode),
     Binary(BinaryExpressionNode),
@@ -390,7 +374,7 @@ pub enum CoreExpressionNode {
 }
 
 // ATOMIC_EXPRESSION
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreAtomicExpressionNode {
     BoolValue(TokenNode),
     Integer(TokenNode),
@@ -403,7 +387,7 @@ pub enum CoreAtomicExpressionNode {
 
 // PARENTHESISED_EXPRESSION
 // `(` <expr> `)`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreParenthesisedExpressionNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
@@ -411,7 +395,7 @@ pub struct CoreParenthesisedExpressionNode {
 }
 
 // UNARY_EXPRESSION
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreUnaryExpressionNode {
     Atomic(AtomicExpressionNode),
     Unary(OnlyUnaryExpressionNode),
@@ -420,7 +404,7 @@ pub enum CoreUnaryExpressionNode {
 
 // ONLY_UNARY_EXPRESSION
 // <operator> <unary_expr>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreOnlyUnaryExpressionNode {
     pub operator: TokenNode,
     pub unary_expr: UnaryExpressionNode,
@@ -429,7 +413,7 @@ pub struct CoreOnlyUnaryExpressionNode {
 
 // BINARY_EXPRESSION
 // <left_expr> <operator> <right_expr>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreBinaryExpressionNode {
     pub operator_kind: BinaryOperatorKind,
     pub operator: TokenNode,
@@ -438,7 +422,7 @@ pub struct CoreBinaryExpressionNode {
 }
 
 // COMPARISON
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreComparisonNode {
     pub operands: Vec<ExpressionNode>,
     pub operators: Vec<TokenNode>,
@@ -446,7 +430,7 @@ pub struct CoreComparisonNode {
 
 // CALL_EXPRESSION
 // <function_name> `(` [<params>] `)`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreCallExpressionNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
@@ -455,7 +439,7 @@ pub struct CoreCallExpressionNode {
 }
 
 // ATOM
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreAtomNode {
     AtomStart(AtomStartNode),           // <id>, id(...), id::id(...)
     Call(CallNode),                     // A(...)
@@ -465,7 +449,7 @@ pub enum CoreAtomNode {
 }
 
 // ATOM_START
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreAtomStartNode {
     Identifier(IdentifierNode),           // id
     SelfKeyword(SelfKeywordNode),         // self
@@ -475,7 +459,7 @@ pub enum CoreAtomStartNode {
 
 // PROPERTY_ACCESS
 // <atom> `.` <property>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CorePropertyAccessNode {
     pub dot: TokenNode,
     pub atom: AtomNode,
@@ -484,7 +468,7 @@ pub struct CorePropertyAccessNode {
 
 // METHOD_ACCESS
 // <atom> `.` <method_name> `(` [<params>] `)`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreMethodAccessNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
@@ -496,7 +480,7 @@ pub struct CoreMethodAccessNode {
 
 // INDEX_ACCESS
 // <atom> `[` <index> `]`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreIndexAccessNode {
     pub lsquare: TokenNode,
     pub rsquare: TokenNode,
@@ -506,7 +490,7 @@ pub struct CoreIndexAccessNode {
 
 // CALL
 // <atom> `(` [<params>] `)`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreCallNode {
     pub atom: AtomNode,
     pub lparen: TokenNode,
@@ -516,7 +500,7 @@ pub struct CoreCallNode {
 
 // CLASS_METHOD_CALL
 // <class_name> `::` <class_method_name> `(` [<params>] `)`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreClassMethodCallNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
@@ -527,7 +511,7 @@ pub struct CoreClassMethodCallNode {
 }
 
 // NAME_TYPE_SPECS
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreNameTypeSpecsNode {
     Ok(OkNameTypeSpecsNode),
     MissingTokens(MissingTokenNode),
@@ -535,7 +519,7 @@ pub enum CoreNameTypeSpecsNode {
 
 // OK_NAME_TYPE_SPECS
 // <arg> `,` <remaining_args>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreOkNameTypeSpecsNode {
     pub comma: Option<TokenNode>,
     pub arg: NameTypeSpecNode,
@@ -544,7 +528,7 @@ pub struct CoreOkNameTypeSpecsNode {
 
 // NAME_TYPE_SPEC
 // <name> `:` <data_type>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreNameTypeSpecNode {
     pub colon: TokenNode,
     pub name: IdentifierNode,
@@ -552,7 +536,7 @@ pub struct CoreNameTypeSpecNode {
 }
 
 // TYPE_TUPLE
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreTypeTupleNode {
     Ok(OkTypeTupleNode),
     MissingTokens(MissingTokenNode),
@@ -560,7 +544,7 @@ pub enum CoreTypeTupleNode {
 
 // OK_TYPE_TUPLE
 // <data_type> `,` <remaining_types>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreOkTypeTupleNode {
     pub comma: Option<TokenNode>,
     pub data_type: TypeExpressionNode,
@@ -568,7 +552,7 @@ pub struct CoreOkTypeTupleNode {
 }
 
 // PARAMS
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreParamsNode {
     Ok(OkParamsNode),
     MissingTokens(MissingTokenNode),
@@ -576,7 +560,7 @@ pub enum CoreParamsNode {
 
 // OK_PARAMS
 // <param> `,` <remaining_params>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreOkParamsNode {
     pub comma: Option<TokenNode>,
     pub param: ExpressionNode,
@@ -584,51 +568,51 @@ pub struct CoreOkParamsNode {
 }
 
 // IDENTIFIER
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreIdentifierNode {
     Ok(OkIdentifierNode),
     MissingTokens(MissingTokenNode),
 }
 
 // OK_IDENTIFIER
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreOkIdentifierNode {
     pub token: OkTokenNode,
 }
 
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreSelfKeywordNode {
     Ok(OkSelfKeywordNode),
     MissingTokens(MissingTokenNode),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreOkSelfKeywordNode {
     pub token: OkTokenNode,
 }
 
 // TOKEN
-#[derive(Debug, Clone, Node)]
+#[derive(Debug, Node)]
 pub enum CoreTokenNode {
     Ok(OkTokenNode),
     MissingTokens(MissingTokenNode),
 }
 
 // OK_TOKEN
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreOkTokenNode {
     pub token: Token,
 }
 
 // MISSING_TOKEN
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreMissingTokenNode {
     pub expected_symbols: Vec<&'static str>,
     pub received_token: Token,
 }
 
 // SKIPPED_TOKEN
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreSkippedTokenNode {
     pub skipped_token: Token,
 }
