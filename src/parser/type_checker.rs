@@ -323,7 +323,7 @@ impl TypeChecker {
             Some(received_params) => {
                 let received_params_iter = received_params.iter();
                 let mut index = 0;
-                let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![]; // (expected_type, received_type, index_of_param)
+                let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![];
                 for received_param in received_params_iter {
                     let param_type_obj = self.check_expr(&received_param);
                     if index >= expected_params_len {
