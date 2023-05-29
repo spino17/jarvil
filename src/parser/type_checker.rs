@@ -57,30 +57,30 @@ struct Context {
 }
 
 pub enum AtomicTokenExprKind {
-    BOOL,
-    INTEGER,
-    FLOAT,
-    LITERAL,
+    Bool,
+    Integer,
+    Float,
+    Literal,
 }
 
 pub enum StructPropertyCheckResult {
-    PROPERTY_EXIST(Type),
-    PROPERTY_DOES_NOT_EXIST,
-    NON_STRUCT_TYPE,
+    PropertyExist(Type),
+    PropertyDoesNotExist,
+    NonStructType,
 }
 
 pub enum ParamsTypeNCountResult {
-    OK,
-    MORE_PARAMS(usize),
-    LESS_PARAMS((usize, usize)), // (expected_params_num, received_params_num)
-    MISMATCHED_TYPE(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
+    Ok,
+    MoreParams(usize),
+    LessParams((usize, usize)), // (expected_params_num, received_params_num)
+    MismatchedType(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
 }
 
 #[derive(Debug, Clone)]
 pub enum TupleIndexCheckResult {
-    OK(usize),
-    POSITIVE_INDEX_OUT_OF_BOUND,
-    NEGATIVE_INDEX_OUT_OF_BOUND,
+    Ok(usize),
+    PositiveIndexOutOfBound,
+    NegativeIndexOutOfBound,
 }
 
 pub struct TypeChecker {
@@ -137,12 +137,12 @@ impl TypeChecker {
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_after_resolved(&self.code, &self.namespace_handler) {
-            TypeResolveKind::RESOLVED(type_obj) => {
+            TypeResolveKind::Resolved(type_obj) => {
                 type DummyFnType = fn(&mut Resolver, TextRange, ErrorLoggingTypeKind);
                 return Resolver::pre_type_checking::<DummyFnType>(&type_obj, type_expr, None);
             }
-            TypeResolveKind::UNRESOLVED(_) => return Type::new_with_unknown(),
-            TypeResolveKind::INVALID => Type::new_with_unknown(),
+            TypeResolveKind::Unresolved(_) => return Type::new_with_unknown(),
+            TypeResolveKind::Invalid => Type::new_with_unknown(),
         }
     }
 
@@ -164,7 +164,7 @@ impl TypeChecker {
             for param in params_iter {
                 let core_param = param.core_ref();
                 let name = &core_param.name;
-                if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                if let CoreIdentifierNode::Ok(ok_identifier) = name.core_ref() {
                     if self.is_resolved(ok_identifier) {
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         params_vec.push(type_obj);
@@ -179,13 +179,13 @@ impl TypeChecker {
         let core_lambda_decl = lambda_decl.0.as_ref();
         let lambda_name = &core_lambda_decl.name;
         match &core_lambda_decl.body.core_ref() {
-            CoreCallableBodyNode::OK(ok_callable_decl) => {
+            CoreCallableBodyNode::Ok(ok_callable_decl) => {
                 let core_ok_callable_decl = ok_callable_decl.core_ref();
                 let prototype = &core_ok_callable_decl.prototype.core_ref();
                 let params = &prototype.params;
                 let return_type = &prototype.return_type;
                 let (params_vec, return_type) = match lambda_name.core_ref() {
-                    CoreIdentifierNode::OK(ok_identifier) => match self
+                    CoreIdentifierNode::Ok(ok_identifier) => match self
                         .namespace_handler
                         .get_variable_symbol_data_ref(ok_identifier, &self.code)
                     {
@@ -199,13 +199,13 @@ impl TypeChecker {
                 let lambda_type_obj = Type::new_with_lambda(None, &params_vec, &return_type);
                 return lambda_type_obj;
             }
-            CoreCallableBodyNode::MISSING_TOKENS(_) => return Type::new_with_unknown(),
+            CoreCallableBodyNode::MissingTokens(_) => return Type::new_with_unknown(),
         }
     }
 
     pub fn is_callable<'a>(type_obj: &'a Type) -> Option<(&'a Vec<Type>, &'a Type)> {
         match type_obj.0.as_ref() {
-            CoreType::LAMBDA(lambda_data) => {
+            CoreType::Lambda(lambda_data) => {
                 return Some((
                     &lambda_data.meta_data.params,
                     &lambda_data.meta_data.return_type,
@@ -217,7 +217,7 @@ impl TypeChecker {
 
     pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
         match unary.core_ref() {
-            CoreUnaryExpressionNode::UNARY(unary) => {
+            CoreUnaryExpressionNode::Unary(unary) => {
                 let core_unary = unary.core_ref();
                 let operator_kind = &core_unary.operator_kind;
                 let operand_value = self.is_unary_expr_int_valued(&core_unary.unary_expr);
@@ -230,10 +230,10 @@ impl TypeChecker {
                     None => return None,
                 }
             }
-            CoreUnaryExpressionNode::ATOMIC(atomic) => match atomic.core_ref() {
-                CoreAtomicExpressionNode::INTEGER(integer_valued_token) => {
+            CoreUnaryExpressionNode::Atomic(atomic) => match atomic.core_ref() {
+                CoreAtomicExpressionNode::Integer(integer_valued_token) => {
                     match integer_valued_token.core_ref() {
-                        CoreTokenNode::OK(ok_token) => {
+                        CoreTokenNode::Ok(ok_token) => {
                             let value = ok_token.token_value(&self.code);
                             match value.parse::<i32>() {
                                 Ok(value) => return Some(value),
@@ -245,7 +245,7 @@ impl TypeChecker {
                 }
                 _ => return None,
             },
-            CoreUnaryExpressionNode::MISSING_TOKENS(_) => None,
+            CoreUnaryExpressionNode::MissingTokens(_) => None,
         }
     }
 
@@ -256,15 +256,15 @@ impl TypeChecker {
     ) -> TupleIndexCheckResult {
         if index_value >= 0 {
             if index_value < tuple_len as i32 {
-                return TupleIndexCheckResult::OK(index_value as usize);
+                return TupleIndexCheckResult::Ok(index_value as usize);
             } else {
-                return TupleIndexCheckResult::POSITIVE_INDEX_OUT_OF_BOUND;
+                return TupleIndexCheckResult::PositiveIndexOutOfBound;
             }
         } else {
             if -(tuple_len as i32) <= index_value {
-                return TupleIndexCheckResult::OK((tuple_len as i32 + index_value) as usize);
+                return TupleIndexCheckResult::Ok((tuple_len as i32 + index_value) as usize);
             } else {
-                return TupleIndexCheckResult::NEGATIVE_INDEX_OUT_OF_BOUND;
+                return TupleIndexCheckResult::NegativeIndexOutOfBound;
             }
         }
     }
@@ -272,15 +272,15 @@ impl TypeChecker {
     pub fn is_indexable_with_type(&self, base_type: &Type, index_type: &Type) -> Option<Type> {
         // NOTE - case for `tuple` is already handled in the calling function
         match base_type.0.as_ref() {
-            CoreType::ARRAY(array) => {
+            CoreType::Array(array) => {
                 if index_type.is_int() {
                     return Some(array.element_type.clone());
                 } else {
                     return None;
                 }
             }
-            CoreType::ATOMIC(atomic) => match atomic {
-                Atomic::STRING => {
+            CoreType::Atomic(atomic) => match atomic {
+                Atomic::String => {
                     if index_type.is_int() {
                         return Some(Type::new_with_atomic("str"));
                     } else {
@@ -289,7 +289,7 @@ impl TypeChecker {
                 }
                 _ => return None,
             },
-            CoreType::HASHMAP(hashmap) => {
+            CoreType::HashMap(hashmap) => {
                 if index_type.is_eq(&hashmap.key_type) && index_type.is_hashable() {
                     return Some(hashmap.value_type.clone());
                 } else {
@@ -327,7 +327,7 @@ impl TypeChecker {
                 for received_param in received_params_iter {
                     let param_type_obj = self.check_expr(&received_param);
                     if index >= expected_params_len {
-                        return ParamsTypeNCountResult::MORE_PARAMS(expected_params_len);
+                        return ParamsTypeNCountResult::MoreParams(expected_params_len);
                     }
                     let expected_param_type = &expected_param_data[index];
                     if !param_type_obj.is_eq(expected_param_type) {
@@ -341,18 +341,18 @@ impl TypeChecker {
                     index = index + 1;
                 }
                 if index < expected_params_len {
-                    return ParamsTypeNCountResult::LESS_PARAMS((expected_params_len, index));
+                    return ParamsTypeNCountResult::LessParams((expected_params_len, index));
                 } else if mismatch_types_vec.len() > 0 {
-                    return ParamsTypeNCountResult::MISMATCHED_TYPE(mismatch_types_vec);
+                    return ParamsTypeNCountResult::MismatchedType(mismatch_types_vec);
                 } else {
-                    return ParamsTypeNCountResult::OK;
+                    return ParamsTypeNCountResult::Ok;
                 }
             }
             None => {
                 if expected_params_len != 0 {
-                    return ParamsTypeNCountResult::LESS_PARAMS((expected_params_len, 0));
+                    return ParamsTypeNCountResult::LessParams((expected_params_len, 0));
                 } else {
-                    return ParamsTypeNCountResult::OK;
+                    return ParamsTypeNCountResult::Ok;
                 }
             }
         }
@@ -361,8 +361,8 @@ impl TypeChecker {
     pub fn check_atom_start(&self, atom_start: &AtomStartNode) -> Type {
         let core_atom_start = atom_start.core_ref();
         match core_atom_start {
-            CoreAtomStartNode::IDENTIFIER(token) => match token.core_ref() {
-                CoreIdentifierNode::OK(ok_identifier) => {
+            CoreAtomStartNode::Identifier(token) => match token.core_ref() {
+                CoreIdentifierNode::Ok(ok_identifier) => {
                     match self
                         .namespace_handler
                         .get_variable_symbol_data_ref(ok_identifier, &self.code)
@@ -375,10 +375,10 @@ impl TypeChecker {
                 }
                 _ => Type::new_with_unknown(),
             },
-            CoreAtomStartNode::SELF_KEYWORD(self_keyword) => {
+            CoreAtomStartNode::SelfKeyword(self_keyword) => {
                 let core_self_keyword = self_keyword.core_ref();
                 match core_self_keyword {
-                    CoreSelfKeywordNode::OK(ok_self_keyword) => {
+                    CoreSelfKeywordNode::Ok(ok_self_keyword) => {
                         match self
                             .namespace_handler
                             .get_self_keyword_symbol_data_ref(ok_self_keyword)
@@ -392,17 +392,17 @@ impl TypeChecker {
                     _ => Type::new_with_unknown(),
                 }
             }
-            CoreAtomStartNode::CALL(call_expr) => {
+            CoreAtomStartNode::Call(call_expr) => {
                 let core_call_expr = call_expr.core_ref();
                 let func_name = &core_call_expr.function_name;
                 let params = &core_call_expr.params;
-                if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
+                if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
                     if let Some(symbol_data) = self
                         .namespace_handler
                         .get_symbol_data_ref(ok_identifier, &self.code)
                     {
                         let (result, return_type) = match symbol_data {
-                            SymbolDataRef::FUNCTION(func_symbol_data) => {
+                            SymbolDataRef::Function(func_symbol_data) => {
                                 let func_data = &*func_symbol_data.0.as_ref().borrow();
                                 let expected_params = &func_data.params;
                                 let return_type = &func_data.return_type;
@@ -410,11 +410,11 @@ impl TypeChecker {
                                     self.check_params_type_and_count(&expected_params, params);
                                 (result, return_type.clone())
                             }
-                            SymbolDataRef::VARIABLE(variable_symbol_data) => {
+                            SymbolDataRef::Variable(variable_symbol_data) => {
                                 let lambda_type =
                                     &variable_symbol_data.0.as_ref().borrow().data_type;
                                 match lambda_type.0.as_ref() {
-                                    CoreType::LAMBDA(lambda_data) => {
+                                    CoreType::Lambda(lambda_data) => {
                                         let result = self.check_params_type_and_count(
                                             &lambda_data.meta_data.params,
                                             params,
@@ -431,9 +431,9 @@ impl TypeChecker {
                                     }
                                 }
                             }
-                            SymbolDataRef::TYPE(user_defined_type_symbol_data) => {
+                            SymbolDataRef::Type(user_defined_type_symbol_data) => {
                                 match &*user_defined_type_symbol_data.0.as_ref().borrow() {
-                                    UserDefinedTypeData::STRUCT(struct_symbol_data) => {
+                                    UserDefinedTypeData::Struct(struct_symbol_data) => {
                                         let constructor_meta_data = &struct_symbol_data.constructor;
                                         let result = self.check_params_type_and_count(
                                             &constructor_meta_data.params,
@@ -441,7 +441,7 @@ impl TypeChecker {
                                         );
                                         (result, constructor_meta_data.return_type.clone())
                                     }
-                                    UserDefinedTypeData::LAMBDA(_) => {
+                                    UserDefinedTypeData::Lambda(_) => {
                                         let type_name = ok_identifier.token_value(&self.code);
                                         let err = ConstructorNotFoundForTypeError::new(
                                             type_name,
@@ -456,7 +456,7 @@ impl TypeChecker {
                             }
                         };
                         match result {
-                            ParamsTypeNCountResult::OK => return return_type,
+                            ParamsTypeNCountResult::Ok => return return_type,
                             _ => {
                                 self.log_params_type_and_count_check_error(
                                     func_name.range(),
@@ -468,21 +468,21 @@ impl TypeChecker {
                 }
                 Type::new_with_unknown()
             }
-            CoreAtomStartNode::CLASS_METHOD_CALL(class_method) => {
+            CoreAtomStartNode::ClassMethodCall(class_method) => {
                 let core_class_method = class_method.core_ref();
                 let class = &core_class_method.class_name;
                 let class_method = &core_class_method.class_method_name;
                 let params = &core_class_method.params;
-                if let CoreIdentifierNode::OK(ok_identifier) = class.core_ref() {
+                if let CoreIdentifierNode::Ok(ok_identifier) = class.core_ref() {
                     let class_name = ok_identifier.token_value(&self.code);
                     match self
                         .namespace_handler
                         .get_type_symbol_data_ref(ok_identifier, &self.code)
                     {
                         Some(type_symbol_data) => match &*type_symbol_data.0.as_ref().borrow() {
-                            UserDefinedTypeData::STRUCT(struct_data) => {
+                            UserDefinedTypeData::Struct(struct_data) => {
                                 let class_method_name = match class_method.core_ref() {
-                                    CoreIdentifierNode::OK(class_method) => {
+                                    CoreIdentifierNode::Ok(class_method) => {
                                         class_method.token_value(&self.code)
                                     }
                                     _ => return Type::new_with_unknown(),
@@ -494,7 +494,7 @@ impl TypeChecker {
                                         let result = self
                                             .check_params_type_and_count(&expected_params, params);
                                         match result {
-                                            ParamsTypeNCountResult::OK => {
+                                            ParamsTypeNCountResult::Ok => {
                                                 return return_type.clone()
                                             }
                                             _ => {
@@ -540,26 +540,26 @@ impl TypeChecker {
     ) -> StructPropertyCheckResult {
         let property_name_str = property_name.token_value(&self.code);
         match atom_type_obj.0.as_ref() {
-            CoreType::STRUCT(struct_type) => match &*struct_type.symbol_data.0.as_ref().borrow() {
-                UserDefinedTypeData::STRUCT(struct_data) => {
+            CoreType::Struct(struct_type) => match &*struct_type.symbol_data.0.as_ref().borrow() {
+                UserDefinedTypeData::Struct(struct_data) => {
                     match struct_data.try_field(&property_name_str) {
                         Some((type_obj, _)) => {
-                            return StructPropertyCheckResult::PROPERTY_EXIST(type_obj)
+                            return StructPropertyCheckResult::PropertyExist(type_obj)
                         }
-                        None => return StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST,
+                        None => return StructPropertyCheckResult::PropertyDoesNotExist,
                     }
                 }
                 _ => unreachable!(),
             },
-            _ => return StructPropertyCheckResult::NON_STRUCT_TYPE,
+            _ => return StructPropertyCheckResult::NonStructType,
         }
     }
 
     pub fn check_atom(&self, atom: &AtomNode) -> (Type, Option<Type>) {
         let core_atom = atom.core_ref();
         match core_atom {
-            CoreAtomNode::ATOM_START(atom_start) => (self.check_atom_start(atom_start), None),
-            CoreAtomNode::CALL(call) => {
+            CoreAtomNode::AtomStart(atom_start) => (self.check_atom_start(atom_start), None),
+            CoreAtomNode::Call(call) => {
                 let core_call = call.core_ref();
                 let atom = &core_call.atom;
                 let params = &core_call.params;
@@ -569,7 +569,7 @@ impl TypeChecker {
                         let result =
                             self.check_params_type_and_count(&expected_param_types, params);
                         match result {
-                            ParamsTypeNCountResult::OK => {
+                            ParamsTypeNCountResult::Ok => {
                                 return (return_type.clone(), Some(atom_type_obj))
                             }
                             _ => {
@@ -585,20 +585,20 @@ impl TypeChecker {
                     }
                 }
             }
-            CoreAtomNode::PROPERTRY_ACCESS(property_access) => {
+            CoreAtomNode::PropertyAccess(property_access) => {
                 let core_property_access = property_access.core_ref();
                 let atom = &core_property_access.atom;
                 let (atom_type_obj, _) = self.check_atom(atom);
                 let property = &core_property_access.propertry;
-                if let CoreIdentifierNode::OK(ok_identifier) = property.core_ref() {
+                if let CoreIdentifierNode::Ok(ok_identifier) = property.core_ref() {
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     match result {
-                        StructPropertyCheckResult::PROPERTY_EXIST(type_obj) => {
+                        StructPropertyCheckResult::PropertyExist(type_obj) => {
                             return (type_obj, Some(atom_type_obj))
                         }
-                        StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST => {
+                        StructPropertyCheckResult::PropertyDoesNotExist => {
                             let err = PropertyDoesNotExistError::new(
-                                PropertyKind::FIELD,
+                                PropertyKind::Field,
                                 atom_type_obj.to_string(),
                                 ok_identifier.range(),
                                 atom.range(),
@@ -606,9 +606,9 @@ impl TypeChecker {
                             self.log_error(Diagnostics::PropertyDoesNotExist(err));
                             return (Type::new_with_unknown(), Some(atom_type_obj));
                         }
-                        StructPropertyCheckResult::NON_STRUCT_TYPE => {
+                        StructPropertyCheckResult::NonStructType => {
                             let err = PropertyDoesNotExistError::new(
-                                PropertyKind::FIELD,
+                                PropertyKind::Field,
                                 atom_type_obj.to_string(),
                                 property.range(),
                                 atom.range(),
@@ -620,26 +620,26 @@ impl TypeChecker {
                 }
                 (Type::new_with_unknown(), Some(atom_type_obj))
             }
-            CoreAtomNode::METHOD_ACCESS(method_access) => {
+            CoreAtomNode::MethodAccess(method_access) => {
                 let core_method_access = method_access.core_ref();
                 let atom = &core_method_access.atom;
                 let (atom_type_obj, _) = self.check_atom(atom);
                 let method = &core_method_access.method_name;
                 let params = &core_method_access.params;
-                if let CoreIdentifierNode::OK(ok_identifier) = method.core_ref() {
+                if let CoreIdentifierNode::Ok(ok_identifier) = method.core_ref() {
                     // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
                     // (for example: a field with lambda type) and then it goes on to find it in methods.
                     // This is sync with what Python does.
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     let method_name = ok_identifier.token_value(&self.code);
                     match result {
-                        StructPropertyCheckResult::PROPERTY_EXIST(type_obj) => {
+                        StructPropertyCheckResult::PropertyExist(type_obj) => {
                             match TypeChecker::is_callable(&type_obj) {
                                 Some((expected_param_types, return_type)) => {
                                     let result = self
                                         .check_params_type_and_count(&expected_param_types, params);
                                     match result {
-                                        ParamsTypeNCountResult::OK => {
+                                        ParamsTypeNCountResult::Ok => {
                                             return (return_type.clone(), Some(atom_type_obj))
                                         }
                                         _ => {
@@ -661,11 +661,11 @@ impl TypeChecker {
                                 }
                             }
                         }
-                        StructPropertyCheckResult::PROPERTY_DOES_NOT_EXIST => {
+                        StructPropertyCheckResult::PropertyDoesNotExist => {
                             match atom_type_obj.0.as_ref() {
-                                CoreType::STRUCT(struct_type) => {
+                                CoreType::Struct(struct_type) => {
                                     match &*struct_type.symbol_data.0.as_ref().borrow() {
-                                        UserDefinedTypeData::STRUCT(struct_data) => {
+                                        UserDefinedTypeData::Struct(struct_data) => {
                                             match struct_data.try_method(&method_name) {
                                                 Some((func_data, _)) => {
                                                     let expected_params = &func_data.params;
@@ -675,7 +675,7 @@ impl TypeChecker {
                                                         params,
                                                     );
                                                     match result {
-                                                        ParamsTypeNCountResult::OK => {
+                                                        ParamsTypeNCountResult::Ok => {
                                                             return (
                                                                 return_type.clone(),
                                                                 Some(atom_type_obj.clone()),
@@ -695,7 +695,7 @@ impl TypeChecker {
                                                 }
                                                 None => {
                                                     let err = PropertyDoesNotExistError::new(
-                                                        PropertyKind::METHOD,
+                                                        PropertyKind::Method,
                                                         atom_type_obj.to_string(),
                                                         method.range(),
                                                         atom.range(),
@@ -716,9 +716,9 @@ impl TypeChecker {
                                 _ => unreachable!(),
                             }
                         }
-                        StructPropertyCheckResult::NON_STRUCT_TYPE => {
+                        StructPropertyCheckResult::NonStructType => {
                             let err = PropertyDoesNotExistError::new(
-                                PropertyKind::METHOD,
+                                PropertyKind::Method,
                                 atom_type_obj.to_string(),
                                 method.range(),
                                 atom.range(),
@@ -730,29 +730,29 @@ impl TypeChecker {
                 }
                 (Type::new_with_unknown(), Some(atom_type_obj))
             }
-            CoreAtomNode::INDEX_ACCESS(index_access) => {
+            CoreAtomNode::IndexAccess(index_access) => {
                 let core_index_access = index_access.core_ref();
                 let atom = &core_index_access.atom;
                 let (atom_type_obj, _) = self.check_atom(atom);
                 let index_expr = &core_index_access.index;
                 let index_type_obj = self.check_expr(index_expr);
                 match atom_type_obj.0.as_ref() {
-                    CoreType::TUPLE(tuple) => {
+                    CoreType::Tuple(tuple) => {
                         let sub_types = &tuple.sub_types;
                         match index_expr.core_ref() {
-                            CoreExpressionNode::UNARY(index_unary_expr) => {
+                            CoreExpressionNode::Unary(index_unary_expr) => {
                                 match self.is_unary_expr_int_valued(index_unary_expr) {
                                     Some(index_value) => {
                                         match self
                                             .is_valid_index_for_tuple(index_value, sub_types.len())
                                         {
-                                            TupleIndexCheckResult::OK(index_value) => {
+                                            TupleIndexCheckResult::Ok(index_value) => {
                                                 return (
                                                     sub_types[index_value].clone(),
                                                     Some(atom_type_obj),
                                                 )
                                             }
-                                            TupleIndexCheckResult::POSITIVE_INDEX_OUT_OF_BOUND => {
+                                            TupleIndexCheckResult::PositiveIndexOutOfBound => {
                                                 let err = TupleIndexOutOfBoundError::new(
                                                     sub_types.len(),
                                                     index_expr.range(),
@@ -765,7 +765,7 @@ impl TypeChecker {
                                                     Some(atom_type_obj),
                                                 );
                                             }
-                                            TupleIndexCheckResult::NEGATIVE_INDEX_OUT_OF_BOUND => {
+                                            TupleIndexCheckResult::NegativeIndexOutOfBound => {
                                                 let err = TupleIndexOutOfBoundError::new(
                                                     sub_types.len(),
                                                     index_expr.range(),
@@ -791,9 +791,9 @@ impl TypeChecker {
                                     }
                                 }
                             }
-                            CoreExpressionNode::BINARY(_)
-                            | CoreExpressionNode::COMPARISON(_)
-                            | CoreExpressionNode::MISSING_TOKENS(_) => {
+                            CoreExpressionNode::Binary(_)
+                            | CoreExpressionNode::Comparison(_)
+                            | CoreExpressionNode::MissingTokens(_) => {
                                 let err =
                                     InvalidIndexExpressionForTupleError::new(index_expr.range());
                                 self.log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
@@ -827,10 +827,10 @@ impl TypeChecker {
     pub fn check_r_assign(&self, r_assign: &RAssignmentNode) -> Type {
         let core_r_assign = r_assign.core_ref();
         match core_r_assign {
-            CoreRAssignmentNode::EXPRESSION(expr_stmt) => {
+            CoreRAssignmentNode::Expression(expr_stmt) => {
                 self.check_expr(&expr_stmt.core_ref().expr)
             }
-            CoreRAssignmentNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
+            CoreRAssignmentNode::MissingTokens(_) => Type::new_with_unknown(),
         }
     }
 
@@ -840,24 +840,24 @@ impl TypeChecker {
     ) -> Type {
         let core_r_variable_decl = r_variable_decl.core_ref();
         match core_r_variable_decl {
-            CoreRVariableDeclarationNode::EXPRESSION(expr_stmt) => {
+            CoreRVariableDeclarationNode::Expression(expr_stmt) => {
                 self.check_expr(&expr_stmt.core_ref().expr)
             }
-            CoreRVariableDeclarationNode::LAMBDA(lambda) => {
+            CoreRVariableDeclarationNode::Lambda(lambda) => {
                 self.check_callable_body(&lambda.core_ref().body, false);
                 return self.type_of_lambda(lambda);
             }
-            CoreRVariableDeclarationNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
+            CoreRVariableDeclarationNode::MissingTokens(_) => Type::new_with_unknown(),
         }
     }
 
     pub fn check_token(&self, token: &TokenNode, kind: AtomicTokenExprKind) -> Type {
         match token.core_ref() {
-            CoreTokenNode::OK(_) => match kind {
-                AtomicTokenExprKind::INTEGER => Type::new_with_atomic(INT),
-                AtomicTokenExprKind::BOOL => Type::new_with_atomic(BOOL),
-                AtomicTokenExprKind::FLOAT => Type::new_with_atomic(FLOAT),
-                AtomicTokenExprKind::LITERAL => Type::new_with_atomic(STRING),
+            CoreTokenNode::Ok(_) => match kind {
+                AtomicTokenExprKind::Integer => Type::new_with_atomic(INT),
+                AtomicTokenExprKind::Bool => Type::new_with_atomic(BOOL),
+                AtomicTokenExprKind::Float => Type::new_with_atomic(FLOAT),
+                AtomicTokenExprKind::Literal => Type::new_with_atomic(STRING),
             },
             _ => Type::new_with_unknown(),
         }
@@ -866,23 +866,23 @@ impl TypeChecker {
     pub fn check_atomic_expr(&self, atomic_expr: &AtomicExpressionNode) -> Type {
         let core_atomic_expr = atomic_expr.core_ref();
         match core_atomic_expr {
-            CoreAtomicExpressionNode::BOOL_VALUE(token) => {
-                self.check_token(token, AtomicTokenExprKind::BOOL)
+            CoreAtomicExpressionNode::BoolValue(token) => {
+                self.check_token(token, AtomicTokenExprKind::Bool)
             }
-            CoreAtomicExpressionNode::INTEGER(token) => {
-                self.check_token(token, AtomicTokenExprKind::INTEGER)
+            CoreAtomicExpressionNode::Integer(token) => {
+                self.check_token(token, AtomicTokenExprKind::Integer)
             }
-            CoreAtomicExpressionNode::FLOATING_POINT_NUMBER(token) => {
-                self.check_token(token, AtomicTokenExprKind::FLOAT)
+            CoreAtomicExpressionNode::FloatingPointNumber(token) => {
+                self.check_token(token, AtomicTokenExprKind::Float)
             }
-            CoreAtomicExpressionNode::LITERAL(token) => {
-                self.check_token(token, AtomicTokenExprKind::LITERAL)
+            CoreAtomicExpressionNode::Literal(token) => {
+                self.check_token(token, AtomicTokenExprKind::Literal)
             }
-            CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(parenthesised_expr) => {
+            CoreAtomicExpressionNode::ParenthesisedExpression(parenthesised_expr) => {
                 self.check_expr(&parenthesised_expr.core_ref().expr)
             }
-            CoreAtomicExpressionNode::ATOM(atom) => self.check_atom(atom).0,
-            CoreAtomicExpressionNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
+            CoreAtomicExpressionNode::Atom(atom) => self.check_atom(atom).0,
+            CoreAtomicExpressionNode::MissingTokens(_) => Type::new_with_unknown(),
         }
     }
 
@@ -929,8 +929,8 @@ impl TypeChecker {
     pub fn check_unary_expr(&self, unary_expr: &UnaryExpressionNode) -> Type {
         let core_unary_expr = unary_expr.core_ref();
         match core_unary_expr {
-            CoreUnaryExpressionNode::ATOMIC(atomic) => self.check_atomic_expr(atomic),
-            CoreUnaryExpressionNode::UNARY(unary) => self.check_only_unary_expr(unary),
+            CoreUnaryExpressionNode::Atomic(atomic) => self.check_atomic_expr(atomic),
+            CoreUnaryExpressionNode::Unary(unary) => self.check_only_unary_expr(unary),
             _ => Type::new_with_unknown(),
         }
     }
@@ -981,8 +981,8 @@ impl TypeChecker {
             let result = self.is_binary_operation_valid(&l_type, &r_type, &operator_kind);
             match result {
                 Some(type_obj) => match type_obj.0.as_ref() {
-                    CoreType::ATOMIC(atomic) => assert!(atomic.is_bool()),
-                    CoreType::UNKNOWN => return Type::new_with_unknown(),
+                    CoreType::Atomic(atomic) => assert!(atomic.is_bool()),
+                    CoreType::Unknown => return Type::new_with_unknown(),
                     _ => unreachable!("comparison operator always result into `bool` type"),
                 },
                 None => {
@@ -1004,9 +1004,9 @@ impl TypeChecker {
     pub fn check_expr(&self, expr: &ExpressionNode) -> Type {
         let core_expr = expr.core_ref();
         match core_expr {
-            CoreExpressionNode::UNARY(unary_expr) => self.check_unary_expr(unary_expr),
-            CoreExpressionNode::BINARY(binary_expr) => self.check_binary_expr(binary_expr),
-            CoreExpressionNode::COMPARISON(comparison_expr) => {
+            CoreExpressionNode::Unary(unary_expr) => self.check_unary_expr(unary_expr),
+            CoreExpressionNode::Binary(binary_expr) => self.check_binary_expr(binary_expr),
+            CoreExpressionNode::Comparison(comparison_expr) => {
                 self.check_comp_expr(comparison_expr)
             }
             _ => Type::new_with_unknown(),
@@ -1016,11 +1016,11 @@ impl TypeChecker {
     pub fn check_assignment(&self, assignment: &AssignmentNode) {
         let core_assignment = assignment.core_ref();
         let (l_type, r_assign, range) = match core_assignment {
-            CoreAssignmentNode::OK(ok_assignment) => {
+            CoreAssignmentNode::Ok(ok_assignment) => {
                 let core_ok_assignment = ok_assignment.core_ref();
                 let l_expr = &core_ok_assignment.l_atom;
                 let (l_type, interior_atom_type) = self.check_atom(l_expr);
-                if let CoreAtomNode::INDEX_ACCESS(l_index_expr) = l_expr.core_ref() {
+                if let CoreAtomNode::IndexAccess(l_index_expr) = l_expr.core_ref() {
                     if let Some(interior_atom_type) = interior_atom_type {
                         if interior_atom_type.is_immutable() {
                             let err = ImmutableTypeNotAssignableError::new(
@@ -1034,7 +1034,7 @@ impl TypeChecker {
                 let r_assign = &core_ok_assignment.r_assign;
                 (l_type, r_assign, l_expr.range())
             }
-            CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value) => {
+            CoreAssignmentNode::InvalidLValue(invalid_l_value) => {
                 let core_invalid_l_value = invalid_l_value.core_ref();
                 let expr = &core_invalid_l_value.l_expr;
                 let r_assign = &core_invalid_l_value.r_assign;
@@ -1067,7 +1067,7 @@ impl TypeChecker {
             let err = RightSideWithVoidTypeNotAllowedError::new(r_variable_decl.range());
             self.log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
         }
-        if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+        if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
                 .get_variable_symbol_data_ref(ok_identifier, &self.code)
@@ -1090,7 +1090,7 @@ impl TypeChecker {
     pub fn check_callable_body(&mut self, callable_body: &CallableBodyNode, is_constructor: bool) {
         let core_callable_body = callable_body.0.as_ref();
         match core_callable_body {
-            CoreCallableBodyNode::OK(ok_callable_body) => {
+            CoreCallableBodyNode::Ok(ok_callable_body) => {
                 let core_ok_callable_body = ok_callable_body.core_ref();
                 let return_type_obj =
                     self.check_callable_prototype(&core_ok_callable_body.prototype);
@@ -1100,15 +1100,15 @@ impl TypeChecker {
                 let mut has_return_stmt: Option<TextRange> = None;
                 for stmt in &*core_ok_callable_body.block.0.as_ref().stmts.as_ref() {
                     let stmt = match stmt.core_ref() {
-                        CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt,
-                        CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
+                        CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                        CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
                             let core_stmt = stmt.core_ref();
                             &core_stmt.stmt
                         }
                         _ => continue,
                     };
                     self.walk_stmt(&stmt);
-                    if let CoreStatementNode::RETURN(return_stmt) = stmt.core_ref() {
+                    if let CoreStatementNode::Return(return_stmt) = stmt.core_ref() {
                         has_return_stmt = Some(return_stmt.range());
                     }
                 }
@@ -1139,7 +1139,7 @@ impl TypeChecker {
                 }
                 self.context.func_stack.pop();
             }
-            CoreCallableBodyNode::MISSING_TOKENS(_) => return,
+            CoreCallableBodyNode::MissingTokens(_) => return,
         }
     }
 
@@ -1150,7 +1150,7 @@ impl TypeChecker {
             .get_bounded_kind_ref(bounded_method_wrapper)
         {
             Some(bounded_kind) => match bounded_kind {
-                BoundedMethodKind::CONSTRUCTOR => true,
+                BoundedMethodKind::Constructor => true,
                 _ => false,
             },
             None => false,
@@ -1193,35 +1193,35 @@ impl TypeChecker {
 
     pub fn check_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
-            CoreStatementNode::EXPRESSION(expr_stmt) => {
+            CoreStatementNode::Expression(expr_stmt) => {
                 let core_expr_stmt = expr_stmt.core_ref();
                 self.check_expr(&core_expr_stmt.expr);
             }
-            CoreStatementNode::ASSIGNMENT(assignment) => {
+            CoreStatementNode::Assignment(assignment) => {
                 self.check_assignment(assignment);
             }
-            CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
+            CoreStatementNode::VariableDeclaration(variable_decl) => {
                 self.check_variable_decl(variable_decl);
             }
-            CoreStatementNode::FUNCTION_WRAPPER(func_wrapper) => {
+            CoreStatementNode::FunctionWrapper(func_wrapper) => {
                 self.check_callable_body(&func_wrapper.core_ref().func_decl.core_ref().body, false);
             }
-            CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+            CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                 self.check_bounded_method(bounded_method_wrapper);
             }
-            CoreStatementNode::RETURN(return_stmt) => {
+            CoreStatementNode::Return(return_stmt) => {
                 self.check_return_stmt(return_stmt);
             }
-            CoreStatementNode::TYPE_DECLARATION(type_decl) => match type_decl.core_ref() {
-                CoreTypeDeclarationNode::STRUCT(struct_decl) => {
+            CoreStatementNode::TypeDeclaration(type_decl) => match type_decl.core_ref() {
+                CoreTypeDeclarationNode::Struct(struct_decl) => {
                     self.walk_block(&struct_decl.core_ref().block);
                 }
-                CoreTypeDeclarationNode::LAMBDA(_) | CoreTypeDeclarationNode::MISSING_TOKENS(_) => {
+                CoreTypeDeclarationNode::Lambda(_) | CoreTypeDeclarationNode::MissingTokens(_) => {
                     return
                 }
             },
-            CoreStatementNode::STRUCT_PROPERTY_DECLARATION(_)
-            | CoreStatementNode::MISSING_TOKENS(_) => return,
+            CoreStatementNode::StructPropertyDeclaration(_)
+            | CoreStatementNode::MissingTokens(_) => return,
         }
     }
 
@@ -1231,17 +1231,17 @@ impl TypeChecker {
         result: ParamsTypeNCountResult,
     ) {
         match result {
-            ParamsTypeNCountResult::OK => return,
-            ParamsTypeNCountResult::LESS_PARAMS((expected_params_count, received_params_count)) => {
+            ParamsTypeNCountResult::Ok => return,
+            ParamsTypeNCountResult::LessParams((expected_params_count, received_params_count)) => {
                 let err =
                     LessParamsCountError::new(expected_params_count, received_params_count, range);
                 self.log_error(Diagnostics::LessParamsCount(err));
             }
-            ParamsTypeNCountResult::MORE_PARAMS(expected_params_count) => {
+            ParamsTypeNCountResult::MoreParams(expected_params_count) => {
                 let err = MoreParamsCountError::new(expected_params_count, range);
                 self.log_error(Diagnostics::MoreParamsCount(err));
             }
-            ParamsTypeNCountResult::MISMATCHED_TYPE(params_vec) => {
+            ParamsTypeNCountResult::MismatchedType(params_vec) => {
                 let err = MismatchedParamTypeError::new(params_vec);
                 self.log_error(Diagnostics::MismatchedParamType(err));
             }
@@ -1252,7 +1252,7 @@ impl TypeChecker {
 impl Visitor for TypeChecker {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
-            ASTNode::STATEMENT(stmt) => {
+            ASTNode::Statement(stmt) => {
                 self.check_stmt(stmt);
                 return None;
             }

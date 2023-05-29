@@ -42,13 +42,13 @@ use std::vec;
 use text_size::TextRange;
 
 pub enum ResolveResult {
-    OK(usize),   // depth
+    Ok(usize),   // depth
     Err(String), // name of the identifier
 }
 
 pub enum ErrorLoggingTypeKind {
-    HASHMAP,
-    TUPLE,
+    HashMap,
+    Tuple,
 }
 
 pub struct ClassContext {
@@ -245,7 +245,7 @@ impl Resolver {
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
             Some((_, resolved_scope_index, depth, _)) => {
                 self.bind_decl_to_identifier(identifier, resolved_scope_index, namespace_kind);
-                ResolveResult::OK(depth)
+                ResolveResult::Ok(depth)
             }
             None => ResolveResult::Err(name),
         }
@@ -261,16 +261,16 @@ impl Resolver {
             .namespace
             .lookup_in_variables_namespace_with_is_init(self.scope_index, &name)
         {
-            VariableLookupResult::OK((symbol_data, resolved_scope_index, depth)) => {
+            VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth)) => {
                 self.bind_decl_to_identifier(
                     identifier,
                     resolved_scope_index,
-                    NamespaceKind::VARIABLE,
+                    NamespaceKind::Variable,
                 );
-                return VariableLookupResult::OK((symbol_data, resolved_scope_index, depth));
+                return VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth));
             }
-            VariableLookupResult::NOT_INITIALIZED(decl_range) => {
-                return VariableLookupResult::NOT_INITIALIZED(decl_range)
+            VariableLookupResult::NotInitialized(decl_range) => {
+                return VariableLookupResult::NotInitialized(decl_range)
             }
             VariableLookupResult::Err => return VariableLookupResult::Err,
         }
@@ -302,7 +302,7 @@ impl Resolver {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_types_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn, NamespaceKind::TYPE)
+        self.try_resolving(identifier, lookup_fn, NamespaceKind::Type)
     }
 
     pub fn try_declare_and_bind<
@@ -337,7 +337,7 @@ impl Resolver {
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_variable(scope_index, name, decl_range)
             };
-        self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::VARIABLE)
+        self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::Variable)
     }
 
     pub fn try_declare_and_bind_function(
@@ -348,7 +348,7 @@ impl Resolver {
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_function(scope_index, name, decl_range)
             };
-        self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::FUNCTION)
+        self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::Function)
     }
 
     pub fn try_declare_and_bind_struct_type(
@@ -359,7 +359,7 @@ impl Resolver {
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_struct_type(scope_index, name, decl_range)
             };
-        self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::TYPE)
+        self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::Type)
     }
 
     pub fn pre_type_checking<T: Fn(&mut Resolver, TextRange, ErrorLoggingTypeKind)>(
@@ -368,25 +368,25 @@ impl Resolver {
         is_log_error: Option<(T, &mut Resolver)>,
     ) -> Type {
         match type_obj.0.as_ref() {
-            CoreType::HASHMAP(hashmap) => {
+            CoreType::HashMap(hashmap) => {
                 let index_span = match type_expr.core_ref() {
-                    CoreTypeExpressionNode::HASHMAP(hashmap_type_expr) => {
+                    CoreTypeExpressionNode::HashMap(hashmap_type_expr) => {
                         hashmap_type_expr.core_ref().key_type.range()
                     }
                     _ => unreachable!(),
                 };
                 if !hashmap.key_type.is_hashable() {
                     if let Some((log_error_fn, resolver)) = is_log_error {
-                        log_error_fn(resolver, index_span, ErrorLoggingTypeKind::HASHMAP)
+                        log_error_fn(resolver, index_span, ErrorLoggingTypeKind::HashMap)
                     }
                     return Type::new_with_unknown();
                 }
                 return type_obj.clone();
             }
-            CoreType::TUPLE(tuple) => {
+            CoreType::Tuple(tuple) => {
                 if tuple.sub_types.len() <= 1 {
                     if let Some((log_error_fn, resolver)) = is_log_error {
-                        log_error_fn(resolver, type_expr.range(), ErrorLoggingTypeKind::TUPLE)
+                        log_error_fn(resolver, type_expr.range(), ErrorLoggingTypeKind::Tuple)
                     }
                     return Type::new_with_unknown();
                 }
@@ -398,17 +398,17 @@ impl Resolver {
 
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_before_resolved(self, self.scope_index) {
-            TypeResolveKind::RESOLVED(type_obj) => {
+            TypeResolveKind::Resolved(type_obj) => {
                 let log_error_fn =
                     |resolver: &mut Resolver, span: TextRange, type_kind: ErrorLoggingTypeKind| {
                         match type_kind {
-                            ErrorLoggingTypeKind::HASHMAP => {
+                            ErrorLoggingTypeKind::HashMap => {
                                 let err = NonHashableTypeInIndexError::new(span);
                                 resolver
                                     .errors
                                     .push(Diagnostics::NonHashableTypeInIndex(err));
                             }
-                            ErrorLoggingTypeKind::TUPLE => {
+                            ErrorLoggingTypeKind::Tuple => {
                                 let err = SingleSubTypeFoundInTupleError::new(span);
                                 resolver
                                     .errors
@@ -421,17 +421,17 @@ impl Resolver {
                 // structure of the type.
                 return Self::pre_type_checking(&type_obj, type_expr, Some((log_error_fn, self)));
             }
-            TypeResolveKind::UNRESOLVED(identifier) => {
+            TypeResolveKind::Unresolved(identifier) => {
                 for unresolved_identifier in identifier {
                     let err = IdentifierNotDeclaredError::new(
-                        IdentKind::TYPE,
+                        IdentKind::Type,
                         unresolved_identifier.range(),
                     );
                     self.errors.push(Diagnostics::IdentifierNotDeclared(err));
                 }
                 return Type::new_with_unknown();
             }
-            TypeResolveKind::INVALID => Type::new_with_unknown(),
+            TypeResolveKind::Invalid => Type::new_with_unknown(),
         }
     }
 
@@ -473,7 +473,7 @@ impl Resolver {
             for param in params_iter {
                 let core_param = param.core_ref();
                 let param_name = &core_param.name;
-                if let CoreIdentifierNode::OK(ok_identifier) = param_name.core_ref() {
+                if let CoreIdentifierNode::Ok(ok_identifier) = param_name.core_ref() {
                     let param_name = ok_identifier.token_value(&self.code);
                     let param_type = self.type_obj_from_expression(&core_param.data_type);
                     let result = self.namespace_handler.namespace.declare_variable_with_type(
@@ -488,14 +488,14 @@ impl Resolver {
                             self.bind_decl_to_identifier(
                                 ok_identifier,
                                 self.scope_index,
-                                NamespaceKind::VARIABLE,
+                                NamespaceKind::Variable,
                             );
                             param_types_vec.push(param_type);
                             params_count += 1;
                         }
                         Err((param_name, previous_decl_range)) => {
                             let err = IdentifierAlreadyDeclaredError::new(
-                                IdentKind::VARIABLE,
+                                IdentKind::Variable,
                                 param_name,
                                 previous_decl_range,
                                 ok_identifier.range(),
@@ -525,7 +525,7 @@ impl Resolver {
     ) -> (Vec<Type>, Type, Option<TextRange>) {
         let core_callable_body_decl = callable_body_decl.core_ref();
         match core_callable_body_decl {
-            CoreCallableBodyNode::OK(ok_callable_body) => {
+            CoreCallableBodyNode::Ok(ok_callable_body) => {
                 let core_ok_callable_body = ok_callable_body.core_ref();
                 let callable_body = &core_ok_callable_body.block;
                 self.open_block();
@@ -537,7 +537,7 @@ impl Resolver {
                 self.close_block(callable_body);
                 (param_types_vec, return_type, return_type_range)
             }
-            CoreCallableBodyNode::MISSING_TOKENS(_) => {
+            CoreCallableBodyNode::MissingTokens(_) => {
                 return (Vec::new(), Type::new_with_unknown(), None)
             }
         }
@@ -550,7 +550,7 @@ impl Resolver {
         let core_callable_body_decl = callable_body_decl.core_ref();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
         match core_callable_body_decl {
-            CoreCallableBodyNode::OK(ok_callable_body) => {
+            CoreCallableBodyNode::Ok(ok_callable_body) => {
                 let core_ok_callable_body = ok_callable_body.core_ref();
                 let callable_body = &core_ok_callable_body.block;
                 self.open_block();
@@ -558,28 +558,27 @@ impl Resolver {
                     self.declare_callable_prototype(&core_ok_callable_body.prototype);
                 for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
                     let stmt = match stmt.core_ref() {
-                        CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt,
-                        CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
+                        CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                        CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
                             let core_stmt = stmt.core_ref();
                             &core_stmt.stmt
                         }
                         _ => continue,
                     };
                     self.walk_stmt(&stmt);
-                    if let CoreStatementNode::ASSIGNMENT(assignment) = stmt.core_ref() {
-                        if let CoreAssignmentNode::OK(ok_assignment) = assignment.core_ref() {
+                    if let CoreStatementNode::Assignment(assignment) = stmt.core_ref() {
+                        if let CoreAssignmentNode::Ok(ok_assignment) = assignment.core_ref() {
                             let l_atom = &ok_assignment.core_ref().l_atom;
-                            if let CoreAtomNode::PROPERTRY_ACCESS(property_access) =
-                                l_atom.core_ref()
+                            if let CoreAtomNode::PropertyAccess(property_access) = l_atom.core_ref()
                             {
                                 let core_property_access = property_access.core_ref();
                                 let property_name = &core_property_access.propertry;
-                                if let CoreIdentifierNode::OK(property_name) =
+                                if let CoreIdentifierNode::Ok(property_name) =
                                     property_name.core_ref()
                                 {
                                     let atom = &core_property_access.atom;
-                                    if let CoreAtomNode::ATOM_START(atom_start) = atom.core_ref() {
-                                        if let CoreAtomStartNode::SELF_KEYWORD(_) =
+                                    if let CoreAtomNode::AtomStart(atom_start) = atom.core_ref() {
+                                        if let CoreAtomStartNode::SelfKeyword(_) =
                                             atom_start.core_ref()
                                         {
                                             // l_atom of the form `self.<property_name>`
@@ -601,7 +600,7 @@ impl Resolver {
                     initialized_fields,
                 )
             }
-            CoreCallableBodyNode::MISSING_TOKENS(_) => {
+            CoreCallableBodyNode::MissingTokens(_) => {
                 return (
                     Vec::new(),
                     Type::new_with_unknown(),
@@ -614,11 +613,11 @@ impl Resolver {
 
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+        if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
             if self.is_variable_in_non_locals(&name) {
                 let err = IdentifierFoundInNonLocalsError::new(
-                    IdentKind::VARIABLE,
+                    IdentKind::Variable,
                     ok_identifier.range(),
                 );
                 self.errors
@@ -628,7 +627,7 @@ impl Resolver {
                     self.try_declare_and_bind_variable(ok_identifier)
                 {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::VARIABLE,
+                        IdentKind::Variable,
                         name,
                         previous_decl_range,
                         ok_identifier.range(),
@@ -641,10 +640,10 @@ impl Resolver {
         // Except `CoreRAssignmentNode::LAMBDA`, type of the variable is set in the `type_checker.rs`. For `CoreRAssignmentNode::LAMBDA`,
         // it's type is set to the variable symbol_data here itself.
         match core_variable_decl.r_node.core_ref() {
-            CoreRVariableDeclarationNode::LAMBDA(lambda_r_assign) => {
+            CoreRVariableDeclarationNode::Lambda(lambda_r_assign) => {
                 // For case of lambda variable, it is allowed to be referenced inside the body to
                 // enable recursive definitions
-                if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+                if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
                     if let Some(symbol_data) = self
                         .namespace_handler
                         .get_variable_symbol_data_ref(ok_identifier, &self.code)
@@ -656,7 +655,7 @@ impl Resolver {
                 let (params_vec, return_type, _) =
                     self.visit_callable_body(&core_lambda_r_assign.body);
                 let lambda_type_obj = Type::new_with_lambda(None, &params_vec, &return_type);
-                if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+                if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
                     if let Some(symbol_data) = self
                         .namespace_handler
                         .get_variable_symbol_data_ref(ok_identifier, &self.code)
@@ -669,14 +668,14 @@ impl Resolver {
                     }
                 };
             }
-            CoreRVariableDeclarationNode::EXPRESSION(expr_r_assign) => {
+            CoreRVariableDeclarationNode::Expression(expr_r_assign) => {
                 self.walk_expr_stmt(expr_r_assign);
             }
-            CoreRVariableDeclarationNode::MISSING_TOKENS(missing_token) => {
+            CoreRVariableDeclarationNode::MissingTokens(missing_token) => {
                 self.walk_missing_tokens(missing_token);
             }
         }
-        if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
+        if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
                 .get_variable_symbol_data_ref(ok_identifier, &self.code)
@@ -690,11 +689,11 @@ impl Resolver {
         let core_func_decl = func_wrapper.core_ref().func_decl.core_ref();
         let func_name = &core_func_decl.name;
         let body = &core_func_decl.body;
-        if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
+        if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
             if self.is_function_in_non_locals(&name) {
                 let err = IdentifierFoundInNonLocalsError::new(
-                    IdentKind::FUNCTION,
+                    IdentKind::Function,
                     ok_identifier.range(),
                 );
                 self.errors
@@ -708,7 +707,7 @@ impl Resolver {
                     self.try_declare_and_bind_function(ok_identifier)
                 {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::FUNCTION,
+                        IdentKind::Function,
                         name.to_string(),
                         previous_decl_range,
                         ok_identifier.range(),
@@ -719,7 +718,7 @@ impl Resolver {
             }
         }
         let (param_types_vec, return_type, _) = self.visit_callable_body(body);
-        if let CoreIdentifierNode::OK(ok_identifier) = func_name.core_ref() {
+        if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
                 .get_function_symbol_data_ref(ok_identifier, &self.code)
@@ -740,12 +739,12 @@ impl Resolver {
         let core_struct_decl = struct_decl.core_ref();
         let struct_body = &core_struct_decl.block;
         let (struct_type_obj, struct_name) = match core_struct_decl.name.core_ref() {
-            CoreIdentifierNode::OK(ok_identifier) => {
+            CoreIdentifierNode::Ok(ok_identifier) => {
                 let temp_struct_type_obj =
                     match self.try_declare_and_bind_struct_type(ok_identifier) {
                         Some((name, previous_decl_range)) => {
                             let err = IdentifierAlreadyDeclaredError::new(
-                                IdentKind::TYPE,
+                                IdentKind::Type,
                                 name.to_string(),
                                 previous_decl_range,
                                 ok_identifier.range(),
@@ -791,15 +790,15 @@ impl Resolver {
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
         for stmt in &*struct_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
-                CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => stmt,
-                CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => &stmt.core_ref().stmt,
+                CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
                 _ => continue,
             };
             match stmt.core_ref() {
-                CoreStatementNode::STRUCT_PROPERTY_DECLARATION(struct_property_decl) => {
+                CoreStatementNode::StructPropertyDeclaration(struct_property_decl) => {
                     let core_struct_stmt = struct_property_decl.core_ref();
                     let name = &core_struct_stmt.name_type_spec.core_ref().name;
-                    if let CoreIdentifierNode::OK(ok_identifier) = name.core_ref() {
+                    if let CoreIdentifierNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier.token_value(&self.code);
                         let type_obj = self.type_obj_from_expression(
                             &core_struct_stmt.name_type_spec.core_ref().data_type,
@@ -807,7 +806,7 @@ impl Resolver {
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
-                                    IdentKind::FIELD,
+                                    IdentKind::Field,
                                     field_name,
                                     *previous_decl_range,
                                     ok_identifier.range(),
@@ -821,11 +820,11 @@ impl Resolver {
                         }
                     }
                 }
-                CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+                CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                     self.set_curr_class_context_is_containing_self(false);
                     let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
                     let mut is_constructor = false;
-                    if let CoreIdentifierNode::OK(ok_bounded_method_name) =
+                    if let CoreIdentifierNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
@@ -845,7 +844,7 @@ impl Resolver {
                     } else {
                         self.visit_callable_body(&core_func_decl.body)
                     };
-                    if let CoreIdentifierNode::OK(ok_bounded_method_name) =
+                    if let CoreIdentifierNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
                         let func_meta_data =
@@ -855,7 +854,7 @@ impl Resolver {
                             match constructor {
                                 Some((_, previous_decl_range)) => {
                                     let err = IdentifierAlreadyDeclaredError::new(
-                                        IdentKind::CONSTRUCTOR,
+                                        IdentKind::Constructor,
                                         method_name_str,
                                         previous_decl_range,
                                         ok_bounded_method_name.range(),
@@ -866,7 +865,7 @@ impl Resolver {
                                 None => {
                                     match return_type_range {
                                         Some(return_type_range) => match return_type.0.as_ref() {
-                                            CoreType::STRUCT(struct_data) => {
+                                            CoreType::Struct(struct_data) => {
                                                 if let Some(struct_name) = &struct_name {
                                                     if !struct_data.name.eq(struct_name) {
                                                         let err = MismatchedConstructorReturnTypeError::new(
@@ -877,7 +876,7 @@ impl Resolver {
                                                     }
                                                 }
                                             }
-                                            CoreType::VOID => unreachable!(),
+                                            CoreType::Void => unreachable!(),
                                             _ => {
                                                 let err = NonStructConstructorReturnTypeError::new(
                                                     return_type_range,
@@ -901,7 +900,7 @@ impl Resolver {
                                         Some((func_meta_data, ok_bounded_method_name.range()));
                                     self.namespace_handler.set_bounded_kind(
                                         bounded_method_wrapper,
-                                        BoundedMethodKind::CONSTRUCTOR,
+                                        BoundedMethodKind::Constructor,
                                     );
                                 }
                             }
@@ -913,7 +912,7 @@ impl Resolver {
                             ) {
                                 Some(previous_decl_range) => {
                                     let err = IdentifierAlreadyDeclaredError::new(
-                                        IdentKind::METHOD,
+                                        IdentKind::Method,
                                         method_name_str,
                                         previous_decl_range,
                                         ok_bounded_method_name.range(),
@@ -931,7 +930,7 @@ impl Resolver {
                                         );
                                         self.namespace_handler.set_bounded_kind(
                                             bounded_method_wrapper,
-                                            BoundedMethodKind::METHOD,
+                                            BoundedMethodKind::Method,
                                         );
                                     } else {
                                         class_methods.insert(
@@ -940,7 +939,7 @@ impl Resolver {
                                         );
                                         self.namespace_handler.set_bounded_kind(
                                             bounded_method_wrapper,
-                                            BoundedMethodKind::CLASS_METHOD,
+                                            BoundedMethodKind::ClassMethod,
                                         );
                                     }
                                 }
@@ -952,7 +951,7 @@ impl Resolver {
             }
         }
         self.close_block(struct_body);
-        if let CoreIdentifierNode::OK(ok_identifier) = core_struct_decl.name.core_ref() {
+        if let CoreIdentifierNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             match constructor {
                 Some((_, construct_span)) => {
                     let mut missing_fields_from_constructor: Vec<&str> = vec![];
@@ -1036,7 +1035,7 @@ impl Resolver {
             self.errors
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
-        if let CoreIdentifierNode::OK(ok_identifier) = core_lambda_type_decl.name.core_ref() {
+        if let CoreIdentifierNode::Ok(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
             let result = self
                 .namespace_handler
@@ -1053,12 +1052,12 @@ impl Resolver {
                     self.bind_decl_to_identifier(
                         ok_identifier,
                         self.scope_index,
-                        NamespaceKind::TYPE,
+                        NamespaceKind::Type,
                     );
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::TYPE,
+                        IdentKind::Type,
                         name,
                         previous_decl_range,
                         ok_identifier.range(),
@@ -1074,7 +1073,7 @@ impl Resolver {
 impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
-            ASTNode::BLOCK(block) => {
+            ASTNode::Block(block) => {
                 self.open_block();
                 let core_block = block.0.as_ref();
                 for stmt in &*core_block.stmts.as_ref() {
@@ -1083,34 +1082,34 @@ impl Visitor for Resolver {
                 self.close_block(block);
                 return None;
             }
-            ASTNode::VARIABLE_DECLARATION(variable_decl) => {
+            ASTNode::VariableDeclaration(variable_decl) => {
                 self.declare_variable(variable_decl);
                 return None;
             }
-            ASTNode::FUNCTION_WRAPPER(func_wrapper) => {
+            ASTNode::FunctionWrapper(func_wrapper) => {
                 self.declare_function(func_wrapper);
                 return None;
             }
-            ASTNode::STRUCT_DECLARATION(struct_decl) => {
+            ASTNode::StructDeclaration(struct_decl) => {
                 self.declare_struct_type(struct_decl);
                 return None;
             }
-            ASTNode::OK_LAMBDA_TYPE_DECLARATION(lambda_type_decl) => {
+            ASTNode::OkLambdaTypeDeclaration(lambda_type_decl) => {
                 self.declare_lambda_type(lambda_type_decl);
                 return None;
             }
-            ASTNode::ATOM_START(atom_start) => {
+            ASTNode::AtomStart(atom_start) => {
                 match atom_start.core_ref() {
-                    CoreAtomStartNode::IDENTIFIER(identifier) => {
-                        if let CoreIdentifierNode::OK(ok_identifier) = identifier.core_ref() {
+                    CoreAtomStartNode::Identifier(identifier) => {
+                        if let CoreIdentifierNode::Ok(ok_identifier) = identifier.core_ref() {
                             let name = ok_identifier.token_value(&self.code);
                             match self.try_resolving_variable(ok_identifier) {
-                                VariableLookupResult::OK((_, _, depth)) => {
+                                VariableLookupResult::Ok((_, _, depth)) => {
                                     if depth > 0 {
                                         self.set_to_variable_non_locals(name);
                                     }
                                 }
-                                VariableLookupResult::NOT_INITIALIZED(decl_range) => {
+                                VariableLookupResult::NotInitialized(decl_range) => {
                                     let err = VariableReferencedBeforeAssignmentError::new(
                                         name.to_string(),
                                         decl_range,
@@ -1121,7 +1120,7 @@ impl Visitor for Resolver {
                                 }
                                 VariableLookupResult::Err => {
                                     let err = IdentifierNotDeclaredError::new(
-                                        IdentKind::VARIABLE,
+                                        IdentKind::Variable,
                                         ok_identifier.range(),
                                     );
                                     self.errors.push(Diagnostics::IdentifierNotDeclared(err));
@@ -1129,8 +1128,8 @@ impl Visitor for Resolver {
                             }
                         }
                     }
-                    CoreAtomStartNode::SELF_KEYWORD(self_keyword) => {
-                        if let CoreSelfKeywordNode::OK(ok_self_keyword) = self_keyword.core_ref() {
+                    CoreAtomStartNode::SelfKeyword(self_keyword) => {
+                        if let CoreSelfKeywordNode::Ok(ok_self_keyword) = self_keyword.core_ref() {
                             match self.try_resolving_self_keyword(ok_self_keyword) {
                                 Some(_) => {
                                     self.set_curr_class_context_is_containing_self(true);
@@ -1142,9 +1141,9 @@ impl Visitor for Resolver {
                             }
                         }
                     }
-                    CoreAtomStartNode::CALL(func_call) => {
+                    CoreAtomStartNode::Call(func_call) => {
                         let core_func_call = func_call.core_ref();
-                        if let CoreIdentifierNode::OK(ok_identifier) =
+                        if let CoreIdentifierNode::Ok(ok_identifier) =
                             core_func_call.function_name.core_ref()
                         {
                             // order of namespace search: function => type => variable
@@ -1158,7 +1157,7 @@ impl Visitor for Resolver {
                                     self.bind_decl_to_identifier(
                                         ok_identifier,
                                         resolved_scope_index,
-                                        NamespaceKind::FUNCTION,
+                                        NamespaceKind::Function,
                                     );
                                     // function is resolved to nonlocal scope and should be non-builtin
                                     if depth > 0 && symbol_data.2 {
@@ -1174,16 +1173,16 @@ impl Visitor for Resolver {
                                         self.bind_decl_to_identifier(
                                             ok_identifier,
                                             resolved_scope_index,
-                                            NamespaceKind::TYPE,
+                                            NamespaceKind::Type,
                                         );
                                     }
                                     None => match self.try_resolving_variable(ok_identifier) {
-                                        VariableLookupResult::OK((_, _, depth)) => {
+                                        VariableLookupResult::Ok((_, _, depth)) => {
                                             if depth > 0 {
                                                 self.set_to_variable_non_locals(name);
                                             }
                                         }
-                                        VariableLookupResult::NOT_INITIALIZED(decl_range) => {
+                                        VariableLookupResult::NotInitialized(decl_range) => {
                                             let err = VariableReferencedBeforeAssignmentError::new(
                                                 name,
                                                 decl_range,
@@ -1211,16 +1210,16 @@ impl Visitor for Resolver {
                             self.walk_params(params)
                         }
                     }
-                    CoreAtomStartNode::CLASS_METHOD_CALL(class_method_call) => {
+                    CoreAtomStartNode::ClassMethodCall(class_method_call) => {
                         let core_class_method_call = class_method_call.core_ref();
-                        if let CoreIdentifierNode::OK(ok_identifier) =
+                        if let CoreIdentifierNode::Ok(ok_identifier) =
                             core_class_method_call.class_name.core_ref()
                         {
                             if let ResolveResult::Err(_) =
                                 self.try_resolving_user_defined_type(ok_identifier)
                             {
                                 let err = IdentifierNotDeclaredError::new(
-                                    IdentKind::TYPE,
+                                    IdentKind::Type,
                                     ok_identifier.range(),
                                 );
                                 self.errors.push(Diagnostics::IdentifierNotDeclared(err));

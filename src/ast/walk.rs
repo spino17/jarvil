@@ -260,112 +260,112 @@ pub trait Visitor {
         }
 
         match node {
-            ASTNode::BLOCK(block_node) => {
+            ASTNode::Block(block_node) => {
                 let core_block_node = &block_node.0.as_ref();
                 self.walk_token(&core_block_node.newline);
                 for stmt in &*core_block_node.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
             }
-            ASTNode::STATEMENT_INDENT_WRAPPER(stmt_indent_wrapper_node) => {
+            ASTNode::StatementIndentWrapper(stmt_indent_wrapper_node) => {
                 match stmt_indent_wrapper_node.core_ref() {
-                    CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(stmt) => {
+                    CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => {
                         self.walk_stmt(stmt);
                     }
-                    CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(stmt) => {
+                    CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
                         self.walk_incorrectly_indented_stmt(stmt);
                     }
-                    CoreStatemenIndentWrapperNode::LEADING_SKIPPED_TOKENS(skipped_tokens) => {
+                    CoreStatemenIndentWrapperNode::LeadingSkippedTokens(skipped_tokens) => {
                         self.walk_skipped_tokens(skipped_tokens);
                     }
-                    CoreStatemenIndentWrapperNode::TRAILING_SKIPPED_TOKENS(skipped_tokens) => {
+                    CoreStatemenIndentWrapperNode::TrailingSkippedTokens(skipped_tokens) => {
                         self.walk_skipped_tokens(skipped_tokens);
                     }
-                    CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(skipped_tokens) => {
+                    CoreStatemenIndentWrapperNode::ExtraNewlines(skipped_tokens) => {
                         self.walk_skipped_tokens(skipped_tokens);
                     }
                 }
             }
-            ASTNode::SKIPPED_TOKENS(skipped_tokens) => {
+            ASTNode::SkippedTokens(skipped_tokens) => {
                 for skipped_token in &skipped_tokens.core_ref().skipped_tokens {
                     self.walk_skipped_token(skipped_token);
                 }
             }
-            ASTNode::INCORRECTLY_INDENTED_STATEMENT(stmt) => {
+            ASTNode::IncorrectlyIndentedStatement(stmt) => {
                 let core_stmt = stmt.core_ref();
                 self.walk_stmt(&core_stmt.stmt);
             }
-            ASTNode::STATEMENT(statement_node) => match statement_node.core_ref() {
-                CoreStatementNode::EXPRESSION(expr_stmt) => {
+            ASTNode::Statement(statement_node) => match statement_node.core_ref() {
+                CoreStatementNode::Expression(expr_stmt) => {
                     self.walk_expr_stmt(expr_stmt);
                 }
-                CoreStatementNode::ASSIGNMENT(assignment) => {
+                CoreStatementNode::Assignment(assignment) => {
                     self.walk_assignment(assignment);
                 }
-                CoreStatementNode::VARIABLE_DECLARATION(variable_decl) => {
+                CoreStatementNode::VariableDeclaration(variable_decl) => {
                     self.walk_variable_decl(variable_decl);
                 }
-                CoreStatementNode::FUNCTION_WRAPPER(func_wrapper) => {
+                CoreStatementNode::FunctionWrapper(func_wrapper) => {
                     self.walk_func_wrapper(func_wrapper);
                 }
-                CoreStatementNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+                CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                     self.walk_bounded_method_wrapper(bounded_method_wrapper);
                 }
-                CoreStatementNode::TYPE_DECLARATION(type_decl) => {
+                CoreStatementNode::TypeDeclaration(type_decl) => {
                     self.walk_type_decl(type_decl);
                 }
-                CoreStatementNode::STRUCT_PROPERTY_DECLARATION(struct_stmt) => {
+                CoreStatementNode::StructPropertyDeclaration(struct_stmt) => {
                     self.walk_struct_property_declaration(struct_stmt);
                 }
-                CoreStatementNode::RETURN(return_stmt) => {
+                CoreStatementNode::Return(return_stmt) => {
                     self.walk_return_stmt(return_stmt);
                 }
-                CoreStatementNode::MISSING_TOKENS(missing_tokens) => {
+                CoreStatementNode::MissingTokens(missing_tokens) => {
                     self.walk_missing_tokens(missing_tokens);
                 }
             },
-            ASTNode::EXPRESSION_STATEMENT(expr_stmt) => {
+            ASTNode::ExpressionStatement(expr_stmt) => {
                 let core_expr_stmt = expr_stmt.core_ref();
                 self.walk_expression(&core_expr_stmt.expr);
                 self.walk_token(&core_expr_stmt.newline);
             }
-            ASTNode::ASSIGNMENT(assignment_node) => match assignment_node.core_ref() {
-                CoreAssignmentNode::OK(ok_assignment) => {
+            ASTNode::Assignment(assignment_node) => match assignment_node.core_ref() {
+                CoreAssignmentNode::Ok(ok_assignment) => {
                     self.walk_ok_assignment(ok_assignment);
                 }
-                CoreAssignmentNode::INVALID_L_VALUE(invalid_l_value_assignment) => {
+                CoreAssignmentNode::InvalidLValue(invalid_l_value_assignment) => {
                     self.walk_invalid_l_value_assignment(invalid_l_value_assignment);
                 }
             },
-            ASTNode::OK_ASSIGNMENT(ok_assignment) => {
+            ASTNode::OkAssignment(ok_assignment) => {
                 let core_ok_assignment = ok_assignment.core_ref();
                 self.walk_atom(&core_ok_assignment.l_atom);
                 self.walk_token(&core_ok_assignment.equal);
                 self.walk_r_assignment(&core_ok_assignment.r_assign);
             }
-            ASTNode::INVALID_L_VALUE(invalid_l_value) => {
+            ASTNode::InvalidLValue(invalid_l_value) => {
                 let core_invalid_l_value = invalid_l_value.core_ref();
                 self.walk_expression(&core_invalid_l_value.l_expr);
                 self.walk_token(&core_invalid_l_value.equal);
                 self.walk_r_assignment(&core_invalid_l_value.r_assign);
             }
-            ASTNode::STRUCT_PROPERTY_DECLARATION(struct_statement) => {
+            ASTNode::StructPropertyDeclaration(struct_statement) => {
                 let core_struct_stmt = struct_statement.core_ref();
                 self.walk_name_type_spec(&core_struct_stmt.name_type_spec);
                 self.walk_token(&core_struct_stmt.newline);
             }
-            ASTNode::TYPE_DECLARATION(type_decl_node) => match &type_decl_node.core_ref() {
-                CoreTypeDeclarationNode::STRUCT(struct_decl) => {
+            ASTNode::TypeDeclaration(type_decl_node) => match &type_decl_node.core_ref() {
+                CoreTypeDeclarationNode::Struct(struct_decl) => {
                     self.walk_struct_decl(struct_decl);
                 }
-                CoreTypeDeclarationNode::LAMBDA(lambda_decl) => {
+                CoreTypeDeclarationNode::Lambda(lambda_decl) => {
                     self.walk_lambda_type_decl(lambda_decl);
                 }
-                CoreTypeDeclarationNode::MISSING_TOKENS(missing_tokens) => {
+                CoreTypeDeclarationNode::MissingTokens(missing_tokens) => {
                     self.walk_missing_tokens(missing_tokens);
                 }
             },
-            ASTNode::STRUCT_DECLARATION(struct_decl_node) => {
+            ASTNode::StructDeclaration(struct_decl_node) => {
                 let core_struct_decl = struct_decl_node.core_ref();
                 self.walk_token(&core_struct_decl.type_keyword);
                 self.walk_identifier(&core_struct_decl.name);
@@ -373,17 +373,17 @@ pub trait Visitor {
                 self.walk_token(&core_struct_decl.colon);
                 self.walk_block(&core_struct_decl.block);
             }
-            ASTNode::LAMBDA_TYPE_DECLARATION(lambda_decl_node) => {
+            ASTNode::LambdaTypeDeclaration(lambda_decl_node) => {
                 match &lambda_decl_node.core_ref() {
-                    CoreLambdaTypeDeclarationNode::OK(ok_lambda_decl) => {
+                    CoreLambdaTypeDeclarationNode::Ok(ok_lambda_decl) => {
                         self.walk_ok_lambda_type_declaration(ok_lambda_decl);
                     }
-                    CoreLambdaTypeDeclarationNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreLambdaTypeDeclarationNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::OK_LAMBDA_TYPE_DECLARATION(ok_lambda_decl_node) => {
+            ASTNode::OkLambdaTypeDeclaration(ok_lambda_decl_node) => {
                 let core_ok_lambda_decl = ok_lambda_decl_node.core_ref();
                 self.walk_token(&core_ok_lambda_decl.type_keyword);
                 self.walk_identifier(&core_ok_lambda_decl.name);
@@ -402,7 +402,7 @@ pub trait Visitor {
                 }
                 self.walk_token(&core_ok_lambda_decl.newline);
             }
-            ASTNode::CALLABLE_PROTOTYPE(callable_prototype) => {
+            ASTNode::CallablePrototype(callable_prototype) => {
                 let core_callable_prototype = callable_prototype.core_ref();
                 self.walk_token(&core_callable_prototype.lparen);
                 if let Some(name_type_specs) = &core_callable_prototype.params {
@@ -416,48 +416,48 @@ pub trait Visitor {
                     self.walk_type_expression(return_type);
                 }
             }
-            ASTNode::CALLABLE_BODY(callable_body) => {
+            ASTNode::CallableBody(callable_body) => {
                 let core_callable_body = callable_body.0.as_ref();
                 match &core_callable_body {
-                    CoreCallableBodyNode::OK(ok_callable_body) => {
+                    CoreCallableBodyNode::Ok(ok_callable_body) => {
                         self.walk_ok_callable_body(ok_callable_body);
                     }
-                    CoreCallableBodyNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreCallableBodyNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::OK_CALLABLE_BODY(ok_callable_body) => {
+            ASTNode::OkCallableBody(ok_callable_body) => {
                 let core_ok_callable_body = ok_callable_body.core_ref();
                 self.walk_callable_prototype(&core_ok_callable_body.prototype);
                 self.walk_token(&core_ok_callable_body.colon);
                 self.walk_block(&core_ok_callable_body.block);
             }
-            ASTNode::LAMBDA_DECLARATION(lambda_decl_node) => {
+            ASTNode::LambdaDeclaration(lambda_decl_node) => {
                 let core_lambda_decl_node = lambda_decl_node.core_ref();
                 self.walk_token(&core_lambda_decl_node.lambda_keyword);
                 self.walk_callable_body(&core_lambda_decl_node.body);
             }
-            ASTNode::FUNCTION_DECLARATION(function_decl_node) => {
+            ASTNode::FunctionDeclaration(function_decl_node) => {
                 let core_func_decl = function_decl_node.core_ref();
                 self.walk_token(&core_func_decl.def_keyword);
                 self.walk_identifier(&core_func_decl.name);
                 self.walk_callable_body(&core_func_decl.body);
             }
-            ASTNode::FUNCTION_WRAPPER(func_wrapper) => {
+            ASTNode::FunctionWrapper(func_wrapper) => {
                 self.walk_func_decl(&func_wrapper.core_ref().func_decl);
             }
-            ASTNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+            ASTNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                 self.walk_func_decl(&bounded_method_wrapper.0.as_ref().func_decl);
             }
-            ASTNode::VARIABLE_DECLARATION(variable_decl_node) => {
+            ASTNode::VariableDeclaration(variable_decl_node) => {
                 let core_variable_decl = variable_decl_node.core_ref();
                 self.walk_token(&core_variable_decl.let_keyword);
                 self.walk_identifier(&core_variable_decl.name);
                 self.walk_token(&core_variable_decl.equal);
                 self.walk_r_variable_declaration(&core_variable_decl.r_node);
             }
-            ASTNode::RETURN(return_stmt) => {
+            ASTNode::Return(return_stmt) => {
                 let core_return_stmt = return_stmt.core_ref();
                 self.walk_token(&core_return_stmt.return_keyword);
                 if let Some(expr) = &core_return_stmt.expr {
@@ -465,43 +465,43 @@ pub trait Visitor {
                 }
                 self.walk_token(&core_return_stmt.newline);
             }
-            ASTNode::R_ASSIGNMENT(r_assignment_node) => {
+            ASTNode::RAssignment(r_assignment_node) => {
                 let core_r_assignment = r_assignment_node.core_ref();
                 match core_r_assignment {
-                    CoreRAssignmentNode::EXPRESSION(expr_stmt) => {
+                    CoreRAssignmentNode::Expression(expr_stmt) => {
                         self.walk_expr_stmt(expr_stmt);
                     }
-                    CoreRAssignmentNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreRAssignmentNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::R_VARIABLE_DECLARATION(r_variable_decl) => {
+            ASTNode::RVariableDeclaration(r_variable_decl) => {
                 let core_r_variable_decl = r_variable_decl.core_ref();
                 match core_r_variable_decl {
-                    CoreRVariableDeclarationNode::EXPRESSION(expr_stmt) => {
+                    CoreRVariableDeclarationNode::Expression(expr_stmt) => {
                         self.walk_expr_stmt(expr_stmt);
                     }
-                    CoreRVariableDeclarationNode::LAMBDA(lambda) => {
+                    CoreRVariableDeclarationNode::Lambda(lambda) => {
                         self.walk_lambda_decl(lambda);
                     }
-                    CoreRVariableDeclarationNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreRVariableDeclarationNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::NAME_TYPE_SPECS(name_type_specs_node) => {
+            ASTNode::NameTypeSpecs(name_type_specs_node) => {
                 let core_name_type_specs = name_type_specs_node.core_ref();
                 match core_name_type_specs {
-                    CoreNameTypeSpecsNode::OK(ok_name_type_specs) => {
+                    CoreNameTypeSpecsNode::Ok(ok_name_type_specs) => {
                         self.walk_ok_name_type_specs(ok_name_type_specs);
                     }
-                    CoreNameTypeSpecsNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreNameTypeSpecsNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::OK_NAME_TYPE_SPECS(ok_name_type_specs_node) => {
+            ASTNode::OkNameTypeSpecs(ok_name_type_specs_node) => {
                 let core_ok_name_type_specs = ok_name_type_specs_node.core_ref();
                 self.walk_name_type_spec(&core_ok_name_type_specs.arg);
                 if let Some(comma) = &core_ok_name_type_specs.comma {
@@ -511,24 +511,24 @@ pub trait Visitor {
                     self.walk_name_type_specs(remaining_args);
                 }
             }
-            ASTNode::NAME_TYPE_SPEC(name_type_spec_node) => {
+            ASTNode::NameTypeSpec(name_type_spec_node) => {
                 let core_name_type_spec = name_type_spec_node.core_ref();
                 self.walk_identifier(&core_name_type_spec.name);
                 self.walk_token(&core_name_type_spec.colon);
                 self.walk_type_expression(&core_name_type_spec.data_type);
             }
-            ASTNode::TYPE_TUPLE(type_tuple_node) => {
+            ASTNode::TypeTuple(type_tuple_node) => {
                 let core_type_tuple = type_tuple_node.core_ref();
                 match core_type_tuple {
-                    CoreTypeTupleNode::OK(ok_type_tuple) => {
+                    CoreTypeTupleNode::Ok(ok_type_tuple) => {
                         self.walk_ok_type_tuple(ok_type_tuple);
                     }
-                    CoreTypeTupleNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreTypeTupleNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::OK_TYPE_TUPLE(ok_type_tuple_node) => {
+            ASTNode::OkTypeTuple(ok_type_tuple_node) => {
                 let core_ok_type_tuple = ok_type_tuple_node.core_ref();
                 self.walk_type_expression(&core_ok_type_tuple.data_type);
                 if let Some(comma) = &core_ok_type_tuple.comma {
@@ -538,46 +538,46 @@ pub trait Visitor {
                     self.walk_type_tuple(remaining_types);
                 }
             }
-            ASTNode::TYPE_EXPRESSION(type_expression_node) => {
+            ASTNode::TypeExpression(type_expression_node) => {
                 let core_type_expr = type_expression_node.core_ref();
                 match core_type_expr {
-                    CoreTypeExpressionNode::ATOMIC(atomic_type) => {
+                    CoreTypeExpressionNode::Atomic(atomic_type) => {
                         self.walk_atomic_type(atomic_type);
                     }
-                    CoreTypeExpressionNode::USER_DEFINED(user_defined_type) => {
+                    CoreTypeExpressionNode::UserDefined(user_defined_type) => {
                         self.walk_user_defined_type(user_defined_type);
                     }
-                    CoreTypeExpressionNode::ARRAY(array_type) => {
+                    CoreTypeExpressionNode::Array(array_type) => {
                         self.walk_array_type(array_type);
                     }
-                    CoreTypeExpressionNode::TUPLE(tuple_type) => {
+                    CoreTypeExpressionNode::Tuple(tuple_type) => {
                         self.walk_tuple_type(tuple_type);
                     }
-                    CoreTypeExpressionNode::HASHMAP(hashmap_type) => {
+                    CoreTypeExpressionNode::HashMap(hashmap_type) => {
                         self.walk_hashmap_type(hashmap_type);
                     }
-                    CoreTypeExpressionNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreTypeExpressionNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::ATOMIC_TYPE(atomic_type_node) => {
+            ASTNode::AtomicType(atomic_type_node) => {
                 let core_atomic_type = atomic_type_node.core_ref();
                 self.walk_token(&core_atomic_type.kind)
             }
-            ASTNode::ARRAY_TYPE(array_type_node) => {
+            ASTNode::ArrayType(array_type_node) => {
                 let core_array_type = array_type_node.core_ref();
                 self.walk_token(&core_array_type.lsquare);
                 self.walk_type_expression(&core_array_type.sub_type);
                 self.walk_token(&core_array_type.rsquare);
             }
-            ASTNode::TUPLE_TYPE(tuple_type_node) => {
+            ASTNode::TupleType(tuple_type_node) => {
                 let core_tuple_type = tuple_type_node.core_ref();
                 self.walk_token(&core_tuple_type.lparen);
                 self.walk_type_tuple(&core_tuple_type.types);
                 self.walk_token(&core_tuple_type.rparen);
             }
-            ASTNode::HASHMAP_TYPE(hashmap_type_node) => {
+            ASTNode::HashmapType(hashmap_type_node) => {
                 let core_hashmap_type_node = hashmap_type_node.core_ref();
                 self.walk_token(&core_hashmap_type_node.lcurly);
                 self.walk_type_expression(&core_hashmap_type_node.key_type);
@@ -585,85 +585,85 @@ pub trait Visitor {
                 self.walk_type_expression(&core_hashmap_type_node.value_type);
                 self.walk_token(&core_hashmap_type_node.rcurly);
             }
-            ASTNode::USER_DEFINED_TYPE(user_defined_type) => {
+            ASTNode::UserDefinedType(user_defined_type) => {
                 let core_user_defined_type = user_defined_type.core_ref();
                 self.walk_identifier(&core_user_defined_type.name)
             }
-            ASTNode::EXPRESSION(expression_node) => {
+            ASTNode::Expression(expression_node) => {
                 let core_expr = expression_node.core_ref();
                 match core_expr {
-                    CoreExpressionNode::UNARY(unary_expr) => {
+                    CoreExpressionNode::Unary(unary_expr) => {
                         self.walk_unary_expression(unary_expr);
                     }
-                    CoreExpressionNode::BINARY(binary_expr) => {
+                    CoreExpressionNode::Binary(binary_expr) => {
                         self.walk_binary_expression(binary_expr);
                     }
-                    CoreExpressionNode::COMPARISON(comparison_expr) => {
+                    CoreExpressionNode::Comparison(comparison_expr) => {
                         self.walk_comparison(comparison_expr);
                     }
-                    CoreExpressionNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreExpressionNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::ATOMIC_EXPRESSION(atomic_expression_node) => {
+            ASTNode::AtomicExpression(atomic_expression_node) => {
                 let core_atomic_expr = atomic_expression_node.core_ref();
                 match core_atomic_expr {
-                    CoreAtomicExpressionNode::BOOL_VALUE(token) => {
+                    CoreAtomicExpressionNode::BoolValue(token) => {
                         self.walk_token(token);
                     }
-                    CoreAtomicExpressionNode::INTEGER(token) => {
+                    CoreAtomicExpressionNode::Integer(token) => {
                         self.walk_token(token);
                     }
-                    CoreAtomicExpressionNode::FLOATING_POINT_NUMBER(token) => {
+                    CoreAtomicExpressionNode::FloatingPointNumber(token) => {
                         self.walk_token(token);
                     }
-                    CoreAtomicExpressionNode::LITERAL(token) => {
+                    CoreAtomicExpressionNode::Literal(token) => {
                         self.walk_token(token);
                     }
-                    CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(parenthesised_expr) => {
+                    CoreAtomicExpressionNode::ParenthesisedExpression(parenthesised_expr) => {
                         self.walk_parenthesised_expression(parenthesised_expr);
                     }
-                    CoreAtomicExpressionNode::ATOM(atom) => {
+                    CoreAtomicExpressionNode::Atom(atom) => {
                         self.walk_atom(atom);
                     }
-                    CoreAtomicExpressionNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreAtomicExpressionNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
                     }
                 }
             }
-            ASTNode::PARENTHESISED_EXPRESSION(parenthesised_expression_node) => {
+            ASTNode::ParenthesisedExpression(parenthesised_expression_node) => {
                 let parenthesised_expr = parenthesised_expression_node.core_ref();
                 self.walk_token(&parenthesised_expr.lparen);
                 self.walk_expression(&parenthesised_expr.expr);
                 self.walk_token(&parenthesised_expr.rparen);
             }
-            ASTNode::UNARY_EXPRESSION(unary_expression_node) => {
+            ASTNode::UnaryExpression(unary_expression_node) => {
                 let core_unary_expr = unary_expression_node.core_ref();
                 match core_unary_expr {
-                    CoreUnaryExpressionNode::ATOMIC(atomic) => {
+                    CoreUnaryExpressionNode::Atomic(atomic) => {
                         self.walk_atomic_expression(atomic);
                     }
-                    CoreUnaryExpressionNode::UNARY(unary) => {
+                    CoreUnaryExpressionNode::Unary(unary) => {
                         self.walk_only_unary_expression(unary);
                     }
-                    CoreUnaryExpressionNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreUnaryExpressionNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::ONLY_UNARY_EXPRESSION(only_unary_expression_node) => {
+            ASTNode::OnlyUnaryExpression(only_unary_expression_node) => {
                 let core_only_unary_expr = only_unary_expression_node.core_ref();
                 self.walk_token(&core_only_unary_expr.operator);
                 self.walk_unary_expression(&core_only_unary_expr.unary_expr);
             }
-            ASTNode::BINARY_EXPRESSION(binary_expression_node) => {
+            ASTNode::BinaryExpression(binary_expression_node) => {
                 let core_binary_expr = binary_expression_node.core_ref();
                 self.walk_expression(&core_binary_expr.left_expr);
                 self.walk_token(&core_binary_expr.operator);
                 self.walk_expression(&core_binary_expr.right_expr);
             }
-            ASTNode::COMPARISON(comparison_expression_node) => {
+            ASTNode::Comparison(comparison_expression_node) => {
                 let core_comp_expr = comparison_expression_node.core_ref();
                 let operator_len = core_comp_expr.operators.len();
                 self.walk_expression(&core_comp_expr.operands[0]);
@@ -672,18 +672,18 @@ pub trait Visitor {
                     self.walk_expression(&core_comp_expr.operands[i + 1]);
                 }
             }
-            ASTNode::PARAMS(params_node) => {
+            ASTNode::Params(params_node) => {
                 let core_params = params_node.core_ref();
                 match core_params {
-                    CoreParamsNode::OK(ok_params) => {
+                    CoreParamsNode::Ok(ok_params) => {
                         self.walk_ok_params(ok_params);
                     }
-                    CoreParamsNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreParamsNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::OK_PARAMS(ok_params_node) => {
+            ASTNode::OkParams(ok_params_node) => {
                 let core_ok_params = ok_params_node.core_ref();
                 self.walk_expression(&core_ok_params.param);
                 if let Some(comma) = &core_ok_params.comma {
@@ -693,7 +693,7 @@ pub trait Visitor {
                     self.walk_params(remaining_params);
                 }
             }
-            ASTNode::CALL_EXPRESSION(call_expression_node) => {
+            ASTNode::CallExpression(call_expression_node) => {
                 let core_call_expr = call_expression_node.core_ref();
                 self.walk_identifier(&core_call_expr.function_name);
                 self.walk_token(&core_call_expr.lparen);
@@ -702,7 +702,7 @@ pub trait Visitor {
                 }
                 self.walk_token(&core_call_expr.rparen);
             }
-            ASTNode::CLASS_METHOD_CALL(class_method_call_node) => {
+            ASTNode::ClassMethodCall(class_method_call_node) => {
                 let core_class_method_call = class_method_call_node.core_ref();
                 self.walk_identifier(&core_class_method_call.class_name);
                 self.walk_token(&core_class_method_call.double_colon);
@@ -713,44 +713,44 @@ pub trait Visitor {
                 }
                 self.walk_token(&core_class_method_call.rparen);
             }
-            ASTNode::ATOM(atom_node) => {
+            ASTNode::Atom(atom_node) => {
                 let core_atom = atom_node.core_ref();
                 match core_atom {
-                    CoreAtomNode::ATOM_START(atom_start) => {
+                    CoreAtomNode::AtomStart(atom_start) => {
                         self.walk_atom_start(atom_start);
                     }
-                    CoreAtomNode::CALL(call_node) => {
+                    CoreAtomNode::Call(call_node) => {
                         self.walk_call(call_node);
                     }
-                    CoreAtomNode::PROPERTRY_ACCESS(property_access) => {
+                    CoreAtomNode::PropertyAccess(property_access) => {
                         self.walk_property_access(property_access);
                     }
-                    CoreAtomNode::METHOD_ACCESS(method_access) => {
+                    CoreAtomNode::MethodAccess(method_access) => {
                         self.walk_method_access(method_access);
                     }
-                    CoreAtomNode::INDEX_ACCESS(index_access) => {
+                    CoreAtomNode::IndexAccess(index_access) => {
                         self.walk_index_access(index_access);
                     }
                 }
             }
-            ASTNode::ATOM_START(atom_start_node) => {
+            ASTNode::AtomStart(atom_start_node) => {
                 let core_atom_start = atom_start_node.core_ref();
                 match core_atom_start {
-                    CoreAtomStartNode::IDENTIFIER(token) => {
+                    CoreAtomStartNode::Identifier(token) => {
                         self.walk_identifier(token);
                     }
-                    CoreAtomStartNode::SELF_KEYWORD(self_keyword) => {
+                    CoreAtomStartNode::SelfKeyword(self_keyword) => {
                         self.walk_self_keyword(self_keyword);
                     }
-                    CoreAtomStartNode::CALL(call_expr) => {
+                    CoreAtomStartNode::Call(call_expr) => {
                         self.walk_call_expression(call_expr);
                     }
-                    CoreAtomStartNode::CLASS_METHOD_CALL(class_method) => {
+                    CoreAtomStartNode::ClassMethodCall(class_method) => {
                         self.walk_class_method_call(class_method);
                     }
                 }
             }
-            ASTNode::CALL(call_node) => {
+            ASTNode::Call(call_node) => {
                 let core_call = call_node.core_ref();
                 self.walk_atom(&core_call.atom);
                 self.walk_token(&core_call.lparen);
@@ -759,13 +759,13 @@ pub trait Visitor {
                 }
                 self.walk_token(&core_call.rparen);
             }
-            ASTNode::PROPERTY_ACCESS(property_access_node) => {
+            ASTNode::PropertyAccess(property_access_node) => {
                 let core_property_access = property_access_node.core_ref();
                 self.walk_atom(&core_property_access.atom);
                 self.walk_token(&core_property_access.dot);
                 self.walk_identifier(&core_property_access.propertry);
             }
-            ASTNode::METHOD_ACCESS(method_access_node) => {
+            ASTNode::MethodAccess(method_access_node) => {
                 let core_method_access = method_access_node.core_ref();
                 self.walk_atom(&core_method_access.atom);
                 self.walk_token(&core_method_access.dot);
@@ -776,55 +776,55 @@ pub trait Visitor {
                 }
                 self.walk_token(&core_method_access.rparen);
             }
-            ASTNode::INDEX_ACCESS(index_access_node) => {
+            ASTNode::IndexAccess(index_access_node) => {
                 let core_index_access = index_access_node.core_ref();
                 self.walk_atom(&core_index_access.atom);
                 self.walk_token(&core_index_access.lsquare);
                 self.walk_expression(&core_index_access.index);
                 self.walk_token(&core_index_access.rsquare);
             }
-            ASTNode::TOKEN(token) => {
+            ASTNode::Token(token) => {
                 let token = token.core_ref();
                 match token {
-                    CoreTokenNode::OK(ok_token) => self.walk_ok_token(ok_token),
-                    CoreTokenNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreTokenNode::Ok(ok_token) => self.walk_ok_token(ok_token),
+                    CoreTokenNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
                     }
                 }
             }
-            ASTNode::IDENTIFIER(identifier) => {
+            ASTNode::Identifier(identifier) => {
                 let core_identifier = identifier.core_ref();
                 match core_identifier {
-                    CoreIdentifierNode::OK(ok_identifier) => self.walk_ok_identifier(ok_identifier),
-                    CoreIdentifierNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreIdentifierNode::Ok(ok_identifier) => self.walk_ok_identifier(ok_identifier),
+                    CoreIdentifierNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
                     }
                 }
             }
-            ASTNode::OK_IDENTIFIER(ok_identifier) => {
+            ASTNode::OkIdentifier(ok_identifier) => {
                 self.walk_ok_token(&ok_identifier.0.as_ref().token);
             }
-            ASTNode::SELF_KEYWORD(self_keyword) => {
+            ASTNode::SelfKeyword(self_keyword) => {
                 let core_self_keyword = self_keyword.core_ref();
                 match core_self_keyword {
-                    CoreSelfKeywordNode::OK(ok_self_keyword) => {
+                    CoreSelfKeywordNode::Ok(ok_self_keyword) => {
                         self.walk_ok_self_keyword(ok_self_keyword)
                     }
-                    CoreSelfKeywordNode::MISSING_TOKENS(missing_tokens) => {
+                    CoreSelfKeywordNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
                     }
                 }
             }
-            ASTNode::OK_SELF_KEYWORD(ok_self_keyword) => {
+            ASTNode::OkSelfKeyword(ok_self_keyword) => {
                 self.walk_ok_token(&ok_self_keyword.0.as_ref().token);
             }
-            ASTNode::OK_TOKEN(_) => {
+            ASTNode::OkToken(_) => {
                 // do nothing
             }
-            ASTNode::MISSING_TOKEN(_) => {
+            ASTNode::MissingToken(_) => {
                 // do nothing
             }
-            ASTNode::SKIPPED_TOKEN(_) => {
+            ASTNode::SkippedToken(_) => {
                 // do nothing
             }
         }

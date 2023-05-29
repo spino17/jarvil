@@ -9,8 +9,8 @@ use std::rc::Rc;
 use text_size::TextRange;
 
 pub enum VariableLookupResult {
-    OK((SymbolData<VariableData>, usize, usize)),
-    NOT_INITIALIZED(TextRange),
+    Ok((SymbolData<VariableData>, usize, usize)),
+    NotInitialized(TextRange),
     Err,
 }
 
@@ -193,9 +193,9 @@ impl<T> Scope<T> {
 
 #[derive(Debug)]
 pub enum NamespaceKind {
-    VARIABLE,
-    TYPE,
-    FUNCTION,
+    Variable,
+    Type,
+    Function,
 }
 
 #[derive(Debug)]
@@ -264,9 +264,9 @@ impl Namespace {
         match self.variables.lookup(scope_index, key) {
             Some((symbol_data, resolved_scope_index, depth, _)) => {
                 if symbol_data.0.as_ref().borrow().is_initialized() {
-                    return VariableLookupResult::OK((symbol_data, resolved_scope_index, depth));
+                    return VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth));
                 } else {
-                    return VariableLookupResult::NOT_INITIALIZED(symbol_data.1);
+                    return VariableLookupResult::NotInitialized(symbol_data.1);
                 }
             }
             None => return VariableLookupResult::Err,
@@ -401,7 +401,7 @@ impl Namespace {
         self.types.insert(
             scope_index,
             name,
-            UserDefinedTypeData::LAMBDA(LambdaTypeData {
+            UserDefinedTypeData::Lambda(LambdaTypeData {
                 meta_data: FunctionData {
                     params: param_types,
                     return_type,

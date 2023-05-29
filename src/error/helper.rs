@@ -4,39 +4,40 @@ use text_size::TextRange;
 
 #[derive(Clone, Debug)]
 pub enum IdentifierKind {
-    VARIABLE,
-    FUNCTION,
-    TYPE,
-    ARGUMENT,
-    FIELD,
-    METHOD,
-    CONSTRUCTOR,
+    Variable,
+    Function,
+    Type,
+    Argument,
+    Field,
+    Method,
+    Constructor,
 }
 
 impl Display for IdentifierKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            IdentifierKind::VARIABLE => write!(f, "variable"),
-            IdentifierKind::FUNCTION => write!(f, "function"),
-            IdentifierKind::TYPE => write!(f, "type"),
-            IdentifierKind::ARGUMENT => write!(f, "argument"),
-            IdentifierKind::FIELD => write!(f, "field"),
-            IdentifierKind::METHOD => write!(f, "method"),
-            IdentifierKind::CONSTRUCTOR => write!(f, "constructor"),
+            IdentifierKind::Variable => write!(f, "variable"),
+            IdentifierKind::Function => write!(f, "function"),
+            IdentifierKind::Type => write!(f, "type"),
+            IdentifierKind::Argument => write!(f, "argument"),
+            IdentifierKind::Field => write!(f, "field"),
+            IdentifierKind::Method => write!(f, "method"),
+            IdentifierKind::Constructor => write!(f, "constructor"),
         }
     }
 }
 
 #[derive(Clone, Debug)]
 pub enum PropertyKind {
-    FIELD,
-    METHOD,
+    Field,
+    Method,
 }
+
 impl Display for PropertyKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PropertyKind::FIELD => write!(f, "field"),
-            PropertyKind::METHOD => write!(f, "method"),
+            PropertyKind::Field => write!(f, "field"),
+            PropertyKind::Method => write!(f, "method"),
         }
     }
 }

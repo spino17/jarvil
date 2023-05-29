@@ -44,9 +44,9 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
             ));
         }
         let incorrect_indent_data = match indent_result.kind {
-            IndentResultKind::CORRECT_INDENTATION => None,
-            IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
-            IndentResultKind::BLOCK_OVER => {
+            IndentResultKind::CorrectIndentation => None,
+            IndentResultKind::IncorrectIndentation(indent_data) => Some(indent_data),
+            IndentResultKind::BlockOver => {
                 parser.set_indent_level(parser.curr_indent_level() - 1);
                 if !has_atleast_one_stmt {
                     parser.log_no_valid_statement_inside_block_error(newline_node.range());

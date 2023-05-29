@@ -190,8 +190,8 @@ impl Display for BinaryOperatorKind {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LexicalErrorKind {
-    INVALID_CHAR,
-    NO_CLOSING_SYMBOLS(&'static str),
+    InvalidChar,
+    NoClosingSymbols(&'static str),
 }
 
 #[derive(Debug, Clone)]
@@ -211,11 +211,6 @@ pub struct Token {
 impl Token {
     pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
         self.trivia = Some(trivia_vec);
-    }
-
-    pub fn index(&self) -> usize {
-        let r: usize = (self.range.start() + self.range.end()).into();
-        r / 2
     }
 
     pub fn start_index(&self) -> usize {
@@ -240,10 +235,6 @@ impl Token {
 
     pub fn is_eq(&self, symbol: &str) -> bool {
         self.core_token.is_eq(symbol)
-    }
-
-    pub fn is_identifier(&self) -> bool {
-        self.core_token.IDENTIFIER()
     }
 
     pub fn try_as_binary_operator(&self) -> Option<BinaryOperatorKind> {

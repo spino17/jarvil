@@ -121,12 +121,12 @@ pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> 
     let func_decl_node =
         FunctionDeclarationNode::new(&func_name_node, &def_keyword_node, &callable_body);
     match callable_kind {
-        CallableKind::FUNC => {
+        CallableKind::Function => {
             return StatementNode::new_with_function_wrapper(&FunctionWrapperNode::new(
                 &func_decl_node,
             ))
         }
-        CallableKind::METHOD => {
+        CallableKind::Method => {
             return StatementNode::new_with_bounded_method_wrapper(&BoundedMethodWrapperNode::new(
                 &func_decl_node,
             ))

@@ -67,7 +67,7 @@ impl Node for BlockNode {
             let mut is_empty = false;
             loop {
                 match core_block.stmts[index].core_ref() {
-                    CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(_) => {}
+                    CoreStatemenIndentWrapperNode::ExtraNewlines(_) => {}
                     _ => break,
                 }
                 if index == 0 {
@@ -107,7 +107,7 @@ impl Hash for BlockNode {
 
 impl StatemenIndentWrapperNode {
     pub fn new_with_correctly_indented(stmt: &StatementNode) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(
+        let node = Rc::new(CoreStatemenIndentWrapperNode::CorrectlyIndented(
             stmt.clone(),
         ));
         StatemenIndentWrapperNode(node)
@@ -118,28 +118,28 @@ impl StatemenIndentWrapperNode {
         expected_indent: i64,
         received_indent: i64,
     ) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(
+        let node = Rc::new(CoreStatemenIndentWrapperNode::IncorrectlyIndented(
             IncorrectlyIndentedStatementNode::new(stmt, expected_indent, received_indent),
         ));
         StatemenIndentWrapperNode(node)
     }
 
     pub fn new_with_leading_skipped_tokens(skipped_tokens: &SkippedTokensNode) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::LEADING_SKIPPED_TOKENS(
+        let node = Rc::new(CoreStatemenIndentWrapperNode::LeadingSkippedTokens(
             skipped_tokens.clone(),
         ));
         StatemenIndentWrapperNode(node)
     }
 
     pub fn new_with_trailing_skipped_tokens(skipped_tokens: &SkippedTokensNode) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::TRAILING_SKIPPED_TOKENS(
+        let node = Rc::new(CoreStatemenIndentWrapperNode::TrailingSkippedTokens(
             skipped_tokens.clone(),
         ));
         StatemenIndentWrapperNode(node)
     }
 
     pub fn new_with_extra_newlines(skipped_tokens: &SkippedTokensNode) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(
+        let node = Rc::new(CoreStatemenIndentWrapperNode::ExtraNewlines(
             skipped_tokens.clone(),
         ));
         StatemenIndentWrapperNode(node)
@@ -182,45 +182,45 @@ impl Node for SkippedTokensNode {
 
 impl StatementNode {
     pub fn new_with_expression(expr: &ExpressionNode, newline: &TokenNode) -> Self {
-        let node = Rc::new(CoreStatementNode::EXPRESSION(ExpressionStatementNode::new(
+        let node = Rc::new(CoreStatementNode::Expression(ExpressionStatementNode::new(
             expr, newline,
         )));
         StatementNode(node)
     }
 
     pub fn new_with_assignment(assignment: &AssignmentNode) -> Self {
-        let node = Rc::new(CoreStatementNode::ASSIGNMENT(assignment.clone()));
+        let node = Rc::new(CoreStatementNode::Assignment(assignment.clone()));
         StatementNode(node)
     }
 
     pub fn new_with_variable_declaration(variable_decl: &VariableDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::VARIABLE_DECLARATION(
+        let node = Rc::new(CoreStatementNode::VariableDeclaration(
             variable_decl.clone(),
         ));
         StatementNode(node)
     }
 
     pub fn new_with_function_wrapper(func_wrapper: &FunctionWrapperNode) -> Self {
-        let node = Rc::new(CoreStatementNode::FUNCTION_WRAPPER(func_wrapper.clone()));
+        let node = Rc::new(CoreStatementNode::FunctionWrapper(func_wrapper.clone()));
         StatementNode(node)
     }
 
     pub fn new_with_bounded_method_wrapper(
         bounded_method_wrapper: &BoundedMethodWrapperNode,
     ) -> Self {
-        let node = Rc::new(CoreStatementNode::BOUNDED_METHOD_WRAPPER(
+        let node = Rc::new(CoreStatementNode::BoundedMethodWrapper(
             bounded_method_wrapper.clone(),
         ));
         StatementNode(node)
     }
 
     pub fn new_with_type_declaration(type_decl: &TypeDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::TYPE_DECLARATION(type_decl.clone()));
+        let node = Rc::new(CoreStatementNode::TypeDeclaration(type_decl.clone()));
         StatementNode(node)
     }
 
     pub fn new_with_struct_stmt(struct_stmt: &StructPropertyDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::STRUCT_PROPERTY_DECLARATION(
+        let node = Rc::new(CoreStatementNode::StructPropertyDeclaration(
             struct_stmt.clone(),
         ));
         StatementNode(node)
@@ -231,7 +231,7 @@ impl StatementNode {
         expr: Option<&ExpressionNode>,
         newline: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreStatementNode::RETURN(ReturnStatementNode::new(
+        let node = Rc::new(CoreStatementNode::Return(ReturnStatementNode::new(
             return_keyword,
             expr,
             newline,
@@ -288,7 +288,7 @@ impl Node for ExpressionStatementNode {
 
 impl AssignmentNode {
     pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
-        let node = Rc::new(CoreAssignmentNode::OK(OkAssignmentNode::new(
+        let node = Rc::new(CoreAssignmentNode::Ok(OkAssignmentNode::new(
             l_atom, r_assign, equal,
         )));
         AssignmentNode(node)
@@ -299,7 +299,7 @@ impl AssignmentNode {
         r_assign: &RAssignmentNode,
         equal: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAssignmentNode::INVALID_L_VALUE(InvalidLValueNode::new(
+        let node = Rc::new(CoreAssignmentNode::InvalidLValue(InvalidLValueNode::new(
             l_expr, r_assign, equal,
         )));
         AssignmentNode(node)
@@ -384,7 +384,7 @@ impl TypeDeclarationNode {
         struct_keyword: &TokenNode,
         colon: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreTypeDeclarationNode::STRUCT(StructDeclarationNode::new(
+        let node = Rc::new(CoreTypeDeclarationNode::Struct(StructDeclarationNode::new(
             name,
             block,
             type_keyword,
@@ -395,7 +395,7 @@ impl TypeDeclarationNode {
     }
 
     pub fn new_with_lambda(lambda: &LambdaTypeDeclarationNode) -> Self {
-        let node = Rc::new(CoreTypeDeclarationNode::LAMBDA(lambda.clone()));
+        let node = Rc::new(CoreTypeDeclarationNode::Lambda(lambda.clone()));
         TypeDeclarationNode(node)
     }
 
@@ -446,7 +446,7 @@ impl LambdaTypeDeclarationNode {
         return_type: Option<&TypeExpressionNode>,
         newline: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreLambdaTypeDeclarationNode::OK(
+        let node = Rc::new(CoreLambdaTypeDeclarationNode::Ok(
             OkLambdaTypeDeclarationNode::new(
                 name,
                 type_keyword,
@@ -542,7 +542,7 @@ impl Node for CallablePrototypeNode {
 
 impl CallableBodyNode {
     pub fn new(block: &BlockNode, colon: &TokenNode, prototype: &CallablePrototypeNode) -> Self {
-        let node = Rc::new(CoreCallableBodyNode::OK(OkCallableBodyNode::new(
+        let node = Rc::new(CoreCallableBodyNode::Ok(OkCallableBodyNode::new(
             block, colon, prototype,
         )));
         CallableBodyNode(node)
@@ -730,7 +730,7 @@ impl Node for ReturnStatementNode {
 
 impl TypeTupleNode {
     pub fn new(ok_type_tuple: &OkTypeTupleNode) -> Self {
-        let node = Rc::new(CoreTypeTupleNode::OK(ok_type_tuple.clone()));
+        let node = Rc::new(CoreTypeTupleNode::Ok(ok_type_tuple.clone()));
         TypeTupleNode(node)
     }
 
@@ -782,7 +782,7 @@ impl Node for OkTypeTupleNode {
 
 impl NameTypeSpecsNode {
     pub fn new(ok_name_type_specs: &OkNameTypeSpecsNode) -> Self {
-        let node = Rc::new(CoreNameTypeSpecsNode::OK(ok_name_type_specs.clone()));
+        let node = Rc::new(CoreNameTypeSpecsNode::Ok(ok_name_type_specs.clone()));
         NameTypeSpecsNode(node)
     }
 
@@ -860,14 +860,14 @@ impl Node for NameTypeSpecNode {
 
 impl TypeExpressionNode {
     pub fn new_with_atomic_type(atomic_type: &TokenNode) -> Self {
-        let node = Rc::new(CoreTypeExpressionNode::ATOMIC(AtomicTypeNode::new(
+        let node = Rc::new(CoreTypeExpressionNode::Atomic(AtomicTypeNode::new(
             atomic_type,
         )));
         TypeExpressionNode(node)
     }
 
     pub fn new_with_user_defined_type(identifier: &IdentifierNode) -> Self {
-        let node = Rc::new(CoreTypeExpressionNode::USER_DEFINED(
+        let node = Rc::new(CoreTypeExpressionNode::UserDefined(
             UserDefinedTypeNode::new(identifier),
         ));
         TypeExpressionNode(node)
@@ -878,7 +878,7 @@ impl TypeExpressionNode {
         lsquare: &TokenNode,
         rsquare: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreTypeExpressionNode::ARRAY(ArrayTypeNode::new(
+        let node = Rc::new(CoreTypeExpressionNode::Array(ArrayTypeNode::new(
             sub_type, lsquare, rsquare,
         )));
         TypeExpressionNode(node)
@@ -889,7 +889,7 @@ impl TypeExpressionNode {
         rparen: &TokenNode,
         types: &TypeTupleNode,
     ) -> Self {
-        let node = Rc::new(CoreTypeExpressionNode::TUPLE(TupleTypeNode::new(
+        let node = Rc::new(CoreTypeExpressionNode::Tuple(TupleTypeNode::new(
             lparen, rparen, types,
         )));
         TypeExpressionNode(node)
@@ -902,7 +902,7 @@ impl TypeExpressionNode {
         key_type: &TypeExpressionNode,
         value_type: &TypeExpressionNode,
     ) -> Self {
-        let node = Rc::new(CoreTypeExpressionNode::HASHMAP(HashMapTypeNode::new(
+        let node = Rc::new(CoreTypeExpressionNode::HashMap(HashMapTypeNode::new(
             lcurly, rcurly, colon, key_type, value_type,
         )));
         TypeExpressionNode(node)
@@ -914,22 +914,22 @@ impl TypeExpressionNode {
         scope_index: usize,
     ) -> TypeResolveKind {
         match self.core_ref() {
-            CoreTypeExpressionNode::ATOMIC(atomic) => {
+            CoreTypeExpressionNode::Atomic(atomic) => {
                 atomic.type_obj_before_resolved(&resolver.code)
             }
-            CoreTypeExpressionNode::ARRAY(array) => {
+            CoreTypeExpressionNode::Array(array) => {
                 array.type_obj_before_resolved(resolver, scope_index)
             }
-            CoreTypeExpressionNode::TUPLE(tuple) => {
+            CoreTypeExpressionNode::Tuple(tuple) => {
                 tuple.type_obj_before_resolved(resolver, scope_index)
             }
-            CoreTypeExpressionNode::HASHMAP(hashmap) => {
+            CoreTypeExpressionNode::HashMap(hashmap) => {
                 hashmap.type_obj_before_resolved(resolver, scope_index)
             }
-            CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
+            CoreTypeExpressionNode::UserDefined(user_defined) => {
                 user_defined.type_obj_before_resolved(resolver, scope_index)
             }
-            CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID,
+            CoreTypeExpressionNode::MissingTokens(_) => TypeResolveKind::Invalid,
         }
     }
 
@@ -939,20 +939,20 @@ impl TypeExpressionNode {
         namespace_handler: &NamespaceHandler,
     ) -> TypeResolveKind {
         match self.core_ref() {
-            CoreTypeExpressionNode::ATOMIC(atomic) => atomic.type_obj_after_resolved(code),
-            CoreTypeExpressionNode::ARRAY(array) => {
+            CoreTypeExpressionNode::Atomic(atomic) => atomic.type_obj_after_resolved(code),
+            CoreTypeExpressionNode::Array(array) => {
                 array.type_obj_after_resolved(code, namespace_handler)
             }
-            CoreTypeExpressionNode::TUPLE(tuple) => {
+            CoreTypeExpressionNode::Tuple(tuple) => {
                 tuple.type_obj_after_resolved(code, namespace_handler)
             }
-            CoreTypeExpressionNode::HASHMAP(hashmap) => {
+            CoreTypeExpressionNode::HashMap(hashmap) => {
                 hashmap.type_obj_after_resolved(code, namespace_handler)
             }
-            CoreTypeExpressionNode::USER_DEFINED(user_defined) => {
+            CoreTypeExpressionNode::UserDefined(user_defined) => {
                 user_defined.type_obj_after_resolved(code, namespace_handler)
             }
-            CoreTypeExpressionNode::MISSING_TOKENS(_) => TypeResolveKind::INVALID,
+            CoreTypeExpressionNode::MissingTokens(_) => TypeResolveKind::Invalid,
         }
     }
 
@@ -974,12 +974,12 @@ impl AtomicTypeNode {
 
     pub fn type_obj_after_resolved(&self, code: &JarvilCode) -> TypeResolveKind {
         match self.core_ref().kind.core_ref() {
-            CoreTokenNode::OK(ok_token) => {
-                return TypeResolveKind::RESOLVED(Type::new_with_atomic(
+            CoreTokenNode::Ok(ok_token) => {
+                return TypeResolveKind::Resolved(Type::new_with_atomic(
                     &ok_token.token_value(code),
                 ))
             }
-            _ => return TypeResolveKind::INVALID,
+            _ => return TypeResolveKind::Invalid,
         }
     }
 
@@ -1015,13 +1015,13 @@ impl ArrayTypeNode {
             .sub_type
             .type_obj_before_resolved(resolver, scope_index)
         {
-            TypeResolveKind::RESOLVED(element_type) => {
-                return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
+            TypeResolveKind::Resolved(element_type) => {
+                return TypeResolveKind::Resolved(Type::new_with_array(&element_type))
             }
-            TypeResolveKind::UNRESOLVED(identifier_node) => {
-                return TypeResolveKind::UNRESOLVED(identifier_node)
+            TypeResolveKind::Unresolved(identifier_node) => {
+                return TypeResolveKind::Unresolved(identifier_node)
             }
-            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+            TypeResolveKind::Invalid => return TypeResolveKind::Invalid,
         }
     }
 
@@ -1035,13 +1035,13 @@ impl ArrayTypeNode {
             .sub_type
             .type_obj_after_resolved(code, namespace_handler)
         {
-            TypeResolveKind::RESOLVED(element_type) => {
-                return TypeResolveKind::RESOLVED(Type::new_with_array(&element_type))
+            TypeResolveKind::Resolved(element_type) => {
+                return TypeResolveKind::Resolved(Type::new_with_array(&element_type))
             }
-            TypeResolveKind::UNRESOLVED(identifier_node) => {
-                return TypeResolveKind::UNRESOLVED(identifier_node)
+            TypeResolveKind::Unresolved(identifier_node) => {
+                return TypeResolveKind::Unresolved(identifier_node)
             }
-            TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+            TypeResolveKind::Invalid => return TypeResolveKind::Invalid,
         }
     }
 
@@ -1076,19 +1076,19 @@ impl TupleTypeNode {
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
             match ty.type_obj_before_resolved(resolver, scope_index) {
-                TypeResolveKind::RESOLVED(type_obj) => resolved_types.push(type_obj),
-                TypeResolveKind::UNRESOLVED(mut identifier) => {
+                TypeResolveKind::Resolved(type_obj) => resolved_types.push(type_obj),
+                TypeResolveKind::Unresolved(mut identifier) => {
                     unresolved_identifiers.append(&mut identifier)
                 }
-                TypeResolveKind::INVALID => resolved_types.push(Type::new_with_unknown()),
+                TypeResolveKind::Invalid => resolved_types.push(Type::new_with_unknown()),
             }
         }
         if unresolved_identifiers.len() > 0 {
-            return TypeResolveKind::UNRESOLVED(unresolved_identifiers);
+            return TypeResolveKind::Unresolved(unresolved_identifiers);
         } else if resolved_types.len() > 0 {
-            return TypeResolveKind::RESOLVED(Type::new_with_tuple(resolved_types));
+            return TypeResolveKind::Resolved(Type::new_with_tuple(resolved_types));
         } else {
-            return TypeResolveKind::INVALID;
+            return TypeResolveKind::Invalid;
         }
     }
 
@@ -1101,19 +1101,19 @@ impl TupleTypeNode {
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
             match ty.type_obj_after_resolved(code, namespace_handler) {
-                TypeResolveKind::RESOLVED(type_obj) => resolved_types.push(type_obj),
-                TypeResolveKind::UNRESOLVED(mut identifier) => {
+                TypeResolveKind::Resolved(type_obj) => resolved_types.push(type_obj),
+                TypeResolveKind::Unresolved(mut identifier) => {
                     unresolved_identifiers.append(&mut identifier)
                 }
-                TypeResolveKind::INVALID => resolved_types.push(Type::new_with_unknown()),
+                TypeResolveKind::Invalid => resolved_types.push(Type::new_with_unknown()),
             }
         }
         if unresolved_identifiers.len() > 0 {
-            return TypeResolveKind::UNRESOLVED(unresolved_identifiers);
+            return TypeResolveKind::Unresolved(unresolved_identifiers);
         } else if resolved_types.len() > 0 {
-            return TypeResolveKind::RESOLVED(Type::new_with_tuple(resolved_types));
+            return TypeResolveKind::Resolved(Type::new_with_tuple(resolved_types));
         } else {
-            return TypeResolveKind::INVALID;
+            return TypeResolveKind::Invalid;
         }
     }
 
@@ -1153,44 +1153,44 @@ impl HashMapTypeNode {
         value_result: TypeResolveKind,
     ) -> TypeResolveKind {
         match key_result {
-            TypeResolveKind::RESOLVED(key_type) => match value_result {
-                TypeResolveKind::RESOLVED(value_type) => {
-                    return TypeResolveKind::RESOLVED(Type::new_with_hashmap(
+            TypeResolveKind::Resolved(key_type) => match value_result {
+                TypeResolveKind::Resolved(value_type) => {
+                    return TypeResolveKind::Resolved(Type::new_with_hashmap(
                         &key_type,
                         &value_type,
                     ))
                 }
-                TypeResolveKind::UNRESOLVED(unresolved_vec) => {
-                    return TypeResolveKind::UNRESOLVED(unresolved_vec)
+                TypeResolveKind::Unresolved(unresolved_vec) => {
+                    return TypeResolveKind::Unresolved(unresolved_vec)
                 }
-                TypeResolveKind::INVALID => {
-                    return TypeResolveKind::RESOLVED(Type::new_with_hashmap(
+                TypeResolveKind::Invalid => {
+                    return TypeResolveKind::Resolved(Type::new_with_hashmap(
                         &key_type,
                         &Type::new_with_unknown(),
                     ))
                 }
             },
-            TypeResolveKind::UNRESOLVED(mut key_unresolved_vec) => match value_result {
-                TypeResolveKind::RESOLVED(_) => {
-                    return TypeResolveKind::UNRESOLVED(key_unresolved_vec)
+            TypeResolveKind::Unresolved(mut key_unresolved_vec) => match value_result {
+                TypeResolveKind::Resolved(_) => {
+                    return TypeResolveKind::Unresolved(key_unresolved_vec)
                 }
-                TypeResolveKind::UNRESOLVED(mut value_unresolved_vec) => {
+                TypeResolveKind::Unresolved(mut value_unresolved_vec) => {
                     key_unresolved_vec.append(&mut value_unresolved_vec);
-                    return TypeResolveKind::UNRESOLVED(key_unresolved_vec);
+                    return TypeResolveKind::Unresolved(key_unresolved_vec);
                 }
-                TypeResolveKind::INVALID => return TypeResolveKind::UNRESOLVED(key_unresolved_vec),
+                TypeResolveKind::Invalid => return TypeResolveKind::Unresolved(key_unresolved_vec),
             },
-            TypeResolveKind::INVALID => match value_result {
-                TypeResolveKind::RESOLVED(value_type) => {
-                    return TypeResolveKind::RESOLVED(Type::new_with_hashmap(
+            TypeResolveKind::Invalid => match value_result {
+                TypeResolveKind::Resolved(value_type) => {
+                    return TypeResolveKind::Resolved(Type::new_with_hashmap(
                         &Type::new_with_unknown(),
                         &value_type,
                     ))
                 }
-                TypeResolveKind::UNRESOLVED(unresolved_vec) => {
-                    return TypeResolveKind::UNRESOLVED(unresolved_vec)
+                TypeResolveKind::Unresolved(unresolved_vec) => {
+                    return TypeResolveKind::Unresolved(unresolved_vec)
                 }
-                TypeResolveKind::INVALID => return TypeResolveKind::INVALID,
+                TypeResolveKind::Invalid => return TypeResolveKind::Invalid,
             },
         }
     }
@@ -1252,7 +1252,7 @@ impl UserDefinedTypeNode {
         resolver: &mut Resolver,
         scope_index: usize,
     ) -> TypeResolveKind {
-        if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
+        if let CoreIdentifierNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(&resolver.code);
             match resolver
                 .namespace_handler
@@ -1264,17 +1264,17 @@ impl UserDefinedTypeNode {
                     resolver.bind_decl_to_identifier(
                         ok_identifier,
                         resolved_scope_index,
-                        NamespaceKind::TYPE,
+                        NamespaceKind::Type,
                     );
                     match &*symbol_data.0.as_ref().borrow() {
-                        UserDefinedTypeData::STRUCT(_) => {
-                            return TypeResolveKind::RESOLVED(Type::new_with_struct(
+                        UserDefinedTypeData::Struct(_) => {
+                            return TypeResolveKind::Resolved(Type::new_with_struct(
                                 name,
                                 &symbol_data,
                             ));
                         }
-                        UserDefinedTypeData::LAMBDA(lambda_data) => {
-                            return TypeResolveKind::RESOLVED(Type::new_with_lambda(
+                        UserDefinedTypeData::Lambda(lambda_data) => {
+                            return TypeResolveKind::Resolved(Type::new_with_lambda(
                                 Some(name),
                                 &lambda_data.meta_data.params,
                                 &lambda_data.meta_data.return_type,
@@ -1282,10 +1282,10 @@ impl UserDefinedTypeNode {
                         }
                     }
                 }
-                None => return TypeResolveKind::UNRESOLVED(vec![ok_identifier.clone()]),
+                None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
             }
         }
-        return TypeResolveKind::INVALID;
+        return TypeResolveKind::Invalid;
     }
 
     pub fn type_obj_after_resolved(
@@ -1293,27 +1293,27 @@ impl UserDefinedTypeNode {
         code: &JarvilCode,
         namespace_handler: &NamespaceHandler,
     ) -> TypeResolveKind {
-        if let CoreIdentifierNode::OK(ok_identifier) = self.core_ref().name.core_ref() {
+        if let CoreIdentifierNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(code);
             match namespace_handler
                 .identifier_binding_table
                 .get(ok_identifier)
             {
                 Some((scope_index, namespace_kind)) => match namespace_kind {
-                    NamespaceKind::TYPE => {
+                    NamespaceKind::Type => {
                         let symbol_data = namespace_handler
                             .namespace
                             .get_from_types_namespace(*scope_index, &name);
                         match symbol_data {
                             Some(symbol_data) => match &*symbol_data.0.as_ref().borrow() {
-                                UserDefinedTypeData::STRUCT(_) => {
-                                    return TypeResolveKind::RESOLVED(Type::new_with_struct(
+                                UserDefinedTypeData::Struct(_) => {
+                                    return TypeResolveKind::Resolved(Type::new_with_struct(
                                         name,
                                         &symbol_data,
                                     ));
                                 }
-                                UserDefinedTypeData::LAMBDA(lambda_data) => {
-                                    return TypeResolveKind::RESOLVED(Type::new_with_lambda(
+                                UserDefinedTypeData::Lambda(lambda_data) => {
+                                    return TypeResolveKind::Resolved(Type::new_with_lambda(
                                         Some(name),
                                         &lambda_data.meta_data.params,
                                         &lambda_data.meta_data.return_type,
@@ -1325,7 +1325,7 @@ impl UserDefinedTypeNode {
                     }
                     _ => unreachable!(),
                 },
-                None => return TypeResolveKind::UNRESOLVED(vec![ok_identifier.clone()]),
+                None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
             }
             /*
             match ok_identifier.user_defined_type_symbol_data(
@@ -1349,7 +1349,7 @@ impl UserDefinedTypeNode {
             }
              */
         }
-        return TypeResolveKind::INVALID;
+        return TypeResolveKind::Invalid;
     }
 
     impl_core_ref!(CoreUserDefinedTypeNode);
@@ -1366,7 +1366,7 @@ impl Node for UserDefinedTypeNode {
 
 impl RAssignmentNode {
     pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
-        let node = Rc::new(CoreRAssignmentNode::EXPRESSION(
+        let node = Rc::new(CoreRAssignmentNode::Expression(
             ExpressionStatementNode::new(expr, newline),
         ));
         RAssignmentNode(node)
@@ -1378,12 +1378,12 @@ default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode);
 
 impl RVariableDeclarationNode {
     pub fn new_with_lambda(lambda_decl: &LambdaDeclarationNode) -> Self {
-        let node = Rc::new(CoreRVariableDeclarationNode::LAMBDA(lambda_decl.clone()));
+        let node = Rc::new(CoreRVariableDeclarationNode::Lambda(lambda_decl.clone()));
         RVariableDeclarationNode(node)
     }
 
     pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
-        let node = Rc::new(CoreRVariableDeclarationNode::EXPRESSION(
+        let node = Rc::new(CoreRVariableDeclarationNode::Expression(
             ExpressionStatementNode::new(expr, newline),
         ));
         RVariableDeclarationNode(node)
@@ -1395,7 +1395,7 @@ default_errornous_node_impl!(RVariableDeclarationNode, CoreRVariableDeclarationN
 
 impl ExpressionNode {
     pub fn new_with_unary(unary_expr: &UnaryExpressionNode) -> Self {
-        let node = Rc::new(CoreExpressionNode::UNARY(unary_expr.clone()));
+        let node = Rc::new(CoreExpressionNode::Unary(unary_expr.clone()));
         ExpressionNode(node)
     }
 
@@ -1410,7 +1410,7 @@ impl ExpressionNode {
                 "any node passed in this method as operator should be a valid operator"
             ),
         };
-        let node = Rc::new(CoreExpressionNode::BINARY(BinaryExpressionNode::new(
+        let node = Rc::new(CoreExpressionNode::Binary(BinaryExpressionNode::new(
             operator_kind,
             operator,
             left_expr,
@@ -1420,7 +1420,7 @@ impl ExpressionNode {
     }
 
     pub fn new_with_comparison(operands: Vec<ExpressionNode>, operators: Vec<TokenNode>) -> Self {
-        let node = Rc::new(CoreExpressionNode::COMPARISON(ComparisonNode::new(
+        let node = Rc::new(CoreExpressionNode::Comparison(ComparisonNode::new(
             operands, operators,
         )));
         ExpressionNode(node)
@@ -1428,10 +1428,10 @@ impl ExpressionNode {
 
     pub fn is_valid_l_value(&self) -> Option<AtomNode> {
         match &self.0.as_ref() {
-            CoreExpressionNode::UNARY(unary_expr_node) => match &unary_expr_node.0.as_ref() {
-                CoreUnaryExpressionNode::ATOMIC(atomic_expr_node) => {
+            CoreExpressionNode::Unary(unary_expr_node) => match &unary_expr_node.0.as_ref() {
+                CoreUnaryExpressionNode::Atomic(atomic_expr_node) => {
                     match &atomic_expr_node.0.as_ref() {
-                        CoreAtomicExpressionNode::ATOM(atom_node) => {
+                        CoreAtomicExpressionNode::Atom(atom_node) => {
                             if atom_node.is_valid_l_value() {
                                 return Some(atom_node.clone());
                             } else {
@@ -1453,24 +1453,24 @@ default_errornous_node_impl!(ExpressionNode, CoreExpressionNode);
 
 impl AtomicExpressionNode {
     pub fn new_with_bool(bool_value: &TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::BOOL_VALUE(bool_value.clone()));
+        let node = Rc::new(CoreAtomicExpressionNode::BoolValue(bool_value.clone()));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_integer(integer_value: &TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::INTEGER(integer_value.clone()));
+        let node = Rc::new(CoreAtomicExpressionNode::Integer(integer_value.clone()));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_floating_point_number(floating_point_value: &TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::FLOATING_POINT_NUMBER(
+        let node = Rc::new(CoreAtomicExpressionNode::FloatingPointNumber(
             floating_point_value.clone(),
         ));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_literal(literal_value: &TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::LITERAL(literal_value.clone()));
+        let node = Rc::new(CoreAtomicExpressionNode::Literal(literal_value.clone()));
         AtomicExpressionNode(node)
     }
 
@@ -1479,14 +1479,14 @@ impl AtomicExpressionNode {
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::PARENTHESISED_EXPRESSION(
+        let node = Rc::new(CoreAtomicExpressionNode::ParenthesisedExpression(
             ParenthesisedExpressionNode::new(expr, lparen, rparen),
         ));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_atom(atom: &AtomNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::ATOM(atom.clone()));
+        let node = Rc::new(CoreAtomicExpressionNode::Atom(atom.clone()));
         AtomicExpressionNode(node)
     }
 
@@ -1518,7 +1518,7 @@ impl Node for ParenthesisedExpressionNode {
 
 impl UnaryExpressionNode {
     pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
-        let node = Rc::new(CoreUnaryExpressionNode::ATOMIC(atomic_expr.clone()));
+        let node = Rc::new(CoreUnaryExpressionNode::Atomic(atomic_expr.clone()));
         UnaryExpressionNode(node)
     }
 
@@ -1527,7 +1527,7 @@ impl UnaryExpressionNode {
         operator: &TokenNode,
         operator_kind: UnaryOperatorKind,
     ) -> Self {
-        let node = Rc::new(CoreUnaryExpressionNode::UNARY(
+        let node = Rc::new(CoreUnaryExpressionNode::Unary(
             OnlyUnaryExpressionNode::new(operator, unary_expr, operator_kind),
         ));
         UnaryExpressionNode(node)
@@ -1618,7 +1618,7 @@ impl Node for ComparisonNode {
 
 impl ParamsNode {
     pub fn new(ok_params_node: &OkParamsNode) -> Self {
-        let node = Rc::new(CoreParamsNode::OK(ok_params_node.clone()));
+        let node = Rc::new(CoreParamsNode::Ok(ok_params_node.clone()));
         ParamsNode(node)
     }
 
@@ -1730,7 +1730,7 @@ impl Node for ClassMethodCallNode {
 
 impl AtomNode {
     pub fn new_with_atom_start(atom_start: &AtomStartNode) -> Self {
-        let node = Rc::new(CoreAtomNode::ATOM_START(atom_start.clone()));
+        let node = Rc::new(CoreAtomNode::AtomStart(atom_start.clone()));
         AtomNode(node)
     }
 
@@ -1740,7 +1740,7 @@ impl AtomNode {
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomNode::CALL(CallNode::new(
+        let node = Rc::new(CoreAtomNode::Call(CallNode::new(
             atom, params, lparen, rparen,
         )));
         AtomNode(node)
@@ -1751,7 +1751,7 @@ impl AtomNode {
         propertry: &IdentifierNode,
         dot: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomNode::PROPERTRY_ACCESS(PropertyAccessNode::new(
+        let node = Rc::new(CoreAtomNode::PropertyAccess(PropertyAccessNode::new(
             atom, propertry, dot,
         )));
         AtomNode(node)
@@ -1765,7 +1765,7 @@ impl AtomNode {
         rparen: &TokenNode,
         dot: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomNode::METHOD_ACCESS(MethodAccessNode::new(
+        let node = Rc::new(CoreAtomNode::MethodAccess(MethodAccessNode::new(
             atom,
             method_name,
             params,
@@ -1782,7 +1782,7 @@ impl AtomNode {
         lsquare: &TokenNode,
         rsquare: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomNode::INDEX_ACCESS(IndexAccessNode::new(
+        let node = Rc::new(CoreAtomNode::IndexAccess(IndexAccessNode::new(
             atom, index, lsquare, rsquare,
         )));
         AtomNode(node)
@@ -1790,14 +1790,14 @@ impl AtomNode {
 
     pub fn is_valid_l_value(&self) -> bool {
         match &self.0.as_ref() {
-            CoreAtomNode::ATOM_START(atom_start_node) => atom_start_node.is_valid_l_value(),
-            CoreAtomNode::CALL(_) => false,
-            CoreAtomNode::METHOD_ACCESS(_) => false,
-            CoreAtomNode::INDEX_ACCESS(atom_index_access_node) => {
+            CoreAtomNode::AtomStart(atom_start_node) => atom_start_node.is_valid_l_value(),
+            CoreAtomNode::Call(_) => false,
+            CoreAtomNode::MethodAccess(_) => false,
+            CoreAtomNode::IndexAccess(atom_index_access_node) => {
                 let atom = &atom_index_access_node.0.as_ref().atom;
                 return atom.is_valid_l_value();
             }
-            CoreAtomNode::PROPERTRY_ACCESS(atom_property_access_node) => {
+            CoreAtomNode::PropertyAccess(atom_property_access_node) => {
                 let atom = &atom_property_access_node.0.as_ref().atom;
                 return atom.is_valid_l_value();
             }
@@ -1809,17 +1809,17 @@ impl AtomNode {
 
 impl AtomStartNode {
     pub fn new_with_identifier(token: &IdentifierNode) -> Self {
-        let node = Rc::new(CoreAtomStartNode::IDENTIFIER(token.clone()));
+        let node = Rc::new(CoreAtomStartNode::Identifier(token.clone()));
         AtomStartNode(node)
     }
 
     pub fn new_with_self_keyword(self_keyword: &SelfKeywordNode) -> Self {
-        let node = Rc::new(CoreAtomStartNode::SELF_KEYWORD(self_keyword.clone()));
+        let node = Rc::new(CoreAtomStartNode::SelfKeyword(self_keyword.clone()));
         AtomStartNode(node)
     }
 
     pub fn new_with_function_call(call_expr: &CallExpressionNode) -> Self {
-        let node = Rc::new(CoreAtomStartNode::CALL(call_expr.clone()));
+        let node = Rc::new(CoreAtomStartNode::Call(call_expr.clone()));
         AtomStartNode(node)
     }
 
@@ -1831,7 +1831,7 @@ impl AtomStartNode {
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomStartNode::CLASS_METHOD_CALL(
+        let node = Rc::new(CoreAtomStartNode::ClassMethodCall(
             ClassMethodCallNode::new(
                 class_name,
                 class_method_name,
@@ -1846,8 +1846,8 @@ impl AtomStartNode {
 
     pub fn is_valid_l_value(&self) -> bool {
         match &self.0.as_ref() {
-            CoreAtomStartNode::IDENTIFIER(_) => true,
-            CoreAtomStartNode::SELF_KEYWORD(_) => true,
+            CoreAtomStartNode::Identifier(_) => true,
+            CoreAtomStartNode::SelfKeyword(_) => true,
             _ => false,
         }
     }
@@ -1967,7 +1967,7 @@ impl Node for IndexAccessNode {
 
 impl IdentifierNode {
     pub fn new_with_ok(token: &OkTokenNode) -> Self {
-        let node = Rc::new(CoreIdentifierNode::OK(OkIdentifierNode::new(token)));
+        let node = Rc::new(CoreIdentifierNode::Ok(OkIdentifierNode::new(token)));
         IdentifierNode(node)
     }
 
@@ -2014,7 +2014,7 @@ impl Hash for OkIdentifierNode {
 
 impl SelfKeywordNode {
     pub fn new_with_ok(token: &OkTokenNode) -> Self {
-        let node = Rc::new(CoreSelfKeywordNode::OK(OkSelfKeywordNode::new(token)));
+        let node = Rc::new(CoreSelfKeywordNode::Ok(OkSelfKeywordNode::new(token)));
         SelfKeywordNode(node)
     }
 
@@ -2061,13 +2061,13 @@ impl Hash for OkSelfKeywordNode {
 
 impl TokenNode {
     pub fn new_with_ok(token: &Token) -> Self {
-        let node = Rc::new(CoreTokenNode::OK(OkTokenNode::new(token)));
+        let node = Rc::new(CoreTokenNode::Ok(OkTokenNode::new(token)));
         TokenNode(node)
     }
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match &self.0.as_ref() {
-            CoreTokenNode::OK(ok_token) => match ok_token.is_binary_operator() {
+            CoreTokenNode::Ok(ok_token) => match ok_token.is_binary_operator() {
                 Some(operator) => return Some(operator),
                 None => None,
             },

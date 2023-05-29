@@ -27,8 +27,8 @@ fn attach_source_code(err: Report, source: String) -> Report {
 
 #[derive(Debug)]
 pub enum BuildMode {
-    BUILD,
-    RUN,
+    Build,
+    Run,
 }
 
 #[derive(Debug)]
@@ -123,7 +123,7 @@ impl AbstractCommand for BuildDriver {
             .arg(&transpiled_py_code_file_path)
             .output()?;
         match self.mode {
-            BuildMode::RUN => {
+            BuildMode::Run => {
                 let output = Command::new("python3")
                     .arg(transpiled_py_code_file_path)
                     .output()?;
@@ -133,7 +133,7 @@ impl AbstractCommand for BuildDriver {
                     println!("{}", std_output_str)
                 }
             }
-            BuildMode::BUILD => {}
+            BuildMode::Build => {}
         }
         Ok(())
     }

@@ -19,11 +19,11 @@ pub trait AbstractCommand {
 
 #[derive(Debug)]
 pub enum AnyonCommand {
-    NEW(NewDriver),
-    BUILD(BuildDriver),
-    FMT(FmtDriver),
-    VERSION(VersionDriver),
-    HELP(HelpDriver),
+    New(NewDriver),
+    Build(BuildDriver),
+    Fmt(FmtDriver),
+    Version(VersionDriver),
+    Help(HelpDriver),
 }
 
 impl AbstractCommand for AnyonCommand {
@@ -42,22 +42,22 @@ impl AbstractCommand for AnyonCommand {
 
 pub fn get_cmd_from_command_line_args(args: Vec<String>) -> Result<AnyonCommand, AnyonError> {
     if args.len() < 2 {
-        return Ok(AnyonCommand::HELP(HelpDriver::new(args)));
+        return Ok(AnyonCommand::Help(HelpDriver::new(args)));
     } else {
         let core_cmd = &args[1];
         if core_cmd.eq("new") {
-            return Ok(AnyonCommand::NEW(NewDriver::new(args)));
+            return Ok(AnyonCommand::New(NewDriver::new(args)));
         } else if core_cmd.eq("build") {
-            return Ok(AnyonCommand::BUILD(BuildDriver::new(
+            return Ok(AnyonCommand::Build(BuildDriver::new(
                 args,
-                BuildMode::BUILD,
+                BuildMode::Build,
             )));
         } else if core_cmd.eq("run") {
-            return Ok(AnyonCommand::BUILD(BuildDriver::new(args, BuildMode::RUN)));
+            return Ok(AnyonCommand::Build(BuildDriver::new(args, BuildMode::Run)));
         } else if core_cmd.eq("version") {
-            return Ok(AnyonCommand::VERSION(VersionDriver::new(args)));
+            return Ok(AnyonCommand::Version(VersionDriver::new(args)));
         } else if core_cmd.eq("help") {
-            return Ok(AnyonCommand::HELP(HelpDriver::new(args)));
+            return Ok(AnyonCommand::Help(HelpDriver::new(args)));
         } else {
             return Err(AnyonError::new_with_command(format!(
                 "no such command: {}",

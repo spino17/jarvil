@@ -1,11 +1,11 @@
 macro_rules! impl_variants {
     ($t: ident, $u: ident) => {
         match $t {
-            AnyonCommand::NEW(new_driver) => new_driver.$u(),
-            AnyonCommand::BUILD(build_driver) => build_driver.$u(),
-            AnyonCommand::FMT(fmt_driver) => fmt_driver.$u(),
-            AnyonCommand::VERSION(version_driver) => version_driver.$u(),
-            AnyonCommand::HELP(help_driver) => help_driver.$u(),
+            AnyonCommand::New(new_driver) => new_driver.$u(),
+            AnyonCommand::Build(build_driver) => build_driver.$u(),
+            AnyonCommand::Fmt(fmt_driver) => fmt_driver.$u(),
+            AnyonCommand::Version(version_driver) => version_driver.$u(),
+            AnyonCommand::Help(help_driver) => help_driver.$u(),
         }
     };
 }

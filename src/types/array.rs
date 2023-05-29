@@ -23,7 +23,7 @@ impl Array {
         operator_kind: &BinaryOperatorKind,
     ) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ARRAY(other_array) => {
+            CoreType::Array(other_array) => {
                 if self
                     .element_type
                     .check_operator(&other_array.element_type, operator_kind)
@@ -41,8 +41,8 @@ impl Array {
 impl AbstractType for Array {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
-            CoreType::ARRAY(array_data) => self.element_type.is_eq(&array_data.element_type),
-            CoreType::ANY => true,
+            CoreType::Array(array_data) => self.element_type.is_eq(&array_data.element_type),
+            CoreType::Any => true,
             _ => false,
         }
     }
@@ -57,7 +57,7 @@ impl ToString for Array {
 impl OperatorCompatiblity for Array {
     fn check_add(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ARRAY(array) => {
+            CoreType::Array(array) => {
                 let sub_type = &array.element_type;
                 if self.element_type.is_eq(sub_type) {
                     return Some(Type::new_with_array(sub_type));

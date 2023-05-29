@@ -52,7 +52,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
             let variable_decl_node = parser.variable_decl();
             StatementNode::new_with_variable_declaration(&variable_decl_node)
         }
-        CoreToken::DEF => parser.function_stmt(CallableKind::FUNC),
+        CoreToken::DEF => parser.function_stmt(CallableKind::Function),
         CoreToken::FOR => todo!(),
         CoreToken::WHILE => todo!(),
         CoreToken::IF => todo!(),
@@ -110,7 +110,7 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
                 StructPropertyDeclarationNode::new(&name_type_spec_node, &newline_node);
             return StatementNode::new_with_struct_stmt(&struct_stmt);
         }
-        CoreToken::DEF => return parser.function_stmt(CallableKind::METHOD),
+        CoreToken::DEF => return parser.function_stmt(CallableKind::Method),
         _ => unreachable!(),
     }
 }

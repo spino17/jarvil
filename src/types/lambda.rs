@@ -27,7 +27,7 @@ impl Lambda {
 impl AbstractType for Lambda {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
-            CoreType::LAMBDA(lambda_data) => {
+            CoreType::Lambda(lambda_data) => {
                 // Lambda type has structural equivalence checks unlike struct type which is only compared by it's name
                 // This structural equivalence is important because we can have lambda types which are not named for example:
                 // let x = (...) -> <Type>: block would have `x` to be of type `Lambda` with no name but symbol_data.
@@ -52,7 +52,7 @@ impl AbstractType for Lambda {
                 }
                 true
             }
-            CoreType::ANY => true,
+            CoreType::Any => true,
             _ => false,
         }
     }

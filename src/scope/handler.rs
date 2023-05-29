@@ -13,9 +13,9 @@ use crate::{
 use rustc_hash::{FxHashMap, FxHashSet};
 
 pub enum SymbolDataRef<'a> {
-    VARIABLE(&'a SymbolData<VariableData>),
-    FUNCTION(&'a SymbolData<FunctionData>),
-    TYPE(&'a SymbolData<UserDefinedTypeData>),
+    Variable(&'a SymbolData<VariableData>),
+    Function(&'a SymbolData<FunctionData>),
+    Type(&'a SymbolData<UserDefinedTypeData>),
 }
 
 pub struct NamespaceHandler {
@@ -46,27 +46,27 @@ impl NamespaceHandler {
             Some((scope_index, namespace_kind)) => {
                 let name = node.token_value(code);
                 match namespace_kind {
-                    NamespaceKind::VARIABLE => {
+                    NamespaceKind::Variable => {
                         match self
                             .namespace
                             .get_from_variables_namespace(*scope_index, &name)
                         {
-                            Some(symbol_data) => return Some(SymbolDataRef::VARIABLE(symbol_data)),
+                            Some(symbol_data) => return Some(SymbolDataRef::Variable(symbol_data)),
                             None => unreachable!(),
                         }
                     }
-                    NamespaceKind::FUNCTION => {
+                    NamespaceKind::Function => {
                         match self
                             .namespace
                             .get_from_functions_namespace(*scope_index, &name)
                         {
-                            Some(symbol_data) => return Some(SymbolDataRef::FUNCTION(symbol_data)),
+                            Some(symbol_data) => return Some(SymbolDataRef::Function(symbol_data)),
                             None => unreachable!(),
                         }
                     }
-                    NamespaceKind::TYPE => {
+                    NamespaceKind::Type => {
                         match self.namespace.get_from_types_namespace(*scope_index, &name) {
-                            Some(symbol_data) => return Some(SymbolDataRef::TYPE(symbol_data)),
+                            Some(symbol_data) => return Some(SymbolDataRef::Type(symbol_data)),
                             None => unreachable!(),
                         }
                     }
@@ -83,7 +83,7 @@ impl NamespaceHandler {
     ) -> Option<&SymbolData<VariableData>> {
         match self.identifier_binding_table.get(node) {
             Some((scope_index, namespace_kind)) => match namespace_kind {
-                NamespaceKind::VARIABLE => {
+                NamespaceKind::Variable => {
                     let name = node.token_value(code);
                     return self
                         .namespace
@@ -102,7 +102,7 @@ impl NamespaceHandler {
     ) -> Option<&SymbolData<FunctionData>> {
         match self.identifier_binding_table.get(node) {
             Some((scope_index, namespace_kind)) => match namespace_kind {
-                NamespaceKind::FUNCTION => {
+                NamespaceKind::Function => {
                     let name = node.token_value(code);
                     return self
                         .namespace
@@ -121,7 +121,7 @@ impl NamespaceHandler {
     ) -> Option<&SymbolData<UserDefinedTypeData>> {
         match self.identifier_binding_table.get(node) {
             Some((scope_index, namespace_kind)) => match namespace_kind {
-                NamespaceKind::TYPE => {
+                NamespaceKind::Type => {
                     let name = node.token_value(code);
                     return self.namespace.get_from_types_namespace(*scope_index, &name);
                 }

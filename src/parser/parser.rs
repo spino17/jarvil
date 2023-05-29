@@ -269,7 +269,7 @@ impl JarvilParser {
                 }
                 CoreToken::ENDMARKER => {
                     return IndentResult {
-                        kind: IndentResultKind::BLOCK_OVER,
+                        kind: IndentResultKind::BlockOver,
                         skipped_tokens,
                         extra_newlines,
                     }
@@ -281,13 +281,13 @@ impl JarvilParser {
                     expected_indent_spaces = expected_indent_spaces + self.correction_indent();
                     if indent_spaces == expected_indent_spaces {
                         return IndentResult {
-                            kind: IndentResultKind::CORRECT_INDENTATION,
+                            kind: IndentResultKind::CorrectIndentation,
                             skipped_tokens,
                             extra_newlines,
                         };
                     } else if indent_spaces > expected_indent_spaces {
                         return IndentResult {
-                            kind: IndentResultKind::INCORRECT_INDENTATION((
+                            kind: IndentResultKind::IncorrectIndentation((
                                 expected_indent_spaces,
                                 indent_spaces,
                             )),
@@ -296,7 +296,7 @@ impl JarvilParser {
                         };
                     } else {
                         return IndentResult {
-                            kind: IndentResultKind::BLOCK_OVER,
+                            kind: IndentResultKind::BlockOver,
                             skipped_tokens,
                             extra_newlines,
                         };

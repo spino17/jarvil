@@ -180,7 +180,7 @@ impl CoreLexer {
                     token = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
                 } else {
                     *begin_lexeme = *begin_lexeme + 1;
-                    token = CoreToken::LEXICAL_ERROR(LexicalErrorKind::INVALID_CHAR);
+                    token = CoreToken::LEXICAL_ERROR(LexicalErrorKind::InvalidChar);
                 }
                 token
             }
@@ -198,14 +198,14 @@ impl CoreLexer {
         };
         match &core_token {
             CoreToken::LEXICAL_ERROR(err_kind) => match err_kind {
-                LexicalErrorKind::INVALID_CHAR => {
+                LexicalErrorKind::InvalidChar => {
                     assert!(
                         end_line_number == start_line_number,
                         "invalid char should occur on the same line"
                     );
                     self.log_invalid_char_error(&token);
                 }
-                LexicalErrorKind::NO_CLOSING_SYMBOLS(expected_symbol) => {
+                LexicalErrorKind::NoClosingSymbols(expected_symbol) => {
                     self.log_no_closing_symbol_error(expected_symbol.to_string(), &token)
                 }
             },

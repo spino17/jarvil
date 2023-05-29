@@ -27,7 +27,7 @@ pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
 
 pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
     match token.core_ref() {
-        CoreTokenNode::OK(ok_token_node) => match &ok_token_node.core_ref().token.trivia {
+        CoreTokenNode::Ok(ok_token_node) => match &ok_token_node.core_ref().token.trivia {
             Some(trivia) => return Some(trivia),
             None => return None,
         },
@@ -93,7 +93,7 @@ impl PythonCodeGenerator {
             Some((scope_index, namespace_kind)) => {
                 let name = identifier.token_value(&self.code);
                 match namespace_kind {
-                    NamespaceKind::VARIABLE => {
+                    NamespaceKind::Variable => {
                         match self
                             .namespace_handler
                             .namespace
@@ -108,7 +108,7 @@ impl PythonCodeGenerator {
                             None => unreachable!(),
                         }
                     }
-                    NamespaceKind::FUNCTION => {
+                    NamespaceKind::Function => {
                         match self
                             .namespace_handler
                             .namespace
@@ -123,7 +123,7 @@ impl PythonCodeGenerator {
                             None => unreachable!(),
                         }
                     }
-                    NamespaceKind::TYPE => {
+                    NamespaceKind::Type => {
                         match self
                             .namespace_handler
                             .namespace
@@ -185,16 +185,16 @@ impl PythonCodeGenerator {
 
     pub fn print_token_node(&mut self, token: &TokenNode) {
         match token.core_ref() {
-            CoreTokenNode::OK(ok_token_node) => {
+            CoreTokenNode::Ok(ok_token_node) => {
                 self.walk_ok_token(&ok_token_node);
             }
-            CoreTokenNode::MISSING_TOKENS(_) => unreachable!(),
+            CoreTokenNode::MissingTokens(_) => unreachable!(),
         }
     }
 
     pub fn print_identifier(&mut self, identifier: &IdentifierNode) {
         let identifier = match identifier.core_ref() {
-            CoreIdentifierNode::OK(ok_identifier) => ok_identifier,
+            CoreIdentifierNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
         let suffix_str = self.get_suffix_str_for_identifier(identifier);
@@ -211,7 +211,7 @@ impl PythonCodeGenerator {
 
     pub fn print_identifier_without_trivia(&mut self, identifier: &IdentifierNode) {
         let identifier = match identifier.core_ref() {
-            CoreIdentifierNode::OK(ok_identifier) => ok_identifier,
+            CoreIdentifierNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
         let suffix_str = self.get_suffix_str_for_identifier(identifier);
@@ -229,18 +229,18 @@ impl PythonCodeGenerator {
         let trivia = get_trivia_from_token_node(let_keyword);
         self.print_trivia(trivia);
         match r_node.core_ref() {
-            CoreRVariableDeclarationNode::EXPRESSION(expr_stmt) => {
+            CoreRVariableDeclarationNode::Expression(expr_stmt) => {
                 self.print_identifier_without_trivia(name);
                 self.print_token_node(equal);
                 self.walk_expr_stmt(expr_stmt);
             }
-            CoreRVariableDeclarationNode::LAMBDA(lambda_decl) => {
+            CoreRVariableDeclarationNode::Lambda(lambda_decl) => {
                 let callable_body = &lambda_decl.core_ref().body;
                 self.add_str_to_python_code("def");
                 self.print_identifier(name);
                 self.walk_callable_body(callable_body);
             }
-            CoreRVariableDeclarationNode::MISSING_TOKENS(_) => unreachable!(),
+            CoreRVariableDeclarationNode::MissingTokens(_) => unreachable!(),
         }
     }
 
@@ -259,7 +259,7 @@ impl PythonCodeGenerator {
     pub fn print_type_decl(&mut self, type_decl: &TypeDeclarationNode) {
         let core_type_decl = type_decl.core_ref();
         match core_type_decl {
-            CoreTypeDeclarationNode::STRUCT(struct_decl) => {
+            CoreTypeDeclarationNode::Struct(struct_decl) => {
                 let core_struct_decl = struct_decl.core_ref();
                 let struct_name = &core_struct_decl.name;
                 let type_keyword = &core_struct_decl.type_keyword;
@@ -272,10 +272,10 @@ impl PythonCodeGenerator {
                 self.print_token_node(colon);
                 self.walk_block(block);
             }
-            CoreTypeDeclarationNode::LAMBDA(_) => {
+            CoreTypeDeclarationNode::Lambda(_) => {
                 self.add_str_to_python_code("\n");
             }
-            CoreTypeDeclarationNode::MISSING_TOKENS(_) => unreachable!(),
+            CoreTypeDeclarationNode::MissingTokens(_) => unreachable!(),
         }
     }
 
@@ -308,16 +308,16 @@ impl PythonCodeGenerator {
             None => unreachable!(),
         };
         match bounded_kind {
-            BoundedMethodKind::CLASS_METHOD => {
+            BoundedMethodKind::ClassMethod => {
                 self.walk_func_decl(&bounded_method_wrapper.0.as_ref().func_decl);
                 return;
             }
-            BoundedMethodKind::METHOD | BoundedMethodKind::CONSTRUCTOR => {
+            BoundedMethodKind::Method | BoundedMethodKind::Constructor => {
                 let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
                 let def_keyword = &core_func_decl.def_keyword;
                 let name = &core_func_decl.name;
                 let body = match core_func_decl.body.core_ref() {
-                    CoreCallableBodyNode::OK(ok_callable_body) => ok_callable_body.core_ref(),
+                    CoreCallableBodyNode::Ok(ok_callable_body) => ok_callable_body.core_ref(),
                     _ => unreachable!(),
                 };
                 let colon = &body.colon;
@@ -346,7 +346,7 @@ impl PythonCodeGenerator {
 impl Visitor for PythonCodeGenerator {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
-            ASTNode::BLOCK(block) => {
+            ASTNode::Block(block) => {
                 self.open_block();
                 let core_block = block.0.as_ref();
                 self.print_token_node(&core_block.newline);
@@ -389,14 +389,14 @@ impl Visitor for PythonCodeGenerator {
                 self.close_block();
                 return None;
             }
-            ASTNode::STATEMENT_INDENT_WRAPPER(stmt_wrapper) => {
+            ASTNode::StatementIndentWrapper(stmt_wrapper) => {
                 let core_stmt_wrapper = stmt_wrapper.core_ref();
                 match core_stmt_wrapper {
-                    CoreStatemenIndentWrapperNode::CORRECTLY_INDENTED(ok_stmt) => {
+                    CoreStatemenIndentWrapperNode::CorrectlyIndented(ok_stmt) => {
                         // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                         self.walk_stmt(ok_stmt);
                     }
-                    CoreStatemenIndentWrapperNode::EXTRA_NEWLINES(extra_newlines) => {
+                    CoreStatemenIndentWrapperNode::ExtraNewlines(extra_newlines) => {
                         let core_extra_newlines = extra_newlines.core_ref();
                         for extra_newline in &core_extra_newlines.skipped_tokens {
                             let core_token = &extra_newline.core_ref().skipped_token;
@@ -404,48 +404,48 @@ impl Visitor for PythonCodeGenerator {
                             self.print_token(core_token);
                         }
                     }
-                    CoreStatemenIndentWrapperNode::INCORRECTLY_INDENTED(_) => unreachable!(),
-                    CoreStatemenIndentWrapperNode::LEADING_SKIPPED_TOKENS(_) => unreachable!(),
-                    CoreStatemenIndentWrapperNode::TRAILING_SKIPPED_TOKENS(_) => unreachable!(),
+                    CoreStatemenIndentWrapperNode::IncorrectlyIndented(_) => unreachable!(),
+                    CoreStatemenIndentWrapperNode::LeadingSkippedTokens(_) => unreachable!(),
+                    CoreStatemenIndentWrapperNode::TrailingSkippedTokens(_) => unreachable!(),
                 }
                 return None;
             }
-            ASTNode::VARIABLE_DECLARATION(variable_decl) => {
+            ASTNode::VariableDeclaration(variable_decl) => {
                 self.print_variable_decl(variable_decl);
                 return None;
             }
-            ASTNode::STRUCT_PROPERTY_DECLARATION(_) => {
+            ASTNode::StructPropertyDeclaration(_) => {
                 self.add_str_to_python_code("\n");
                 return None;
             }
-            ASTNode::BOUNDED_METHOD_WRAPPER(bounded_method_wrapper) => {
+            ASTNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                 self.print_bounded_method_wrapper(bounded_method_wrapper);
                 return None;
             }
-            ASTNode::CALLABLE_PROTOTYPE(callable_prototype) => {
+            ASTNode::CallablePrototype(callable_prototype) => {
                 self.print_callable_prototype(callable_prototype);
                 return None;
             }
-            ASTNode::NAME_TYPE_SPEC(name_type_spec) => {
+            ASTNode::NameTypeSpec(name_type_spec) => {
                 // This is where type-annotations are evapored in the generated Python code
                 let core_name_type_spec = name_type_spec.core_ref();
                 let name = &core_name_type_spec.name;
                 self.print_identifier(name);
                 return None;
             }
-            ASTNode::TYPE_DECLARATION(type_decl) => {
+            ASTNode::TypeDeclaration(type_decl) => {
                 self.print_type_decl(type_decl);
                 return None;
             }
-            ASTNode::CLASS_METHOD_CALL(class_method_call) => {
+            ASTNode::ClassMethodCall(class_method_call) => {
                 self.print_class_method_call(class_method_call);
                 return None;
             }
-            ASTNode::IDENTIFIER(identifier) => {
+            ASTNode::Identifier(identifier) => {
                 self.print_identifier(identifier);
                 return None;
             }
-            ASTNode::OK_TOKEN(token) => {
+            ASTNode::OkToken(token) => {
                 self.print_token(&token.core_ref().token);
                 return None;
             }

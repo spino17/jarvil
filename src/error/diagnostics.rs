@@ -404,31 +404,31 @@ impl IdentifierAlreadyDeclaredError {
         redecl_range: TextRange,
     ) -> Self {
         let help_str = match identifier_kind {
-            IdentifierKind::VARIABLE | IdentifierKind::FUNCTION => {
+            IdentifierKind::Variable | IdentifierKind::Function => {
                 format!(
                     "{}s are not allowed to be redeclared inside the same scope",
                     identifier_kind
                 )
             }
-            IdentifierKind::ARGUMENT => {
+            IdentifierKind::Argument => {
                 format!(
                     "{}s are not allowed to be redeclared in the same function defintion",
                     identifier_kind
                 )
             }
-            IdentifierKind::FIELD => {
+            IdentifierKind::Field => {
                 format!("all fields of struct should have distinct names")
             }
-            IdentifierKind::TYPE => {
+            IdentifierKind::Type => {
                 format!(
                     "{}s are not allowed to be redeclared inside the complete scope chain",
                     identifier_kind
                 )
             }
-            IdentifierKind::METHOD => {
+            IdentifierKind::Method => {
                 format!("all methods of struct should have distinct names")
             }
-            IdentifierKind::CONSTRUCTOR => {
+            IdentifierKind::Constructor => {
                 format!("constructor is not allowed to be redeclared")
             }
         };

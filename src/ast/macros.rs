@@ -5,31 +5,11 @@ macro_rules! default_errornous_node_impl {
                 expected_symbols: &Vec<&'static str>,
                 received_token: &Token,
             ) -> Self {
-                $t(Rc::new($u::MISSING_TOKENS(MissingTokenNode::new(
+                $t(Rc::new($u::MissingTokens(MissingTokenNode::new(
                     expected_symbols,
                     received_token,
                 ))))
             }
-        }
-    };
-}
-
-macro_rules! impl_weak_node {
-    ($(($t: ident, $v: ident)),*) => {
-        $(
-            #[derive(Debug, Clone)]
-            pub struct $t(Weak<$v>);
-        )*
-    };
-}
-
-macro_rules! weak_ast_nodes {
-    ($(($t: ident, $v: ident)),*) => {
-        #[derive(Debug, Clone)]
-        pub enum WeakASTNode {
-            $(
-                $t($v),
-            )*
         }
     };
 }

@@ -5,20 +5,20 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub enum UserDefinedTypeData {
-    STRUCT(StructData),
-    LAMBDA(LambdaTypeData),
+    Struct(StructData),
+    Lambda(LambdaTypeData),
 }
 
 impl UserDefinedTypeData {
     pub fn default_with_struct() -> Self {
-        UserDefinedTypeData::STRUCT(StructData::default())
+        UserDefinedTypeData::Struct(StructData::default())
     }
 
     // Below methods should only be called if getting the desired variant is guarenteed
     // that's why interally it uses `unreachable!()`
     pub fn get_struct_data_mut_ref(&mut self) -> &mut StructData {
         match self {
-            UserDefinedTypeData::STRUCT(data) => data,
+            UserDefinedTypeData::Struct(data) => data,
             _ => unreachable!(),
         }
     }
