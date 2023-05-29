@@ -70,11 +70,12 @@ impl Type {
         Type(Rc::new(CoreType::STRUCT(Struct::new(name, symbol_data))))
     }
 
-    pub fn new_with_lambda(
-        name: Option<String>,
-        symbol_data: &SymbolData<UserDefinedTypeData>,
-    ) -> Type {
-        Type(Rc::new(CoreType::LAMBDA(Lambda::new(name, symbol_data))))
+    pub fn new_with_lambda(name: Option<String>, params: &Vec<Type>, return_type: &Type) -> Type {
+        Type(Rc::new(CoreType::LAMBDA(Lambda::new(
+            name,
+            params,
+            return_type,
+        ))))
     }
 
     pub fn new_with_array(element_type: &Type) -> Type {

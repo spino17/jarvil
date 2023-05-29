@@ -5,7 +5,7 @@ use std::{rc::Rc, str::Chars};
 // print(_obj: <any>)
 pub fn print_meta_data() -> FunctionData {
     FunctionData {
-        params: Rc::new(vec![Type::new_with_any()]),
+        params: vec![Type::new_with_any()],
         return_type: Type::new_with_void(),
     }
 }
@@ -13,7 +13,7 @@ pub fn print_meta_data() -> FunctionData {
 // range(_start: int, _end: int) -> [int]
 pub fn range_meta_data() -> FunctionData {
     FunctionData {
-        params: Rc::new(vec![Type::new_with_atomic(INT), Type::new_with_atomic(INT)]),
+        params: vec![Type::new_with_atomic(INT), Type::new_with_atomic(INT)],
         return_type: Type::new_with_array(&Type::new_with_atomic(INT)),
     }
 }

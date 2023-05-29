@@ -126,7 +126,7 @@ impl Resolver {
                 let func_meta_data = &*symbol_data.0.as_ref().borrow();
                 let params = &func_meta_data.params;
                 let return_type = &func_meta_data.return_type;
-                if params.as_ref().len() > 0 || !return_type.is_void() {
+                if params.len() > 0 || !return_type.is_void() {
                     let span = symbol_data.1;
                     let err = MainFunctionWrongTypeError::new(span);
                     self.errors.push(Diagnostics::MainFunctionWrongType(err));
@@ -674,28 +674,7 @@ impl Resolver {
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
                 let (params_vec, return_type, _) =
                     self.visit_callable_body(&core_lambda_r_assign.body);
-                let lambda_type_obj = match core_lambda_r_assign.body.core_ref() {
-                    CoreCallableBodyNode::OK(ok_callable_body) => {
-                        let symbol_data = UserDefinedTypeData::LAMBDA(LambdaTypeData::new(
-                            params_vec,
-                            return_type,
-                        ));
-                        Type::new_with_lambda(
-                            None,
-                            &SymbolData::new(
-                                symbol_data,
-                                ok_callable_body
-                                    .core_ref()
-                                    .prototype
-                                    .core_ref()
-                                    .lparen
-                                    .range(),
-                                true,
-                            ),
-                        )
-                    }
-                    CoreCallableBodyNode::MISSING_TOKENS(_) => Type::new_with_unknown(),
-                };
+                let lambda_type_obj = Type::new_with_lambda(None, &params_vec, &return_type);
                 if let CoreIdentifierNode::OK(ok_identifier) = core_variable_decl.name.core_ref() {
                     if let Some(symbol_data) = self
                         .namespace_handler

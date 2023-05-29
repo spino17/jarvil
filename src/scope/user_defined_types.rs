@@ -84,7 +84,7 @@ impl LambdaTypeData {
     pub fn new(param_types: Vec<Type>, return_type: Type) -> Self {
         LambdaTypeData {
             meta_data: FunctionData {
-                params: Rc::new(param_types),
+                params: param_types,
                 return_type,
             },
         }

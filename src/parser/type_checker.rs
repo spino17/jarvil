@@ -197,31 +197,19 @@ impl TypeChecker {
                     },
                     _ => self.params_and_return_type_obj_from_expr(return_type, params),
                 };
-                let symbol_data =
-                    UserDefinedTypeData::LAMBDA(LambdaTypeData::new(params_vec, return_type));
-                let lambda_type_obj = Type::new_with_lambda(
-                    None,
-                    &SymbolData::new(symbol_data, prototype.lparen.range(), true),
-                );
+                let lambda_type_obj = Type::new_with_lambda(None, &params_vec, &return_type);
                 return lambda_type_obj;
             }
             CoreCallableBodyNode::MISSING_TOKENS(_) => return Type::new_with_unknown(),
         }
     }
 
-    pub fn is_callable(&self, type_obj: &Type) -> Option<(Rc<Vec<Type>>, Type)> {
+    pub fn is_callable<'a>(type_obj: &'a Type) -> Option<(&'a Vec<Type>, &'a Type)> {
         match type_obj.0.as_ref() {
-            CoreType::LAMBDA(lambda) => {
-                let lambda_data = lambda
-                    .symbol_data
-                    .0
-                    .as_ref()
-                    .borrow()
-                    .get_lambda_data_ref()
-                    .clone();
+            CoreType::LAMBDA(lambda_data) => {
                 return Some((
-                    lambda_data.meta_data.params,
-                    lambda_data.meta_data.return_type,
+                    &lambda_data.meta_data.params,
+                    &lambda_data.meta_data.return_type,
                 ));
             }
             _ => None,
@@ -425,19 +413,10 @@ impl TypeChecker {
                                 let lambda_type =
                                     &variable_symbol_data.0.as_ref().borrow().data_type;
                                 match lambda_type.0.as_ref() {
-                                    CoreType::LAMBDA(lambda_data) => {
-                                        let lambda_data = lambda_data
-                                            .symbol_data
-                                            .0
-                                            .as_ref()
-                                            .borrow()
-                                            .get_lambda_data_ref()
-                                            .clone();
-                                        (
-                                            lambda_data.meta_data.params,
-                                            lambda_data.meta_data.return_type,
-                                        )
-                                    }
+                                    CoreType::LAMBDA(lambda_data) => (
+                                        lambda_data.meta_data.params.clone(),
+                                        lambda_data.meta_data.return_type.clone(),
+                                    ),
                                     _ => {
                                         let err = IdentifierNotCallableError::new(
                                             lambda_type.to_string(),
@@ -581,13 +560,13 @@ impl TypeChecker {
                 let atom = &core_call.atom;
                 let params = &core_call.params;
                 let (atom_type_obj, _) = self.check_atom(atom);
-                match self.is_callable(&atom_type_obj) {
+                match TypeChecker::is_callable(&atom_type_obj) {
                     Some((expected_param_types, return_type)) => {
                         let result =
                             self.check_params_type_and_count(&expected_param_types, params);
                         match result {
                             ParamsTypeNCountResult::OK => {
-                                return (return_type, Some(atom_type_obj))
+                                return (return_type.clone(), Some(atom_type_obj))
                             }
                             _ => {
                                 self.log_params_type_and_count_check_error(atom.range(), result);
@@ -651,13 +630,13 @@ impl TypeChecker {
                     let method_name = ok_identifier.token_value(&self.code);
                     match result {
                         StructPropertyCheckResult::PROPERTY_EXIST(type_obj) => {
-                            match self.is_callable(&type_obj) {
+                            match TypeChecker::is_callable(&type_obj) {
                                 Some((expected_param_types, return_type)) => {
                                     let result = self
                                         .check_params_type_and_count(&expected_param_types, params);
                                     match result {
                                         ParamsTypeNCountResult::OK => {
-                                            return (return_type, Some(atom_type_obj))
+                                            return (return_type.clone(), Some(atom_type_obj))
                                         }
                                         _ => {
                                             self.log_params_type_and_count_check_error(

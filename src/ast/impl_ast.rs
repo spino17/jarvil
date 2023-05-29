@@ -1274,10 +1274,11 @@ impl UserDefinedTypeNode {
                                 &symbol_data,
                             ));
                         }
-                        UserDefinedTypeData::LAMBDA(_) => {
+                        UserDefinedTypeData::LAMBDA(lambda_data) => {
                             return TypeResolveKind::RESOLVED(Type::new_with_lambda(
                                 Some(name),
-                                &symbol_data,
+                                &lambda_data.meta_data.params,
+                                &lambda_data.meta_data.return_type,
                             ));
                         }
                     }
@@ -1312,10 +1313,11 @@ impl UserDefinedTypeNode {
                                         &symbol_data,
                                     ));
                                 }
-                                UserDefinedTypeData::LAMBDA(_) => {
+                                UserDefinedTypeData::LAMBDA(lambda_data) => {
                                     return TypeResolveKind::RESOLVED(Type::new_with_lambda(
                                         Some(name),
-                                        &symbol_data,
+                                        &lambda_data.meta_data.params,
+                                        &lambda_data.meta_data.return_type,
                                     ));
                                 }
                             },

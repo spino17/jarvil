@@ -1,19 +1,23 @@
 use super::core::OperatorCompatiblity;
-use crate::scope::core::SymbolData;
-use crate::scope::user_defined_types::UserDefinedTypeData;
+use crate::scope::function::FunctionData;
 use crate::types::core::{AbstractType, CoreType, Type};
 
 #[derive(Debug)]
 pub struct Lambda {
     pub name: Option<String>,
-    pub symbol_data: SymbolData<UserDefinedTypeData>,
+    // pub symbol_data: SymbolData<UserDefinedTypeData>,
+    pub meta_data: FunctionData,
 }
 
 impl Lambda {
-    pub fn new(name: Option<String>, symbol_data: &SymbolData<UserDefinedTypeData>) -> Lambda {
+    pub fn new(name: Option<String>, params: &Vec<Type>, return_type: &Type) -> Lambda {
         Lambda {
             name,
-            symbol_data: symbol_data.clone(),
+            // symbol_data: symbol_data.clone(),
+            meta_data: FunctionData {
+                params: params.clone(),
+                return_type: return_type.clone(),
+            },
         }
     }
 }
@@ -26,35 +30,21 @@ impl AbstractType for Lambda {
                 // This structural equivalence is important because we can have lambda types which are not named for example:
                 // let x = (...) -> <Type>: block would have `x` to be of type `Lambda` with no name but symbol_data.
                 let (self_param_types, self_return_type) =
-                    match &*self.symbol_data.0.as_ref().borrow() {
-                        UserDefinedTypeData::LAMBDA(lambda_data) => (
-                            lambda_data.meta_data.params.clone(),
-                            lambda_data.meta_data.return_type.clone(),
-                        ),
-                        _ => unreachable!(
-                            "lambda type should have reference to a lambda variant symbol entry"
-                        ),
-                    };
-                let (base_param_types, base_return_type) =
-                    match &*lambda_data.symbol_data.0.as_ref().borrow() {
-                        UserDefinedTypeData::LAMBDA(lambda_data) => (
-                            lambda_data.meta_data.params.clone(),
-                            lambda_data.meta_data.return_type.clone(),
-                        ),
-                        _ => unreachable!(
-                            "lambda type should have reference to a lambda variant symbol entry"
-                        ),
-                    };
+                    (&self.meta_data.params, &self.meta_data.return_type);
+                let (base_param_types, base_return_type) = (
+                    &lambda_data.meta_data.params,
+                    &lambda_data.meta_data.return_type,
+                );
                 let self_params_len = self_param_types.len();
                 let base_params_len = base_param_types.len();
                 if self_params_len != base_params_len {
                     return false;
                 }
-                if !self_return_type.is_eq(&base_return_type) {
+                if !self_return_type.is_eq(base_return_type) {
                     return false;
                 }
                 for index in 0..self_params_len {
-                    if !self_param_types.as_ref()[index].is_eq(&base_param_types.as_ref()[index]) {
+                    if !self_param_types[index].is_eq(&base_param_types[index]) {
                         return false;
                     }
                 }
@@ -72,18 +62,10 @@ impl ToString for Lambda {
             Some(name) => format!("{}", name),
             None => {
                 let (self_param_types, self_return_type) =
-                    match &*self.symbol_data.0.as_ref().borrow() {
-                        UserDefinedTypeData::LAMBDA(lambda_data) => (
-                            lambda_data.meta_data.params.clone(),
-                            lambda_data.meta_data.return_type.clone(),
-                        ),
-                        _ => unreachable!(
-                            "lambda type should have reference to a lambda variant symbol entry"
-                        ),
-                    };
+                    (&self.meta_data.params, &self.meta_data.return_type);
                 let mut params_str = "".to_string();
                 let mut flag = false;
-                for param in self_param_types.as_ref() {
+                for param in self_param_types {
                     if flag {
                         params_str.push_str(", ")
                     }

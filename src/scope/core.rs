@@ -437,7 +437,7 @@ impl Namespace {
             name,
             UserDefinedTypeData::LAMBDA(LambdaTypeData {
                 meta_data: FunctionData {
-                    params: Rc::new(param_types),
+                    params: param_types,
                     return_type,
                 },
             }),
