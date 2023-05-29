@@ -147,7 +147,7 @@ impl fmt::Display for Diagnostics {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("invalid character found")]
-#[diagnostic(code("lexical error"))]
+#[diagnostic(code("LexicalError"))]
 pub struct InvalidCharError {
     #[label("invalid char")]
     pub span: SourceSpan,
@@ -165,7 +165,7 @@ impl InvalidCharError {
 #[error(
     r#"opening symbols `/*`, `'` and `"` should have closing parts `*/`, `'` and `"` respectively"#
 )]
-#[diagnostic(code("lexical error"))]
+#[diagnostic(code("LexicalError"))]
 pub struct NoClosingSymbolError {
     pub expected_symbol: String,
     #[label("no closing `{}` found", self.expected_symbol)]
@@ -208,7 +208,7 @@ impl MissingTokenError {
 
 impl Diagnostic for MissingTokenError {
     fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        return Some(Box::new("syntax error"));
+        return Some(Box::new("SyntaxError"));
     }
 
     fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
@@ -250,7 +250,7 @@ impl Diagnostic for MissingTokenError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("invalid trailing sequence of tokens")]
-#[diagnostic(code("syntax error"))]
+#[diagnostic(code("SyntaxError"))]
 pub struct InvalidTrailingTokensError {
     #[label("tokens will be skipped for any further analysis")]
     pub span: SourceSpan,
@@ -266,7 +266,7 @@ impl InvalidTrailingTokensError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("incorrectly indented statement")]
-#[diagnostic(code("syntax error"))]
+#[diagnostic(code("SyntaxError"))]
 pub struct IncorrectlyIndentedBlockError {
     pub expected_indent: i64,
     pub received_indent: i64,
@@ -286,7 +286,7 @@ impl IncorrectlyIndentedBlockError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("invalid l-value")]
-#[diagnostic(code("syntax error"))]
+#[diagnostic(code("SyntaxError"))]
 pub struct InvalidLValueError {
     #[label("expression cannot be assigned a value")]
     pub span: SourceSpan,
@@ -310,7 +310,7 @@ impl InvalidLValueError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("void constructor return-type")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct VoidConstructorReturnTypeError {
     #[label("constructor cannot have a void return-type")]
     pub span: SourceSpan,
@@ -334,7 +334,7 @@ impl VoidConstructorReturnTypeError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("mismatched constructor return-type")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct MismatchedConstructorReturnTypeError {
     pub struct_name: String,
     #[label("constructor return-type should be `{}`", self.struct_name)]
@@ -360,7 +360,7 @@ impl MismatchedConstructorReturnTypeError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("non-struct constructor return-type")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct NonStructConstructorReturnTypeError {
     #[label("constructor return-type should be a struct")]
     pub span: SourceSpan,
@@ -384,7 +384,7 @@ impl NonStructConstructorReturnTypeError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("{} is redeclared", self.identifier_kind)]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct IdentifierAlreadyDeclaredError {
     pub identifier_kind: IdentifierKind,
     pub name: String,
@@ -444,7 +444,7 @@ impl IdentifierAlreadyDeclaredError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("builtin function name overlap")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct BuiltinFunctionNameOverlapError {
     #[label("there is a builtin function with same name")]
     pub span: SourceSpan,
@@ -468,7 +468,7 @@ impl BuiltinFunctionNameOverlapError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("{} is not declared in the scope", self.identifier_kind)]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct IdentifierNotDeclaredError {
     pub identifier_kind: IdentifierKind,
     #[label("not found in the scope")]
@@ -494,7 +494,7 @@ impl IdentifierNotDeclaredError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("constructor not found")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct ConstructorNotFoundInsideStructDeclarationError {
     #[label("constructor definition not found inside struct declaration")]
     pub span: SourceSpan,
@@ -518,7 +518,7 @@ impl ConstructorNotFoundInsideStructDeclarationError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("fields not initialized in constructor")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct FieldsNotInitializedInConstructorError {
     pub message: String,
     #[label("fields {} not initialized inside the constructor", self.message)]
@@ -544,7 +544,7 @@ impl FieldsNotInitializedInConstructorError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("`self` is not declared in the scope")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct SelfNotFoundError {
     #[label("not found in the scope")]
     pub span: SourceSpan,
@@ -568,7 +568,7 @@ impl SelfNotFoundError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("{} found in non-locals", self.identifier_kind)]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct IdentifierFoundInNonLocalsError {
     pub identifier_kind: IdentifierKind,
     #[label("identifier with same name is resolved in non-local scope")]
@@ -594,7 +594,7 @@ impl IdentifierFoundInNonLocalsError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("variable `{}` referenced before assignment", self.variable_name)]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct VariableReferencedBeforeAssignmentError {
     pub variable_name: String,
     #[label("variable declared here")]
@@ -623,7 +623,7 @@ impl VariableReferencedBeforeAssignmentError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("callable is not declared in any namespace")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct IdentifierNotFoundInAnyNamespaceError {
     #[label("not found in the scope")]
     pub span: SourceSpan,
@@ -647,7 +647,7 @@ impl IdentifierNotFoundInAnyNamespaceError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("right side with `()` type is not allowed")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct RightSideWithVoidTypeNotAllowedError {
     #[label("has type `()`")]
     pub span: SourceSpan,
@@ -671,7 +671,7 @@ impl RightSideWithVoidTypeNotAllowedError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("assignment to immutable type")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct ImmutableTypeNotAssignableError {
     pub ty: String,
     #[label("type `{}` is not assignable", self.ty)]
@@ -697,7 +697,7 @@ impl ImmutableTypeNotAssignableError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("mismatched expected and passed number of parameters")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct MoreParamsCountError {
     expected_params_count: usize,
     #[label("expected {} parameters, got more than that", self.expected_params_count)]
@@ -715,7 +715,7 @@ impl MoreParamsCountError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("mismatched expected and passed number of parameters")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct LessParamsCountError {
     expected_params_count: usize,
     received_params_count: usize,
@@ -739,7 +739,7 @@ impl LessParamsCountError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("more than {} parameters passed in the function", self.max_limit)]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct MoreThanMaxLimitParamsPassedError {
     params_count: usize,
     max_limit: usize,
@@ -785,13 +785,13 @@ impl Diagnostic for MismatchedParamTypeError {
     }
 
     fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
-        return Some(Box::new("semantic error (type-checking phase)"));
+        return Some(Box::new("TypeCheckError"));
     }
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("calling an uncallable")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct IdentifierNotCallableError {
     pub ty: String,
     #[label("variable with type `{}` is not callable", self.ty)]
@@ -817,7 +817,7 @@ impl IdentifierNotCallableError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("constructor not found")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct ConstructorNotFoundForTypeError {
     pub ty: String,
     #[label("type `{}` does not have a constructor", self.ty)]
@@ -843,7 +843,7 @@ impl ConstructorNotFoundForTypeError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("property does not exist")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct ClassmethodDoesNotExistError {
     pub struct_name: String,
     #[label("no classmethod with this name exist for struct `{}`", self.struct_name)]
@@ -861,7 +861,7 @@ impl ClassmethodDoesNotExistError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("property does not exist")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct PropertyDoesNotExistError {
     pub property_kind: PropertyKind,
     pub ty: String,
@@ -889,7 +889,7 @@ impl PropertyDoesNotExistError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("struct field not callable")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct StructFieldNotCallableError {
     pub ty: String,
     #[label("field with type `{}` is not callable", self.ty)]
@@ -907,7 +907,7 @@ impl StructFieldNotCallableError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("property not supported")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct PropertyNotSupportedError {
     pub property_name: String,
     #[label("{} are only supported for `struct` types", self.property_name)]
@@ -925,7 +925,7 @@ impl PropertyNotSupportedError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("calling an uncallable")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct ExpressionNotCallableError {
     #[label("expression is not callable")]
     pub span: SourceSpan,
@@ -941,7 +941,7 @@ impl ExpressionNotCallableError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("invalid indexing")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct ExpressionIndexingNotValidError {
     pub expr_type: String,
     pub index_type: String,
@@ -969,7 +969,7 @@ impl ExpressionIndexingNotValidError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("tuple index out of bound")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct TupleIndexOutOfBoundError {
     pub tuple_len: usize,
     #[label("index out of bounds `(0, {})` or `(-1, -{})`", self.tuple_len - 1, self.tuple_len)]
@@ -987,7 +987,7 @@ impl TupleIndexOutOfBoundError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("invalid indexing")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct InvalidIndexExpressionForTupleError {
     #[label("invalid expression for indexing tuple")]
     pub index_span: SourceSpan,
@@ -1003,7 +1003,7 @@ impl InvalidIndexExpressionForTupleError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("unresolved index expression in tuple")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct UnresolvedIndexExpressionInTupleError {
     #[label("expression does not resolve to a valid integer value for indexing tuple")]
     pub index_span: SourceSpan,
@@ -1027,7 +1027,7 @@ impl UnresolvedIndexExpressionInTupleError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("invalid unary operand")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct UnaryOperatorInvalidUseError {
     pub ty: String,
     pub valid_operand_type: String,
@@ -1065,7 +1065,7 @@ impl UnaryOperatorInvalidUseError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("invalid binary operands")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct BinaryOperatorInvalidOperandsError {
     pub left_type: String,
     pub right_type: String,
@@ -1101,7 +1101,7 @@ impl BinaryOperatorInvalidOperandsError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("mismatched types")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct MismatchedTypesOnLeftRightError {
     pub left_type: String,
     pub right_type: String,
@@ -1137,7 +1137,7 @@ impl MismatchedTypesOnLeftRightError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("no return statement found")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct NoReturnStatementInFunctionError {
     #[label("function body has no `return` statement")]
     pub span: SourceSpan,
@@ -1161,7 +1161,7 @@ impl NoReturnStatementInFunctionError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("explicit return statement found in constructor body")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct ExplicitReturnStatementFoundInConstructorBodyError {
     #[label("explicit return statement")]
     pub span: SourceSpan,
@@ -1185,7 +1185,7 @@ impl ExplicitReturnStatementFoundInConstructorBodyError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("no valid statement found inside the block")]
-#[diagnostic(code("syntax error"))]
+#[diagnostic(code("SyntaxError"))]
 pub struct NoValidStatementFoundInsideBlockBodyError {
     #[label("expected atleast one statement inside the block")]
     pub span: SourceSpan,
@@ -1209,7 +1209,7 @@ impl NoValidStatementFoundInsideBlockBodyError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("invalid return statement")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct InvalidReturnStatementError {
     #[label("invalid `return` statement")]
     pub span: SourceSpan,
@@ -1233,7 +1233,7 @@ impl InvalidReturnStatementError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("mismatched types")]
-#[diagnostic(code("semantic error (type-checking phase)"))]
+#[diagnostic(code("TypeCheckError"))]
 pub struct MismatchedReturnTypeError {
     pub expected_type: String,
     pub received_type: String,
@@ -1253,7 +1253,7 @@ impl MismatchedReturnTypeError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("non-hashable type found in hashmap index")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct NonHashableTypeInIndexError {
     #[label("non-hashable type")]
     pub index_span: SourceSpan,
@@ -1277,7 +1277,7 @@ impl NonHashableTypeInIndexError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("single sub-type in tuple")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct SingleSubTypeFoundInTupleError {
     #[label("only one sub-type in tuple")]
     pub index_span: SourceSpan,
@@ -1301,7 +1301,7 @@ impl SingleSubTypeFoundInTupleError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("`main` function not found")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct MainFunctionNotFoundError {
     #[help]
     help: Option<String>,
@@ -1322,7 +1322,7 @@ impl MainFunctionNotFoundError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("`main` function has wrong type")]
-#[diagnostic(code("semantic error (resolving phase)"))]
+#[diagnostic(code("SemanticError"))]
 pub struct MainFunctionWrongTypeError {
     #[label("wrong structure of params and return type")]
     pub index_span: SourceSpan,
