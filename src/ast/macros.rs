@@ -2,7 +2,7 @@ macro_rules! default_errornous_node_impl {
     ($t: ident, $u: ident) => {
         impl ErrornousNode for $t {
             fn new_with_missing_tokens(
-                expected_symbols: &Rc<Vec<&'static str>>,
+                expected_symbols: &Vec<&'static str>,
                 received_token: &Token,
             ) -> Self {
                 $t(Rc::new($u::MISSING_TOKENS(MissingTokenNode::new(

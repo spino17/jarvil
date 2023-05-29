@@ -15,8 +15,8 @@ mod types;
 
 use miette::{GraphicalReportHandler, GraphicalTheme};
 use owo_colors::Style;
-use std::fmt::Write;
 use std::env::args;
+use std::fmt::Write;
 use tools::anyon::{
     core::{get_cmd_from_command_line_args, AbstractCommand},
     error::AnyonError,

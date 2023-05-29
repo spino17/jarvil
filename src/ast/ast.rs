@@ -24,7 +24,7 @@ pub trait Node {
 
 pub trait ErrornousNode {
     fn new_with_missing_tokens(
-        expected_symbols: &Rc<Vec<&'static str>>,
+        expected_symbols: &Vec<&'static str>,
         received_token: &Token,
     ) -> Self;
 }
@@ -624,7 +624,7 @@ pub struct CoreOkTokenNode {
 // MISSING_TOKEN
 #[derive(Debug, Clone)]
 pub struct CoreMissingTokenNode {
-    pub expected_symbols: Rc<Vec<&'static str>>,
+    pub expected_symbols: Vec<&'static str>,
     pub received_token: Token,
 }
 
