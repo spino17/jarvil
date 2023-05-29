@@ -4,17 +4,17 @@ use crate::error::{
 };
 
 #[derive(Debug)]
-pub struct VersionDriver {
+pub struct VersionCommand {
     command_line_args: Vec<String>,
 }
 
-impl VersionDriver {
+impl VersionCommand {
     pub fn new(command_line_args: Vec<String>) -> Self {
-        VersionDriver { command_line_args }
+        VersionCommand { command_line_args }
     }
 }
 
-impl AbstractCommand for VersionDriver {
+impl AbstractCommand for VersionCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         let len = self.command_line_args.len();
         if len > 2 {

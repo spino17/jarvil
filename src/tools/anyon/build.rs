@@ -32,15 +32,15 @@ pub enum BuildMode {
 }
 
 #[derive(Debug)]
-pub struct BuildDriver {
+pub struct BuildCommand {
     command_line_args: Vec<String>,
     mode: BuildMode,
     alternate_code_file_name: Option<String>,
 }
 
-impl BuildDriver {
+impl BuildCommand {
     pub fn new(command_line_args: Vec<String>, mode: BuildMode) -> Self {
-        BuildDriver {
+        BuildCommand {
             command_line_args,
             mode,
             alternate_code_file_name: None,
@@ -88,7 +88,7 @@ impl BuildDriver {
     }
 }
 
-impl AbstractCommand for BuildDriver {
+impl AbstractCommand for BuildCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         let len = self.command_line_args.len();
         if len == 2 {

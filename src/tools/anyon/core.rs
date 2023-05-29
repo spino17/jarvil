@@ -3,12 +3,12 @@
 // testing, and managing dependencies.
 
 use super::{
-    build::{BuildDriver, BuildMode},
+    build::{BuildCommand, BuildMode},
     error::AnyonError,
-    fmt::FmtDriver,
-    help::HelpDriver,
-    new::NewDriver,
-    version::VersionDriver,
+    fmt::FmtCommand,
+    help::HelpCommand,
+    new::NewCommand,
+    version::VersionCommand,
 };
 
 pub trait AbstractCommand {
@@ -19,11 +19,11 @@ pub trait AbstractCommand {
 
 #[derive(Debug)]
 pub enum AnyonCommand {
-    New(NewDriver),
-    Build(BuildDriver),
-    Fmt(FmtDriver),
-    Version(VersionDriver),
-    Help(HelpDriver),
+    New(NewCommand),
+    Build(BuildCommand),
+    Fmt(FmtCommand),
+    Version(VersionCommand),
+    Help(HelpCommand),
 }
 
 impl AbstractCommand for AnyonCommand {
@@ -42,22 +42,22 @@ impl AbstractCommand for AnyonCommand {
 
 pub fn get_cmd_from_command_line_args(args: Vec<String>) -> Result<AnyonCommand, AnyonError> {
     if args.len() < 2 {
-        return Ok(AnyonCommand::Help(HelpDriver::new(args)));
+        return Ok(AnyonCommand::Help(HelpCommand::new(args)));
     } else {
         let core_cmd = &args[1];
         if core_cmd.eq("new") {
-            return Ok(AnyonCommand::New(NewDriver::new(args)));
+            return Ok(AnyonCommand::New(NewCommand::new(args)));
         } else if core_cmd.eq("build") {
-            return Ok(AnyonCommand::Build(BuildDriver::new(
+            return Ok(AnyonCommand::Build(BuildCommand::new(
                 args,
                 BuildMode::Build,
             )));
         } else if core_cmd.eq("run") {
-            return Ok(AnyonCommand::Build(BuildDriver::new(args, BuildMode::Run)));
+            return Ok(AnyonCommand::Build(BuildCommand::new(args, BuildMode::Run)));
         } else if core_cmd.eq("version") {
-            return Ok(AnyonCommand::Version(VersionDriver::new(args)));
+            return Ok(AnyonCommand::Version(VersionCommand::new(args)));
         } else if core_cmd.eq("help") {
-            return Ok(AnyonCommand::Help(HelpDriver::new(args)));
+            return Ok(AnyonCommand::Help(HelpCommand::new(args)));
         } else {
             return Err(AnyonError::new_with_command(format!(
                 "no such command: {}",

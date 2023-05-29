@@ -6,21 +6,21 @@ use crate::{
 use std::{fs, mem, process::Command};
 
 #[derive(Debug)]
-pub struct NewDriver {
+pub struct NewCommand {
     command_line_args: Vec<String>,
     project_name: Option<String>,
 }
 
-impl NewDriver {
+impl NewCommand {
     pub fn new(command_line_args: Vec<String>) -> Self {
-        NewDriver {
+        NewCommand {
             command_line_args,
             project_name: None,
         }
     }
 }
 
-impl AbstractCommand for NewDriver {
+impl AbstractCommand for NewCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         let len = self.command_line_args.len();
         if len < 3 {
