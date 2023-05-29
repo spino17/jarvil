@@ -402,21 +402,26 @@ impl TypeChecker {
                         .namespace_handler
                         .get_symbol_data_ref(ok_identifier, &self.code)
                     {
-                        let (expected_params_data, return_type) = match symbol_data {
+                        let (result, return_type) = match symbol_data {
                             SymbolDataRef::FUNCTION(func_symbol_data) => {
-                                let func_data = func_symbol_data.0.as_ref().borrow().clone();
-                                let expected_params = func_data.params;
-                                let return_type = func_data.return_type;
-                                (expected_params, return_type)
+                                let func_data = &*func_symbol_data.0.as_ref().borrow();
+                                let expected_params = &func_data.params;
+                                let return_type = &func_data.return_type;
+                                let result =
+                                    self.check_params_type_and_count(&expected_params, params);
+                                (result, return_type.clone())
                             }
                             SymbolDataRef::VARIABLE(variable_symbol_data) => {
                                 let lambda_type =
                                     &variable_symbol_data.0.as_ref().borrow().data_type;
                                 match lambda_type.0.as_ref() {
-                                    CoreType::LAMBDA(lambda_data) => (
-                                        lambda_data.meta_data.params.clone(),
-                                        lambda_data.meta_data.return_type.clone(),
-                                    ),
+                                    CoreType::LAMBDA(lambda_data) => {
+                                        let result = self.check_params_type_and_count(
+                                            &lambda_data.meta_data.params,
+                                            params,
+                                        );
+                                        (result, lambda_data.meta_data.return_type.clone())
+                                    }
                                     _ => {
                                         let err = IdentifierNotCallableError::new(
                                             lambda_type.to_string(),
@@ -430,12 +435,12 @@ impl TypeChecker {
                             SymbolDataRef::TYPE(user_defined_type_symbol_data) => {
                                 match &*user_defined_type_symbol_data.0.as_ref().borrow() {
                                     UserDefinedTypeData::STRUCT(struct_symbol_data) => {
-                                        let constructor_meta_data =
-                                            struct_symbol_data.constructor.clone();
-                                        (
-                                            constructor_meta_data.params,
-                                            constructor_meta_data.return_type,
-                                        )
+                                        let constructor_meta_data = &struct_symbol_data.constructor;
+                                        let result = self.check_params_type_and_count(
+                                            &constructor_meta_data.params,
+                                            params,
+                                        );
+                                        (result, constructor_meta_data.return_type.clone())
                                     }
                                     UserDefinedTypeData::LAMBDA(_) => {
                                         let type_name = ok_identifier.token_value(&self.code);
@@ -451,8 +456,6 @@ impl TypeChecker {
                                 }
                             }
                         };
-                        let result =
-                            self.check_params_type_and_count(&expected_params_data, params);
                         match result {
                             ParamsTypeNCountResult::OK => return return_type,
                             _ => {
@@ -487,12 +490,14 @@ impl TypeChecker {
                                 };
                                 match struct_data.class_methods.get(&class_method_name) {
                                     Some((func_data, _)) => {
-                                        let expected_params = func_data.params.clone();
-                                        let return_type = func_data.return_type.clone();
+                                        let expected_params = &func_data.params;
+                                        let return_type = &func_data.return_type;
                                         let result = self
                                             .check_params_type_and_count(&expected_params, params);
                                         match result {
-                                            ParamsTypeNCountResult::OK => return return_type,
+                                            ParamsTypeNCountResult::OK => {
+                                                return return_type.clone()
+                                            }
                                             _ => {
                                                 self.log_params_type_and_count_check_error(
                                                     class_method.range(),

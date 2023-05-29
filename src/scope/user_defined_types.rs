@@ -1,7 +1,6 @@
 use super::function::FunctionData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
-use std::rc::Rc;
 use text_size::TextRange;
 
 #[derive(Debug)]
@@ -67,15 +66,15 @@ impl StructData {
         }
     }
 
-    pub fn try_method(&self, method_name: &str) -> Option<(FunctionData, TextRange)> {
+    pub fn try_method(&self, method_name: &str) -> Option<(&FunctionData, TextRange)> {
         match self.methods.get(method_name) {
-            Some(func_data) => Some(func_data.clone()),
+            Some(func_data) => Some((&func_data.0, func_data.1)),
             None => None,
         }
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct LambdaTypeData {
     pub meta_data: FunctionData,
 }

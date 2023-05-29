@@ -1,7 +1,7 @@
 use crate::types::core::Type;
-use std::{rc::Rc, vec};
+use std::vec;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct FunctionData {
     pub params: Vec<Type>,
     pub return_type: Type,

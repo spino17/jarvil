@@ -5,7 +5,6 @@ use crate::types::core::{AbstractType, CoreType, Type};
 #[derive(Debug)]
 pub struct Lambda {
     pub name: Option<String>,
-    // pub symbol_data: SymbolData<UserDefinedTypeData>,
     pub meta_data: FunctionData,
 }
 
@@ -13,7 +12,6 @@ impl Lambda {
     pub fn new(name: Option<String>, params: &Vec<Type>, return_type: &Type) -> Lambda {
         Lambda {
             name,
-            // symbol_data: symbol_data.clone(),
             meta_data: FunctionData {
                 params: params.clone(),
                 return_type: return_type.clone(),

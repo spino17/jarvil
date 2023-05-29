@@ -460,9 +460,9 @@ impl Resolver {
         name: &str,
     ) -> Option<TextRange> {
         match methods.get(name) {
-            Some((_, previous_decl_range)) => return Some(previous_decl_range.clone()),
+            Some((_, previous_decl_range)) => return Some(*previous_decl_range),
             None => match class_methods.get(name) {
-                Some((_, previous_decl_range)) => return Some(previous_decl_range.clone()),
+                Some((_, previous_decl_range)) => return Some(*previous_decl_range),
                 None => return None,
             },
         }
