@@ -1,22 +1,22 @@
 use crate::types::core::Type;
-use std::{rc::Rc, vec};
+use std::vec;
 
 #[derive(Debug)]
 pub struct FunctionData {
-    pub params: Rc<Vec<(Rc<String>, Type)>>,
+    pub params: Vec<Type>,
     pub return_type: Type,
 }
 
 impl FunctionData {
-    pub fn new(params: Vec<(Rc<String>, Type)>, return_type: Type) -> Self {
+    pub fn new(params: Vec<Type>, return_type: Type) -> Self {
         FunctionData {
-            params: Rc::new(params),
+            params,
             return_type,
         }
     }
 
-    pub fn set_data(&mut self, params: Vec<(Rc<String>, Type)>, return_type: Type) {
-        self.params = Rc::new(params);
+    pub fn set_data(&mut self, params: Vec<Type>, return_type: Type) {
+        self.params = params;
         self.return_type = return_type;
     }
 }
@@ -24,17 +24,8 @@ impl FunctionData {
 impl Default for FunctionData {
     fn default() -> Self {
         FunctionData {
-            params: Rc::new(vec![]),
+            params: vec![],
             return_type: Type::new_with_unset(),
-        }
-    }
-}
-
-impl Clone for FunctionData {
-    fn clone(&self) -> Self {
-        FunctionData {
-            params: self.params.clone(),
-            return_type: self.return_type.clone(),
         }
     }
 }

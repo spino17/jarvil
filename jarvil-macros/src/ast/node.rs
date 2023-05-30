@@ -35,8 +35,6 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
     };
     let variant_iter = &mut enum_data.variants.iter();
     let variants_len = enum_data.variants.len();
-    let mut impl_weak_str = "".to_string();
-    let mut weak_str = "".to_string();
     let mut impl_ast_node = "".to_string();
     let mut flag = false;
     let mut variants_info: Vec<ExprTuple> = vec![];
@@ -61,24 +59,14 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
         };
         let variant_field_name = variant_field_name.to_string();  // eg. BlockNode
         variants_info.push(get_tuple_from_str(&variant_name, &variant_field_name));
-        let weak_name = format!("Weak{}", &variant_field_name);
-        let core_name = format!("Core{}", &variant_field_name);
         if flag {
-            impl_weak_str.push_str(", ");
-            weak_str.push_str(", ");
             impl_ast_node.push_str(", ");
         }
-        impl_weak_str.push_str(&format!("({}, {})", &weak_name, &core_name));
-        weak_str.push_str(&format!("({}, {})", &variant_name, &weak_name));
         impl_ast_node.push_str(&format!("({}, {}, new_with_{})", &variant_name, &variant_field_name, &variant_field_name));
         flag = true;
     }
-    let impl_weak_node_macro_stmt = get_macro_expr_stmt("impl_weak_node", &impl_weak_str);
-    let weak_nodes_macro_stmt = get_macro_expr_stmt("weak_ast_nodes", &weak_str);
     let impl_ast_node = get_macro_expr_stmt("impl_ast_node", &impl_ast_node);
     let gen = quote! {
-        #impl_weak_node_macro_stmt;
-        #weak_nodes_macro_stmt;
         impl ASTNode {
             #impl_ast_node;
         }

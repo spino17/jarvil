@@ -2,9 +2,9 @@ use super::statement::core::{
     is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
 };
 use crate::ast::ast::{
-    BlockKind, BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode,
-    ErrornousNode, FunctionDeclarationNode, FunctionWrapperNode, NameTypeSpecNode,
-    NameTypeSpecsNode, OkNameTypeSpecsNode, OkTypeTupleNode, StatementNode, TypeTupleNode,
+    BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode,
+    FunctionDeclarationNode, FunctionWrapperNode, NameTypeSpecNode, NameTypeSpecsNode,
+    OkNameTypeSpecsNode, OkTypeTupleNode, StatementNode, TypeTupleNode,
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
@@ -104,7 +104,6 @@ pub fn callable_body(parser: &mut JarvilParser) -> CallableBodyNode {
                 |token| is_statement_within_function_starting_with(token),
                 |parser| parser.stmt(),
                 &STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
-                BlockKind::FUNC,
             );
             return CallableBodyNode::new(&func_block_node, &colon_node, &callable_prototype);
         }
@@ -122,12 +121,12 @@ pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> 
     let func_decl_node =
         FunctionDeclarationNode::new(&func_name_node, &def_keyword_node, &callable_body);
     match callable_kind {
-        CallableKind::FUNC => {
+        CallableKind::Function => {
             return StatementNode::new_with_function_wrapper(&FunctionWrapperNode::new(
                 &func_decl_node,
             ))
         }
-        CallableKind::METHOD => {
+        CallableKind::Method => {
             return StatementNode::new_with_bounded_method_wrapper(&BoundedMethodWrapperNode::new(
                 &func_decl_node,
             ))

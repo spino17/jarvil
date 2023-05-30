@@ -24,7 +24,7 @@ impl Tuple {
         operator_kind: &BinaryOperatorKind,
     ) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::TUPLE(other_tuple) => {
+            CoreType::Tuple(other_tuple) => {
                 let other_len = other_tuple.sub_types.len();
                 let self_len = self.sub_types.len();
                 let min_len = cmp::min(self_len, other_len);
@@ -46,7 +46,7 @@ impl Tuple {
 impl AbstractType for Tuple {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
-            CoreType::TUPLE(tuple_data) => {
+            CoreType::Tuple(tuple_data) => {
                 if tuple_data.sub_types.len() != self.sub_types.len() {
                     return false;
                 } else {
@@ -59,7 +59,7 @@ impl AbstractType for Tuple {
                     return true;
                 }
             }
-            CoreType::ANY => true,
+            CoreType::Any => true,
             _ => false,
         }
     }
@@ -78,7 +78,7 @@ impl ToString for Tuple {
 impl OperatorCompatiblity for Tuple {
     fn check_add(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::TUPLE(other_tuple) => {
+            CoreType::Tuple(other_tuple) => {
                 let self_sub_types = &self.sub_types;
                 let other_sub_types = &other_tuple.sub_types;
                 let mut combined_sub_types: Vec<Type> = vec![];

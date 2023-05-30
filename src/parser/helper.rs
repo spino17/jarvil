@@ -2,9 +2,9 @@ use crate::ast::ast::SkippedTokenNode;
 use crate::constants::common::NEWLINE;
 
 pub enum IndentResultKind {
-    CORRECT_INDENTATION,
-    INCORRECT_INDENTATION((i64, i64)),
-    BLOCK_OVER,
+    CorrectIndentation,
+    IncorrectIndentation((i64, i64)),
+    BlockOver,
 }
 
 pub struct IndentResult {

@@ -5,19 +5,19 @@ use super::core::OperatorCompatiblity;
 
 #[derive(Debug)]
 pub enum Atomic {
-    INT,
-    FLOAT,
-    STRING,
-    BOOL,
+    Int,
+    Float,
+    String,
+    Bool,
 }
 
 impl Atomic {
     pub fn new(name: &str) -> Atomic {
         match name {
-            INT => Atomic::INT,
-            FLOAT => Atomic::FLOAT,
-            STRING => Atomic::STRING,
-            BOOL => Atomic::BOOL,
+            INT => Atomic::Int,
+            FLOAT => Atomic::Float,
+            STRING => Atomic::String,
+            BOOL => Atomic::Bool,
             _ => unreachable!(
                 "name should be `{}`, `{}`, `{}` and `{}`",
                 INT, FLOAT, STRING, BOOL
@@ -27,28 +27,28 @@ impl Atomic {
 
     pub fn is_int(&self) -> bool {
         match self {
-            Atomic::INT => true,
+            Atomic::Int => true,
             _ => false,
         }
     }
 
     pub fn is_float(&self) -> bool {
         match self {
-            Atomic::FLOAT => true,
+            Atomic::Float => true,
             _ => false,
         }
     }
 
     pub fn is_string(&self) -> bool {
         match self {
-            Atomic::STRING => true,
+            Atomic::String => true,
             _ => false,
         }
     }
 
     pub fn is_bool(&self) -> bool {
         match self {
-            Atomic::BOOL => true,
+            Atomic::Bool => true,
             _ => false,
         }
     }
@@ -57,13 +57,13 @@ impl Atomic {
 impl AbstractType for Atomic {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
-            CoreType::ATOMIC(atomic_data) => match atomic_data {
-                Atomic::INT => self.is_int(),
-                Atomic::FLOAT => self.is_float(),
-                Atomic::STRING => self.is_string(),
-                Atomic::BOOL => self.is_bool(),
+            CoreType::Atomic(atomic_data) => match atomic_data {
+                Atomic::Int => self.is_int(),
+                Atomic::Float => self.is_float(),
+                Atomic::String => self.is_string(),
+                Atomic::Bool => self.is_bool(),
             },
-            CoreType::ANY => true,
+            CoreType::Any => true,
             _ => false,
         }
     }
@@ -72,10 +72,10 @@ impl AbstractType for Atomic {
 impl ToString for Atomic {
     fn to_string(&self) -> String {
         match self {
-            Atomic::INT => String::from(INT),
-            Atomic::FLOAT => String::from(FLOAT),
-            Atomic::STRING => String::from(STRING),
-            Atomic::BOOL => String::from(BOOL),
+            Atomic::Int => String::from(INT),
+            Atomic::Float => String::from(FLOAT),
+            Atomic::String => String::from(STRING),
+            Atomic::Bool => String::from(BOOL),
         }
     }
 }
@@ -83,19 +83,19 @@ impl ToString for Atomic {
 impl OperatorCompatiblity for Atomic {
     fn check_add(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ATOMIC(other_atomic) => match self {
-                Atomic::INT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(INT)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(FLOAT)),
+            CoreType::Atomic(other_atomic) => match self {
+                Atomic::Int => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(INT)),
+                    Atomic::Float => return Some(Type::new_with_atomic(FLOAT)),
                     _ => return None,
                 },
-                Atomic::FLOAT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(FLOAT)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(FLOAT)),
+                Atomic::Float => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(FLOAT)),
+                    Atomic::Float => return Some(Type::new_with_atomic(FLOAT)),
                     _ => return None,
                 },
-                Atomic::STRING => match other_atomic {
-                    Atomic::STRING => return Some(Type::new_with_atomic(STRING)),
+                Atomic::String => match other_atomic {
+                    Atomic::String => return Some(Type::new_with_atomic(STRING)),
                     _ => return None,
                 },
                 _ => return None,
@@ -106,15 +106,15 @@ impl OperatorCompatiblity for Atomic {
 
     fn check_subtract(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ATOMIC(other_atomic) => match self {
-                Atomic::INT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(INT)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(FLOAT)),
+            CoreType::Atomic(other_atomic) => match self {
+                Atomic::Int => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(INT)),
+                    Atomic::Float => return Some(Type::new_with_atomic(FLOAT)),
                     _ => return None,
                 },
-                Atomic::FLOAT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(FLOAT)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(FLOAT)),
+                Atomic::Float => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(FLOAT)),
+                    Atomic::Float => return Some(Type::new_with_atomic(FLOAT)),
                     _ => return None,
                 },
                 _ => return None,
@@ -125,15 +125,15 @@ impl OperatorCompatiblity for Atomic {
 
     fn check_multiply(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ATOMIC(other_atomic) => match self {
-                Atomic::INT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(INT)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(FLOAT)),
+            CoreType::Atomic(other_atomic) => match self {
+                Atomic::Int => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(INT)),
+                    Atomic::Float => return Some(Type::new_with_atomic(FLOAT)),
                     _ => return None,
                 },
-                Atomic::FLOAT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(FLOAT)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(FLOAT)),
+                Atomic::Float => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(FLOAT)),
+                    Atomic::Float => return Some(Type::new_with_atomic(FLOAT)),
                     _ => return None,
                 },
                 _ => return None,
@@ -144,15 +144,15 @@ impl OperatorCompatiblity for Atomic {
 
     fn check_divide(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ATOMIC(other_atomic) => match self {
-                Atomic::INT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(FLOAT)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(FLOAT)),
+            CoreType::Atomic(other_atomic) => match self {
+                Atomic::Int => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(FLOAT)),
+                    Atomic::Float => return Some(Type::new_with_atomic(FLOAT)),
                     _ => return None,
                 },
-                Atomic::FLOAT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(FLOAT)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(FLOAT)),
+                Atomic::Float => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(FLOAT)),
+                    Atomic::Float => return Some(Type::new_with_atomic(FLOAT)),
                     _ => return None,
                 },
                 _ => return None,
@@ -163,23 +163,23 @@ impl OperatorCompatiblity for Atomic {
 
     fn check_double_equal(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ATOMIC(other_atomic) => match self {
-                Atomic::INT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(BOOL)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(BOOL)),
+            CoreType::Atomic(other_atomic) => match self {
+                Atomic::Int => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(BOOL)),
+                    Atomic::Float => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                Atomic::FLOAT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(BOOL)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(BOOL)),
+                Atomic::Float => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(BOOL)),
+                    Atomic::Float => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                Atomic::BOOL => match other_atomic {
-                    Atomic::BOOL => return Some(Type::new_with_atomic(BOOL)),
+                Atomic::Bool => match other_atomic {
+                    Atomic::Bool => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                Atomic::STRING => match other_atomic {
-                    Atomic::STRING => return Some(Type::new_with_atomic(BOOL)),
+                Atomic::String => match other_atomic {
+                    Atomic::String => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
             },
@@ -189,23 +189,23 @@ impl OperatorCompatiblity for Atomic {
 
     fn check_greater(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ATOMIC(other_atomic) => match self {
-                Atomic::INT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(BOOL)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(BOOL)),
+            CoreType::Atomic(other_atomic) => match self {
+                Atomic::Int => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(BOOL)),
+                    Atomic::Float => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                Atomic::FLOAT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(BOOL)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(BOOL)),
+                Atomic::Float => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(BOOL)),
+                    Atomic::Float => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                Atomic::STRING => match other_atomic {
-                    Atomic::STRING => return Some(Type::new_with_atomic(BOOL)),
+                Atomic::String => match other_atomic {
+                    Atomic::String => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                Atomic::BOOL => match other_atomic {
-                    Atomic::BOOL => return Some(Type::new_with_atomic(BOOL)),
+                Atomic::Bool => match other_atomic {
+                    Atomic::Bool => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
             },
@@ -215,23 +215,23 @@ impl OperatorCompatiblity for Atomic {
 
     fn check_less(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ATOMIC(other_atomic) => match self {
-                Atomic::INT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(BOOL)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(BOOL)),
+            CoreType::Atomic(other_atomic) => match self {
+                Atomic::Int => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(BOOL)),
+                    Atomic::Float => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                Atomic::FLOAT => match other_atomic {
-                    Atomic::INT => return Some(Type::new_with_atomic(BOOL)),
-                    Atomic::FLOAT => return Some(Type::new_with_atomic(BOOL)),
+                Atomic::Float => match other_atomic {
+                    Atomic::Int => return Some(Type::new_with_atomic(BOOL)),
+                    Atomic::Float => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                Atomic::STRING => match other_atomic {
-                    Atomic::STRING => return Some(Type::new_with_atomic(BOOL)),
+                Atomic::String => match other_atomic {
+                    Atomic::String => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
-                Atomic::BOOL => match other_atomic {
-                    Atomic::BOOL => return Some(Type::new_with_atomic(BOOL)),
+                Atomic::Bool => match other_atomic {
+                    Atomic::Bool => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
             },
@@ -241,9 +241,9 @@ impl OperatorCompatiblity for Atomic {
 
     fn check_and(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ATOMIC(other_atomic) => match self {
-                Atomic::BOOL => match other_atomic {
-                    Atomic::BOOL => return Some(Type::new_with_atomic(BOOL)),
+            CoreType::Atomic(other_atomic) => match self {
+                Atomic::Bool => match other_atomic {
+                    Atomic::Bool => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
                 _ => return None,
@@ -254,9 +254,9 @@ impl OperatorCompatiblity for Atomic {
 
     fn check_or(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::ATOMIC(other_atomic) => match self {
-                Atomic::BOOL => match other_atomic {
-                    Atomic::BOOL => return Some(Type::new_with_atomic(BOOL)),
+            CoreType::Atomic(other_atomic) => match self {
+                Atomic::Bool => match other_atomic {
+                    Atomic::Bool => return Some(Type::new_with_atomic(BOOL)),
                     _ => return None,
                 },
                 _ => return None,

@@ -135,11 +135,11 @@ pub fn extract_slash_prefix_lexeme(
         }
         2 => {
             *begin_lexeme = forward_lexeme;
-            return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS("*/"));
+            return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("*/"));
         }
         3 => {
             *begin_lexeme = forward_lexeme;
-            return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS("*/"));
+            return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("*/"));
         }
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable"),
     }
@@ -241,12 +241,12 @@ pub fn extract_exclaimation_prefix_lexeme(
             }
             _ => {
                 *begin_lexeme = *begin_lexeme + 1;
-                CoreToken::LEXICAL_ERROR(LexicalErrorKind::INVALID_CHAR)
+                CoreToken::LEXICAL_ERROR(LexicalErrorKind::InvalidChar)
             }
         }
     } else {
         *begin_lexeme = *begin_lexeme + 1;
-        CoreToken::LEXICAL_ERROR(LexicalErrorKind::INVALID_CHAR)
+        CoreToken::LEXICAL_ERROR(LexicalErrorKind::InvalidChar)
     }
 }
 
@@ -276,7 +276,7 @@ pub fn extract_single_quote_prefix_lexeme(
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
-    return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS("'"));
+    return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("'"));
 }
 
 // " -> "..."
@@ -305,7 +305,7 @@ pub fn extract_double_quote_prefix_lexeme(
         forward_lexeme = forward_lexeme + 1;
     }
     *begin_lexeme = forward_lexeme;
-    return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NO_CLOSING_SYMBOLS(r#"""#));
+    return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols(r#"""#));
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type

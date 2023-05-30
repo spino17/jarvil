@@ -1,19 +1,25 @@
 use super::core::OperatorCompatiblity;
-use crate::scope::core::SymbolData;
-use crate::scope::user_defined_types::UserDefinedTypeData;
+use crate::scope::function::FunctionData;
 use crate::types::core::{AbstractType, CoreType, Type};
 
 #[derive(Debug)]
 pub struct Lambda {
     pub name: Option<String>,
-    pub symbol_data: SymbolData<UserDefinedTypeData>,
+    pub meta_data: FunctionData,
 }
 
 impl Lambda {
-    pub fn new(name: Option<String>, symbol_data: &SymbolData<UserDefinedTypeData>) -> Lambda {
+    pub fn new(name: Option<String>, params: &Vec<Type>, return_type: &Type) -> Lambda {
         Lambda {
             name,
-            symbol_data: symbol_data.clone(),
+            meta_data: FunctionData {
+                // NOTE: Below is traditionally an expensive clone but in our case,
+                // mostly `params.len()` is less (that is number of arguments in a function definition)
+                // so we avoid runtime overhead of using `Rc` which ideally should be used if length is large
+                // for example: in `BlockNode`, see `stmts` field.
+                params: params.clone(),
+                return_type: return_type.clone(),
+            },
         }
     }
 }
@@ -21,46 +27,32 @@ impl Lambda {
 impl AbstractType for Lambda {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
-            CoreType::LAMBDA(lambda_data) => {
+            CoreType::Lambda(lambda_data) => {
                 // Lambda type has structural equivalence checks unlike struct type which is only compared by it's name
                 // This structural equivalence is important because we can have lambda types which are not named for example:
                 // let x = (...) -> <Type>: block would have `x` to be of type `Lambda` with no name but symbol_data.
                 let (self_param_types, self_return_type) =
-                    match &*self.symbol_data.0.as_ref().borrow() {
-                        UserDefinedTypeData::LAMBDA(lambda_data) => (
-                            lambda_data.param_types.clone(),
-                            lambda_data.return_type.clone(),
-                        ),
-                        _ => unreachable!(
-                            "lambda type should have reference to a lambda variant symbol entry"
-                        ),
-                    };
-                let (base_param_types, base_return_type) =
-                    match &*lambda_data.symbol_data.0.as_ref().borrow() {
-                        UserDefinedTypeData::LAMBDA(lambda_data) => (
-                            lambda_data.param_types.clone(),
-                            lambda_data.return_type.clone(),
-                        ),
-                        _ => unreachable!(
-                            "lambda type should have reference to a lambda variant symbol entry"
-                        ),
-                    };
+                    (&self.meta_data.params, &self.meta_data.return_type);
+                let (base_param_types, base_return_type) = (
+                    &lambda_data.meta_data.params,
+                    &lambda_data.meta_data.return_type,
+                );
                 let self_params_len = self_param_types.len();
                 let base_params_len = base_param_types.len();
                 if self_params_len != base_params_len {
                     return false;
                 }
-                if !self_return_type.is_eq(&base_return_type) {
+                if !self_return_type.is_eq(base_return_type) {
                     return false;
                 }
                 for index in 0..self_params_len {
-                    if !self_param_types.as_ref()[index].is_eq(&base_param_types.as_ref()[index]) {
+                    if !self_param_types[index].is_eq(&base_param_types[index]) {
                         return false;
                     }
                 }
                 true
             }
-            CoreType::ANY => true,
+            CoreType::Any => true,
             _ => false,
         }
     }
@@ -72,18 +64,10 @@ impl ToString for Lambda {
             Some(name) => format!("{}", name),
             None => {
                 let (self_param_types, self_return_type) =
-                    match &*self.symbol_data.0.as_ref().borrow() {
-                        UserDefinedTypeData::LAMBDA(lambda_data) => (
-                            lambda_data.param_types.clone(),
-                            lambda_data.return_type.clone(),
-                        ),
-                        _ => unreachable!(
-                            "lambda type should have reference to a lambda variant symbol entry"
-                        ),
-                    };
-                let mut params_str = String::from("");
+                    (&self.meta_data.params, &self.meta_data.return_type);
+                let mut params_str = "".to_string();
                 let mut flag = false;
-                for param in self_param_types.as_ref() {
+                for param in self_param_types {
                     if flag {
                         params_str.push_str(", ")
                     }

@@ -2,13 +2,13 @@ use super::{core::AbstractCommand, error::AnyonError};
 use crate::{code::JarvilCode, error::diagnostics::Diagnostics};
 
 #[derive(Debug)]
-pub struct FmtDriver {
+pub struct FmtCommand {
     command_line_args: Vec<String>,
 }
 
-impl FmtDriver {
+impl FmtCommand {
     pub fn new(command_line_args: Vec<String>) -> Self {
-        FmtDriver { command_line_args }
+        FmtCommand { command_line_args }
     }
 
     pub fn format_code(&self, code: JarvilCode) -> String {
@@ -16,7 +16,7 @@ impl FmtDriver {
     }
 }
 
-impl AbstractCommand for FmtDriver {
+impl AbstractCommand for FmtCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         todo!()
     }

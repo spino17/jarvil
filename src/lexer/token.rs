@@ -14,7 +14,6 @@ use crate::constants::common::{
     WITH_KEYWORD, YIELD_KEYWORD,
 };
 use std::fmt::Display;
-use std::rc::Rc;
 use text_size::TextRange;
 
 #[derive(Debug, Clone, PartialEq, Tokenify)]
@@ -189,15 +188,15 @@ impl Display for BinaryOperatorKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LexicalErrorKind {
-    INVALID_CHAR,
-    NO_CLOSING_SYMBOLS(&'static str),
+    InvalidChar,
+    NoClosingSymbols(&'static str),
 }
 
 #[derive(Debug, Clone)]
 pub struct MissingToken {
-    pub expected_symbols: Rc<Vec<&'static str>>,
+    pub expected_symbols: Vec<&'static str>,
     pub received_token: Token,
 }
 
@@ -206,17 +205,12 @@ pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
     pub range: TextRange,
-    pub trivia: Option<Rc<Vec<Token>>>,
+    pub trivia: Option<Vec<Token>>,
 }
 
 impl Token {
     pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
-        self.trivia = Some(Rc::new(trivia_vec));
-    }
-
-    pub fn index(&self) -> usize {
-        let r: usize = (self.range.start() + self.range.end()).into();
-        r / 2
+        self.trivia = Some(trivia_vec);
     }
 
     pub fn start_index(&self) -> usize {
@@ -241,10 +235,6 @@ impl Token {
 
     pub fn is_eq(&self, symbol: &str) -> bool {
         self.core_token.is_eq(symbol)
-    }
-
-    pub fn is_identifier(&self) -> bool {
-        self.core_token.IDENTIFIER()
     }
 
     pub fn try_as_binary_operator(&self) -> Option<BinaryOperatorKind> {

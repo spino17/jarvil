@@ -10,8 +10,7 @@
 
 use crate::ast::ast::Node;
 use crate::ast::ast::{
-    BlockKind, BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode,
-    StatementNode,
+    BlockNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
 };
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
@@ -24,12 +23,12 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
     is_starting_with_fn: F,
     statement_parsing_fn: G,
     expected_symbols: &[&'static str],
-    kind: BlockKind,
 ) -> BlockNode {
     let newline_node = parser.expect_terminators();
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let mut stmts_vec: Vec<StatemenIndentWrapperNode> = vec![];
     let mut leading_skipped_tokens: Vec<SkippedTokenNode> = vec![];
+    let mut has_atleast_one_stmt = false;
     loop {
         let indent_result = parser.expect_indent_spaces();
         let skipped_tokens = indent_result.skipped_tokens;
@@ -45,11 +44,14 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
             ));
         }
         let incorrect_indent_data = match indent_result.kind {
-            IndentResultKind::CORRECT_INDENTATION => None,
-            IndentResultKind::INCORRECT_INDENTATION(indent_data) => Some(indent_data),
-            IndentResultKind::BLOCK_OVER => {
+            IndentResultKind::CorrectIndentation => None,
+            IndentResultKind::IncorrectIndentation(indent_data) => Some(indent_data),
+            IndentResultKind::BlockOver => {
                 parser.set_indent_level(parser.curr_indent_level() - 1);
-                return BlockNode::new(stmts_vec, &newline_node, kind);
+                if !has_atleast_one_stmt {
+                    parser.log_no_valid_statement_inside_block_error(newline_node.range());
+                }
+                return BlockNode::new(stmts_vec, &newline_node);
             }
         };
         while !is_starting_with_fn(&parser.curr_token()) {
@@ -71,7 +73,10 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
         let token = &parser.curr_token();
         if token.is_eq(ENDMARKER) {
             parser.set_indent_level(parser.curr_indent_level() - 1);
-            return BlockNode::new(stmts_vec, &newline_node, kind);
+            if !has_atleast_one_stmt {
+                parser.log_no_valid_statement_inside_block_error(newline_node.range());
+            }
+            return BlockNode::new(stmts_vec, &newline_node);
         }
         if token.is_eq("\n") {
             continue;
@@ -88,15 +93,10 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
                 } else {
                     // the highest level incorrectly indented stmt
                     parser.set_ignore_all_errors(true);
-                    let before_line_number = parser.curr_line_number();
                     parser.set_correction_indent(indent_data.1 - indent_data.0);
                     let stmt_node = statement_parsing_fn(parser);
                     parser.set_ignore_all_errors(false);
-                    let mut after_line_number = parser.curr_line_number();
                     parser.set_correction_indent(0);
-                    if after_line_number > before_line_number {
-                        after_line_number = after_line_number - 1;
-                    }
                     parser.log_incorrectly_indented_block_error(
                         stmt_node.range(),
                         indent_data.0,
@@ -109,12 +109,14 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
                     indent_data.0,
                     indent_data.1,
                 ));
+                has_atleast_one_stmt = true;
             }
             None => {
                 let stmt_node = statement_parsing_fn(parser);
                 stmts_vec.push(StatemenIndentWrapperNode::new_with_correctly_indented(
                     &stmt_node,
                 ));
+                has_atleast_one_stmt = true;
             }
         }
     }

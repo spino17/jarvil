@@ -23,11 +23,11 @@ impl HashMap {
 impl AbstractType for HashMap {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
-            CoreType::HASHMAP(hashmap_data) => {
+            CoreType::HashMap(hashmap_data) => {
                 self.key_type.is_eq(&hashmap_data.key_type)
                     && self.value_type.is_eq(&hashmap_data.value_type)
             }
-            CoreType::ANY => true,
+            CoreType::Any => true,
             _ => false,
         }
     }
@@ -62,7 +62,7 @@ impl OperatorCompatiblity for HashMap {
 
     fn check_double_equal(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
-            CoreType::HASHMAP(other_hashmap) => {
+            CoreType::HashMap(other_hashmap) => {
                 if self
                     .key_type
                     .check_operator(&other_hashmap.key_type, &BinaryOperatorKind::DoubleEqual)

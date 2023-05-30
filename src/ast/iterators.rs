@@ -20,7 +20,7 @@ impl Iterator for NameTypeSpecsIterator {
     fn next(&mut self) -> Option<Self::Item> {
         let ok_name_type_specs = match &self.node {
             Some(node) => match node.core_ref() {
-                CoreNameTypeSpecsNode::OK(ok_name_type_specs) => ok_name_type_specs.clone(),
+                CoreNameTypeSpecsNode::Ok(ok_name_type_specs) => ok_name_type_specs.clone(),
                 _ => return None,
             },
             None => return None,
@@ -50,7 +50,7 @@ impl Iterator for TypeTupleIterator {
     fn next(&mut self) -> Option<Self::Item> {
         let ok_type_tuple_node = match &self.node {
             Some(node) => match node.core_ref() {
-                CoreTypeTupleNode::OK(ok_type_tuple) => ok_type_tuple.clone(),
+                CoreTypeTupleNode::Ok(ok_type_tuple) => ok_type_tuple.clone(),
                 _ => return None,
             },
             None => return None,
@@ -80,7 +80,7 @@ impl Iterator for ParamsIterator {
     fn next(&mut self) -> Option<Self::Item> {
         let ok_params = match &self.node {
             Some(node) => match node.core_ref() {
-                CoreParamsNode::OK(ok_params) => ok_params.clone(),
+                CoreParamsNode::Ok(ok_params) => ok_params.clone(),
                 _ => return None,
             },
             None => return None,

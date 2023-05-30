@@ -11,20 +11,20 @@ pub struct VanillaError {
 }
 
 pub enum AnyonError {
-    REPORT(Report),
-    IO(Error),
-    VANILLA(VanillaError),
+    Report(Report),
+    Io(Error),
+    Vanilla(VanillaError),
     UTF8(Utf8Error),
-    COMMAND(VanillaError),
+    Command(VanillaError),
 }
 
 impl AnyonError {
     pub fn new_with_report(report_err: Report) -> Self {
-        AnyonError::REPORT(report_err)
+        AnyonError::Report(report_err)
     }
 
     pub fn new_with_io(io_err: Error) -> Self {
-        AnyonError::IO(io_err)
+        AnyonError::Io(io_err)
     }
 
     pub fn new_with_utf8(utf8: Utf8Error) -> Self {
@@ -32,11 +32,11 @@ impl AnyonError {
     }
 
     pub fn new_with_vanilla(msg: String) -> Self {
-        AnyonError::VANILLA(VanillaError { msg })
+        AnyonError::Vanilla(VanillaError { msg })
     }
 
     pub fn new_with_command(msg: String) -> Self {
-        AnyonError::COMMAND(VanillaError { msg })
+        AnyonError::Command(VanillaError { msg })
     }
 }
 
@@ -61,11 +61,13 @@ impl From<Utf8Error> for AnyonError {
 impl Debug for AnyonError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result {
         match self {
-            AnyonError::REPORT(report) => report.fmt(f),
-            AnyonError::VANILLA(vanilla) => write!(f, "{}", vanilla.msg),
-            AnyonError::IO(io) => write!(f, "{}", io.to_string()),
+            AnyonError::Report(report) => report.fmt(f),
+            AnyonError::Vanilla(vanilla) => write!(f, "{}", vanilla.msg),
+            AnyonError::Io(io) => write!(f, "{}", io.to_string()),
             AnyonError::UTF8(utf8) => write!(f, "{}", utf8.to_string()),
-            AnyonError::COMMAND(command) => write!(f, "{}\nView all commands with `jarvil help`", command.msg)
+            AnyonError::Command(command) => {
+                write!(f, "{}\nView all commands with `jarvil help`", command.msg)
+            }
         }
     }
 }

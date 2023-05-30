@@ -1,11 +1,11 @@
 use super::function::FunctionData;
 use crate::{constants::common::INT, types::core::Type};
-use std::{rc::Rc, str::Chars};
+use std::str::Chars;
 
 // print(_obj: <any>)
 pub fn print_meta_data() -> FunctionData {
     FunctionData {
-        params: Rc::new(vec![(Rc::new("_obj".to_string()), Type::new_with_any())]),
+        params: vec![Type::new_with_any()],
         return_type: Type::new_with_void(),
     }
 }
@@ -13,10 +13,7 @@ pub fn print_meta_data() -> FunctionData {
 // range(_start: int, _end: int) -> [int]
 pub fn range_meta_data() -> FunctionData {
     FunctionData {
-        params: Rc::new(vec![
-            (Rc::new("_start".to_string()), Type::new_with_atomic(INT)),
-            (Rc::new("_end".to_string()), Type::new_with_atomic(INT)),
-        ]),
+        params: vec![Type::new_with_atomic(INT), Type::new_with_atomic(INT)],
         return_type: Type::new_with_array(&Type::new_with_atomic(INT)),
     }
 }
@@ -30,7 +27,7 @@ fn check_in_builtin_func_trie(remaining_str: &str, value: Chars) -> bool {
     }
 }
 
-pub fn is_name_in_builtin_func(name: &Rc<String>) -> bool {
+pub fn is_name_in_builtin_func(name: &str) -> bool {
     let mut iter = name.chars();
     match iter.next() {
         Some(c) => match c {

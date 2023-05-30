@@ -1,16 +1,16 @@
 use crate::ast::ast::{
-    AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockKind, BlockNode,
-    CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode,
-    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, OkTokenNode, ParamsNode,
-    SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
-    TypeExpressionNode, TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
+    AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
+    CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode, IdentifierNode,
+    NameTypeSpecNode, NameTypeSpecsNode, Node, OkTokenNode, ParamsNode, SelfKeywordNode,
+    SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::code::JarvilCode;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::{
     Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
-    MissingTokenError,
+    MissingTokenError, NoValidStatementFoundInsideBlockBodyError,
 };
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
@@ -19,7 +19,7 @@ use std::rc::Rc;
 use text_size::TextRange;
 
 pub trait Parser {
-    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>);
+    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCode);
 }
 
 pub struct JarvilParser {
@@ -33,12 +33,12 @@ pub struct JarvilParser {
 }
 
 impl JarvilParser {
-    pub fn new(code: &JarvilCode) -> Self {
+    pub fn new(code: JarvilCode) -> Self {
         JarvilParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
-            code: code.clone(),
+            code,
             ignore_all_errors: false,
             correction_indent: 0,
             errors: vec![],
@@ -47,9 +47,9 @@ impl JarvilParser {
 }
 
 impl Parser for JarvilParser {
-    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>) {
+    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCode) {
         let code_node = self.code(token_vec);
-        (code_node, self.errors)
+        (code_node, self.errors, self.code)
     }
 }
 
@@ -89,10 +89,6 @@ impl JarvilParser {
 
     pub fn add_to_correction_indent(&mut self, addition: i64) {
         self.correction_indent = self.correction_indent + addition;
-    }
-
-    pub fn curr_line_number(&self) -> usize {
-        self.token_vec[self.lookahead].line_number
     }
 
     pub fn curr_token(&mut self) -> Token {
@@ -186,6 +182,15 @@ impl JarvilParser {
         self.errors.push(Diagnostics::IncorrectlyIndentedBlock(err));
     }
 
+    pub fn log_no_valid_statement_inside_block_error(&mut self, range: TextRange) {
+        if self.ignore_all_errors {
+            return;
+        }
+        let err = NoValidStatementFoundInsideBlockBodyError::new(range);
+        self.errors
+            .push(Diagnostics::NoValidStatementFoundInsideBlockBody(err));
+    }
+
     pub fn log_invalid_l_value_error(&mut self, range: TextRange) {
         if self.ignore_all_errors {
             return;
@@ -233,18 +238,6 @@ impl JarvilParser {
         }
     }
 
-    pub fn expects(&mut self, symbols: &[&'static str]) -> TokenNode {
-        let token = self.curr_token();
-        for &symbol in symbols {
-            if token.is_eq(symbol) {
-                self.scan_next_token();
-                return TokenNode::new_with_ok(&token);
-            }
-        }
-        self.log_missing_token_error(symbols, &token);
-        TokenNode::new_with_missing_tokens(&Rc::new(symbols.to_vec()), &token)
-    }
-
     pub fn expect_terminators(&mut self) -> TokenNode {
         let symbols = &["\n", ENDMARKER];
         let token = self.curr_token();
@@ -276,7 +269,7 @@ impl JarvilParser {
                 }
                 CoreToken::ENDMARKER => {
                     return IndentResult {
-                        kind: IndentResultKind::BLOCK_OVER,
+                        kind: IndentResultKind::BlockOver,
                         skipped_tokens,
                         extra_newlines,
                     }
@@ -288,13 +281,13 @@ impl JarvilParser {
                     expected_indent_spaces = expected_indent_spaces + self.correction_indent();
                     if indent_spaces == expected_indent_spaces {
                         return IndentResult {
-                            kind: IndentResultKind::CORRECT_INDENTATION,
+                            kind: IndentResultKind::CorrectIndentation,
                             skipped_tokens,
                             extra_newlines,
                         };
                     } else if indent_spaces > expected_indent_spaces {
                         return IndentResult {
-                            kind: IndentResultKind::INCORRECT_INDENTATION((
+                            kind: IndentResultKind::IncorrectIndentation((
                                 expected_indent_spaces,
                                 indent_spaces,
                             )),
@@ -303,7 +296,7 @@ impl JarvilParser {
                         };
                     } else {
                         return IndentResult {
-                            kind: IndentResultKind::BLOCK_OVER,
+                            kind: IndentResultKind::BlockOver,
                             skipped_tokens,
                             extra_newlines,
                         };
@@ -324,14 +317,12 @@ impl JarvilParser {
         is_starting_with_fn: F,
         statement_parsing_fn: G,
         expected_symbols: &[&'static str],
-        kind: BlockKind,
     ) -> BlockNode {
         components::block::block(
             self,
             is_starting_with_fn,
             statement_parsing_fn,
             expected_symbols,
-            kind,
         )
     }
 

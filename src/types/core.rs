@@ -46,16 +46,16 @@ pub trait OperatorCompatiblity {
 
 #[derive(Debug)]
 pub enum CoreType {
-    ATOMIC(Atomic),
-    STRUCT(Struct),
-    LAMBDA(Lambda),
-    ARRAY(Array),
-    TUPLE(Tuple),
-    HASHMAP(HashMap),
-    UNKNOWN,
-    VOID,
-    UNSET,
-    ANY,
+    Atomic(Atomic),
+    Struct(Struct),
+    Lambda(Lambda),
+    Array(Array),
+    Tuple(Tuple),
+    HashMap(HashMap),
+    Unknown,
+    Void,
+    Unset,
+    Any,
 }
 
 #[derive(Debug, Clone)]
@@ -63,88 +63,89 @@ pub struct Type(pub Rc<CoreType>);
 
 impl Type {
     pub fn new_with_atomic(name: &str) -> Type {
-        Type(Rc::new(CoreType::ATOMIC(Atomic::new(name))))
+        Type(Rc::new(CoreType::Atomic(Atomic::new(name))))
     }
 
     pub fn new_with_struct(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
-        Type(Rc::new(CoreType::STRUCT(Struct::new(name, symbol_data))))
+        Type(Rc::new(CoreType::Struct(Struct::new(name, symbol_data))))
     }
 
-    pub fn new_with_lambda(
-        name: Option<String>,
-        symbol_data: &SymbolData<UserDefinedTypeData>,
-    ) -> Type {
-        Type(Rc::new(CoreType::LAMBDA(Lambda::new(name, symbol_data))))
+    pub fn new_with_lambda(name: Option<String>, params: &Vec<Type>, return_type: &Type) -> Type {
+        Type(Rc::new(CoreType::Lambda(Lambda::new(
+            name,
+            params,
+            return_type,
+        ))))
     }
 
     pub fn new_with_array(element_type: &Type) -> Type {
-        Type(Rc::new(CoreType::ARRAY(Array::new(element_type))))
+        Type(Rc::new(CoreType::Array(Array::new(element_type))))
     }
 
     pub fn new_with_tuple(types: Vec<Type>) -> Type {
-        Type(Rc::new(CoreType::TUPLE(Tuple::new(types))))
+        Type(Rc::new(CoreType::Tuple(Tuple::new(types))))
     }
 
     pub fn new_with_hashmap(key_type: &Type, value_type: &Type) -> Type {
-        Type(Rc::new(CoreType::HASHMAP(HashMap::new(
+        Type(Rc::new(CoreType::HashMap(HashMap::new(
             key_type, value_type,
         ))))
     }
 
     pub fn new_with_unknown() -> Type {
-        Type(Rc::new(CoreType::UNKNOWN))
+        Type(Rc::new(CoreType::Unknown))
     }
 
     pub fn new_with_unset() -> Type {
-        Type(Rc::new(CoreType::UNSET))
+        Type(Rc::new(CoreType::Unset))
     }
 
     pub fn new_with_void() -> Type {
-        Type(Rc::new(CoreType::VOID))
+        Type(Rc::new(CoreType::Void))
     }
 
     pub fn new_with_any() -> Type {
-        Type(Rc::new(CoreType::ANY))
+        Type(Rc::new(CoreType::Any))
     }
 
     pub fn is_void(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::VOID => true,
+            CoreType::Void => true,
             _ => false,
         }
     }
 
     pub fn is_string(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::ATOMIC(atomic) => atomic.is_string(),
+            CoreType::Atomic(atomic) => atomic.is_string(),
             _ => false,
         }
     }
 
     pub fn is_array(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::ARRAY(_) => true,
+            CoreType::Array(_) => true,
             _ => false,
         }
     }
 
     pub fn is_bool(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::ATOMIC(atomic) => atomic.is_bool(),
+            CoreType::Atomic(atomic) => atomic.is_bool(),
             _ => false,
         }
     }
 
     pub fn is_int(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::ATOMIC(atomic) => atomic.is_int(),
+            CoreType::Atomic(atomic) => atomic.is_int(),
             _ => false,
         }
     }
 
     pub fn is_float(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::ATOMIC(atomic) => atomic.is_float(),
+            CoreType::Atomic(atomic) => atomic.is_float(),
             _ => false,
         }
     }
@@ -159,14 +160,14 @@ impl Type {
 
     pub fn is_lambda(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::LAMBDA(_) => true,
+            CoreType::Lambda(_) => true,
             _ => false,
         }
     }
 
     pub fn is_hashmap(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::HASHMAP(_) => true,
+            CoreType::HashMap(_) => true,
             _ => false,
         }
     }
@@ -177,7 +178,7 @@ impl Type {
 
     pub fn is_tuple(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::TUPLE(_) => true,
+            CoreType::Tuple(_) => true,
             _ => false,
         }
     }
@@ -185,10 +186,10 @@ impl Type {
     pub fn is_hashable(&self) -> bool {
         // `int`, `float`, `str` and `tuple` with hashable sub_types are only hashable types
         match self.0.as_ref() {
-            CoreType::ATOMIC(atomic) => {
+            CoreType::Atomic(atomic) => {
                 return atomic.is_int() || atomic.is_string() || atomic.is_float()
             }
-            CoreType::TUPLE(tuple) => {
+            CoreType::Tuple(tuple) => {
                 for ty in &tuple.sub_types {
                     if !ty.is_hashable() {
                         return false;
@@ -202,7 +203,7 @@ impl Type {
 
     pub fn is_unknown(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::UNKNOWN => true,
+            CoreType::Unknown => true,
             _ => false,
         }
     }
@@ -253,19 +254,19 @@ impl Type {
 impl AbstractType for Type {
     fn is_eq(&self, base_type: &Type) -> bool {
         match self.0.as_ref() {
-            CoreType::ATOMIC(atomic_type) => atomic_type.is_eq(base_type),
-            CoreType::STRUCT(struct_type) => struct_type.is_eq(base_type),
-            CoreType::LAMBDA(lambda_type) => lambda_type.is_eq(base_type),
-            CoreType::ARRAY(array_type) => array_type.is_eq(base_type),
-            CoreType::TUPLE(tuple_type) => tuple_type.is_eq(base_type),
-            CoreType::HASHMAP(hashmap_type) => hashmap_type.is_eq(base_type),
-            CoreType::UNKNOWN => return false,
-            CoreType::VOID => match base_type.0.as_ref() {
-                CoreType::VOID => true,
+            CoreType::Atomic(atomic_type) => atomic_type.is_eq(base_type),
+            CoreType::Struct(struct_type) => struct_type.is_eq(base_type),
+            CoreType::Lambda(lambda_type) => lambda_type.is_eq(base_type),
+            CoreType::Array(array_type) => array_type.is_eq(base_type),
+            CoreType::Tuple(tuple_type) => tuple_type.is_eq(base_type),
+            CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(base_type),
+            CoreType::Unknown => return false,
+            CoreType::Void => match base_type.0.as_ref() {
+                CoreType::Void => true,
                 _ => false,
             },
-            CoreType::UNSET => return false,
-            CoreType::ANY => return true,
+            CoreType::Unset => return false,
+            CoreType::Any => return true,
         }
     }
 }
@@ -273,16 +274,16 @@ impl AbstractType for Type {
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self.0.as_ref() {
-            CoreType::ATOMIC(atomic_type) => write!(f, "{}", atomic_type.to_string()),
-            CoreType::STRUCT(struct_type) => write!(f, "{}", struct_type.to_string()),
-            CoreType::LAMBDA(lambda_type) => write!(f, "{}", lambda_type.to_string()),
-            CoreType::ARRAY(array_type) => write!(f, "{}", array_type.to_string()),
-            CoreType::TUPLE(tuple_type) => write!(f, "{}", tuple_type.to_string()),
-            CoreType::HASHMAP(hashmap_type) => write!(f, "{}", hashmap_type.to_string()),
-            CoreType::UNKNOWN => write!(f, "{}", UNKNOWN),
-            CoreType::VOID => write!(f, "()"),
-            CoreType::UNSET => write!(f, "{}", UNSET),
-            CoreType::ANY => write!(f, "{}", ANY),
+            CoreType::Atomic(atomic_type) => write!(f, "{}", atomic_type.to_string()),
+            CoreType::Struct(struct_type) => write!(f, "{}", struct_type.to_string()),
+            CoreType::Lambda(lambda_type) => write!(f, "{}", lambda_type.to_string()),
+            CoreType::Array(array_type) => write!(f, "{}", array_type.to_string()),
+            CoreType::Tuple(tuple_type) => write!(f, "{}", tuple_type.to_string()),
+            CoreType::HashMap(hashmap_type) => write!(f, "{}", hashmap_type.to_string()),
+            CoreType::Unknown => write!(f, "{}", UNKNOWN),
+            CoreType::Void => write!(f, "()"),
+            CoreType::Unset => write!(f, "{}", UNSET),
+            CoreType::Any => write!(f, "{}", ANY),
         }
     }
 }

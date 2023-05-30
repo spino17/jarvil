@@ -1,4 +1,4 @@
-use crate::ast::ast::{BlockKind, ErrornousNode, TokenNode, TypeExpressionNode, TypeTupleNode};
+use crate::ast::ast::{ErrornousNode, TokenNode, TypeExpressionNode, TypeTupleNode};
 use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::constants::common::DEF;
 use crate::lexer::token::CoreToken;
@@ -21,7 +21,6 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 },
                 |parser| parser.struct_stmt(),
                 &[IDENTIFIER, DEF],
-                BlockKind::STRUCT,
             );
             TypeDeclarationNode::new_with_struct(
                 &type_name_node,

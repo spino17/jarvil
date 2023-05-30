@@ -1,18 +1,18 @@
-use crate::error::constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG;
 use super::{core::AbstractCommand, error::AnyonError};
+use crate::error::constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG;
 
 #[derive(Debug)]
-pub struct HelpDriver {
+pub struct HelpCommand {
     command_line_args: Vec<String>,
 }
 
-impl HelpDriver {
+impl HelpCommand {
     pub fn new(command_line_args: Vec<String>) -> Self {
-        HelpDriver { command_line_args }
+        HelpCommand { command_line_args }
     }
 }
 
-impl AbstractCommand for HelpDriver {
+impl AbstractCommand for HelpCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         let len = self.command_line_args.len();
         if len > 2 {
