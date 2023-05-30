@@ -75,7 +75,6 @@ impl BuildCommand {
         let type_checker = TypeChecker::new(code, namespace_handler);
         let (namespace_handler, code) = type_checker.check_ast(&ast, &mut errors);
 
-        // errors.append(&mut type_errors);
         if errors.len() > 0 {
             let err = &errors[0];
             return Err(attach_source_code(err.report(), code_str));
