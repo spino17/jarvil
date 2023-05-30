@@ -1,5 +1,5 @@
 use super::{core::AbstractCommand, error::AnyonError};
-use crate::{code::JarvilCode, error::diagnostics::Diagnostics};
+use compiler::{code::JarvilCode, error::diagnostics::Diagnostics};
 
 #[derive(Debug)]
 pub struct FmtCommand {

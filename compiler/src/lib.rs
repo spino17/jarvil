@@ -10,5 +10,4 @@ pub mod reader;
 pub mod scope;
 #[cfg(test)]
 pub mod tests;
-pub mod tools;
 pub mod types;

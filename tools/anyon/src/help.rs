@@ -1,5 +1,5 @@
 use super::{core::AbstractCommand, error::AnyonError};
-use crate::error::constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG;
+use compiler::error::constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG;
 
 #[derive(Debug)]
 pub struct HelpCommand {

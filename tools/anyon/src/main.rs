@@ -1,26 +1,12 @@
-#[macro_use]
-extern crate jarvil_macros;
-mod ast;
-mod code;
-mod codegen;
-mod constants;
-mod context;
-mod error;
-mod lexer;
-mod parser;
-mod reader;
-mod scope;
-mod tools;
-mod types;
-
 use miette::{GraphicalReportHandler, GraphicalTheme};
 use owo_colors::Style;
 use std::env::args;
 use std::fmt::Write;
-use tools::anyon::{
+use anyon::{
     core::{get_cmd_from_command_line_args, AbstractCommand},
     error::AnyonError,
 };
+
 
 fn check_and_execute_cmd(args: Vec<String>) -> Result<(), AnyonError> {
     let mut anyon_obj = get_cmd_from_command_line_args(args)?;

@@ -1,14 +1,6 @@
-[package]
-name = "jarvil"
-version = "0.1.0"
-edition = "2018"
-authors = ["Bhavya Bhatt bhavyabhatt17@gmail.com"]
-
-[dependencies]
-rustc-hash = { version = "1.1" }
-colored = "2.0.0"
-jarvil-macros = { path = "jarvil-macros" }
-text-size = "1.1.0"
-miette = { version = "5.3.0", features = ["fancy"] }
-thiserror = "1.0.34"
-owo-colors = "3.5.0"
+[workspace]
+members = [
+    "compiler",
+    "tools/anyon",
+    "tools/jarvil-wasm"
+]
