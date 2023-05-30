@@ -1,5 +1,5 @@
 use super::error::AnyonError;
-use crate::context;
+use compiler::context;
 use std::path::Path;
 
 pub fn check_jarvil_code_file_extension(file_name: &str) -> Result<String, AnyonError> {
