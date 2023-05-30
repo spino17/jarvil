@@ -1163,7 +1163,7 @@ impl NoReturnStatementInFunctionError {
 #[error("explicit return statement found in constructor body")]
 #[diagnostic(code("TypeCheckError"))]
 pub struct ExplicitReturnStatementFoundInConstructorBodyError {
-    #[label("explicit return statement")]
+    #[label("explicit return statement found")]
     pub span: SourceSpan,
     #[help]
     pub help: Option<String>,
