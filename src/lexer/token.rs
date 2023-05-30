@@ -1,3 +1,5 @@
+#![allow(non_camel_case_types)]
+
 #[macro_use]
 use jarvil_macros::Tokenify;
 use crate::code::JarvilCode;
@@ -18,90 +20,62 @@ use text_size::TextRange;
 
 #[derive(Debug, Clone, PartialEq, Tokenify)]
 pub enum CoreToken {
-    // conditionals
-    IF,   // 'if'
-    ELSE, // 'else'
-    ELIF, // 'elif'
-
-    // loops
-    FOR,      // 'for'
-    WHILE,    // 'while'
-    CONTINUE, // 'continue'
-    BREAK,    // 'break'
-
-    // functions
-    DEF,            // 'def'
-    RETURN,         // 'return'
-    LAMBDA_KEYWORD, // 'lambda'
-
-    // types
-    TYPE_KEYWORD, // 'type'
+    IF,                     // 'if'
+    ELSE,                   // 'else'
+    ELIF,                   // 'elif'
+    FOR,                    // 'for'
+    WHILE,                  // 'while'
+    CONTINUE,               // 'continue'
+    BREAK,                  // 'break'
+    DEF,                    // 'def'
+    RETURN,                 // 'return'
+    LAMBDA_KEYWORD,         // 'lambda'
+    TYPE_KEYWORD,           // 'type'
     ATOMIC_TYPE,
-    LET,                // 'let'
-    SELF,               // 'self'
-    IMPLEMENTS_KEYWORD, // 'implements'
-    INTERFACE_KEYWORD,  // 'interface'
-    STRUCT_KEYWORD,     // 'struct'
-
-    // logical operators
-    AND, // 'and'
-    NOT, // 'not'
-    OR,  // 'or'
-    IN,  // 'in'
-
-    // booleans
-    TRUE,  // 'True'
-    FALSE, // 'False'
-
-    // operators
-    PLUS,        // '+'
-    DASH,        // '-'
-    RIGHT_ARROW, // '->'
-    STAR,        // '*'
-    DOUBLE_STAR, // '**'
-    SLASH,       // '/'
-
-    // wrappers
-    LPAREN,  // '('
-    RPAREN,  // ')'
-    LBRACE,  // '{'
-    RBRACE,  // '}'
-    LSQUARE, // '['
-    RSQUARE, // ']'
-
-    // delimiters
-    SEMICOLON,    // ';'
-    COLON,        // ':'
-    DOUBLE_COLON, // '::'
-    COMMA,        // ','
-    DOT,          // '.'
-    BLANK,        // ' '
-    // TAB,       // '\t'
-    NEWLINE, // '\n'
-
-    // comparison
-    EQUAL,         // '='
-    DOUBLE_EQUAL,  // '=='
-    LBRACKET,      // '<'
-    RBRACKET,      // '>'
-    LESS_EQUAL,    // '<='
-    GREATER_EQUAL, // '>='
-    NOT_EQUAL,     // '!='
-
-    // expression terminals
+    LET,                    // 'let'
+    SELF,                   // 'self'
+    IMPLEMENTS_KEYWORD,     // 'implements'
+    INTERFACE_KEYWORD,      // 'interface'
+    STRUCT_KEYWORD,         // 'struct'
+    AND,                    // 'and'
+    NOT,                    // 'not'
+    OR,                     // 'or'
+    IN,                     // 'in'
+    TRUE,                   // 'True'
+    FALSE,                  // 'False'
+    PLUS,                   // '+'
+    DASH,                   // '-'
+    RIGHT_ARROW,            // '->'
+    STAR,                   // '*'
+    DOUBLE_STAR,            // '**'
+    SLASH,                  // '/'
+    LPAREN,                 // '('
+    RPAREN,                 // ')'
+    LBRACE,                 // '{'
+    RBRACE,                 // '}'
+    LSQUARE,                // '['
+    RSQUARE,                // ']'
+    SEMICOLON,              // ';'
+    COLON,                  // ':'
+    DOUBLE_COLON,           // '::'
+    COMMA,                  // ','
+    DOT,                    // '.'
+    BLANK,                  // ' '
+    NEWLINE,                // '\n'
+    EQUAL,                  // '='
+    DOUBLE_EQUAL,           // '=='
+    LBRACKET,               // '<'
+    RBRACKET,               // '>'
+    LESS_EQUAL,             // '<='
+    GREATER_EQUAL,          // '>='
+    NOT_EQUAL,              // '!='
+    SINGLE_LINE_COMMENT,    // '//...\n' or '#...\n'
+    BLOCK_COMMENT,          // '/* ... */'
     INTEGER,
     FLOATING_POINT_NUMBER,
     IDENTIFIER,
     LITERAL,
-
-    // ignored by parser
-    SINGLE_LINE_COMMENT, // '//...\n' or '#...\n'
-    BLOCK_COMMENT,       // '/* ... */'
-
-    // termination
     ENDMARKER,
-
-    // error
     LEXICAL_ERROR(LexicalErrorKind),
 
     // reserved tokens in Python (3.9.6)

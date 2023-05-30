@@ -22,7 +22,6 @@ use tools::anyon::{
     error::AnyonError,
 };
 
-
 fn check_and_execute_cmd(args: Vec<String>) -> Result<(), AnyonError> {
     let mut anyon_obj = get_cmd_from_command_line_args(args)?;
     anyon_obj.check_cmd()?;
