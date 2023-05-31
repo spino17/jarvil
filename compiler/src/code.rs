@@ -8,7 +8,7 @@ pub struct JarvilCode {
 impl JarvilCode {
     pub fn new(code_vec: Vec<char>) -> Self {
         JarvilCode {
-            code_vec: code_vec,
+            code_vec,
             code_lines: None,
         }
     }

@@ -866,7 +866,7 @@ impl TypeChecker {
     pub fn check_atomic_expr(&self, atomic_expr: &AtomicExpressionNode) -> Type {
         let core_atomic_expr = atomic_expr.core_ref();
         match core_atomic_expr {
-            CoreAtomicExpressionNode::BoolValue(token) => {
+            CoreAtomicExpressionNode::Bool(token) => {
                 self.check_token(token, AtomicTokenExprKind::Bool)
             }
             CoreAtomicExpressionNode::Integer(token) => {

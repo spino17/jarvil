@@ -1453,7 +1453,7 @@ default_errornous_node_impl!(ExpressionNode, CoreExpressionNode);
 
 impl AtomicExpressionNode {
     pub fn new_with_bool(bool_value: &TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::BoolValue(bool_value.clone()));
+        let node = Rc::new(CoreAtomicExpressionNode::Bool(bool_value.clone()));
         AtomicExpressionNode(node)
     }
 

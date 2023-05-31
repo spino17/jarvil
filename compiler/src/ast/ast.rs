@@ -376,7 +376,7 @@ pub enum CoreExpressionNode {
 // ATOMIC_EXPRESSION
 #[derive(Debug, Node)]
 pub enum CoreAtomicExpressionNode {
-    BoolValue(TokenNode),
+    Bool(TokenNode),
     Integer(TokenNode),
     FloatingPointNumber(TokenNode),
     Literal(TokenNode),

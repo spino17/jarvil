@@ -4,5 +4,9 @@ version = "0.1.0"
 edition = "2018"
 authors = ["Bhavya Bhatt bhavyabhatt17@gmail.com"]
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
 compiler = { path = "../../compiler" }
+wasm-bindgen = "0.2"

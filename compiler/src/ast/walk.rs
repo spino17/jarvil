@@ -609,7 +609,7 @@ pub trait Visitor {
             ASTNode::AtomicExpression(atomic_expression_node) => {
                 let core_atomic_expr = atomic_expression_node.core_ref();
                 match core_atomic_expr {
-                    CoreAtomicExpressionNode::BoolValue(token) => {
+                    CoreAtomicExpressionNode::Bool(token) => {
                         self.walk_token(token);
                     }
                     CoreAtomicExpressionNode::Integer(token) => {
