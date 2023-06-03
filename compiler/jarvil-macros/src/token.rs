@@ -1,7 +1,7 @@
 extern crate proc_macro;
+use crate::get_macro_expr_stmt;
 use proc_macro::*;
 use quote::quote;
-use crate::get_macro_expr_stmt;
 
 pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
     let enum_name = &ast.ident;
@@ -10,7 +10,7 @@ pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
     }
     let enum_data = match &ast.data {
         syn::Data::Enum(enum_data) => enum_data,
-        _ => panic!("tokenify macro should only be used for `crate::lexer::token::CoreToken` enum")
+        _ => panic!("tokenify macro should only be used for `crate::lexer::token::CoreToken` enum"),
     };
     let variant_iter = &mut enum_data.variants.iter();
     let mut args_str = "".to_string();

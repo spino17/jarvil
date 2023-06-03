@@ -65,11 +65,12 @@ impl PythonCodeGenerator {
         for stmt in &*code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        let main_call_str = format!(
-            "\n\nif __name__ == \"__main__\":\n{}main_func()",
-            get_whitespaces_from_indent_level(1)
-        );
-        self.add_str_to_python_code(&main_call_str);
+        //let main_call_str = format!(
+        //    "\n\nif __name__ == \"__main__\":\n{}main_func()",
+        //    get_whitespaces_from_indent_level(1)
+        //);
+        let main_call_str = "\n\nmain_func()";
+        self.add_str_to_python_code(main_call_str);
         self.generate_code
     }
 

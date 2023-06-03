@@ -1,6 +1,6 @@
 use super::{core::AbstractCommand, error::AnyonError};
 use compiler::{
-    codegen::python::get_whitespaces_from_indent_level, context,
+    codegen::python::get_whitespaces_from_indent_level, curr_dir_path,
     error::constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG,
 };
 use std::{fs, mem, process::Command};
@@ -38,7 +38,7 @@ impl AbstractCommand for NewCommand {
     }
 
     fn execute_cmd(&self) -> Result<(), AnyonError> {
-        let curr_dir_path = context::curr_dir_path();
+        let curr_dir_path = curr_dir_path();
         let project_name = match &self.project_name {
             Some(project_name) => project_name,
             None => unreachable!(), // `project_name` is set in `check_cmd`
