@@ -170,6 +170,7 @@ impl PythonCodeGenerator {
                 final_str.push_str(&critical_section);
                 self.add_str_to_python_code(&final_str);
             }
+            CoreToken::ENDMARKER => return,
             _ => {
                 self.add_str_to_python_code(&token_value);
             }

@@ -55,7 +55,9 @@ impl Lexer for CoreLexer {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
             range: TextRange::new(
-                TextSize::try_from(code.len()).unwrap(),
+                // ideally span of `ENDMARKER` should be code.len()-code.len() however to display error messages 
+                // we need to have non-zero range span.
+                TextSize::try_from(code.len() - 1).unwrap(),
                 TextSize::try_from(code.len()).unwrap(),
             ),
             trivia: None,
