@@ -28,6 +28,7 @@ pub fn compile(code_str: &str) -> Result<String, String> {
                     // Below step strips down the ansi escaped codes (which is there for styling the error message)
                     // Once we have enabled ansi escaped string to HTML converter in-place on web-app,
                     // we can again just send `Err(buffer)`
+                    /*
                     let plain_bytes = strip_ansi_escapes::strip(&buffer);
                     match plain_bytes {
                         Ok(s) => {
@@ -46,7 +47,8 @@ pub fn compile(code_str: &str) -> Result<String, String> {
                             ))
                         }
                     }
-                    // return Err(buffer);
+                     */
+                    return Err(buffer);
                 }
                 Err(err) => {
                     return Err(format!(

@@ -636,7 +636,7 @@ impl IdentifierNotFoundInAnyNamespaceError {
         IdentifierNotFoundInAnyNamespaceError {
             span: range_to_span(range).into(),
             help: Some(
-                "identifiers are declared in one of the three namespaces: variables, functions and types\ncallable identifier are resolved in the following order of namespace:\nfunction => type => variable"
+                "callable identifier are resolved in the following order of namespace: function => type => variable"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()
