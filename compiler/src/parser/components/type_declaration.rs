@@ -1,4 +1,4 @@
-use crate::ast::ast::{ErrornousNode, TokenNode, TypeExpressionNode, TypeTupleNode};
+use crate::ast::ast::{CommaSeparatedNode, ErrornousNode, TokenNode, TypeExpressionNode};
 use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::constants::common::DEF;
 use crate::lexer::token::CoreToken;
@@ -31,10 +31,10 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             )
         }
         CoreToken::LAMBDA_KEYWORD => {
-            let mut type_tuple_node: Option<&TypeTupleNode> = None;
+            let mut type_tuple_node: Option<&CommaSeparatedNode<TypeExpressionNode>> = None;
             let mut r_arrow_node: Option<&TokenNode> = None;
             let mut return_type_node: Option<&TypeExpressionNode> = None;
-            let temp_type_tuple_node: TypeTupleNode;
+            let temp_type_tuple_node: CommaSeparatedNode<TypeExpressionNode>;
             let temp_r_arrow_node: TokenNode;
             let temp_return_type_node: TypeExpressionNode;
 

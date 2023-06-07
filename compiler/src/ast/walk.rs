@@ -6,20 +6,19 @@ use crate::ast::ast::{
     CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode, CoreLambdaTypeDeclarationNode,
     CoreNameTypeSpecsNode, CoreParamsNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
     CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
-    ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode,
-    HashMapTypeNode, IdentifierNode, IncorrectlyIndentedStatementNode, IndexAccessNode,
-    InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
-    MissingTokenNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkIdentifierNode,
-    OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode, ParamsNode,
-    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
-    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, SkippedTokensNode,
-    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
-    TokenNode, TypeDeclarationNode, TypeExpressionNode, TypeTupleNode, UnaryExpressionNode,
-    UserDefinedTypeNode, VariableDeclarationNode,
+    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode,
+    ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
+    IdentifierNode, IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
+    LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode,
+    NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkIdentifierNode, OkSelfKeywordNode,
+    OkTokenNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
+    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
+    SelfKeywordNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
+    StructDeclarationNode, StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode,
+    TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
 
-use super::ast::TupleTypeNode;
+use super::ast::{CommaSeparatedNode, TupleTypeNode};
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
 // See /src/go/ast/walk.go
@@ -151,7 +150,9 @@ pub trait Visitor {
         new_with_RVariableDeclarationNode
     );
     impl_node_walk!(walk_expression, ExpressionNode, new_with_ExpressionNode);
-    impl_node_walk!(walk_type_tuple, TypeTupleNode, new_with_TypeTupleNode);
+    fn walk_type_tuple(&mut self, x: &CommaSeparatedNode<TypeExpressionNode>) {
+        self.walk(&ASTNode::new_with_TypeTuple(x));
+    }
     impl_node_walk!(walk_atomic_type, AtomicTypeNode, new_with_AtomicTypeNode);
     impl_node_walk!(
         walk_user_defined_type,
@@ -452,11 +453,11 @@ pub trait Visitor {
             }
             ASTNode::TypeTuple(type_tuple_node) => {
                 let core_type_tuple = type_tuple_node.core_ref();
-                self.walk_type_expression(&core_type_tuple.data_type);
+                self.walk_type_expression(&core_type_tuple.entity);
                 if let Some(comma) = &core_type_tuple.comma {
                     self.walk_token(comma);
                 }
-                if let Some(remaining_types) = &core_type_tuple.remaining_types {
+                if let Some(remaining_types) = &core_type_tuple.remaining_entities {
                     self.walk_type_tuple(remaining_types);
                 }
             }

@@ -2,9 +2,9 @@ use super::statement::core::{
     is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
 };
 use crate::ast::ast::{
-    BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode,
-    FunctionDeclarationNode, FunctionWrapperNode, NameTypeSpecNode, NameTypeSpecsNode,
-    StatementNode, TypeTupleNode,
+    BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode,
+    CommaSeparatedNode, ErrornousNode, FunctionDeclarationNode, FunctionWrapperNode,
+    NameTypeSpecNode, NameTypeSpecsNode, StatementNode, TypeExpressionNode,
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
@@ -29,7 +29,7 @@ pub fn name_type_specs(parser: &mut JarvilParser) -> NameTypeSpecsNode {
     }
 }
 
-pub fn type_tuple(parser: &mut JarvilParser) -> TypeTupleNode {
+pub fn type_tuple(parser: &mut JarvilParser) -> CommaSeparatedNode<TypeExpressionNode> {
     let first_type_node = parser.type_expr();
     let token = &parser.curr_token();
     // TODO - check that atleast two types are parsed inside tuple type expression
@@ -37,9 +37,13 @@ pub fn type_tuple(parser: &mut JarvilParser) -> TypeTupleNode {
         CoreToken::COMMA => {
             let comma_node = parser.expect(",");
             let remaining_types_node = parser.type_tuple();
-            TypeTupleNode::new_with_args(&first_type_node, &remaining_types_node, &comma_node)
+            CommaSeparatedNode::new_with_entities(
+                &first_type_node,
+                &remaining_types_node,
+                &comma_node,
+            )
         }
-        _ => TypeTupleNode::new_with_single_data_type(&first_type_node),
+        _ => CommaSeparatedNode::new_with_single_entity(&first_type_node),
     }
 }
 

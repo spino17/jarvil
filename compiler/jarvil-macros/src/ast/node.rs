@@ -38,12 +38,14 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
         _ => panic!("tokenify macro should only be used for `crate::lexer::token::CoreToken` enum"),
     };
     let variant_iter = &mut enum_data.variants.iter();
-    let variants_len = enum_data.variants.len();
     let mut impl_ast_node = "".to_string();
     let mut flag = false;
     let mut variants_info: Vec<ExprTuple> = vec![];
     while let Some(variant) = variant_iter.next() {
         let variant_name = variant.ident.to_string(); // eg. `BLOCK`
+        if variant_name == "TypeTuple" {
+            continue;
+        }
         let field_name = match &variant.fields {
             syn::Fields::Unnamed(field) => field,
             _ => panic!("data of `ASTNode` enum should be named"),
@@ -74,10 +76,10 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         impl ASTNode {
             #impl_ast_node;
+            pub fn new_with_TypeTuple(x: &CommaSeparatedNode<TypeExpressionNode>) -> Self {
+                ASTNode::TypeTuple(x.clone())
+            }
         }
-        pub const NODES_ARRAY: [(&'static str, &'static str); #variants_len] = [
-            #(#variants_info,)*
-        ];
     };
     gen.into()
 }

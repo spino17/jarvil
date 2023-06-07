@@ -16,7 +16,7 @@ use super::ast::{
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
     CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
     CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreTokenNode, CoreTupleTypeNode,
-    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
+    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode,
     CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode,
     FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode, IdentifierNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
@@ -26,11 +26,9 @@ use super::ast::{
     RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
     StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
     TokenNode, TupleTypeNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind,
-    TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
+    UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
-use super::iterators::{
-    CommanSeparedIterator, NameTypeSpecsIterator, ParamsIterator, TypeTupleIterator,
-};
+use super::iterators::{CommanSeparedIterator, NameTypeSpecsIterator, ParamsIterator};
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
@@ -439,7 +437,7 @@ impl LambdaTypeDeclarationNode {
         equal: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
-        type_tuple: Option<&TypeTupleNode>,
+        type_tuple: Option<&CommaSeparatedNode<TypeExpressionNode>>,
         right_arrow: Option<&TokenNode>,
         return_type: Option<&TypeExpressionNode>,
         newline: &TokenNode,
@@ -680,48 +678,6 @@ impl Node for ReturnStatementNode {
     }
 }
 
-impl TypeTupleNode {
-    pub fn new_with_args(
-        data_type: &TypeExpressionNode,
-        remaining_types: &TypeTupleNode,
-        comma: &TokenNode,
-    ) -> Self {
-        let node = Rc::new(CoreTypeTupleNode {
-            comma: Some(comma.clone()),
-            data_type: data_type.clone(),
-            remaining_types: Some(remaining_types.clone()),
-        });
-        TypeTupleNode(node)
-    }
-
-    pub fn new_with_single_data_type(data_type: &TypeExpressionNode) -> Self {
-        let node = Rc::new(CoreTypeTupleNode {
-            comma: None,
-            data_type: data_type.clone(),
-            remaining_types: None,
-        });
-        TypeTupleNode(node)
-    }
-
-    pub fn iter(&self) -> TypeTupleIterator {
-        TypeTupleIterator::new(self)
-    }
-
-    impl_core_ref!(CoreTypeTupleNode);
-}
-
-impl Node for TypeTupleNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref().remaining_types {
-            Some(remaining_types) => impl_range!(self.0.as_ref().data_type, remaining_types),
-            None => impl_range!(self.0.as_ref().data_type, self.0.as_ref().data_type),
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        self.0.as_ref().data_type.start_line_number()
-    }
-}
-
 impl NameTypeSpecsNode {
     pub fn new_with_args(
         arg: &NameTypeSpecNode,
@@ -819,7 +775,7 @@ impl TypeExpressionNode {
     pub fn new_with_tuple_type(
         lparen: &TokenNode,
         rparen: &TokenNode,
-        types: &TypeTupleNode,
+        types: &CommaSeparatedNode<TypeExpressionNode>,
     ) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::Tuple(TupleTypeNode::new(
             lparen, rparen, types,
@@ -990,7 +946,11 @@ impl Node for ArrayTypeNode {
 }
 
 impl TupleTypeNode {
-    pub fn new(lparen: &TokenNode, rparen: &TokenNode, types: &TypeTupleNode) -> Self {
+    pub fn new(
+        lparen: &TokenNode,
+        rparen: &TokenNode,
+        types: &CommaSeparatedNode<TypeExpressionNode>,
+    ) -> Self {
         let node = Rc::new(CoreTupleTypeNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
@@ -1554,7 +1514,7 @@ impl Node for ComparisonNode {
 }
 
 impl<T: Clone> CommaSeparatedNode<T> {
-    pub fn new_with_single_param(entity: &T) -> Self {
+    pub fn new_with_single_entity(entity: &T) -> Self {
         let node = Rc::new(CoreCommaSeparatedNode {
             comma: None,
             entity: entity.clone(),
@@ -1563,7 +1523,7 @@ impl<T: Clone> CommaSeparatedNode<T> {
         CommaSeparatedNode(node)
     }
 
-    pub fn new_with_params(
+    pub fn new_with_entities(
         entity: &T,
         remaining_entities: &CommaSeparatedNode<T>,
         comma: &TokenNode,
@@ -1582,6 +1542,18 @@ impl<T: Clone> CommaSeparatedNode<T> {
 
     pub fn core_ref(&self) -> &CoreCommaSeparatedNode<T> {
         self.0.as_ref()
+    }
+}
+
+impl<T: Clone + Node> Node for CommaSeparatedNode<T> {
+    fn range(&self) -> TextRange {
+        match &self.0.as_ref().remaining_entities {
+            Some(remaining_entities) => impl_range!(self.0.as_ref().entity, remaining_entities),
+            None => impl_range!(self.0.as_ref().entity, self.0.as_ref().entity),
+        }
+    }
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().entity.start_line_number()
     }
 }
 

@@ -59,6 +59,7 @@ pub enum ASTNode {
     BoundedMethodWrapper(BoundedMethodWrapperNode),
     LambdaDeclaration(LambdaDeclarationNode),
     ExpressionStatement(ExpressionStatementNode),
+    TypeTuple(CommaSeparatedNode<TypeExpressionNode>),
     Expression(ExpressionNode),
     AtomicExpression(AtomicExpressionNode),
     ParenthesisedExpression(ParenthesisedExpressionNode),
@@ -76,7 +77,6 @@ pub enum ASTNode {
     ClassMethodCall(ClassMethodCallNode),
     NameTypeSpecs(NameTypeSpecsNode),
     NameTypeSpec(NameTypeSpecNode),
-    TypeTuple(TypeTupleNode),
     Params(ParamsNode),
     Identifier(IdentifierNode),
     OkIdentifier(OkIdentifierNode),
@@ -218,7 +218,7 @@ pub struct CoreStructPropertyDeclarationNode {
 }
 
 // LAMBDA_TYPE_DECLARATION
-// `type` <name> `:` <prototype> `\n`
+// `type` <name> lambda `=` `(` [<type_tuple>] `)` [ `->` <return_type> ]`\n`
 #[derive(Debug)]
 pub struct CoreLambdaTypeDeclarationNode {
     pub type_keyword: TokenNode,
@@ -227,7 +227,7 @@ pub struct CoreLambdaTypeDeclarationNode {
     pub equal: TokenNode,
     pub lparen: TokenNode,
     pub rparen: TokenNode,
-    pub type_tuple: Option<TypeTupleNode>,
+    pub type_tuple: Option<CommaSeparatedNode<TypeExpressionNode>>,
     pub right_arrow: Option<TokenNode>,
     pub return_type: Option<TypeExpressionNode>,
     pub newline: TokenNode,
@@ -266,7 +266,7 @@ pub struct CoreArrayTypeNode {
 pub struct CoreTupleTypeNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
-    pub types: TypeTupleNode,
+    pub types: CommaSeparatedNode<TypeExpressionNode>,
 }
 
 // DICTIONARY_TYPE
@@ -504,15 +504,6 @@ pub struct CoreNameTypeSpecNode {
     pub data_type: TypeExpressionNode,
 }
 
-// TYPE_TUPLE
-// <data_type> `,` <remaining_types>
-#[derive(Debug)]
-pub struct CoreTypeTupleNode {
-    pub comma: Option<TokenNode>,
-    pub data_type: TypeExpressionNode,
-    pub remaining_types: Option<TypeTupleNode>,
-}
-
 // PARAMS
 // <param> `,` <remaining_params>
 #[derive(Debug)]
@@ -672,8 +663,6 @@ pub struct ClassMethodCallNode(pub Rc<CoreClassMethodCallNode>);
 pub struct NameTypeSpecsNode(pub Rc<CoreNameTypeSpecsNode>);
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(pub Rc<CoreNameTypeSpecNode>);
-#[derive(Debug, Clone)]
-pub struct TypeTupleNode(pub Rc<CoreTypeTupleNode>);
 #[derive(Debug, Clone)]
 pub struct ParamsNode(pub Rc<CoreParamsNode>);
 #[derive(Debug, Clone)]

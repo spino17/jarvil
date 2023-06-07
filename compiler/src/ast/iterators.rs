@@ -1,6 +1,6 @@
 use super::ast::{
     CommaSeparatedNode, ExpressionNode, NameTypeSpecNode, NameTypeSpecsNode, ParamsNode,
-    TypeExpressionNode, TypeTupleNode,
+    TypeExpressionNode,
 };
 
 pub struct NameTypeSpecsIterator {
@@ -27,33 +27,6 @@ impl Iterator for NameTypeSpecsIterator {
             None => None,
         };
         Some(ok_name_type_specs.core_ref().arg.clone())
-    }
-}
-
-pub struct TypeTupleIterator {
-    node: Option<TypeTupleNode>,
-}
-
-impl TypeTupleIterator {
-    pub fn new(node: &TypeTupleNode) -> Self {
-        TypeTupleIterator {
-            node: Some(node.clone()),
-        }
-    }
-}
-
-impl Iterator for TypeTupleIterator {
-    type Item = TypeExpressionNode;
-    fn next(&mut self) -> Option<Self::Item> {
-        let ok_type_tuple_node = match &self.node {
-            Some(node) => node.clone(),
-            None => return None,
-        };
-        self.node = match &ok_type_tuple_node.core_ref().remaining_types {
-            Some(remaining_args) => Some(remaining_args.clone()),
-            None => None,
-        };
-        Some(ok_type_tuple_node.core_ref().data_type.clone())
     }
 }
 
