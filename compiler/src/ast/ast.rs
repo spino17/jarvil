@@ -46,7 +46,6 @@ pub enum ASTNode {
     StructDeclaration(StructDeclarationNode),
     StructPropertyDeclaration(StructPropertyDeclarationNode),
     LambdaTypeDeclaration(LambdaTypeDeclarationNode),
-    OkLambdaTypeDeclaration(OkLambdaTypeDeclarationNode),
     TypeExpression(TypeExpressionNode),
     AtomicType(AtomicTypeNode),
     ArrayType(ArrayTypeNode),
@@ -55,7 +54,6 @@ pub enum ASTNode {
     UserDefinedType(UserDefinedTypeNode),
     CallablePrototype(CallablePrototypeNode),
     CallableBody(CallableBodyNode),
-    OkCallableBody(OkCallableBodyNode),
     FunctionDeclaration(FunctionDeclarationNode),
     FunctionWrapper(FunctionWrapperNode),
     BoundedMethodWrapper(BoundedMethodWrapperNode),
@@ -77,12 +75,9 @@ pub enum ASTNode {
     Call(CallNode),
     ClassMethodCall(ClassMethodCallNode),
     NameTypeSpecs(NameTypeSpecsNode),
-    OkNameTypeSpecs(OkNameTypeSpecsNode),
     NameTypeSpec(NameTypeSpecNode),
     TypeTuple(TypeTupleNode),
-    OkTypeTuple(OkTypeTupleNode),
     Params(ParamsNode),
-    OkParams(OkParamsNode),
     Identifier(IdentifierNode),
     OkIdentifier(OkIdentifierNode),
     SelfKeyword(SelfKeywordNode),
@@ -137,7 +132,6 @@ pub enum CoreStatementNode {
     BoundedMethodWrapper(BoundedMethodWrapperNode),
     TypeDeclaration(TypeDeclarationNode),
     StructPropertyDeclaration(StructPropertyDeclarationNode),
-    MissingTokens(MissingTokenNode),
 }
 
 // RETURN
@@ -185,17 +179,15 @@ pub struct CoreInvalidLValueNode {
 }
 
 // R_ASSIGNMENT
-#[derive(Debug, Node)]
-pub enum CoreRAssignmentNode {
-    Expression(ExpressionStatementNode),
-    MissingTokens(MissingTokenNode),
+#[derive(Debug)]
+pub struct CoreRAssignmentNode {
+    pub expr: ExpressionStatementNode,
 }
 
 #[derive(Debug, Node)]
 pub enum CoreRVariableDeclarationNode {
     Lambda(LambdaDeclarationNode),
     Expression(ExpressionStatementNode),
-    MissingTokens(MissingTokenNode),
 }
 
 // TYPE_DECLARATION
@@ -226,16 +218,9 @@ pub struct CoreStructPropertyDeclarationNode {
 }
 
 // LAMBDA_TYPE_DECLARATION
-#[derive(Debug, Node)]
-pub enum CoreLambdaTypeDeclarationNode {
-    Ok(OkLambdaTypeDeclarationNode),
-    MissingTokens(MissingTokenNode),
-}
-
-// OK_LAMBDA_TYPE_DECLARATION
 // `type` <name> `:` <prototype> `\n`
 #[derive(Debug)]
-pub struct CoreOkLambdaTypeDeclarationNode {
+pub struct CoreLambdaTypeDeclarationNode {
     pub type_keyword: TokenNode,
     pub lambda_keyword: TokenNode,
     pub name: IdentifierNode,
@@ -313,16 +298,9 @@ pub struct CoreCallablePrototypeNode {
 }
 
 // CALLABLE_BODY
-#[derive(Debug, Node)]
-pub enum CoreCallableBodyNode {
-    Ok(OkCallableBodyNode),
-    MissingTokens(MissingTokenNode),
-}
-
-// OK_CALLABLE_BODY
 // `(` [<params>] `)` [`->`] [<return_type>] `:` <block>
 #[derive(Debug)]
-pub struct CoreOkCallableBodyNode {
+pub struct CoreCallableBodyNode {
     pub colon: TokenNode,
     pub block: BlockNode,
     pub prototype: CallablePrototypeNode,
@@ -370,7 +348,6 @@ pub enum CoreExpressionNode {
     Unary(UnaryExpressionNode),
     Binary(BinaryExpressionNode),
     Comparison(ComparisonNode),
-    MissingTokens(MissingTokenNode),
 }
 
 // ATOMIC_EXPRESSION
@@ -399,7 +376,6 @@ pub struct CoreParenthesisedExpressionNode {
 pub enum CoreUnaryExpressionNode {
     Atomic(AtomicExpressionNode),
     Unary(OnlyUnaryExpressionNode),
-    MissingTokens(MissingTokenNode),
 }
 
 // ONLY_UNARY_EXPRESSION
@@ -511,16 +487,9 @@ pub struct CoreClassMethodCallNode {
 }
 
 // NAME_TYPE_SPECS
-#[derive(Debug, Node)]
-pub enum CoreNameTypeSpecsNode {
-    Ok(OkNameTypeSpecsNode),
-    MissingTokens(MissingTokenNode),
-}
-
-// OK_NAME_TYPE_SPECS
 // <arg> `,` <remaining_args>
 #[derive(Debug)]
-pub struct CoreOkNameTypeSpecsNode {
+pub struct CoreNameTypeSpecsNode {
     pub comma: Option<TokenNode>,
     pub arg: NameTypeSpecNode,
     pub remaining_args: Option<NameTypeSpecsNode>,
@@ -536,32 +505,18 @@ pub struct CoreNameTypeSpecNode {
 }
 
 // TYPE_TUPLE
-#[derive(Debug, Node)]
-pub enum CoreTypeTupleNode {
-    Ok(OkTypeTupleNode),
-    MissingTokens(MissingTokenNode),
-}
-
-// OK_TYPE_TUPLE
 // <data_type> `,` <remaining_types>
 #[derive(Debug)]
-pub struct CoreOkTypeTupleNode {
+pub struct CoreTypeTupleNode {
     pub comma: Option<TokenNode>,
     pub data_type: TypeExpressionNode,
     pub remaining_types: Option<TypeTupleNode>,
 }
 
 // PARAMS
-#[derive(Debug, Node)]
-pub enum CoreParamsNode {
-    Ok(OkParamsNode),
-    MissingTokens(MissingTokenNode),
-}
-
-// OK_PARAMS
 // <param> `,` <remaining_params>
 #[derive(Debug)]
-pub struct CoreOkParamsNode {
+pub struct CoreParamsNode {
     pub comma: Option<TokenNode>,
     pub param: ExpressionNode,
     pub remaining_params: Option<ParamsNode>,
@@ -617,6 +572,13 @@ pub struct CoreSkippedTokenNode {
     pub skipped_token: Token,
 }
 
+#[derive(Debug)]
+pub struct CoreCommaSeparatedNode<T: Clone> {
+    pub comma: Option<TokenNode>,
+    pub entity: T,
+    pub remaining_entities: Option<CommaSeparatedNode<T>>,
+}
+
 // core node wrapper
 #[derive(Debug, Clone)]
 pub struct BlockNode(pub Rc<CoreBlockNode>);
@@ -651,8 +613,6 @@ pub struct StructPropertyDeclarationNode(pub Rc<CoreStructPropertyDeclarationNod
 #[derive(Debug, Clone)]
 pub struct LambdaTypeDeclarationNode(pub Rc<CoreLambdaTypeDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct OkLambdaTypeDeclarationNode(pub Rc<CoreOkLambdaTypeDeclarationNode>);
-#[derive(Debug, Clone)]
 pub struct TypeExpressionNode(pub Rc<CoreTypeExpressionNode>);
 #[derive(Debug, Clone)]
 pub struct AtomicTypeNode(pub Rc<CoreAtomicTypeNode>);
@@ -668,8 +628,6 @@ pub struct UserDefinedTypeNode(pub Rc<CoreUserDefinedTypeNode>);
 pub struct CallablePrototypeNode(pub Rc<CoreCallablePrototypeNode>);
 #[derive(Debug, Clone)]
 pub struct CallableBodyNode(pub Rc<CoreCallableBodyNode>);
-#[derive(Debug, Clone)]
-pub struct OkCallableBodyNode(pub Rc<CoreOkCallableBodyNode>);
 #[derive(Debug, Clone)]
 pub struct FunctionDeclarationNode(pub Rc<CoreFunctionDeclarationNode>);
 #[derive(Debug, Clone)]
@@ -713,17 +671,11 @@ pub struct ClassMethodCallNode(pub Rc<CoreClassMethodCallNode>);
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecsNode(pub Rc<CoreNameTypeSpecsNode>);
 #[derive(Debug, Clone)]
-pub struct OkNameTypeSpecsNode(pub Rc<CoreOkNameTypeSpecsNode>);
-#[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(pub Rc<CoreNameTypeSpecNode>);
 #[derive(Debug, Clone)]
 pub struct TypeTupleNode(pub Rc<CoreTypeTupleNode>);
 #[derive(Debug, Clone)]
-pub struct OkTypeTupleNode(pub Rc<CoreOkTypeTupleNode>);
-#[derive(Debug, Clone)]
 pub struct ParamsNode(pub Rc<CoreParamsNode>);
-#[derive(Debug, Clone)]
-pub struct OkParamsNode(pub Rc<CoreOkParamsNode>);
 #[derive(Debug, Clone)]
 pub struct IdentifierNode(pub Rc<CoreIdentifierNode>);
 #[derive(Debug, Clone)]
@@ -740,6 +692,8 @@ pub struct OkTokenNode(pub Rc<CoreOkTokenNode>);
 pub struct MissingTokenNode(pub Rc<CoreMissingTokenNode>);
 #[derive(Debug, Clone)]
 pub struct SkippedTokenNode(pub Rc<CoreSkippedTokenNode>);
+#[derive(Debug, Clone)]
+pub struct CommaSeparatedNode<T: Clone>(pub Rc<CoreCommaSeparatedNode<T>>);
 
 // misc "kind" enums
 

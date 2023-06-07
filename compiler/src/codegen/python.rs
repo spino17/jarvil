@@ -171,6 +171,16 @@ impl PythonCodeGenerator {
                 self.add_str_to_python_code(&final_str);
             }
             CoreToken::ENDMARKER => return,
+            CoreToken::LITERAL => {
+                // Jarvil `str` can span multiple lines so this
+                // translates to Python three-quotes string.
+                let len = token_value.len();
+                let mut critical_section = token_value[1..(len - 1)].to_string();
+                critical_section.push_str("'''");
+                let mut final_str = "'''".to_string();
+                final_str.push_str(&critical_section);
+                self.add_str_to_python_code(&final_str);
+            }
             _ => {
                 self.add_str_to_python_code(&token_value);
             }
@@ -242,7 +252,6 @@ impl PythonCodeGenerator {
                 self.print_identifier(name);
                 self.walk_callable_body(callable_body);
             }
-            CoreRVariableDeclarationNode::MissingTokens(_) => unreachable!(),
         }
     }
 
@@ -318,10 +327,7 @@ impl PythonCodeGenerator {
                 let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
                 let def_keyword = &core_func_decl.def_keyword;
                 let name = &core_func_decl.name;
-                let body = match core_func_decl.body.core_ref() {
-                    CoreCallableBodyNode::Ok(ok_callable_body) => ok_callable_body.core_ref(),
-                    _ => unreachable!(),
-                };
+                let body = core_func_decl.body.core_ref();
                 let colon = &body.colon;
                 let block = &body.block;
                 let prototype = body.prototype.core_ref();

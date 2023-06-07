@@ -1,7 +1,7 @@
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
     CoreCallableBodyNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-    CoreTypeExpressionNode, FunctionWrapperNode, OkSelfKeywordNode,
+    CoreTypeExpressionNode, FunctionWrapperNode, LambdaTypeDeclarationNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -23,8 +23,7 @@ use crate::{
         ast::{
             ASTNode, BlockNode, CoreAtomStartNode, CoreIdentifierNode,
             CoreStatemenIndentWrapperNode, CoreStatementNode, Node, OkIdentifierNode,
-            OkLambdaTypeDeclarationNode, StructDeclarationNode, TypeExpressionNode,
-            TypeResolveKind, VariableDeclarationNode,
+            StructDeclarationNode, TypeExpressionNode, TypeResolveKind, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -521,94 +520,67 @@ impl Resolver {
 
     pub fn visit_callable_body(
         &mut self,
-        callable_body_decl: &CallableBodyNode,
+        callable_body: &CallableBodyNode,
     ) -> (Vec<Type>, Type, Option<TextRange>) {
-        let core_callable_body_decl = callable_body_decl.core_ref();
-        match core_callable_body_decl {
-            CoreCallableBodyNode::Ok(ok_callable_body) => {
-                let core_ok_callable_body = ok_callable_body.core_ref();
-                let callable_body = &core_ok_callable_body.block;
-                self.open_block();
-                let (param_types_vec, return_type, return_type_range) =
-                    self.declare_callable_prototype(&core_ok_callable_body.prototype);
-                for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
-                    self.walk_stmt_indent_wrapper(stmt);
-                }
-                self.close_block(callable_body);
-                (param_types_vec, return_type, return_type_range)
-            }
-            CoreCallableBodyNode::MissingTokens(_) => {
-                return (Vec::new(), Type::new_with_unknown(), None)
-            }
+        let core_callable_body = callable_body.core_ref();
+        let callable_body = &core_callable_body.block;
+        self.open_block();
+        let (param_types_vec, return_type, return_type_range) =
+            self.declare_callable_prototype(&core_callable_body.prototype);
+        for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
+            self.walk_stmt_indent_wrapper(stmt);
         }
+        self.close_block(callable_body);
+        (param_types_vec, return_type, return_type_range)
     }
 
     pub fn visit_constructor_body(
         &mut self,
-        callable_body_decl: &CallableBodyNode,
+        callable_body: &CallableBodyNode,
     ) -> (Vec<Type>, Type, Option<TextRange>, FxHashSet<String>) {
-        let core_callable_body_decl = callable_body_decl.core_ref();
+        let core_callable_body = callable_body.core_ref();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
-        match core_callable_body_decl {
-            CoreCallableBodyNode::Ok(ok_callable_body) => {
-                let core_ok_callable_body = ok_callable_body.core_ref();
-                let callable_body = &core_ok_callable_body.block;
-                self.open_block();
-                let (param_types_vec, return_type, return_type_range) =
-                    self.declare_callable_prototype(&core_ok_callable_body.prototype);
-                for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
-                    let stmt = match stmt.core_ref() {
-                        CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
-                        CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
-                            let core_stmt = stmt.core_ref();
-                            &core_stmt.stmt
-                        }
-                        _ => continue,
-                    };
-                    self.walk_stmt(&stmt);
-                    if let CoreStatementNode::Assignment(assignment) = stmt.core_ref() {
-                        if let CoreAssignmentNode::Ok(ok_assignment) = assignment.core_ref() {
-                            let l_atom = &ok_assignment.core_ref().l_atom;
-                            if let CoreAtomNode::PropertyAccess(property_access) = l_atom.core_ref()
-                            {
-                                let core_property_access = property_access.core_ref();
-                                let property_name = &core_property_access.propertry;
-                                if let CoreIdentifierNode::Ok(property_name) =
-                                    property_name.core_ref()
-                                {
-                                    let atom = &core_property_access.atom;
-                                    if let CoreAtomNode::AtomStart(atom_start) = atom.core_ref() {
-                                        if let CoreAtomStartNode::SelfKeyword(_) =
-                                            atom_start.core_ref()
-                                        {
-                                            // l_atom of the form `self.<property_name>`
-                                            let property_name_str =
-                                                property_name.token_value(&self.code);
-                                            initialized_fields.insert(property_name_str);
-                                        }
-                                    }
+        let callable_body = &core_callable_body.block;
+        self.open_block();
+        let (param_types_vec, return_type, return_type_range) =
+            self.declare_callable_prototype(&core_callable_body.prototype);
+        for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
+            let stmt = match stmt.core_ref() {
+                CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
+                    let core_stmt = stmt.core_ref();
+                    &core_stmt.stmt
+                }
+                _ => continue,
+            };
+            self.walk_stmt(&stmt);
+            if let CoreStatementNode::Assignment(assignment) = stmt.core_ref() {
+                if let CoreAssignmentNode::Ok(ok_assignment) = assignment.core_ref() {
+                    let l_atom = &ok_assignment.core_ref().l_atom;
+                    if let CoreAtomNode::PropertyAccess(property_access) = l_atom.core_ref() {
+                        let core_property_access = property_access.core_ref();
+                        let property_name = &core_property_access.propertry;
+                        if let CoreIdentifierNode::Ok(property_name) = property_name.core_ref() {
+                            let atom = &core_property_access.atom;
+                            if let CoreAtomNode::AtomStart(atom_start) = atom.core_ref() {
+                                if let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref() {
+                                    // l_atom of the form `self.<property_name>`
+                                    let property_name_str = property_name.token_value(&self.code);
+                                    initialized_fields.insert(property_name_str);
                                 }
                             }
                         }
                     }
                 }
-                self.close_block(callable_body);
-                (
-                    param_types_vec,
-                    return_type,
-                    return_type_range,
-                    initialized_fields,
-                )
-            }
-            CoreCallableBodyNode::MissingTokens(_) => {
-                return (
-                    Vec::new(),
-                    Type::new_with_unknown(),
-                    None,
-                    FxHashSet::default(),
-                )
             }
         }
+        self.close_block(callable_body);
+        (
+            param_types_vec,
+            return_type,
+            return_type_range,
+            initialized_fields,
+        )
     }
 
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
@@ -670,9 +642,6 @@ impl Resolver {
             }
             CoreRVariableDeclarationNode::Expression(expr_r_assign) => {
                 self.walk_expr_stmt(expr_r_assign);
-            }
-            CoreRVariableDeclarationNode::MissingTokens(missing_token) => {
-                self.walk_missing_tokens(missing_token);
             }
         }
         if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
@@ -1005,7 +974,7 @@ impl Resolver {
         self.context.class_context_stack.pop();
     }
 
-    pub fn declare_lambda_type(&mut self, lambda_type_decl: &OkLambdaTypeDeclarationNode) {
+    pub fn declare_lambda_type(&mut self, lambda_type_decl: &LambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
         let mut types_vec: Vec<Type> = vec![];
         let type_tuple = &core_lambda_type_decl.type_tuple;
@@ -1094,7 +1063,7 @@ impl Visitor for Resolver {
                 self.declare_struct_type(struct_decl);
                 return None;
             }
-            ASTNode::OkLambdaTypeDeclaration(lambda_type_decl) => {
+            ASTNode::LambdaTypeDeclaration(lambda_type_decl) => {
                 self.declare_lambda_type(lambda_type_decl);
                 return None;
             }

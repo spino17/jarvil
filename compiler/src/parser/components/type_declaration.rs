@@ -52,32 +52,19 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 r_arrow_node = Some(&temp_r_arrow_node);
                 return_type_node = Some(&temp_return_type_node);
             }
-            let token = &parser.curr_token();
-            let lambda_node = match token.core_token {
-                CoreToken::NEWLINE | CoreToken::ENDMARKER => {
-                    let newline_node = parser.expect_terminators();
-                    LambdaTypeDeclarationNode::new(
-                        &type_name_node,
-                        &type_keyword_node,
-                        &lambda_keyword_node,
-                        &equal_node,
-                        &lparen_node,
-                        &rparen_node,
-                        type_tuple_node,
-                        r_arrow_node,
-                        return_type_node,
-                        &newline_node,
-                    )
-                }
-                _ => {
-                    parser.log_missing_token_error(&["\n"], token);
-                    let lambda_node = LambdaTypeDeclarationNode::new_with_missing_tokens(
-                        &Rc::new(["\n"].to_vec()),
-                        token,
-                    );
-                    return TypeDeclarationNode::new_with_lambda(&lambda_node);
-                }
-            };
+            let newline_node = parser.expect_terminators();
+            let lambda_node = LambdaTypeDeclarationNode::new(
+                &type_name_node,
+                &type_keyword_node,
+                &lambda_keyword_node,
+                &equal_node,
+                &lparen_node,
+                &rparen_node,
+                type_tuple_node,
+                r_arrow_node,
+                return_type_node,
+                &newline_node,
+            );
             TypeDeclarationNode::new_with_lambda(&lambda_node)
         }
         _ => {

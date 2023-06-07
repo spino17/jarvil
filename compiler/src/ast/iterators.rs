@@ -1,6 +1,6 @@
 use super::ast::{
-    CoreNameTypeSpecsNode, CoreParamsNode, CoreTypeTupleNode, ExpressionNode, NameTypeSpecNode,
-    NameTypeSpecsNode, ParamsNode, TypeExpressionNode, TypeTupleNode,
+    CommaSeparatedNode, ExpressionNode, NameTypeSpecNode, NameTypeSpecsNode, ParamsNode,
+    TypeExpressionNode, TypeTupleNode,
 };
 
 pub struct NameTypeSpecsIterator {
@@ -19,10 +19,7 @@ impl Iterator for NameTypeSpecsIterator {
     type Item = NameTypeSpecNode;
     fn next(&mut self) -> Option<Self::Item> {
         let ok_name_type_specs = match &self.node {
-            Some(node) => match node.core_ref() {
-                CoreNameTypeSpecsNode::Ok(ok_name_type_specs) => ok_name_type_specs.clone(),
-                _ => return None,
-            },
+            Some(node) => node.clone(),
             None => return None,
         };
         self.node = match &ok_name_type_specs.core_ref().remaining_args {
@@ -49,10 +46,7 @@ impl Iterator for TypeTupleIterator {
     type Item = TypeExpressionNode;
     fn next(&mut self) -> Option<Self::Item> {
         let ok_type_tuple_node = match &self.node {
-            Some(node) => match node.core_ref() {
-                CoreTypeTupleNode::Ok(ok_type_tuple) => ok_type_tuple.clone(),
-                _ => return None,
-            },
+            Some(node) => node.clone(),
             None => return None,
         };
         self.node = match &ok_type_tuple_node.core_ref().remaining_types {
@@ -79,10 +73,7 @@ impl Iterator for ParamsIterator {
     type Item = ExpressionNode;
     fn next(&mut self) -> Option<Self::Item> {
         let ok_params = match &self.node {
-            Some(node) => match node.core_ref() {
-                CoreParamsNode::Ok(ok_params) => ok_params.clone(),
-                _ => return None,
-            },
+            Some(node) => node.clone(),
             None => return None,
         };
         self.node = match &ok_params.core_ref().remaining_params {
@@ -90,5 +81,32 @@ impl Iterator for ParamsIterator {
             None => None,
         };
         Some(ok_params.core_ref().param.clone())
+    }
+}
+
+pub struct CommanSeparedIterator<T: Clone> {
+    node: Option<CommaSeparatedNode<T>>,
+}
+
+impl<T: Clone> CommanSeparedIterator<T> {
+    pub fn new(node: &CommaSeparatedNode<T>) -> Self {
+        CommanSeparedIterator {
+            node: Some(node.clone()),
+        }
+    }
+}
+
+impl<T: Clone> Iterator for CommanSeparedIterator<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        let ok_entity = match &self.node {
+            Some(node) => node.clone(),
+            None => return None,
+        };
+        self.node = match &ok_entity.core_ref().remaining_entities {
+            Some(remaining_params) => Some(remaining_params.clone()),
+            None => None,
+        };
+        Some(ok_entity.core_ref().entity.clone())
     }
 }

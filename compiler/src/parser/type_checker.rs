@@ -178,29 +178,22 @@ impl TypeChecker {
     pub fn type_of_lambda(&self, lambda_decl: &LambdaDeclarationNode) -> Type {
         let core_lambda_decl = lambda_decl.0.as_ref();
         let lambda_name = &core_lambda_decl.name;
-        match &core_lambda_decl.body.core_ref() {
-            CoreCallableBodyNode::Ok(ok_callable_decl) => {
-                let core_ok_callable_decl = ok_callable_decl.core_ref();
-                let prototype = &core_ok_callable_decl.prototype.core_ref();
-                let params = &prototype.params;
-                let return_type = &prototype.return_type;
-                let (params_vec, return_type) = match lambda_name.core_ref() {
-                    CoreIdentifierNode::Ok(ok_identifier) => match self
-                        .namespace_handler
-                        .get_variable_symbol_data_ref(ok_identifier, &self.code)
-                    {
-                        Some(symbol_data) => {
-                            return symbol_data.0.as_ref().borrow().data_type.clone()
-                        }
-                        None => self.params_and_return_type_obj_from_expr(return_type, params),
-                    },
-                    _ => self.params_and_return_type_obj_from_expr(return_type, params),
-                };
-                let lambda_type_obj = Type::new_with_lambda(None, &params_vec, &return_type);
-                return lambda_type_obj;
-            }
-            CoreCallableBodyNode::MissingTokens(_) => return Type::new_with_unknown(),
-        }
+        let core_callable_body = core_lambda_decl.body.core_ref();
+        let prototype = core_callable_body.prototype.core_ref();
+        let params = &prototype.params;
+        let return_type = &prototype.return_type;
+        let (params_vec, return_type) = match lambda_name.core_ref() {
+            CoreIdentifierNode::Ok(ok_identifier) => match self
+                .namespace_handler
+                .get_variable_symbol_data_ref(ok_identifier, &self.code)
+            {
+                Some(symbol_data) => return symbol_data.0.as_ref().borrow().data_type.clone(),
+                None => self.params_and_return_type_obj_from_expr(return_type, params),
+            },
+            _ => self.params_and_return_type_obj_from_expr(return_type, params),
+        };
+        let lambda_type_obj = Type::new_with_lambda(None, &params_vec, &return_type);
+        return lambda_type_obj;
     }
 
     pub fn is_callable<'a>(type_obj: &'a Type) -> Option<(&'a Vec<Type>, &'a Type)> {
@@ -245,7 +238,6 @@ impl TypeChecker {
                 }
                 _ => return None,
             },
-            CoreUnaryExpressionNode::MissingTokens(_) => None,
         }
     }
 
@@ -791,9 +783,7 @@ impl TypeChecker {
                                     }
                                 }
                             }
-                            CoreExpressionNode::Binary(_)
-                            | CoreExpressionNode::Comparison(_)
-                            | CoreExpressionNode::MissingTokens(_) => {
+                            CoreExpressionNode::Binary(_) | CoreExpressionNode::Comparison(_) => {
                                 let err =
                                     InvalidIndexExpressionForTupleError::new(index_expr.range());
                                 self.log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
@@ -826,12 +816,7 @@ impl TypeChecker {
 
     pub fn check_r_assign(&self, r_assign: &RAssignmentNode) -> Type {
         let core_r_assign = r_assign.core_ref();
-        match core_r_assign {
-            CoreRAssignmentNode::Expression(expr_stmt) => {
-                self.check_expr(&expr_stmt.core_ref().expr)
-            }
-            CoreRAssignmentNode::MissingTokens(_) => Type::new_with_unknown(),
-        }
+        self.check_expr(&core_r_assign.expr.core_ref().expr)
     }
 
     pub fn check_r_variable_declaration(
@@ -847,7 +832,6 @@ impl TypeChecker {
                 self.check_callable_body(&lambda.core_ref().body, false);
                 return self.type_of_lambda(lambda);
             }
-            CoreRVariableDeclarationNode::MissingTokens(_) => Type::new_with_unknown(),
         }
     }
 
@@ -1089,58 +1073,50 @@ impl TypeChecker {
 
     pub fn check_callable_body(&mut self, callable_body: &CallableBodyNode, is_constructor: bool) {
         let core_callable_body = callable_body.0.as_ref();
-        match core_callable_body {
-            CoreCallableBodyNode::Ok(ok_callable_body) => {
-                let core_ok_callable_body = ok_callable_body.core_ref();
-                let return_type_obj =
-                    self.check_callable_prototype(&core_ok_callable_body.prototype);
-                self.context
-                    .func_stack
-                    .push((is_constructor, return_type_obj.clone()));
-                let mut has_return_stmt: Option<TextRange> = None;
-                for stmt in &*core_ok_callable_body.block.0.as_ref().stmts.as_ref() {
-                    let stmt = match stmt.core_ref() {
-                        CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
-                        CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
-                            let core_stmt = stmt.core_ref();
-                            &core_stmt.stmt
-                        }
-                        _ => continue,
-                    };
-                    self.walk_stmt(&stmt);
-                    if let CoreStatementNode::Return(return_stmt) = stmt.core_ref() {
-                        has_return_stmt = Some(return_stmt.range());
-                    }
+        let return_type_obj = self.check_callable_prototype(&core_callable_body.prototype);
+        self.context
+            .func_stack
+            .push((is_constructor, return_type_obj.clone()));
+        let mut has_return_stmt: Option<TextRange> = None;
+        for stmt in &*core_callable_body.block.0.as_ref().stmts.as_ref() {
+            let stmt = match stmt.core_ref() {
+                CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
+                    let core_stmt = stmt.core_ref();
+                    &core_stmt.stmt
                 }
-                if is_constructor {
-                    match has_return_stmt {
-                        Some(return_stmt_range) => {
-                            let err = ExplicitReturnStatementFoundInConstructorBodyError::new(
-                                return_stmt_range,
-                            );
-                            self.log_error(
-                                Diagnostics::ExplicitReturnStatementFoundInConstructorBody(err),
-                            );
-                        }
-                        None => {}
-                    }
-                } else {
-                    if !has_return_stmt.is_some() && !return_type_obj.is_void() {
-                        let return_type_node = ok_callable_body
-                            .core_ref()
-                            .prototype
-                            .core_ref()
-                            .return_type
-                            .as_ref()
-                            .unwrap();
-                        let err = NoReturnStatementInFunctionError::new(return_type_node.range());
-                        self.log_error(Diagnostics::NoReturnStatementInFunction(err));
-                    }
-                }
-                self.context.func_stack.pop();
+                _ => continue,
+            };
+            self.walk_stmt(&stmt);
+            if let CoreStatementNode::Return(return_stmt) = stmt.core_ref() {
+                has_return_stmt = Some(return_stmt.range());
             }
-            CoreCallableBodyNode::MissingTokens(_) => return,
         }
+        if is_constructor {
+            match has_return_stmt {
+                Some(return_stmt_range) => {
+                    let err =
+                        ExplicitReturnStatementFoundInConstructorBodyError::new(return_stmt_range);
+                    self.log_error(Diagnostics::ExplicitReturnStatementFoundInConstructorBody(
+                        err,
+                    ));
+                }
+                None => {}
+            }
+        } else {
+            if !has_return_stmt.is_some() && !return_type_obj.is_void() {
+                let return_type_node = callable_body
+                    .core_ref()
+                    .prototype
+                    .core_ref()
+                    .return_type
+                    .as_ref()
+                    .unwrap();
+                let err = NoReturnStatementInFunctionError::new(return_type_node.range());
+                self.log_error(Diagnostics::NoReturnStatementInFunction(err));
+            }
+        }
+        self.context.func_stack.pop();
     }
 
     pub fn check_bounded_method(&mut self, bounded_method_wrapper: &BoundedMethodWrapperNode) {
@@ -1220,8 +1196,7 @@ impl TypeChecker {
                     return
                 }
             },
-            CoreStatementNode::StructPropertyDeclaration(_)
-            | CoreStatementNode::MissingTokens(_) => return,
+            CoreStatementNode::StructPropertyDeclaration(_) => return,
         }
     }
 

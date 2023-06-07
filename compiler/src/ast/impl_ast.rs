@@ -1,37 +1,36 @@
 use super::ast::{
     ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
     BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode, CallNode,
-    CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
-    CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
+    CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, CommaSeparatedNode,
+    ComparisonNode, CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
     CoreAtomicExpressionNode, CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode,
     CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
-    CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode, CoreExpressionNode,
-    CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
-    CoreHashMapTypeNode, CoreIdentifierNode, CoreIncorrectlyIndentedStatementNode,
-    CoreIndexAccessNode, CoreInvalidLValueNode, CoreLambdaDeclarationNode,
-    CoreLambdaTypeDeclarationNode, CoreMethodAccessNode, CoreMissingTokenNode,
-    CoreNameTypeSpecNode, CoreNameTypeSpecsNode, CoreOkAssignmentNode, CoreOkCallableBodyNode,
-    CoreOkIdentifierNode, CoreOkLambdaTypeDeclarationNode, CoreOkNameTypeSpecsNode,
-    CoreOkParamsNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOkTypeTupleNode,
-    CoreOnlyUnaryExpressionNode, CoreParamsNode, CoreParenthesisedExpressionNode,
-    CorePropertyAccessNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
-    CoreReturnStatementNode, CoreSelfKeywordNode, CoreSkippedTokenNode, CoreSkippedTokensNode,
-    CoreStatemenIndentWrapperNode, CoreStatementNode, CoreStructDeclarationNode,
-    CoreStructPropertyDeclarationNode, CoreTokenNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
-    CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
-    CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
-    FunctionWrapperNode, HashMapTypeNode, IdentifierNode, IncorrectlyIndentedStatementNode,
-    IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
-    MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkCallableBodyNode,
-    OkIdentifierNode, OkLambdaTypeDeclarationNode, OkNameTypeSpecsNode, OkParamsNode,
-    OkSelfKeywordNode, OkTokenNode, OkTypeTupleNode, OnlyUnaryExpressionNode, ParamsNode,
-    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
-    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode,
-    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode, TokenNode, TupleTypeNode,
-    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, TypeTupleNode, UnaryExpressionNode,
-    UserDefinedTypeNode, VariableDeclarationNode,
+    CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreCommaSeparatedNode, CoreComparisonNode,
+    CoreExpressionNode, CoreExpressionStatementNode, CoreFunctionDeclarationNode,
+    CoreFunctionWrapperNode, CoreHashMapTypeNode, CoreIdentifierNode,
+    CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode, CoreInvalidLValueNode,
+    CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMethodAccessNode,
+    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreNameTypeSpecsNode, CoreOkAssignmentNode,
+    CoreOkIdentifierNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
+    CoreParamsNode, CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
+    CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
+    CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
+    CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreTokenNode, CoreTupleTypeNode,
+    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreTypeTupleNode, CoreUnaryExpressionNode,
+    CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode,
+    FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode, IdentifierNode,
+    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
+    LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode,
+    OkAssignmentNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
+    ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode,
+    RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
+    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    TokenNode, TupleTypeNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind,
+    TypeTupleNode, UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
-use super::iterators::{NameTypeSpecsIterator, ParamsIterator, TypeTupleIterator};
+use super::iterators::{
+    CommanSeparedIterator, NameTypeSpecsIterator, ParamsIterator, TypeTupleIterator,
+};
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
@@ -241,7 +240,6 @@ impl StatementNode {
 
     impl_core_ref!(CoreStatementNode);
 }
-default_errornous_node_impl!(StatementNode, CoreStatementNode);
 
 impl IncorrectlyIndentedStatementNode {
     pub fn new(stmt: &StatementNode, expected_indent: i64, received_indent: i64) -> Self {
@@ -446,45 +444,11 @@ impl LambdaTypeDeclarationNode {
         return_type: Option<&TypeExpressionNode>,
         newline: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreLambdaTypeDeclarationNode::Ok(
-            OkLambdaTypeDeclarationNode::new(
-                name,
-                type_keyword,
-                lambda_keyword,
-                equal,
-                lparen,
-                rparen,
-                type_tuple,
-                right_arrow,
-                return_type,
-                newline,
-            ),
-        ));
-        LambdaTypeDeclarationNode(node)
-    }
-
-    impl_core_ref!(CoreLambdaTypeDeclarationNode);
-}
-default_errornous_node_impl!(LambdaTypeDeclarationNode, CoreLambdaTypeDeclarationNode);
-
-impl OkLambdaTypeDeclarationNode {
-    pub fn new(
-        name: &IdentifierNode,
-        type_keyword: &TokenNode,
-        lambda_keyword: &TokenNode,
-        equal: &TokenNode,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        type_tuple: Option<&TypeTupleNode>,
-        right_arrow: Option<&TokenNode>,
-        return_type: Option<&TypeExpressionNode>,
-        newline: &TokenNode,
-    ) -> Self {
-        let node = Rc::new(CoreOkLambdaTypeDeclarationNode {
+        let node = Rc::new(CoreLambdaTypeDeclarationNode {
+            name: name.clone(),
             type_keyword: type_keyword.clone(),
             lambda_keyword: lambda_keyword.clone(),
             equal: equal.clone(),
-            name: name.clone(),
             lparen: lparen.clone(),
             rparen: rparen.clone(),
             type_tuple: extract_from_option!(type_tuple),
@@ -492,13 +456,13 @@ impl OkLambdaTypeDeclarationNode {
             return_type: extract_from_option!(return_type),
             newline: newline.clone(),
         });
-        OkLambdaTypeDeclarationNode(node)
+        LambdaTypeDeclarationNode(node)
     }
 
-    impl_core_ref!(CoreOkLambdaTypeDeclarationNode);
+    impl_core_ref!(CoreLambdaTypeDeclarationNode);
 }
 
-impl Node for OkLambdaTypeDeclarationNode {
+impl Node for LambdaTypeDeclarationNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().newline.range()
     }
@@ -542,30 +506,18 @@ impl Node for CallablePrototypeNode {
 
 impl CallableBodyNode {
     pub fn new(block: &BlockNode, colon: &TokenNode, prototype: &CallablePrototypeNode) -> Self {
-        let node = Rc::new(CoreCallableBodyNode::Ok(OkCallableBodyNode::new(
-            block, colon, prototype,
-        )));
+        let node = Rc::new(CoreCallableBodyNode {
+            block: block.clone(),
+            colon: colon.clone(),
+            prototype: prototype.clone(),
+        });
         CallableBodyNode(node)
     }
 
     impl_core_ref!(CoreCallableBodyNode);
 }
-default_errornous_node_impl!(CallableBodyNode, CoreCallableBodyNode);
 
-impl OkCallableBodyNode {
-    pub fn new(block: &BlockNode, colon: &TokenNode, prototype: &CallablePrototypeNode) -> Self {
-        let node = Rc::new(CoreOkCallableBodyNode {
-            colon: colon.clone(),
-            block: block.clone(),
-            prototype: prototype.clone(),
-        });
-        OkCallableBodyNode(node)
-    }
-
-    impl_core_ref!(CoreOkCallableBodyNode);
-}
-
-impl Node for OkCallableBodyNode {
+impl Node for CallableBodyNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().prototype, self.0.as_ref().block)
     }
@@ -729,8 +681,25 @@ impl Node for ReturnStatementNode {
 }
 
 impl TypeTupleNode {
-    pub fn new(ok_type_tuple: &OkTypeTupleNode) -> Self {
-        let node = Rc::new(CoreTypeTupleNode::Ok(ok_type_tuple.clone()));
+    pub fn new_with_args(
+        data_type: &TypeExpressionNode,
+        remaining_types: &TypeTupleNode,
+        comma: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(CoreTypeTupleNode {
+            comma: Some(comma.clone()),
+            data_type: data_type.clone(),
+            remaining_types: Some(remaining_types.clone()),
+        });
+        TypeTupleNode(node)
+    }
+
+    pub fn new_with_single_data_type(data_type: &TypeExpressionNode) -> Self {
+        let node = Rc::new(CoreTypeTupleNode {
+            comma: None,
+            data_type: data_type.clone(),
+            remaining_types: None,
+        });
         TypeTupleNode(node)
     }
 
@@ -740,35 +709,8 @@ impl TypeTupleNode {
 
     impl_core_ref!(CoreTypeTupleNode);
 }
-default_errornous_node_impl!(TypeTupleNode, CoreTypeTupleNode);
 
-impl OkTypeTupleNode {
-    pub fn new_with_args(
-        data_type: &TypeExpressionNode,
-        remaining_types: &TypeTupleNode,
-        comma: &TokenNode,
-    ) -> Self {
-        let node = Rc::new(CoreOkTypeTupleNode {
-            comma: Some(comma.clone()),
-            data_type: data_type.clone(),
-            remaining_types: Some(remaining_types.clone()),
-        });
-        OkTypeTupleNode(node)
-    }
-
-    pub fn new_with_single_data_type(data_type: &TypeExpressionNode) -> Self {
-        let node = Rc::new(CoreOkTypeTupleNode {
-            comma: None,
-            data_type: data_type.clone(),
-            remaining_types: None,
-        });
-        OkTypeTupleNode(node)
-    }
-
-    impl_core_ref!(CoreOkTypeTupleNode);
-}
-
-impl Node for OkTypeTupleNode {
+impl Node for TypeTupleNode {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_types {
             Some(remaining_types) => impl_range!(self.0.as_ref().data_type, remaining_types),
@@ -781,8 +723,25 @@ impl Node for OkTypeTupleNode {
 }
 
 impl NameTypeSpecsNode {
-    pub fn new(ok_name_type_specs: &OkNameTypeSpecsNode) -> Self {
-        let node = Rc::new(CoreNameTypeSpecsNode::Ok(ok_name_type_specs.clone()));
+    pub fn new_with_args(
+        arg: &NameTypeSpecNode,
+        remaining_args: &NameTypeSpecsNode,
+        comma: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(CoreNameTypeSpecsNode {
+            comma: Some(comma.clone()),
+            arg: arg.clone(),
+            remaining_args: Some(remaining_args.clone()),
+        });
+        NameTypeSpecsNode(node)
+    }
+
+    pub fn new_with_single_arg(arg: &NameTypeSpecNode) -> Self {
+        let node = Rc::new(CoreNameTypeSpecsNode {
+            comma: None,
+            arg: arg.clone(),
+            remaining_args: None,
+        });
         NameTypeSpecsNode(node)
     }
 
@@ -792,35 +751,8 @@ impl NameTypeSpecsNode {
 
     impl_core_ref!(CoreNameTypeSpecsNode);
 }
-default_errornous_node_impl!(NameTypeSpecsNode, CoreNameTypeSpecsNode);
 
-impl OkNameTypeSpecsNode {
-    pub fn new_with_args(
-        arg: &NameTypeSpecNode,
-        remaining_args: &NameTypeSpecsNode,
-        comma: &TokenNode,
-    ) -> Self {
-        let node = Rc::new(CoreOkNameTypeSpecsNode {
-            comma: Some(comma.clone()),
-            arg: arg.clone(),
-            remaining_args: Some(remaining_args.clone()),
-        });
-        OkNameTypeSpecsNode(node)
-    }
-
-    pub fn new_with_single_arg(arg: &NameTypeSpecNode) -> Self {
-        let node = Rc::new(CoreOkNameTypeSpecsNode {
-            comma: None,
-            arg: arg.clone(),
-            remaining_args: None,
-        });
-        OkNameTypeSpecsNode(node)
-    }
-
-    impl_core_ref!(CoreOkNameTypeSpecsNode);
-}
-
-impl Node for OkNameTypeSpecsNode {
+impl Node for NameTypeSpecsNode {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_args {
             Some(remaining_args) => impl_range!(self.0.as_ref().arg, remaining_args),
@@ -1366,15 +1298,23 @@ impl Node for UserDefinedTypeNode {
 
 impl RAssignmentNode {
     pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
-        let node = Rc::new(CoreRAssignmentNode::Expression(
-            ExpressionStatementNode::new(expr, newline),
-        ));
+        let node = Rc::new(CoreRAssignmentNode {
+            expr: ExpressionStatementNode::new(expr, newline),
+        });
         RAssignmentNode(node)
     }
 
     impl_core_ref!(CoreRAssignmentNode);
 }
-default_errornous_node_impl!(RAssignmentNode, CoreRAssignmentNode);
+
+impl Node for RAssignmentNode {
+    fn range(&self) -> TextRange {
+        self.core_ref().expr.range()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().expr.start_line_number()
+    }
+}
 
 impl RVariableDeclarationNode {
     pub fn new_with_lambda(lambda_decl: &LambdaDeclarationNode) -> Self {
@@ -1391,7 +1331,6 @@ impl RVariableDeclarationNode {
 
     impl_core_ref!(CoreRVariableDeclarationNode);
 }
-default_errornous_node_impl!(RVariableDeclarationNode, CoreRVariableDeclarationNode);
 
 impl ExpressionNode {
     pub fn new_with_unary(unary_expr: &UnaryExpressionNode) -> Self {
@@ -1449,7 +1388,6 @@ impl ExpressionNode {
 
     impl_core_ref!(CoreExpressionNode);
 }
-default_errornous_node_impl!(ExpressionNode, CoreExpressionNode);
 
 impl AtomicExpressionNode {
     pub fn new_with_bool(bool_value: &TokenNode) -> Self {
@@ -1535,7 +1473,6 @@ impl UnaryExpressionNode {
 
     impl_core_ref!(CoreUnaryExpressionNode);
 }
-default_errornous_node_impl!(UnaryExpressionNode, CoreUnaryExpressionNode);
 
 impl OnlyUnaryExpressionNode {
     pub fn new(
@@ -1616,9 +1553,58 @@ impl Node for ComparisonNode {
     }
 }
 
+impl<T: Clone> CommaSeparatedNode<T> {
+    pub fn new_with_single_param(entity: &T) -> Self {
+        let node = Rc::new(CoreCommaSeparatedNode {
+            comma: None,
+            entity: entity.clone(),
+            remaining_entities: None,
+        });
+        CommaSeparatedNode(node)
+    }
+
+    pub fn new_with_params(
+        entity: &T,
+        remaining_entities: &CommaSeparatedNode<T>,
+        comma: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(CoreCommaSeparatedNode {
+            comma: Some(comma.clone()),
+            entity: entity.clone(),
+            remaining_entities: Some(remaining_entities.clone()),
+        });
+        CommaSeparatedNode(node)
+    }
+
+    pub fn iter(&self) -> CommanSeparedIterator<T> {
+        CommanSeparedIterator::new(self)
+    }
+
+    pub fn core_ref(&self) -> &CoreCommaSeparatedNode<T> {
+        self.0.as_ref()
+    }
+}
+
 impl ParamsNode {
-    pub fn new(ok_params_node: &OkParamsNode) -> Self {
-        let node = Rc::new(CoreParamsNode::Ok(ok_params_node.clone()));
+    pub fn new_with_single_param(param: &ExpressionNode) -> Self {
+        let node = Rc::new(CoreParamsNode {
+            comma: None,
+            param: param.clone(),
+            remaining_params: None,
+        });
+        ParamsNode(node)
+    }
+
+    pub fn new_with_params(
+        param: &ExpressionNode,
+        remaining_params: &ParamsNode,
+        comma: &TokenNode,
+    ) -> Self {
+        let node = Rc::new(CoreParamsNode {
+            comma: Some(comma.clone()),
+            param: param.clone(),
+            remaining_params: Some(remaining_params.clone()),
+        });
         ParamsNode(node)
     }
 
@@ -1628,35 +1614,8 @@ impl ParamsNode {
 
     impl_core_ref!(CoreParamsNode);
 }
-default_errornous_node_impl!(ParamsNode, CoreParamsNode);
 
-impl OkParamsNode {
-    pub fn new_with_single_param(param: &ExpressionNode) -> Self {
-        let node = Rc::new(CoreOkParamsNode {
-            comma: None,
-            param: param.clone(),
-            remaining_params: None,
-        });
-        OkParamsNode(node)
-    }
-
-    pub fn new_with_params(
-        param: &ExpressionNode,
-        remaining_params: &ParamsNode,
-        comma: &TokenNode,
-    ) -> Self {
-        let node = Rc::new(CoreOkParamsNode {
-            comma: Some(comma.clone()),
-            param: param.clone(),
-            remaining_params: Some(remaining_params.clone()),
-        });
-        OkParamsNode(node)
-    }
-
-    impl_core_ref!(CoreOkParamsNode);
-}
-
-impl Node for OkParamsNode {
+impl Node for ParamsNode {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_params {
             Some(remaining_params) => impl_range!(self.0.as_ref().param, remaining_params),

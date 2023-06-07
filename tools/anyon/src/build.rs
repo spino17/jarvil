@@ -62,7 +62,7 @@ impl AbstractCommand for BuildCommand {
             "{}/__transpiled_{}_py_code__.py",
             curr_dir_path, code_file_name
         );
-        
+
         let code_str = fs::read_to_string(&jarvil_code_file_path)?;
         let code = JarvilCode::new(&code_str);
         let py_code = build_code(code, code_str)?;

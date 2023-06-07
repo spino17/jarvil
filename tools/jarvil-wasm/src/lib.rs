@@ -22,41 +22,16 @@ pub fn compile(code_str: &str) -> Result<String, String> {
     let mut buffer = String::new();
     match py_result {
         Ok(py_code) => return Ok(py_code),
-        Err(err) => {
-            match write!(&mut buffer, "{:?}", err) {
-                Ok(()) => {
-                    // Below step strips down the ansi escaped codes (which is there for styling the error message)
-                    // Once we have enabled ansi escaped string to HTML converter in-place on web-app,
-                    // we can again just send `Err(buffer)`
-                    /*
-                    let plain_bytes = strip_ansi_escapes::strip(&buffer);
-                    match plain_bytes {
-                        Ok(s) => {
-                            match str::from_utf8(&s) {
-                                Ok(ok_s) => return Err(ok_s.to_string()),
-                                Err(err) => return Err(format!(
-                                    "Failed to convert plain bytes into UTF-8 encoded string: {}",
-                                    err.to_string()
-                                )),
-                            }
-                        }
-                        Err(err) => {
-                            return Err(format!(
-                                "Failed to strip ansi escaped codes from Jarvil output: {}",
-                                err.to_string()
-                            ))
-                        }
-                    }
-                     */
-                    return Err(buffer);
-                }
-                Err(err) => {
-                    return Err(format!(
-                        "Failed to write Jarvil error to buffer: {}",
-                        err.to_string()
-                    ))
-                }
+        Err(err) => match write!(&mut buffer, "{:?}", err) {
+            Ok(()) => {
+                return Err(buffer);
             }
-        }
+            Err(err) => {
+                return Err(format!(
+                    "Failed to write Jarvil error to buffer: {}",
+                    err.to_string()
+                ))
+            }
+        },
     }
 }
