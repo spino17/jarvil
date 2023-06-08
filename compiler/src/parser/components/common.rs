@@ -3,8 +3,8 @@ use super::statement::core::{
 };
 use crate::ast::ast::{
     BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode,
-    CommaSeparatedNode, ErrornousNode, FunctionDeclarationNode, FunctionWrapperNode,
-    NameTypeSpecNode, NameTypeSpecsNode, StatementNode, TypeExpressionNode,
+    CommaSeparatedNode, FunctionDeclarationNode, FunctionWrapperNode, NameTypeSpecNode,
+    StatementNode, TypeExpressionNode,
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
@@ -16,16 +16,20 @@ pub fn name_type_spec(parser: &mut JarvilParser) -> NameTypeSpecNode {
     NameTypeSpecNode::new(&name_node, &type_expr_node, &colon_node)
 }
 
-pub fn name_type_specs(parser: &mut JarvilParser) -> NameTypeSpecsNode {
+pub fn name_type_specs(parser: &mut JarvilParser) -> CommaSeparatedNode<NameTypeSpecNode> {
     let first_arg_node = parser.name_type_spec();
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::COMMA => {
             let comma_node = parser.expect(",");
             let remaining_args_node = parser.name_type_specs();
-            NameTypeSpecsNode::new_with_args(&first_arg_node, &remaining_args_node, &comma_node)
+            CommaSeparatedNode::new_with_entities(
+                &first_arg_node,
+                &remaining_args_node,
+                &comma_node,
+            )
         }
-        _ => NameTypeSpecsNode::new_with_single_arg(&first_arg_node),
+        _ => CommaSeparatedNode::new_with_single_entity(&first_arg_node),
     }
 }
 
@@ -48,8 +52,8 @@ pub fn type_tuple(parser: &mut JarvilParser) -> CommaSeparatedNode<TypeExpressio
 }
 
 pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
-    let mut args_node: Option<&NameTypeSpecsNode> = None;
-    let name_type_specs_node: NameTypeSpecsNode;
+    let mut args_node: Option<&CommaSeparatedNode<NameTypeSpecNode>> = None;
+    let name_type_specs_node: CommaSeparatedNode<NameTypeSpecNode>;
     let lparen_node = parser.expect("(");
     if !parser.check_curr_token(")") {
         name_type_specs_node = parser.name_type_specs();

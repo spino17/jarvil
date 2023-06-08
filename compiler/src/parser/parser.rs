@@ -1,9 +1,9 @@
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, CommaSeparatedNode, ErrornousNode, ExpressionNode,
-    IdentifierNode, NameTypeSpecNode, NameTypeSpecsNode, Node, OkTokenNode, ParamsNode,
-    SelfKeywordNode, SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode,
-    TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
+    IdentifierNode, NameTypeSpecNode, Node, OkTokenNode, ParamsNode, SelfKeywordNode,
+    SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::code::JarvilCode;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
@@ -415,7 +415,7 @@ impl JarvilParser {
         components::common::name_type_spec(self)
     }
 
-    pub fn name_type_specs(&mut self) -> NameTypeSpecsNode {
+    pub fn name_type_specs(&mut self) -> CommaSeparatedNode<NameTypeSpecNode> {
         components::common::name_type_specs(self)
     }
 

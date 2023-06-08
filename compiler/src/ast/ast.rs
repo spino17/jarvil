@@ -75,7 +75,7 @@ pub enum ASTNode {
     IndexAccess(IndexAccessNode),
     Call(CallNode),
     ClassMethodCall(ClassMethodCallNode),
-    NameTypeSpecs(NameTypeSpecsNode),
+    NameTypeSpecs(CommaSeparatedNode<NameTypeSpecNode>),
     NameTypeSpec(NameTypeSpecNode),
     Params(ParamsNode),
     Identifier(IdentifierNode),
@@ -293,7 +293,7 @@ pub struct CoreCallablePrototypeNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
     pub right_arrow: Option<TokenNode>,
-    pub params: Option<NameTypeSpecsNode>,
+    pub params: Option<CommaSeparatedNode<NameTypeSpecNode>>,
     pub return_type: Option<TypeExpressionNode>,
 }
 
@@ -486,15 +486,6 @@ pub struct CoreClassMethodCallNode {
     pub params: Option<ParamsNode>,
 }
 
-// NAME_TYPE_SPECS
-// <arg> `,` <remaining_args>
-#[derive(Debug)]
-pub struct CoreNameTypeSpecsNode {
-    pub comma: Option<TokenNode>,
-    pub arg: NameTypeSpecNode,
-    pub remaining_args: Option<NameTypeSpecsNode>,
-}
-
 // NAME_TYPE_SPEC
 // <name> `:` <data_type>
 #[derive(Debug)]
@@ -659,8 +650,6 @@ pub struct IndexAccessNode(pub Rc<CoreIndexAccessNode>);
 pub struct CallNode(pub Rc<CoreCallNode>);
 #[derive(Debug, Clone)]
 pub struct ClassMethodCallNode(pub Rc<CoreClassMethodCallNode>);
-#[derive(Debug, Clone)]
-pub struct NameTypeSpecsNode(pub Rc<CoreNameTypeSpecsNode>);
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(pub Rc<CoreNameTypeSpecNode>);
 #[derive(Debug, Clone)]

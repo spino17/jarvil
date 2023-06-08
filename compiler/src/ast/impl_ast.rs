@@ -10,9 +10,9 @@ use super::ast::{
     CoreFunctionWrapperNode, CoreHashMapTypeNode, CoreIdentifierNode,
     CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode, CoreInvalidLValueNode,
     CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMethodAccessNode,
-    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreNameTypeSpecsNode, CoreOkAssignmentNode,
-    CoreOkIdentifierNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
-    CoreParamsNode, CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
+    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierNode,
+    CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode, CoreParamsNode,
+    CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
     CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
     CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreTokenNode, CoreTupleTypeNode,
@@ -20,15 +20,15 @@ use super::ast::{
     CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode,
     FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode, IdentifierNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
-    LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode, NameTypeSpecsNode,
-    OkAssignmentNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
-    ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode,
-    RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
-    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
-    TokenNode, TupleTypeNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind,
-    UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
+    LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode, OkAssignmentNode,
+    OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode, ParamsNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode,
+    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode, TokenNode, TupleTypeNode,
+    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
+    UserDefinedTypeNode, VariableDeclarationNode,
 };
-use super::iterators::{CommanSeparedIterator, NameTypeSpecsIterator, ParamsIterator};
+use super::iterators::{CommanSeparedIterator, ParamsIterator};
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
@@ -471,7 +471,7 @@ impl Node for LambdaTypeDeclarationNode {
 
 impl CallablePrototypeNode {
     pub fn new(
-        params: Option<&NameTypeSpecsNode>,
+        params: Option<&CommaSeparatedNode<NameTypeSpecNode>>,
         return_type: Option<&TypeExpressionNode>,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -675,48 +675,6 @@ impl Node for ReturnStatementNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().return_keyword.start_line_number()
-    }
-}
-
-impl NameTypeSpecsNode {
-    pub fn new_with_args(
-        arg: &NameTypeSpecNode,
-        remaining_args: &NameTypeSpecsNode,
-        comma: &TokenNode,
-    ) -> Self {
-        let node = Rc::new(CoreNameTypeSpecsNode {
-            comma: Some(comma.clone()),
-            arg: arg.clone(),
-            remaining_args: Some(remaining_args.clone()),
-        });
-        NameTypeSpecsNode(node)
-    }
-
-    pub fn new_with_single_arg(arg: &NameTypeSpecNode) -> Self {
-        let node = Rc::new(CoreNameTypeSpecsNode {
-            comma: None,
-            arg: arg.clone(),
-            remaining_args: None,
-        });
-        NameTypeSpecsNode(node)
-    }
-
-    pub fn iter(&self) -> NameTypeSpecsIterator {
-        NameTypeSpecsIterator::new(self)
-    }
-
-    impl_core_ref!(CoreNameTypeSpecsNode);
-}
-
-impl Node for NameTypeSpecsNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref().remaining_args {
-            Some(remaining_args) => impl_range!(self.0.as_ref().arg, remaining_args),
-            None => impl_range!(self.0.as_ref().arg, self.0.as_ref().arg),
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        self.0.as_ref().arg.start_line_number()
     }
 }
 

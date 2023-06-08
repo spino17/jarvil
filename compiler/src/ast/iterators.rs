@@ -1,34 +1,6 @@
 use super::ast::{
-    CommaSeparatedNode, ExpressionNode, NameTypeSpecNode, NameTypeSpecsNode, ParamsNode,
-    TypeExpressionNode,
+    CommaSeparatedNode, ExpressionNode, NameTypeSpecNode, ParamsNode, TypeExpressionNode,
 };
-
-pub struct NameTypeSpecsIterator {
-    node: Option<NameTypeSpecsNode>,
-}
-
-impl NameTypeSpecsIterator {
-    pub fn new(node: &NameTypeSpecsNode) -> Self {
-        NameTypeSpecsIterator {
-            node: Some(node.clone()),
-        }
-    }
-}
-
-impl Iterator for NameTypeSpecsIterator {
-    type Item = NameTypeSpecNode;
-    fn next(&mut self) -> Option<Self::Item> {
-        let ok_name_type_specs = match &self.node {
-            Some(node) => node.clone(),
-            None => return None,
-        };
-        self.node = match &ok_name_type_specs.core_ref().remaining_args {
-            Some(remaining_args) => Some(remaining_args.clone()),
-            None => None,
-        };
-        Some(ok_name_type_specs.core_ref().arg.clone())
-    }
-}
 
 pub struct ParamsIterator {
     node: Option<ParamsNode>,

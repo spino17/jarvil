@@ -43,7 +43,7 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
     let mut variants_info: Vec<ExprTuple> = vec![];
     while let Some(variant) = variant_iter.next() {
         let variant_name = variant.ident.to_string(); // eg. `BLOCK`
-        if variant_name == "TypeTuple" {
+        if variant_name == "TypeTuple" || variant_name == "NameTypeSpecs" {
             continue;
         }
         let field_name = match &variant.fields {
@@ -78,6 +78,10 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
             #impl_ast_node;
             pub fn new_with_TypeTuple(x: &CommaSeparatedNode<TypeExpressionNode>) -> Self {
                 ASTNode::TypeTuple(x.clone())
+            }
+
+            pub fn new_with_NameTypeSpecs(x: &CommaSeparatedNode<NameTypeSpecNode>) -> Self {
+                ASTNode::NameTypeSpecs(x.clone())
             }
         }
     };

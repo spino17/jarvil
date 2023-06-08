@@ -7,12 +7,12 @@ use crate::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
             BinaryExpressionNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode,
-            CallableBodyNode, CallablePrototypeNode, ComparisonNode, CoreAssignmentNode,
-            CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreCallableBodyNode,
-            CoreExpressionNode, CoreIdentifierNode, CoreRAssignmentNode,
+            CallableBodyNode, CallablePrototypeNode, CommaSeparatedNode, ComparisonNode,
+            CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
+            CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode, CoreRAssignmentNode,
             CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatemenIndentWrapperNode,
             CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreUnaryExpressionNode,
-            ExpressionNode, LambdaDeclarationNode, NameTypeSpecsNode, Node, OkIdentifierNode,
+            ExpressionNode, LambdaDeclarationNode, NameTypeSpecNode, Node, OkIdentifierNode,
             OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
             ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
             UnaryExpressionNode, VariableDeclarationNode,
@@ -149,7 +149,7 @@ impl TypeChecker {
     pub fn params_and_return_type_obj_from_expr(
         &self,
         return_type: &Option<TypeExpressionNode>,
-        params: &Option<NameTypeSpecsNode>,
+        params: &Option<CommaSeparatedNode<NameTypeSpecNode>>,
     ) -> (Vec<Type>, Type) {
         let mut params_vec: Vec<Type> = vec![];
         let return_type: Type = match return_type {

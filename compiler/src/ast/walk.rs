@@ -3,19 +3,18 @@ use crate::ast::ast::{
     AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
     CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
     CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode, CoreLambdaTypeDeclarationNode,
-    CoreNameTypeSpecsNode, CoreParamsNode, CoreRAssignmentNode, CoreRVariableDeclarationNode,
-    CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode,
-    ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
-    IdentifierNode, IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
-    LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode,
-    NameTypeSpecNode, NameTypeSpecsNode, OkAssignmentNode, OkIdentifierNode, OkSelfKeywordNode,
-    OkTokenNode, OnlyUnaryExpressionNode, ParamsNode, ParenthesisedExpressionNode,
-    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
-    SelfKeywordNode, SkippedTokenNode, SkippedTokensNode, StatemenIndentWrapperNode, StatementNode,
-    StructDeclarationNode, StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode,
-    TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
+    CoreExpressionNode, CoreIdentifierNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
+    CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
+    CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode, ExpressionStatementNode,
+    FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode, IdentifierNode,
+    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
+    LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
+    OkAssignmentNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
+    ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode,
+    RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
+    SkippedTokensNode, StatemenIndentWrapperNode, StatementNode, StructDeclarationNode,
+    StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
 
 use super::ast::{CommaSeparatedNode, TupleTypeNode};
@@ -134,11 +133,6 @@ pub trait Visitor {
         new_with_NameTypeSpecNode
     );
     impl_node_walk!(
-        walk_name_type_specs,
-        NameTypeSpecsNode,
-        new_with_NameTypeSpecsNode
-    );
-    impl_node_walk!(
         walk_type_expression,
         TypeExpressionNode,
         new_with_TypeExpressionNode
@@ -152,6 +146,9 @@ pub trait Visitor {
     impl_node_walk!(walk_expression, ExpressionNode, new_with_ExpressionNode);
     fn walk_type_tuple(&mut self, x: &CommaSeparatedNode<TypeExpressionNode>) {
         self.walk(&ASTNode::new_with_TypeTuple(x));
+    }
+    fn walk_name_type_specs(&mut self, x: &CommaSeparatedNode<NameTypeSpecNode>) {
+        self.walk(&ASTNode::new_with_NameTypeSpecs(x));
     }
     impl_node_walk!(walk_atomic_type, AtomicTypeNode, new_with_AtomicTypeNode);
     impl_node_walk!(
@@ -437,11 +434,11 @@ pub trait Visitor {
             }
             ASTNode::NameTypeSpecs(name_type_specs_node) => {
                 let core_name_type_specs = name_type_specs_node.core_ref();
-                self.walk_name_type_spec(&core_name_type_specs.arg);
+                self.walk_name_type_spec(&core_name_type_specs.entity);
                 if let Some(comma) = &core_name_type_specs.comma {
                     self.walk_token(comma);
                 }
-                if let Some(remaining_args) = &core_name_type_specs.remaining_args {
+                if let Some(remaining_args) = &core_name_type_specs.remaining_entities {
                     self.walk_name_type_specs(remaining_args);
                 }
             }
