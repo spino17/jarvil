@@ -77,7 +77,7 @@ pub enum ASTNode {
     ClassMethodCall(ClassMethodCallNode),
     NameTypeSpecs(CommaSeparatedNode<NameTypeSpecNode>),
     NameTypeSpec(NameTypeSpecNode),
-    Params(ParamsNode),
+    Params(CommaSeparatedNode<ExpressionNode>),
     Identifier(IdentifierNode),
     OkIdentifier(OkIdentifierNode),
     SelfKeyword(SelfKeywordNode),
@@ -411,7 +411,7 @@ pub struct CoreCallExpressionNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
     pub function_name: IdentifierNode,
-    pub params: Option<ParamsNode>,
+    pub params: Option<CommaSeparatedNode<ExpressionNode>>,
 }
 
 // ATOM
@@ -451,7 +451,7 @@ pub struct CoreMethodAccessNode {
     pub dot: TokenNode,
     pub atom: AtomNode,
     pub method_name: IdentifierNode,
-    pub params: Option<ParamsNode>,
+    pub params: Option<CommaSeparatedNode<ExpressionNode>>,
 }
 
 // INDEX_ACCESS
@@ -471,7 +471,7 @@ pub struct CoreCallNode {
     pub atom: AtomNode,
     pub lparen: TokenNode,
     pub rparen: TokenNode,
-    pub params: Option<ParamsNode>,
+    pub params: Option<CommaSeparatedNode<ExpressionNode>>,
 }
 
 // CLASS_METHOD_CALL
@@ -483,7 +483,7 @@ pub struct CoreClassMethodCallNode {
     pub double_colon: TokenNode,
     pub class_name: IdentifierNode,
     pub class_method_name: IdentifierNode,
-    pub params: Option<ParamsNode>,
+    pub params: Option<CommaSeparatedNode<ExpressionNode>>,
 }
 
 // NAME_TYPE_SPEC
@@ -493,15 +493,6 @@ pub struct CoreNameTypeSpecNode {
     pub colon: TokenNode,
     pub name: IdentifierNode,
     pub data_type: TypeExpressionNode,
-}
-
-// PARAMS
-// <param> `,` <remaining_params>
-#[derive(Debug)]
-pub struct CoreParamsNode {
-    pub comma: Option<TokenNode>,
-    pub param: ExpressionNode,
-    pub remaining_params: Option<ParamsNode>,
 }
 
 // IDENTIFIER
@@ -652,8 +643,6 @@ pub struct CallNode(pub Rc<CoreCallNode>);
 pub struct ClassMethodCallNode(pub Rc<CoreClassMethodCallNode>);
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(pub Rc<CoreNameTypeSpecNode>);
-#[derive(Debug, Clone)]
-pub struct ParamsNode(pub Rc<CoreParamsNode>);
 #[derive(Debug, Clone)]
 pub struct IdentifierNode(pub Rc<CoreIdentifierNode>);
 #[derive(Debug, Clone)]

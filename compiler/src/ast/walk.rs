@@ -10,11 +10,11 @@ use crate::ast::ast::{
     IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
     LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
     OkAssignmentNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
-    ParamsNode, ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode,
-    RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
-    SkippedTokensNode, StatemenIndentWrapperNode, StatementNode, StructDeclarationNode,
-    StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, SkippedTokensNode,
+    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
+    VariableDeclarationNode,
 };
 
 use super::ast::{CommaSeparatedNode, TupleTypeNode};
@@ -144,12 +144,6 @@ pub trait Visitor {
         new_with_RVariableDeclarationNode
     );
     impl_node_walk!(walk_expression, ExpressionNode, new_with_ExpressionNode);
-    fn walk_type_tuple(&mut self, x: &CommaSeparatedNode<TypeExpressionNode>) {
-        self.walk(&ASTNode::new_with_TypeTuple(x));
-    }
-    fn walk_name_type_specs(&mut self, x: &CommaSeparatedNode<NameTypeSpecNode>) {
-        self.walk(&ASTNode::new_with_NameTypeSpecs(x));
-    }
     impl_node_walk!(walk_atomic_type, AtomicTypeNode, new_with_AtomicTypeNode);
     impl_node_walk!(
         walk_user_defined_type,
@@ -186,7 +180,6 @@ pub trait Visitor {
         OnlyUnaryExpressionNode,
         new_with_OnlyUnaryExpressionNode
     );
-    impl_node_walk!(walk_params, ParamsNode, new_with_ParamsNode);
     impl_node_walk!(walk_atom_start, AtomStartNode, new_with_AtomStartNode);
     impl_node_walk!(walk_call, CallNode, new_with_CallNode);
     impl_node_walk!(
@@ -228,6 +221,15 @@ pub trait Visitor {
         OkSelfKeywordNode,
         new_with_OkSelfKeywordNode
     );
+    fn walk_type_tuple(&mut self, x: &CommaSeparatedNode<TypeExpressionNode>) {
+        self.walk(&ASTNode::new_with_TypeTuple(x));
+    }
+    fn walk_name_type_specs(&mut self, x: &CommaSeparatedNode<NameTypeSpecNode>) {
+        self.walk(&ASTNode::new_with_NameTypeSpecs(x));
+    }
+    fn walk_params(&mut self, x: &CommaSeparatedNode<ExpressionNode>) {
+        self.walk(&ASTNode::new_with_Params(x));
+    }
 
     fn walk(&mut self, node: &ASTNode) {
         match self.visit(node) {
@@ -588,11 +590,11 @@ pub trait Visitor {
             }
             ASTNode::Params(params_node) => {
                 let core_params = params_node.core_ref();
-                self.walk_expression(&core_params.param);
+                self.walk_expression(&core_params.entity);
                 if let Some(comma) = &core_params.comma {
                     self.walk_token(comma);
                 }
-                if let Some(remaining_params) = &core_params.remaining_params {
+                if let Some(remaining_params) = &core_params.remaining_entities {
                     self.walk_params(remaining_params);
                 }
             }

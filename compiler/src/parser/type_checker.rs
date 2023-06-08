@@ -13,7 +13,7 @@ use crate::{
             CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatemenIndentWrapperNode,
             CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreUnaryExpressionNode,
             ExpressionNode, LambdaDeclarationNode, NameTypeSpecNode, Node, OkIdentifierNode,
-            OnlyUnaryExpressionNode, ParamsNode, RAssignmentNode, RVariableDeclarationNode,
+            OnlyUnaryExpressionNode, RAssignmentNode, RVariableDeclarationNode,
             ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
             UnaryExpressionNode, VariableDeclarationNode,
         },
@@ -308,7 +308,7 @@ impl TypeChecker {
     pub fn check_params_type_and_count(
         &self,
         expected_param_data: &Vec<Type>,
-        received_params: &Option<ParamsNode>,
+        received_params: &Option<CommaSeparatedNode<ExpressionNode>>,
     ) -> ParamsTypeNCountResult {
         let expected_params_len = expected_param_data.len();
         match received_params {

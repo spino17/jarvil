@@ -1,33 +1,4 @@
-use super::ast::{
-    CommaSeparatedNode, ExpressionNode, NameTypeSpecNode, ParamsNode, TypeExpressionNode,
-};
-
-pub struct ParamsIterator {
-    node: Option<ParamsNode>,
-}
-
-impl ParamsIterator {
-    pub fn new(node: &ParamsNode) -> Self {
-        ParamsIterator {
-            node: Some(node.clone()),
-        }
-    }
-}
-
-impl Iterator for ParamsIterator {
-    type Item = ExpressionNode;
-    fn next(&mut self) -> Option<Self::Item> {
-        let ok_params = match &self.node {
-            Some(node) => node.clone(),
-            None => return None,
-        };
-        self.node = match &ok_params.core_ref().remaining_params {
-            Some(remaining_params) => Some(remaining_params.clone()),
-            None => None,
-        };
-        Some(ok_params.core_ref().param.clone())
-    }
-}
+use super::ast::{CommaSeparatedNode, ExpressionNode};
 
 pub struct CommanSeparedIterator<T: Clone> {
     node: Option<CommaSeparatedNode<T>>,

@@ -11,7 +11,7 @@ use super::ast::{
     CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode, CoreInvalidLValueNode,
     CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMethodAccessNode,
     CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierNode,
-    CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode, CoreParamsNode,
+    CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
     CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
     CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
@@ -21,14 +21,14 @@ use super::ast::{
     FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode, IdentifierNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
     LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode, OkAssignmentNode,
-    OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode, ParamsNode,
+    OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
     ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
     ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode,
     StatementNode, StructDeclarationNode, StructPropertyDeclarationNode, TokenNode, TupleTypeNode,
     TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
     UserDefinedTypeNode, VariableDeclarationNode,
 };
-use super::iterators::{CommanSeparedIterator, ParamsIterator};
+use super::iterators::CommanSeparedIterator;
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
@@ -1515,52 +1515,10 @@ impl<T: Clone + Node> Node for CommaSeparatedNode<T> {
     }
 }
 
-impl ParamsNode {
-    pub fn new_with_single_param(param: &ExpressionNode) -> Self {
-        let node = Rc::new(CoreParamsNode {
-            comma: None,
-            param: param.clone(),
-            remaining_params: None,
-        });
-        ParamsNode(node)
-    }
-
-    pub fn new_with_params(
-        param: &ExpressionNode,
-        remaining_params: &ParamsNode,
-        comma: &TokenNode,
-    ) -> Self {
-        let node = Rc::new(CoreParamsNode {
-            comma: Some(comma.clone()),
-            param: param.clone(),
-            remaining_params: Some(remaining_params.clone()),
-        });
-        ParamsNode(node)
-    }
-
-    pub fn iter(&self) -> ParamsIterator {
-        ParamsIterator::new(self)
-    }
-
-    impl_core_ref!(CoreParamsNode);
-}
-
-impl Node for ParamsNode {
-    fn range(&self) -> TextRange {
-        match &self.0.as_ref().remaining_params {
-            Some(remaining_params) => impl_range!(self.0.as_ref().param, remaining_params),
-            None => impl_range!(self.0.as_ref().param, self.0.as_ref().param),
-        }
-    }
-    fn start_line_number(&self) -> usize {
-        self.0.as_ref().param.start_line_number()
-    }
-}
-
 impl CallExpressionNode {
     pub fn new(
         function_name: &IdentifierNode,
-        params: Option<&ParamsNode>,
+        params: Option<&CommaSeparatedNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1589,7 +1547,7 @@ impl ClassMethodCallNode {
     pub fn new(
         class_name: &IdentifierNode,
         class_method_name: &IdentifierNode,
-        params: Option<&ParamsNode>,
+        params: Option<&CommaSeparatedNode<ExpressionNode>>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1625,7 +1583,7 @@ impl AtomNode {
 
     pub fn new_with_call(
         atom: &AtomNode,
-        params: Option<&ParamsNode>,
+        params: Option<&CommaSeparatedNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1649,7 +1607,7 @@ impl AtomNode {
     pub fn new_with_method_access(
         atom: &AtomNode,
         method_name: &IdentifierNode,
-        params: Option<&ParamsNode>,
+        params: Option<&CommaSeparatedNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
         dot: &TokenNode,
@@ -1715,7 +1673,7 @@ impl AtomStartNode {
     pub fn new_with_class_method_call(
         class_name: &IdentifierNode,
         class_method_name: &IdentifierNode,
-        params: Option<&ParamsNode>,
+        params: Option<&CommaSeparatedNode<ExpressionNode>>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1747,7 +1705,7 @@ impl AtomStartNode {
 impl CallNode {
     pub fn new(
         atom: &AtomNode,
-        params: Option<&ParamsNode>,
+        params: Option<&CommaSeparatedNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1798,7 +1756,7 @@ impl MethodAccessNode {
     pub fn new(
         atom: &AtomNode,
         method_name: &IdentifierNode,
-        params: Option<&ParamsNode>,
+        params: Option<&CommaSeparatedNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
         dot: &TokenNode,
