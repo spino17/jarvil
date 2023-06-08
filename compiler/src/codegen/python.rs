@@ -2,10 +2,9 @@ use crate::{
     ast::{
         ast::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
-            ClassMethodCallNode, CoreCallableBodyNode, CoreIdentifierNode,
-            CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode, CoreTokenNode,
-            CoreTypeDeclarationNode, IdentifierNode, OkIdentifierNode, TokenNode,
-            TypeDeclarationNode, VariableDeclarationNode,
+            ClassMethodCallNode, CoreIdentifierNode, CoreRVariableDeclarationNode,
+            CoreStatemenIndentWrapperNode, CoreTokenNode, CoreTypeDeclarationNode, IdentifierNode,
+            OkIdentifierNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },

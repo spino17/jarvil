@@ -9,10 +9,10 @@ use crate::{
             BinaryExpressionNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode,
             CallableBodyNode, CallablePrototypeNode, CommaSeparatedNode, ComparisonNode,
             CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-            CoreCallableBodyNode, CoreExpressionNode, CoreIdentifierNode, CoreRAssignmentNode,
-            CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatemenIndentWrapperNode,
-            CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreUnaryExpressionNode,
-            ExpressionNode, LambdaDeclarationNode, NameTypeSpecNode, Node, OkIdentifierNode,
+            CoreExpressionNode, CoreIdentifierNode, CoreRVariableDeclarationNode,
+            CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
+            LambdaDeclarationNode, NameTypeSpecNode, Node, OkIdentifierNode,
             OnlyUnaryExpressionNode, RAssignmentNode, RVariableDeclarationNode,
             ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
             UnaryExpressionNode, VariableDeclarationNode,
@@ -914,7 +914,6 @@ impl TypeChecker {
         match core_unary_expr {
             CoreUnaryExpressionNode::Atomic(atomic) => self.check_atomic_expr(atomic),
             CoreUnaryExpressionNode::Unary(unary) => self.check_only_unary_expr(unary),
-            _ => Type::new_with_unknown(),
         }
     }
 
@@ -992,7 +991,6 @@ impl TypeChecker {
             CoreExpressionNode::Comparison(comparison_expr) => {
                 self.check_comp_expr(comparison_expr)
             }
-            _ => Type::new_with_unknown(),
         }
     }
 

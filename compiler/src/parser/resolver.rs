@@ -1,7 +1,7 @@
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
-    CoreCallableBodyNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-    CoreTypeExpressionNode, FunctionWrapperNode, LambdaTypeDeclarationNode, OkSelfKeywordNode,
+    CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode,
+    LambdaTypeDeclarationNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -10,8 +10,7 @@ use crate::error::diagnostics::{
     IdentifierNotFoundInAnyNamespaceError, MainFunctionNotFoundError, MainFunctionWrongTypeError,
     MismatchedConstructorReturnTypeError, MoreThanMaxLimitParamsPassedError,
     NonHashableTypeInIndexError, NonStructConstructorReturnTypeError, SelfNotFoundError,
-    SingleSubTypeFoundInTupleError, VariableReferencedBeforeAssignmentError,
-    VoidConstructorReturnTypeError,
+    VariableReferencedBeforeAssignmentError, VoidConstructorReturnTypeError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};

@@ -1,7 +1,7 @@
 use crate::ast::ast::ErrornousNode;
 use crate::{
     ast::ast::{AtomicExpressionNode, ExpressionNode, UnaryExpressionNode},
-    constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, NOT, TRUE},
+    constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, TRUE},
     lexer::token::UnaryOperatorKind,
     lexer::token::{CoreToken, Token},
     parser::parser::JarvilParser,
@@ -24,7 +24,6 @@ pub fn is_expression_starting_with(token: &Token) -> bool {
 }
 
 pub fn expr(parser: &mut JarvilParser) -> ExpressionNode {
-    let token = &parser.curr_token();
     parser.pratt_expr(0)
 }
 

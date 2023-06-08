@@ -1,9 +1,6 @@
-use crate::ast::ast::{ErrornousNode, LambdaDeclarationNode};
+use crate::ast::ast::LambdaDeclarationNode;
 use crate::constants::common::LAMBDA_KEYWORD;
-use crate::{
-    ast::ast::RVariableDeclarationNode,
-    lexer::token::{CoreToken, Token},
-};
+use crate::{ast::ast::RVariableDeclarationNode, lexer::token::CoreToken};
 use crate::{ast::ast::VariableDeclarationNode, parser::parser::JarvilParser};
 
 pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {

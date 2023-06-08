@@ -1,4 +1,4 @@
-use super::ast::{CommaSeparatedNode, ExpressionNode};
+use super::ast::CommaSeparatedNode;
 
 pub struct CommanSeparedIterator<T: Clone> {
     node: Option<CommaSeparatedNode<T>>,
