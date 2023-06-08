@@ -1277,7 +1277,7 @@ impl NonHashableTypeInIndexError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("single sub-type in tuple")]
-#[diagnostic(code("SemanticError"))]
+#[diagnostic(code("SyntaxError"))]
 pub struct SingleSubTypeFoundInTupleError {
     #[label("only one sub-type in tuple")]
     pub index_span: SourceSpan,
