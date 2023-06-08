@@ -1,4 +1,5 @@
 use crate::ast::ast::ErrornousNode;
+use crate::ast::ast::Node;
 use crate::ast::ast::TypeExpressionNode;
 use crate::constants::common::{ATOMIC_TYPE, IDENTIFIER};
 use crate::lexer::token::CoreToken;
@@ -27,8 +28,12 @@ pub fn type_expr(parser: &mut JarvilParser) -> TypeExpressionNode {
         }
         CoreToken::LPAREN => {
             let lparen_node = parser.expect("(");
-            let types_node = parser.type_tuple();
+            let (types_node, num_types) = parser.type_tuple();
+            // TODO - check here that `num_types` > 1 as tuple type should have atleast two subtypes
             let rparen_node = parser.expect(")");
+            if num_types < 2 {
+                parser.log_single_sub_type_in_tuple_error(types_node.range());
+            }
             TypeExpressionNode::new_with_tuple_type(&lparen_node, &rparen_node, &types_node)
         }
         CoreToken::LBRACE => {

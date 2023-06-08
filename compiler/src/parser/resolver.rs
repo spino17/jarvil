@@ -45,11 +45,6 @@ pub enum ResolveResult {
     Err(String), // name of the identifier
 }
 
-pub enum ErrorLoggingTypeKind {
-    HashMap,
-    Tuple,
-}
-
 pub struct ClassContext {
     is_containing_self: bool,
 }
@@ -361,7 +356,7 @@ impl Resolver {
         self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::Type)
     }
 
-    pub fn pre_type_checking<T: Fn(&mut Resolver, TextRange, ErrorLoggingTypeKind)>(
+    pub fn pre_type_checking<T: Fn(&mut Resolver, TextRange)>(
         type_obj: &Type,
         type_expr: &TypeExpressionNode,
         is_log_error: Option<(T, &mut Resolver)>,
@@ -376,16 +371,7 @@ impl Resolver {
                 };
                 if !hashmap.key_type.is_hashable() {
                     if let Some((log_error_fn, resolver)) = is_log_error {
-                        log_error_fn(resolver, index_span, ErrorLoggingTypeKind::HashMap)
-                    }
-                    return Type::new_with_unknown();
-                }
-                return type_obj.clone();
-            }
-            CoreType::Tuple(tuple) => {
-                if tuple.sub_types.len() <= 1 {
-                    if let Some((log_error_fn, resolver)) = is_log_error {
-                        log_error_fn(resolver, type_expr.range(), ErrorLoggingTypeKind::Tuple)
+                        log_error_fn(resolver, index_span)
                     }
                     return Type::new_with_unknown();
                 }
@@ -398,23 +384,12 @@ impl Resolver {
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_before_resolved(self, self.scope_index) {
             TypeResolveKind::Resolved(type_obj) => {
-                let log_error_fn =
-                    |resolver: &mut Resolver, span: TextRange, type_kind: ErrorLoggingTypeKind| {
-                        match type_kind {
-                            ErrorLoggingTypeKind::HashMap => {
-                                let err = NonHashableTypeInIndexError::new(span);
-                                resolver
-                                    .errors
-                                    .push(Diagnostics::NonHashableTypeInIndex(err));
-                            }
-                            ErrorLoggingTypeKind::Tuple => {
-                                let err = SingleSubTypeFoundInTupleError::new(span);
-                                resolver
-                                    .errors
-                                    .push(Diagnostics::SingleSubTypeFoundInTuple(err));
-                            }
-                        }
-                    };
+                let log_error_fn = |resolver: &mut Resolver, span: TextRange| {
+                    let err = NonHashableTypeInIndexError::new(span);
+                    resolver
+                        .errors
+                        .push(Diagnostics::NonHashableTypeInIndex(err));
+                };
                 // This is type-checking prior to type-checking phase to
                 // catch some early errors related to name resolution and
                 // structure of the type.

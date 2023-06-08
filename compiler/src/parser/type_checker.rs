@@ -38,7 +38,6 @@ use crate::{
         helper::PropertyKind,
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
-    parser::resolver::ErrorLoggingTypeKind,
     scope::{
         handler::{NamespaceHandler, SymbolDataRef},
         user_defined_types::UserDefinedTypeData,
@@ -138,7 +137,7 @@ impl TypeChecker {
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_after_resolved(&self.code, &self.namespace_handler) {
             TypeResolveKind::Resolved(type_obj) => {
-                type DummyFnType = fn(&mut Resolver, TextRange, ErrorLoggingTypeKind);
+                type DummyFnType = fn(&mut Resolver, TextRange);
                 return Resolver::pre_type_checking::<DummyFnType>(&type_obj, type_expr, None);
             }
             TypeResolveKind::Unresolved(_) => return Type::new_with_unknown(),

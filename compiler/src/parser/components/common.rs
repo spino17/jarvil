@@ -33,21 +33,27 @@ pub fn name_type_specs(parser: &mut JarvilParser) -> CommaSeparatedNode<NameType
     }
 }
 
-pub fn type_tuple(parser: &mut JarvilParser) -> CommaSeparatedNode<TypeExpressionNode> {
+pub fn type_tuple(parser: &mut JarvilParser) -> (CommaSeparatedNode<TypeExpressionNode>, usize) {
     let first_type_node = parser.type_expr();
     let token = &parser.curr_token();
     // TODO - check that atleast two types are parsed inside tuple type expression
     match token.core_token {
         CoreToken::COMMA => {
             let comma_node = parser.expect(",");
-            let remaining_types_node = parser.type_tuple();
-            CommaSeparatedNode::new_with_entities(
-                &first_type_node,
-                &remaining_types_node,
-                &comma_node,
+            let (remaining_types_node, num_types) = parser.type_tuple();
+            (
+                CommaSeparatedNode::new_with_entities(
+                    &first_type_node,
+                    &remaining_types_node,
+                    &comma_node,
+                ),
+                num_types + 1,
             )
         }
-        _ => CommaSeparatedNode::new_with_single_entity(&first_type_node),
+        _ => (
+            CommaSeparatedNode::new_with_single_entity(&first_type_node),
+            1,
+        ),
     }
 }
 

@@ -42,7 +42,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             let equal_node = parser.expect("=");
             let lparen_node = parser.expect("(");
             if !parser.check_curr_token(")") {
-                temp_type_tuple_node = parser.type_tuple();
+                (temp_type_tuple_node, _) = parser.type_tuple();
                 type_tuple_node = Some(&temp_type_tuple_node);
             }
             let rparen_node = parser.expect(")");

@@ -10,7 +10,7 @@ use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::{
     Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
-    MissingTokenError, NoValidStatementFoundInsideBlockBodyError,
+    MissingTokenError, NoValidStatementFoundInsideBlockBodyError, SingleSubTypeFoundInTupleError,
 };
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
@@ -198,6 +198,15 @@ impl JarvilParser {
         // -> TODO - check whether error on same line already exists
         let err = InvalidLValueError::new(range);
         self.errors.push(Diagnostics::InvalidLValue(err));
+    }
+
+    pub fn log_single_sub_type_in_tuple_error(&mut self, range: TextRange) {
+        if self.ignore_all_errors {
+            return;
+        }
+        let err = SingleSubTypeFoundInTupleError::new(range);
+        self.errors
+            .push(Diagnostics::SingleSubTypeFoundInTuple(err));
     }
 
     // ------------------- parsing routines for terminals and block indentation -------------------
@@ -419,7 +428,7 @@ impl JarvilParser {
         components::common::name_type_specs(self)
     }
 
-    pub fn type_tuple(&mut self) -> CommaSeparatedNode<TypeExpressionNode> {
+    pub fn type_tuple(&mut self) -> (CommaSeparatedNode<TypeExpressionNode>, usize) {
         components::common::type_tuple(self)
     }
 
