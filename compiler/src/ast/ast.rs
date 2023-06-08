@@ -90,7 +90,7 @@ pub enum ASTNode {
 
 // core nodes containing the structure for storing concrete syntax
 // BLOCK
-// `\n` <stmts>
+// newline <stmts>
 #[derive(Debug)]
 pub struct CoreBlockNode {
     pub newline: TokenNode,
@@ -135,7 +135,7 @@ pub enum CoreStatementNode {
 }
 
 // RETURN
-// `return` <expr> `\n`
+// `return` <expr>? newline
 #[derive(Debug)]
 pub struct CoreReturnStatementNode {
     pub return_keyword: TokenNode,
@@ -144,7 +144,7 @@ pub struct CoreReturnStatementNode {
 }
 
 // VARIABLE_DECLARATION
-// `let` <name> `=` <r_assign>
+// `let` <name> `=` <r_node>
 #[derive(Debug)]
 pub struct CoreVariableDeclarationNode {
     pub let_keyword: TokenNode,
@@ -210,7 +210,7 @@ pub struct CoreStructDeclarationNode {
 }
 
 // STRUCT_STATEMENT
-// <name_type_spec> `\n`
+// <name_type_spec> newline
 #[derive(Debug)]
 pub struct CoreStructPropertyDeclarationNode {
     pub newline: TokenNode,
@@ -218,7 +218,7 @@ pub struct CoreStructPropertyDeclarationNode {
 }
 
 // LAMBDA_TYPE_DECLARATION
-// `type` <name> lambda `=` `(` [<type_tuple>] `)` [ `->` <return_type> ]`\n`
+// `type` <name> lambda `=` `(` <type_tuple>? `)` { `->` <return_type> }? newline
 #[derive(Debug)]
 pub struct CoreLambdaTypeDeclarationNode {
     pub type_keyword: TokenNode,
@@ -245,7 +245,7 @@ pub enum CoreTypeExpressionNode {
 }
 
 // ATOMIC_TYPE
-// `int` | `float` | `string` | `bool` ...
+// `int` | `float` | `string` | `bool`
 #[derive(Debug)]
 pub struct CoreAtomicTypeNode {
     pub kind: TokenNode,
@@ -287,7 +287,7 @@ pub struct CoreUserDefinedTypeNode {
 }
 
 // CALLABLE_PROTOTYPE
-// `(` [<params>] `)` [`->` <return_type>]
+// `(` <params>? `)` { `->` <return_type> }?
 #[derive(Debug)]
 pub struct CoreCallablePrototypeNode {
     pub lparen: TokenNode,
@@ -298,7 +298,7 @@ pub struct CoreCallablePrototypeNode {
 }
 
 // CALLABLE_BODY
-// `(` [<params>] `)` [`->`] [<return_type>] `:` <block>
+// <prototype> `:` <block>
 #[derive(Debug)]
 pub struct CoreCallableBodyNode {
     pub colon: TokenNode,
@@ -326,7 +326,7 @@ pub struct CoreBoundedMethodWrapperNode {
 }
 
 // LAMBDA_DECLARATION
-// `lambda` `(` [<params>] `)` [`->`] [<return_type>] `:` <block>
+// `lambda` `(` <params>? `)` { `->` <return_type> }? `:` <block>
 #[derive(Debug)]
 pub struct CoreLambdaDeclarationNode {
     pub lambda_keyword: TokenNode,
@@ -335,7 +335,7 @@ pub struct CoreLambdaDeclarationNode {
 }
 
 // EXPRESSION_STATEMENT
-// <expr> `\n`
+// <expr> newline
 #[derive(Debug)]
 pub struct CoreExpressionStatementNode {
     pub expr: ExpressionNode,
@@ -405,7 +405,7 @@ pub struct CoreComparisonNode {
 }
 
 // CALL_EXPRESSION
-// <function_name> `(` [<params>] `)`
+// <function_name> `(` <params>? `)`
 #[derive(Debug)]
 pub struct CoreCallExpressionNode {
     pub lparen: TokenNode,
@@ -417,7 +417,7 @@ pub struct CoreCallExpressionNode {
 // ATOM
 #[derive(Debug, Node)]
 pub enum CoreAtomNode {
-    AtomStart(AtomStartNode),           // <id>, id(...), id::id(...)
+    AtomStart(AtomStartNode),           // id, id(...), id::id(...), `self`
     Call(CallNode),                     // A(...)
     PropertyAccess(PropertyAccessNode), // A.id
     MethodAccess(MethodAccessNode),     // A.id(...)
@@ -443,7 +443,7 @@ pub struct CorePropertyAccessNode {
 }
 
 // METHOD_ACCESS
-// <atom> `.` <method_name> `(` [<params>] `)`
+// <atom> `.` <method_name> `(` <params>? `)`
 #[derive(Debug)]
 pub struct CoreMethodAccessNode {
     pub lparen: TokenNode,
@@ -465,7 +465,7 @@ pub struct CoreIndexAccessNode {
 }
 
 // CALL
-// <atom> `(` [<params>] `)`
+// <atom> `(` <params>? `)`
 #[derive(Debug)]
 pub struct CoreCallNode {
     pub atom: AtomNode,
@@ -475,7 +475,7 @@ pub struct CoreCallNode {
 }
 
 // CLASS_METHOD_CALL
-// <class_name> `::` <class_method_name> `(` [<params>] `)`
+// <class_name> `::` <class_method_name> `(` <params>? `)`
 #[derive(Debug)]
 pub struct CoreClassMethodCallNode {
     pub lparen: TokenNode,
