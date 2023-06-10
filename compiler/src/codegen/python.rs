@@ -46,7 +46,7 @@ impl PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
             generate_code: "".to_string(),
-            code: code,
+            code,
             namespace_handler,
         }
     }
