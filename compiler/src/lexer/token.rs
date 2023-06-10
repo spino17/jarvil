@@ -195,6 +195,13 @@ impl Token {
         self.range.end().into()
     }
 
+    pub fn is_trivia(&self) -> bool {
+        match self.core_token {
+            CoreToken::BLANK | CoreToken::SINGLE_LINE_COMMENT | CoreToken::BLOCK_COMMENT => true,
+            _ => false
+        }
+    }
+
     pub fn len(&self) -> usize {
         self.end_index() - self.start_index()
     }

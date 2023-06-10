@@ -284,9 +284,18 @@ impl JarvilParser {
                     }
                 }
                 _ => {
+                    // At this point we are sure that the token index is set to the first token on a newline
                     indent_spaces = (token.start_index()
                         - self.code.get_line_start_index(token.line_number))
                         as i64;
+                    let alternate_line_index = match &token.trivia {
+                        Some(trivia) => {
+                            // this index is bounded as we only have `Some` trivia if it's length > 0
+                            trivia[0].start_index()
+                        }
+                        None => token.start_index()
+                    };
+                    // assert!(alternate_line_index == self.code.get_line_start_index(token.line_number));
                     expected_indent_spaces = expected_indent_spaces + self.correction_indent();
                     if indent_spaces == expected_indent_spaces {
                         return IndentResult {
