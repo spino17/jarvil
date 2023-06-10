@@ -293,7 +293,7 @@ impl JarvilParser {
                             // this index is bounded as we only have `Some` trivia if it's length > 0
                             trivia[0].start_index()
                         }
-                        None => token.start_index()
+                        None => token.start_index(),
                     };
                     // assert!(alternate_line_index == self.code.get_line_start_index(token.line_number));
                     expected_indent_spaces = expected_indent_spaces + self.correction_indent();

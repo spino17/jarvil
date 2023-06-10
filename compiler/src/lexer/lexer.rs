@@ -34,8 +34,8 @@ impl Lexer for CoreLexer {
             ),
             trivia: None,
         });
-        let mut trivia_vec: Vec<Token> = vec![];
-        while self.begin_lexeme < code.len() {
+        /*
+         while self.begin_lexeme < code.len() {
             let mut token = self.extract_lexeme(&code);
             match token.core_token {
                 CoreToken::BLANK => trivia_vec.push(token),
@@ -47,6 +47,34 @@ impl Lexer for CoreLexer {
                     }
                     token_vec.push(token)
                 }
+            }
+        }
+         */
+        let mut eof_trivia_vec: Vec<Token> = vec![];
+        while self.begin_lexeme < code.len() {
+            let token = self.extract_lexeme(&code);
+            if token.is_trivia() {
+                let mut trivia_vec = vec![token];
+                let mut is_eof: Option<Token> = None;
+                // spin loop to collect other trivia tokens as well
+                while self.begin_lexeme < code.len() {
+                    let token = self.extract_lexeme(&code);
+                    if token.is_trivia() {
+                        trivia_vec.push(token);
+                    } else {
+                        is_eof = Some(token);
+                        break;
+                    }
+                }
+                match is_eof {
+                    Some(mut token) => {
+                        token.set_trivia(trivia_vec);
+                        token_vec.push(token);
+                    }
+                    None => eof_trivia_vec = trivia_vec,
+                }
+            } else {
+                token_vec.push(token);
             }
         }
         self.code_lines.push(self.line_start_index);
@@ -62,8 +90,8 @@ impl Lexer for CoreLexer {
             ),
             trivia: None,
         };
-        if trivia_vec.len() > 0 {
-            token.set_trivia(mem::take(&mut trivia_vec));
+        if eof_trivia_vec.len() > 0 {
+            token.set_trivia(eof_trivia_vec);
         }
         token_vec.push(token);
         (token_vec, self.errors)

@@ -198,7 +198,7 @@ impl Token {
     pub fn is_trivia(&self) -> bool {
         match self.core_token {
             CoreToken::BLANK | CoreToken::SINGLE_LINE_COMMENT | CoreToken::BLOCK_COMMENT => true,
-            _ => false
+            _ => false,
         }
     }
 
