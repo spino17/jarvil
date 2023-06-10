@@ -34,22 +34,6 @@ impl Lexer for CoreLexer {
             ),
             trivia: None,
         });
-        /*
-         while self.begin_lexeme < code.len() {
-            let mut token = self.extract_lexeme(&code);
-            match token.core_token {
-                CoreToken::BLANK => trivia_vec.push(token),
-                CoreToken::SINGLE_LINE_COMMENT => trivia_vec.push(token),
-                CoreToken::BLOCK_COMMENT => trivia_vec.push(token),
-                _ => {
-                    if trivia_vec.len() > 0 {
-                        token.set_trivia(mem::take(&mut trivia_vec));
-                    }
-                    token_vec.push(token)
-                }
-            }
-        }
-         */
         let mut eof_trivia_vec: Vec<Token> = vec![];
         while self.begin_lexeme < code.len() {
             let token = self.extract_lexeme(&code);
