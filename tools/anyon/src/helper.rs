@@ -1,9 +1,9 @@
 use super::error::AnyonError;
-use compiler::context;
+use compiler::curr_dir_path;
 use std::path::Path;
 
 pub fn check_jarvil_code_file_extension(file_name: &str) -> Result<String, AnyonError> {
-    let complete_file_path = format!("{}/{}", context::curr_dir_path(), file_name);
+    let complete_file_path = format!("{}/{}", curr_dir_path(), file_name);
     let path = Path::new(&complete_file_path);
     match path.extension() {
         Some(extension) => {

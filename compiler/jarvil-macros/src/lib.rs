@@ -1,15 +1,13 @@
 extern crate proc_macro;
 mod ast;
 mod token;
-use crate::ast::{node::impl_weak_nodes_macro};
-use crate::token::impl_tokenify_macro;
 use crate::ast::node::impl_node_trait;
+use crate::ast::node::impl_weak_nodes_macro;
+use crate::token::impl_tokenify_macro;
 use proc_macro::*;
 use std::str::FromStr;
 use syn::{
-    punctuated::Punctuated,
-    token::Colon2,
-    Expr, ExprMacro, PathArguments, PathSegment, Stmt, Token,
+    punctuated::Punctuated, token::Colon2, Expr, ExprMacro, PathArguments, PathSegment, Stmt, Token,
 };
 
 // This method is taken from Tokio-macros

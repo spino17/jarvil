@@ -1,7 +1,7 @@
 use crate::ast::ast::ErrornousNode;
 use crate::{
     ast::ast::{AtomicExpressionNode, ExpressionNode, UnaryExpressionNode},
-    constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, NOT, TRUE},
+    constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, TRUE},
     lexer::token::UnaryOperatorKind,
     lexer::token::{CoreToken, Token},
     parser::parser::JarvilParser,
@@ -23,18 +23,7 @@ pub fn is_expression_starting_with(token: &Token) -> bool {
     }
 }
 
-pub const EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 11] =
-    UNARY_EXPRESSION_STARTING_SYMBOLS;
-
 pub fn expr(parser: &mut JarvilParser) -> ExpressionNode {
-    let token = &parser.curr_token();
-    if !is_expression_starting_with(token) {
-        parser.log_missing_token_error(&EXPRESSION_EXPECTED_STARTING_SYMBOLS, token);
-        return ExpressionNode::new_with_missing_tokens(
-            &Rc::new(EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
-            token,
-        );
-    }
     parser.pratt_expr(0)
 }
 
@@ -47,29 +36,8 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
     }
 }
 
-pub const UNARY_EXPRESSION_STARTING_SYMBOLS: [&'static str; 11] = [
-    "+",
-    "-",
-    NOT,
-    TRUE,
-    FALSE,
-    INTEGER,
-    FLOATING_POINT_NUMBER,
-    LITERAL,
-    IDENTIFIER,
-    "self",
-    "(",
-];
-
 pub fn unary_expr(parser: &mut JarvilParser) -> UnaryExpressionNode {
     let token = &parser.curr_token();
-    if !is_unary_expression_starting_with(token) {
-        parser.log_missing_token_error(&UNARY_EXPRESSION_STARTING_SYMBOLS, token);
-        return UnaryExpressionNode::new_with_missing_tokens(
-            &Rc::new(UNARY_EXPRESSION_STARTING_SYMBOLS.to_vec()),
-            token,
-        );
-    }
     let unary_expr_node = match token.core_token {
         CoreToken::PLUS => {
             let plus_node = parser.expect("+");

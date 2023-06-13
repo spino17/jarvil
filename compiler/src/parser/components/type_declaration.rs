@@ -1,4 +1,4 @@
-use crate::ast::ast::{ErrornousNode, TokenNode, TypeExpressionNode, TypeTupleNode};
+use crate::ast::ast::{CommaSeparatedNode, ErrornousNode, TokenNode, TypeExpressionNode};
 use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::constants::common::DEF;
 use crate::lexer::token::CoreToken;
@@ -31,10 +31,10 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             )
         }
         CoreToken::LAMBDA_KEYWORD => {
-            let mut type_tuple_node: Option<&TypeTupleNode> = None;
+            let mut type_tuple_node: Option<&CommaSeparatedNode<TypeExpressionNode>> = None;
             let mut r_arrow_node: Option<&TokenNode> = None;
             let mut return_type_node: Option<&TypeExpressionNode> = None;
-            let temp_type_tuple_node: TypeTupleNode;
+            let temp_type_tuple_node: CommaSeparatedNode<TypeExpressionNode>;
             let temp_r_arrow_node: TokenNode;
             let temp_return_type_node: TypeExpressionNode;
 
@@ -42,7 +42,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             let equal_node = parser.expect("=");
             let lparen_node = parser.expect("(");
             if !parser.check_curr_token(")") {
-                temp_type_tuple_node = parser.type_tuple();
+                (temp_type_tuple_node, _) = parser.type_tuple();
                 type_tuple_node = Some(&temp_type_tuple_node);
             }
             let rparen_node = parser.expect(")");
@@ -52,32 +52,19 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 r_arrow_node = Some(&temp_r_arrow_node);
                 return_type_node = Some(&temp_return_type_node);
             }
-            let token = &parser.curr_token();
-            let lambda_node = match token.core_token {
-                CoreToken::NEWLINE | CoreToken::ENDMARKER => {
-                    let newline_node = parser.expect_terminators();
-                    LambdaTypeDeclarationNode::new(
-                        &type_name_node,
-                        &type_keyword_node,
-                        &lambda_keyword_node,
-                        &equal_node,
-                        &lparen_node,
-                        &rparen_node,
-                        type_tuple_node,
-                        r_arrow_node,
-                        return_type_node,
-                        &newline_node,
-                    )
-                }
-                _ => {
-                    parser.log_missing_token_error(&["\n"], token);
-                    let lambda_node = LambdaTypeDeclarationNode::new_with_missing_tokens(
-                        &Rc::new(["\n"].to_vec()),
-                        token,
-                    );
-                    return TypeDeclarationNode::new_with_lambda(&lambda_node);
-                }
-            };
+            let newline_node = parser.expect_terminators();
+            let lambda_node = LambdaTypeDeclarationNode::new(
+                &type_name_node,
+                &type_keyword_node,
+                &lambda_keyword_node,
+                &equal_node,
+                &lparen_node,
+                &rparen_node,
+                type_tuple_node,
+                r_arrow_node,
+                return_type_node,
+                &newline_node,
+            );
             TypeDeclarationNode::new_with_lambda(&lambda_node)
         }
         _ => {

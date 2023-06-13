@@ -6,9 +6,9 @@ pub struct JarvilCode {
 }
 
 impl JarvilCode {
-    pub fn new(code_vec: Vec<char>) -> Self {
+    pub fn new(code: &str) -> Self {
         JarvilCode {
-            code_vec: code_vec,
+            code_vec: code.chars().collect(),
             code_lines: None,
         }
     }

@@ -1,16 +1,16 @@
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
-    CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode, IdentifierNode,
-    NameTypeSpecNode, NameTypeSpecsNode, Node, OkTokenNode, ParamsNode, SelfKeywordNode,
-    SkippedTokenNode, StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    TypeTupleNode, UnaryExpressionNode, VariableDeclarationNode,
+    CallableKind, CallablePrototypeNode, CommaSeparatedNode, ErrornousNode, ExpressionNode,
+    IdentifierNode, NameTypeSpecNode, Node, OkTokenNode, SelfKeywordNode, SkippedTokenNode,
+    StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode,
+    VariableDeclarationNode,
 };
 use crate::code::JarvilCode;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::{
     Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
-    MissingTokenError, NoValidStatementFoundInsideBlockBodyError,
+    MissingTokenError, NoValidStatementFoundInsideBlockBodyError, SingleSubTypeFoundInTupleError,
 };
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
@@ -200,6 +200,15 @@ impl JarvilParser {
         self.errors.push(Diagnostics::InvalidLValue(err));
     }
 
+    pub fn log_single_sub_type_in_tuple_error(&mut self, range: TextRange) {
+        if self.ignore_all_errors {
+            return;
+        }
+        let err = SingleSubTypeFoundInTupleError::new(range);
+        self.errors
+            .push(Diagnostics::SingleSubTypeFoundInTuple(err));
+    }
+
     // ------------------- parsing routines for terminals and block indentation -------------------
     pub fn expect(&mut self, symbol: &'static str) -> TokenNode {
         let token = self.curr_token();
@@ -275,9 +284,18 @@ impl JarvilParser {
                     }
                 }
                 _ => {
+                    // At this point we are sure that the token index is set to the first token on a newline
                     indent_spaces = (token.start_index()
                         - self.code.get_line_start_index(token.line_number))
                         as i64;
+                    let alternate_line_index = match &token.trivia {
+                        Some(trivia) => {
+                            // this index is bounded as we only have `Some` trivia if it's length > 0
+                            trivia[0].start_index()
+                        }
+                        None => token.start_index(),
+                    };
+                    // assert!(alternate_line_index == self.code.get_line_start_index(token.line_number));
                     expected_indent_spaces = expected_indent_spaces + self.correction_indent();
                     if indent_spaces == expected_indent_spaces {
                         return IndentResult {
@@ -403,7 +421,7 @@ impl JarvilParser {
         components::expression::atom::atom_start(self)
     }
 
-    pub fn params(&mut self) -> ParamsNode {
+    pub fn params(&mut self) -> CommaSeparatedNode<ExpressionNode> {
         components::expression::common::params(self)
     }
 
@@ -415,11 +433,11 @@ impl JarvilParser {
         components::common::name_type_spec(self)
     }
 
-    pub fn name_type_specs(&mut self) -> NameTypeSpecsNode {
+    pub fn name_type_specs(&mut self) -> CommaSeparatedNode<NameTypeSpecNode> {
         components::common::name_type_specs(self)
     }
 
-    pub fn type_tuple(&mut self) -> TypeTupleNode {
+    pub fn type_tuple(&mut self) -> (CommaSeparatedNode<TypeExpressionNode>, usize) {
         components::common::type_tuple(self)
     }
 

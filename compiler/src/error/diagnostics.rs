@@ -636,7 +636,7 @@ impl IdentifierNotFoundInAnyNamespaceError {
         IdentifierNotFoundInAnyNamespaceError {
             span: range_to_span(range).into(),
             help: Some(
-                "identifiers are declared in one of the three namespaces: variables, functions and types\ncallable identifier are resolved in the following order of namespace:\nfunction => type => variable"
+                "callable identifier are resolved in the following order of namespace: function => type => variable"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()
@@ -1277,7 +1277,7 @@ impl NonHashableTypeInIndexError {
 
 #[derive(Diagnostic, Debug, Error, Clone)]
 #[error("single sub-type in tuple")]
-#[diagnostic(code("SemanticError"))]
+#[diagnostic(code("SyntaxError"))]
 pub struct SingleSubTypeFoundInTupleError {
     #[label("only one sub-type in tuple")]
     pub index_span: SourceSpan,

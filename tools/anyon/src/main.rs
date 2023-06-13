@@ -1,12 +1,10 @@
-use miette::{GraphicalReportHandler, GraphicalTheme};
-use owo_colors::Style;
-use std::env::args;
-use std::fmt::Write;
 use anyon::{
     core::{get_cmd_from_command_line_args, AbstractCommand},
     error::AnyonError,
 };
-
+use miette::{GraphicalReportHandler, GraphicalTheme};
+use owo_colors::Style;
+use std::env::args;
 
 fn check_and_execute_cmd(args: Vec<String>) -> Result<(), AnyonError> {
     let mut anyon_obj = get_cmd_from_command_line_args(args)?;
@@ -27,12 +25,9 @@ fn main() {
         Box::new(GraphicalReportHandler::new_themed(my_theme))
     }));
 
-    // Create a buffer to capture the output
-    let mut buffer = String::new();
     let args: Vec<String> = args().collect();
     let result = check_and_execute_cmd(args);
     if let Err(err) = result {
-        write!(&mut buffer, "{:?}", err).expect("Failed to write to buffer");
         println!("{:?}", err);
     }
 }

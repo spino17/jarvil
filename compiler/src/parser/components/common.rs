@@ -2,13 +2,12 @@ use super::statement::core::{
     is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
 };
 use crate::ast::ast::{
-    BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode, ErrornousNode,
-    FunctionDeclarationNode, FunctionWrapperNode, NameTypeSpecNode, NameTypeSpecsNode,
-    OkNameTypeSpecsNode, OkTypeTupleNode, StatementNode, TypeTupleNode,
+    BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode,
+    CommaSeparatedNode, FunctionDeclarationNode, FunctionWrapperNode, NameTypeSpecNode,
+    StatementNode, TypeExpressionNode,
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
-use std::rc::Rc;
 
 pub fn name_type_spec(parser: &mut JarvilParser) -> NameTypeSpecNode {
     let name_node = parser.expect_ident();
@@ -17,62 +16,50 @@ pub fn name_type_spec(parser: &mut JarvilParser) -> NameTypeSpecNode {
     NameTypeSpecNode::new(&name_node, &type_expr_node, &colon_node)
 }
 
-pub fn name_type_specs(parser: &mut JarvilParser) -> NameTypeSpecsNode {
+pub fn name_type_specs(parser: &mut JarvilParser) -> CommaSeparatedNode<NameTypeSpecNode> {
     let first_arg_node = parser.name_type_spec();
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::COMMA => {
             let comma_node = parser.expect(",");
             let remaining_args_node = parser.name_type_specs();
-            let ok_name_type_specs_node = OkNameTypeSpecsNode::new_with_args(
+            CommaSeparatedNode::new_with_entities(
                 &first_arg_node,
                 &remaining_args_node,
                 &comma_node,
-            );
-            return NameTypeSpecsNode::new(&ok_name_type_specs_node);
+            )
         }
-        CoreToken::RPAREN => {
-            let ok_name_type_specs_node = OkNameTypeSpecsNode::new_with_single_arg(&first_arg_node);
-            return NameTypeSpecsNode::new(&ok_name_type_specs_node);
-        }
-        _ => {
-            parser.log_missing_token_error(&[",", ")"], token);
-            return NameTypeSpecsNode::new_with_missing_tokens(
-                &Rc::new([",", ")"].to_vec()),
-                token,
-            );
-        }
+        _ => CommaSeparatedNode::new_with_single_entity(&first_arg_node),
     }
 }
 
-pub fn type_tuple(parser: &mut JarvilParser) -> TypeTupleNode {
+pub fn type_tuple(parser: &mut JarvilParser) -> (CommaSeparatedNode<TypeExpressionNode>, usize) {
     let first_type_node = parser.type_expr();
     let token = &parser.curr_token();
+    // TODO - check that atleast two types are parsed inside tuple type expression
     match token.core_token {
         CoreToken::COMMA => {
             let comma_node = parser.expect(",");
-            let remaining_types_node = parser.type_tuple();
-            let ok_type_tuple_node = OkTypeTupleNode::new_with_args(
-                &first_type_node,
-                &remaining_types_node,
-                &comma_node,
-            );
-            return TypeTupleNode::new(&ok_type_tuple_node);
+            let (remaining_types_node, num_types) = parser.type_tuple();
+            (
+                CommaSeparatedNode::new_with_entities(
+                    &first_type_node,
+                    &remaining_types_node,
+                    &comma_node,
+                ),
+                num_types + 1,
+            )
         }
-        CoreToken::RPAREN => {
-            let ok_type_tuple_node = OkTypeTupleNode::new_with_single_data_type(&first_type_node);
-            return TypeTupleNode::new(&ok_type_tuple_node);
-        }
-        _ => {
-            parser.log_missing_token_error(&[",", ")"], token);
-            return TypeTupleNode::new_with_missing_tokens(&Rc::new([",", ")"].to_vec()), token);
-        }
+        _ => (
+            CommaSeparatedNode::new_with_single_entity(&first_type_node),
+            1,
+        ),
     }
 }
 
 pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
-    let mut args_node: Option<&NameTypeSpecsNode> = None;
-    let name_type_specs_node: NameTypeSpecsNode;
+    let mut args_node: Option<&CommaSeparatedNode<NameTypeSpecNode>> = None;
+    let name_type_specs_node: CommaSeparatedNode<NameTypeSpecNode>;
     let lparen_node = parser.expect("(");
     if !parser.check_curr_token(")") {
         name_type_specs_node = parser.name_type_specs();
@@ -96,22 +83,13 @@ pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
 
 pub fn callable_body(parser: &mut JarvilParser) -> CallableBodyNode {
     let callable_prototype = parser.callable_prototype();
-    let token = &parser.curr_token();
-    match token.core_token {
-        CoreToken::COLON => {
-            let colon_node = parser.expect(":");
-            let func_block_node = parser.block(
-                |token| is_statement_within_function_starting_with(token),
-                |parser| parser.stmt(),
-                &STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
-            );
-            return CallableBodyNode::new(&func_block_node, &colon_node, &callable_prototype);
-        }
-        _ => {
-            parser.log_missing_token_error(&[":"], token);
-            return CallableBodyNode::new_with_missing_tokens(&Rc::new([":"].to_vec()), token);
-        }
-    }
+    let colon_node = parser.expect(":");
+    let func_block_node = parser.block(
+        |token| is_statement_within_function_starting_with(token),
+        |parser| parser.stmt(),
+        &STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
+    );
+    return CallableBodyNode::new(&func_block_node, &colon_node, &callable_prototype);
 }
 
 pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> StatementNode {

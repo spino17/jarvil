@@ -2,10 +2,9 @@ use crate::{
     ast::{
         ast::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
-            ClassMethodCallNode, CoreCallableBodyNode, CoreIdentifierNode,
-            CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode, CoreTokenNode,
-            CoreTypeDeclarationNode, IdentifierNode, OkIdentifierNode, TokenNode,
-            TypeDeclarationNode, VariableDeclarationNode,
+            ClassMethodCallNode, CoreIdentifierNode, CoreRVariableDeclarationNode,
+            CoreStatemenIndentWrapperNode, CoreTokenNode, CoreTypeDeclarationNode, IdentifierNode,
+            OkIdentifierNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -47,7 +46,7 @@ impl PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
             generate_code: "".to_string(),
-            code: code,
+            code,
             namespace_handler,
         }
     }
@@ -65,11 +64,12 @@ impl PythonCodeGenerator {
         for stmt in &*code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        let main_call_str = format!(
-            "\n\nif __name__ == \"__main__\":\n{}main_func()",
-            get_whitespaces_from_indent_level(1)
-        );
-        self.add_str_to_python_code(&main_call_str);
+        //let main_call_str = format!(
+        //    "\n\nif __name__ == \"__main__\":\n{}main_func()",
+        //    get_whitespaces_from_indent_level(1)
+        //);
+        let main_call_str = "\n\nmain_func()";
+        self.add_str_to_python_code(main_call_str);
         self.generate_code
     }
 
@@ -169,6 +169,17 @@ impl PythonCodeGenerator {
                 final_str.push_str(&critical_section);
                 self.add_str_to_python_code(&final_str);
             }
+            CoreToken::ENDMARKER => return,
+            CoreToken::LITERAL => {
+                // Jarvil `str` can span multiple lines so this
+                // translates to Python three-quotes string.
+                let len = token_value.len();
+                let mut critical_section = token_value[1..(len - 1)].to_string();
+                critical_section.push_str("'''");
+                let mut final_str = "'''".to_string();
+                final_str.push_str(&critical_section);
+                self.add_str_to_python_code(&final_str);
+            }
             _ => {
                 self.add_str_to_python_code(&token_value);
             }
@@ -240,7 +251,6 @@ impl PythonCodeGenerator {
                 self.print_identifier(name);
                 self.walk_callable_body(callable_body);
             }
-            CoreRVariableDeclarationNode::MissingTokens(_) => unreachable!(),
         }
     }
 
@@ -316,10 +326,7 @@ impl PythonCodeGenerator {
                 let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
                 let def_keyword = &core_func_decl.def_keyword;
                 let name = &core_func_decl.name;
-                let body = match core_func_decl.body.core_ref() {
-                    CoreCallableBodyNode::Ok(ok_callable_body) => ok_callable_body.core_ref(),
-                    _ => unreachable!(),
-                };
+                let body = core_func_decl.body.core_ref();
                 let colon = &body.colon;
                 let block = &body.block;
                 let prototype = body.prototype.core_ref();

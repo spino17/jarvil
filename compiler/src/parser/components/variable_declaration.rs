@@ -1,21 +1,7 @@
-use super::expression::core::is_expression_starting_with;
-use crate::ast::ast::{ErrornousNode, LambdaDeclarationNode};
+use crate::ast::ast::LambdaDeclarationNode;
 use crate::constants::common::LAMBDA_KEYWORD;
-use crate::{
-    ast::ast::RVariableDeclarationNode,
-    lexer::token::{CoreToken, Token},
-};
+use crate::{ast::ast::RVariableDeclarationNode, lexer::token::CoreToken};
 use crate::{ast::ast::VariableDeclarationNode, parser::parser::JarvilParser};
-use std::rc::Rc;
-
-pub const R_VARIABLE_DECLARATION_STARTING_SYMBOLS: [&'static str; 2] = ["<expression>", "lambda"];
-
-pub fn is_r_variable_declaration_starting_with(token: &Token) -> bool {
-    match token.core_token {
-        CoreToken::LAMBDA_KEYWORD => true,
-        _ => is_expression_starting_with(token),
-    }
-}
 
 pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
     let let_keyword_node = parser.expect("let");
@@ -23,19 +9,6 @@ pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
     // TODO - add optional type-casting expression here
     let equal_node = parser.expect("=");
     let token = &parser.curr_token();
-    if !is_r_variable_declaration_starting_with(token) {
-        parser.log_missing_token_error(&["<expression>", "lambda"], token);
-        let r_node = RVariableDeclarationNode::new_with_missing_tokens(
-            &Rc::new(R_VARIABLE_DECLARATION_STARTING_SYMBOLS.to_vec()),
-            token,
-        );
-        return VariableDeclarationNode::new(
-            &identifier_node,
-            &r_node,
-            &let_keyword_node,
-            &equal_node,
-        );
-    }
     let r_node = match token.core_token {
         CoreToken::LAMBDA_KEYWORD => {
             let lambda_keyword_node = parser.expect(LAMBDA_KEYWORD);
