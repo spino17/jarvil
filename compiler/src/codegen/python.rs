@@ -11,7 +11,7 @@ use crate::{
     code::JarvilCode,
     context,
     lexer::token::{CoreToken, Token},
-    scope::{core::NamespaceKind, handler::NamespaceHandler},
+    scope::handler::{NamespaceHandler, SymbolDataEntry},
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::convert::TryInto;
@@ -90,56 +90,26 @@ impl PythonCodeGenerator {
             .identifier_binding_table
             .get(identifier)
         {
-            Some((scope_index, namespace_kind)) => {
-                let name = identifier.token_value(&self.code);
-                match namespace_kind {
-                    NamespaceKind::Variable => {
-                        match self
-                            .namespace_handler
-                            .namespace
-                            .get_from_variables_namespace(*scope_index, &name)
-                        {
-                            Some(symbol_data) => {
-                                if symbol_data.2 {
-                                    return "_var";
-                                }
-                                return "";
-                            }
-                            None => unreachable!(),
-                        }
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Variable(variable_symbol_data) => {
+                    if variable_symbol_data.2 {
+                        return "_var";
                     }
-                    NamespaceKind::Function => {
-                        match self
-                            .namespace_handler
-                            .namespace
-                            .get_from_functions_namespace(*scope_index, &name)
-                        {
-                            Some(symbol_data) => {
-                                if symbol_data.2 {
-                                    return "_func";
-                                }
-                                return "";
-                            }
-                            None => unreachable!(),
-                        }
+                    return "";
+                }
+                SymbolDataEntry::Function(func_symbol_data) => {
+                    if func_symbol_data.2 {
+                        return "_func";
                     }
-                    NamespaceKind::Type => {
-                        match self
-                            .namespace_handler
-                            .namespace
-                            .get_from_types_namespace(*scope_index, &name)
-                        {
-                            Some(symbol_data) => {
-                                if symbol_data.2 {
-                                    return "_ty";
-                                }
-                                return "";
-                            }
-                            None => unreachable!(),
-                        }
+                    return "";
+                }
+                SymbolDataEntry::Type(type_symbol_data) => {
+                    if type_symbol_data.2 {
+                        return "_ty";
                     }
-                };
-            }
+                    return "";
+                }
+            },
             None => return "",
         };
     }
