@@ -184,7 +184,7 @@ impl TypeChecker {
         let (params_vec, return_type) = match lambda_name.core_ref() {
             CoreIdentifierNode::Ok(ok_identifier) => match self
                 .namespace_handler
-                .get_variable_symbol_data_ref(ok_identifier, &self.code)
+                .get_variable_symbol_data_ref(ok_identifier)
             {
                 Some(symbol_data) => return symbol_data.0.as_ref().borrow().data_type.clone(),
                 None => self.params_and_return_type_obj_from_expr(return_type, params),
@@ -356,7 +356,7 @@ impl TypeChecker {
                 CoreIdentifierNode::Ok(ok_identifier) => {
                     match self
                         .namespace_handler
-                        .get_variable_symbol_data_ref(ok_identifier, &self.code)
+                        .get_variable_symbol_data_ref(ok_identifier)
                     {
                         Some(variable_symbol_data) => {
                             return variable_symbol_data.0.as_ref().borrow().data_type.clone()
@@ -388,9 +388,8 @@ impl TypeChecker {
                 let func_name = &core_call_expr.function_name;
                 let params = &core_call_expr.params;
                 if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
-                    if let Some(symbol_data) = self
-                        .namespace_handler
-                        .get_symbol_data_ref(ok_identifier, &self.code)
+                    if let Some(symbol_data) =
+                        self.namespace_handler.get_symbol_data_ref(ok_identifier)
                     {
                         let (result, return_type) = match symbol_data {
                             SymbolDataRef::Function(func_symbol_data) => {
@@ -468,7 +467,7 @@ impl TypeChecker {
                     let class_name = ok_identifier.token_value(&self.code);
                     match self
                         .namespace_handler
-                        .get_type_symbol_data_ref(ok_identifier, &self.code)
+                        .get_type_symbol_data_ref(ok_identifier)
                     {
                         Some(type_symbol_data) => match &*type_symbol_data.0.as_ref().borrow() {
                             UserDefinedTypeData::Struct(struct_data) => {
@@ -1051,7 +1050,7 @@ impl TypeChecker {
         if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
-                .get_variable_symbol_data_ref(ok_identifier, &self.code)
+                .get_variable_symbol_data_ref(ok_identifier)
             {
                 symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
             }

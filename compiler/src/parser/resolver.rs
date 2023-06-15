@@ -14,8 +14,8 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
-use crate::scope::core::{NamespaceKind, VariableLookupResult};
-use crate::scope::handler::NamespaceHandler;
+use crate::scope::core::VariableLookupResult;
+use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
 use crate::types::core::CoreType;
 use crate::{
     ast::{
@@ -211,33 +211,34 @@ impl Resolver {
     pub fn bind_decl_to_identifier(
         &mut self,
         node: &OkIdentifierNode,
-        scope_index: usize,
-        namespace_kind: NamespaceKind,
+        symbol_data: SymbolDataEntry,
     ) {
         self.namespace_handler
             .identifier_binding_table
-            .insert(node.clone(), (scope_index, namespace_kind));
+            .insert(node.clone(), symbol_data);
     }
 
-    pub fn bind_decl_to_self_keyword(&mut self, node: &OkSelfKeywordNode, scope_index: usize) {
+    pub fn bind_decl_to_self_keyword(
+        &mut self,
+        node: &OkSelfKeywordNode,
+        symbol_data: SymbolData<VariableData>,
+    ) {
         self.namespace_handler
             .self_keyword_binding_table
-            .insert(node.clone(), scope_index);
+            .insert(node.clone(), symbol_data);
     }
 
     pub fn try_resolving<
-        T,
-        U: Fn(&Namespace, usize, &str) -> Option<(SymbolData<T>, usize, usize, bool)>,
+        U: Fn(&Namespace, usize, &str) -> Option<(SymbolDataEntry, usize, usize, bool)>,
     >(
         &mut self,
         identifier: &OkIdentifierNode,
         lookup_fn: U,
-        namespace_kind: NamespaceKind,
     ) -> ResolveResult {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
-            Some((_, resolved_scope_index, depth, _)) => {
-                self.bind_decl_to_identifier(identifier, resolved_scope_index, namespace_kind);
+            Some((symbol_data, _, depth, _)) => {
+                self.bind_decl_to_identifier(identifier, symbol_data);
                 ResolveResult::Ok(depth)
             }
             None => ResolveResult::Err(name),
@@ -257,8 +258,7 @@ impl Resolver {
             VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth)) => {
                 self.bind_decl_to_identifier(
                     identifier,
-                    resolved_scope_index,
-                    NamespaceKind::Variable,
+                    SymbolDataEntry::Variable(symbol_data.clone()),
                 );
                 return VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth));
             }
@@ -280,8 +280,8 @@ impl Resolver {
             .namespace
             .lookup_in_variables_namespace(self.scope_index, &name)
         {
-            Some((symbol_data, scope_index, depth, _)) => {
-                self.bind_decl_to_self_keyword(self_keyword, scope_index);
+            Some((symbol_data, _, depth, _)) => {
+                self.bind_decl_to_self_keyword(self_keyword, symbol_data.clone());
                 return Some((symbol_data, depth));
             }
             None => return None,
@@ -292,19 +292,33 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
     ) -> ResolveResult {
-        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
-            namespace.lookup_in_types_namespace(scope_index, key)
+        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| match namespace
+            .lookup_in_types_namespace(scope_index, key)
+        {
+            Some(result) => {
+                return Some((
+                    SymbolDataEntry::Type(result.0),
+                    result.1,
+                    result.2,
+                    result.3,
+                ))
+            }
+            None => return None,
         };
-        self.try_resolving(identifier, lookup_fn, NamespaceKind::Type)
+        self.try_resolving(identifier, lookup_fn)
     }
 
     pub fn try_declare_and_bind<
-        U: Fn(&mut Namespace, usize, String, TextRange) -> Result<(), (String, TextRange)>,
+        U: Fn(
+            &mut Namespace,
+            usize,
+            String,
+            TextRange,
+        ) -> Result<SymbolDataEntry, (String, TextRange)>,
     >(
         &mut self,
         identifier: &OkIdentifierNode,
         declare_fn: U,
-        namespace_kind: NamespaceKind,
     ) -> Option<(String, TextRange)> {
         let name = identifier.token_value(&self.code);
         let symbol_data = declare_fn(
@@ -314,8 +328,8 @@ impl Resolver {
             identifier.range(),
         );
         match symbol_data {
-            Ok(()) => {
-                self.bind_decl_to_identifier(identifier, self.scope_index, namespace_kind);
+            Ok(symbol_data) => {
+                self.bind_decl_to_identifier(identifier, symbol_data);
                 None
             }
             Err((name, previous_decl_range)) => Some((name, previous_decl_range)),
@@ -330,7 +344,7 @@ impl Resolver {
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_variable(scope_index, name, decl_range)
             };
-        self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::Variable)
+        self.try_declare_and_bind(identifier, declare_fn)
     }
 
     pub fn try_declare_and_bind_function(
@@ -341,7 +355,7 @@ impl Resolver {
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_function(scope_index, name, decl_range)
             };
-        self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::Function)
+        self.try_declare_and_bind(identifier, declare_fn)
     }
 
     pub fn try_declare_and_bind_struct_type(
@@ -352,7 +366,7 @@ impl Resolver {
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_struct_type(scope_index, name, decl_range)
             };
-        self.try_declare_and_bind(identifier, declare_fn, NamespaceKind::Type)
+        self.try_declare_and_bind(identifier, declare_fn)
     }
 
     pub fn pre_type_checking<T: Fn(&mut Resolver, TextRange)>(
@@ -457,12 +471,8 @@ impl Resolver {
                         true,
                     );
                     match result {
-                        Ok(()) => {
-                            self.bind_decl_to_identifier(
-                                ok_identifier,
-                                self.scope_index,
-                                NamespaceKind::Variable,
-                            );
+                        Ok(symbol_data) => {
+                            self.bind_decl_to_identifier(ok_identifier, symbol_data);
                             param_types_vec.push(param_type);
                             params_count += 1;
                         }
@@ -592,7 +602,7 @@ impl Resolver {
                 if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
                     if let Some(symbol_data) = self
                         .namespace_handler
-                        .get_variable_symbol_data_ref(ok_identifier, &self.code)
+                        .get_variable_symbol_data_ref(ok_identifier)
                     {
                         symbol_data.0.as_ref().borrow_mut().set_is_init(true);
                     }
@@ -604,7 +614,7 @@ impl Resolver {
                 if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
                     if let Some(symbol_data) = self
                         .namespace_handler
-                        .get_variable_symbol_data_ref(ok_identifier, &self.code)
+                        .get_variable_symbol_data_ref(ok_identifier)
                     {
                         symbol_data
                             .0
@@ -621,7 +631,7 @@ impl Resolver {
         if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
-                .get_variable_symbol_data_ref(ok_identifier, &self.code)
+                .get_variable_symbol_data_ref(ok_identifier)
             {
                 symbol_data.0.as_ref().borrow_mut().set_is_init(true);
             }
@@ -664,7 +674,7 @@ impl Resolver {
         if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
-                .get_function_symbol_data_ref(ok_identifier, &self.code)
+                .get_function_symbol_data_ref(ok_identifier)
             {
                 symbol_data
                     .0
@@ -699,7 +709,7 @@ impl Resolver {
                         None => {
                             match self
                                 .namespace_handler
-                                .get_type_symbol_data_ref(ok_identifier, &self.code)
+                                .get_type_symbol_data_ref(ok_identifier)
                             {
                                 Some(symbol_data) => {
                                     let name = ok_identifier.token_value(&self.code);
@@ -935,7 +945,7 @@ impl Resolver {
             }
             if let Some(symbol_data) = self
                 .namespace_handler
-                .get_type_symbol_data_ref(ok_identifier, &self.code)
+                .get_type_symbol_data_ref(ok_identifier)
             {
                 symbol_data
                     .0
@@ -991,12 +1001,8 @@ impl Resolver {
                     ok_identifier.range(),
                 );
             match result {
-                Ok(()) => {
-                    self.bind_decl_to_identifier(
-                        ok_identifier,
-                        self.scope_index,
-                        NamespaceKind::Type,
-                    );
+                Ok(symbol_data) => {
+                    self.bind_decl_to_identifier(ok_identifier, symbol_data);
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
@@ -1096,27 +1102,25 @@ impl Visitor for Resolver {
                                 .namespace
                                 .lookup_in_functions_namespace(self.scope_index, &name)
                             {
-                                Some((symbol_data, resolved_scope_index, depth, is_global)) => {
-                                    self.bind_decl_to_identifier(
-                                        ok_identifier,
-                                        resolved_scope_index,
-                                        NamespaceKind::Function,
-                                    );
+                                Some((symbol_data, _, depth, is_global)) => {
                                     // function is resolved to nonlocal scope and should be non-builtin
                                     if depth > 0 && symbol_data.2 {
                                         self.set_to_function_non_locals(name, is_global);
                                     }
+                                    self.bind_decl_to_identifier(
+                                        ok_identifier,
+                                        SymbolDataEntry::Function(symbol_data),
+                                    );
                                 }
                                 None => match self
                                     .namespace_handler
                                     .namespace
                                     .lookup_in_types_namespace(self.scope_index, &name)
                                 {
-                                    Some((_, resolved_scope_index, _, _)) => {
+                                    Some((symbol_data, _, _, _)) => {
                                         self.bind_decl_to_identifier(
                                             ok_identifier,
-                                            resolved_scope_index,
-                                            NamespaceKind::Type,
+                                            SymbolDataEntry::Type(symbol_data),
                                         );
                                     }
                                     None => match self.try_resolving_variable(ok_identifier) {

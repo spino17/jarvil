@@ -36,8 +36,7 @@ use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::Resolver;
-use crate::scope::core::NamespaceKind;
-use crate::scope::handler::NamespaceHandler;
+use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::core::Type;
 use std::hash::{Hash, Hasher};
@@ -1110,27 +1109,22 @@ impl UserDefinedTypeNode {
                 .types
                 .lookup_and_get_symbol_data_ref(scope_index, &name)
             {
-                Some((symbol_data, resolved_scope_index, _, _)) => {
-                    resolver.bind_decl_to_identifier(
-                        ok_identifier,
-                        resolved_scope_index,
-                        NamespaceKind::Type,
-                    );
-                    match &*symbol_data.0.as_ref().borrow() {
+                Some((symbol_data, _, _, _)) => {
+                    let result = match &*symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::Struct(_) => {
-                            return TypeResolveKind::Resolved(Type::new_with_struct(
-                                name,
-                                &symbol_data,
-                            ));
+                            TypeResolveKind::Resolved(Type::new_with_struct(name, &symbol_data))
                         }
                         UserDefinedTypeData::Lambda(lambda_data) => {
-                            return TypeResolveKind::Resolved(Type::new_with_lambda(
+                            TypeResolveKind::Resolved(Type::new_with_lambda(
                                 Some(name),
                                 &lambda_data.meta_data.params,
                                 &lambda_data.meta_data.return_type,
-                            ));
+                            ))
                         }
-                    }
+                    };
+                    resolver
+                        .bind_decl_to_identifier(ok_identifier, SymbolDataEntry::Type(symbol_data));
+                    return result;
                 }
                 None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
             }
@@ -1149,55 +1143,26 @@ impl UserDefinedTypeNode {
                 .identifier_binding_table
                 .get(ok_identifier)
             {
-                Some((scope_index, namespace_kind)) => match namespace_kind {
-                    NamespaceKind::Type => {
-                        let symbol_data = namespace_handler
-                            .namespace
-                            .get_from_types_namespace(*scope_index, &name);
-                        match symbol_data {
-                            Some(symbol_data) => match &*symbol_data.0.as_ref().borrow() {
-                                UserDefinedTypeData::Struct(_) => {
-                                    return TypeResolveKind::Resolved(Type::new_with_struct(
-                                        name,
-                                        &symbol_data,
-                                    ));
-                                }
-                                UserDefinedTypeData::Lambda(lambda_data) => {
-                                    return TypeResolveKind::Resolved(Type::new_with_lambda(
-                                        Some(name),
-                                        &lambda_data.meta_data.params,
-                                        &lambda_data.meta_data.return_type,
-                                    ));
-                                }
-                            },
-                            None => unreachable!(),
+                Some(symbol_data) => match symbol_data {
+                    SymbolDataEntry::Type(symbol_data) => match &*symbol_data.0.as_ref().borrow() {
+                        UserDefinedTypeData::Struct(_) => {
+                            return TypeResolveKind::Resolved(Type::new_with_struct(
+                                name,
+                                &symbol_data,
+                            ));
                         }
-                    }
-                    _ => unreachable!(),
+                        UserDefinedTypeData::Lambda(lambda_data) => {
+                            return TypeResolveKind::Resolved(Type::new_with_lambda(
+                                Some(name),
+                                &lambda_data.meta_data.params,
+                                &lambda_data.meta_data.return_type,
+                            ));
+                        }
+                    },
+                    SymbolDataEntry::Function(_) | SymbolDataEntry::Variable(_) => unreachable!(),
                 },
                 None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
             }
-            /*
-            match ok_identifier.user_defined_type_symbol_data(
-                "identifier should be resolved to `SymbolData<UserDefinedTypeData>`",
-            ) {
-                Some(symbol_data) => match &*symbol_data.0.as_ref().borrow() {
-                    UserDefinedTypeData::STRUCT(_) => {
-                        return TypeResolveKind::RESOLVED(Type::new_with_struct(
-                            name,
-                            &symbol_data,
-                        ));
-                    }
-                    UserDefinedTypeData::LAMBDA(_) => {
-                        return TypeResolveKind::RESOLVED(Type::new_with_lambda(
-                            Some(name),
-                            &symbol_data,
-                        ));
-                    }
-                },
-                None => return TypeResolveKind::UNRESOLVED(vec![ok_identifier.clone()]),
-            }
-             */
         }
         return TypeResolveKind::Invalid;
     }

@@ -663,7 +663,6 @@ pub struct SkippedTokenNode(pub Rc<CoreSkippedTokenNode>);
 pub struct CommaSeparatedNode<T: Clone>(pub Rc<CoreCommaSeparatedNode<T>>);
 
 // misc "kind" enums
-
 pub enum TypeResolveKind {
     Resolved(Type),
     Unresolved(Vec<OkIdentifierNode>),

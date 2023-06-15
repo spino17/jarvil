@@ -1,14 +1,11 @@
 use super::{
-    core::{Namespace, NamespaceKind, SymbolData},
+    core::{Namespace, SymbolData},
     function::FunctionData,
     user_defined_types::UserDefinedTypeData,
     variables::VariableData,
 };
-use crate::{
-    ast::ast::{
-        BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierNode, OkSelfKeywordNode,
-    },
-    code::JarvilCode,
+use crate::ast::ast::{
+    BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierNode, OkSelfKeywordNode,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -18,10 +15,16 @@ pub enum SymbolDataRef<'a> {
     Type(&'a SymbolData<UserDefinedTypeData>),
 }
 
+pub enum SymbolDataEntry {
+    Variable(SymbolData<VariableData>),
+    Function(SymbolData<FunctionData>),
+    Type(SymbolData<UserDefinedTypeData>),
+}
+
 pub struct NamespaceHandler {
     pub namespace: Namespace,
-    pub identifier_binding_table: FxHashMap<OkIdentifierNode, (usize, NamespaceKind)>, // node -> (scope_index, namespace_kind)
-    pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, usize>, // `self` (node) -> scope_index
+    pub identifier_binding_table: FxHashMap<OkIdentifierNode, SymbolDataEntry>, // node -> (scope_index, namespace_kind)
+    pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
     pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashMap<String, bool>)>, // block_node -> (non_locally resolved variables, (non_locally resolved functions -> is_in_global_scope))
     pub bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
 }
@@ -37,41 +40,19 @@ impl NamespaceHandler {
         }
     }
 
-    pub fn get_symbol_data_ref(
-        &self,
-        node: &OkIdentifierNode,
-        code: &JarvilCode,
-    ) -> Option<SymbolDataRef> {
+    pub fn get_symbol_data_ref(&self, node: &OkIdentifierNode) -> Option<SymbolDataRef> {
         match self.identifier_binding_table.get(node) {
-            Some((scope_index, namespace_kind)) => {
-                let name = node.token_value(code);
-                match namespace_kind {
-                    NamespaceKind::Variable => {
-                        match self
-                            .namespace
-                            .get_from_variables_namespace(*scope_index, &name)
-                        {
-                            Some(symbol_data) => return Some(SymbolDataRef::Variable(symbol_data)),
-                            None => unreachable!(),
-                        }
-                    }
-                    NamespaceKind::Function => {
-                        match self
-                            .namespace
-                            .get_from_functions_namespace(*scope_index, &name)
-                        {
-                            Some(symbol_data) => return Some(SymbolDataRef::Function(symbol_data)),
-                            None => unreachable!(),
-                        }
-                    }
-                    NamespaceKind::Type => {
-                        match self.namespace.get_from_types_namespace(*scope_index, &name) {
-                            Some(symbol_data) => return Some(SymbolDataRef::Type(symbol_data)),
-                            None => unreachable!(),
-                        }
-                    }
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Variable(variable_symbol_data) => {
+                    Some(SymbolDataRef::Variable(variable_symbol_data))
                 }
-            }
+                SymbolDataEntry::Function(func_symbol_data) => {
+                    Some(SymbolDataRef::Function(func_symbol_data))
+                }
+                SymbolDataEntry::Type(type_symbol_data) => {
+                    Some(SymbolDataRef::Type(type_symbol_data))
+                }
+            },
             None => None,
         }
     }
@@ -79,16 +60,10 @@ impl NamespaceHandler {
     pub fn get_variable_symbol_data_ref(
         &self,
         node: &OkIdentifierNode,
-        code: &JarvilCode,
     ) -> Option<&SymbolData<VariableData>> {
         match self.identifier_binding_table.get(node) {
-            Some((scope_index, namespace_kind)) => match namespace_kind {
-                NamespaceKind::Variable => {
-                    let name = node.token_value(code);
-                    return self
-                        .namespace
-                        .get_from_variables_namespace(*scope_index, &name);
-                }
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Variable(variable_symbol_data) => Some(variable_symbol_data),
                 _ => unreachable!(),
             },
             None => None,
@@ -98,16 +73,10 @@ impl NamespaceHandler {
     pub fn get_function_symbol_data_ref(
         &self,
         node: &OkIdentifierNode,
-        code: &JarvilCode,
     ) -> Option<&SymbolData<FunctionData>> {
         match self.identifier_binding_table.get(node) {
-            Some((scope_index, namespace_kind)) => match namespace_kind {
-                NamespaceKind::Function => {
-                    let name = node.token_value(code);
-                    return self
-                        .namespace
-                        .get_from_functions_namespace(*scope_index, &name);
-                }
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Function(func_symbol_data) => Some(func_symbol_data),
                 _ => unreachable!(),
             },
             None => None,
@@ -117,14 +86,10 @@ impl NamespaceHandler {
     pub fn get_type_symbol_data_ref(
         &self,
         node: &OkIdentifierNode,
-        code: &JarvilCode,
     ) -> Option<&SymbolData<UserDefinedTypeData>> {
         match self.identifier_binding_table.get(node) {
-            Some((scope_index, namespace_kind)) => match namespace_kind {
-                NamespaceKind::Type => {
-                    let name = node.token_value(code);
-                    return self.namespace.get_from_types_namespace(*scope_index, &name);
-                }
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data),
                 _ => unreachable!(),
             },
             None => None,
@@ -135,14 +100,7 @@ impl NamespaceHandler {
         &self,
         node: &OkSelfKeywordNode,
     ) -> Option<&SymbolData<VariableData>> {
-        match self.self_keyword_binding_table.get(node) {
-            Some(&scope_index) => {
-                return self
-                    .namespace
-                    .get_from_variables_namespace(scope_index, "self")
-            }
-            None => return None,
-        }
+        self.self_keyword_binding_table.get(node)
     }
 
     pub fn set_non_locals(

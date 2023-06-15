@@ -1,4 +1,5 @@
 use super::function::FunctionData;
+use super::handler::SymbolDataEntry;
 use super::user_defined_types::LambdaTypeData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
@@ -41,13 +42,20 @@ pub struct CoreScope<T> {
 }
 
 impl<T> CoreScope<T> {
-    fn set(&mut self, name: String, meta_data: T, decl_range: TextRange, is_suffix_required: bool) {
+    fn set(
+        &mut self,
+        name: String,
+        meta_data: T,
+        decl_range: TextRange,
+        is_suffix_required: bool,
+    ) -> SymbolData<T> {
         let symbol_data = SymbolData(
             Rc::new(RefCell::new(meta_data)),
             decl_range,
             is_suffix_required,
         );
-        self.symbol_table.insert(name, symbol_data);
+        self.symbol_table.insert(name, symbol_data.clone());
+        symbol_data
     }
 
     pub fn get(&self, name: &str) -> Option<&SymbolData<T>> {
@@ -157,12 +165,13 @@ impl<T> Scope<T> {
         decl_range: TextRange,
         lookup_fn: U,
         is_suffix_required: bool,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<SymbolData<T>, (String, TextRange)> {
         if let Some(previous_decl_range) = lookup_fn(self, scope_index, &key) {
             return Err((key, previous_decl_range));
         }
-        self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
-        Ok(())
+        let symbol_data =
+            self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
+        Ok(symbol_data)
     }
 
     pub fn get(&self, scope_index: usize, key: &str) -> Option<&SymbolData<T>> {
@@ -294,7 +303,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<SymbolDataEntry, (String, TextRange)> {
         let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
             .flattened_vec[scope_index]
             .get(key)
@@ -302,14 +311,17 @@ impl Namespace {
             Some(symbol_data) => Some(symbol_data.1),
             None => None,
         };
-        self.variables.insert(
+        match self.variables.insert(
             scope_index,
             name,
             VariableData::default(),
             decl_range,
             lookup_func,
             true,
-        )
+        ) {
+            Ok(symbol_data) => return Ok(SymbolDataEntry::Variable(symbol_data)),
+            Err(err) => return Err(err),
+        }
     }
 
     pub fn declare_variable_with_type(
@@ -319,7 +331,7 @@ impl Namespace {
         variable_type: &Type,
         decl_range: TextRange,
         is_init: bool,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<SymbolDataEntry, (String, TextRange)> {
         let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
             .flattened_vec[scope_index]
             .get(key)
@@ -327,14 +339,17 @@ impl Namespace {
             Some(symbol_data) => Some(symbol_data.1),
             None => None,
         };
-        self.variables.insert(
+        match self.variables.insert(
             scope_index,
             name,
             VariableData::new(variable_type, is_init),
             decl_range,
             lookup_func,
             true,
-        )
+        ) {
+            Ok(symbol_data) => return Ok(SymbolDataEntry::Variable(symbol_data)),
+            Err(err) => return Err(err),
+        }
     }
 
     pub fn declare_function(
@@ -342,7 +357,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<SymbolDataEntry, (String, TextRange)> {
         let lookup_func = |scope: &Scope<FunctionData>, scope_index: usize, key: &str| match scope
             .flattened_vec[scope_index]
             .get(key)
@@ -350,14 +365,17 @@ impl Namespace {
             Some(symbol_data) => Some(symbol_data.1),
             None => None,
         };
-        self.functions.insert(
+        match self.functions.insert(
             scope_index,
             name,
             FunctionData::default(),
             decl_range,
             lookup_func,
             true,
-        )
+        ) {
+            Ok(symbol_data) => return Ok(SymbolDataEntry::Function(symbol_data)),
+            Err(err) => return Err(err),
+        }
     }
 
     pub fn declare_struct_type(
@@ -365,7 +383,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<SymbolDataEntry, (String, TextRange)> {
         let lookup_func =
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
@@ -373,14 +391,17 @@ impl Namespace {
                 Some((symbol_data, _, _, _)) => Some(symbol_data.1),
                 None => None,
             };
-        self.types.insert(
+        match self.types.insert(
             scope_index,
             name,
             UserDefinedTypeData::default_with_struct(),
             decl_range,
             lookup_func,
             true,
-        )
+        ) {
+            Ok(symbol_data) => return Ok(SymbolDataEntry::Type(symbol_data)),
+            Err(err) => return Err(err),
+        }
     }
 
     pub fn declare_lambda_type_with_meta_data(
@@ -390,7 +411,7 @@ impl Namespace {
         param_types: Vec<Type>,
         return_type: Type,
         decl_range: TextRange,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<SymbolDataEntry, (String, TextRange)> {
         let lookup_func =
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
@@ -398,7 +419,7 @@ impl Namespace {
                 Some((symbol_data, _, _, _)) => Some(symbol_data.1),
                 None => None,
             };
-        self.types.insert(
+        match self.types.insert(
             scope_index,
             name,
             UserDefinedTypeData::Lambda(LambdaTypeData {
@@ -410,7 +431,10 @@ impl Namespace {
             decl_range,
             lookup_func,
             true,
-        )
+        ) {
+            Ok(symbol_data) => return Ok(SymbolDataEntry::Type(symbol_data)),
+            Err(err) => return Err(err),
+        }
     }
 }
 
