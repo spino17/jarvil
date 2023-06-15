@@ -1163,27 +1163,6 @@ impl UserDefinedTypeNode {
                 },
                 None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
             }
-            /*
-            match ok_identifier.user_defined_type_symbol_data(
-                "identifier should be resolved to `SymbolData<UserDefinedTypeData>`",
-            ) {
-                Some(symbol_data) => match &*symbol_data.0.as_ref().borrow() {
-                    UserDefinedTypeData::STRUCT(_) => {
-                        return TypeResolveKind::RESOLVED(Type::new_with_struct(
-                            name,
-                            &symbol_data,
-                        ));
-                    }
-                    UserDefinedTypeData::LAMBDA(_) => {
-                        return TypeResolveKind::RESOLVED(Type::new_with_lambda(
-                            Some(name),
-                            &symbol_data,
-                        ));
-                    }
-                },
-                None => return TypeResolveKind::UNRESOLVED(vec![ok_identifier.clone()]),
-            }
-             */
         }
         return TypeResolveKind::Invalid;
     }
