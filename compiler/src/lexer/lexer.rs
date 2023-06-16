@@ -69,7 +69,7 @@ impl Lexer for CoreLexer {
             range: TextRange::new(
                 // ideally span of `ENDMARKER` should be (code.len() - code.len()), however to display error messages
                 // we need to have non-zero range span.
-                TextSize::try_from(code.len() - 1).unwrap(),
+                TextSize::try_from(if code.len() > 0 { code.len() - 1 } else { code.len() }).unwrap(),
                 TextSize::try_from(code.len()).unwrap(),
             ),
             trivia: None,
