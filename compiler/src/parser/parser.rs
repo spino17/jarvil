@@ -1,8 +1,9 @@
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, CommaSeparatedNode, ErrornousNode, ExpressionNode,
-    IdentifierNode, NameTypeSpecNode, Node, OkTokenNode, SelfKeywordNode, SkippedTokenNode,
-    StatementNode, TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode,
+    GenericTypeDeclNode, IdentifierInDeclNode, IdentifierInUseNode, IdentifierNode,
+    NameTypeSpecNode, Node, OkTokenNode, SelfKeywordNode, SkippedTokenNode, StatementNode,
+    TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode,
     VariableDeclarationNode,
 };
 use crate::code::JarvilCode;
@@ -224,14 +225,14 @@ impl JarvilParser {
     pub fn expect_symbol_separated_sequence<T: Clone, U: Fn(&mut JarvilParser) -> T>(
         &mut self,
         entity_parsing_fn: U,
-        separator_token: Token,
+        separator: &'static str,
     ) -> CommaSeparatedNode<T> {
         let first_entity_node = entity_parsing_fn(self);
         let token = self.curr_token();
-        if token.core_token == separator_token.core_token {
-            let separator_node = self.expect(separator_token.core_token.to_string());
+        if token.core_token.to_string() == separator {
+            let separator_node = self.expect(separator);
             let remaining_generic_type_args_node =
-                self.expect_symbol_separated_sequence(entity_parsing_fn, separator_token);
+                self.expect_symbol_separated_sequence(entity_parsing_fn, separator);
             return CommaSeparatedNode::new_with_entities(
                 &first_entity_node,
                 &remaining_generic_type_args_node,
@@ -241,15 +242,32 @@ impl JarvilParser {
         return CommaSeparatedNode::new_with_single_entity(&first_entity_node);
     }
 
-    pub fn expect_generic_type_args(&mut self) {
-        todo!()
+    pub fn expect_generic_type_args(&mut self) -> CommaSeparatedNode<TypeExpressionNode> {
+        let parsing_fn = |parser: &mut JarvilParser| {
+            return parser.type_expr();
+        };
+        return self.expect_symbol_separated_sequence(parsing_fn, ",");
     }
 
-    pub fn expect_generic_type_decls(&mut self) {
-        todo!()
+    pub fn expect_generic_type_decls(&mut self) -> CommaSeparatedNode<GenericTypeDeclNode> {
+        let parsing_fn = |parser: &mut JarvilParser| {
+            let identifier_in_decl_node = parser.expect_ident_in_decl();
+            let colon_node = parser.expect(":");
+            let interface_bounds_node = parser.expect_symbol_separated_sequence(
+                |parser: &mut JarvilParser| {
+                    return parser.expect_ident_in_use();
+                },
+                "+",
+            );
+            return GenericTypeDeclNode::new(
+                &identifier_in_decl_node,
+                Some((&colon_node, &interface_bounds_node)),
+            );
+        };
+        return self.expect_symbol_separated_sequence(parsing_fn, ",");
     }
 
-    pub fn expect_ident_in_use(&mut self) {
+    pub fn expect_ident_in_use(&mut self) -> IdentifierInUseNode {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
@@ -271,9 +289,10 @@ impl JarvilParser {
             self.log_missing_token_error(&[symbol], &token);
             // IdentifierNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
         }
+        todo!()
     }
 
-    pub fn expect_ident_in_decl(&mut self) {
+    pub fn expect_ident_in_decl(&mut self) -> IdentifierInDeclNode {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
@@ -295,6 +314,7 @@ impl JarvilParser {
             self.log_missing_token_error(&[symbol], &token);
             // IdentifierNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
         }
+        todo!()
     }
 
     pub fn expect_ident(&mut self) -> IdentifierNode {

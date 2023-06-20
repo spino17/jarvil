@@ -552,6 +552,40 @@ pub struct CoreCommaSeparatedNode<T: Clone> {
     pub remaining_entities: Option<CommaSeparatedNode<T>>,
 }
 
+#[derive(Debug, Node)]
+pub enum CoreIdentifierInUseNode {
+    Ok(OkIdentifierInUseNode),
+    MissingTokens(MissingTokenNode),
+}
+
+#[derive(Debug, Node)]
+pub enum CoreIdentifierInDeclNode {
+    Ok(OkIdentifierInDeclNode),
+    MissingTokens(MissingTokenNode),
+}
+
+#[derive(Debug)]
+pub struct CoreOkIdentifierInUseNode {
+    pub name: OkTokenNode,
+    pub generic_type_args: Option<(TokenNode, CommaSeparatedNode<TypeExpressionNode>, TokenNode)>,
+}
+
+#[derive(Debug)]
+pub struct CoreOkIdentifierInDeclNode {
+    pub name: OkTokenNode,
+    pub generic_type_decls: Option<(
+        TokenNode,
+        CommaSeparatedNode<GenericTypeDeclNode>,
+        TokenNode,
+    )>, // (langle, ..., rangle)
+}
+
+#[derive(Debug)]
+pub struct CoreGenericTypeDeclNode {
+    pub generic_type_name: IdentifierInDeclNode,
+    pub interface_bounds: Option<(TokenNode, CommaSeparatedNode<IdentifierInUseNode>)>, // (colon, ...)
+}
+
 // core node wrapper
 #[derive(Debug, Clone)]
 pub struct BlockNode(pub Rc<CoreBlockNode>);
@@ -661,6 +695,16 @@ pub struct MissingTokenNode(pub Rc<CoreMissingTokenNode>);
 pub struct SkippedTokenNode(pub Rc<CoreSkippedTokenNode>);
 #[derive(Debug, Clone)]
 pub struct CommaSeparatedNode<T: Clone>(pub Rc<CoreCommaSeparatedNode<T>>);
+#[derive(Debug, Clone)]
+pub struct GenericTypeDeclNode(pub Rc<CoreGenericTypeDeclNode>);
+#[derive(Debug, Clone)]
+pub struct IdentifierInUseNode(pub Rc<CoreIdentifierInUseNode>);
+#[derive(Debug, Clone)]
+pub struct IdentifierInDeclNode(pub Rc<CoreIdentifierInDeclNode>);
+#[derive(Debug, Clone)]
+pub struct OkIdentifierInUseNode(pub Rc<CoreOkIdentifierInUseNode>);
+#[derive(Debug, Clone)]
+pub struct OkIdentifierInDeclNode(pub Rc<CoreOkIdentifierInDeclNode>);
 
 // misc "kind" enums
 pub enum TypeResolveKind {

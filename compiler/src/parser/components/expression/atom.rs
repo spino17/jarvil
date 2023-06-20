@@ -9,7 +9,7 @@ pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> At
     match token.core_token {
         CoreToken::DOT => {
             let dot_node = parser.expect(".");
-            let property_or_method_name_node = parser.expect_ident();
+            let property_or_method_name_node = parser.expect_ident(); // usage
             match &parser.curr_token().core_token {
                 CoreToken::LPAREN => {
                     let lparen_node = parser.expect("(");
@@ -75,7 +75,7 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
     let token = &parser.curr_token();
     match token.core_token {
         CoreToken::IDENTIFIER => {
-            let leading_identifier_node = parser.expect_ident();
+            let leading_identifier_node = parser.expect_ident(); // usage
             let token = &parser.curr_token();
             match token.core_token {
                 CoreToken::LPAREN => {
@@ -97,7 +97,7 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
                 }
                 CoreToken::DOUBLE_COLON => {
                     let double_colon_node = parser.expect("::");
-                    let class_method_name = parser.expect_ident();
+                    let class_method_name = parser.expect_ident(); // usage
                     let lparen_node = parser.expect("(");
                     let mut params_node: Option<&CommaSeparatedNode<ExpressionNode>> = None;
                     let params: CommaSeparatedNode<ExpressionNode>;

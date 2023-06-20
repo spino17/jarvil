@@ -7,20 +7,22 @@ use super::ast::{
     CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
     CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreCommaSeparatedNode, CoreComparisonNode,
     CoreExpressionNode, CoreExpressionStatementNode, CoreFunctionDeclarationNode,
-    CoreFunctionWrapperNode, CoreHashMapTypeNode, CoreIdentifierNode,
+    CoreFunctionWrapperNode, CoreGenericTypeDeclNode, CoreHashMapTypeNode, CoreIdentifierNode,
     CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode, CoreInvalidLValueNode,
     CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMethodAccessNode,
-    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierNode,
-    CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
-    CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
-    CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
-    CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
-    CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreTokenNode, CoreTupleTypeNode,
-    CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode,
-    CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode,
-    FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode, IdentifierNode,
-    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
-    LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode, OkAssignmentNode,
+    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
+    CoreOkIdentifierInUseNode, CoreOkIdentifierNode, CoreOkSelfKeywordNode, CoreOkTokenNode,
+    CoreOnlyUnaryExpressionNode, CoreParenthesisedExpressionNode, CorePropertyAccessNode,
+    CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreReturnStatementNode,
+    CoreSelfKeywordNode, CoreSkippedTokenNode, CoreSkippedTokensNode,
+    CoreStatemenIndentWrapperNode, CoreStatementNode, CoreStructDeclarationNode,
+    CoreStructPropertyDeclarationNode, CoreTokenNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
+    CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
+    CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
+    FunctionWrapperNode, GenericTypeDeclNode, HashMapTypeNode, IdentifierInDeclNode,
+    IdentifierInUseNode, IdentifierNode, IncorrectlyIndentedStatementNode, IndexAccessNode,
+    InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
+    NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
     OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
     ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
     ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode,
@@ -1961,4 +1963,54 @@ impl Node for SkippedTokenNode {
     fn start_line_number(&self) -> usize {
         self.0.as_ref().skipped_token.line_number
     }
+}
+
+impl OkIdentifierInUseNode {
+    impl_core_ref!(CoreOkIdentifierInUseNode);
+}
+
+impl Node for OkIdentifierInUseNode {
+    fn range(&self) -> TextRange {
+        match &self.core_ref().generic_type_args {
+            Some((_, _, rangle)) => impl_range!(self.core_ref().name, rangle),
+            None => self.core_ref().name.range(),
+        }
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().name.start_line_number()
+    }
+}
+
+impl OkIdentifierInDeclNode {
+    impl_core_ref!(CoreOkIdentifierInDeclNode);
+}
+
+impl Node for OkIdentifierInDeclNode {
+    fn range(&self) -> TextRange {
+        match &self.core_ref().generic_type_decls {
+            Some((_, _, rangle)) => impl_range!(self.core_ref().name, rangle),
+            None => self.core_ref().name.range(),
+        }
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().name.start_line_number()
+    }
+}
+
+impl GenericTypeDeclNode {
+    pub fn new(
+        generic_type_name: &IdentifierInDeclNode,
+        interface_bounds: Option<(&TokenNode, &CommaSeparatedNode<IdentifierInUseNode>)>,
+    ) -> Self {
+        let node = Rc::new(CoreGenericTypeDeclNode {
+            generic_type_name: generic_type_name.clone(),
+            interface_bounds: match interface_bounds {
+                Some((colon, interfaces)) => Some((colon.clone(), interfaces.clone())),
+                None => None,
+            },
+        });
+        GenericTypeDeclNode(node)
+    }
+
+    impl_core_ref!(CoreGenericTypeDeclNode);
 }

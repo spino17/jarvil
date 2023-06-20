@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
     let type_keyword_node = parser.expect("type");
-    let type_name_node = parser.expect_ident();
+    let type_name_node = parser.expect_ident(); // decl
     let token = &parser.curr_token();
     let type_decl_node = match token.core_token {
         CoreToken::STRUCT_KEYWORD => {

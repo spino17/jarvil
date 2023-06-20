@@ -5,8 +5,8 @@ use crate::{ast::ast::VariableDeclarationNode, parser::parser::JarvilParser};
 
 pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
     let let_keyword_node = parser.expect("let");
-    let identifier_node = parser.expect_ident();
-    // TODO - add optional type-casting expression here
+    let identifier_node = parser.expect_ident(); // decl - generic args will only for lambdas
+                                                 // TODO - add optional type-casting expression here
     let equal_node = parser.expect("=");
     let token = &parser.curr_token();
     let r_node = match token.core_token {
