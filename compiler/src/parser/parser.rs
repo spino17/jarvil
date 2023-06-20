@@ -221,6 +221,82 @@ impl JarvilParser {
         }
     }
 
+    pub fn expect_symbol_separated_sequence<T: Clone, U: Fn(&mut JarvilParser) -> T>(
+        &mut self,
+        entity_parsing_fn: U,
+        separator_token: Token,
+    ) -> CommaSeparatedNode<T> {
+        let first_entity_node = entity_parsing_fn(self);
+        let token = self.curr_token();
+        if token.core_token == separator_token.core_token {
+            let separator_node = self.expect(separator_token.core_token.to_string());
+            let remaining_generic_type_args_node =
+                self.expect_symbol_separated_sequence(entity_parsing_fn, separator_token);
+            return CommaSeparatedNode::new_with_entities(
+                &first_entity_node,
+                &remaining_generic_type_args_node,
+                &separator_node,
+            );
+        }
+        return CommaSeparatedNode::new_with_single_entity(&first_entity_node);
+    }
+
+    pub fn expect_generic_type_args(&mut self) {
+        todo!()
+    }
+
+    pub fn expect_generic_type_decls(&mut self) {
+        todo!()
+    }
+
+    pub fn expect_ident_in_use(&mut self) {
+        let token = self.curr_token();
+        let symbol = IDENTIFIER;
+        if token.is_eq(symbol) {
+            self.scan_next_token();
+            let ok_token_node = OkTokenNode::new(&token); // ident token
+            let next_token = self.curr_token();
+            match next_token.core_token {
+                CoreToken::LBRACKET => {
+                    let langle_node = self.expect("<");
+                    let generic_type_args_node = self.expect_generic_type_args();
+                    let rangle_node = self.expect(">");
+                }
+                _ => {
+                    // return None node for generic type arguments which is just the normal case
+                    todo!()
+                }
+            }
+        } else {
+            self.log_missing_token_error(&[symbol], &token);
+            // IdentifierNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
+        }
+    }
+
+    pub fn expect_ident_in_decl(&mut self) {
+        let token = self.curr_token();
+        let symbol = IDENTIFIER;
+        if token.is_eq(symbol) {
+            self.scan_next_token();
+            let ok_token_node = OkTokenNode::new(&token); // ident token
+            let next_token = self.curr_token();
+            match next_token.core_token {
+                CoreToken::LBRACKET => {
+                    let langle_node = self.expect("<");
+                    let generic_type_decls_node = self.expect_generic_type_decls();
+                    let rangle_node = self.expect(">");
+                }
+                _ => {
+                    // return None node for generic type arguments which is just the normal case
+                    todo!()
+                }
+            }
+        } else {
+            self.log_missing_token_error(&[symbol], &token);
+            // IdentifierNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
+        }
+    }
+
     pub fn expect_ident(&mut self) -> IdentifierNode {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
