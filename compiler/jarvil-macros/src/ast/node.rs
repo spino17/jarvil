@@ -79,13 +79,13 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         impl ASTNode {
             #impl_ast_node;
-            pub fn new_with_TypeTuple(x: &CommaSeparatedNode<TypeExpressionNode>) -> Self {
+            pub fn new_with_TypeTuple(x: &SymbolSeparatedSequenceNode<TypeExpressionNode>) -> Self {
                 ASTNode::TypeTuple(x.clone())
             }
-            pub fn new_with_NameTypeSpecs(x: &CommaSeparatedNode<NameTypeSpecNode>) -> Self {
+            pub fn new_with_NameTypeSpecs(x: &SymbolSeparatedSequenceNode<NameTypeSpecNode>) -> Self {
                 ASTNode::NameTypeSpecs(x.clone())
             }
-            pub fn new_with_Params(x: &CommaSeparatedNode<ExpressionNode>) -> Self {
+            pub fn new_with_Params(x: &SymbolSeparatedSequenceNode<ExpressionNode>) -> Self {
                 ASTNode::Params(x.clone())
             }
         }

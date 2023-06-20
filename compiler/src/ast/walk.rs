@@ -17,7 +17,7 @@ use crate::ast::ast::{
     VariableDeclarationNode,
 };
 
-use super::ast::{CommaSeparatedNode, TupleTypeNode};
+use super::ast::{SymbolSeparatedSequenceNode, TupleTypeNode};
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
 // See /src/go/ast/walk.go
@@ -221,13 +221,13 @@ pub trait Visitor {
         OkSelfKeywordNode,
         new_with_OkSelfKeywordNode
     );
-    fn walk_type_tuple(&mut self, x: &CommaSeparatedNode<TypeExpressionNode>) {
+    fn walk_type_tuple(&mut self, x: &SymbolSeparatedSequenceNode<TypeExpressionNode>) {
         self.walk(&ASTNode::new_with_TypeTuple(x));
     }
-    fn walk_name_type_specs(&mut self, x: &CommaSeparatedNode<NameTypeSpecNode>) {
+    fn walk_name_type_specs(&mut self, x: &SymbolSeparatedSequenceNode<NameTypeSpecNode>) {
         self.walk(&ASTNode::new_with_NameTypeSpecs(x));
     }
-    fn walk_params(&mut self, x: &CommaSeparatedNode<ExpressionNode>) {
+    fn walk_params(&mut self, x: &SymbolSeparatedSequenceNode<ExpressionNode>) {
         self.walk(&ASTNode::new_with_Params(x));
     }
 
@@ -437,7 +437,7 @@ pub trait Visitor {
             ASTNode::NameTypeSpecs(name_type_specs_node) => {
                 let core_name_type_specs = name_type_specs_node.core_ref();
                 self.walk_name_type_spec(&core_name_type_specs.entity);
-                if let Some(comma) = &core_name_type_specs.comma {
+                if let Some(comma) = &core_name_type_specs.separator {
                     self.walk_token(comma);
                 }
                 if let Some(remaining_args) = &core_name_type_specs.remaining_entities {
@@ -453,7 +453,7 @@ pub trait Visitor {
             ASTNode::TypeTuple(type_tuple_node) => {
                 let core_type_tuple = type_tuple_node.core_ref();
                 self.walk_type_expression(&core_type_tuple.entity);
-                if let Some(comma) = &core_type_tuple.comma {
+                if let Some(comma) = &core_type_tuple.separator {
                     self.walk_token(comma);
                 }
                 if let Some(remaining_types) = &core_type_tuple.remaining_entities {
@@ -591,7 +591,7 @@ pub trait Visitor {
             ASTNode::Params(params_node) => {
                 let core_params = params_node.core_ref();
                 self.walk_expression(&core_params.entity);
-                if let Some(comma) = &core_params.comma {
+                if let Some(comma) = &core_params.separator {
                     self.walk_token(comma);
                 }
                 if let Some(remaining_params) = &core_params.remaining_entities {

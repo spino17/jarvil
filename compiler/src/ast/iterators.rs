@@ -1,11 +1,11 @@
-use super::ast::CommaSeparatedNode;
+use super::ast::SymbolSeparatedSequenceNode;
 
 pub struct CommanSeparedIterator<T: Clone> {
-    node: Option<CommaSeparatedNode<T>>,
+    node: Option<SymbolSeparatedSequenceNode<T>>,
 }
 
 impl<T: Clone> CommanSeparedIterator<T> {
-    pub fn new(node: &CommaSeparatedNode<T>) -> Self {
+    pub fn new(node: &SymbolSeparatedSequenceNode<T>) -> Self {
         CommanSeparedIterator {
             node: Some(node.clone()),
         }

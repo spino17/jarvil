@@ -1,5 +1,5 @@
 use crate::ast::ast::{
-    AtomNode, AtomStartNode, CallExpressionNode, CommaSeparatedNode, ExpressionNode,
+    AtomNode, AtomStartNode, CallExpressionNode, ExpressionNode, SymbolSeparatedSequenceNode,
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
@@ -13,8 +13,9 @@ pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> At
             match &parser.curr_token().core_token {
                 CoreToken::LPAREN => {
                     let lparen_node = parser.expect("(");
-                    let mut params_node: Option<&CommaSeparatedNode<ExpressionNode>> = None;
-                    let params: CommaSeparatedNode<ExpressionNode>;
+                    let mut params_node: Option<&SymbolSeparatedSequenceNode<ExpressionNode>> =
+                        None;
+                    let params: SymbolSeparatedSequenceNode<ExpressionNode>;
                     if !parser.check_curr_token(")") {
                         params = parser.params();
                         params_node = Some(&params);
@@ -42,8 +43,8 @@ pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> At
         }
         CoreToken::LPAREN => {
             let lparen_node = parser.expect("(");
-            let mut params_node: Option<&CommaSeparatedNode<ExpressionNode>> = None;
-            let params: CommaSeparatedNode<ExpressionNode>;
+            let mut params_node: Option<&SymbolSeparatedSequenceNode<ExpressionNode>> = None;
+            let params: SymbolSeparatedSequenceNode<ExpressionNode>;
             if !parser.check_curr_token(")") {
                 params = parser.params();
                 params_node = Some(&params);
@@ -80,8 +81,9 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
             match token.core_token {
                 CoreToken::LPAREN => {
                     let lparen_node = parser.expect("(");
-                    let mut params_node: Option<&CommaSeparatedNode<ExpressionNode>> = None;
-                    let params: CommaSeparatedNode<ExpressionNode>;
+                    let mut params_node: Option<&SymbolSeparatedSequenceNode<ExpressionNode>> =
+                        None;
+                    let params: SymbolSeparatedSequenceNode<ExpressionNode>;
                     if !parser.check_curr_token(")") {
                         params = parser.params();
                         params_node = Some(&params);
@@ -99,8 +101,9 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
                     let double_colon_node = parser.expect("::");
                     let class_method_name = parser.expect_ident(); // usage
                     let lparen_node = parser.expect("(");
-                    let mut params_node: Option<&CommaSeparatedNode<ExpressionNode>> = None;
-                    let params: CommaSeparatedNode<ExpressionNode>;
+                    let mut params_node: Option<&SymbolSeparatedSequenceNode<ExpressionNode>> =
+                        None;
+                    let params: SymbolSeparatedSequenceNode<ExpressionNode>;
                     if !parser.check_curr_token(")") {
                         params = parser.params();
                         params_node = Some(&params);

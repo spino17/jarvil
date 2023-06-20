@@ -59,7 +59,7 @@ pub enum ASTNode {
     BoundedMethodWrapper(BoundedMethodWrapperNode),
     LambdaDeclaration(LambdaDeclarationNode),
     ExpressionStatement(ExpressionStatementNode),
-    TypeTuple(CommaSeparatedNode<TypeExpressionNode>),
+    TypeTuple(SymbolSeparatedSequenceNode<TypeExpressionNode>),
     Expression(ExpressionNode),
     AtomicExpression(AtomicExpressionNode),
     ParenthesisedExpression(ParenthesisedExpressionNode),
@@ -75,9 +75,9 @@ pub enum ASTNode {
     IndexAccess(IndexAccessNode),
     Call(CallNode),
     ClassMethodCall(ClassMethodCallNode),
-    NameTypeSpecs(CommaSeparatedNode<NameTypeSpecNode>),
+    NameTypeSpecs(SymbolSeparatedSequenceNode<NameTypeSpecNode>),
     NameTypeSpec(NameTypeSpecNode),
-    Params(CommaSeparatedNode<ExpressionNode>),
+    Params(SymbolSeparatedSequenceNode<ExpressionNode>),
     Identifier(IdentifierNode),
     OkIdentifier(OkIdentifierNode),
     SelfKeyword(SelfKeywordNode),
@@ -227,7 +227,7 @@ pub struct CoreLambdaTypeDeclarationNode {
     pub equal: TokenNode,
     pub lparen: TokenNode,
     pub rparen: TokenNode,
-    pub type_tuple: Option<CommaSeparatedNode<TypeExpressionNode>>,
+    pub type_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
     pub right_arrow: Option<TokenNode>,
     pub return_type: Option<TypeExpressionNode>,
     pub newline: TokenNode,
@@ -266,7 +266,7 @@ pub struct CoreArrayTypeNode {
 pub struct CoreTupleTypeNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
-    pub types: CommaSeparatedNode<TypeExpressionNode>,
+    pub types: SymbolSeparatedSequenceNode<TypeExpressionNode>,
 }
 
 // DICTIONARY_TYPE
@@ -293,7 +293,7 @@ pub struct CoreCallablePrototypeNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
     pub right_arrow: Option<TokenNode>,
-    pub params: Option<CommaSeparatedNode<NameTypeSpecNode>>,
+    pub params: Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
     pub return_type: Option<TypeExpressionNode>,
 }
 
@@ -411,7 +411,7 @@ pub struct CoreCallExpressionNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
     pub function_name: IdentifierNode,
-    pub params: Option<CommaSeparatedNode<ExpressionNode>>,
+    pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
 }
 
 // ATOM
@@ -451,7 +451,7 @@ pub struct CoreMethodAccessNode {
     pub dot: TokenNode,
     pub atom: AtomNode,
     pub method_name: IdentifierNode,
-    pub params: Option<CommaSeparatedNode<ExpressionNode>>,
+    pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
 }
 
 // INDEX_ACCESS
@@ -471,7 +471,7 @@ pub struct CoreCallNode {
     pub atom: AtomNode,
     pub lparen: TokenNode,
     pub rparen: TokenNode,
-    pub params: Option<CommaSeparatedNode<ExpressionNode>>,
+    pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
 }
 
 // CLASS_METHOD_CALL
@@ -483,7 +483,7 @@ pub struct CoreClassMethodCallNode {
     pub double_colon: TokenNode,
     pub class_name: IdentifierNode,
     pub class_method_name: IdentifierNode,
-    pub params: Option<CommaSeparatedNode<ExpressionNode>>,
+    pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
 }
 
 // NAME_TYPE_SPEC
@@ -546,10 +546,10 @@ pub struct CoreSkippedTokenNode {
 }
 
 #[derive(Debug)]
-pub struct CoreCommaSeparatedNode<T: Clone> {
-    pub comma: Option<TokenNode>,
+pub struct CoreSymbolSeparatedSequenceNode<T: Clone> {
+    pub separator: Option<TokenNode>,
     pub entity: T,
-    pub remaining_entities: Option<CommaSeparatedNode<T>>,
+    pub remaining_entities: Option<SymbolSeparatedSequenceNode<T>>,
 }
 
 #[derive(Debug, Node)]
@@ -567,7 +567,11 @@ pub enum CoreIdentifierInDeclNode {
 #[derive(Debug)]
 pub struct CoreOkIdentifierInUseNode {
     pub name: OkTokenNode,
-    pub generic_type_args: Option<(TokenNode, CommaSeparatedNode<TypeExpressionNode>, TokenNode)>,
+    pub generic_type_args: Option<(
+        TokenNode,
+        SymbolSeparatedSequenceNode<TypeExpressionNode>,
+        TokenNode,
+    )>,
 }
 
 #[derive(Debug)]
@@ -575,7 +579,7 @@ pub struct CoreOkIdentifierInDeclNode {
     pub name: OkTokenNode,
     pub generic_type_decls: Option<(
         TokenNode,
-        CommaSeparatedNode<GenericTypeDeclNode>,
+        SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
         TokenNode,
     )>, // (langle, ..., rangle)
 }
@@ -583,7 +587,7 @@ pub struct CoreOkIdentifierInDeclNode {
 #[derive(Debug)]
 pub struct CoreGenericTypeDeclNode {
     pub generic_type_name: IdentifierInDeclNode,
-    pub interface_bounds: Option<(TokenNode, CommaSeparatedNode<IdentifierInUseNode>)>, // (colon, ...)
+    pub interface_bounds: Option<(TokenNode, SymbolSeparatedSequenceNode<IdentifierInUseNode>)>, // (colon, ...)
 }
 
 // core node wrapper
@@ -694,7 +698,7 @@ pub struct MissingTokenNode(pub Rc<CoreMissingTokenNode>);
 #[derive(Debug, Clone)]
 pub struct SkippedTokenNode(pub Rc<CoreSkippedTokenNode>);
 #[derive(Debug, Clone)]
-pub struct CommaSeparatedNode<T: Clone>(pub Rc<CoreCommaSeparatedNode<T>>);
+pub struct SymbolSeparatedSequenceNode<T: Clone>(pub Rc<CoreSymbolSeparatedSequenceNode<T>>);
 #[derive(Debug, Clone)]
 pub struct GenericTypeDeclNode(pub Rc<CoreGenericTypeDeclNode>);
 #[derive(Debug, Clone)]

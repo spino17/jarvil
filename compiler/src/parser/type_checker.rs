@@ -7,15 +7,15 @@ use crate::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
             BinaryExpressionNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode,
-            CallableBodyNode, CallablePrototypeNode, CommaSeparatedNode, ComparisonNode,
-            CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-            CoreExpressionNode, CoreIdentifierNode, CoreRVariableDeclarationNode,
-            CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CallableBodyNode, CallablePrototypeNode, ComparisonNode, CoreAssignmentNode,
+            CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
+            CoreIdentifierNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
             LambdaDeclarationNode, NameTypeSpecNode, Node, OkIdentifierNode,
             OnlyUnaryExpressionNode, RAssignmentNode, RVariableDeclarationNode,
-            ReturnStatementNode, StatementNode, TokenNode, TypeExpressionNode, TypeResolveKind,
-            UnaryExpressionNode, VariableDeclarationNode,
+            ReturnStatementNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode,
+            TypeExpressionNode, TypeResolveKind, UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -148,7 +148,7 @@ impl TypeChecker {
     pub fn params_and_return_type_obj_from_expr(
         &self,
         return_type: &Option<TypeExpressionNode>,
-        params: &Option<CommaSeparatedNode<NameTypeSpecNode>>,
+        params: &Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
     ) -> (Vec<Type>, Type) {
         let mut params_vec: Vec<Type> = vec![];
         let return_type: Type = match return_type {
@@ -307,7 +307,7 @@ impl TypeChecker {
     pub fn check_params_type_and_count(
         &self,
         expected_param_data: &Vec<Type>,
-        received_params: &Option<CommaSeparatedNode<ExpressionNode>>,
+        received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> ParamsTypeNCountResult {
         let expected_params_len = expected_param_data.len();
         match received_params {

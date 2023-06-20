@@ -1,35 +1,35 @@
 use super::ast::{
     ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
     BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode, CallNode,
-    CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, CommaSeparatedNode,
-    ComparisonNode, CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
+    CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
+    CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
     CoreAtomicExpressionNode, CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode,
     CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
-    CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreCommaSeparatedNode, CoreComparisonNode,
-    CoreExpressionNode, CoreExpressionStatementNode, CoreFunctionDeclarationNode,
-    CoreFunctionWrapperNode, CoreGenericTypeDeclNode, CoreHashMapTypeNode,
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreIdentifierNode,
-    CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode, CoreInvalidLValueNode,
-    CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMethodAccessNode,
-    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
+    CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode, CoreExpressionNode,
+    CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
+    CoreGenericTypeDeclNode, CoreHashMapTypeNode, CoreIdentifierInDeclNode,
+    CoreIdentifierInUseNode, CoreIdentifierNode, CoreIncorrectlyIndentedStatementNode,
+    CoreIndexAccessNode, CoreInvalidLValueNode, CoreLambdaDeclarationNode,
+    CoreLambdaTypeDeclarationNode, CoreMethodAccessNode, CoreMissingTokenNode,
+    CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
     CoreOkIdentifierInUseNode, CoreOkIdentifierNode, CoreOkSelfKeywordNode, CoreOkTokenNode,
     CoreOnlyUnaryExpressionNode, CoreParenthesisedExpressionNode, CorePropertyAccessNode,
     CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreReturnStatementNode,
     CoreSelfKeywordNode, CoreSkippedTokenNode, CoreSkippedTokensNode,
     CoreStatemenIndentWrapperNode, CoreStatementNode, CoreStructDeclarationNode,
-    CoreStructPropertyDeclarationNode, CoreTokenNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
-    CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
-    CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
-    FunctionWrapperNode, GenericTypeDeclNode, HashMapTypeNode, IdentifierInDeclNode,
-    IdentifierInUseNode, IdentifierNode, IncorrectlyIndentedStatementNode, IndexAccessNode,
-    InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
-    NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
-    OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
-    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
-    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode,
-    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode, TokenNode, TupleTypeNode,
-    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-    UserDefinedTypeNode, VariableDeclarationNode,
+    CoreStructPropertyDeclarationNode, CoreSymbolSeparatedSequenceNode, CoreTokenNode,
+    CoreTupleTypeNode, CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode,
+    CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode,
+    FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode, HashMapTypeNode,
+    IdentifierInDeclNode, IdentifierInUseNode, IdentifierNode, IncorrectlyIndentedStatementNode,
+    IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
+    MethodAccessNode, NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode,
+    OkIdentifierInUseNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode,
+    OnlyUnaryExpressionNode, ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode,
+    RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
+    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    SymbolSeparatedSequenceNode, TokenNode, TupleTypeNode, TypeDeclarationNode, TypeExpressionNode,
+    TypeResolveKind, UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
 use super::iterators::CommanSeparedIterator;
 use crate::ast::ast::ErrornousNode;
@@ -439,7 +439,7 @@ impl LambdaTypeDeclarationNode {
         equal: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
-        type_tuple: Option<&CommaSeparatedNode<TypeExpressionNode>>,
+        type_tuple: Option<&SymbolSeparatedSequenceNode<TypeExpressionNode>>,
         right_arrow: Option<&TokenNode>,
         return_type: Option<&TypeExpressionNode>,
         newline: &TokenNode,
@@ -473,7 +473,7 @@ impl Node for LambdaTypeDeclarationNode {
 
 impl CallablePrototypeNode {
     pub fn new(
-        params: Option<&CommaSeparatedNode<NameTypeSpecNode>>,
+        params: Option<&SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
         return_type: Option<&TypeExpressionNode>,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -735,7 +735,7 @@ impl TypeExpressionNode {
     pub fn new_with_tuple_type(
         lparen: &TokenNode,
         rparen: &TokenNode,
-        types: &CommaSeparatedNode<TypeExpressionNode>,
+        types: &SymbolSeparatedSequenceNode<TypeExpressionNode>,
     ) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::Tuple(TupleTypeNode::new(
             lparen, rparen, types,
@@ -909,7 +909,7 @@ impl TupleTypeNode {
     pub fn new(
         lparen: &TokenNode,
         rparen: &TokenNode,
-        types: &CommaSeparatedNode<TypeExpressionNode>,
+        types: &SymbolSeparatedSequenceNode<TypeExpressionNode>,
     ) -> Self {
         let node = Rc::new(CoreTupleTypeNode {
             lparen: lparen.clone(),
@@ -1439,39 +1439,39 @@ impl Node for ComparisonNode {
     }
 }
 
-impl<T: Clone> CommaSeparatedNode<T> {
+impl<T: Clone> SymbolSeparatedSequenceNode<T> {
     pub fn new_with_single_entity(entity: &T) -> Self {
-        let node = Rc::new(CoreCommaSeparatedNode {
-            comma: None,
+        let node = Rc::new(CoreSymbolSeparatedSequenceNode {
+            separator: None,
             entity: entity.clone(),
             remaining_entities: None,
         });
-        CommaSeparatedNode(node)
+        SymbolSeparatedSequenceNode(node)
     }
 
     pub fn new_with_entities(
         entity: &T,
-        remaining_entities: &CommaSeparatedNode<T>,
+        remaining_entities: &SymbolSeparatedSequenceNode<T>,
         comma: &TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreCommaSeparatedNode {
-            comma: Some(comma.clone()),
+        let node = Rc::new(CoreSymbolSeparatedSequenceNode {
+            separator: Some(comma.clone()),
             entity: entity.clone(),
             remaining_entities: Some(remaining_entities.clone()),
         });
-        CommaSeparatedNode(node)
+        SymbolSeparatedSequenceNode(node)
     }
 
     pub fn iter(&self) -> CommanSeparedIterator<T> {
         CommanSeparedIterator::new(self)
     }
 
-    pub fn core_ref(&self) -> &CoreCommaSeparatedNode<T> {
+    pub fn core_ref(&self) -> &CoreSymbolSeparatedSequenceNode<T> {
         self.0.as_ref()
     }
 }
 
-impl<T: Clone + Node> Node for CommaSeparatedNode<T> {
+impl<T: Clone + Node> Node for SymbolSeparatedSequenceNode<T> {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_entities {
             Some(remaining_entities) => impl_range!(self.0.as_ref().entity, remaining_entities),
@@ -1486,7 +1486,7 @@ impl<T: Clone + Node> Node for CommaSeparatedNode<T> {
 impl CallExpressionNode {
     pub fn new(
         function_name: &IdentifierNode,
-        params: Option<&CommaSeparatedNode<ExpressionNode>>,
+        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1515,7 +1515,7 @@ impl ClassMethodCallNode {
     pub fn new(
         class_name: &IdentifierNode,
         class_method_name: &IdentifierNode,
-        params: Option<&CommaSeparatedNode<ExpressionNode>>,
+        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1551,7 +1551,7 @@ impl AtomNode {
 
     pub fn new_with_call(
         atom: &AtomNode,
-        params: Option<&CommaSeparatedNode<ExpressionNode>>,
+        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1575,7 +1575,7 @@ impl AtomNode {
     pub fn new_with_method_access(
         atom: &AtomNode,
         method_name: &IdentifierNode,
-        params: Option<&CommaSeparatedNode<ExpressionNode>>,
+        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
         dot: &TokenNode,
@@ -1641,7 +1641,7 @@ impl AtomStartNode {
     pub fn new_with_class_method_call(
         class_name: &IdentifierNode,
         class_method_name: &IdentifierNode,
-        params: Option<&CommaSeparatedNode<ExpressionNode>>,
+        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1673,7 +1673,7 @@ impl AtomStartNode {
 impl CallNode {
     pub fn new(
         atom: &AtomNode,
-        params: Option<&CommaSeparatedNode<ExpressionNode>>,
+        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1724,7 +1724,7 @@ impl MethodAccessNode {
     pub fn new(
         atom: &AtomNode,
         method_name: &IdentifierNode,
-        params: Option<&CommaSeparatedNode<ExpressionNode>>,
+        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
         dot: &TokenNode,
@@ -1971,7 +1971,7 @@ impl IdentifierInUseNode {
         token: &OkTokenNode,
         generic_type_args: Option<(
             &TokenNode,
-            &CommaSeparatedNode<TypeExpressionNode>,
+            &SymbolSeparatedSequenceNode<TypeExpressionNode>,
             &TokenNode,
         )>,
     ) -> Self {
@@ -1991,7 +1991,7 @@ impl IdentifierInDeclNode {
         token: &OkTokenNode,
         generic_type_decls: Option<(
             &TokenNode,
-            &CommaSeparatedNode<GenericTypeDeclNode>,
+            &SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
             &TokenNode,
         )>,
     ) -> Self {
@@ -2011,7 +2011,7 @@ impl OkIdentifierInUseNode {
         token: &OkTokenNode,
         generic_type_args: Option<(
             &TokenNode,
-            &CommaSeparatedNode<TypeExpressionNode>,
+            &SymbolSeparatedSequenceNode<TypeExpressionNode>,
             &TokenNode,
         )>,
     ) -> Self {
@@ -2047,7 +2047,7 @@ impl OkIdentifierInDeclNode {
         token: &OkTokenNode,
         generic_type_decls: Option<(
             &TokenNode,
-            &CommaSeparatedNode<GenericTypeDeclNode>,
+            &SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
             &TokenNode,
         )>,
     ) -> Self {
@@ -2081,7 +2081,10 @@ impl Node for OkIdentifierInDeclNode {
 impl GenericTypeDeclNode {
     pub fn new(
         generic_type_name: &IdentifierInDeclNode,
-        interface_bounds: Option<(&TokenNode, &CommaSeparatedNode<IdentifierInUseNode>)>,
+        interface_bounds: Option<(
+            &TokenNode,
+            &SymbolSeparatedSequenceNode<IdentifierInUseNode>,
+        )>,
     ) -> Self {
         let node = Rc::new(CoreGenericTypeDeclNode {
             generic_type_name: generic_type_name.clone(),
