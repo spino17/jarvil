@@ -1,18 +1,18 @@
 use super::ast::SymbolSeparatedSequenceNode;
 
-pub struct CommanSeparedIterator<T: Clone> {
+pub struct SymbolSeparatedSequenceIterator<T: Clone> {
     node: Option<SymbolSeparatedSequenceNode<T>>,
 }
 
-impl<T: Clone> CommanSeparedIterator<T> {
+impl<T: Clone> SymbolSeparatedSequenceIterator<T> {
     pub fn new(node: &SymbolSeparatedSequenceNode<T>) -> Self {
-        CommanSeparedIterator {
+        SymbolSeparatedSequenceIterator {
             node: Some(node.clone()),
         }
     }
 }
 
-impl<T: Clone> Iterator for CommanSeparedIterator<T> {
+impl<T: Clone> Iterator for SymbolSeparatedSequenceIterator<T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         let ok_entity = match &self.node {

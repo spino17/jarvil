@@ -31,7 +31,7 @@ use super::ast::{
     SymbolSeparatedSequenceNode, TokenNode, TupleTypeNode, TypeDeclarationNode, TypeExpressionNode,
     TypeResolveKind, UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
-use super::iterators::CommanSeparedIterator;
+use super::iterators::SymbolSeparatedSequenceIterator;
 use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
@@ -1462,8 +1462,8 @@ impl<T: Clone> SymbolSeparatedSequenceNode<T> {
         SymbolSeparatedSequenceNode(node)
     }
 
-    pub fn iter(&self) -> CommanSeparedIterator<T> {
-        CommanSeparedIterator::new(self)
+    pub fn iter(&self) -> SymbolSeparatedSequenceIterator<T> {
+        SymbolSeparatedSequenceIterator::new(self)
     }
 
     pub fn core_ref(&self) -> &CoreSymbolSeparatedSequenceNode<T> {
