@@ -7,7 +7,8 @@ use super::ast::{
     CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
     CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreCommaSeparatedNode, CoreComparisonNode,
     CoreExpressionNode, CoreExpressionStatementNode, CoreFunctionDeclarationNode,
-    CoreFunctionWrapperNode, CoreGenericTypeDeclNode, CoreHashMapTypeNode, CoreIdentifierNode,
+    CoreFunctionWrapperNode, CoreGenericTypeDeclNode, CoreHashMapTypeNode,
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreIdentifierNode,
     CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode, CoreInvalidLValueNode,
     CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMethodAccessNode,
     CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
@@ -1965,7 +1966,67 @@ impl Node for SkippedTokenNode {
     }
 }
 
+impl IdentifierInUseNode {
+    pub fn new_with_ok(
+        token: &OkTokenNode,
+        generic_type_args: Option<(
+            &TokenNode,
+            &CommaSeparatedNode<TypeExpressionNode>,
+            &TokenNode,
+        )>,
+    ) -> Self {
+        let node = Rc::new(CoreIdentifierInUseNode::Ok(OkIdentifierInUseNode::new(
+            token,
+            generic_type_args,
+        )));
+        IdentifierInUseNode(node)
+    }
+
+    impl_core_ref!(CoreIdentifierInUseNode);
+}
+default_errornous_node_impl!(IdentifierInUseNode, CoreIdentifierInUseNode);
+
+impl IdentifierInDeclNode {
+    pub fn new_with_ok(
+        token: &OkTokenNode,
+        generic_type_decls: Option<(
+            &TokenNode,
+            &CommaSeparatedNode<GenericTypeDeclNode>,
+            &TokenNode,
+        )>,
+    ) -> Self {
+        let node = Rc::new(CoreIdentifierInDeclNode::Ok(OkIdentifierInDeclNode::new(
+            token,
+            generic_type_decls,
+        )));
+        IdentifierInDeclNode(node)
+    }
+
+    impl_core_ref!(CoreIdentifierInDeclNode);
+}
+default_errornous_node_impl!(IdentifierInDeclNode, CoreIdentifierInDeclNode);
+
 impl OkIdentifierInUseNode {
+    fn new(
+        token: &OkTokenNode,
+        generic_type_args: Option<(
+            &TokenNode,
+            &CommaSeparatedNode<TypeExpressionNode>,
+            &TokenNode,
+        )>,
+    ) -> Self {
+        let node = Rc::new(CoreOkIdentifierInUseNode {
+            name: token.clone(),
+            generic_type_args: match generic_type_args {
+                Some((langle, args, rangle)) => {
+                    Some((langle.clone(), args.clone(), rangle.clone()))
+                }
+                None => None,
+            },
+        });
+        OkIdentifierInUseNode(node)
+    }
+
     impl_core_ref!(CoreOkIdentifierInUseNode);
 }
 
@@ -1982,6 +2043,26 @@ impl Node for OkIdentifierInUseNode {
 }
 
 impl OkIdentifierInDeclNode {
+    fn new(
+        token: &OkTokenNode,
+        generic_type_decls: Option<(
+            &TokenNode,
+            &CommaSeparatedNode<GenericTypeDeclNode>,
+            &TokenNode,
+        )>,
+    ) -> Self {
+        let node = Rc::new(CoreOkIdentifierInDeclNode {
+            name: token.clone(),
+            generic_type_decls: match generic_type_decls {
+                Some((langle, args, rangle)) => {
+                    Some((langle.clone(), args.clone(), rangle.clone()))
+                }
+                None => None,
+            },
+        });
+        OkIdentifierInDeclNode(node)
+    }
+
     impl_core_ref!(CoreOkIdentifierInDeclNode);
 }
 
