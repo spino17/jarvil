@@ -252,14 +252,14 @@ impl JarvilParser {
         &mut self,
     ) -> SymbolSeparatedSequenceNode<GenericTypeDeclNode> {
         let parsing_fn = |parser: &mut JarvilParser| {
-            let identifier_in_decl_node = parser.expect_ident_in_decl(false);
+            let identifier_in_decl_node = parser.expect_identifier();
             let token = parser.curr_token();
             match token.core_token {
                 CoreToken::COLON => {
                     let colon_node = parser.expect(":");
                     let interface_bounds_node = parser.expect_symbol_separated_sequence(
                         |parser: &mut JarvilParser| {
-                            return parser.expect_ident_in_use(true);
+                            return parser.expect_identifier_in_use();
                         },
                         "+",
                     );
@@ -276,46 +276,67 @@ impl JarvilParser {
         return self.expect_symbol_separated_sequence(parsing_fn, ",");
     }
 
-    pub fn expect_ident_in_use(&mut self, is_generics_allowed: bool) -> IdentifierInUseNode {
+    pub fn expect_identifier(&mut self) -> IdentifierInDeclNode {
+        let token = self.curr_token();
+        let symbol = IDENTIFIER;
+        if token.is_eq(symbol) {
+            self.scan_next_token();
+            let ok_token_node = OkTokenNode::new(&token);
+            return IdentifierInDeclNode::new_with_ok(&ok_token_node, None);
+        } else {
+            self.log_missing_token_error(&[symbol], &token);
+            return IdentifierInDeclNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token);
+        }
+    }
+
+    pub fn expect_identifier_in_use(&mut self) -> IdentifierInUseNode {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
             self.scan_next_token();
             let ok_token_node = OkTokenNode::new(&token);
             let next_token = self.curr_token();
-            if is_generics_allowed && next_token.is_eq("<") {
-                let langle_node = self.expect("<");
-                let generic_type_args_node = self.expect_generic_type_args();
-                let rangle_node = self.expect(">");
-                return IdentifierInUseNode::new_with_ok(
-                    &ok_token_node,
-                    Some((&langle_node, &generic_type_args_node, &rangle_node)),
-                );
+            match next_token.core_token {
+                CoreToken::LBRACKET => {
+                    let langle_node = self.expect("<");
+                    let generic_type_args_node = self.expect_generic_type_args();
+                    let rangle_node = self.expect(">");
+                    return IdentifierInUseNode::new_with_ok(
+                        &ok_token_node,
+                        Some((&langle_node, &generic_type_args_node, &rangle_node)),
+                    );
+                }
+                _ => {
+                    return IdentifierInUseNode::new_with_ok(&ok_token_node, None);
+                }
             }
-            return IdentifierInUseNode::new_with_ok(&ok_token_node, None);
         } else {
             self.log_missing_token_error(&[symbol], &token);
             IdentifierInUseNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
         }
     }
 
-    pub fn expect_ident_in_decl(&mut self, is_generics_allowed: bool) -> IdentifierInDeclNode {
+    pub fn expect_identifier_in_decl(&mut self) -> IdentifierInDeclNode {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
             self.scan_next_token();
             let ok_token_node = OkTokenNode::new(&token);
             let next_token = self.curr_token();
-            if is_generics_allowed && next_token.is_eq("<") {
-                let langle_node = self.expect("<");
-                let generic_type_decls_node = self.expect_generic_type_decls();
-                let rangle_node = self.expect(">");
-                return IdentifierInDeclNode::new_with_ok(
-                    &ok_token_node,
-                    Some((&langle_node, &generic_type_decls_node, &rangle_node)),
-                );
+            match next_token.core_token {
+                CoreToken::LBRACKET => {
+                    let langle_node = self.expect("<");
+                    let generic_type_decls_node = self.expect_generic_type_decls();
+                    let rangle_node = self.expect(">");
+                    return IdentifierInDeclNode::new_with_ok(
+                        &ok_token_node,
+                        Some((&langle_node, &generic_type_decls_node, &rangle_node)),
+                    );
+                }
+                _ => {
+                    return IdentifierInDeclNode::new_with_ok(&ok_token_node, None);
+                }
             }
-            return IdentifierInDeclNode::new_with_ok(&ok_token_node, None);
         } else {
             self.log_missing_token_error(&[symbol], &token);
             return IdentifierInDeclNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token);
