@@ -31,6 +31,14 @@ impl AbstractType for HashMap {
             _ => false,
         }
     }
+
+    fn stringify(&self) -> String {
+        return format!(
+            "lc_{}_colon_{}_rc",
+            self.key_type.stringify(),
+            self.value_type.stringify()
+        );
+    }
 }
 
 impl ToString for HashMap {

@@ -63,6 +63,18 @@ impl AbstractType for Tuple {
             _ => false,
         }
     }
+
+    fn stringify(&self) -> String {
+        let mut s = "lp_".to_string();
+        let len = self.sub_types.len();
+        s.push_str(&self.sub_types[0].stringify());
+        for i in 1..len {
+            s.push_str("_comma_");
+            s.push_str(&self.sub_types[i].stringify());
+        }
+        s.push_str("_rp");
+        return s;
+    }
 }
 
 impl ToString for Tuple {

@@ -67,6 +67,10 @@ impl AbstractType for Atomic {
             _ => false,
         }
     }
+
+    fn stringify(&self) -> String {
+        self.to_string()
+    }
 }
 
 impl ToString for Atomic {

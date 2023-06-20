@@ -85,6 +85,7 @@ impl PythonCodeGenerator {
     }
 
     pub fn get_suffix_str_for_identifier(&self, identifier: &OkIdentifierNode) -> &'static str {
+        // TODO - use OkIdenifierNode and generic type arguments to generate the name
         match self
             .namespace_handler
             .identifier_binding_table

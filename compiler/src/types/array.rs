@@ -46,6 +46,10 @@ impl AbstractType for Array {
             _ => false,
         }
     }
+
+    fn stringify(&self) -> String {
+        return format!("ls_{}_rs", self.element_type.stringify());
+    }
 }
 
 impl ToString for Array {

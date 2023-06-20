@@ -6,6 +6,7 @@ use crate::types::core::{AbstractType, CoreType, Type};
 pub struct Lambda {
     pub name: Option<String>,
     pub meta_data: FunctionData,
+    pub generic_type_args: Vec<Type>,
 }
 
 impl Lambda {
@@ -20,6 +21,7 @@ impl Lambda {
                 params: params.clone(),
                 return_type: return_type.clone(),
             },
+            generic_type_args: vec![],
         }
     }
 }
@@ -54,6 +56,26 @@ impl AbstractType for Lambda {
             }
             CoreType::Any => true,
             _ => false,
+        }
+    }
+
+    fn stringify(&self) -> String {
+        match &self.name {
+            Some(name) => {
+                let mut s = name.to_string();
+                let len = self.generic_type_args.len();
+                if len > 0 {
+                    s.push_str("_la_");
+                    s.push_str(&self.generic_type_args[0].stringify());
+                    for i in 1..len {
+                        s.push_str("_comma_");
+                        s.push_str(&self.generic_type_args[i].stringify());
+                    }
+                    s.push_str("_ra");
+                }
+                return s;
+            }
+            None => unreachable!(),
         }
     }
 }
