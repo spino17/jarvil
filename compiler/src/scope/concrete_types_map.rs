@@ -11,10 +11,6 @@ pub struct ConcreteTypesMap {
 }
 
 impl ConcreteTypesMap {
-    fn new() -> Self {
-        todo!()
-    }
-
     fn stringify_types(types: &Vec<Type>) -> String {
         let mut s = types[0].stringify();
         let len = types.len();
@@ -25,7 +21,13 @@ impl ConcreteTypesMap {
         s
     }
 
-    fn insert(
+    fn insert_struct_concrete_types(&mut self, struct_concrete_types: &ConcreteTypes) {
+        if !self.map.contains_key(struct_concrete_types) {
+            self.map.insert(struct_concrete_types.clone(), FxHashMap::default());
+        }
+    }
+
+    fn insert_method_concrete_types(
         &mut self,
         method_name: &str,
         struct_concrete_types: &ConcreteTypes,
@@ -53,6 +55,14 @@ impl ConcreteTypesMap {
                 struct_val.insert(method_name.to_string(), methods_val);
                 entry.insert(struct_val);
             }
+        }
+    }
+}
+
+impl Default for ConcreteTypesMap {
+    fn default() -> Self {
+        ConcreteTypesMap {
+            map: FxHashMap::default()
         }
     }
 }
