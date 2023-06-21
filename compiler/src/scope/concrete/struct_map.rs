@@ -1,26 +1,12 @@
-use std::{
-    collections::hash_map::Entry,
-    hash::{Hash, Hasher},
-};
-
-use crate::types::core::{AbstractType, Type};
+use std::collections::hash_map::Entry;
 use rustc_hash::{FxHashMap, FxHashSet};
+use super::core::ConcreteTypes;
 
-pub struct ConcreteTypesMap {
+pub struct StructConcreteTypesMap {
     map: FxHashMap<ConcreteTypes, FxHashMap<String, FxHashSet<ConcreteTypes>>>,
 }
 
-impl ConcreteTypesMap {
-    fn stringify_types(types: &Vec<Type>) -> String {
-        let mut s = types[0].stringify();
-        let len = types.len();
-        for i in 1..len {
-            s.push_str("_comma_");
-            s.push_str(&types[i].stringify());
-        }
-        s
-    }
-
+impl StructConcreteTypesMap {
     fn insert_struct_concrete_types(&mut self, struct_concrete_types: &ConcreteTypes) {
         if !self.map.contains_key(struct_concrete_types) {
             self.map.insert(struct_concrete_types.clone(), FxHashMap::default());
@@ -59,40 +45,10 @@ impl ConcreteTypesMap {
     }
 }
 
-impl Default for ConcreteTypesMap {
+impl Default for StructConcreteTypesMap {
     fn default() -> Self {
-        ConcreteTypesMap {
+        StructConcreteTypesMap {
             map: FxHashMap::default()
         }
     }
 }
-
-#[derive(Debug, Clone)]
-pub struct ConcreteTypes {
-    types: Vec<Type>,
-    hash_str: String,
-}
-
-impl ConcreteTypes {
-    fn new(types: &Vec<Type>) -> Self {
-        ConcreteTypes {
-            types: types.clone(), // expensive clone
-            hash_str: ConcreteTypesMap::stringify_types(types),
-        }
-    }
-}
-
-impl Hash for ConcreteTypes {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let hash_str = &self.hash_str;
-        hash_str.hash(state);
-    }
-}
-
-impl PartialEq for ConcreteTypes {
-    fn eq(&self, other: &Self) -> bool {
-        self.hash_str == other.hash_str
-    }
-}
-
-impl Eq for ConcreteTypes {}
