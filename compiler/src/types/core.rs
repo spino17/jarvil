@@ -13,6 +13,9 @@ use std::rc::Rc;
 pub trait AbstractType {
     fn is_eq(&self, base_type: &Type) -> bool;
     fn stringify(&self) -> String;
+    fn has_generic_type(&self) {
+        todo!()
+    }
 }
 
 pub trait OperatorCompatiblity {
