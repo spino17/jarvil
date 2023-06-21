@@ -79,6 +79,11 @@ pub enum ASTNode {
     NameTypeSpec(NameTypeSpecNode),
     Params(SymbolSeparatedSequenceNode<ExpressionNode>),
     Identifier(IdentifierNode),
+    IdentifierInUse(IdentifierInUseNode),
+    IdentifierInDecl(IdentifierInDeclNode),
+    OkIdentifierInUse(OkIdentifierInUseNode),
+    OkIdentifierInDecl(OkIdentifierInDeclNode),
+    GenericTypeDecl(GenericTypeDeclNode),
     OkIdentifier(OkIdentifierNode),
     SelfKeyword(SelfKeywordNode),
     OkSelfKeyword(OkSelfKeywordNode),
@@ -547,9 +552,9 @@ pub struct CoreSkippedTokenNode {
 
 #[derive(Debug)]
 pub struct CoreSymbolSeparatedSequenceNode<T: Clone> {
-    pub separator: Option<TokenNode>,
+    // pub separator: Option<TokenNode>,
     pub entity: T,
-    pub remaining_entities: Option<SymbolSeparatedSequenceNode<T>>,
+    pub remaining_entities: Option<(TokenNode, SymbolSeparatedSequenceNode<T>)>,
 }
 
 #[derive(Debug, Node)]

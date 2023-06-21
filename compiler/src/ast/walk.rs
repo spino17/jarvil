@@ -17,7 +17,11 @@ use crate::ast::ast::{
     VariableDeclarationNode,
 };
 
-use super::ast::{SymbolSeparatedSequenceNode, TupleTypeNode};
+use super::ast::{
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, GenericTypeDeclNode, IdentifierInDeclNode,
+    IdentifierInUseNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    SymbolSeparatedSequenceNode, TupleTypeNode,
+};
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
 // See /src/go/ast/walk.go
@@ -215,6 +219,31 @@ pub trait Visitor {
         new_with_OkIdentifierNode
     );
     impl_node_walk!(walk_identifier, IdentifierNode, new_with_IdentifierNode);
+    impl_node_walk!(
+        walk_identifier_in_use,
+        IdentifierInUseNode,
+        new_with_IdentifierInUseNode
+    );
+    impl_node_walk!(
+        walk_identifier_in_decl,
+        IdentifierInDeclNode,
+        new_with_IdentifierInDeclNode
+    );
+    impl_node_walk!(
+        walk_ok_identifier_in_use,
+        OkIdentifierInUseNode,
+        new_with_OkIdentifierInUseNode
+    );
+    impl_node_walk!(
+        walk_ok_identifier_in_decl,
+        OkIdentifierInDeclNode,
+        new_with_OkIdentifierInDeclNode
+    );
+    impl_node_walk!(
+        walk_generic_type_decl,
+        GenericTypeDeclNode,
+        new_with_GenericTypeDeclNode
+    );
     impl_node_walk!(walk_self_keyword, SelfKeywordNode, new_with_SelfKeywordNode);
     impl_node_walk!(
         walk_ok_self_keyword,
@@ -229,6 +258,22 @@ pub trait Visitor {
     }
     fn walk_params(&mut self, x: &SymbolSeparatedSequenceNode<ExpressionNode>) {
         self.walk(&ASTNode::new_with_Params(x));
+    }
+    fn walk_generic_type_decls(&mut self, x: &SymbolSeparatedSequenceNode<GenericTypeDeclNode>) {
+        let core_generic_type_decls = x.core_ref();
+        self.walk_generic_type_decl(&core_generic_type_decls.entity);
+        if let Some((comma, remaining_entities)) = &core_generic_type_decls.remaining_entities {
+            self.walk_token(comma);
+            self.walk_generic_type_decls(remaining_entities);
+        }
+    }
+    fn walk_interface_bounds(&mut self, x: &SymbolSeparatedSequenceNode<IdentifierInUseNode>) {
+        let core_interface_bounds = x.core_ref();
+        self.walk_identifier_in_use(&core_interface_bounds.entity);
+        if let Some((comma, remaining_entities)) = &core_interface_bounds.remaining_entities {
+            self.walk_token(comma);
+            self.walk_interface_bounds(remaining_entities);
+        }
     }
 
     fn walk(&mut self, node: &ASTNode) {
@@ -437,10 +482,8 @@ pub trait Visitor {
             ASTNode::NameTypeSpecs(name_type_specs_node) => {
                 let core_name_type_specs = name_type_specs_node.core_ref();
                 self.walk_name_type_spec(&core_name_type_specs.entity);
-                if let Some(comma) = &core_name_type_specs.separator {
+                if let Some((comma, remaining_args)) = &core_name_type_specs.remaining_entities {
                     self.walk_token(comma);
-                }
-                if let Some(remaining_args) = &core_name_type_specs.remaining_entities {
                     self.walk_name_type_specs(remaining_args);
                 }
             }
@@ -453,10 +496,8 @@ pub trait Visitor {
             ASTNode::TypeTuple(type_tuple_node) => {
                 let core_type_tuple = type_tuple_node.core_ref();
                 self.walk_type_expression(&core_type_tuple.entity);
-                if let Some(comma) = &core_type_tuple.separator {
+                if let Some((comma, remaining_types)) = &core_type_tuple.remaining_entities {
                     self.walk_token(comma);
-                }
-                if let Some(remaining_types) = &core_type_tuple.remaining_entities {
                     self.walk_type_tuple(remaining_types);
                 }
             }
@@ -591,10 +632,8 @@ pub trait Visitor {
             ASTNode::Params(params_node) => {
                 let core_params = params_node.core_ref();
                 self.walk_expression(&core_params.entity);
-                if let Some(comma) = &core_params.separator {
+                if let Some((comma, remaining_params)) = &core_params.remaining_entities {
                     self.walk_token(comma);
-                }
-                if let Some(remaining_params) = &core_params.remaining_entities {
                     self.walk_params(remaining_params);
                 }
             }
@@ -718,6 +757,58 @@ pub trait Visitor {
                     CoreSelfKeywordNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
                     }
+                }
+            }
+            ASTNode::IdentifierInUse(identifier_in_use) => {
+                let core_identifier_in_use = identifier_in_use.core_ref();
+                match core_identifier_in_use {
+                    CoreIdentifierInUseNode::Ok(ok_identifier) => {
+                        self.walk_ok_identifier_in_use(ok_identifier)
+                    }
+                    CoreIdentifierInUseNode::MissingTokens(missing_tokens) => {
+                        self.walk_missing_tokens(missing_tokens)
+                    }
+                }
+            }
+            ASTNode::IdentifierInDecl(identifier_in_decl) => {
+                let core_identifier_in_decl = identifier_in_decl.core_ref();
+                match core_identifier_in_decl {
+                    CoreIdentifierInDeclNode::Ok(ok_identifier) => {
+                        self.walk_ok_identifier_in_decl(ok_identifier)
+                    }
+                    CoreIdentifierInDeclNode::MissingTokens(missing_tokens) => {
+                        self.walk_missing_tokens(missing_tokens)
+                    }
+                }
+            }
+            ASTNode::OkIdentifierInUse(ok_identifier_in_use) => {
+                let core_ok_identifier_in_use = ok_identifier_in_use.core_ref();
+                self.walk_ok_token(&core_ok_identifier_in_use.name);
+                if let Some((langle, generic_type_args, rangle)) =
+                    &core_ok_identifier_in_use.generic_type_args
+                {
+                    self.walk_token(langle);
+                    self.walk_type_tuple(generic_type_args);
+                    self.walk_token(rangle);
+                }
+            }
+            ASTNode::OkIdentifierInDecl(ok_identifier_in_decl) => {
+                let core_ok_identifier_in_decl = ok_identifier_in_decl.core_ref();
+                self.walk_ok_token(&core_ok_identifier_in_decl.name);
+                if let Some((langle, generic_type_decls, rangle)) =
+                    &core_ok_identifier_in_decl.generic_type_decls
+                {
+                    self.walk_token(langle);
+                    self.walk_generic_type_decls(generic_type_decls);
+                    self.walk_token(rangle);
+                }
+            }
+            ASTNode::GenericTypeDecl(generic_type_decl) => {
+                let core_generic_type_decl = generic_type_decl.core_ref();
+                self.walk_identifier_in_decl(&core_generic_type_decl.generic_type_name);
+                if let Some((colon, interface_bounds)) = &core_generic_type_decl.interface_bounds {
+                    self.walk_token(colon);
+                    self.walk_interface_bounds(interface_bounds);
                 }
             }
             ASTNode::OkSelfKeyword(ok_self_keyword) => {

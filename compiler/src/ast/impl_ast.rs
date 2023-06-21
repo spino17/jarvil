@@ -1442,7 +1442,6 @@ impl Node for ComparisonNode {
 impl<T: Clone> SymbolSeparatedSequenceNode<T> {
     pub fn new_with_single_entity(entity: &T) -> Self {
         let node = Rc::new(CoreSymbolSeparatedSequenceNode {
-            separator: None,
             entity: entity.clone(),
             remaining_entities: None,
         });
@@ -1455,9 +1454,8 @@ impl<T: Clone> SymbolSeparatedSequenceNode<T> {
         comma: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreSymbolSeparatedSequenceNode {
-            separator: Some(comma.clone()),
             entity: entity.clone(),
-            remaining_entities: Some(remaining_entities.clone()),
+            remaining_entities: Some((comma.clone(), remaining_entities.clone())),
         });
         SymbolSeparatedSequenceNode(node)
     }
@@ -1474,7 +1472,9 @@ impl<T: Clone> SymbolSeparatedSequenceNode<T> {
 impl<T: Clone + Node> Node for SymbolSeparatedSequenceNode<T> {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_entities {
-            Some(remaining_entities) => impl_range!(self.0.as_ref().entity, remaining_entities),
+            Some((_, remaining_entities)) => {
+                impl_range!(self.0.as_ref().entity, remaining_entities)
+            }
             None => impl_range!(self.0.as_ref().entity, self.0.as_ref().entity),
         }
     }

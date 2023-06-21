@@ -242,9 +242,12 @@ impl JarvilParser {
     }
 
     pub fn expect_generic_type_args(&mut self) -> SymbolSeparatedSequenceNode<TypeExpressionNode> {
-        return self.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
-            return parser.type_expr();
-        }, ",");
+        return self.expect_symbol_separated_sequence(
+            |parser: &mut JarvilParser| {
+                return parser.type_expr();
+            },
+            ",",
+        );
     }
 
     pub fn expect_generic_type_decls(

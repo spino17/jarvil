@@ -20,7 +20,7 @@ impl<T: Clone> Iterator for SymbolSeparatedSequenceIterator<T> {
             None => return None,
         };
         self.node = match &ok_entity.core_ref().remaining_entities {
-            Some(remaining_params) => Some(remaining_params.clone()),
+            Some((_, remaining_params)) => Some(remaining_params.clone()),
             None => None,
         };
         Some(ok_entity.core_ref().entity.clone())
