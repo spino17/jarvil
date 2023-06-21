@@ -242,10 +242,9 @@ impl JarvilParser {
     }
 
     pub fn expect_generic_type_args(&mut self) -> SymbolSeparatedSequenceNode<TypeExpressionNode> {
-        let parsing_fn = |parser: &mut JarvilParser| {
+        return self.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
             return parser.type_expr();
-        };
-        return self.expect_symbol_separated_sequence(parsing_fn, ",");
+        }, ",");
     }
 
     pub fn expect_generic_type_decls(
@@ -372,10 +371,8 @@ impl JarvilParser {
     pub fn expect_terminators(&mut self) -> TokenNode {
         let symbols = &["\n", ENDMARKER];
         let token = self.curr_token();
-        if token.is_eq("\n") {
+        if token.is_eq("\n") || token.is_eq(ENDMARKER) {
             self.scan_next_token();
-            return TokenNode::new_with_ok(&token);
-        } else if token.is_eq(ENDMARKER) {
             return TokenNode::new_with_ok(&token);
         } else {
             self.log_missing_token_error(symbols, &token);
