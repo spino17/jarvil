@@ -1162,7 +1162,9 @@ impl UserDefinedTypeNode {
                             ));
                         }
                     },
-                    SymbolDataEntry::Function(_) | SymbolDataEntry::Variable(_) => unreachable!(),
+                    SymbolDataEntry::Function(_)
+                    | SymbolDataEntry::Variable(_)
+                    | SymbolDataEntry::Interface(_) => unreachable!(),
                 },
                 None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
             }

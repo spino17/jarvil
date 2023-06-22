@@ -1,6 +1,7 @@
 use super::{
     core::{Namespace, SymbolData},
     function::FunctionData,
+    interfaces::InterfaceData,
     user_defined_types::UserDefinedTypeData,
     variables::VariableData,
 };
@@ -13,12 +14,14 @@ pub enum SymbolDataRef<'a> {
     Variable(&'a SymbolData<VariableData>),
     Function(&'a SymbolData<FunctionData>),
     Type(&'a SymbolData<UserDefinedTypeData>),
+    Interface(&'a SymbolData<InterfaceData>),
 }
 
 pub enum SymbolDataEntry {
     Variable(SymbolData<VariableData>),
     Function(SymbolData<FunctionData>),
     Type(SymbolData<UserDefinedTypeData>),
+    Interface(SymbolData<InterfaceData>),
 }
 
 pub struct NamespaceHandler {
@@ -51,6 +54,9 @@ impl NamespaceHandler {
                 }
                 SymbolDataEntry::Type(type_symbol_data) => {
                     Some(SymbolDataRef::Type(type_symbol_data))
+                }
+                SymbolDataEntry::Interface(interface_symbol_data) => {
+                    Some(SymbolDataRef::Interface(interface_symbol_data))
                 }
             },
             None => None,

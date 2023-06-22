@@ -1,5 +1,6 @@
 use super::function::FunctionData;
 use super::handler::SymbolDataEntry;
+use super::interfaces::InterfaceData;
 use super::user_defined_types::LambdaTypeData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
@@ -223,6 +224,7 @@ pub struct Namespace {
     pub variables: Scope<VariableData>,
     pub types: Scope<UserDefinedTypeData>,
     pub functions: Scope<FunctionData>,
+    pub interfaces: Scope<InterfaceData>,
 }
 
 impl Namespace {
@@ -231,6 +233,7 @@ impl Namespace {
             variables: Scope::new(),
             types: Scope::new(),
             functions: Scope::new(),
+            interfaces: Scope::new(),
         }
     }
 
@@ -241,7 +244,8 @@ impl Namespace {
     pub fn open_scope(&mut self, curr_scope_index: usize) -> usize {
         self.variables.add_new_scope(curr_scope_index);
         self.types.add_new_scope(curr_scope_index);
-        self.functions.add_new_scope(curr_scope_index)
+        self.functions.add_new_scope(curr_scope_index);
+        self.interfaces.add_new_scope(curr_scope_index)
     }
 
     pub fn get_from_variables_namespace(
@@ -266,6 +270,14 @@ impl Namespace {
         key: &str,
     ) -> Option<&SymbolData<UserDefinedTypeData>> {
         self.types.get(scope_index, key)
+    }
+
+    pub fn get_from_interfaces_namespace(
+        &self,
+        scope_index: usize,
+        key: &str,
+    ) -> Option<&SymbolData<InterfaceData>> {
+        self.interfaces.get(scope_index, key)
     }
 
     pub fn lookup_in_variables_namespace(
@@ -299,6 +311,14 @@ impl Namespace {
         key: &str,
     ) -> Option<(SymbolData<UserDefinedTypeData>, usize, usize, bool)> {
         self.types.lookup(scope_index, key)
+    }
+
+    pub fn lookup_in_interfaces_namespace(
+        &self,
+        scope_index: usize,
+        key: &str,
+    ) -> Option<(SymbolData<InterfaceData>, usize, usize, bool)> {
+        self.interfaces.lookup(scope_index, key)
     }
 
     pub fn lookup_in_functions_namespace(
@@ -444,6 +464,31 @@ impl Namespace {
             true,
         ) {
             Ok(symbol_data) => return Ok(SymbolDataEntry::Type(symbol_data)),
+            Err(err) => return Err(err),
+        }
+    }
+
+    pub fn declare_interface(
+        &mut self,
+        scope_index: usize,
+        name: String,
+        decl_range: TextRange,
+    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+        let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| match scope
+            .lookup(scope_index, key)
+        {
+            Some((symbol_data, _, _, _)) => Some(symbol_data.1),
+            None => None,
+        };
+        match self.interfaces.insert(
+            scope_index,
+            name,
+            InterfaceData::default(),
+            decl_range,
+            lookup_func,
+            true,
+        ) {
+            Ok(symbol_data) => return Ok(SymbolDataEntry::Interface(symbol_data)),
             Err(err) => return Err(err),
         }
     }

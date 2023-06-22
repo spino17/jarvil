@@ -110,6 +110,12 @@ impl PythonCodeGenerator {
                     }
                     return "";
                 }
+                SymbolDataEntry::Interface(interface_symbol_data) => {
+                    if interface_symbol_data.2 {
+                        return "_intf";
+                    }
+                    return "";
+                }
             },
             None => return "",
         };

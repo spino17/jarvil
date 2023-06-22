@@ -421,6 +421,7 @@ impl TypeChecker {
                                     }
                                 }
                             }
+                            SymbolDataRef::Interface(_) => unreachable!(),
                             SymbolDataRef::Type(user_defined_type_symbol_data) => {
                                 match &*user_defined_type_symbol_data.0.as_ref().borrow() {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
