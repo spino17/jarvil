@@ -1,4 +1,6 @@
-use super::function::FunctionData;
+use std::collections::hash_map::Entry;
+
+use super::{core::AbstractConcreteTypesHandler, function::FunctionData};
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
@@ -24,12 +26,28 @@ impl UserDefinedTypeData {
     }
 }
 
+impl AbstractConcreteTypesHandler for UserDefinedTypeData {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
+        todo!()
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct StructData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub constructor: FunctionData,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub class_methods: FxHashMap<String, (FunctionData, TextRange)>,
+    pub concrete_types_registry: Vec<(Vec<Type>, FxHashMap<String, Vec<Vec<Type>>>)>,
+}
+
+impl AbstractConcreteTypesHandler for StructData {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
+        let index = self.concrete_types_registry.len();
+        self.concrete_types_registry
+            .push((concrete_types.clone(), FxHashMap::default()));
+        index
+    }
 }
 
 impl StructData {
@@ -45,6 +63,26 @@ impl StructData {
         self.class_methods = class_methods;
         if let Some((constructor_meta_data, _)) = constructor {
             self.constructor = constructor_meta_data;
+        }
+    }
+
+    pub fn register_method_concrete_types_at_index(
+        &mut self,
+        struct_concrete_types_index: usize,
+        method_name: &str,
+        method_concrete_types: &Vec<Type>,
+    ) {
+        match self.concrete_types_registry[struct_concrete_types_index]
+            .1
+            .entry(method_name.to_string())
+        {
+            Entry::Occupied(mut occupied_entry) => {
+                let occupied_entry_mut_ref = occupied_entry.get_mut();
+                occupied_entry_mut_ref.push(method_concrete_types.clone());
+            }
+            Entry::Vacant(vacant_entry) => {
+                vacant_entry.insert(vec![method_concrete_types.clone()]);
+            }
         }
     }
 

@@ -1,6 +1,6 @@
-use std::collections::hash_map::Entry;
-use rustc_hash::{FxHashMap, FxHashSet};
 use super::core::ConcreteTypes;
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::hash_map::Entry;
 
 pub struct StructConcreteTypesMap {
     map: FxHashMap<ConcreteTypes, FxHashMap<String, FxHashSet<ConcreteTypes>>>,
@@ -9,7 +9,8 @@ pub struct StructConcreteTypesMap {
 impl StructConcreteTypesMap {
     fn insert_struct_concrete_types(&mut self, struct_concrete_types: &ConcreteTypes) {
         if !self.map.contains_key(struct_concrete_types) {
-            self.map.insert(struct_concrete_types.clone(), FxHashMap::default());
+            self.map
+                .insert(struct_concrete_types.clone(), FxHashMap::default());
         }
     }
 
@@ -48,7 +49,7 @@ impl StructConcreteTypesMap {
 impl Default for StructConcreteTypesMap {
     fn default() -> Self {
         StructConcreteTypesMap {
-            map: FxHashMap::default()
+            map: FxHashMap::default(),
         }
     }
 }

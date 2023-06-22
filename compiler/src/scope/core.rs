@@ -15,10 +15,14 @@ pub enum VariableLookupResult {
     Err,
 }
 
-#[derive(Debug)]
-pub struct SymbolData<T>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
+pub trait AbstractConcreteTypesHandler {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize; // returns the index inside the list of concrete types
+}
 
-impl<T> SymbolData<T> {
+#[derive(Debug)]
+pub struct SymbolData<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
+
+impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn new(core_data: T, decl_range: TextRange, is_suffix_required: bool) -> Self {
         SymbolData(
             Rc::new(RefCell::new(core_data)),
@@ -26,22 +30,29 @@ impl<T> SymbolData<T> {
             is_suffix_required,
         )
     }
+
+    pub fn register_concrete_types(&self, concrete_types: &Vec<Type>) -> usize {
+        self.0
+            .as_ref()
+            .borrow_mut()
+            .register_concrete_types(concrete_types)
+    }
 }
 
-impl<T> Clone for SymbolData<T> {
+impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone(), self.1, self.2)
     }
 }
 
 #[derive(Debug)]
-pub struct CoreScope<T> {
+pub struct CoreScope<T: AbstractConcreteTypesHandler> {
     symbol_table: FxHashMap<String, SymbolData<T>>,
     pub parent_scope: Option<usize>, // points to the index in the global flattened scope vec
     is_global: bool,
 }
 
-impl<T> CoreScope<T> {
+impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
     fn set(
         &mut self,
         name: String,
@@ -120,11 +131,11 @@ impl<T> CoreScope<T> {
 }
 
 #[derive(Debug)]
-pub struct Scope<T> {
+pub struct Scope<T: AbstractConcreteTypesHandler> {
     pub flattened_vec: Vec<CoreScope<T>>,
 }
 
-impl<T> Scope<T> {
+impl<T: AbstractConcreteTypesHandler> Scope<T> {
     fn new() -> Self {
         Scope {
             flattened_vec: vec![CoreScope {

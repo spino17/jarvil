@@ -1,3 +1,4 @@
+use super::core::AbstractConcreteTypesHandler;
 use crate::types::core::Type;
 
 #[derive(Debug)]
@@ -24,6 +25,12 @@ impl VariableData {
 
     pub fn is_initialized(&self) -> bool {
         self.is_init
+    }
+}
+
+impl AbstractConcreteTypesHandler for VariableData {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
+        todo!()
     }
 }
 

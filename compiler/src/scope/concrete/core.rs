@@ -1,6 +1,6 @@
-use std::hash::{Hash, Hasher};
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
+use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone)]
 pub struct ConcreteTypes {
