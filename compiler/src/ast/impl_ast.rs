@@ -1125,6 +1125,7 @@ impl UserDefinedTypeNode {
                                 &lambda_data.meta_data.return_type,
                             ))
                         }
+                        UserDefinedTypeData::Generic(generic_data) => todo!()
                     };
                     resolver
                         .bind_decl_to_identifier(ok_identifier, SymbolDataEntry::Type(symbol_data));
@@ -1162,6 +1163,7 @@ impl UserDefinedTypeNode {
                                 &lambda_data.meta_data.return_type,
                             ));
                         }
+                        UserDefinedTypeData::Generic(generic_data) => todo!()
                     },
                     SymbolDataEntry::Function(_)
                     | SymbolDataEntry::Variable(_)

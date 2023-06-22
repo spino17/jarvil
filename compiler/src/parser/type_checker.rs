@@ -443,6 +443,17 @@ impl TypeChecker {
                                         ));
                                         return Type::new_with_unknown();
                                     }
+                                    UserDefinedTypeData::Generic(_) => {
+                                        let type_name = ok_identifier.token_value(&self.code);
+                                        let err = ConstructorNotFoundForTypeError::new(
+                                            type_name,
+                                            ok_identifier.range(),
+                                        );
+                                        self.log_error(Diagnostics::ConstructorNotFoundForType(
+                                            err,
+                                        ));
+                                        return Type::new_with_unknown();
+                                    }
                                 }
                             }
                         };

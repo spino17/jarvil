@@ -1,12 +1,13 @@
 use crate::types::core::Type;
 use std::vec;
 
-use super::core::AbstractConcreteTypesHandler;
+use super::{core::{AbstractConcreteTypesHandler, ConcreteSymbolData}, interfaces::InterfaceData};
 
 #[derive(Debug)]
 pub struct FunctionData {
     pub params: Vec<Type>,
     pub return_type: Type,
+    // pub generics: Vec<(String, Vec<ConcreteSymbolData<InterfaceData>>)>
 }
 
 impl FunctionData {

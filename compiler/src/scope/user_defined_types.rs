@@ -1,6 +1,6 @@
 use std::collections::hash_map::Entry;
 
-use super::{core::AbstractConcreteTypesHandler, function::FunctionData};
+use super::{core::{AbstractConcreteTypesHandler, ConcreteSymbolData}, function::FunctionData, interfaces::InterfaceData};
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
@@ -9,6 +9,7 @@ use text_size::TextRange;
 pub enum UserDefinedTypeData {
     Struct(StructData),
     Lambda(LambdaTypeData),
+    Generic(GenericTypeData),
 }
 
 impl UserDefinedTypeData {
@@ -35,6 +36,7 @@ impl AbstractConcreteTypesHandler for UserDefinedTypeData {
             UserDefinedTypeData::Lambda(lambda_type_data) => {
                 lambda_type_data.register_concrete_types(concrete_types)
             }
+            UserDefinedTypeData::Generic(_) => unreachable!()
         }
     }
 }
@@ -128,4 +130,17 @@ impl AbstractConcreteTypesHandler for LambdaTypeData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
         todo!()
     }
+}
+
+#[derive(Debug)]
+pub struct GenericTypeData {
+    index: usize,  // index in the sequence of all generic type params in declaration
+    category: GenericTypeCategory,
+    interface_bounds: Vec<ConcreteSymbolData<InterfaceData>>
+}
+
+#[derive(Debug)]
+pub enum GenericTypeCategory {
+    Struct,
+    Callable
 }
