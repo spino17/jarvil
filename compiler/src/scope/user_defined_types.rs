@@ -28,7 +28,14 @@ impl UserDefinedTypeData {
 
 impl AbstractConcreteTypesHandler for UserDefinedTypeData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
-        todo!()
+        match self {
+            UserDefinedTypeData::Struct(struct_type_data) => {
+                struct_type_data.register_concrete_types(concrete_types)
+            }
+            UserDefinedTypeData::Lambda(lambda_type_data) => {
+                lambda_type_data.register_concrete_types(concrete_types)
+            }
+        }
     }
 }
 
@@ -114,5 +121,11 @@ impl LambdaTypeData {
                 return_type,
             },
         }
+    }
+}
+
+impl AbstractConcreteTypesHandler for LambdaTypeData {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
+        todo!()
     }
 }
