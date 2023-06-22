@@ -345,6 +345,44 @@ impl JarvilParser {
         }
     }
 
+    pub fn expect_identifier_in<
+        T,
+        U: Clone,
+        F: Fn(&mut JarvilParser) -> SymbolSeparatedSequenceNode<U>,
+        V: Fn(&OkTokenNode, Option<(&TokenNode, &SymbolSeparatedSequenceNode<U>, &TokenNode)>) -> T,
+        W: Fn(&Vec<&'static str>, &Token) -> T,
+    >(
+        &mut self,
+        angle_bracketed_content_parsing_fn: F,
+        node_creation_method_with_some: V,
+        node_creation_method_with_err: W,
+    ) -> T {
+        let token = self.curr_token();
+        let symbol = IDENTIFIER;
+        if token.is_eq(symbol) {
+            self.scan_next_token();
+            let ok_token_node = OkTokenNode::new(&token);
+            let next_token = self.curr_token();
+            match next_token.core_token {
+                CoreToken::LBRACKET => {
+                    let langle_node = self.expect("<");
+                    let angle_bracketed_content_node = angle_bracketed_content_parsing_fn(self);
+                    let rangle_node = self.expect(">");
+                    return node_creation_method_with_some(
+                        &ok_token_node,
+                        Some((&langle_node, &angle_bracketed_content_node, &rangle_node)),
+                    );
+                }
+                _ => {
+                    return node_creation_method_with_some(&ok_token_node, None);
+                }
+            }
+        } else {
+            self.log_missing_token_error(&[symbol], &token);
+            return node_creation_method_with_err(&Rc::new(vec![symbol]), &token);
+        }
+    }
+
     pub fn expect_ident(&mut self) -> IdentifierNode {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
