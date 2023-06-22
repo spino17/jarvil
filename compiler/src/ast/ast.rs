@@ -148,6 +148,13 @@ pub struct CoreReturnStatementNode {
     pub newline: TokenNode,
 }
 
+#[derive(Debug)]
+pub struct CoreInterfaceMethodDeclaration {
+    pub name: IdentifierInDeclNode,
+    pub prototype: CallablePrototypeNode,
+    pub default_block: Option<(TokenNode, BlockNode)>  // (`:`, block for default implementation)
+}
+
 // VARIABLE_DECLARATION
 // `let` <name> `=` <r_node>
 #[derive(Debug)]
@@ -297,9 +304,8 @@ pub struct CoreUserDefinedTypeNode {
 pub struct CoreCallablePrototypeNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
-    pub right_arrow: Option<TokenNode>,
     pub params: Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
-    pub return_type: Option<TypeExpressionNode>,
+    pub return_type: Option<(TokenNode, TypeExpressionNode)>,  // (`->`, <type_expr>)
 }
 
 // CALLABLE_BODY

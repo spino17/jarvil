@@ -419,10 +419,8 @@ pub trait Visitor {
                     self.walk_name_type_specs(name_type_specs);
                 }
                 self.walk_token(&core_callable_prototype.rparen);
-                if let Some(right_arrow) = &core_callable_prototype.right_arrow {
+                if let Some((right_arrow, return_type)) = &core_callable_prototype.return_type {
                     self.walk_token(right_arrow);
-                }
-                if let Some(return_type) = &core_callable_prototype.return_type {
                     self.walk_type_expression(return_type);
                 }
             }

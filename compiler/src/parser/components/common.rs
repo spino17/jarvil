@@ -73,13 +73,12 @@ pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
         let return_type_node = parser.type_expr();
         return CallablePrototypeNode::new(
             args_node,
-            Some(&return_type_node),
+            Some((&r_arrow_node, &return_type_node)),
             &lparen_node,
             &rparen_node,
-            Some(&r_arrow_node),
         );
     } else {
-        return CallablePrototypeNode::new(args_node, None, &lparen_node, &rparen_node, None);
+        return CallablePrototypeNode::new(args_node, None, &lparen_node, &rparen_node);
     }
 }
 

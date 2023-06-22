@@ -447,7 +447,7 @@ impl Resolver {
         let mut param_types_vec: Vec<Type> = vec![];
         let mut return_type_range: Option<TextRange> = None;
         let return_type: Type = match return_type {
-            Some(return_type_expr) => {
+            Some((_, return_type_expr)) => {
                 return_type_range = Some(return_type_expr.range());
                 let type_obj = self.type_obj_from_expression(return_type_expr);
                 type_obj

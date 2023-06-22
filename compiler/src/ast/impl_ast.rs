@@ -474,17 +474,18 @@ impl Node for LambdaTypeDeclarationNode {
 impl CallablePrototypeNode {
     pub fn new(
         params: Option<&SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
-        return_type: Option<&TypeExpressionNode>,
+        return_type: Option<(&TokenNode, &TypeExpressionNode)>,
         lparen: &TokenNode,
         rparen: &TokenNode,
-        right_arrow: Option<&TokenNode>,
     ) -> Self {
         let node = Rc::new(CoreCallablePrototypeNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
-            right_arrow: extract_from_option!(right_arrow),
             params: extract_from_option!(params),
-            return_type: extract_from_option!(return_type),
+            return_type: match return_type {
+                Some((colon, return_type)) => Some((colon.clone(), return_type.clone())),
+                None => None
+            },
         });
         CallablePrototypeNode(node)
     }
@@ -495,7 +496,7 @@ impl CallablePrototypeNode {
 impl Node for CallablePrototypeNode {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().return_type {
-            Some(return_type) => impl_range!(self.0.as_ref().lparen, return_type),
+            Some((_, return_type)) => impl_range!(self.0.as_ref().lparen, return_type),
             None => impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen),
         }
     }

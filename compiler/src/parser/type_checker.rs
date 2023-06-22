@@ -147,12 +147,12 @@ impl TypeChecker {
 
     pub fn params_and_return_type_obj_from_expr(
         &self,
-        return_type: &Option<TypeExpressionNode>,
+        return_type: &Option<(TokenNode, TypeExpressionNode)>,
         params: &Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
     ) -> (Vec<Type>, Type) {
         let mut params_vec: Vec<Type> = vec![];
         let return_type: Type = match return_type {
-            Some(return_type_expr) => {
+            Some((_, return_type_expr)) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
                 type_obj
             }
@@ -1062,7 +1062,7 @@ impl TypeChecker {
         let core_callable_prototype = callable_prototype.0.as_ref();
         let return_type_node = &core_callable_prototype.return_type;
         let return_type_obj = match return_type_node {
-            Some(return_type_expr) => self.type_obj_from_expression(return_type_expr),
+            Some((_, return_type_expr)) => self.type_obj_from_expression(return_type_expr),
             None => Type::new_with_void(),
         };
         return_type_obj
@@ -1102,7 +1102,7 @@ impl TypeChecker {
             }
         } else {
             if !has_return_stmt.is_some() && !return_type_obj.is_void() {
-                let return_type_node = callable_body
+                let (_, return_type_node) = callable_body
                     .core_ref()
                     .prototype
                     .core_ref()
