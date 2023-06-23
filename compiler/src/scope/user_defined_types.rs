@@ -1,11 +1,14 @@
 use super::{
-    core::{AbstractConcreteTypesHandler, ConcreteSymbolData},
+    concrete::{
+        CallableConcreteTypesRegistry, ConcreteSymbolData, ConcreteTypesRegistryKey,
+        StructConcreteTypesRegistry,
+    },
+    core::AbstractConcreteTypesHandler,
     function::FunctionData,
     interfaces::InterfaceData,
 };
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
-use std::collections::hash_map::Entry;
 use text_size::TextRange;
 
 #[derive(Debug)]
@@ -35,24 +38,10 @@ impl UserDefinedTypeData {
             _ => unreachable!(),
         }
     }
-
-    pub fn get_lambda_data_ref(&self) -> &LambdaTypeData {
-        match self {
-            UserDefinedTypeData::Lambda(data) => data,
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn get_lambda_data_mut_ref(&self) -> &LambdaTypeData {
-        match self {
-            UserDefinedTypeData::Lambda(data) => data,
-            _ => unreachable!(),
-        }
-    }
 }
 
 impl AbstractConcreteTypesHandler for UserDefinedTypeData {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
         match self {
             UserDefinedTypeData::Struct(struct_type_data) => {
                 struct_type_data.register_concrete_types(concrete_types)
@@ -71,16 +60,7 @@ pub struct StructTypeData {
     pub constructor: FunctionData,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub class_methods: FxHashMap<String, (FunctionData, TextRange)>,
-    pub concrete_types_registry: Vec<(Vec<Type>, FxHashMap<String, Vec<Vec<Type>>>)>,
-}
-
-impl AbstractConcreteTypesHandler for StructTypeData {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
-        let index = self.concrete_types_registry.len();
-        self.concrete_types_registry
-            .push((concrete_types.clone(), FxHashMap::default()));
-        index
-    }
+    pub concrete_types_registry: StructConcreteTypesRegistry,
 }
 
 impl StructTypeData {
@@ -99,26 +79,6 @@ impl StructTypeData {
         }
     }
 
-    pub fn register_method_concrete_types_at_index(
-        &mut self,
-        struct_concrete_types_index: usize,
-        method_name: &str,
-        method_concrete_types: &Vec<Type>,
-    ) {
-        match self.concrete_types_registry[struct_concrete_types_index]
-            .1
-            .entry(method_name.to_string())
-        {
-            Entry::Occupied(mut occupied_entry) => {
-                let occupied_entry_mut_ref = occupied_entry.get_mut();
-                occupied_entry_mut_ref.push(method_concrete_types.clone());
-            }
-            Entry::Vacant(vacant_entry) => {
-                vacant_entry.insert(vec![method_concrete_types.clone()]);
-            }
-        }
-    }
-
     pub fn try_field(&self, field_name: &str) -> Option<(Type, TextRange)> {
         match self.fields.get(field_name) {
             Some(type_obj) => return Some((type_obj.0.clone(), type_obj.1)),
@@ -134,6 +94,13 @@ impl StructTypeData {
     }
 }
 
+impl AbstractConcreteTypesHandler for StructTypeData {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
+        self.concrete_types_registry
+            .register_concrete_types(concrete_types)
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct LambdaTypeData {
     pub meta_data: FunctionData,
@@ -145,14 +112,15 @@ impl LambdaTypeData {
             meta_data: FunctionData {
                 params: param_types,
                 return_type,
+                concrete_types_registry: CallableConcreteTypesRegistry::default(),
             },
         }
     }
 }
 
 impl AbstractConcreteTypesHandler for LambdaTypeData {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
-        todo!()
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
+        self.meta_data.register_concrete_types(concrete_types)
     }
 }
 

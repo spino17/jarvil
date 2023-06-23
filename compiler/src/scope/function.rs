@@ -2,7 +2,8 @@ use crate::types::core::Type;
 use std::vec;
 
 use super::{
-    core::{AbstractConcreteTypesHandler, ConcreteSymbolData},
+    concrete::{CallableConcreteTypesRegistry, ConcreteTypesRegistryKey},
+    core::AbstractConcreteTypesHandler,
     interfaces::InterfaceData,
 };
 
@@ -11,6 +12,7 @@ pub struct FunctionData {
     pub params: Vec<Type>,
     pub return_type: Type,
     // pub generics: Vec<(String, Vec<ConcreteSymbolData<InterfaceData>>)>
+    pub concrete_types_registry: CallableConcreteTypesRegistry,
 }
 
 impl FunctionData {
@@ -18,6 +20,7 @@ impl FunctionData {
         FunctionData {
             params,
             return_type,
+            concrete_types_registry: CallableConcreteTypesRegistry::default(),
         }
     }
 
@@ -28,8 +31,9 @@ impl FunctionData {
 }
 
 impl AbstractConcreteTypesHandler for FunctionData {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
-        todo!()
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
+        self.concrete_types_registry
+            .register_concrete_types(concrete_types)
     }
 }
 
@@ -38,6 +42,7 @@ impl Default for FunctionData {
         FunctionData {
             params: vec![],
             return_type: Type::new_with_unset(),
+            concrete_types_registry: CallableConcreteTypesRegistry::default(),
         }
     }
 }

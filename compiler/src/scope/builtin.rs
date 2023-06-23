@@ -1,4 +1,4 @@
-use super::function::FunctionData;
+use super::{concrete::CallableConcreteTypesRegistry, function::FunctionData};
 use crate::{constants::common::INT, types::core::Type};
 use std::str::Chars;
 
@@ -7,6 +7,7 @@ pub fn print_meta_data() -> FunctionData {
     FunctionData {
         params: vec![Type::new_with_any()],
         return_type: Type::new_with_void(),
+        concrete_types_registry: CallableConcreteTypesRegistry::default(),
     }
 }
 
@@ -15,6 +16,7 @@ pub fn range_meta_data() -> FunctionData {
     FunctionData {
         params: vec![Type::new_with_atomic(INT), Type::new_with_atomic(INT)],
         return_type: Type::new_with_array(&Type::new_with_atomic(INT)),
+        concrete_types_registry: CallableConcreteTypesRegistry::default(),
     }
 }
 

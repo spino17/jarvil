@@ -4,6 +4,7 @@ use super::r#struct::Struct;
 use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
+use crate::scope::concrete::ConcreteTypesRegistryKey;
 use crate::scope::core::SymbolData;
 use crate::scope::user_defined_types::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
@@ -74,11 +75,15 @@ impl Type {
         Type(Rc::new(CoreType::Struct(Struct::new(name, symbol_data))))
     }
 
-    pub fn new_with_lambda(name: Option<String>, params: &Vec<Type>, return_type: &Type) -> Type {
+    pub fn new_with_lambda(
+        name: Option<String>,
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        index: Option<ConcreteTypesRegistryKey>,
+    ) -> Type {
         Type(Rc::new(CoreType::Lambda(Lambda::new(
             name,
-            params,
-            return_type,
+            symbol_data,
+            index,
         ))))
     }
 

@@ -16,6 +16,7 @@ use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
 use crate::scope::core::VariableLookupResult;
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
+use crate::scope::user_defined_types::{LambdaTypeData, UserDefinedTypeData};
 use crate::types::core::CoreType;
 use crate::{
     ast::{
@@ -610,7 +611,14 @@ impl Resolver {
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
                 let (params_vec, return_type, _) =
                     self.visit_callable_body(&core_lambda_r_assign.body);
-                let lambda_type_obj = Type::new_with_lambda(None, &params_vec, &return_type);
+                let symbol_data = SymbolData::new(
+                    UserDefinedTypeData::Lambda(LambdaTypeData {
+                        meta_data: FunctionData::new(params_vec.clone(), return_type.clone()),
+                    }),
+                    TextRange::default(),
+                    true,
+                );
+                let lambda_type_obj = Type::new_with_lambda(None, &symbol_data, None);
                 if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
                     if let Some(symbol_data) = self
                         .namespace_handler

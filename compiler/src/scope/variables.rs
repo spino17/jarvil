@@ -1,5 +1,5 @@
-use super::core::AbstractConcreteTypesHandler;
-use crate::types::core::Type;
+use super::{concrete::ConcreteTypesRegistryKey, core::AbstractConcreteTypesHandler};
+use crate::types::core::{CoreType, Type};
 
 #[derive(Debug)]
 pub struct VariableData {
@@ -29,8 +29,13 @@ impl VariableData {
 }
 
 impl AbstractConcreteTypesHandler for VariableData {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
-        todo!()
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
+        match self.data_type.0.as_ref() {
+            CoreType::Lambda(data) => {
+                todo!()
+            }
+            _ => unreachable!(),
+        }
     }
 }
 

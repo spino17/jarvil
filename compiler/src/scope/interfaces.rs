@@ -1,4 +1,6 @@
-use super::{core::AbstractConcreteTypesHandler, function::FunctionData};
+use super::{
+    concrete::ConcreteTypesRegistryKey, core::AbstractConcreteTypesHandler, function::FunctionData,
+};
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
@@ -22,7 +24,7 @@ impl InterfaceData {
 }
 
 impl AbstractConcreteTypesHandler for InterfaceData {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
         todo!()
     }
 }

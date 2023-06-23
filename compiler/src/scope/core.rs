@@ -1,3 +1,4 @@
+use super::concrete::{CallableConcreteTypesRegistry, ConcreteTypesRegistryKey};
 use super::function::FunctionData;
 use super::handler::SymbolDataEntry;
 use super::interfaces::InterfaceData;
@@ -17,7 +18,7 @@ pub enum VariableLookupResult {
 }
 
 pub trait AbstractConcreteTypesHandler {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize; // returns the index inside the list of concrete types
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey; // returns the index inside the list of concrete types
 }
 
 #[derive(Debug)]
@@ -32,7 +33,7 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
         )
     }
 
-    pub fn register_concrete_types(&self, concrete_types: &Vec<Type>) -> usize {
+    pub fn register_concrete_types(&self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
         self.0
             .as_ref()
             .borrow_mut()
@@ -44,12 +45,6 @@ impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone(), self.1, self.2)
     }
-}
-
-#[derive(Debug)]
-pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler> {
-    symbol_data: SymbolData<T>,
-    concrete_types_index: Option<usize>, // if there are any concrete type arguments
 }
 
 #[derive(Debug)]
@@ -463,6 +458,7 @@ impl Namespace {
                 meta_data: FunctionData {
                     params: param_types,
                     return_type,
+                    concrete_types_registry: CallableConcreteTypesRegistry::default(),
                 },
             }),
             decl_range,

@@ -39,8 +39,10 @@ use crate::{
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
+        core::SymbolData,
+        function::FunctionData,
         handler::{NamespaceHandler, SymbolDataRef},
-        user_defined_types::UserDefinedTypeData,
+        user_defined_types::{LambdaTypeData, UserDefinedTypeData},
     },
     types::{
         atomic::Atomic,
@@ -191,21 +193,35 @@ impl TypeChecker {
             },
             _ => self.params_and_return_type_obj_from_expr(return_type, params),
         };
-        let lambda_type_obj = Type::new_with_lambda(None, &params_vec, &return_type);
+        let symbol_data = SymbolData::new(
+            UserDefinedTypeData::Lambda(LambdaTypeData {
+                meta_data: FunctionData::new(params_vec.clone(), return_type.clone()),
+            }),
+            TextRange::default(),
+            true,
+        );
+        let lambda_type_obj = Type::new_with_lambda(None, &symbol_data, None);
         return lambda_type_obj;
     }
 
-    pub fn is_callable<'a>(type_obj: &'a Type) -> Option<(&'a Vec<Type>, &'a Type)> {
+    /*
+    pub fn is_callable<'a>(type_obj: &'a Type) -> Option<(Vec<Type>, Type)> {
         match type_obj.0.as_ref() {
             CoreType::Lambda(lambda_data) => {
-                return Some((
-                    &lambda_data.meta_data.params,
-                    &lambda_data.meta_data.return_type,
-                ));
+                match &*lambda_data.semantic_data.symbol_data.0.as_ref().borrow() {
+                    UserDefinedTypeData::Lambda(data) => {
+                        return Some((
+                            data.meta_data.params.clone(),  // expensive clone
+                            data.meta_data.return_type.clone(),
+                        ))
+                    }
+                    _ => unreachable!(),
+                }
             }
             _ => None,
         }
     }
+     */
 
     pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
         match unary.core_ref() {
@@ -397,7 +413,7 @@ impl TypeChecker {
                                 let expected_params = &func_data.params;
                                 let return_type = &func_data.return_type;
                                 let result =
-                                    self.check_params_type_and_count(&expected_params, params);
+                                    self.check_params_type_and_count(expected_params, params);
                                 (result, return_type.clone())
                             }
                             SymbolDataRef::Variable(variable_symbol_data) => {
@@ -405,11 +421,25 @@ impl TypeChecker {
                                     &variable_symbol_data.0.as_ref().borrow().data_type;
                                 match lambda_type.0.as_ref() {
                                     CoreType::Lambda(lambda_data) => {
-                                        let result = self.check_params_type_and_count(
-                                            &lambda_data.meta_data.params,
-                                            params,
-                                        );
-                                        (result, lambda_data.meta_data.return_type.clone())
+                                        match &*lambda_data
+                                            .semantic_data
+                                            .symbol_data
+                                            .0
+                                            .as_ref()
+                                            .borrow()
+                                        {
+                                            UserDefinedTypeData::Lambda(data) => {
+                                                let expected_params = &data.meta_data.params;
+                                                let return_type =
+                                                    data.meta_data.return_type.clone();
+                                                let result = self.check_params_type_and_count(
+                                                    expected_params,
+                                                    params,
+                                                );
+                                                (result, return_type)
+                                            }
+                                            _ => unreachable!(),
+                                        }
                                     }
                                     _ => {
                                         let err = IdentifierNotCallableError::new(
@@ -494,7 +524,7 @@ impl TypeChecker {
                                         let expected_params = &func_data.params;
                                         let return_type = &func_data.return_type;
                                         let result = self
-                                            .check_params_type_and_count(&expected_params, params);
+                                            .check_params_type_and_count(expected_params, params);
                                         match result {
                                             ParamsTypeNCountResult::Ok => {
                                                 return return_type.clone()
@@ -566,6 +596,41 @@ impl TypeChecker {
                 let atom = &core_call.atom;
                 let params = &core_call.params;
                 let (atom_type_obj, _) = self.check_atom(atom);
+                match &atom_type_obj.0.as_ref() {
+                    CoreType::Lambda(lambda_data) => {
+                        // check if the type is lambda
+                        match &*lambda_data.semantic_data.symbol_data.0.as_ref().borrow() {
+                            UserDefinedTypeData::Lambda(data) => {
+                                let expected_param_types = &data.meta_data.params;
+                                let return_type = &data.meta_data.return_type;
+                                let result =
+                                    self.check_params_type_and_count(expected_param_types, params);
+                                match result {
+                                    ParamsTypeNCountResult::Ok => {
+                                        return (return_type.clone(), Some(atom_type_obj.clone()))
+                                    }
+                                    _ => {
+                                        self.log_params_type_and_count_check_error(
+                                            atom.range(),
+                                            result,
+                                        );
+                                        return (
+                                            Type::new_with_unknown(),
+                                            Some(atom_type_obj.clone()),
+                                        );
+                                    }
+                                }
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    _ => {
+                        let err = ExpressionNotCallableError::new(atom.range());
+                        self.log_error(Diagnostics::ExpressionNotCallable(err));
+                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                    }
+                }
+                /*
                 match TypeChecker::is_callable(&atom_type_obj) {
                     Some((expected_param_types, return_type)) => {
                         let result =
@@ -586,6 +651,7 @@ impl TypeChecker {
                         return (Type::new_with_unknown(), Some(atom_type_obj));
                     }
                 }
+                 */
             }
             CoreAtomNode::PropertyAccess(property_access) => {
                 let core_property_access = property_access.core_ref();
@@ -636,6 +702,54 @@ impl TypeChecker {
                     let method_name = ok_identifier.token_value(&self.code);
                     match result {
                         StructPropertyCheckResult::PropertyExist(type_obj) => {
+                            match &type_obj.0.as_ref() {
+                                CoreType::Lambda(lambda_data) => {
+                                    match &*lambda_data
+                                        .semantic_data
+                                        .symbol_data
+                                        .0
+                                        .as_ref()
+                                        .borrow()
+                                    {
+                                        UserDefinedTypeData::Lambda(data) => {
+                                            let expected_param_types = &data.meta_data.params;
+                                            let return_type = &data.meta_data.return_type;
+                                            let result = self.check_params_type_and_count(
+                                                expected_param_types,
+                                                params,
+                                            );
+                                            match result {
+                                                ParamsTypeNCountResult::Ok => {
+                                                    return (
+                                                        return_type.clone(),
+                                                        Some(atom_type_obj),
+                                                    )
+                                                }
+                                                _ => {
+                                                    self.log_params_type_and_count_check_error(
+                                                        ok_identifier.range(),
+                                                        result,
+                                                    );
+                                                    return (
+                                                        Type::new_with_unknown(),
+                                                        Some(atom_type_obj),
+                                                    );
+                                                }
+                                            }
+                                        }
+                                        _ => unreachable!(),
+                                    }
+                                }
+                                _ => {
+                                    let err = StructFieldNotCallableError::new(
+                                        type_obj.to_string(),
+                                        ok_identifier.range(),
+                                    );
+                                    self.log_error(Diagnostics::StructFieldNotCallable(err));
+                                    return (Type::new_with_unknown(), Some(atom_type_obj));
+                                }
+                            }
+                            /*
                             match TypeChecker::is_callable(&type_obj) {
                                 Some((expected_param_types, return_type)) => {
                                     let result = self
@@ -662,6 +776,7 @@ impl TypeChecker {
                                     return (Type::new_with_unknown(), Some(atom_type_obj));
                                 }
                             }
+                             */
                         }
                         StructPropertyCheckResult::PropertyDoesNotExist => {
                             match atom_type_obj.0.as_ref() {
@@ -673,7 +788,7 @@ impl TypeChecker {
                                                     let expected_params = &func_data.params;
                                                     let return_type = &func_data.return_type;
                                                     let result = self.check_params_type_and_count(
-                                                        &expected_params,
+                                                        expected_params,
                                                         params,
                                                     );
                                                     match result {
