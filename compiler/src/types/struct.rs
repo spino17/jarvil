@@ -8,8 +8,6 @@ use crate::scope::{
 #[derive(Debug)]
 pub struct Struct {
     pub name: String,
-    // pub symbol_data: SymbolData<UserDefinedTypeData>,
-    // pub concrete_types: Vec<Type>,
     pub semantic_data: ConcreteSymbolData<UserDefinedTypeData>,
 }
 
