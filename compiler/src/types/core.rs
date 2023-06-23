@@ -71,8 +71,16 @@ impl Type {
         Type(Rc::new(CoreType::Atomic(Atomic::new(name))))
     }
 
-    pub fn new_with_struct(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
-        Type(Rc::new(CoreType::Struct(Struct::new(name, symbol_data))))
+    pub fn new_with_struct(
+        name: String,
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        index: Option<ConcreteTypesRegistryKey>,
+    ) -> Type {
+        Type(Rc::new(CoreType::Struct(Struct::new(
+            name,
+            symbol_data,
+            None,
+        ))))
     }
 
     pub fn new_with_lambda(

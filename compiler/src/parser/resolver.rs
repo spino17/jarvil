@@ -721,7 +721,7 @@ impl Resolver {
                             {
                                 Some(symbol_data) => {
                                     let name = ok_identifier.token_value(&self.code);
-                                    Type::new_with_struct(name, &symbol_data)
+                                    Type::new_with_struct(name, &symbol_data, None)
                                 }
                                 None => unreachable!(),
                             }

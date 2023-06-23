@@ -572,17 +572,19 @@ impl TypeChecker {
     ) -> StructPropertyCheckResult {
         let property_name_str = property_name.token_value(&self.code);
         match atom_type_obj.0.as_ref() {
-            CoreType::Struct(struct_type) => match &*struct_type.symbol_data.0.as_ref().borrow() {
-                UserDefinedTypeData::Struct(struct_data) => {
-                    match struct_data.try_field(&property_name_str) {
-                        Some((type_obj, _)) => {
-                            return StructPropertyCheckResult::PropertyExist(type_obj)
+            CoreType::Struct(struct_type) => {
+                match &*struct_type.semantic_data.symbol_data.0.as_ref().borrow() {
+                    UserDefinedTypeData::Struct(struct_data) => {
+                        match struct_data.try_field(&property_name_str) {
+                            Some((type_obj, _)) => {
+                                return StructPropertyCheckResult::PropertyExist(type_obj)
+                            }
+                            None => return StructPropertyCheckResult::PropertyDoesNotExist,
                         }
-                        None => return StructPropertyCheckResult::PropertyDoesNotExist,
                     }
+                    _ => unreachable!(),
                 }
-                _ => unreachable!(),
-            },
+            }
             _ => return StructPropertyCheckResult::NonStructType,
         }
     }
@@ -781,7 +783,13 @@ impl TypeChecker {
                         StructPropertyCheckResult::PropertyDoesNotExist => {
                             match atom_type_obj.0.as_ref() {
                                 CoreType::Struct(struct_type) => {
-                                    match &*struct_type.symbol_data.0.as_ref().borrow() {
+                                    match &*struct_type
+                                        .semantic_data
+                                        .symbol_data
+                                        .0
+                                        .as_ref()
+                                        .borrow()
+                                    {
                                         UserDefinedTypeData::Struct(struct_data) => {
                                             match struct_data.try_method(&method_name) {
                                                 Some((func_data, _)) => {

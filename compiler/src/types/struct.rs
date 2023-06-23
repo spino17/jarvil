@@ -1,19 +1,30 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
-use crate::scope::{core::SymbolData, user_defined_types::UserDefinedTypeData};
+use crate::scope::{
+    concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey},
+    core::SymbolData,
+    user_defined_types::UserDefinedTypeData,
+};
 
 #[derive(Debug)]
 pub struct Struct {
     pub name: String,
-    pub symbol_data: SymbolData<UserDefinedTypeData>,
-    pub concrete_types: Vec<Type>,
+    // pub symbol_data: SymbolData<UserDefinedTypeData>,
+    // pub concrete_types: Vec<Type>,
+    pub semantic_data: ConcreteSymbolData<UserDefinedTypeData>,
 }
 
 impl Struct {
-    pub fn new(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Struct {
+    pub fn new(
+        name: String,
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        index: Option<ConcreteTypesRegistryKey>,
+    ) -> Struct {
         Struct {
             name,
-            symbol_data: symbol_data.clone(),
-            concrete_types: vec![],
+            semantic_data: ConcreteSymbolData {
+                symbol_data: symbol_data.clone(),
+                index,
+            },
         }
     }
 }
@@ -28,18 +39,7 @@ impl AbstractType for Struct {
     }
 
     fn stringify(&self) -> String {
-        let mut s = self.name.to_string();
-        let len = self.concrete_types.len();
-        if len > 0 {
-            s.push_str("_la_");
-            s.push_str(&self.concrete_types[0].stringify());
-            for i in 1..len {
-                s.push_str("_comma_");
-                s.push_str(&self.concrete_types[i].stringify());
-            }
-            s.push_str("_ra");
-        }
-        return s;
+        todo!()
     }
 }
 
