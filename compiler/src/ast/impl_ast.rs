@@ -484,7 +484,7 @@ impl CallablePrototypeNode {
             params: extract_from_option!(params),
             return_type: match return_type {
                 Some((colon, return_type)) => Some((colon.clone(), return_type.clone())),
-                None => None
+                None => None,
             },
         });
         CallablePrototypeNode(node)
@@ -1125,7 +1125,7 @@ impl UserDefinedTypeNode {
                                 &lambda_data.meta_data.return_type,
                             ))
                         }
-                        UserDefinedTypeData::Generic(generic_data) => todo!()
+                        UserDefinedTypeData::Generic(generic_data) => todo!(),
                     };
                     resolver
                         .bind_decl_to_identifier(ok_identifier, SymbolDataEntry::Type(symbol_data));
@@ -1163,7 +1163,7 @@ impl UserDefinedTypeNode {
                                 &lambda_data.meta_data.return_type,
                             ));
                         }
-                        UserDefinedTypeData::Generic(generic_data) => todo!()
+                        UserDefinedTypeData::Generic(generic_data) => todo!(),
                     },
                     SymbolDataEntry::Function(_)
                     | SymbolDataEntry::Variable(_)

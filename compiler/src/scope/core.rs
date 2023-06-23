@@ -49,7 +49,7 @@ impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
 #[derive(Debug)]
 pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler> {
     symbol_data: SymbolData<T>,
-    concrete_types_index: Option<usize>,  // if there are any concrete type arguments
+    concrete_types_index: Option<usize>, // if there are any concrete type arguments
 }
 
 #[derive(Debug)]

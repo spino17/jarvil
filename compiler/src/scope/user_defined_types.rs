@@ -1,27 +1,51 @@
-use std::collections::hash_map::Entry;
-
-use super::{core::{AbstractConcreteTypesHandler, ConcreteSymbolData}, function::FunctionData, interfaces::InterfaceData};
+use super::{
+    core::{AbstractConcreteTypesHandler, ConcreteSymbolData},
+    function::FunctionData,
+    interfaces::InterfaceData,
+};
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
+use std::collections::hash_map::Entry;
 use text_size::TextRange;
 
 #[derive(Debug)]
 pub enum UserDefinedTypeData {
-    Struct(StructData),
+    Struct(StructTypeData),
     Lambda(LambdaTypeData),
     Generic(GenericTypeData),
 }
 
 impl UserDefinedTypeData {
     pub fn default_with_struct() -> Self {
-        UserDefinedTypeData::Struct(StructData::default())
+        UserDefinedTypeData::Struct(StructTypeData::default())
     }
 
     // Below methods should only be called if getting the desired variant is guarenteed
     // that's why interally it uses `unreachable!()`
-    pub fn get_struct_data_mut_ref(&mut self) -> &mut StructData {
+    pub fn get_struct_data_ref(&self) -> &StructTypeData {
         match self {
             UserDefinedTypeData::Struct(data) => data,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_struct_data_mut_ref(&mut self) -> &mut StructTypeData {
+        match self {
+            UserDefinedTypeData::Struct(data) => data,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_lambda_data_ref(&self) -> &LambdaTypeData {
+        match self {
+            UserDefinedTypeData::Lambda(data) => data,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_lambda_data_mut_ref(&self) -> &LambdaTypeData {
+        match self {
+            UserDefinedTypeData::Lambda(data) => data,
             _ => unreachable!(),
         }
     }
@@ -36,13 +60,13 @@ impl AbstractConcreteTypesHandler for UserDefinedTypeData {
             UserDefinedTypeData::Lambda(lambda_type_data) => {
                 lambda_type_data.register_concrete_types(concrete_types)
             }
-            UserDefinedTypeData::Generic(_) => unreachable!()
+            UserDefinedTypeData::Generic(_) => unreachable!(),
         }
     }
 }
 
 #[derive(Debug, Default)]
-pub struct StructData {
+pub struct StructTypeData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub constructor: FunctionData,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
@@ -50,7 +74,7 @@ pub struct StructData {
     pub concrete_types_registry: Vec<(Vec<Type>, FxHashMap<String, Vec<Vec<Type>>>)>,
 }
 
-impl AbstractConcreteTypesHandler for StructData {
+impl AbstractConcreteTypesHandler for StructTypeData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> usize {
         let index = self.concrete_types_registry.len();
         self.concrete_types_registry
@@ -59,7 +83,7 @@ impl AbstractConcreteTypesHandler for StructData {
     }
 }
 
-impl StructData {
+impl StructTypeData {
     pub fn set_meta_data(
         &mut self,
         fields: FxHashMap<String, (Type, TextRange)>,
@@ -134,13 +158,13 @@ impl AbstractConcreteTypesHandler for LambdaTypeData {
 
 #[derive(Debug)]
 pub struct GenericTypeData {
-    index: usize,  // index in the sequence of all generic type params in declaration
+    index: usize, // index in the sequence of all generic type params in declaration
     category: GenericTypeCategory,
-    interface_bounds: Vec<ConcreteSymbolData<InterfaceData>>
+    interface_bounds: Vec<ConcreteSymbolData<InterfaceData>>,
 }
 
 #[derive(Debug)]
 pub enum GenericTypeCategory {
     Struct,
-    Callable
+    Callable,
 }

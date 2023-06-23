@@ -1,7 +1,10 @@
 use crate::types::core::Type;
 use std::vec;
 
-use super::{core::{AbstractConcreteTypesHandler, ConcreteSymbolData}, interfaces::InterfaceData};
+use super::{
+    core::{AbstractConcreteTypesHandler, ConcreteSymbolData},
+    interfaces::InterfaceData,
+};
 
 #[derive(Debug)]
 pub struct FunctionData {
