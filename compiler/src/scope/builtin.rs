@@ -8,7 +8,6 @@ pub fn print_meta_data() -> FunctionData {
         params: vec![Type::new_with_any()],
         return_type: Type::new_with_void(),
         generics: None,
-        concrete_types_registry: CallableConcreteTypesRegistry::default(),
     }
 }
 
@@ -18,7 +17,6 @@ pub fn range_meta_data() -> FunctionData {
         params: vec![Type::new_with_atomic(INT), Type::new_with_atomic(INT)],
         return_type: Type::new_with_array(&Type::new_with_atomic(INT)),
         generics: None,
-        concrete_types_registry: CallableConcreteTypesRegistry::default(),
     }
 }
 

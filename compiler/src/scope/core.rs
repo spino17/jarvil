@@ -20,17 +20,24 @@ pub enum VariableLookupResult {
 }
 
 pub trait AbstractConcreteTypesHandler {
-    fn has_generics(&self) -> bool;
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey; // returns the index inside the list of concrete types
+}
+
+pub trait GenericContainingConstructs {
+    fn has_generics(&self) -> bool;
 }
 
 #[derive(Debug)]
 pub struct GenericTypeParams(Vec<(String, Vec<ConcreteSymbolData<InterfaceData>>)>);
 
 #[derive(Debug)]
-pub struct SymbolData<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
+pub struct SymbolData<T: AbstractConcreteTypesHandler + GenericContainingConstructs>(
+    pub Rc<RefCell<T>>,
+    pub TextRange,
+    pub bool,
+); // (identifier_meta_data, decl_line_number, should_add_prefix)
 
-impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
+impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> SymbolData<T> {
     pub fn new(core_data: T, decl_range: TextRange, is_suffix_required: bool) -> Self {
         SymbolData(
             Rc::new(RefCell::new(core_data)),
@@ -45,22 +52,26 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
             .borrow_mut()
             .register_concrete_types(concrete_types)
     }
+
+    pub fn has_generics(&self) -> bool {
+        self.0.as_ref().borrow().has_generics()
+    }
 }
 
-impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
+impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone(), self.1, self.2)
     }
 }
 
 #[derive(Debug)]
-pub struct CoreScope<T: AbstractConcreteTypesHandler> {
+pub struct CoreScope<T: AbstractConcreteTypesHandler + GenericContainingConstructs> {
     symbol_table: FxHashMap<String, SymbolData<T>>,
     pub parent_scope: Option<usize>, // points to the index in the global flattened scope vec
     is_global: bool,
 }
 
-impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
+impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> CoreScope<T> {
     fn set(
         &mut self,
         name: String,
@@ -139,11 +150,11 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
 }
 
 #[derive(Debug)]
-pub struct Scope<T: AbstractConcreteTypesHandler> {
+pub struct Scope<T: AbstractConcreteTypesHandler + GenericContainingConstructs> {
     pub flattened_vec: Vec<CoreScope<T>>,
 }
 
-impl<T: AbstractConcreteTypesHandler> Scope<T> {
+impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> Scope<T> {
     fn new() -> Self {
         Scope {
             flattened_vec: vec![CoreScope {
@@ -465,7 +476,6 @@ impl Namespace {
                     params: param_types,
                     return_type,
                     generics: None,
-                    concrete_types_registry: CallableConcreteTypesRegistry::default(),
                 },
             }),
             decl_range,

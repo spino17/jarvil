@@ -1,5 +1,7 @@
 use std::collections::hash_map::Entry;
 
+use super::core::GenericContainingConstructs;
+use super::core::GenericTypeParams;
 use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::SymbolData;
 use crate::types::core::Type;
@@ -9,9 +11,24 @@ use rustc_hash::FxHashMap;
 pub struct ConcreteTypesRegistryKey(usize);
 
 #[derive(Debug)]
-pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler> {
+pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler + GenericContainingConstructs> {
     pub symbol_data: SymbolData<T>,
     pub index: Option<ConcreteTypesRegistryKey>, // This will be `None` for symbol data which does not have any generic type params
+}
+
+#[derive(Debug)]
+pub struct GenericsSpecAndConcreteTypesRegistry<T: AbstractConcreteTypesHandler + Default> {
+    pub generics_spec: GenericTypeParams,
+    pub concrete_types_registry: T,
+}
+
+impl<T: AbstractConcreteTypesHandler + Default> GenericsSpecAndConcreteTypesRegistry<T> {
+    fn new(generics_spec: GenericTypeParams) -> Self {
+        GenericsSpecAndConcreteTypesRegistry {
+            generics_spec,
+            concrete_types_registry: T::default(),
+        }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -20,15 +37,6 @@ pub struct StructConcreteTypesRegistry(
 );
 
 impl StructConcreteTypesRegistry {
-    pub fn register_concrete_types(
-        &mut self,
-        concrete_types: &Vec<Type>,
-    ) -> ConcreteTypesRegistryKey {
-        let index = self.0.len();
-        self.0.push((concrete_types.clone(), FxHashMap::default()));
-        ConcreteTypesRegistryKey(index)
-    }
-
     pub fn register_method_concrete_types_for_key(
         &mut self,
         key: &ConcreteTypesRegistryKey,
@@ -49,6 +57,14 @@ impl StructConcreteTypesRegistry {
     }
 }
 
+impl AbstractConcreteTypesHandler for StructConcreteTypesRegistry {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
+        let index = self.0.len();
+        self.0.push((concrete_types.clone(), FxHashMap::default()));
+        ConcreteTypesRegistryKey(index)
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct CallableConcreteTypesRegistry(Vec<Vec<Type>>);
 
@@ -56,11 +72,10 @@ impl CallableConcreteTypesRegistry {
     pub fn new_with_entries(entries: Vec<Vec<Type>>) -> Self {
         CallableConcreteTypesRegistry(entries)
     }
+}
 
-    pub fn register_concrete_types(
-        &mut self,
-        concrete_types: &Vec<Type>,
-    ) -> ConcreteTypesRegistryKey {
+impl AbstractConcreteTypesHandler for CallableConcreteTypesRegistry {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
         let index = self.0.len();
         self.0.push(concrete_types.clone());
         ConcreteTypesRegistryKey(index)

@@ -688,7 +688,7 @@ impl Resolver {
                     .0
                     .as_ref()
                     .borrow_mut()
-                    .set_data(param_types_vec, return_type);
+                    .set_data(param_types_vec, return_type, None);
             }
         }
     }
@@ -960,7 +960,7 @@ impl Resolver {
                     .as_ref()
                     .borrow_mut()
                     .get_struct_data_mut_ref()
-                    .set_meta_data(fields_map, constructor, methods, class_methods);
+                    .set_meta_data(fields_map, constructor, methods, class_methods, None);
             }
         }
         self.context.class_context_stack.pop();

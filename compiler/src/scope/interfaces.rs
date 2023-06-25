@@ -1,6 +1,8 @@
 use super::{
-    concrete::{ConcreteTypesRegistryKey, StructConcreteTypesRegistry},
-    core::{AbstractConcreteTypesHandler, GenericTypeParams},
+    concrete::{
+        ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry, StructConcreteTypesRegistry,
+    },
+    core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
     function::FunctionData,
 };
 use crate::types::core::Type;
@@ -11,8 +13,7 @@ use text_size::TextRange;
 pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
-    pub concrete_types_registry: StructConcreteTypesRegistry,
-    pub generics: Option<GenericTypeParams>,
+    pub generics: Option<GenericsSpecAndConcreteTypesRegistry<StructConcreteTypesRegistry>>,
 }
 
 impl InterfaceData {
@@ -20,9 +21,17 @@ impl InterfaceData {
         &mut self,
         fields: FxHashMap<String, (Type, TextRange)>,
         methods: FxHashMap<String, (FunctionData, TextRange)>,
+        generics_spec: Option<GenericTypeParams>,
     ) {
         self.fields = fields;
         self.methods = methods;
+        self.generics = match generics_spec {
+            Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
+                generics_spec,
+                concrete_types_registry: StructConcreteTypesRegistry::default(),
+            }),
+            None => None,
+        }
     }
 
     pub fn register_method_concrete_types_for_key(
@@ -31,18 +40,27 @@ impl InterfaceData {
         method_name: String,
         method_concrete_types: &Vec<Type>,
     ) {
-        self.concrete_types_registry
-            .register_method_concrete_types_for_key(key, method_name, method_concrete_types)
+        //self.concrete_types_registry
+        //    .register_method_concrete_types_for_key(key, method_name, method_concrete_types)
+        todo!()
     }
 }
 
 impl AbstractConcreteTypesHandler for InterfaceData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
-        self.concrete_types_registry
-            .register_concrete_types(concrete_types)
+        match &mut self.generics {
+            Some(generics) => {
+                return generics
+                    .concrete_types_registry
+                    .register_concrete_types(concrete_types)
+            }
+            None => unreachable!(),
+        }
     }
+}
 
+impl GenericContainingConstructs for InterfaceData {
     fn has_generics(&self) -> bool {
-        todo!()
+        self.generics.is_some()
     }
 }

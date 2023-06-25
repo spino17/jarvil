@@ -2,8 +2,11 @@ use crate::types::core::Type;
 use std::vec;
 
 use super::{
-    concrete::{CallableConcreteTypesRegistry, ConcreteTypesRegistryKey},
-    core::{AbstractConcreteTypesHandler, GenericTypeParams},
+    concrete::{
+        CallableConcreteTypesRegistry, ConcreteTypesRegistryKey,
+        GenericsSpecAndConcreteTypesRegistry,
+    },
+    core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
     interfaces::InterfaceData,
 };
 
@@ -11,34 +14,62 @@ use super::{
 pub struct FunctionData {
     pub params: Vec<Type>,
     pub return_type: Type,
-    pub concrete_types_registry: CallableConcreteTypesRegistry,
-    pub generics: Option<GenericTypeParams>,
+    pub generics: Option<GenericsSpecAndConcreteTypesRegistry<CallableConcreteTypesRegistry>>,
 }
 
 impl FunctionData {
-    pub fn new(params: Vec<Type>, return_type: Type, generics: Option<GenericTypeParams>) -> Self {
+    pub fn new(
+        params: Vec<Type>,
+        return_type: Type,
+        generics_spec: Option<GenericTypeParams>,
+    ) -> Self {
         FunctionData {
             params,
             return_type,
-            generics,
-            concrete_types_registry: CallableConcreteTypesRegistry::default(),
+            generics: match generics_spec {
+                Some(generic_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
+                    generics_spec: generic_spec,
+                    concrete_types_registry: CallableConcreteTypesRegistry::default(),
+                }),
+                None => None,
+            },
         }
     }
 
-    pub fn set_data(&mut self, params: Vec<Type>, return_type: Type) {
+    pub fn set_data(
+        &mut self,
+        params: Vec<Type>,
+        return_type: Type,
+        generics_spec: Option<GenericTypeParams>,
+    ) {
         self.params = params;
         self.return_type = return_type;
+        self.generics = match generics_spec {
+            Some(generic_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
+                generics_spec: generic_spec,
+                concrete_types_registry: CallableConcreteTypesRegistry::default(),
+            }),
+            None => None,
+        }
     }
 }
 
 impl AbstractConcreteTypesHandler for FunctionData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
-        self.concrete_types_registry
-            .register_concrete_types(concrete_types)
+        match &mut self.generics {
+            Some(generics) => {
+                return generics
+                    .concrete_types_registry
+                    .register_concrete_types(concrete_types)
+            }
+            None => unreachable!(),
+        }
     }
+}
 
+impl GenericContainingConstructs for FunctionData {
     fn has_generics(&self) -> bool {
-        todo!()
+        self.generics.is_some()
     }
 }
 
@@ -48,7 +79,6 @@ impl Default for FunctionData {
             params: vec![],
             return_type: Type::new_with_unset(),
             generics: None,
-            concrete_types_registry: CallableConcreteTypesRegistry::default(),
         }
     }
 }

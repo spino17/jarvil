@@ -1,9 +1,9 @@
 use super::{
     concrete::{
         CallableConcreteTypesRegistry, ConcreteSymbolData, ConcreteTypesRegistryKey,
-        StructConcreteTypesRegistry,
+        GenericsSpecAndConcreteTypesRegistry, StructConcreteTypesRegistry,
     },
-    core::{AbstractConcreteTypesHandler, GenericTypeParams},
+    core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
     function::FunctionData,
     interfaces::InterfaceData,
 };
@@ -52,9 +52,15 @@ impl AbstractConcreteTypesHandler for UserDefinedTypeData {
             UserDefinedTypeData::Generic(_) => unreachable!(),
         }
     }
+}
 
+impl GenericContainingConstructs for UserDefinedTypeData {
     fn has_generics(&self) -> bool {
-        todo!()
+        match self {
+            UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.has_generics(),
+            UserDefinedTypeData::Lambda(lambda_type_data) => lambda_type_data.has_generics(),
+            UserDefinedTypeData::Generic(_) => false,
+        }
     }
 }
 
@@ -64,8 +70,7 @@ pub struct StructTypeData {
     pub constructor: FunctionData,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub class_methods: FxHashMap<String, (FunctionData, TextRange)>,
-    pub concrete_types_registry: StructConcreteTypesRegistry,
-    pub generics: Option<GenericTypeParams>,
+    pub generics: Option<GenericsSpecAndConcreteTypesRegistry<StructConcreteTypesRegistry>>,
 }
 
 impl StructTypeData {
@@ -75,12 +80,20 @@ impl StructTypeData {
         constructor: Option<(FunctionData, TextRange)>,
         methods: FxHashMap<String, (FunctionData, TextRange)>,
         class_methods: FxHashMap<String, (FunctionData, TextRange)>,
+        generics_spec: Option<GenericTypeParams>,
     ) {
         self.fields = fields;
         self.methods = methods;
         self.class_methods = class_methods;
         if let Some((constructor_meta_data, _)) = constructor {
             self.constructor = constructor_meta_data;
+        }
+        self.generics = match generics_spec {
+            Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
+                generics_spec,
+                concrete_types_registry: StructConcreteTypesRegistry::default(),
+            }),
+            None => None,
         }
     }
 
@@ -104,19 +117,28 @@ impl StructTypeData {
         method_name: String,
         method_concrete_types: &Vec<Type>,
     ) {
-        self.concrete_types_registry
-            .register_method_concrete_types_for_key(key, method_name, method_concrete_types)
+        //self.concrete_types_registry
+        //    .register_method_concrete_types_for_key(key, method_name, method_concrete_types)
+        todo!()
     }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
-        self.concrete_types_registry
-            .register_concrete_types(concrete_types)
+        match &mut self.generics {
+            Some(generics) => {
+                return generics
+                    .concrete_types_registry
+                    .register_concrete_types(concrete_types)
+            }
+            None => unreachable!(),
+        }
     }
+}
 
+impl GenericContainingConstructs for StructTypeData {
     fn has_generics(&self) -> bool {
-        todo!()
+        self.generics.is_some()
     }
 }
 
@@ -129,14 +151,19 @@ impl LambdaTypeData {
     pub fn new(
         param_types: Vec<Type>,
         return_type: Type,
-        generics: Option<GenericTypeParams>,
+        generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         LambdaTypeData {
             meta_data: FunctionData {
                 params: param_types,
                 return_type,
-                generics,
-                concrete_types_registry: CallableConcreteTypesRegistry::default(),
+                generics: match generics_spec {
+                    Some(generic_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
+                        generics_spec: generic_spec,
+                        concrete_types_registry: CallableConcreteTypesRegistry::default(),
+                    }),
+                    None => None,
+                },
             },
         }
     }
@@ -146,9 +173,11 @@ impl AbstractConcreteTypesHandler for LambdaTypeData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
         self.meta_data.register_concrete_types(concrete_types)
     }
+}
 
+impl GenericContainingConstructs for LambdaTypeData {
     fn has_generics(&self) -> bool {
-        todo!()
+        self.meta_data.has_generics()
     }
 }
 
