@@ -110,7 +110,7 @@ impl StructTypeData {
 
     pub fn register_method_concrete_types(
         &mut self,
-        key: Option<&ConcreteTypesRegistryKey>,
+        key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
         method_concrete_types: &Vec<Type>,
     ) {

@@ -1,5 +1,4 @@
 use std::collections::hash_map::Entry;
-
 use super::core::GenericContainingConstructs;
 use super::core::GenericTypeParams;
 use crate::scope::core::AbstractConcreteTypesHandler;
@@ -7,7 +6,7 @@ use crate::scope::core::SymbolData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct ConcreteTypesRegistryKey(usize);
 
 #[derive(Debug)]
@@ -39,7 +38,7 @@ pub struct StructConcreteTypesRegistry(
 impl StructConcreteTypesRegistry {
     pub fn register_method_concrete_types_for_key(
         &mut self,
-        key: &ConcreteTypesRegistryKey,
+        key: ConcreteTypesRegistryKey,
         method_name: String,
         method_concrete_types: &Vec<Type>,
     ) {
