@@ -1,6 +1,6 @@
 use super::{
     concrete::{ConcreteTypesRegistryKey, StructConcreteTypesRegistry},
-    core::AbstractConcreteTypesHandler,
+    core::{AbstractConcreteTypesHandler, GenericTypeParams},
     function::FunctionData,
 };
 use crate::types::core::Type;
@@ -12,6 +12,7 @@ pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub concrete_types_registry: StructConcreteTypesRegistry,
+    pub generics: Option<GenericTypeParams>,
 }
 
 impl InterfaceData {
@@ -39,5 +40,9 @@ impl AbstractConcreteTypesHandler for InterfaceData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
         self.concrete_types_registry
             .register_concrete_types(concrete_types)
+    }
+
+    fn has_generics(&self) -> bool {
+        todo!()
     }
 }

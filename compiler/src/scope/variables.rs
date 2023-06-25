@@ -37,6 +37,10 @@ impl AbstractConcreteTypesHandler for VariableData {
             _ => unreachable!(),
         }
     }
+
+    fn has_generics(&self) -> bool {
+        todo!()
+    }
 }
 
 impl Default for VariableData {

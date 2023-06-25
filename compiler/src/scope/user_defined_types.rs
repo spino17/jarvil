@@ -3,7 +3,7 @@ use super::{
         CallableConcreteTypesRegistry, ConcreteSymbolData, ConcreteTypesRegistryKey,
         StructConcreteTypesRegistry,
     },
-    core::AbstractConcreteTypesHandler,
+    core::{AbstractConcreteTypesHandler, GenericTypeParams},
     function::FunctionData,
     interfaces::InterfaceData,
 };
@@ -52,6 +52,10 @@ impl AbstractConcreteTypesHandler for UserDefinedTypeData {
             UserDefinedTypeData::Generic(_) => unreachable!(),
         }
     }
+
+    fn has_generics(&self) -> bool {
+        todo!()
+    }
 }
 
 #[derive(Debug, Default)]
@@ -61,6 +65,7 @@ pub struct StructTypeData {
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub class_methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub concrete_types_registry: StructConcreteTypesRegistry,
+    pub generics: Option<GenericTypeParams>,
 }
 
 impl StructTypeData {
@@ -109,6 +114,10 @@ impl AbstractConcreteTypesHandler for StructTypeData {
         self.concrete_types_registry
             .register_concrete_types(concrete_types)
     }
+
+    fn has_generics(&self) -> bool {
+        todo!()
+    }
 }
 
 #[derive(Debug, Default)]
@@ -117,11 +126,16 @@ pub struct LambdaTypeData {
 }
 
 impl LambdaTypeData {
-    pub fn new(param_types: Vec<Type>, return_type: Type) -> Self {
+    pub fn new(
+        param_types: Vec<Type>,
+        return_type: Type,
+        generics: Option<GenericTypeParams>,
+    ) -> Self {
         LambdaTypeData {
             meta_data: FunctionData {
                 params: param_types,
                 return_type,
+                generics,
                 concrete_types_registry: CallableConcreteTypesRegistry::default(),
             },
         }
@@ -131,6 +145,10 @@ impl LambdaTypeData {
 impl AbstractConcreteTypesHandler for LambdaTypeData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
         self.meta_data.register_concrete_types(concrete_types)
+    }
+
+    fn has_generics(&self) -> bool {
+        todo!()
     }
 }
 

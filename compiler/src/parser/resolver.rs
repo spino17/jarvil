@@ -613,7 +613,7 @@ impl Resolver {
                     self.visit_callable_body(&core_lambda_r_assign.body);
                 let symbol_data = SymbolData::new(
                     UserDefinedTypeData::Lambda(LambdaTypeData {
-                        meta_data: FunctionData::new(params_vec.clone(), return_type.clone()),
+                        meta_data: FunctionData::new(params_vec.clone(), return_type.clone(), None),
                     }),
                     TextRange::default(),
                     true,
@@ -809,7 +809,7 @@ impl Resolver {
                         core_func_decl.name.core_ref()
                     {
                         let func_meta_data =
-                            FunctionData::new(param_types_vec, return_type.clone());
+                            FunctionData::new(param_types_vec, return_type.clone(), None);
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") {
                             match constructor {

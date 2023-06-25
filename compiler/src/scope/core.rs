@@ -1,4 +1,6 @@
-use super::concrete::{CallableConcreteTypesRegistry, ConcreteTypesRegistryKey};
+use super::concrete::{
+    CallableConcreteTypesRegistry, ConcreteSymbolData, ConcreteTypesRegistryKey,
+};
 use super::function::FunctionData;
 use super::handler::SymbolDataEntry;
 use super::interfaces::InterfaceData;
@@ -18,8 +20,12 @@ pub enum VariableLookupResult {
 }
 
 pub trait AbstractConcreteTypesHandler {
+    fn has_generics(&self) -> bool;
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey; // returns the index inside the list of concrete types
 }
+
+#[derive(Debug)]
+pub struct GenericTypeParams(Vec<(String, Vec<ConcreteSymbolData<InterfaceData>>)>);
 
 #[derive(Debug)]
 pub struct SymbolData<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
@@ -458,6 +464,7 @@ impl Namespace {
                 meta_data: FunctionData {
                     params: param_types,
                     return_type,
+                    generics: None,
                     concrete_types_registry: CallableConcreteTypesRegistry::default(),
                 },
             }),

@@ -195,7 +195,7 @@ impl TypeChecker {
         };
         let symbol_data = SymbolData::new(
             UserDefinedTypeData::Lambda(LambdaTypeData {
-                meta_data: FunctionData::new(params_vec.clone(), return_type.clone()),
+                meta_data: FunctionData::new(params_vec.clone(), return_type.clone(), None),
             }),
             TextRange::default(),
             true,

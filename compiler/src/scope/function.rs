@@ -3,7 +3,7 @@ use std::vec;
 
 use super::{
     concrete::{CallableConcreteTypesRegistry, ConcreteTypesRegistryKey},
-    core::AbstractConcreteTypesHandler,
+    core::{AbstractConcreteTypesHandler, GenericTypeParams},
     interfaces::InterfaceData,
 };
 
@@ -11,15 +11,16 @@ use super::{
 pub struct FunctionData {
     pub params: Vec<Type>,
     pub return_type: Type,
-    // pub generics: Vec<(String, Vec<ConcreteSymbolData<InterfaceData>>)>
     pub concrete_types_registry: CallableConcreteTypesRegistry,
+    pub generics: Option<GenericTypeParams>,
 }
 
 impl FunctionData {
-    pub fn new(params: Vec<Type>, return_type: Type) -> Self {
+    pub fn new(params: Vec<Type>, return_type: Type, generics: Option<GenericTypeParams>) -> Self {
         FunctionData {
             params,
             return_type,
+            generics,
             concrete_types_registry: CallableConcreteTypesRegistry::default(),
         }
     }
@@ -35,6 +36,10 @@ impl AbstractConcreteTypesHandler for FunctionData {
         self.concrete_types_registry
             .register_concrete_types(concrete_types)
     }
+
+    fn has_generics(&self) -> bool {
+        todo!()
+    }
 }
 
 impl Default for FunctionData {
@@ -42,6 +47,7 @@ impl Default for FunctionData {
         FunctionData {
             params: vec![],
             return_type: Type::new_with_unset(),
+            generics: None,
             concrete_types_registry: CallableConcreteTypesRegistry::default(),
         }
     }
