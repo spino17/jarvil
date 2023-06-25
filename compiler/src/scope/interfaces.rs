@@ -1,5 +1,7 @@
 use super::{
-    concrete::ConcreteTypesRegistryKey, core::AbstractConcreteTypesHandler, function::FunctionData,
+    concrete::{ConcreteTypesRegistryKey, StructConcreteTypesRegistry},
+    core::AbstractConcreteTypesHandler,
+    function::FunctionData,
 };
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
@@ -9,7 +11,7 @@ use text_size::TextRange;
 pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
-    // pub concrete_types_registry: Vec<Vec<Type>>,
+    pub concrete_types_registry: StructConcreteTypesRegistry,
 }
 
 impl InterfaceData {
@@ -21,10 +23,21 @@ impl InterfaceData {
         self.fields = fields;
         self.methods = methods;
     }
+
+    pub fn register_method_concrete_types_for_key(
+        &mut self,
+        key: &ConcreteTypesRegistryKey,
+        method_name: String,
+        method_concrete_types: &Vec<Type>,
+    ) {
+        self.concrete_types_registry
+            .register_method_concrete_types_for_key(key, method_name, method_concrete_types)
+    }
 }
 
 impl AbstractConcreteTypesHandler for InterfaceData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
-        todo!()
+        self.concrete_types_registry
+            .register_concrete_types(concrete_types)
     }
 }

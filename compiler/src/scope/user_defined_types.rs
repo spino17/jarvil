@@ -92,6 +92,16 @@ impl StructTypeData {
             None => None,
         }
     }
+
+    pub fn register_method_concrete_types_for_key(
+        &mut self,
+        key: &ConcreteTypesRegistryKey,
+        method_name: String,
+        method_concrete_types: &Vec<Type>,
+    ) {
+        self.concrete_types_registry
+            .register_method_concrete_types_for_key(key, method_name, method_concrete_types)
+    }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
