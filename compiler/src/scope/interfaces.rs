@@ -70,7 +70,7 @@ impl InterfaceData {
         self.generics = StructTypeGenerics::new(generics_spec)
     }
 
-    pub fn register_method_concrete_types_for_key(
+    pub fn register_method_concrete_types(
         &mut self,
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
