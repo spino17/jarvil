@@ -1,7 +1,4 @@
-use super::{
-    concrete::CallableConcreteTypesRegistry,
-    function::{FunctionData, FunctionPrototype},
-};
+use super::function::{FunctionData, FunctionPrototype};
 use crate::{constants::common::INT, types::core::Type};
 use std::str::Chars;
 

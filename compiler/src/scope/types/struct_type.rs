@@ -10,7 +10,7 @@ use crate::{
             GenericsSpecAndConcreteTypesRegistry, StructConcreteTypesRegistry,
         },
         core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
-        function::{FunctionData, FunctionPrototype},
+        function::FunctionPrototype,
     },
     types::core::Type,
 };

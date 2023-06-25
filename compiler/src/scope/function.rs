@@ -7,7 +7,6 @@ use super::{
         GenericsSpecAndConcreteTypesRegistry,
     },
     core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
-    interfaces::InterfaceData,
 };
 
 #[derive(Debug)]

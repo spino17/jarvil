@@ -1,5 +1,5 @@
 use super::concrete::{
-    CallableConcreteTypesRegistry, ConcreteSymbolData, ConcreteTypesRegistryKey,
+    ConcreteSymbolData, ConcreteTypesRegistryKey,
 };
 use super::function::{FunctionData, FunctionPrototype};
 use super::handler::SymbolDataEntry;
