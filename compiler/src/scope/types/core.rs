@@ -4,7 +4,7 @@ use crate::{
         core::{AbstractConcreteTypesHandler, GenericContainingConstructs},
         types::generic_type::GenericTypeData,
         types::lambda_type::LambdaTypeData,
-        types::struct_type::StructTypeData
+        types::struct_type::StructTypeData,
     },
     types::core::Type,
 };

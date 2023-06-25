@@ -1,11 +1,13 @@
+use std::collections::hash_map::Entry;
+
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
 
 use crate::{
     scope::{
         concrete::{
-            ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry,
-            StructConcreteTypesRegistry,
+            CallableConcreteTypesRegistry, ConcreteTypesRegistryKey,
+            GenericsSpecAndConcreteTypesRegistry, StructConcreteTypesRegistry,
         },
         core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
         function::{FunctionData, FunctionPrototype},
@@ -42,6 +44,12 @@ impl MethodData {
     }
 }
 
+impl GenericContainingConstructs for MethodData {
+    fn has_generics(&self) -> bool {
+        self.generics.is_some()
+    }
+}
+
 impl Default for MethodData {
     fn default() -> Self {
         MethodData {
@@ -57,7 +65,7 @@ pub struct StructTypeData {
     pub constructor: MethodData,
     pub methods: FxHashMap<String, (MethodData, TextRange)>,
     pub class_methods: FxHashMap<String, (MethodData, TextRange)>,
-    pub generics: Option<GenericsSpecAndConcreteTypesRegistry<StructConcreteTypesRegistry>>,
+    pub generics: StructTypeGenerics,
 }
 
 impl StructTypeData {
@@ -76,11 +84,13 @@ impl StructTypeData {
             self.constructor = constructor_meta_data;
         }
         self.generics = match generics_spec {
-            Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
-                generics_spec,
-                concrete_types_registry: StructConcreteTypesRegistry::default(),
-            }),
-            None => None,
+            Some(generics_spec) => {
+                StructTypeGenerics::HasGenerics(GenericsSpecAndConcreteTypesRegistry {
+                    generics_spec,
+                    concrete_types_registry: StructConcreteTypesRegistry::default(),
+                })
+            }
+            None => StructTypeGenerics::NoGenerics(FxHashMap::default()),
         }
     }
 
@@ -98,33 +108,73 @@ impl StructTypeData {
         }
     }
 
-    pub fn register_method_concrete_types_for_key(
+    pub fn register_method_concrete_types(
         &mut self,
-        key: &ConcreteTypesRegistryKey,
+        key: Option<&ConcreteTypesRegistryKey>,
         method_name: String,
         method_concrete_types: &Vec<Type>,
     ) {
-        //self.concrete_types_registry
-        //    .register_method_concrete_types_for_key(key, method_name, method_concrete_types)
-        todo!()
+        match key {
+            Some(key) => match &mut self.generics {
+                StructTypeGenerics::HasGenerics(generics_spec) => generics_spec
+                    .concrete_types_registry
+                    .register_method_concrete_types_for_key(
+                        key,
+                        method_name,
+                        method_concrete_types,
+                    ),
+                StructTypeGenerics::NoGenerics(_) => unreachable!(),
+            },
+            None => match &mut self.generics {
+                StructTypeGenerics::HasGenerics(_) => unreachable!(),
+                StructTypeGenerics::NoGenerics(generics_spec) => {
+                    match generics_spec.entry(method_name.to_string()) {
+                        Entry::Occupied(mut occupied_entry) => {
+                            let occupied_entry_ref = occupied_entry.get_mut();
+                            occupied_entry_ref.register_concrete_types(method_concrete_types);
+                        }
+                        Entry::Vacant(vacant_entry) => {
+                            vacant_entry.insert(CallableConcreteTypesRegistry::new_with_entries(
+                                vec![method_concrete_types.clone()],
+                            ));
+                        }
+                    }
+                }
+            },
+        }
     }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
         match &mut self.generics {
-            Some(generics) => {
+            StructTypeGenerics::HasGenerics(generics) => {
                 return generics
                     .concrete_types_registry
                     .register_concrete_types(concrete_types)
             }
-            None => unreachable!(),
+            StructTypeGenerics::NoGenerics(_) => unreachable!(),
         }
     }
 }
 
 impl GenericContainingConstructs for StructTypeData {
     fn has_generics(&self) -> bool {
-        self.generics.is_some()
+        match self.generics {
+            StructTypeGenerics::HasGenerics(_) => true,
+            StructTypeGenerics::NoGenerics(_) => false,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum StructTypeGenerics {
+    HasGenerics(GenericsSpecAndConcreteTypesRegistry<StructConcreteTypesRegistry>),
+    NoGenerics(FxHashMap<String, CallableConcreteTypesRegistry>),
+}
+
+impl Default for StructTypeGenerics {
+    fn default() -> Self {
+        StructTypeGenerics::NoGenerics(FxHashMap::default())
     }
 }

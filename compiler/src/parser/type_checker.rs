@@ -43,7 +43,7 @@ use crate::{
         function::FunctionData,
         handler::{NamespaceHandler, SymbolDataRef},
         types::core::UserDefinedTypeData,
-        types::lambda_type::LambdaTypeData
+        types::lambda_type::LambdaTypeData,
     },
     types::{
         atomic::Atomic,

@@ -16,8 +16,8 @@ use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
 use crate::scope::core::VariableLookupResult;
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
-use crate::scope::types::lambda_type::LambdaTypeData;
 use crate::scope::types::core::UserDefinedTypeData;
+use crate::scope::types::lambda_type::LambdaTypeData;
 use crate::scope::types::struct_type::MethodData;
 use crate::types::core::CoreType;
 use crate::{
