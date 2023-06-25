@@ -1,17 +1,20 @@
-use crate::scope::{concrete::ConcreteSymbolData, interfaces::InterfaceData};
+use crate::scope::{
+    concrete::ConcreteSymbolData,
+    interfaces::{InterfaceData, InterfaceObject},
+};
 
 #[derive(Debug)]
 pub struct GenericTypeData {
     index: usize, // index in the sequence of all generic type params in declaration
     category: GenericTypeDeclarationPlaceCategory,
-    interface_bounds: Vec<ConcreteSymbolData<InterfaceData>>,
+    interface_bounds: Vec<InterfaceObject>,
 }
 
 impl GenericTypeData {
     fn new(
         index: usize,
         category: GenericTypeDeclarationPlaceCategory,
-        interface_bounds: Vec<ConcreteSymbolData<InterfaceData>>,
+        interface_bounds: Vec<InterfaceObject>,
     ) -> Self {
         GenericTypeData {
             index,

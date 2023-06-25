@@ -80,6 +80,15 @@ impl AbstractConcreteTypesHandler for FunctionData {
             None => unreachable!(),
         }
     }
+
+    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+        match &self.generics {
+            Some(generics) => generics
+                .concrete_types_registry
+                .get_concrete_types_at_key(key),
+            None => unreachable!(),
+        }
+    }
 }
 
 impl GenericContainingConstructs for FunctionData {

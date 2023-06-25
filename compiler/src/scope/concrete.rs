@@ -15,6 +15,17 @@ pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler + GenericContainin
     pub index: Option<ConcreteTypesRegistryKey>, // This will be `None` for symbol data which does not have any generic type params
 }
 
+impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> Clone
+    for ConcreteSymbolData<T>
+{
+    fn clone(&self) -> Self {
+        ConcreteSymbolData {
+            symbol_data: self.symbol_data.clone(),
+            index: self.index,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct GenericsSpecAndConcreteTypesRegistry<T: AbstractConcreteTypesHandler + Default> {
     pub generics_spec: GenericTypeParams,
@@ -62,6 +73,10 @@ impl AbstractConcreteTypesHandler for StructConcreteTypesRegistry {
         self.0.push((concrete_types.clone(), FxHashMap::default()));
         ConcreteTypesRegistryKey(index)
     }
+
+    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+        self.0[key.0].0.clone()
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -78,6 +93,10 @@ impl AbstractConcreteTypesHandler for CallableConcreteTypesRegistry {
         let index = self.0.len();
         self.0.push(concrete_types.clone());
         ConcreteTypesRegistryKey(index)
+    }
+
+    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+        self.0[key.0].clone()
     }
 }
 

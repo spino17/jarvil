@@ -33,6 +33,10 @@ impl AbstractType for Lambda {
                 // Lambda type has structural equivalence checks unlike struct type which is only compared by it's name
                 // This structural equivalence is important because we can have lambda types which are not named for example:
                 // let x = (...) -> <Type>: block would have `x` to be of type `Lambda` with no name but symbol_data.
+
+                // TODO - once generics gets integrated we have concrete types attached to the lambda type
+                // to enable structural equivalence of lambda type we have to get the concretized version of
+                // function prototype which then we would compare like non-generic lambda types.
                 match &*self.semantic_data.symbol_data.0.as_ref().borrow() {
                     UserDefinedTypeData::Lambda(self_data_ref) => {
                         match &*lambda_data.semantic_data.symbol_data.0.as_ref().borrow() {

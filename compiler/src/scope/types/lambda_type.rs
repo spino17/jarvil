@@ -43,6 +43,10 @@ impl AbstractConcreteTypesHandler for LambdaTypeData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
         self.meta_data.register_concrete_types(concrete_types)
     }
+
+    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+        self.meta_data.get_concrete_types_at_key(key)
+    }
 }
 
 impl GenericContainingConstructs for LambdaTypeData {

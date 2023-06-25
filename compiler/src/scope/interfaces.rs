@@ -1,66 +1,92 @@
 use super::{
-    concrete::{
-        ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry, StructConcreteTypesRegistry,
-    },
+    concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey},
     core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
-    function::FunctionData,
+    types::struct_type::{MethodData, StructTypeGenerics},
 };
+use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
 
+#[derive(Debug, Clone)]
+pub struct InterfaceObject((String, ConcreteSymbolData<InterfaceData>)); // (name, semantic data)
+
+impl InterfaceObject {
+    fn new(name: String, concrete_symbol_data: &ConcreteSymbolData<InterfaceData>) -> Self {
+        InterfaceObject((name, concrete_symbol_data.clone()))
+    }
+
+    fn is_eq(&self, other: &InterfaceObject) -> bool {
+        if self.0 .0.eq(&other.0 .0) {
+            // names of interfaces should be same
+            match self.0 .1.index {
+                Some(self_index) => match other.0 .1.index {
+                    Some(base_index) => {
+                        let self_concrete_types =
+                            self.0 .1.symbol_data.get_concrete_types_at_key(self_index);
+                        let base_concrete_types =
+                            other.0 .1.symbol_data.get_concrete_types_at_key(base_index);
+                        let self_len = self_concrete_types.len();
+                        let base_len = base_concrete_types.len();
+                        assert!(self_len == base_len);
+                        for i in 0..self_len {
+                            if !self_concrete_types[i].is_eq(&base_concrete_types[i]) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                    None => unreachable!(),
+                },
+                None => return true,
+            }
+        }
+        return false;
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
-    pub methods: FxHashMap<String, (FunctionData, TextRange)>,
-    pub generics: Option<GenericsSpecAndConcreteTypesRegistry<StructConcreteTypesRegistry>>,
+    pub methods: FxHashMap<String, (MethodData, TextRange)>,
+    pub generics: StructTypeGenerics,
 }
 
 impl InterfaceData {
     fn set_meta_data(
         &mut self,
         fields: FxHashMap<String, (Type, TextRange)>,
-        methods: FxHashMap<String, (FunctionData, TextRange)>,
+        methods: FxHashMap<String, (MethodData, TextRange)>,
         generics_spec: Option<GenericTypeParams>,
     ) {
         self.fields = fields;
         self.methods = methods;
-        self.generics = match generics_spec {
-            Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
-                generics_spec,
-                concrete_types_registry: StructConcreteTypesRegistry::default(),
-            }),
-            None => None,
-        }
+        self.generics = StructTypeGenerics::new(generics_spec)
     }
 
     pub fn register_method_concrete_types_for_key(
         &mut self,
-        key: &ConcreteTypesRegistryKey,
+        key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
         method_concrete_types: &Vec<Type>,
     ) {
-        //self.concrete_types_registry
-        //    .register_method_concrete_types_for_key(key, method_name, method_concrete_types)
-        todo!()
+        self.generics
+            .register_method_concrete_types(key, method_name, method_concrete_types)
     }
 }
 
 impl AbstractConcreteTypesHandler for InterfaceData {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
-        match &mut self.generics {
-            Some(generics) => {
-                return generics
-                    .concrete_types_registry
-                    .register_concrete_types(concrete_types)
-            }
-            None => unreachable!(),
-        }
+        self.generics.register_concrete_types(concrete_types)
+    }
+
+    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+        self.generics.get_concrete_types_at_key(key).clone()
     }
 }
 
 impl GenericContainingConstructs for InterfaceData {
     fn has_generics(&self) -> bool {
-        self.generics.is_some()
+        self.generics.has_generics()
     }
 }

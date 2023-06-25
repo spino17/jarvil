@@ -1,9 +1,7 @@
-use super::concrete::{
-    ConcreteSymbolData, ConcreteTypesRegistryKey,
-};
+use super::concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey};
 use super::function::{FunctionData, FunctionPrototype};
 use super::handler::SymbolDataEntry;
-use super::interfaces::InterfaceData;
+use super::interfaces::{InterfaceData, InterfaceObject};
 use super::types::lambda_type::LambdaTypeData;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
@@ -21,6 +19,7 @@ pub enum VariableLookupResult {
 
 pub trait AbstractConcreteTypesHandler {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey; // returns the index inside the list of concrete types
+    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type>;
 }
 
 pub trait GenericContainingConstructs {
@@ -28,7 +27,7 @@ pub trait GenericContainingConstructs {
 }
 
 #[derive(Debug)]
-pub struct GenericTypeParams(Vec<(String, Vec<ConcreteSymbolData<InterfaceData>>)>);
+pub struct GenericTypeParams(Vec<(String, Vec<InterfaceObject>)>);
 
 #[derive(Debug)]
 pub struct SymbolData<T: AbstractConcreteTypesHandler + GenericContainingConstructs>(
@@ -51,6 +50,10 @@ impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> SymbolData<T
             .as_ref()
             .borrow_mut()
             .register_concrete_types(concrete_types)
+    }
+
+    pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+        self.0.as_ref().borrow().get_concrete_types_at_key(key)
     }
 
     pub fn has_generics(&self) -> bool {
