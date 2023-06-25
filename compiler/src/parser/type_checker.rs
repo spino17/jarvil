@@ -42,7 +42,8 @@ use crate::{
         core::SymbolData,
         function::FunctionData,
         handler::{NamespaceHandler, SymbolDataRef},
-        user_defined_types::{LambdaTypeData, UserDefinedTypeData},
+        types::core::UserDefinedTypeData,
+        types::lambda_type::LambdaTypeData
     },
     types::{
         atomic::Atomic,

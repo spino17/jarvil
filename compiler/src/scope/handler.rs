@@ -2,7 +2,7 @@ use super::{
     core::{Namespace, SymbolData},
     function::FunctionData,
     interfaces::InterfaceData,
-    user_defined_types::UserDefinedTypeData,
+    types::core::UserDefinedTypeData,
     variables::VariableData,
 };
 use crate::ast::ast::{

@@ -4,8 +4,8 @@ use super::concrete::{
 use super::function::{FunctionData, FunctionPrototype};
 use super::handler::SymbolDataEntry;
 use super::interfaces::InterfaceData;
-use super::user_defined_types::LambdaTypeData;
-use crate::scope::user_defined_types::UserDefinedTypeData;
+use super::types::lambda_type::LambdaTypeData;
+use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;

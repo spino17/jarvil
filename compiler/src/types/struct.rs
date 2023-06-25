@@ -2,7 +2,7 @@ use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::scope::{
     concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey},
     core::SymbolData,
-    user_defined_types::UserDefinedTypeData,
+    types::core::UserDefinedTypeData,
 };
 
 #[derive(Debug)]

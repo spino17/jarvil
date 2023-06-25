@@ -6,7 +6,7 @@ use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::concrete::ConcreteTypesRegistryKey;
 use crate::scope::core::SymbolData;
-use crate::scope::user_defined_types::UserDefinedTypeData;
+use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;

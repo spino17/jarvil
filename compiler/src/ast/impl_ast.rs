@@ -40,7 +40,7 @@ use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::Resolver;
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
-use crate::scope::user_defined_types::UserDefinedTypeData;
+use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
