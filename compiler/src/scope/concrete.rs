@@ -1,10 +1,10 @@
-use std::collections::hash_map::Entry;
 use super::core::GenericContainingConstructs;
 use super::core::GenericTypeParams;
 use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::SymbolData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
+use std::collections::hash_map::Entry;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ConcreteTypesRegistryKey(usize);

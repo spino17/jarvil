@@ -18,7 +18,7 @@ use crate::{
 #[derive(Debug)]
 pub struct MethodData {
     pub prototype: FunctionPrototype,
-    pub generics: Option<GenericTypeParams>, // the concrete types registry is handled by the struct
+    pub generics: Option<GenericTypeParams>, // the concrete types registry for methods is handled by the struct registry
 }
 
 impl MethodData {
