@@ -54,9 +54,9 @@ impl Default for MethodData {
 #[derive(Debug, Default)]
 pub struct StructTypeData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
-    pub constructor: FunctionData,
-    pub methods: FxHashMap<String, (FunctionData, TextRange)>,
-    pub class_methods: FxHashMap<String, (FunctionData, TextRange)>,
+    pub constructor: MethodData,
+    pub methods: FxHashMap<String, (MethodData, TextRange)>,
+    pub class_methods: FxHashMap<String, (MethodData, TextRange)>,
     pub generics: Option<GenericsSpecAndConcreteTypesRegistry<StructConcreteTypesRegistry>>,
 }
 
@@ -64,9 +64,9 @@ impl StructTypeData {
     pub fn set_meta_data(
         &mut self,
         fields: FxHashMap<String, (Type, TextRange)>,
-        constructor: Option<(FunctionData, TextRange)>,
-        methods: FxHashMap<String, (FunctionData, TextRange)>,
-        class_methods: FxHashMap<String, (FunctionData, TextRange)>,
+        constructor: Option<(MethodData, TextRange)>,
+        methods: FxHashMap<String, (MethodData, TextRange)>,
+        class_methods: FxHashMap<String, (MethodData, TextRange)>,
         generics_spec: Option<GenericTypeParams>,
     ) {
         self.fields = fields;
@@ -91,7 +91,7 @@ impl StructTypeData {
         }
     }
 
-    pub fn try_method(&self, method_name: &str) -> Option<(&FunctionData, TextRange)> {
+    pub fn try_method(&self, method_name: &str) -> Option<(&MethodData, TextRange)> {
         match self.methods.get(method_name) {
             Some(func_data) => Some((&func_data.0, func_data.1)),
             None => None,
