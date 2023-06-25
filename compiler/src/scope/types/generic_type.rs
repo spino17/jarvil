@@ -1,7 +1,4 @@
-use crate::scope::{
-    concrete::ConcreteSymbolData,
-    interfaces::{InterfaceData, InterfaceObject},
-};
+use crate::scope::interfaces::InterfaceObject;
 
 #[derive(Debug)]
 pub struct GenericTypeData {

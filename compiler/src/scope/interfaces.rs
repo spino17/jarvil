@@ -1,7 +1,12 @@
 use super::{
-    concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey},
-    core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
-    types::struct_type::{MethodData, StructTypeGenerics},
+    concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey, InterfaceConcreteTypesRegistry},
+    core::{
+        AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams, SymbolData,
+    },
+    types::{
+        core::UserDefinedTypeData,
+        struct_type::{MethodData, StructTypeGenerics},
+    },
 };
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
@@ -49,7 +54,8 @@ impl InterfaceObject {
 pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub methods: FxHashMap<String, (MethodData, TextRange)>,
-    pub generics: StructTypeGenerics,
+    pub generics:
+        StructTypeGenerics<InterfaceConcreteTypesRegistry, Vec<SymbolData<UserDefinedTypeData>>>,
 }
 
 impl InterfaceData {
