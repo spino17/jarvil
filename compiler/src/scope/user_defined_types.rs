@@ -4,7 +4,7 @@ use super::{
         GenericsSpecAndConcreteTypesRegistry, StructConcreteTypesRegistry,
     },
     core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
-    function::FunctionData,
+    function::{FunctionData, FunctionPrototype},
     interfaces::InterfaceData,
 };
 use crate::types::core::Type;
@@ -155,8 +155,10 @@ impl LambdaTypeData {
     ) -> Self {
         LambdaTypeData {
             meta_data: FunctionData {
-                params: param_types,
-                return_type,
+                prototype: FunctionPrototype {
+                    params: param_types,
+                    return_type,
+                },
                 generics: match generics_spec {
                     Some(generic_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
                         generics_spec: generic_spec,

@@ -410,8 +410,8 @@ impl TypeChecker {
                         let (result, return_type) = match symbol_data {
                             SymbolDataRef::Function(func_symbol_data) => {
                                 let func_data = &*func_symbol_data.0.as_ref().borrow();
-                                let expected_params = &func_data.params;
-                                let return_type = &func_data.return_type;
+                                let expected_params = &func_data.prototype.params;
+                                let return_type = &func_data.prototype.return_type;
                                 let result =
                                     self.check_params_type_and_count(expected_params, params);
                                 (result, return_type.clone())
@@ -429,9 +429,10 @@ impl TypeChecker {
                                             .borrow()
                                         {
                                             UserDefinedTypeData::Lambda(data) => {
-                                                let expected_params = &data.meta_data.params;
+                                                let expected_params =
+                                                    &data.meta_data.prototype.params;
                                                 let return_type =
-                                                    data.meta_data.return_type.clone();
+                                                    data.meta_data.prototype.return_type.clone();
                                                 let result = self.check_params_type_and_count(
                                                     expected_params,
                                                     params,
@@ -457,10 +458,13 @@ impl TypeChecker {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
                                         let constructor_meta_data = &struct_symbol_data.constructor;
                                         let result = self.check_params_type_and_count(
-                                            &constructor_meta_data.params,
+                                            &constructor_meta_data.prototype.params,
                                             params,
                                         );
-                                        (result, constructor_meta_data.return_type.clone())
+                                        (
+                                            result,
+                                            constructor_meta_data.prototype.return_type.clone(),
+                                        )
                                     }
                                     UserDefinedTypeData::Lambda(_) => {
                                         let type_name = ok_identifier.token_value(&self.code);
@@ -521,8 +525,8 @@ impl TypeChecker {
                                 };
                                 match struct_data.class_methods.get(&class_method_name) {
                                     Some((func_data, _)) => {
-                                        let expected_params = &func_data.params;
-                                        let return_type = &func_data.return_type;
+                                        let expected_params = &func_data.prototype.params;
+                                        let return_type = &func_data.prototype.return_type;
                                         let result = self
                                             .check_params_type_and_count(expected_params, params);
                                         match result {
@@ -603,8 +607,8 @@ impl TypeChecker {
                         // check if the type is lambda
                         match &*lambda_data.semantic_data.symbol_data.0.as_ref().borrow() {
                             UserDefinedTypeData::Lambda(data) => {
-                                let expected_param_types = &data.meta_data.params;
-                                let return_type = &data.meta_data.return_type;
+                                let expected_param_types = &data.meta_data.prototype.params;
+                                let return_type = &data.meta_data.prototype.return_type;
                                 let result =
                                     self.check_params_type_and_count(expected_param_types, params);
                                 match result {
@@ -714,8 +718,9 @@ impl TypeChecker {
                                         .borrow()
                                     {
                                         UserDefinedTypeData::Lambda(data) => {
-                                            let expected_param_types = &data.meta_data.params;
-                                            let return_type = &data.meta_data.return_type;
+                                            let expected_param_types =
+                                                &data.meta_data.prototype.params;
+                                            let return_type = &data.meta_data.prototype.return_type;
                                             let result = self.check_params_type_and_count(
                                                 expected_param_types,
                                                 params,
@@ -793,8 +798,10 @@ impl TypeChecker {
                                         UserDefinedTypeData::Struct(struct_data) => {
                                             match struct_data.try_method(&method_name) {
                                                 Some((func_data, _)) => {
-                                                    let expected_params = &func_data.params;
-                                                    let return_type = &func_data.return_type;
+                                                    let expected_params =
+                                                        &func_data.prototype.params;
+                                                    let return_type =
+                                                        &func_data.prototype.return_type;
                                                     let result = self.check_params_type_and_count(
                                                         expected_params,
                                                         params,

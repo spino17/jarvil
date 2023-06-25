@@ -117,8 +117,8 @@ impl Resolver {
         {
             Some(symbol_data) => {
                 let func_meta_data = &*symbol_data.0.as_ref().borrow();
-                let params = &func_meta_data.params;
-                let return_type = &func_meta_data.return_type;
+                let params = &func_meta_data.prototype.params;
+                let return_type = &func_meta_data.prototype.return_type;
                 if params.len() > 0 || !return_type.is_void() {
                     let span = symbol_data.1;
                     let err = MainFunctionWrongTypeError::new(span);

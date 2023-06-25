@@ -40,12 +40,12 @@ impl AbstractType for Lambda {
                         match &*lambda_data.semantic_data.symbol_data.0.as_ref().borrow() {
                             UserDefinedTypeData::Lambda(base_data_ref) => {
                                 let (self_param_types, self_return_type) = (
-                                    &self_data_ref.meta_data.params,
-                                    &self_data_ref.meta_data.return_type,
+                                    &self_data_ref.meta_data.prototype.params,
+                                    &self_data_ref.meta_data.prototype.return_type,
                                 );
                                 let (base_param_types, base_return_type) = (
-                                    &base_data_ref.meta_data.params,
-                                    &base_data_ref.meta_data.return_type,
+                                    &base_data_ref.meta_data.prototype.params,
+                                    &base_data_ref.meta_data.prototype.return_type,
                                 );
                                 let self_params_len = self_param_types.len();
                                 let base_params_len = base_param_types.len();
@@ -89,8 +89,8 @@ impl ToString for Lambda {
             Some(name) => format!("{}", name),
             None => match &*self.semantic_data.symbol_data.0.as_ref().borrow() {
                 UserDefinedTypeData::Lambda(data) => {
-                    let self_param_types = &data.meta_data.params;
-                    let self_return_type = &data.meta_data.return_type;
+                    let self_param_types = &data.meta_data.prototype.params;
+                    let self_return_type = &data.meta_data.prototype.return_type;
                     let mut params_str = "".to_string();
                     let mut flag = false;
                     for param in self_param_types {

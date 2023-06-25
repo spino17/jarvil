@@ -11,9 +11,23 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct FunctionData {
+pub struct FunctionPrototype {
     pub params: Vec<Type>,
     pub return_type: Type,
+}
+
+impl Default for FunctionPrototype {
+    fn default() -> Self {
+        FunctionPrototype {
+            params: vec![],
+            return_type: Type::new_with_unset(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct FunctionData {
+    pub prototype: FunctionPrototype,
     pub generics: Option<GenericsSpecAndConcreteTypesRegistry<CallableConcreteTypesRegistry>>,
 }
 
@@ -24,8 +38,10 @@ impl FunctionData {
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         FunctionData {
-            params,
-            return_type,
+            prototype: FunctionPrototype {
+                params,
+                return_type,
+            },
             generics: match generics_spec {
                 Some(generic_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
                     generics_spec: generic_spec,
@@ -42,8 +58,8 @@ impl FunctionData {
         return_type: Type,
         generics_spec: Option<GenericTypeParams>,
     ) {
-        self.params = params;
-        self.return_type = return_type;
+        self.prototype.params = params;
+        self.prototype.return_type = return_type;
         self.generics = match generics_spec {
             Some(generic_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
                 generics_spec: generic_spec,
@@ -76,8 +92,7 @@ impl GenericContainingConstructs for FunctionData {
 impl Default for FunctionData {
     fn default() -> Self {
         FunctionData {
-            params: vec![],
-            return_type: Type::new_with_unset(),
+            prototype: FunctionPrototype::default(),
             generics: None,
         }
     }
