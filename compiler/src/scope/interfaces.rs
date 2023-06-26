@@ -17,11 +17,11 @@ use text_size::TextRange;
 pub struct InterfaceObject((String, ConcreteSymbolData<InterfaceData>)); // (name, semantic data)
 
 impl InterfaceObject {
-    fn new(name: String, concrete_symbol_data: &ConcreteSymbolData<InterfaceData>) -> Self {
+    pub fn new(name: String, concrete_symbol_data: &ConcreteSymbolData<InterfaceData>) -> Self {
         InterfaceObject((name, concrete_symbol_data.clone()))
     }
 
-    fn is_eq(&self, other: &InterfaceObject) -> bool {
+    pub fn is_eq(&self, other: &InterfaceObject) -> bool {
         if self.0 .0.eq(&other.0 .0) {
             // names of interfaces should be same
             match self.0 .1.index {

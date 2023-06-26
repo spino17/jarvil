@@ -2,9 +2,9 @@ use crate::scope::interfaces::InterfaceObject;
 
 #[derive(Debug)]
 pub struct GenericTypeData {
-    index: usize, // index in the sequence of all generic type params in declaration
-    category: GenericTypeDeclarationPlaceCategory,
-    interface_bounds: Vec<InterfaceObject>,
+    pub index: usize, // index in the sequence of all generic type params in declaration
+    pub category: GenericTypeDeclarationPlaceCategory,
+    pub interface_bounds: Vec<InterfaceObject>,
 }
 
 impl GenericTypeData {
@@ -22,7 +22,8 @@ impl GenericTypeData {
 }
 
 #[derive(Debug)]
-pub enum GenericTypeDeclarationPlaceCategory {  // This information is useful for methods
+pub enum GenericTypeDeclarationPlaceCategory {
+    // This information is useful for methods
     InStruct,
     InCallable,
 }

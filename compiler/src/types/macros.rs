@@ -7,6 +7,7 @@ macro_rules! impl_op_compatiblity {
             CoreType::Struct(struct_type) => struct_type.$t($u),
             CoreType::Tuple(tuple_type) => tuple_type.$t($u),
             CoreType::Lambda(lambda_type) => lambda_type.$t($u),
+            CoreType::Generic(generic_type) => generic_type.$t($u),
             CoreType::Unknown => return None,
             CoreType::Void => return None,
             CoreType::Unset => return None,

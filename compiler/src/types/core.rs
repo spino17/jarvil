@@ -1,3 +1,4 @@
+use super::generic::Generic;
 use super::hashmap::HashMap;
 use super::lambda::Lambda;
 use super::r#struct::Struct;
@@ -57,6 +58,7 @@ pub enum CoreType {
     Array(Array),
     Tuple(Tuple),
     HashMap(HashMap),
+    Generic(Generic),
     Unknown,
     Void,
     Unset,
@@ -106,6 +108,14 @@ impl Type {
     pub fn new_with_hashmap(key_type: &Type, value_type: &Type) -> Type {
         Type(Rc::new(CoreType::HashMap(HashMap::new(
             key_type, value_type,
+        ))))
+    }
+
+    pub fn new_with_generic(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
+        Type(Rc::new(CoreType::Generic(Generic::new(
+            name,
+            symbol_data,
+            None,
         ))))
     }
 
@@ -277,6 +287,7 @@ impl AbstractType for Type {
             CoreType::Array(array_type) => array_type.is_eq(base_type),
             CoreType::Tuple(tuple_type) => tuple_type.is_eq(base_type),
             CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(base_type),
+            CoreType::Generic(generic_type) => generic_type.is_eq(base_type),
             CoreType::Unknown => return false,
             CoreType::Void => match base_type.0.as_ref() {
                 CoreType::Void => true,
@@ -295,6 +306,7 @@ impl AbstractType for Type {
             CoreType::Array(array_type) => array_type.stringify(),
             CoreType::Tuple(tuple_type) => tuple_type.stringify(),
             CoreType::HashMap(hashmap_type) => hashmap_type.stringify(),
+            CoreType::Generic(generic_type) => generic_type.stringify(),
             CoreType::Unknown => unreachable!(),
             CoreType::Void => unreachable!(),
             CoreType::Unset => unreachable!(),
@@ -312,6 +324,7 @@ impl std::fmt::Display for Type {
             CoreType::Array(array_type) => write!(f, "{}", array_type.to_string()),
             CoreType::Tuple(tuple_type) => write!(f, "{}", tuple_type.to_string()),
             CoreType::HashMap(hashmap_type) => write!(f, "{}", hashmap_type.to_string()),
+            CoreType::Generic(generic_type) => write!(f, "{}", generic_type.to_string()),
             CoreType::Unknown => write!(f, "{}", UNKNOWN),
             CoreType::Void => write!(f, "()"),
             CoreType::Unset => write!(f, "{}", UNSET),
