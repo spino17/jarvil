@@ -205,25 +205,6 @@ impl TypeChecker {
         return lambda_type_obj;
     }
 
-    /*
-    pub fn is_callable<'a>(type_obj: &'a Type) -> Option<(Vec<Type>, Type)> {
-        match type_obj.0.as_ref() {
-            CoreType::Lambda(lambda_data) => {
-                match &*lambda_data.semantic_data.symbol_data.0.as_ref().borrow() {
-                    UserDefinedTypeData::Lambda(data) => {
-                        return Some((
-                            data.meta_data.params.clone(),  // expensive clone
-                            data.meta_data.return_type.clone(),
-                        ))
-                    }
-                    _ => unreachable!(),
-                }
-            }
-            _ => None,
-        }
-    }
-     */
-
     pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
         match unary.core_ref() {
             CoreUnaryExpressionNode::Unary(unary) => {
@@ -637,28 +618,6 @@ impl TypeChecker {
                         return (Type::new_with_unknown(), Some(atom_type_obj));
                     }
                 }
-                /*
-                match TypeChecker::is_callable(&atom_type_obj) {
-                    Some((expected_param_types, return_type)) => {
-                        let result =
-                            self.check_params_type_and_count(&expected_param_types, params);
-                        match result {
-                            ParamsTypeNCountResult::Ok => {
-                                return (return_type.clone(), Some(atom_type_obj))
-                            }
-                            _ => {
-                                self.log_params_type_and_count_check_error(atom.range(), result);
-                                return (Type::new_with_unknown(), Some(atom_type_obj));
-                            }
-                        }
-                    }
-                    None => {
-                        let err = ExpressionNotCallableError::new(atom.range());
-                        self.log_error(Diagnostics::ExpressionNotCallable(err));
-                        return (Type::new_with_unknown(), Some(atom_type_obj));
-                    }
-                }
-                 */
             }
             CoreAtomNode::PropertyAccess(property_access) => {
                 let core_property_access = property_access.core_ref();
@@ -757,34 +716,6 @@ impl TypeChecker {
                                     return (Type::new_with_unknown(), Some(atom_type_obj));
                                 }
                             }
-                            /*
-                            match TypeChecker::is_callable(&type_obj) {
-                                Some((expected_param_types, return_type)) => {
-                                    let result = self
-                                        .check_params_type_and_count(&expected_param_types, params);
-                                    match result {
-                                        ParamsTypeNCountResult::Ok => {
-                                            return (return_type.clone(), Some(atom_type_obj))
-                                        }
-                                        _ => {
-                                            self.log_params_type_and_count_check_error(
-                                                ok_identifier.range(),
-                                                result,
-                                            );
-                                            return (Type::new_with_unknown(), Some(atom_type_obj));
-                                        }
-                                    }
-                                }
-                                None => {
-                                    let err = StructFieldNotCallableError::new(
-                                        type_obj.to_string(),
-                                        ok_identifier.range(),
-                                    );
-                                    self.log_error(Diagnostics::StructFieldNotCallable(err));
-                                    return (Type::new_with_unknown(), Some(atom_type_obj));
-                                }
-                            }
-                             */
                         }
                         StructPropertyCheckResult::PropertyDoesNotExist => {
                             match atom_type_obj.0.as_ref() {

@@ -22,7 +22,7 @@ impl GenericTypeData {
 }
 
 #[derive(Debug)]
-pub enum GenericTypeDeclarationPlaceCategory {
+pub enum GenericTypeDeclarationPlaceCategory {  // This information is useful for methods
     InStruct,
     InCallable,
 }
