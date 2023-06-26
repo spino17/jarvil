@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::scope::{
     concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey},
