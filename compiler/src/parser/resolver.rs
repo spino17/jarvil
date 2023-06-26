@@ -620,7 +620,7 @@ impl Resolver {
                     TextRange::default(),
                     true,
                 );
-                let lambda_type_obj = Type::new_with_lambda(None, &symbol_data, None);
+                let lambda_type_obj = Type::new_with_lambda(None, &symbol_data, None, false);
                 if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
                     if let Some(symbol_data) = self
                         .namespace_handler
@@ -723,7 +723,7 @@ impl Resolver {
                             {
                                 Some(symbol_data) => {
                                     let name = ok_identifier.token_value(&self.code);
-                                    Type::new_with_struct(name, &symbol_data, None)
+                                    Type::new_with_struct(name, &symbol_data, None, false)
                                 }
                                 None => unreachable!(),
                             }

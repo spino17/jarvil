@@ -201,7 +201,7 @@ impl TypeChecker {
             TextRange::default(),
             true,
         );
-        let lambda_type_obj = Type::new_with_lambda(None, &symbol_data, None);
+        let lambda_type_obj = Type::new_with_lambda(None, &symbol_data, None, false);
         return lambda_type_obj;
     }
 

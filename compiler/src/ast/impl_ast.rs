@@ -1116,10 +1116,10 @@ impl UserDefinedTypeNode {
                 Some((symbol_data, _, _, _)) => {
                     let result = match &*symbol_data.0.as_ref().borrow() {
                         UserDefinedTypeData::Struct(_) => TypeResolveKind::Resolved(
-                            Type::new_with_struct(name, &symbol_data, None),
+                            Type::new_with_struct(name, &symbol_data, None, false),
                         ),
                         UserDefinedTypeData::Lambda(_) => TypeResolveKind::Resolved(
-                            Type::new_with_lambda(Some(name), &symbol_data, None),
+                            Type::new_with_lambda(Some(name), &symbol_data, None, false),
                         ),
                         UserDefinedTypeData::Generic(generic_data) => todo!(),
                     };
@@ -1151,6 +1151,7 @@ impl UserDefinedTypeNode {
                                 name,
                                 &symbol_data,
                                 None,
+                                false
                             ));
                         }
                         UserDefinedTypeData::Lambda(_) => {
@@ -1158,6 +1159,7 @@ impl UserDefinedTypeNode {
                                 Some(name),
                                 &symbol_data,
                                 None,
+                                false
                             ));
                         }
                         UserDefinedTypeData::Generic(generic_data) => todo!(),

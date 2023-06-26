@@ -73,28 +73,6 @@ impl Type {
         Type(Rc::new(CoreType::Atomic(Atomic::new(name))), false)
     }
 
-    pub fn new_with_struct(
-        name: String,
-        symbol_data: &SymbolData<UserDefinedTypeData>,
-        index: Option<ConcreteTypesRegistryKey>,
-    ) -> Type {
-        Type(
-            Rc::new(CoreType::Struct(Struct::new(name, symbol_data, None))),
-            false,
-        )
-    }
-
-    pub fn new_with_lambda(
-        name: Option<String>,
-        symbol_data: &SymbolData<UserDefinedTypeData>,
-        index: Option<ConcreteTypesRegistryKey>,
-    ) -> Type {
-        Type(
-            Rc::new(CoreType::Lambda(Lambda::new(name, symbol_data, index))),
-            false,
-        )
-    }
-
     pub fn new_with_array(element_type: &Type) -> Type {
         Type(
             Rc::new(CoreType::Array(Array::new(element_type))),
@@ -118,6 +96,31 @@ impl Type {
         Type(
             Rc::new(CoreType::HashMap(HashMap::new(key_type, value_type))),
             key_type.has_generics() || value_type.has_generics(),
+        )
+    }
+
+    // user-defined-types
+    pub fn new_with_struct(
+        name: String,
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        index: Option<ConcreteTypesRegistryKey>,
+        has_generics: bool,
+    ) -> Type {
+        Type(
+            Rc::new(CoreType::Struct(Struct::new(name, symbol_data, index))),
+            has_generics,
+        )
+    }
+
+    pub fn new_with_lambda(
+        name: Option<String>,
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        index: Option<ConcreteTypesRegistryKey>,
+        has_generics: bool,
+    ) -> Type {
+        Type(
+            Rc::new(CoreType::Lambda(Lambda::new(name, symbol_data, index))),
+            has_generics, // change this
         )
     }
 
