@@ -1151,7 +1151,7 @@ impl UserDefinedTypeNode {
                                 name,
                                 &symbol_data,
                                 None,
-                                false
+                                false,
                             ));
                         }
                         UserDefinedTypeData::Lambda(_) => {
@@ -1159,7 +1159,7 @@ impl UserDefinedTypeNode {
                                 Some(name),
                                 &symbol_data,
                                 None,
-                                false
+                                false,
                             ));
                         }
                         UserDefinedTypeData::Generic(generic_data) => todo!(),

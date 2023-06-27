@@ -251,6 +251,11 @@ impl Type {
         }
     }
 
+    pub fn concretize(&self) -> Vec<Type> {
+        assert!(self.has_generics());
+        todo!()
+    }
+
     // This function returns Some if operation is possible and None otherwise
     pub fn check_operator(&self, other: &Type, op_kind: &BinaryOperatorKind) -> Option<Type> {
         match op_kind {
