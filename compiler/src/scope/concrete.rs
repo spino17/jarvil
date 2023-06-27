@@ -1,4 +1,3 @@
-use super::core::AbstractMethodConcreteTypesHandler;
 use super::core::GenericContainingConstructs;
 use super::core::GenericTypeParams;
 use super::types::core::UserDefinedTypeData;
@@ -52,23 +51,8 @@ pub struct StructConcreteTypesRegistry<T: Default>(
     )>,
 );
 
-impl<T: Default> StructConcreteTypesRegistry<T> {}
-
-impl<T: Default> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T> {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
-        let index = self.0.len();
-        self.0
-            .push((concrete_types.clone(), T::default(), FxHashMap::default()));
-        ConcreteTypesRegistryKey(index)
-    }
-
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.0[key.0].0.clone()
-    }
-}
-
-impl<T: Default> AbstractMethodConcreteTypesHandler for StructConcreteTypesRegistry<T> {
-    fn register_method_concrete_types_for_key(
+impl<T: Default> StructConcreteTypesRegistry<T> {
+    pub fn register_method_concrete_types_for_key(
         &mut self,
         key: ConcreteTypesRegistryKey,
         method_name: String,
@@ -85,6 +69,19 @@ impl<T: Default> AbstractMethodConcreteTypesHandler for StructConcreteTypesRegis
                 ]));
             }
         }
+    }
+}
+
+impl<T: Default> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T> {
+    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
+        let index = self.0.len();
+        self.0
+            .push((concrete_types.clone(), T::default(), FxHashMap::default()));
+        ConcreteTypesRegistryKey(index)
+    }
+
+    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+        self.0[key.0].0.clone()
     }
 }
 

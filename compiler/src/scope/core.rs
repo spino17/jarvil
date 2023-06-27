@@ -22,6 +22,7 @@ pub trait AbstractConcreteTypesHandler {
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type>;
 }
 
+/*
 pub trait AbstractMethodConcreteTypesHandler {
     fn register_method_concrete_types_for_key(
         &mut self,
@@ -29,7 +30,7 @@ pub trait AbstractMethodConcreteTypesHandler {
         method_name: String,
         method_concrete_types: &Vec<Type>,
     );
-}
+}*/
 
 pub trait GenericContainingConstructs {
     fn has_generics(&self) -> bool;

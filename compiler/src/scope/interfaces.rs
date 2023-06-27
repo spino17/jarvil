@@ -54,10 +54,7 @@ impl InterfaceObject {
 pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub methods: FxHashMap<String, (MethodData, TextRange)>,
-    pub generics: StructTypeGenerics<
-        StructConcreteTypesRegistry<Vec<SymbolData<UserDefinedTypeData>>>,
-        Vec<SymbolData<UserDefinedTypeData>>,
-    >,
+    pub generics: StructTypeGenerics<Vec<SymbolData<UserDefinedTypeData>>>,
 }
 
 impl InterfaceData {
@@ -70,6 +67,10 @@ impl InterfaceData {
         self.fields = fields;
         self.methods = methods;
         self.generics = StructTypeGenerics::new(generics_spec)
+    }
+
+    pub fn register_implementing_struct(&mut self, symbol_data: &SymbolData<UserDefinedTypeData>, index: ConcreteTypesRegistryKey) {
+        todo!()
     }
 
     pub fn register_method_concrete_types(
