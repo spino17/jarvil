@@ -1,5 +1,5 @@
 use super::{
-    concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey, InterfaceConcreteTypesRegistry},
+    concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey, StructConcreteTypesRegistry},
     core::{
         AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams, SymbolData,
     },
@@ -54,8 +54,10 @@ impl InterfaceObject {
 pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub methods: FxHashMap<String, (MethodData, TextRange)>,
-    pub generics:
-        StructTypeGenerics<InterfaceConcreteTypesRegistry, Vec<SymbolData<UserDefinedTypeData>>>,
+    pub generics: StructTypeGenerics<
+        StructConcreteTypesRegistry<Vec<SymbolData<UserDefinedTypeData>>>,
+        Vec<SymbolData<UserDefinedTypeData>>,
+    >,
 }
 
 impl InterfaceData {

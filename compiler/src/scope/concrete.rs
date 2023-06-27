@@ -44,69 +44,21 @@ impl<T: AbstractConcreteTypesHandler + Default> GenericsSpecAndConcreteTypesRegi
 }
 
 #[derive(Debug, Default)]
-pub struct StructConcreteTypesRegistry(
-    Vec<(Vec<Type>, FxHashMap<String, CallableConcreteTypesRegistry>)>,
-);
-
-impl StructConcreteTypesRegistry {}
-
-impl AbstractConcreteTypesHandler for StructConcreteTypesRegistry {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
-        let index = self.0.len();
-        self.0.push((concrete_types.clone(), FxHashMap::default()));
-        ConcreteTypesRegistryKey(index)
-    }
-
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.0[key.0].0.clone()
-    }
-}
-
-impl AbstractMethodConcreteTypesHandler for StructConcreteTypesRegistry {
-    fn register_method_concrete_types_for_key(
-        &mut self,
-        key: ConcreteTypesRegistryKey,
-        method_name: String,
-        method_concrete_types: &Vec<Type>,
-    ) {
-        match self.0[key.0].1.entry(method_name.to_string()) {
-            Entry::Occupied(mut occupied_entry) => {
-                let occupied_entry_mut_ref = occupied_entry.get_mut();
-                occupied_entry_mut_ref.register_concrete_types(method_concrete_types);
-            }
-            Entry::Vacant(vacant_entry) => {
-                vacant_entry.insert(CallableConcreteTypesRegistry::new_with_entries(vec![
-                    method_concrete_types.clone(),
-                ]));
-            }
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct InterfaceConcreteTypesRegistry(
+pub struct StructConcreteTypesRegistry<T: Default>(
     Vec<(
         Vec<Type>,
-        Vec<SymbolData<UserDefinedTypeData>>,
+        T,
         FxHashMap<String, CallableConcreteTypesRegistry>,
     )>,
-); // [(interface concrete types, structs implementing the interface, method name to method concrete types mapping)]
+);
 
-impl InterfaceConcreteTypesRegistry {
-    pub fn register_struct_for_key(
-        &mut self,
-        key: ConcreteTypesRegistryKey,
-        struct_symbol_data: &SymbolData<UserDefinedTypeData>,
-    ) {
-        self.0[key.0].1.push(struct_symbol_data.clone());
-    }
-}
+impl<T: Default> StructConcreteTypesRegistry<T> {}
 
-impl AbstractConcreteTypesHandler for InterfaceConcreteTypesRegistry {
+impl<T: Default> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T> {
     fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
         let index = self.0.len();
         self.0
-            .push((concrete_types.clone(), Vec::default(), FxHashMap::default()));
+            .push((concrete_types.clone(), T::default(), FxHashMap::default()));
         ConcreteTypesRegistryKey(index)
     }
 
@@ -115,7 +67,7 @@ impl AbstractConcreteTypesHandler for InterfaceConcreteTypesRegistry {
     }
 }
 
-impl AbstractMethodConcreteTypesHandler for InterfaceConcreteTypesRegistry {
+impl<T: Default> AbstractMethodConcreteTypesHandler for StructConcreteTypesRegistry<T> {
     fn register_method_concrete_types_for_key(
         &mut self,
         key: ConcreteTypesRegistryKey,
