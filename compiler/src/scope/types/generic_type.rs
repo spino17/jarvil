@@ -11,7 +11,7 @@ pub struct GenericTypeData {
 }
 
 impl GenericTypeData {
-    fn new(
+    pub fn new(
         index: usize,
         category: GenericTypeDeclarationPlaceCategory,
         interface_bounds: Vec<InterfaceObject>,
@@ -26,11 +26,11 @@ impl GenericTypeData {
         }
     }
 
-    fn add_concrete_type(&mut self, ty: &Type) {
+    pub fn add_concrete_type(&mut self, ty: &Type) {
         self.concrete_types.push(ty.clone());
     }
 
-    fn has_concrete_types(&self) -> bool {
+    pub fn has_concrete_types(&self) -> bool {
         // if this method returns `false` then that means the function containing this generic type is never called!
         if self.concrete_types.len() > 0 {
             true
@@ -39,22 +39,22 @@ impl GenericTypeData {
         }
     }
 
-    fn is_concretization_required(&self) -> bool {
+    pub fn is_concretization_required(&self) -> bool {
         if self.generics_containing_types_indexes.len() == 0 {
             return false;
         }
         return false;
     }
 
-    fn concretize_generics(&mut self) {
+    pub fn concretize_generics(&mut self) {
+        // either the concrete_types is already concretized or does not have any generic types to concretize!
         if self.is_concretized || !self.is_concretization_required() {
             return;
         }
         let mut concretized_vec: Vec<Type> = vec![];
         let concrete_types_len = self.concrete_types.len();
         let mut start_index = 0;
-        for i in &self.generics_containing_types_indexes {
-            let index = *i;
+        for &index in &self.generics_containing_types_indexes {
             for j in start_index..index {
                 concretized_vec.push(self.concrete_types[j].clone());
             }
@@ -62,10 +62,6 @@ impl GenericTypeData {
             concretized_vec.append(&mut expanded_vec);
             start_index = index + 1;
         }
-        //let last_index = match self.generics_containing_types_indexes.last() {
-        //    Some(last_index) => *last_index,
-        //    None => unreachable!(),
-        //};
         if start_index < concrete_types_len {
             for i in start_index..concrete_types_len {
                 concretized_vec.push(self.concrete_types[i].clone());

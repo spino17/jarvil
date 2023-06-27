@@ -253,7 +253,91 @@ impl Type {
 
     pub fn concretize(&self) -> Vec<Type> {
         assert!(self.has_generics());
-        todo!()
+        match self.0.as_ref() {
+            CoreType::Array(array_type) => {
+                let element_concrete_types = array_type.element_type.concretize();
+                let mut array_concrete_types = vec![];
+                for ty in element_concrete_types {
+                    array_concrete_types.push(Type::new_with_array(&ty));
+                }
+                return array_concrete_types;
+            }
+            CoreType::HashMap(hashmap_type) => {
+                let key_ty = &hashmap_type.key_type;
+                let value_ty = &hashmap_type.value_type;
+                let key_concrete_types = key_ty.concretize();
+                let value_concrete_types = value_ty.concretize();
+                let mut hashmap_concrete_types = vec![];
+                // TODO - currently key and value are separately concretized without
+                // taking into accound any constraints that might exist between them.
+                // for example the hashmap might be `{T: T}` which let's say T takes
+                // concrete values from set [int, str, bool] then the concrete hashmap types
+                // should be [{int: int}, {str: str}, {bool: bool}] but according to below logic
+                // it will produce [{int: int}, {int: str}, {int: bool}, {str: int}, {str: str} ...]
+                // Size of this vector is directly propotional to the code segments generated in Python code.
+                // For now it is fine as mostly generic types are very rarely used in calling of the constructs.
+                for key_ty in &key_concrete_types {
+                    for value_ty in &value_concrete_types {
+                        hashmap_concrete_types.push(Type::new_with_hashmap(key_ty, value_ty));
+                    }
+                }
+                return hashmap_concrete_types;
+            }
+            CoreType::Tuple(tuple_type) => {
+                fn concretize_tuple(tuple_vec: &[Type]) -> Vec<Vec<Type>> {
+                    if tuple_vec.len() == 1 {
+                        return vec![tuple_vec[0].concretize()];
+                    }
+                    let first_concrete_types = tuple_vec[0].concretize();
+                    let mut remaining_concrete_types = concretize_tuple(&tuple_vec[1..]);
+                    let mut tuple_sub_concrete_types = vec![];
+                    for ty in first_concrete_types {
+                        let mut v = vec![ty];
+                        for types in &mut remaining_concrete_types {
+                            v.append(types);
+                        }
+                        tuple_sub_concrete_types.push(v);
+                    }
+                    return tuple_sub_concrete_types;
+                }
+                let tuple_vec = &tuple_type.sub_types;
+                let mut tuple_concrete_types = vec![];
+                for sub_types in concretize_tuple(&tuple_vec[..]) {
+                    tuple_concrete_types.push(Type::new_with_tuple(sub_types));
+                }
+                return tuple_concrete_types;
+            }
+            CoreType::Struct(struct_type) => {
+                // do something similar like generic type where we maintain some state whether struct is
+                // concretized (or whether it even require it) and replace internal data mutating the struct into concrete types only
+                // atleast for it's own generics and not it's methods.
+                todo!();
+            }
+            CoreType::Lambda(lambda_type) => {
+                todo!()
+            }
+            CoreType::Generic(generic_type) => {
+                let concrete_types = match &mut *generic_type
+                    .semantic_data
+                    .symbol_data
+                    .0
+                    .as_ref()
+                    .borrow_mut()
+                {
+                    UserDefinedTypeData::Generic(generic_data) => {
+                        generic_data.concretize_generics();
+                        generic_data.concrete_types.clone()
+                    }
+                    _ => unreachable!(),
+                };
+                concrete_types
+            }
+            CoreType::Atomic(_)
+            | CoreType::Unknown
+            | CoreType::Unset
+            | CoreType::Void
+            | CoreType::Any => unreachable!(),
+        }
     }
 
     // This function returns Some if operation is possible and None otherwise
