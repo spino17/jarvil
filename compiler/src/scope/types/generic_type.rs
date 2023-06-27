@@ -62,12 +62,12 @@ impl GenericTypeData {
             concretized_vec.append(&mut expanded_vec);
             start_index = index + 1;
         }
-        let last_index = match self.generics_containing_types_indexes.last() {
-            Some(last_index) => *last_index,
-            None => unreachable!(),
-        };
-        if last_index < concrete_types_len - 1 {
-            for i in (last_index + 1)..concrete_types_len {
+        //let last_index = match self.generics_containing_types_indexes.last() {
+        //    Some(last_index) => *last_index,
+        //    None => unreachable!(),
+        //};
+        if start_index < concrete_types_len {
+            for i in start_index..concrete_types_len {
                 concretized_vec.push(self.concrete_types[i].clone());
             }
         }
