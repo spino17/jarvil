@@ -70,12 +70,16 @@ impl FunctionData {
 }
 
 impl AbstractConcreteTypesHandler for FunctionData {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: &Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
+    ) -> ConcreteTypesRegistryKey {
         match &mut self.generics {
             Some(generics) => {
                 return generics
                     .concrete_types_registry
-                    .register_concrete_types(concrete_types)
+                    .register_concrete_types(concrete_types, generics_containing_indexes)
             }
             None => unreachable!(),
         }

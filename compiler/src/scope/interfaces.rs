@@ -29,8 +29,11 @@ impl InterfaceObject {
                     Some(other_index) => {
                         let self_concrete_types =
                             self.0 .1.symbol_data.get_concrete_types_at_key(self_index);
-                        let base_concrete_types =
-                            other.0 .1.symbol_data.get_concrete_types_at_key(other_index);
+                        let base_concrete_types = other
+                            .0
+                             .1
+                            .symbol_data
+                            .get_concrete_types_at_key(other_index);
                         let self_len = self_concrete_types.len();
                         let base_len = base_concrete_types.len();
                         assert!(self_len == base_len);
@@ -82,15 +85,25 @@ impl InterfaceData {
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
         method_concrete_types: &Vec<Type>,
+        method_generics_containing_indexes: Vec<usize>,
     ) {
-        self.generics
-            .register_method_concrete_types(key, method_name, method_concrete_types)
+        self.generics.register_method_concrete_types(
+            key,
+            method_name,
+            method_concrete_types,
+            method_generics_containing_indexes,
+        )
     }
 }
 
 impl AbstractConcreteTypesHandler for InterfaceData {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
-        self.generics.register_concrete_types(concrete_types)
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: &Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
+    ) -> ConcreteTypesRegistryKey {
+        self.generics
+            .register_concrete_types(concrete_types, generics_containing_indexes)
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {

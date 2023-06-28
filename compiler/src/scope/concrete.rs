@@ -11,20 +11,22 @@ pub struct ConcreteTypesRegistryKey(usize);
 
 #[derive(Debug)]
 pub struct ConcreteTypesTuple {
-    concrete_types: Vec<Type>, // this can contain generic type also
-    completely_concrete_types: Option<Vec<Type>>, // it cannot contain generic type -> this is used for code-generation
-    generics_containing_indexes: Vec<usize>,      // these indexes needs concretization
+    pub concrete_types: Vec<Type>, // this can contain generic type also
+    // completely_concrete_types: Option<Vec<Type>>, // it cannot contain generic type -> this is used for code-generation
+    pub generics_containing_indexes: Vec<usize>, // these indexes needs concretization
 }
 
 impl ConcreteTypesTuple {
-    fn new(concrete_types: &Vec<Type>, generics_containing_indexes: Vec<usize>) -> Self {
+    pub fn new(concrete_types: &Vec<Type>, generics_containing_indexes: Vec<usize>) -> Self {
         ConcreteTypesTuple {
             concrete_types: concrete_types.clone(),
+            /*
             completely_concrete_types: if generics_containing_indexes.len() > 0 {
                 None
             } else {
                 Some(concrete_types.clone())
             },
+             */
             generics_containing_indexes,
         }
     }
@@ -35,34 +37,6 @@ impl ConcreteTypesTuple {
         } else {
             false
         }
-    }
-
-    pub fn concretizes(&mut self) {
-        // either the concrete_types is already concretized or does not have any generic types to concretize!
-        if self.completely_concrete_types.is_some() {
-            return;
-        }
-        let mut concretized_vec: Vec<Type> = vec![];
-        let concrete_types_len = self.concrete_types.len();
-        let mut start_index = 0;
-        for &index in &self.generics_containing_indexes {
-            for j in start_index..index {
-                concretized_vec.push(self.concrete_types[j].clone());
-            }
-            let mut expanded_vec = self.concrete_types[index].concretize();
-            concretized_vec.append(&mut expanded_vec);
-            start_index = index + 1;
-        }
-        if start_index < concrete_types_len {
-            for i in start_index..concrete_types_len {
-                concretized_vec.push(self.concrete_types[i].clone());
-            }
-        }
-        let len = concretized_vec.len();
-        for i in 0..len {
-            assert!(!concretized_vec[i].has_generics());
-        }
-        self.concrete_types = concretized_vec;
     }
 }
 
@@ -101,7 +75,7 @@ impl<T: AbstractConcreteTypesHandler + Default> GenericsSpecAndConcreteTypesRegi
 #[derive(Debug, Default)]
 pub struct StructConcreteTypesRegistry<T: Default>(
     Vec<(
-        Vec<Type>,
+        ConcreteTypesTuple,
         T,
         FxHashMap<String, CallableConcreteTypesRegistry>,
     )>,
@@ -113,15 +87,22 @@ impl<T: Default> StructConcreteTypesRegistry<T> {
         key: ConcreteTypesRegistryKey,
         method_name: String,
         method_concrete_types: &Vec<Type>,
+        method_containing_generics_indexes: Vec<usize>,
     ) {
         match self.0[key.0].2.entry(method_name.to_string()) {
             Entry::Occupied(mut occupied_entry) => {
                 let occupied_entry_mut_ref = occupied_entry.get_mut();
-                occupied_entry_mut_ref.register_concrete_types(method_concrete_types);
+                occupied_entry_mut_ref.register_concrete_types(
+                    method_concrete_types,
+                    method_containing_generics_indexes,
+                );
             }
             Entry::Vacant(vacant_entry) => {
                 vacant_entry.insert(CallableConcreteTypesRegistry::new_with_entries(vec![
-                    method_concrete_types.clone(),
+                    ConcreteTypesTuple::new(
+                        method_concrete_types,
+                        method_containing_generics_indexes,
+                    ),
                 ]));
             }
         }
@@ -129,35 +110,49 @@ impl<T: Default> StructConcreteTypesRegistry<T> {
 }
 
 impl<T: Default> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T> {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: &Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
+    ) -> ConcreteTypesRegistryKey {
         let index = self.0.len();
-        self.0
-            .push((concrete_types.clone(), T::default(), FxHashMap::default()));
+        self.0.push((
+            ConcreteTypesTuple::new(concrete_types, generics_containing_indexes),
+            T::default(),
+            FxHashMap::default(),
+        ));
         ConcreteTypesRegistryKey(index)
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.0[key.0].0.clone()
+        self.0[key.0].0.concrete_types.clone()
     }
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct CallableConcreteTypesRegistry(Vec<Vec<Type>>);
+#[derive(Debug, Default)]
+pub struct CallableConcreteTypesRegistry(Vec<ConcreteTypesTuple>);
 
 impl CallableConcreteTypesRegistry {
-    pub fn new_with_entries(entries: Vec<Vec<Type>>) -> Self {
+    pub fn new_with_entries(entries: Vec<ConcreteTypesTuple>) -> Self {
         CallableConcreteTypesRegistry(entries)
     }
 }
 
 impl AbstractConcreteTypesHandler for CallableConcreteTypesRegistry {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: &Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
+    ) -> ConcreteTypesRegistryKey {
         let index = self.0.len();
-        self.0.push(concrete_types.clone());
+        self.0.push(ConcreteTypesTuple::new(
+            concrete_types,
+            generics_containing_indexes,
+        ));
         ConcreteTypesRegistryKey(index)
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.0[key.0].clone()
+        self.0[key.0].concrete_types.clone()
     }
 }

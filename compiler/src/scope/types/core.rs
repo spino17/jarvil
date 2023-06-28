@@ -39,14 +39,16 @@ impl UserDefinedTypeData {
 }
 
 impl AbstractConcreteTypesHandler for UserDefinedTypeData {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: &Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
+    ) -> ConcreteTypesRegistryKey {
         match self {
-            UserDefinedTypeData::Struct(struct_type_data) => {
-                struct_type_data.register_concrete_types(concrete_types)
-            }
-            UserDefinedTypeData::Lambda(lambda_type_data) => {
-                lambda_type_data.register_concrete_types(concrete_types)
-            }
+            UserDefinedTypeData::Struct(struct_type_data) => struct_type_data
+                .register_concrete_types(concrete_types, generics_containing_indexes),
+            UserDefinedTypeData::Lambda(lambda_type_data) => lambda_type_data
+                .register_concrete_types(concrete_types, generics_containing_indexes),
             UserDefinedTypeData::Generic(_) => unreachable!(),
         }
     }

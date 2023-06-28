@@ -1,12 +1,11 @@
-use std::collections::hash_map::Entry;
-
 use rustc_hash::FxHashMap;
+use std::collections::hash_map::Entry;
 use text_size::TextRange;
 
 use crate::{
     scope::{
         concrete::{
-            CallableConcreteTypesRegistry, ConcreteTypesRegistryKey,
+            CallableConcreteTypesRegistry, ConcreteTypesRegistryKey, ConcreteTypesTuple,
             GenericsSpecAndConcreteTypesRegistry, StructConcreteTypesRegistry,
         },
         core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
@@ -105,15 +104,25 @@ impl StructTypeData {
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
         method_concrete_types: &Vec<Type>,
+        method_generics_containing_indexes: Vec<usize>,
     ) {
-        self.generics
-            .register_method_concrete_types(key, method_name, method_concrete_types)
+        self.generics.register_method_concrete_types(
+            key,
+            method_name,
+            method_concrete_types,
+            method_generics_containing_indexes,
+        )
     }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
-    fn register_concrete_types(&mut self, concrete_types: &Vec<Type>) -> ConcreteTypesRegistryKey {
-        self.generics.register_concrete_types(concrete_types)
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: &Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
+    ) -> ConcreteTypesRegistryKey {
+        self.generics
+            .register_concrete_types(concrete_types, generics_containing_indexes)
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
@@ -149,12 +158,13 @@ impl<U: Default> StructTypeGenerics<U> {
     pub fn register_concrete_types(
         &mut self,
         concrete_types: &Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
         match self {
             StructTypeGenerics::HasGenerics(generics) => {
                 return generics
                     .concrete_types_registry
-                    .register_concrete_types(concrete_types)
+                    .register_concrete_types(concrete_types, generics_containing_indexes)
             }
             StructTypeGenerics::NoGenerics(_) => unreachable!(),
         }
@@ -169,6 +179,7 @@ impl<U: Default> StructTypeGenerics<U> {
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
         method_concrete_types: &Vec<Type>,
+        method_generics_containing_indexes: Vec<usize>,
     ) {
         match key {
             Some(key) => match self {
@@ -178,6 +189,7 @@ impl<U: Default> StructTypeGenerics<U> {
                         key,
                         method_name,
                         method_concrete_types,
+                        method_generics_containing_indexes,
                     ),
                 StructTypeGenerics::NoGenerics(_) => unreachable!(),
             },
@@ -187,11 +199,17 @@ impl<U: Default> StructTypeGenerics<U> {
                     match generics_spec.entry(method_name.to_string()) {
                         Entry::Occupied(mut occupied_entry) => {
                             let occupied_entry_ref = occupied_entry.get_mut();
-                            occupied_entry_ref.register_concrete_types(method_concrete_types);
+                            occupied_entry_ref.register_concrete_types(
+                                method_concrete_types,
+                                method_generics_containing_indexes,
+                            );
                         }
                         Entry::Vacant(vacant_entry) => {
                             vacant_entry.insert(CallableConcreteTypesRegistry::new_with_entries(
-                                vec![method_concrete_types.clone()],
+                                vec![ConcreteTypesTuple::new(
+                                    method_concrete_types,
+                                    method_generics_containing_indexes,
+                                )],
                             ));
                         }
                     }
