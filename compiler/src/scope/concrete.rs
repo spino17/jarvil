@@ -14,10 +14,11 @@ pub struct ConcreteTypesTuple {
     pub concrete_types: Vec<Type>, // this can contain generic type also
     // completely_concrete_types: Option<Vec<Type>>, // it cannot contain generic type -> this is used for code-generation
     pub generics_containing_indexes: Vec<usize>, // these indexes needs concretization
+    pub is_concretized: bool,
 }
 
 impl ConcreteTypesTuple {
-    pub fn new(concrete_types: &Vec<Type>, generics_containing_indexes: Vec<usize>) -> Self {
+    pub fn new(concrete_types: Vec<Type>, generics_containing_indexes: Vec<usize>) -> Self {
         ConcreteTypesTuple {
             concrete_types: concrete_types.clone(),
             /*
@@ -28,6 +29,7 @@ impl ConcreteTypesTuple {
             },
              */
             generics_containing_indexes,
+            is_concretized: false,
         }
     }
 
@@ -37,6 +39,22 @@ impl ConcreteTypesTuple {
         } else {
             false
         }
+    }
+
+    fn is_concretization_required(&self) -> bool {
+        // either there are no generic types or is already concretized
+        self.generics_containing_indexes.len() == 0 || self.is_concretized
+    }
+
+    fn concretize(&mut self) -> Vec<Vec<Type>> {
+        if !self.is_concretization_required() {
+            unreachable!() // don't call this function which does not require concretization
+        }
+        // TODO - use `generics_containing_indexes` to get all the concrete value of that generic type.
+        // make it a recursive function that first expands the first generic and then recursively expand all
+        // remaining ones
+        self.is_concretized = true;
+        todo!()
     }
 }
 
@@ -86,7 +104,7 @@ impl<T: Default> StructConcreteTypesRegistry<T> {
         &mut self,
         key: ConcreteTypesRegistryKey,
         method_name: String,
-        method_concrete_types: &Vec<Type>,
+        method_concrete_types: Vec<Type>,
         method_containing_generics_indexes: Vec<usize>,
     ) {
         match self.0[key.0].2.entry(method_name.to_string()) {
@@ -112,7 +130,7 @@ impl<T: Default> StructConcreteTypesRegistry<T> {
 impl<T: Default> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T> {
     fn register_concrete_types(
         &mut self,
-        concrete_types: &Vec<Type>,
+        concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
         let index = self.0.len();
@@ -141,7 +159,7 @@ impl CallableConcreteTypesRegistry {
 impl AbstractConcreteTypesHandler for CallableConcreteTypesRegistry {
     fn register_concrete_types(
         &mut self,
-        concrete_types: &Vec<Type>,
+        concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
         let index = self.0.len();

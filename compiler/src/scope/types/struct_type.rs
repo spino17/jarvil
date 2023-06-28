@@ -103,7 +103,7 @@ impl StructTypeData {
         &mut self,
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
-        method_concrete_types: &Vec<Type>,
+        method_concrete_types: Vec<Type>,
         method_generics_containing_indexes: Vec<usize>,
     ) {
         self.generics.register_method_concrete_types(
@@ -118,7 +118,7 @@ impl StructTypeData {
 impl AbstractConcreteTypesHandler for StructTypeData {
     fn register_concrete_types(
         &mut self,
-        concrete_types: &Vec<Type>,
+        concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
         self.generics
@@ -157,7 +157,7 @@ impl<U: Default> StructTypeGenerics<U> {
 
     pub fn register_concrete_types(
         &mut self,
-        concrete_types: &Vec<Type>,
+        concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
         match self {
@@ -178,7 +178,7 @@ impl<U: Default> StructTypeGenerics<U> {
         &mut self,
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
-        method_concrete_types: &Vec<Type>,
+        method_concrete_types: Vec<Type>,
         method_generics_containing_indexes: Vec<usize>,
     ) {
         match key {

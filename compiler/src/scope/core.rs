@@ -20,7 +20,7 @@ pub enum VariableLookupResult {
 pub trait AbstractConcreteTypesHandler {
     fn register_concrete_types(
         &mut self,
-        concrete_types: &Vec<Type>,
+        concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey; // returns the index inside the list of concrete types
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type>;
@@ -61,7 +61,7 @@ impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> SymbolData<T
 
     pub fn register_concrete_types(
         &self,
-        concrete_types: &Vec<Type>,
+        concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
         self.0

@@ -84,7 +84,7 @@ impl InterfaceData {
         &mut self,
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
-        method_concrete_types: &Vec<Type>,
+        method_concrete_types: Vec<Type>,
         method_generics_containing_indexes: Vec<usize>,
     ) {
         self.generics.register_method_concrete_types(
@@ -99,7 +99,7 @@ impl InterfaceData {
 impl AbstractConcreteTypesHandler for InterfaceData {
     fn register_concrete_types(
         &mut self,
-        concrete_types: &Vec<Type>,
+        concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
         self.generics

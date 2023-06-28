@@ -72,7 +72,7 @@ impl FunctionData {
 impl AbstractConcreteTypesHandler for FunctionData {
     fn register_concrete_types(
         &mut self,
-        concrete_types: &Vec<Type>,
+        concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
         match &mut self.generics {
