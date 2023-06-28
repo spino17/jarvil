@@ -25,7 +25,7 @@ impl ConcreteTypesTuple {
         }
     }
 
-    fn is_containing_generics(&self) -> bool {
+    pub fn is_containing_generics(&self) -> bool {
         if self.generics_containing_indexes.len() > 0 {
             true
         } else {
@@ -33,7 +33,7 @@ impl ConcreteTypesTuple {
         }
     }
 
-    fn is_concretization_required(&self) -> bool {
+    pub fn is_concretization_required(&self) -> bool {
         // either there are no generic types or is already concretized
         self.generics_containing_indexes.len() == 0 || self.is_concretized
     }
@@ -61,17 +61,18 @@ impl ConcreteTypesTuple {
         return all_concrete_types_combination;
     }
 
-    fn concretize(&mut self) -> Vec<Vec<Type>> {
+    pub fn concretize(&mut self) -> Vec<Vec<Type>> {
         if !self.is_concretization_required() {
             unreachable!() // don't call this function which does not require concretization
         }
         let all_concrete_types_combination = self.get_all_concrete_types_combination(0);
         let mut result = vec![];
-        let len = self.generics_containing_indexes.len();
+        let generics_containing_indexes_len = self.generics_containing_indexes.len();
+        let concrete_types_len = self.concrete_types.len();
         for ty_combination in all_concrete_types_combination {
             let mut v = vec![];
             let mut start_index = 0;
-            for index in 0..len {
+            for index in 0..generics_containing_indexes_len {
                 let critical_index = self.generics_containing_indexes[index];
                 let concrete_type = &ty_combination[index];
                 for i in start_index..critical_index {
@@ -79,6 +80,11 @@ impl ConcreteTypesTuple {
                 }
                 v.push(concrete_type.clone());
                 start_index = critical_index + 1;
+            }
+            if start_index < self.concrete_types.len() {
+                for i in start_index..concrete_types_len {
+                    v.push(self.concrete_types[i].clone());
+                }
             }
             result.push(v);
         }
