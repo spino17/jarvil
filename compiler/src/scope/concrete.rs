@@ -12,7 +12,6 @@ pub struct ConcreteTypesRegistryKey(usize);
 #[derive(Debug)]
 pub struct ConcreteTypesTuple {
     pub concrete_types: Vec<Type>, // this can contain generic type also
-    // completely_concrete_types: Option<Vec<Type>>, // it cannot contain generic type -> this is used for code-generation
     pub generics_containing_indexes: Vec<usize>, // these indexes needs concretization
     pub is_concretized: bool,
 }
@@ -21,13 +20,6 @@ impl ConcreteTypesTuple {
     pub fn new(concrete_types: Vec<Type>, generics_containing_indexes: Vec<usize>) -> Self {
         ConcreteTypesTuple {
             concrete_types: concrete_types.clone(),
-            /*
-            completely_concrete_types: if generics_containing_indexes.len() > 0 {
-                None
-            } else {
-                Some(concrete_types.clone())
-            },
-             */
             generics_containing_indexes,
             is_concretized: false,
         }
@@ -46,15 +38,52 @@ impl ConcreteTypesTuple {
         self.generics_containing_indexes.len() == 0 || self.is_concretized
     }
 
+    fn get_all_concrete_types_combination(&self, index: usize) -> Vec<Vec<Type>> {
+        if index == self.generics_containing_indexes.len() - 1 {
+            let mut v = vec![];
+            for ty in &self.concrete_types[self.generics_containing_indexes[index]].concretize() {
+                v.push(vec![ty.clone()])
+            }
+            return v;
+        }
+        let first_generic_concrete_type =
+            self.concrete_types[self.generics_containing_indexes[index]].concretize();
+        let mut remaining_concrete_types_combination =
+            self.get_all_concrete_types_combination(index + 1);
+        let mut all_concrete_types_combination = vec![];
+        for ty in &first_generic_concrete_type {
+            for ty_tuple in &mut remaining_concrete_types_combination {
+                let mut v = vec![ty.clone()];
+                v.append(ty_tuple);
+                all_concrete_types_combination.push(v);
+            }
+        }
+        return all_concrete_types_combination;
+    }
+
     fn concretize(&mut self) -> Vec<Vec<Type>> {
         if !self.is_concretization_required() {
             unreachable!() // don't call this function which does not require concretization
         }
-        // TODO - use `generics_containing_indexes` to get all the concrete value of that generic type.
-        // make it a recursive function that first expands the first generic and then recursively expand all
-        // remaining ones
+        let all_concrete_types_combination = self.get_all_concrete_types_combination(0);
+        let mut result = vec![];
+        let len = self.generics_containing_indexes.len();
+        for ty_combination in all_concrete_types_combination {
+            let mut v = vec![];
+            let mut start_index = 0;
+            for index in 0..len {
+                let critical_index = self.generics_containing_indexes[index];
+                let concrete_type = &ty_combination[index];
+                for i in start_index..critical_index {
+                    v.push(self.concrete_types[i].clone());
+                }
+                v.push(concrete_type.clone());
+                start_index = critical_index + 1;
+            }
+            result.push(v);
+        }
         self.is_concretized = true;
-        todo!()
+        return result;
     }
 }
 
