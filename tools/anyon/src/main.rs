@@ -13,31 +13,6 @@ fn check_and_execute_cmd(args: Vec<String>) -> Result<(), AnyonError> {
     Ok(())
 }
 
-trait Node {
-    fn yoes<T>(&self, x: T);
-}
-
-struct Yo {
-    name: usize,
-}
-
-impl Yo {
-    fn yoes_bool(&self) {
-        todo!()
-    }
-}
-
-impl Node for Yo {
-    fn yoes<T>(&self, x: T) {
-        todo!()
-    }
-}
-
-fn go<T: Node>(x: T) {
-    x.yoes(10);
-    x.yoes(false);
-}
-
 fn main() {
     // hook for styling of the error messages
     miette::set_hook(Box::new(|_err| {
