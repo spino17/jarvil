@@ -1,28 +1,17 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
-use crate::scope::{
-    concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey},
-    core::SymbolData,
-    types::core::UserDefinedTypeData,
-};
+use crate::scope::{core::SymbolData, types::core::UserDefinedTypeData};
 
 #[derive(Debug)]
 pub struct Generic {
     pub name: String,
-    pub semantic_data: ConcreteSymbolData<UserDefinedTypeData>,
+    pub semantic_data: SymbolData<UserDefinedTypeData>,
 }
 
 impl Generic {
-    pub fn new(
-        name: String,
-        symbol_data: &SymbolData<UserDefinedTypeData>,
-        index: Option<ConcreteTypesRegistryKey>,
-    ) -> Generic {
+    pub fn new(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Generic {
         Generic {
             name,
-            semantic_data: ConcreteSymbolData {
-                symbol_data: symbol_data.clone(),
-                index,
-            },
+            semantic_data: symbol_data.clone(),
         }
     }
 }
@@ -31,15 +20,9 @@ impl AbstractType for Generic {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
             CoreType::Generic(base_generic_data) => {
-                match &*self.semantic_data.symbol_data.0.as_ref().borrow() {
+                match &*self.semantic_data.0.as_ref().borrow() {
                     UserDefinedTypeData::Generic(self_generic_data_ref) => {
-                        match &*base_generic_data
-                            .semantic_data
-                            .symbol_data
-                            .0
-                            .as_ref()
-                            .borrow()
-                        {
+                        match &*base_generic_data.semantic_data.0.as_ref().borrow() {
                             // The generic types equivalence is calculated structurally by checking if both
                             // are bounded by the same set of interfaces
                             UserDefinedTypeData::Generic(base_generic_data_ref) => {

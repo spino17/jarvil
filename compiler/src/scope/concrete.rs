@@ -1,6 +1,5 @@
 use super::core::GenericContainingConstructs;
 use super::core::GenericTypeParams;
-use super::types::core::UserDefinedTypeData;
 use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::SymbolData;
 use crate::types::core::Type;
@@ -9,6 +8,63 @@ use std::collections::hash_map::Entry;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ConcreteTypesRegistryKey(usize);
+
+#[derive(Debug)]
+pub struct ConcreteTypesTuple {
+    concrete_types: Vec<Type>, // this can contain generic type also
+    completely_concrete_types: Option<Vec<Type>>, // it cannot contain generic type -> this is used for code-generation
+    generics_containing_indexes: Vec<usize>,      // these indexes needs concretization
+}
+
+impl ConcreteTypesTuple {
+    fn new(concrete_types: &Vec<Type>, generics_containing_indexes: Vec<usize>) -> Self {
+        ConcreteTypesTuple {
+            concrete_types: concrete_types.clone(),
+            completely_concrete_types: if generics_containing_indexes.len() > 0 {
+                None
+            } else {
+                Some(concrete_types.clone())
+            },
+            generics_containing_indexes,
+        }
+    }
+
+    fn is_containing_generics(&self) -> bool {
+        if self.generics_containing_indexes.len() > 0 {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn concretizes(&mut self) {
+        // either the concrete_types is already concretized or does not have any generic types to concretize!
+        if self.completely_concrete_types.is_some() {
+            return;
+        }
+        let mut concretized_vec: Vec<Type> = vec![];
+        let concrete_types_len = self.concrete_types.len();
+        let mut start_index = 0;
+        for &index in &self.generics_containing_indexes {
+            for j in start_index..index {
+                concretized_vec.push(self.concrete_types[j].clone());
+            }
+            let mut expanded_vec = self.concrete_types[index].concretize();
+            concretized_vec.append(&mut expanded_vec);
+            start_index = index + 1;
+        }
+        if start_index < concrete_types_len {
+            for i in start_index..concrete_types_len {
+                concretized_vec.push(self.concrete_types[i].clone());
+            }
+        }
+        let len = concretized_vec.len();
+        for i in 0..len {
+            assert!(!concretized_vec[i].has_generics());
+        }
+        self.concrete_types = concretized_vec;
+    }
+}
 
 #[derive(Debug)]
 pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler + GenericContainingConstructs> {

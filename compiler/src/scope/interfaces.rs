@@ -69,7 +69,11 @@ impl InterfaceData {
         self.generics = StructTypeGenerics::new(generics_spec)
     }
 
-    pub fn register_implementing_struct(&mut self, symbol_data: &SymbolData<UserDefinedTypeData>, index: ConcreteTypesRegistryKey) {
+    pub fn register_implementing_struct(
+        &mut self,
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        index: ConcreteTypesRegistryKey,
+    ) {
         todo!()
     }
 

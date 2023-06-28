@@ -126,7 +126,7 @@ impl Type {
 
     pub fn new_with_generic(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
         Type(
-            Rc::new(CoreType::Generic(Generic::new(name, symbol_data, None))),
+            Rc::new(CoreType::Generic(Generic::new(name, symbol_data))),
             true,
         )
     }
@@ -317,12 +317,7 @@ impl Type {
                 todo!()
             }
             CoreType::Generic(generic_type) => {
-                let concrete_types = match &mut *generic_type
-                    .semantic_data
-                    .symbol_data
-                    .0
-                    .as_ref()
-                    .borrow_mut()
+                let concrete_types = match &mut *generic_type.semantic_data.0.as_ref().borrow_mut()
                 {
                     UserDefinedTypeData::Generic(generic_data) => {
                         generic_data.concretize_generics();
