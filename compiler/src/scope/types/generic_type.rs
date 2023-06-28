@@ -43,7 +43,7 @@ impl GenericTypeData {
         if self.generics_containing_types_indexes.len() == 0 {
             return false;
         }
-        return false;
+        return true;
     }
 
     pub fn concretize_generics(&mut self) {

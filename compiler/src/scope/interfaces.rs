@@ -26,11 +26,11 @@ impl InterfaceObject {
             // names of interfaces should be same
             match self.0 .1.index {
                 Some(self_index) => match other.0 .1.index {
-                    Some(base_index) => {
+                    Some(other_index) => {
                         let self_concrete_types =
                             self.0 .1.symbol_data.get_concrete_types_at_key(self_index);
                         let base_concrete_types =
-                            other.0 .1.symbol_data.get_concrete_types_at_key(base_index);
+                            other.0 .1.symbol_data.get_concrete_types_at_key(other_index);
                         let self_len = self_concrete_types.len();
                         let base_len = base_concrete_types.len();
                         assert!(self_len == base_len);
