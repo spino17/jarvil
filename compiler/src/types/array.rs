@@ -50,6 +50,15 @@ impl AbstractType for Array {
     fn stringify(&self) -> String {
         return format!("ls_{}_rs", self.element_type.stringify());
     }
+
+    fn concretize(&self) -> Vec<Type> {
+        let element_concrete_types = self.element_type.concretize();
+        let mut array_concrete_types = vec![];
+        for ty in element_concrete_types {
+            array_concrete_types.push(Type::new_with_array(&ty));
+        }
+        return array_concrete_types;
+    }
 }
 
 impl ToString for Array {

@@ -83,6 +83,10 @@ impl AbstractType for Lambda {
             None => unreachable!(),
         }
     }
+
+    fn concretize(&self) -> Vec<Type> {
+        todo!()
+    }
 }
 
 impl ToString for Lambda {

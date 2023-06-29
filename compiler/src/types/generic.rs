@@ -54,6 +54,17 @@ impl AbstractType for Generic {
     fn stringify(&self) -> String {
         todo!()
     }
+
+    fn concretize(&self) -> Vec<Type> {
+        let concrete_types = match &mut *self.semantic_data.0.as_ref().borrow_mut() {
+            UserDefinedTypeData::Generic(generic_data) => {
+                generic_data.concretize_generics();
+                generic_data.concrete_types.clone()
+            }
+            _ => unreachable!(),
+        };
+        concrete_types
+    }
 }
 
 impl ToString for Generic {

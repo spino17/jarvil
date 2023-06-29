@@ -71,6 +71,10 @@ impl AbstractType for Atomic {
     fn stringify(&self) -> String {
         self.to_string()
     }
+
+    fn concretize(&self) -> Vec<Type> {
+        unreachable!()
+    }
 }
 
 impl ToString for Atomic {

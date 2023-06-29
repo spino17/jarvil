@@ -1,3 +1,4 @@
+use crate::types::core::AbstractType;
 use crate::{scope::interfaces::InterfaceObject, types::core::Type};
 
 #[derive(Debug)]

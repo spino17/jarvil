@@ -10,6 +10,8 @@ use crate::{
     types::core::Type,
 };
 
+use super::core::AbstractConcretizer;
+
 #[derive(Debug, Default)]
 pub struct LambdaTypeData {
     pub meta_data: FunctionData,
@@ -57,5 +59,11 @@ impl AbstractConcreteTypesHandler for LambdaTypeData {
 impl GenericContainingConstructs for LambdaTypeData {
     fn has_generics(&self) -> bool {
         self.meta_data.has_generics()
+    }
+}
+
+impl AbstractConcretizer for LambdaTypeData {
+    fn concretize(&mut self) -> Vec<ConcreteTypesRegistryKey> {
+        todo!()
     }
 }

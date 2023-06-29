@@ -75,6 +75,10 @@ impl AbstractType for Tuple {
         s.push_str("_rp");
         return s;
     }
+
+    fn concretize(&self) -> Vec<Type> {
+        todo!()
+    }
 }
 
 impl ToString for Tuple {

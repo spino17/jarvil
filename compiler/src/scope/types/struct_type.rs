@@ -14,6 +14,8 @@ use crate::{
     types::core::Type,
 };
 
+use super::core::AbstractConcretizer;
+
 #[derive(Debug)]
 pub struct MethodData {
     pub prototype: FunctionPrototype,
@@ -133,6 +135,12 @@ impl AbstractConcreteTypesHandler for StructTypeData {
 impl GenericContainingConstructs for StructTypeData {
     fn has_generics(&self) -> bool {
         self.generics.has_generics()
+    }
+}
+
+impl AbstractConcretizer for StructTypeData {
+    fn concretize(&mut self) -> Vec<ConcreteTypesRegistryKey> {
+        todo!()
     }
 }
 

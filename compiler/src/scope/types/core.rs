@@ -9,6 +9,10 @@ use crate::{
     types::core::Type,
 };
 
+pub trait AbstractConcretizer {
+    fn concretize(&mut self) -> Vec<ConcreteTypesRegistryKey>;
+}
+
 #[derive(Debug)]
 pub enum UserDefinedTypeData {
     Struct(StructTypeData),
@@ -72,6 +76,16 @@ impl GenericContainingConstructs for UserDefinedTypeData {
             UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.has_generics(),
             UserDefinedTypeData::Lambda(lambda_type_data) => lambda_type_data.has_generics(),
             UserDefinedTypeData::Generic(_) => false,
+        }
+    }
+}
+
+impl AbstractConcretizer for UserDefinedTypeData {
+    fn concretize(&mut self) -> Vec<ConcreteTypesRegistryKey> {
+        match self {
+            UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.concretize(),
+            UserDefinedTypeData::Lambda(lambda_type_data) => lambda_type_data.concretize(),
+            UserDefinedTypeData::Generic(_) => unreachable!(),
         }
     }
 }
