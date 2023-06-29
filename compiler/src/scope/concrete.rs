@@ -10,7 +10,7 @@ use std::collections::hash_map::Entry;
 #[derive(Debug, Clone, Copy)]
 pub struct ConcreteTypesRegistryKey(usize);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConcreteTypesTuple {
     pub concrete_types: Vec<Type>, // this can contain generic type also
     pub generics_containing_indexes: Vec<usize>, // these indexes needs concretization
@@ -127,7 +127,7 @@ impl<T: AbstractConcreteTypesHandler + Default> GenericsSpecAndConcreteTypesRegi
 }
 
 #[derive(Debug, Default)]
-pub struct StructConcreteTypesRegistry<T: Default>(
+pub struct StructConcreteTypesRegistry<T: Default + Clone>(
     Vec<(
         ConcreteTypesTuple,
         T,
@@ -135,7 +135,7 @@ pub struct StructConcreteTypesRegistry<T: Default>(
     )>,
 );
 
-impl<T: Default> StructConcreteTypesRegistry<T> {
+impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
     pub fn register_method_concrete_types_for_key(
         &mut self,
         key: ConcreteTypesRegistryKey,
@@ -162,6 +162,21 @@ impl<T: Default> StructConcreteTypesRegistry<T> {
         }
     }
 
+    pub fn register_entry(
+        &mut self,
+        struct_concrete_types_tuple: ConcreteTypesTuple,
+        second_arg: T,
+        methods_concrete_types_map: FxHashMap<String, CallableConcreteTypesRegistry>,
+    ) -> ConcreteTypesRegistryKey {
+        let index = self.0.len();
+        self.0.push((
+            struct_concrete_types_tuple,
+            second_arg,
+            methods_concrete_types_map,
+        ));
+        return ConcreteTypesRegistryKey(index);
+    }
+
     pub fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
         let index = key.0;
         let concrete_types_tuple = &mut self.0[index].0;
@@ -169,14 +184,19 @@ impl<T: Default> StructConcreteTypesRegistry<T> {
         let expanded_tuples = concrete_types_tuple.concretize();
         let mut result = vec![];
         for tuple in expanded_tuples {
-            // result.push(self.register_concrete_types(tuple, vec![]));
-            todo!()
+            let second_arg = self.0[index].1.clone(); // expensive clone
+            let methods_concrete_types_map = self.0[index].2.clone(); // expensive clone
+            result.push(self.register_entry(
+                ConcreteTypesTuple::new(tuple, vec![]),
+                second_arg,
+                methods_concrete_types_map,
+            ));
         }
-        return result
+        return result;
     }
 }
 
-impl<T: Default> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T> {
+impl<T: Default + Clone> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T> {
     fn register_concrete_types(
         &mut self,
         concrete_types: Vec<Type>,
@@ -196,7 +216,7 @@ impl<T: Default> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T>
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct CallableConcreteTypesRegistry(Vec<ConcreteTypesTuple>);
 
 impl CallableConcreteTypesRegistry {
@@ -211,10 +231,9 @@ impl CallableConcreteTypesRegistry {
         let expanded_tuples = concrete_types_tuple.concretize();
         let mut result = vec![];
         for tuple in expanded_tuples {
-            // result.push(self.register_concrete_types(tuple, vec![]));
-            todo!()
+            result.push(self.register_concrete_types(tuple, vec![]));
         }
-        return result
+        return result;
     }
 }
 

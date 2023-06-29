@@ -1,6 +1,3 @@
-use rustc_hash::FxHashMap;
-use std::collections::hash_map::Entry;
-use text_size::TextRange;
 use crate::{
     scope::{
         concrete::{
@@ -12,6 +9,9 @@ use crate::{
     },
     types::core::Type,
 };
+use rustc_hash::FxHashMap;
+use std::collections::hash_map::Entry;
+use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct MethodData {
@@ -136,12 +136,12 @@ impl GenericContainingConstructs for StructTypeData {
 }
 
 #[derive(Debug)]
-pub enum StructTypeGenerics<U: Default> {
+pub enum StructTypeGenerics<U: Default + Clone> {
     HasGenerics(GenericsSpecAndConcreteTypesRegistry<StructConcreteTypesRegistry<U>>),
     NoGenerics((U, FxHashMap<String, CallableConcreteTypesRegistry>)),
 }
 
-impl<U: Default> StructTypeGenerics<U> {
+impl<U: Default + Clone> StructTypeGenerics<U> {
     pub fn new(generics_spec: Option<GenericTypeParams>) -> Self {
         match generics_spec {
             Some(generics_spec) => {
@@ -234,7 +234,7 @@ impl<U: Default> StructTypeGenerics<U> {
     }
 }
 
-impl<U: Default> Default for StructTypeGenerics<U> {
+impl<U: Default + Clone> Default for StructTypeGenerics<U> {
     fn default() -> Self {
         StructTypeGenerics::NoGenerics((U::default(), FxHashMap::default()))
     }
