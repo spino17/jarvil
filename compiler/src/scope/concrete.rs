@@ -161,6 +161,19 @@ impl<T: Default> StructConcreteTypesRegistry<T> {
             }
         }
     }
+
+    pub fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
+        let index = key.0;
+        let concrete_types_tuple = &mut self.0[index].0;
+        // assert!(concrete_types_tuple.is_concretization_required());
+        let expanded_tuples = concrete_types_tuple.concretize();
+        let mut result = vec![];
+        for tuple in expanded_tuples {
+            // result.push(self.register_concrete_types(tuple, vec![]));
+            todo!()
+        }
+        return result
+    }
 }
 
 impl<T: Default> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T> {
@@ -189,6 +202,19 @@ pub struct CallableConcreteTypesRegistry(Vec<ConcreteTypesTuple>);
 impl CallableConcreteTypesRegistry {
     pub fn new_with_entries(entries: Vec<ConcreteTypesTuple>) -> Self {
         CallableConcreteTypesRegistry(entries)
+    }
+
+    pub fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
+        let index = key.0;
+        let concrete_types_tuple = &mut self.0[index];
+        // assert!(concrete_types_tuple.is_concretization_required());
+        let expanded_tuples = concrete_types_tuple.concretize();
+        let mut result = vec![];
+        for tuple in expanded_tuples {
+            // result.push(self.register_concrete_types(tuple, vec![]));
+            todo!()
+        }
+        return result
     }
 }
 
