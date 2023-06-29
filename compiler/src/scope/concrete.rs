@@ -178,21 +178,7 @@ impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
     }
 
     pub fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
-        let index = key.0;
-        let concrete_types_tuple = &mut self.0[index].0;
-        // assert!(concrete_types_tuple.is_concretization_required());
-        let expanded_tuples = concrete_types_tuple.concretize();
-        let mut result = vec![];
-        for tuple in expanded_tuples {
-            let second_arg = self.0[index].1.clone(); // expensive clone
-            let methods_concrete_types_map = self.0[index].2.clone(); // expensive clone
-            result.push(self.register_entry(
-                ConcreteTypesTuple::new(tuple, vec![]),
-                second_arg,
-                methods_concrete_types_map,
-            ));
-        }
-        return result;
+        todo!()
     }
 }
 
@@ -225,15 +211,7 @@ impl CallableConcreteTypesRegistry {
     }
 
     pub fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
-        let index = key.0;
-        let concrete_types_tuple = &mut self.0[index];
-        // assert!(concrete_types_tuple.is_concretization_required());
-        let expanded_tuples = concrete_types_tuple.concretize();
-        let mut result = vec![];
-        for tuple in expanded_tuples {
-            result.push(self.register_concrete_types(tuple, vec![]));
-        }
-        return result;
+        todo!()
     }
 }
 
