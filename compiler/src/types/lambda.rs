@@ -76,12 +76,7 @@ impl AbstractType for Lambda {
     }
 
     fn stringify(&self) -> String {
-        match &self.name {
-            Some(name) => {
-                todo!()
-            }
-            None => unreachable!(),
-        }
+        todo!()
     }
 
     fn concretize(&self) -> Vec<Type> {

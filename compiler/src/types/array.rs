@@ -48,7 +48,7 @@ impl AbstractType for Array {
     }
 
     fn stringify(&self) -> String {
-        return format!("ls_{}_rs", self.element_type.stringify());
+        todo!()
     }
 
     fn concretize(&self) -> Vec<Type> {

@@ -69,7 +69,7 @@ impl AbstractType for Atomic {
     }
 
     fn stringify(&self) -> String {
-        self.to_string()
+        todo!()
     }
 
     fn concretize(&self) -> Vec<Type> {

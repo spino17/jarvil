@@ -33,11 +33,7 @@ impl AbstractType for HashMap {
     }
 
     fn stringify(&self) -> String {
-        return format!(
-            "lc_{}_colon_{}_rc",
-            self.key_type.stringify(),
-            self.value_type.stringify()
-        );
+        todo!()
     }
 
     fn concretize(&self) -> Vec<Type> {
