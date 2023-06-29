@@ -1,7 +1,6 @@
 use rustc_hash::FxHashMap;
 use std::collections::hash_map::Entry;
 use text_size::TextRange;
-
 use crate::{
     scope::{
         concrete::{
@@ -13,8 +12,6 @@ use crate::{
     },
     types::core::Type,
 };
-
-use super::core::AbstractConcretizer;
 
 #[derive(Debug)]
 pub struct MethodData {
@@ -135,12 +132,6 @@ impl AbstractConcreteTypesHandler for StructTypeData {
 impl GenericContainingConstructs for StructTypeData {
     fn has_generics(&self) -> bool {
         self.generics.has_generics()
-    }
-}
-
-impl AbstractConcretizer for StructTypeData {
-    fn concretize(&mut self) -> Vec<ConcreteTypesRegistryKey> {
-        todo!()
     }
 }
 
