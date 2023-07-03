@@ -28,6 +28,10 @@ impl GenericTypeData {
     }
 
     pub fn add_concrete_type(&mut self, ty: &Type) {
+        if ty.has_generics() {
+            self.generics_containing_types_indexes
+                .push(self.concrete_types.len());
+        }
         self.concrete_types.push(ty.clone());
     }
 

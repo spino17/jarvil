@@ -10,35 +10,19 @@ use std::collections::hash_map::Entry;
 #[derive(Debug, Clone, Copy)]
 pub struct ConcreteTypesRegistryKey(usize);
 
-#[derive(Debug, Clone)]
-pub struct ConcreteTypesTuple {
+#[derive(Debug)]
+pub struct ConcreteTypesTupleWithNoGenerics {
+    pub concrete_types: Vec<Type>,
+}
+
+#[derive(Debug)]
+pub struct ConcreteTypesTupleWithGenerics {
     pub concrete_types: Vec<Type>, // this can contain generic type also
     pub generics_containing_indexes: Vec<usize>, // these indexes needs concretization
     pub is_concretized: bool,
 }
 
-impl ConcreteTypesTuple {
-    pub fn new(concrete_types: Vec<Type>, generics_containing_indexes: Vec<usize>) -> Self {
-        ConcreteTypesTuple {
-            concrete_types: concrete_types.clone(),
-            generics_containing_indexes,
-            is_concretized: false,
-        }
-    }
-
-    pub fn is_containing_generics(&self) -> bool {
-        if self.generics_containing_indexes.len() > 0 {
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn is_concretization_required(&self) -> bool {
-        // either there are no generic types or is already concretized
-        self.generics_containing_indexes.len() == 0 || self.is_concretized
-    }
-
+impl ConcreteTypesTupleWithGenerics {
     fn get_all_concrete_types_combination(&self, index: usize) -> Vec<Vec<Type>> {
         if index == self.generics_containing_indexes.len() - 1 {
             let mut v = vec![];
@@ -62,10 +46,7 @@ impl ConcreteTypesTuple {
         return all_concrete_types_combination;
     }
 
-    pub fn concretize(&mut self) -> Vec<Vec<Type>> {
-        if !self.is_concretization_required() {
-            unreachable!() // don't call this function which does not require concretization
-        }
+    fn concretize(&mut self) -> Vec<Vec<Type>> {
         let all_concrete_types_combination = self.get_all_concrete_types_combination(0);
         let mut result = vec![];
         let generics_containing_indexes_len = self.generics_containing_indexes.len();
@@ -91,6 +72,57 @@ impl ConcreteTypesTuple {
         }
         self.is_concretized = true;
         return result;
+    }
+}
+
+#[derive(Debug)]
+pub enum ConcreteTypesTuple {
+    HasGenericsInConcreteTypes(ConcreteTypesTupleWithGenerics),
+    NoGenericsInConcreteTypes(ConcreteTypesTupleWithNoGenerics),
+}
+
+impl ConcreteTypesTuple {
+    pub fn new(concrete_types: Vec<Type>, generics_containing_indexes: Vec<usize>) -> Self {
+        if generics_containing_indexes.len() == 0 {
+            return ConcreteTypesTuple::NoGenericsInConcreteTypes(
+                ConcreteTypesTupleWithNoGenerics { concrete_types },
+            );
+        } else {
+            return ConcreteTypesTuple::HasGenericsInConcreteTypes(
+                ConcreteTypesTupleWithGenerics {
+                    concrete_types,
+                    is_concretized: false,
+                    generics_containing_indexes,
+                },
+            );
+        }
+    }
+
+    pub fn is_containing_generics(&self) -> bool {
+        match self {
+            ConcreteTypesTuple::HasGenericsInConcreteTypes(_) => true,
+            ConcreteTypesTuple::NoGenericsInConcreteTypes(_) => false,
+        }
+    }
+
+    pub fn get_concrete_types(&self) -> Vec<Type> {
+        match self {
+            ConcreteTypesTuple::HasGenericsInConcreteTypes(concrete_types_tuple) => {
+                concrete_types_tuple.concrete_types.clone()
+            }
+            ConcreteTypesTuple::NoGenericsInConcreteTypes(concrete_types_tuple) => {
+                concrete_types_tuple.concrete_types.clone()
+            }
+        }
+    }
+
+    pub fn is_concretization_required(&self) -> bool {
+        match self {
+            ConcreteTypesTuple::HasGenericsInConcreteTypes(concrete_types_tuple) => {
+                return !concrete_types_tuple.is_concretized
+            }
+            ConcreteTypesTuple::NoGenericsInConcreteTypes(_) => false,
+        }
     }
 }
 
@@ -198,11 +230,11 @@ impl<T: Default + Clone> AbstractConcreteTypesHandler for StructConcreteTypesReg
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.0[key.0].0.concrete_types.clone()
+        self.0[key.0].0.get_concrete_types()
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct CallableConcreteTypesRegistry(Vec<ConcreteTypesTuple>);
 
 impl CallableConcreteTypesRegistry {
@@ -230,6 +262,6 @@ impl AbstractConcreteTypesHandler for CallableConcreteTypesRegistry {
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.0[key.0].concrete_types.clone()
+        self.0[key.0].get_concrete_types()
     }
 }
