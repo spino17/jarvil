@@ -1,5 +1,5 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
-use crate::scope::{core::SymbolData, types::core::UserDefinedTypeData};
+use crate::{scope::{core::SymbolData, types::core::UserDefinedTypeData}, constants::common::BOOL};
 
 #[derive(Debug)]
 pub struct Generic {
@@ -63,7 +63,10 @@ impl AbstractType for Generic {
             }
             _ => unreachable!(),
         };
-        concrete_types
+        // NOTE: if there are no concrete types attached to a generic type that means the construct
+        // where this generic type was declared was never called. To have a unified code-generation flow
+        // for now the default concrete type for a generic type is `bool` which acts as placeholder.
+        if concrete_types.len() == 0 { vec![Type::new_with_atomic(BOOL)] } else { concrete_types }
     }
 }
 
