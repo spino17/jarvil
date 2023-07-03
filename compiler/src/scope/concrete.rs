@@ -63,7 +63,7 @@ impl ConcreteTypesTupleWithGenerics {
                 v.push(concrete_type.clone());
                 start_index = critical_index + 1;
             }
-            if start_index < self.concrete_types.len() {
+            if start_index < concrete_types_len {
                 for i in start_index..concrete_types_len {
                     v.push(self.concrete_types[i].clone());
                 }
