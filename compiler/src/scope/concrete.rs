@@ -46,7 +46,7 @@ impl ConcreteTypesTupleWithGenerics {
         return all_concrete_types_combination;
     }
 
-    fn concretize(&mut self) -> Vec<Vec<Type>> {
+    pub fn concretize(&mut self) -> Vec<Vec<Type>> {
         let all_concrete_types_combination = self.get_all_concrete_types_combination(0);
         let mut result = vec![];
         let generics_containing_indexes_len = self.generics_containing_indexes.len();
@@ -243,7 +243,19 @@ impl CallableConcreteTypesRegistry {
     }
 
     pub fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
-        todo!()
+        let index = key.0;
+        let concrete_types_tuple = &mut self.0[index];
+        match concrete_types_tuple {
+            ConcreteTypesTuple::HasGenericsInConcreteTypes(concrete_types_tuple) => {
+                let mut new_keys = vec![];
+                let expanded_tuples = concrete_types_tuple.concretize();
+                for tuple in expanded_tuples {
+                    new_keys.push(self.register_concrete_types(tuple, vec![]));
+                }
+                return new_keys
+            },
+            _ => unreachable!()
+        }
     }
 }
 
