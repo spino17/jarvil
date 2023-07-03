@@ -210,6 +210,7 @@ pub struct StructConcreteTypesRegistry<T: Default + Clone>(
         ConcreteTypesTuple,
         T,
         FxHashMap<String, CallableConcreteTypesRegistry>,
+        bool,
     )>,
 );
 
@@ -251,6 +252,7 @@ impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
             struct_concrete_types_tuple,
             second_arg,
             methods_concrete_types_map,
+            false,
         ));
         return ConcreteTypesRegistryKey(index);
     }
@@ -267,6 +269,7 @@ impl<T: Default + Clone> AbstractConcreteTypesHandler for StructConcreteTypesReg
             ConcreteTypesTuple::new(concrete_types, generics_containing_indexes),
             T::default(),
             FxHashMap::default(),
+            false,
         ));
         ConcreteTypesRegistryKey(index)
     }
@@ -288,17 +291,26 @@ impl<T: Default + Clone> ConcreteTypesRegisterHandler for StructConcreteTypesReg
     ) -> ConcreteTypesRegistryKey {
         let methods_concrete_types_map = self.0[index].2.clone();
         let second_arg = self.0[index].1.clone();
+        let are_methods_concretized = self.0[index].3;
         let key_index = self.0.len();
         self.0.push((
             ConcreteTypesTuple::new(tuple, vec![]),
             second_arg,
             methods_concrete_types_map,
+            are_methods_concretized,
         ));
         return ConcreteTypesRegistryKey(key_index);
     }
-    
+
     fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
-        // TODO - concretize all the method at this key first
+        let index = key.0;
+        let are_methods_concretized = self.0[index].3;
+        if !are_methods_concretized {
+            for (_, method_concrete_types_tuple) in &mut self.0[index].2 {
+                method_concrete_types_tuple.concretize_all_entries();
+            }
+            self.0[index].3 = true;
+        }
         self.concretize_core(key)
     }
 }
@@ -309,6 +321,10 @@ pub struct CallableConcreteTypesRegistry(Vec<ConcreteTypesTuple>);
 impl CallableConcreteTypesRegistry {
     pub fn new_with_entries(entries: Vec<ConcreteTypesTuple>) -> Self {
         CallableConcreteTypesRegistry(entries)
+    }
+
+    pub fn concretize_all_entries(&mut self) {
+        todo!()
     }
 }
 
