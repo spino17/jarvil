@@ -1,12 +1,12 @@
 use super::{
-    concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
+    concrete::{
+        core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
+        struct_registry::StructTypeGenerics,
+    },
     core::{
         AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams, SymbolData,
     },
-    types::{
-        core::UserDefinedTypeData,
-        struct_type::{MethodData, StructTypeGenerics},
-    },
+    types::{core::UserDefinedTypeData, struct_type::MethodData},
 };
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
