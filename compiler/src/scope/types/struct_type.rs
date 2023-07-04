@@ -57,6 +57,19 @@ impl Default for MethodData {
     }
 }
 
+#[derive(Debug)]
+pub enum GenericContainingLevel {
+    HasTypeAndMethodGenerics,
+    HasOnlyMethodGenerics,
+    NoGenerics
+}
+
+impl Default for GenericContainingLevel {
+    fn default() -> Self {
+        GenericContainingLevel::NoGenerics
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct StructTypeData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
@@ -64,6 +77,7 @@ pub struct StructTypeData {
     pub methods: FxHashMap<String, (MethodData, TextRange)>,
     pub class_methods: FxHashMap<String, (MethodData, TextRange)>,
     pub generics: StructTypeGenerics<()>,
+    pub generics_containing_level: GenericContainingLevel
 }
 
 impl StructTypeData {
@@ -105,6 +119,7 @@ impl StructTypeData {
         method_concrete_types: Vec<Type>,
         method_generics_containing_indexes: Vec<usize>,
     ) {
+        // TODO - check here whether method types have generics or not
         self.generics.register_method_concrete_types(
             key,
             method_name,
@@ -120,6 +135,7 @@ impl AbstractConcreteTypesHandler for StructTypeData {
         concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
+        // TODO - check here whether type has generics or not
         self.generics
             .register_concrete_types(concrete_types, generics_containing_indexes)
     }
@@ -138,7 +154,7 @@ impl GenericContainingConstructs for StructTypeData {
 #[derive(Debug)]
 pub enum StructTypeGenerics<U: Default + Clone> {
     HasGenerics(GenericsSpecAndConcreteTypesRegistry<StructConcreteTypesRegistry<U>>),
-    NoGenerics((U, FxHashMap<String, CallableConcreteTypesRegistry>)),
+    NoGenerics((U, FxHashMap<String, CallableConcreteTypesRegistry>, bool)),
 }
 
 impl<U: Default + Clone> StructTypeGenerics<U> {
@@ -150,7 +166,7 @@ impl<U: Default + Clone> StructTypeGenerics<U> {
                     concrete_types_registry: StructConcreteTypesRegistry::default(),
                 })
             }
-            None => StructTypeGenerics::NoGenerics((U::default(), FxHashMap::default())),
+            None => StructTypeGenerics::NoGenerics((U::default(), FxHashMap::default(), false)),
         }
     }
 
@@ -194,7 +210,7 @@ impl<U: Default + Clone> StructTypeGenerics<U> {
             },
             None => match self {
                 StructTypeGenerics::HasGenerics(_) => unreachable!(),
-                StructTypeGenerics::NoGenerics((_, generics_spec)) => {
+                StructTypeGenerics::NoGenerics((_, generics_spec, _)) => {
                     match generics_spec.entry(method_name.to_string()) {
                         Entry::Occupied(mut occupied_entry) => {
                             let occupied_entry_ref = occupied_entry.get_mut();
@@ -236,6 +252,6 @@ impl<U: Default + Clone> StructTypeGenerics<U> {
 
 impl<U: Default + Clone> Default for StructTypeGenerics<U> {
     fn default() -> Self {
-        StructTypeGenerics::NoGenerics((U::default(), FxHashMap::default()))
+        StructTypeGenerics::NoGenerics((U::default(), FxHashMap::default(), false))
     }
 }

@@ -166,10 +166,6 @@ trait ConcreteTypesRegisterHandler {
         }
         return result;
     }
-
-    fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
-        self.concretize_core(key)
-    }
 }
 
 #[derive(Debug)]
@@ -256,6 +252,18 @@ impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
         ));
         return ConcreteTypesRegistryKey(index);
     }
+
+    fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
+        let index = key.0;
+        let are_methods_concretized = self.0[index].3;
+        if !are_methods_concretized {
+            for (_, method_concrete_types_tuple) in &mut self.0[index].2 {
+                method_concrete_types_tuple.concretize_all_entries();
+            }
+            self.0[index].3 = true;
+        }
+        self.concretize_core(key)
+    }
 }
 
 impl<T: Default + Clone> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T> {
@@ -300,18 +308,6 @@ impl<T: Default + Clone> ConcreteTypesRegisterHandler for StructConcreteTypesReg
             are_methods_concretized,
         ));
         return ConcreteTypesRegistryKey(key_index);
-    }
-
-    fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
-        let index = key.0;
-        let are_methods_concretized = self.0[index].3;
-        if !are_methods_concretized {
-            for (_, method_concrete_types_tuple) in &mut self.0[index].2 {
-                method_concrete_types_tuple.concretize_all_entries();
-            }
-            self.0[index].3 = true;
-        }
-        self.concretize_core(key)
     }
 }
 
