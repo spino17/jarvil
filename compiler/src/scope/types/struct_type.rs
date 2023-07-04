@@ -1,9 +1,8 @@
 use crate::{
     scope::{
         concrete::{
-            callable_registry::CallableConcreteTypesRegistry,
             core::{
-                ConcreteTypesRegistryKey, ConcreteTypesTuple, GenericsSpecAndConcreteTypesRegistry,
+                ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry,
             },
             struct_registry::{MethodsConcreteTypesRegistry, StructConcreteTypesRegistry},
         },
