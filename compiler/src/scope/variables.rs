@@ -1,5 +1,5 @@
 use super::{
-    concrete::ConcreteTypesRegistryKey,
+    concrete::core::ConcreteTypesRegistryKey,
     core::{AbstractConcreteTypesHandler, GenericContainingConstructs},
 };
 use crate::types::core::Type;

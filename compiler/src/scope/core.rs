@@ -1,4 +1,4 @@
-use super::concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey};
+use super::concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey};
 use super::function::{FunctionData, FunctionPrototype};
 use super::handler::SymbolDataEntry;
 use super::interfaces::{InterfaceData, InterfaceObject};
@@ -25,16 +25,6 @@ pub trait AbstractConcreteTypesHandler {
     ) -> ConcreteTypesRegistryKey; // returns the index inside the list of concrete types
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type>;
 }
-
-/*
-pub trait AbstractMethodConcreteTypesHandler {
-    fn register_method_concrete_types_for_key(
-        &mut self,
-        key: ConcreteTypesRegistryKey,
-        method_name: String,
-        method_concrete_types: &Vec<Type>,
-    );
-}*/
 
 pub trait GenericContainingConstructs {
     fn has_generics(&self) -> bool;

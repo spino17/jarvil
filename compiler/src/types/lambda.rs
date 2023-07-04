@@ -1,5 +1,5 @@
 use super::core::OperatorCompatiblity;
-use crate::scope::concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey};
+use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey};
 use crate::scope::core::SymbolData;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};

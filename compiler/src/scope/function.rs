@@ -3,8 +3,8 @@ use std::vec;
 
 use super::{
     concrete::{
-        CallableConcreteTypesRegistry, ConcreteTypesRegistryKey,
-        GenericsSpecAndConcreteTypesRegistry,
+        callable_registry::CallableConcreteTypesRegistry,
+        core::{ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry},
     },
     core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
 };

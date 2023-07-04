@@ -1,6 +1,6 @@
 use crate::{
     scope::{
-        concrete::ConcreteTypesRegistryKey,
+        concrete::core::ConcreteTypesRegistryKey,
         core::{AbstractConcreteTypesHandler, GenericContainingConstructs},
         types::generic_type::GenericTypeData,
         types::lambda_type::LambdaTypeData,

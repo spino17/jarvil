@@ -1,5 +1,5 @@
 use super::{
-    concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey, StructConcreteTypesRegistry},
+    concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
     core::{
         AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams, SymbolData,
     },

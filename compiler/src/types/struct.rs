@@ -1,6 +1,6 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::scope::{
-    concrete::{ConcreteSymbolData, ConcreteTypesRegistryKey},
+    concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
     core::SymbolData,
     types::core::UserDefinedTypeData,
 };

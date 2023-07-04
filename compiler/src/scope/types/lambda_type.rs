@@ -1,8 +1,8 @@
 use crate::{
     scope::{
         concrete::{
-            CallableConcreteTypesRegistry, ConcreteTypesRegistryKey,
-            GenericsSpecAndConcreteTypesRegistry,
+            callable_registry::CallableConcreteTypesRegistry,
+            core::{ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry},
         },
         core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
         function::{FunctionData, FunctionPrototype},

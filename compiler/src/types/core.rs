@@ -5,7 +5,7 @@ use super::r#struct::Struct;
 use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
-use crate::scope::concrete::ConcreteTypesRegistryKey;
+use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::SymbolData;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
