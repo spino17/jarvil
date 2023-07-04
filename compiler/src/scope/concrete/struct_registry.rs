@@ -67,25 +67,6 @@ impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
         method_concrete_types: Vec<Type>,
         method_containing_generics_indexes: Vec<usize>,
     ) {
-        /*
-        match self.0[key.0].1.methods_concrete_types_map.entry(method_name.to_string()) {
-            Entry::Occupied(mut occupied_entry) => {
-                let occupied_entry_mut_ref = occupied_entry.get_mut();
-                occupied_entry_mut_ref.register_concrete_types(
-                    method_concrete_types,
-                    method_containing_generics_indexes,
-                );
-            }
-            Entry::Vacant(vacant_entry) => {
-                vacant_entry.insert(CallableConcreteTypesRegistry::new_with_entries(vec![
-                    ConcreteTypesTuple::new(
-                        method_concrete_types,
-                        method_containing_generics_indexes,
-                    ),
-                ]));
-            }
-        }
-         */
         self.0[key.0].1.register_method_concrete_types(
             method_name,
             method_concrete_types,
@@ -112,16 +93,7 @@ impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
     }
 
     fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
-        let index = key.0;
-        let are_methods_concretized = self.0[index].1.are_method_tuples_concretized;
-        if !are_methods_concretized {
-            for (_, method_concrete_types_tuple) in &mut self.0[index].1.methods_concrete_types_map
-            {
-                method_concrete_types_tuple.concretize_all_entries();
-            }
-            self.0[index].1.are_method_tuples_concretized = true;
-        }
-        self.concretize_core(key)
+        todo!()
     }
 }
 
