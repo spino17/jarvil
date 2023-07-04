@@ -213,26 +213,6 @@ impl<U: Default + Clone> StructTypeGenerics<U> {
             None => match self {
                 StructTypeGenerics::HasGenerics(_) => unreachable!(),
                 StructTypeGenerics::NoGenerics(methods_concrete_types_registry) => {
-                    /*
-                    let generics_spec = &mut methods_concrete_types_registry.methods_concrete_types_map;
-                    match generics_spec.entry(method_name.to_string()) {
-                        Entry::Occupied(mut occupied_entry) => {
-                            let occupied_entry_ref = occupied_entry.get_mut();
-                            occupied_entry_ref.register_concrete_types(
-                                method_concrete_types,
-                                method_generics_containing_indexes,
-                            );
-                        }
-                        Entry::Vacant(vacant_entry) => {
-                            vacant_entry.insert(CallableConcreteTypesRegistry::new_with_entries(
-                                vec![ConcreteTypesTuple::new(
-                                    method_concrete_types,
-                                    method_generics_containing_indexes,
-                                )],
-                            ));
-                        }
-                    }
-                     */
                     methods_concrete_types_registry.register_method_concrete_types(
                         method_name,
                         method_concrete_types,
