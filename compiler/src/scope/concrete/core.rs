@@ -140,18 +140,18 @@ pub trait ConcreteTypesRegisterHandler {
             }
             _ => unreachable!(),
         };
-        let mut result = vec![];
+        let mut keys = vec![];
         for tuple in tuples {
-            result.push(self.register_new_expanded_concrete_types_tuple(tuple, index));
+            keys.push(self.register_new_expanded_concrete_types_tuple(tuple, index));
         }
         let new_concrete_types_tuple_ref = self.get_tuple_mut_ref_at_index(index);
         match new_concrete_types_tuple_ref {
             ConcreteTypesTuple::HasGenericsInConcreteTypes(concrete_types_tuple) => {
-                concrete_types_tuple.finish_concretization_process(&result)
+                concrete_types_tuple.finish_concretization_process(&keys)
             }
             ConcreteTypesTuple::NoGenericsInConcreteTypes(_) => unreachable!(),
         }
-        return result;
+        return keys;
     }
 }
 

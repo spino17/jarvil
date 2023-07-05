@@ -2,8 +2,7 @@ use crate::scope::concrete::struct_registry::StructTypeGenerics;
 use crate::{
     scope::{
         concrete::{
-            core::{ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry},
-            struct_registry::{MethodsConcreteTypesRegistry, StructConcreteTypesRegistry},
+            core::ConcreteTypesRegistryKey,
         },
         core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
         function::FunctionPrototype,
@@ -119,7 +118,6 @@ impl StructTypeData {
         method_concrete_types: Vec<Type>,
         method_generics_containing_indexes: Vec<usize>,
     ) {
-        // TODO - check here whether method types have generics or not
         self.generics.register_method_concrete_types(
             key,
             method_name,
@@ -135,7 +133,6 @@ impl AbstractConcreteTypesHandler for StructTypeData {
         concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
-        // TODO - check here whether type has generics or not
         self.generics
             .register_concrete_types(concrete_types, generics_containing_indexes)
     }

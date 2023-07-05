@@ -1,4 +1,4 @@
-use super::concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey};
+use super::concrete::core::ConcreteTypesRegistryKey;
 use super::function::{FunctionData, FunctionPrototype};
 use super::handler::SymbolDataEntry;
 use super::interfaces::{InterfaceData, InterfaceObject};
@@ -58,6 +58,16 @@ impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> SymbolData<T
             .as_ref()
             .borrow_mut()
             .register_concrete_types(concrete_types, generics_containing_indexes)
+    }
+
+    pub fn register_method_concrete_types(
+        &mut self,
+        key: Option<ConcreteTypesRegistryKey>,
+        method_name: String,
+        method_concrete_types: Vec<Type>,
+        method_generics_containing_indexes: Vec<usize>,
+    ) {
+        todo!()
     }
 
     pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
