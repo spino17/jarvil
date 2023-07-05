@@ -1,4 +1,4 @@
-use super::core::ConcreteTypesRegisterHandler;
+use super::core::ConcreteTypesRegistryHandler;
 use super::core::ConcreteTypesRegistryKey;
 use super::core::ConcreteTypesTuple;
 use crate::scope::core::AbstractConcreteTypesHandler;
@@ -44,7 +44,7 @@ impl CallableConcreteTypesRegistry {
     }
 }
 
-impl ConcreteTypesRegisterHandler for CallableConcreteTypesRegistry {
+impl ConcreteTypesRegistryHandler for CallableConcreteTypesRegistry {
     fn get_tuple_mut_ref_at_index(&mut self, index: usize) -> &mut ConcreteTypesTuple {
         &mut self.0[index]
     }

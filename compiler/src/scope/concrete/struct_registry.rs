@@ -1,5 +1,5 @@
 use super::callable_registry::CallableConcreteTypesRegistry;
-use super::core::ConcreteTypesRegisterHandler;
+use super::core::ConcreteTypesRegistryHandler;
 use super::core::ConcreteTypesRegistryKey;
 use super::core::ConcreteTypesTuple;
 use super::core::GenericsSpecAndConcreteTypesRegistry;
@@ -14,7 +14,6 @@ use std::collections::hash_map::Entry;
 pub struct MethodsConcreteTypesRegistry<T: Default + Clone> {
     pub optional_arg: T,
     pub methods_concrete_types_map: FxHashMap<String, CallableConcreteTypesRegistry>,
-    pub are_method_tuples_concretized: bool,
 }
 
 impl<T: Default + Clone> MethodsConcreteTypesRegistry<T> {
@@ -52,7 +51,6 @@ impl<T: Default + Clone> Default for MethodsConcreteTypesRegistry<T> {
         MethodsConcreteTypesRegistry {
             optional_arg: T::default(),
             methods_concrete_types_map: FxHashMap::default(),
-            are_method_tuples_concretized: false,
         }
     }
 }
@@ -74,7 +72,6 @@ impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
             MethodsConcreteTypesRegistry {
                 optional_arg: T::default(),
                 methods_concrete_types_map: FxHashMap::default(),
-                are_method_tuples_concretized: false,
             },
         ));
         ConcreteTypesRegistryKey(index)
@@ -110,7 +107,6 @@ impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
             MethodsConcreteTypesRegistry {
                 optional_arg,
                 methods_concrete_types_map,
-                are_method_tuples_concretized: false,
             },
         ));
         return ConcreteTypesRegistryKey(index);
@@ -121,7 +117,7 @@ impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
     }
 }
 
-impl<T: Default + Clone> ConcreteTypesRegisterHandler for StructConcreteTypesRegistry<T> {
+impl<T: Default + Clone> ConcreteTypesRegistryHandler for StructConcreteTypesRegistry<T> {
     fn get_tuple_mut_ref_at_index(&mut self, index: usize) -> &mut ConcreteTypesTuple {
         &mut self.0[index].0
     }
@@ -133,14 +129,12 @@ impl<T: Default + Clone> ConcreteTypesRegisterHandler for StructConcreteTypesReg
     ) -> ConcreteTypesRegistryKey {
         let methods_concrete_types_map = self.0[index].1.methods_concrete_types_map.clone();
         let optional_arg = self.0[index].1.optional_arg.clone();
-        let are_method_tuples_concretized = self.0[index].1.are_method_tuples_concretized;
         let key_index = self.0.len();
         self.0.push((
             ConcreteTypesTuple::new(tuple, vec![]),
             MethodsConcreteTypesRegistry {
                 optional_arg,
                 methods_concrete_types_map,
-                are_method_tuples_concretized,
             },
         ));
         return ConcreteTypesRegistryKey(key_index);

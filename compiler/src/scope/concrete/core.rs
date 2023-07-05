@@ -121,7 +121,7 @@ impl ConcreteTypesTuple {
     }
 }
 
-pub trait ConcreteTypesRegisterHandler {
+pub trait ConcreteTypesRegistryHandler {
     fn get_tuple_mut_ref_at_index(&mut self, index: usize) -> &mut ConcreteTypesTuple;
     fn register_new_expanded_concrete_types_tuple(
         &mut self,

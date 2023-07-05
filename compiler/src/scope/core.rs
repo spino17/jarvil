@@ -22,7 +22,7 @@ pub trait AbstractConcreteTypesHandler {
         &mut self,
         concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
-    ) -> ConcreteTypesRegistryKey; // returns the index inside the list of concrete types
+    ) -> ConcreteTypesRegistryKey;
     fn register_method_concrete_types(
         &mut self,
         key: Option<ConcreteTypesRegistryKey>,
@@ -61,20 +61,28 @@ impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> SymbolData<T
         concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey {
+        // TODO - track whether the tuple has generics and store it for concretization process.
         self.0
             .as_ref()
             .borrow_mut()
             .register_concrete_types(concrete_types, generics_containing_indexes)
     }
 
+    // NOTE - This method should be called only for `T = InterfaceData | (UserDefinedTypeData::Struct)`
     pub fn register_method_concrete_types(
-        &mut self,
+        &self,
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
         method_concrete_types: Vec<Type>,
         method_generics_containing_indexes: Vec<usize>,
     ) {
-        todo!()
+        // TODO - track whether the tuple has generics and store it for concretization process.
+        self.0.as_ref().borrow_mut().register_method_concrete_types(
+            key,
+            method_name,
+            method_concrete_types,
+            method_generics_containing_indexes,
+        )
     }
 
     pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {

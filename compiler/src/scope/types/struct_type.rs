@@ -74,7 +74,6 @@ pub struct StructTypeData {
     pub methods: FxHashMap<String, (MethodData, TextRange)>,
     pub class_methods: FxHashMap<String, (MethodData, TextRange)>,
     pub generics: StructTypeGenerics<()>,
-    pub generics_containing_level: GenericContainingLevel,
 }
 
 impl StructTypeData {
