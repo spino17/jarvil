@@ -3,9 +3,7 @@ use super::{
         core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
         struct_registry::StructTypeGenerics,
     },
-    core::{
-        AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams, SymbolData,
-    },
+    core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
     types::{core::UserDefinedTypeData, struct_type::MethodData},
 };
 use crate::types::core::AbstractType;
@@ -109,9 +107,7 @@ impl AbstractConcreteTypesHandler for InterfaceData {
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
         self.generics.get_concrete_types_at_key(key).clone()
     }
-}
 
-impl GenericContainingConstructs for InterfaceData {
     fn has_generics(&self) -> bool {
         self.generics.has_generics()
     }

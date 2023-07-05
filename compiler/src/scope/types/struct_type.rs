@@ -2,7 +2,7 @@ use crate::scope::concrete::struct_registry::StructTypeGenerics;
 use crate::{
     scope::{
         concrete::core::ConcreteTypesRegistryKey,
-        core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
+        core::{AbstractConcreteTypesHandler, GenericTypeParams},
         function::FunctionPrototype,
     },
     types::core::Type,
@@ -37,9 +37,7 @@ impl MethodData {
         self.prototype.return_type = return_type;
         self.generics = generics;
     }
-}
 
-impl GenericContainingConstructs for MethodData {
     fn has_generics(&self) -> bool {
         self.generics.is_some()
     }
@@ -137,9 +135,7 @@ impl AbstractConcreteTypesHandler for StructTypeData {
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
         self.generics.get_concrete_types_at_key(key)
     }
-}
 
-impl GenericContainingConstructs for StructTypeData {
     fn has_generics(&self) -> bool {
         self.generics.has_generics()
     }

@@ -6,7 +6,7 @@ use super::{
         callable_registry::CallableConcreteTypesRegistry,
         core::{ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry},
     },
-    core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
+    core::{AbstractConcreteTypesHandler, GenericTypeParams},
 };
 
 #[derive(Debug)]
@@ -103,9 +103,7 @@ impl AbstractConcreteTypesHandler for FunctionData {
             None => unreachable!(),
         }
     }
-}
 
-impl GenericContainingConstructs for FunctionData {
     fn has_generics(&self) -> bool {
         self.generics.is_some()
     }

@@ -31,9 +31,6 @@ pub trait AbstractConcreteTypesHandler {
         method_generics_containing_indexes: Vec<usize>,
     );
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type>;
-}
-
-pub trait GenericContainingConstructs {
     fn has_generics(&self) -> bool;
 }
 
@@ -41,13 +38,9 @@ pub trait GenericContainingConstructs {
 pub struct GenericTypeParams(Vec<(String, Vec<InterfaceObject>)>);
 
 #[derive(Debug)]
-pub struct SymbolData<T: AbstractConcreteTypesHandler + GenericContainingConstructs>(
-    pub Rc<RefCell<T>>,
-    pub TextRange,
-    pub bool,
-); // (identifier_meta_data, decl_line_number, should_add_prefix)
+pub struct SymbolData<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
 
-impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> SymbolData<T> {
+impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn new(core_data: T, decl_range: TextRange, is_suffix_required: bool) -> Self {
         SymbolData(
             Rc::new(RefCell::new(core_data)),
@@ -94,20 +87,20 @@ impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> SymbolData<T
     }
 }
 
-impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> Clone for SymbolData<T> {
+impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone(), self.1, self.2)
     }
 }
 
 #[derive(Debug)]
-pub struct CoreScope<T: AbstractConcreteTypesHandler + GenericContainingConstructs> {
+pub struct CoreScope<T: AbstractConcreteTypesHandler> {
     symbol_table: FxHashMap<String, SymbolData<T>>,
     pub parent_scope: Option<usize>, // points to the index in the global flattened scope vec
     is_global: bool,
 }
 
-impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> CoreScope<T> {
+impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
     fn set(
         &mut self,
         name: String,
@@ -186,11 +179,11 @@ impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> CoreScope<T>
 }
 
 #[derive(Debug)]
-pub struct Scope<T: AbstractConcreteTypesHandler + GenericContainingConstructs> {
+pub struct Scope<T: AbstractConcreteTypesHandler> {
     pub flattened_vec: Vec<CoreScope<T>>,
 }
 
-impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> Scope<T> {
+impl<T: AbstractConcreteTypesHandler> Scope<T> {
     fn new() -> Self {
         Scope {
             flattened_vec: vec![CoreScope {

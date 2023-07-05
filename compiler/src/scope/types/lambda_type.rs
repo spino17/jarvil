@@ -4,7 +4,7 @@ use crate::{
             callable_registry::CallableConcreteTypesRegistry,
             core::{ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry},
         },
-        core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
+        core::{AbstractConcreteTypesHandler, GenericTypeParams},
         function::{FunctionData, FunctionPrototype},
     },
     types::core::Type,
@@ -62,9 +62,7 @@ impl AbstractConcreteTypesHandler for LambdaTypeData {
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
         self.meta_data.get_concrete_types_at_key(key)
     }
-}
 
-impl GenericContainingConstructs for LambdaTypeData {
     fn has_generics(&self) -> bool {
         self.meta_data.has_generics()
     }

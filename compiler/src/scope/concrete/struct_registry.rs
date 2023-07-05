@@ -4,7 +4,6 @@ use super::core::ConcreteTypesRegistryKey;
 use super::core::ConcreteTypesTuple;
 use super::core::GenericsSpecAndConcreteTypesRegistry;
 use crate::scope::core::AbstractConcreteTypesHandler;
-use crate::scope::core::GenericContainingConstructs;
 use crate::scope::core::GenericTypeParams;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
@@ -217,9 +216,7 @@ impl<U: Default + Clone> AbstractConcreteTypesHandler for StructTypeGenerics<U> 
             StructTypeGenerics::NoGenerics(_) => unreachable!(),
         }
     }
-}
 
-impl<U: Default + Clone> GenericContainingConstructs for StructTypeGenerics<U> {
     fn has_generics(&self) -> bool {
         match self {
             StructTypeGenerics::HasGenerics(_) => true,

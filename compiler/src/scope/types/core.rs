@@ -1,9 +1,7 @@
 use crate::{
     scope::{
-        concrete::core::ConcreteTypesRegistryKey,
-        core::{AbstractConcreteTypesHandler, GenericContainingConstructs},
-        types::generic_type::GenericTypeData,
-        types::lambda_type::LambdaTypeData,
+        concrete::core::ConcreteTypesRegistryKey, core::AbstractConcreteTypesHandler,
+        types::generic_type::GenericTypeData, types::lambda_type::LambdaTypeData,
         types::struct_type::StructTypeData,
     },
     types::core::Type,
@@ -84,9 +82,7 @@ impl AbstractConcreteTypesHandler for UserDefinedTypeData {
             UserDefinedTypeData::Generic(_) => unreachable!(),
         }
     }
-}
 
-impl GenericContainingConstructs for UserDefinedTypeData {
     fn has_generics(&self) -> bool {
         match self {
             UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.has_generics(),

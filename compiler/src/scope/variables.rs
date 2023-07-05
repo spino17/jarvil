@@ -1,7 +1,4 @@
-use super::{
-    concrete::core::ConcreteTypesRegistryKey,
-    core::{AbstractConcreteTypesHandler, GenericContainingConstructs},
-};
+use super::{concrete::core::ConcreteTypesRegistryKey, core::AbstractConcreteTypesHandler};
 use crate::types::core::Type;
 
 #[derive(Debug)]
@@ -53,9 +50,7 @@ impl AbstractConcreteTypesHandler for VariableData {
     fn get_concrete_types_at_key(&self, _key: ConcreteTypesRegistryKey) -> Vec<Type> {
         unreachable!()
     }
-}
 
-impl GenericContainingConstructs for VariableData {
     fn has_generics(&self) -> bool {
         false
     }

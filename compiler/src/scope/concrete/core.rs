@@ -1,5 +1,4 @@
 use crate::scope::core::AbstractConcreteTypesHandler;
-use crate::scope::core::GenericContainingConstructs;
 use crate::scope::core::GenericTypeParams;
 use crate::scope::core::SymbolData;
 use crate::types::core::AbstractType;
@@ -156,14 +155,12 @@ pub trait ConcreteTypesRegistryHandler {
 }
 
 #[derive(Debug)]
-pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler + GenericContainingConstructs> {
+pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler> {
     pub symbol_data: SymbolData<T>,
     pub index: Option<ConcreteTypesRegistryKey>, // This will be `None` for symbol data which does not have any generic type params
 }
 
-impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> Clone
-    for ConcreteSymbolData<T>
-{
+impl<T: AbstractConcreteTypesHandler> Clone for ConcreteSymbolData<T> {
     fn clone(&self) -> Self {
         ConcreteSymbolData {
             symbol_data: self.symbol_data.clone(),
