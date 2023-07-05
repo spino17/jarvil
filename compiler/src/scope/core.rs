@@ -35,6 +35,20 @@ pub trait AbstractConcreteTypesHandler {
     fn has_generics(&self) -> bool;
 }
 
+pub enum ConcreteTypesRegistrationKind {
+    Primary,
+    Method,
+}
+
+pub trait AbstractConcretizableConstructsStorage {
+    fn insert<T: AbstractConcreteTypesHandler>(
+        &mut self,
+        key: &SymbolDataCore<T>,
+        tuple_index: Option<ConcreteTypesRegistryKey>,
+        registration_kind: ConcreteTypesRegistrationKind,
+    );
+}
+
 #[derive(Debug)]
 pub struct GenericTypeParams(Vec<(String, Vec<InterfaceObject>)>);
 
@@ -78,28 +92,39 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
         )
     }
 
-    pub fn register_concrete_types(
+    pub fn register_concrete_types<U: AbstractConcretizableConstructsStorage>(
         &self,
         concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
+        concretizable_constructs_storage_ref: &mut U,
     ) -> ConcreteTypesRegistryKey {
-        // TODO - track whether the tuple has generics and store it for concretization process.
-        self.0
+        let len = generics_containing_indexes.len();
+        let key = self
+            .0
              .0
             .as_ref()
             .borrow_mut()
-            .register_concrete_types(concrete_types, generics_containing_indexes)
+            .register_concrete_types(concrete_types, generics_containing_indexes);
+        if len > 0 {
+            concretizable_constructs_storage_ref.insert(
+                &self.0,
+                Some(key),
+                ConcreteTypesRegistrationKind::Primary,
+            );
+        }
+        key
     }
 
     // NOTE - This method should be called only for `T = InterfaceData | (UserDefinedTypeData::Struct)`
-    pub fn register_method_concrete_types(
+    pub fn register_method_concrete_types<U: AbstractConcretizableConstructsStorage>(
         &self,
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
         method_concrete_types: Vec<Type>,
         method_generics_containing_indexes: Vec<usize>,
+        concretizable_constructs_storage_ref: &mut U,
     ) {
-        // TODO - track whether the tuple has generics and store it for concretization process.
+        let len = method_generics_containing_indexes.len();
         self.0
              .0
             .as_ref()
@@ -109,7 +134,14 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
                 method_name,
                 method_concrete_types,
                 method_generics_containing_indexes,
-            )
+            );
+        if len > 0 {
+            concretizable_constructs_storage_ref.insert(
+                &self.0,
+                key,
+                ConcreteTypesRegistrationKind::Method,
+            );
+        }
     }
 
     pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
