@@ -37,9 +37,9 @@ impl AbstractType for Lambda {
                 // TODO - once generics gets integrated we have concrete types attached to the lambda type
                 // to enable structural equivalence of lambda type we have to get the concretized version of
                 // function prototype which then we would compare like non-generic lambda types.
-                match &*self.semantic_data.symbol_data.0.as_ref().borrow() {
+                match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
                     UserDefinedTypeData::Lambda(self_data_ref) => {
-                        match &*lambda_data.semantic_data.symbol_data.0.as_ref().borrow() {
+                        match &*lambda_data.semantic_data.symbol_data.0 .0.as_ref().borrow() {
                             UserDefinedTypeData::Lambda(base_data_ref) => {
                                 let (self_param_types, self_return_type) = (
                                     &self_data_ref.meta_data.prototype.params,
@@ -88,7 +88,7 @@ impl ToString for Lambda {
     fn to_string(&self) -> String {
         match &self.name {
             Some(name) => format!("{}", name),
-            None => match &*self.semantic_data.symbol_data.0.as_ref().borrow() {
+            None => match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
                 UserDefinedTypeData::Lambda(data) => {
                     let self_param_types = &data.meta_data.prototype.params;
                     let self_return_type = &data.meta_data.prototype.return_type;

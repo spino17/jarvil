@@ -8,6 +8,7 @@ use crate::scope::variables::VariableData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use text_size::TextRange;
 
@@ -38,12 +39,40 @@ pub trait AbstractConcreteTypesHandler {
 pub struct GenericTypeParams(Vec<(String, Vec<InterfaceObject>)>);
 
 #[derive(Debug)]
-pub struct SymbolData<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
+pub struct SymbolDataCore<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>);
+
+impl<T: AbstractConcreteTypesHandler> PartialEq for SymbolDataCore<T> {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl<T: AbstractConcreteTypesHandler> Eq for SymbolDataCore<T> {}
+
+impl<T: AbstractConcreteTypesHandler> Hash for SymbolDataCore<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
+
+impl<T: AbstractConcreteTypesHandler> Clone for SymbolDataCore<T> {
+    fn clone(&self) -> Self {
+        SymbolDataCore(self.0.clone())
+    }
+}
+
+#[derive(Debug)]
+pub struct SymbolData<T: AbstractConcreteTypesHandler>(
+    pub SymbolDataCore<T>,
+    pub TextRange,
+    pub bool,
+); // (identifier_meta_data, decl_line_number, should_add_prefix)
 
 impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn new(core_data: T, decl_range: TextRange, is_suffix_required: bool) -> Self {
         SymbolData(
-            Rc::new(RefCell::new(core_data)),
+            SymbolDataCore(Rc::new(RefCell::new(core_data))),
             decl_range,
             is_suffix_required,
         )
@@ -56,6 +85,7 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     ) -> ConcreteTypesRegistryKey {
         // TODO - track whether the tuple has generics and store it for concretization process.
         self.0
+             .0
             .as_ref()
             .borrow_mut()
             .register_concrete_types(concrete_types, generics_containing_indexes)
@@ -70,20 +100,24 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
         method_generics_containing_indexes: Vec<usize>,
     ) {
         // TODO - track whether the tuple has generics and store it for concretization process.
-        self.0.as_ref().borrow_mut().register_method_concrete_types(
-            key,
-            method_name,
-            method_concrete_types,
-            method_generics_containing_indexes,
-        )
+        self.0
+             .0
+            .as_ref()
+            .borrow_mut()
+            .register_method_concrete_types(
+                key,
+                method_name,
+                method_concrete_types,
+                method_generics_containing_indexes,
+            )
     }
 
     pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.0.as_ref().borrow().get_concrete_types_at_key(key)
+        self.0 .0.as_ref().borrow().get_concrete_types_at_key(key)
     }
 
     pub fn has_generics(&self) -> bool {
-        self.0.as_ref().borrow().has_generics()
+        self.0 .0.as_ref().borrow().has_generics()
     }
 }
 
@@ -108,11 +142,7 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
         decl_range: TextRange,
         is_suffix_required: bool,
     ) -> SymbolData<T> {
-        let symbol_data = SymbolData(
-            Rc::new(RefCell::new(meta_data)),
-            decl_range,
-            is_suffix_required,
-        );
+        let symbol_data = SymbolData::new(meta_data, decl_range, is_suffix_required);
         self.symbol_table.insert(name, symbol_data.clone());
         symbol_data
     }
@@ -342,7 +372,7 @@ impl Namespace {
     ) -> VariableLookupResult {
         match self.variables.lookup(scope_index, key) {
             Some((symbol_data, resolved_scope_index, depth, _)) => {
-                if symbol_data.0.as_ref().borrow().is_initialized() {
+                if symbol_data.0 .0.as_ref().borrow().is_initialized() {
                     return VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth));
                 } else {
                     return VariableLookupResult::NotInitialized(symbol_data.1);

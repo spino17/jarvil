@@ -189,7 +189,7 @@ impl TypeChecker {
                 .namespace_handler
                 .get_variable_symbol_data_ref(ok_identifier)
             {
-                Some(symbol_data) => return symbol_data.0.as_ref().borrow().data_type.clone(),
+                Some(symbol_data) => return symbol_data.0 .0.as_ref().borrow().data_type.clone(),
                 None => self.params_and_return_type_obj_from_expr(return_type, params),
             },
             _ => self.params_and_return_type_obj_from_expr(return_type, params),
@@ -357,7 +357,13 @@ impl TypeChecker {
                         .get_variable_symbol_data_ref(ok_identifier)
                     {
                         Some(variable_symbol_data) => {
-                            return variable_symbol_data.0.as_ref().borrow().data_type.clone()
+                            return variable_symbol_data
+                                .0
+                                 .0
+                                .as_ref()
+                                .borrow()
+                                .data_type
+                                .clone()
                         }
                         None => return Type::new_with_unknown(),
                     }
@@ -373,7 +379,7 @@ impl TypeChecker {
                             .get_self_keyword_symbol_data_ref(ok_self_keyword)
                         {
                             Some(symbol_data) => {
-                                return symbol_data.0.as_ref().borrow().data_type.clone()
+                                return symbol_data.0 .0.as_ref().borrow().data_type.clone()
                             }
                             None => return Type::new_with_unknown(),
                         }
@@ -391,7 +397,7 @@ impl TypeChecker {
                     {
                         let (result, return_type) = match symbol_data {
                             SymbolDataRef::Function(func_symbol_data) => {
-                                let func_data = &*func_symbol_data.0.as_ref().borrow();
+                                let func_data = &*func_symbol_data.0 .0.as_ref().borrow();
                                 let expected_params = &func_data.prototype.params;
                                 let return_type = &func_data.prototype.return_type;
                                 let result =
@@ -400,13 +406,14 @@ impl TypeChecker {
                             }
                             SymbolDataRef::Variable(variable_symbol_data) => {
                                 let lambda_type =
-                                    &variable_symbol_data.0.as_ref().borrow().data_type;
+                                    &variable_symbol_data.0 .0.as_ref().borrow().data_type;
                                 match lambda_type.0.as_ref() {
                                     CoreType::Lambda(lambda_data) => {
                                         match &*lambda_data
                                             .semantic_data
                                             .symbol_data
                                             .0
+                                             .0
                                             .as_ref()
                                             .borrow()
                                         {
@@ -436,7 +443,7 @@ impl TypeChecker {
                             }
                             SymbolDataRef::Interface(_) => unreachable!(),
                             SymbolDataRef::Type(user_defined_type_symbol_data) => {
-                                match &*user_defined_type_symbol_data.0.as_ref().borrow() {
+                                match &*user_defined_type_symbol_data.0 .0.as_ref().borrow() {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
                                         let constructor_meta_data = &struct_symbol_data.constructor;
                                         let result = self.check_params_type_and_count(
@@ -497,7 +504,7 @@ impl TypeChecker {
                         .namespace_handler
                         .get_type_symbol_data_ref(ok_identifier)
                     {
-                        Some(type_symbol_data) => match &*type_symbol_data.0.as_ref().borrow() {
+                        Some(type_symbol_data) => match &*type_symbol_data.0 .0.as_ref().borrow() {
                             UserDefinedTypeData::Struct(struct_data) => {
                                 let class_method_name = match class_method.core_ref() {
                                     CoreIdentifierNode::Ok(class_method) => {
@@ -559,7 +566,7 @@ impl TypeChecker {
         let property_name_str = property_name.token_value(&self.code);
         match atom_type_obj.0.as_ref() {
             CoreType::Struct(struct_type) => {
-                match &*struct_type.semantic_data.symbol_data.0.as_ref().borrow() {
+                match &*struct_type.semantic_data.symbol_data.0 .0.as_ref().borrow() {
                     UserDefinedTypeData::Struct(struct_data) => {
                         match struct_data.try_field(&property_name_str) {
                             Some((type_obj, _)) => {
@@ -587,7 +594,7 @@ impl TypeChecker {
                 match &atom_type_obj.0.as_ref() {
                     CoreType::Lambda(lambda_data) => {
                         // check if the type is lambda
-                        match &*lambda_data.semantic_data.symbol_data.0.as_ref().borrow() {
+                        match &*lambda_data.semantic_data.symbol_data.0 .0.as_ref().borrow() {
                             UserDefinedTypeData::Lambda(data) => {
                                 let expected_param_types = &data.meta_data.prototype.params;
                                 let return_type = &data.meta_data.prototype.return_type;
@@ -674,6 +681,7 @@ impl TypeChecker {
                                         .semantic_data
                                         .symbol_data
                                         .0
+                                         .0
                                         .as_ref()
                                         .borrow()
                                     {
@@ -724,6 +732,7 @@ impl TypeChecker {
                                         .semantic_data
                                         .symbol_data
                                         .0
+                                         .0
                                         .as_ref()
                                         .borrow()
                                     {
@@ -1126,7 +1135,12 @@ impl TypeChecker {
                 .namespace_handler
                 .get_variable_symbol_data_ref(ok_identifier)
             {
-                symbol_data.0.as_ref().borrow_mut().set_data_type(&r_type);
+                symbol_data
+                    .0
+                     .0
+                    .as_ref()
+                    .borrow_mut()
+                    .set_data_type(&r_type);
             }
         };
     }

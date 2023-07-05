@@ -23,9 +23,9 @@ impl AbstractType for Generic {
     fn is_eq(&self, base_type: &Type) -> bool {
         match base_type.0.as_ref() {
             CoreType::Generic(base_generic_data) => {
-                match &*self.semantic_data.0.as_ref().borrow() {
+                match &*self.semantic_data.0 .0.as_ref().borrow() {
                     UserDefinedTypeData::Generic(self_generic_data_ref) => {
-                        match &*base_generic_data.semantic_data.0.as_ref().borrow() {
+                        match &*base_generic_data.semantic_data.0 .0.as_ref().borrow() {
                             // The generic types equivalence is calculated structurally by checking if both
                             // are bounded by the same set of interfaces
                             UserDefinedTypeData::Generic(base_generic_data_ref) => {
@@ -59,7 +59,7 @@ impl AbstractType for Generic {
     }
 
     fn concretize(&self) -> Vec<Type> {
-        let concrete_types = match &mut *self.semantic_data.0.as_ref().borrow_mut() {
+        let concrete_types = match &mut *self.semantic_data.0 .0.as_ref().borrow_mut() {
             UserDefinedTypeData::Generic(generic_data) => {
                 generic_data.concretize_generics();
                 generic_data.concrete_types.clone()
