@@ -85,6 +85,16 @@ impl AbstractConcreteTypesHandler for FunctionData {
         }
     }
 
+    fn register_method_concrete_types(
+        &mut self,
+        _key: Option<ConcreteTypesRegistryKey>,
+        _method_name: String,
+        _method_concrete_types: Vec<Type>,
+        _method_generics_containing_indexes: Vec<usize>,
+    ) {
+        unreachable!()
+    }
+
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
         match &self.generics {
             Some(generics) => generics

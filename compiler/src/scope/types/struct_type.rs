@@ -1,9 +1,7 @@
 use crate::scope::concrete::struct_registry::StructTypeGenerics;
 use crate::{
     scope::{
-        concrete::{
-            core::ConcreteTypesRegistryKey,
-        },
+        concrete::core::ConcreteTypesRegistryKey,
         core::{AbstractConcreteTypesHandler, GenericContainingConstructs, GenericTypeParams},
         function::FunctionPrototype,
     },
@@ -110,8 +108,19 @@ impl StructTypeData {
             None => None,
         }
     }
+}
 
-    pub fn register_method_concrete_types(
+impl AbstractConcreteTypesHandler for StructTypeData {
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
+    ) -> ConcreteTypesRegistryKey {
+        self.generics
+            .register_concrete_types(concrete_types, generics_containing_indexes)
+    }
+
+    fn register_method_concrete_types(
         &mut self,
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
@@ -124,17 +133,6 @@ impl StructTypeData {
             method_concrete_types,
             method_generics_containing_indexes,
         )
-    }
-}
-
-impl AbstractConcreteTypesHandler for StructTypeData {
-    fn register_concrete_types(
-        &mut self,
-        concrete_types: Vec<Type>,
-        generics_containing_indexes: Vec<usize>,
-    ) -> ConcreteTypesRegistryKey {
-        self.generics
-            .register_concrete_types(concrete_types, generics_containing_indexes)
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {

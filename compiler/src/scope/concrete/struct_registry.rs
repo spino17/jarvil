@@ -4,6 +4,7 @@ use super::core::ConcreteTypesRegistryKey;
 use super::core::ConcreteTypesTuple;
 use super::core::GenericsSpecAndConcreteTypesRegistry;
 use crate::scope::core::AbstractConcreteTypesHandler;
+use crate::scope::core::GenericContainingConstructs;
 use crate::scope::core::GenericTypeParams;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
@@ -62,18 +63,39 @@ pub struct StructConcreteTypesRegistry<T: Default + Clone>(
 );
 
 impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
-    pub fn register_method_concrete_types_for_key(
+    pub fn register_concrete_types(
+        &mut self,
+        concrete_types: Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
+    ) -> ConcreteTypesRegistryKey {
+        let index = self.0.len();
+        self.0.push((
+            ConcreteTypesTuple::new(concrete_types, generics_containing_indexes),
+            MethodsConcreteTypesRegistry {
+                optional_arg: T::default(),
+                methods_concrete_types_map: FxHashMap::default(),
+                are_method_tuples_concretized: false,
+            },
+        ));
+        ConcreteTypesRegistryKey(index)
+    }
+
+    pub fn register_method_concrete_types(
         &mut self,
         key: ConcreteTypesRegistryKey,
         method_name: String,
         method_concrete_types: Vec<Type>,
-        method_containing_generics_indexes: Vec<usize>,
+        method_generics_containing_indexes: Vec<usize>,
     ) {
         self.0[key.0].1.register_method_concrete_types(
             method_name,
             method_concrete_types,
-            method_containing_generics_indexes,
+            method_generics_containing_indexes,
         )
+    }
+
+    pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+        self.0[key.0].0.get_concrete_types()
     }
 
     pub fn register_entry(
@@ -94,31 +116,8 @@ impl<T: Default + Clone> StructConcreteTypesRegistry<T> {
         return ConcreteTypesRegistryKey(index);
     }
 
-    fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
+    pub fn concretize(&mut self, key: ConcreteTypesRegistryKey) -> Vec<ConcreteTypesRegistryKey> {
         todo!()
-    }
-}
-
-impl<T: Default + Clone> AbstractConcreteTypesHandler for StructConcreteTypesRegistry<T> {
-    fn register_concrete_types(
-        &mut self,
-        concrete_types: Vec<Type>,
-        generics_containing_indexes: Vec<usize>,
-    ) -> ConcreteTypesRegistryKey {
-        let index = self.0.len();
-        self.0.push((
-            ConcreteTypesTuple::new(concrete_types, generics_containing_indexes),
-            MethodsConcreteTypesRegistry {
-                optional_arg: T::default(),
-                methods_concrete_types_map: FxHashMap::default(),
-                are_method_tuples_concretized: false,
-            },
-        ));
-        ConcreteTypesRegistryKey(index)
-    }
-
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.0[key.0].0.get_concrete_types()
     }
 }
 
@@ -166,8 +165,10 @@ impl<U: Default + Clone> StructTypeGenerics<U> {
             None => StructTypeGenerics::NoGenerics(MethodsConcreteTypesRegistry::default()),
         }
     }
+}
 
-    pub fn register_concrete_types(
+impl<U: Default + Clone> AbstractConcreteTypesHandler for StructTypeGenerics<U> {
+    fn register_concrete_types(
         &mut self,
         concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
@@ -182,7 +183,7 @@ impl<U: Default + Clone> StructTypeGenerics<U> {
         }
     }
 
-    pub fn register_method_concrete_types(
+    fn register_method_concrete_types(
         &mut self,
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
@@ -193,7 +194,7 @@ impl<U: Default + Clone> StructTypeGenerics<U> {
             Some(key) => match self {
                 StructTypeGenerics::HasGenerics(generics_spec) => generics_spec
                     .concrete_types_registry
-                    .register_method_concrete_types_for_key(
+                    .register_method_concrete_types(
                         key,
                         method_name,
                         method_concrete_types,
@@ -214,19 +215,21 @@ impl<U: Default + Clone> StructTypeGenerics<U> {
         }
     }
 
-    pub fn has_generics(&self) -> bool {
-        match self {
-            StructTypeGenerics::HasGenerics(_) => true,
-            StructTypeGenerics::NoGenerics(_) => false,
-        }
-    }
-
-    pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
         match self {
             StructTypeGenerics::HasGenerics(generics_spec) => generics_spec
                 .concrete_types_registry
                 .get_concrete_types_at_key(key),
             StructTypeGenerics::NoGenerics(_) => unreachable!(),
+        }
+    }
+}
+
+impl<U: Default + Clone> GenericContainingConstructs for StructTypeGenerics<U> {
+    fn has_generics(&self) -> bool {
+        match self {
+            StructTypeGenerics::HasGenerics(_) => true,
+            StructTypeGenerics::NoGenerics(_) => false,
         }
     }
 }

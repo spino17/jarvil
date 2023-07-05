@@ -23,6 +23,13 @@ pub trait AbstractConcreteTypesHandler {
         concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
     ) -> ConcreteTypesRegistryKey; // returns the index inside the list of concrete types
+    fn register_method_concrete_types(
+        &mut self,
+        key: Option<ConcreteTypesRegistryKey>,
+        method_name: String,
+        method_concrete_types: Vec<Type>,
+        method_generics_containing_indexes: Vec<usize>,
+    );
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type>;
 }
 

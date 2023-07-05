@@ -173,7 +173,7 @@ impl<T: AbstractConcreteTypesHandler + GenericContainingConstructs> Clone
 }
 
 #[derive(Debug)]
-pub struct GenericsSpecAndConcreteTypesRegistry<T: AbstractConcreteTypesHandler + Default> {
+pub struct GenericsSpecAndConcreteTypesRegistry<T: Default> {
     pub generics_spec: GenericTypeParams,
     pub concrete_types_registry: T,
 }

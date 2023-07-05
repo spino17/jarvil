@@ -12,13 +12,7 @@ impl CallableConcreteTypesRegistry {
         CallableConcreteTypesRegistry(entries)
     }
 
-    pub fn concretize_all_entries(&mut self) {
-        todo!()
-    }
-}
-
-impl AbstractConcreteTypesHandler for CallableConcreteTypesRegistry {
-    fn register_concrete_types(
+    pub fn register_concrete_types(
         &mut self,
         concrete_types: Vec<Type>,
         generics_containing_indexes: Vec<usize>,
@@ -31,8 +25,22 @@ impl AbstractConcreteTypesHandler for CallableConcreteTypesRegistry {
         ConcreteTypesRegistryKey(index)
     }
 
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+    pub fn register_method_concrete_types(
+        &mut self,
+        key: Option<ConcreteTypesRegistryKey>,
+        method_name: String,
+        method_concrete_types: Vec<Type>,
+        method_generics_containing_indexes: Vec<usize>,
+    ) {
+        unreachable!()
+    }
+
+    pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
         self.0[key.0].get_concrete_types()
+    }
+
+    pub fn concretize_all_entries(&mut self) {
+        todo!()
     }
 }
 

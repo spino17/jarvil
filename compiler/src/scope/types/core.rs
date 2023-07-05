@@ -53,6 +53,26 @@ impl AbstractConcreteTypesHandler for UserDefinedTypeData {
         }
     }
 
+    fn register_method_concrete_types(
+        &mut self,
+        key: Option<ConcreteTypesRegistryKey>,
+        method_name: String,
+        method_concrete_types: Vec<Type>,
+        method_generics_containing_indexes: Vec<usize>,
+    ) {
+        match self {
+            UserDefinedTypeData::Struct(struct_type_data) => struct_type_data
+                .register_method_concrete_types(
+                    key,
+                    method_name,
+                    method_concrete_types,
+                    method_generics_containing_indexes,
+                ),
+            UserDefinedTypeData::Lambda(_) => unreachable!(),
+            UserDefinedTypeData::Generic(_) => unreachable!(),
+        }
+    }
+
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
         match self {
             UserDefinedTypeData::Struct(struct_type_data) => {

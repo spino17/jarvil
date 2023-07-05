@@ -79,8 +79,19 @@ impl InterfaceData {
     ) {
         todo!()
     }
+}
 
-    pub fn register_method_concrete_types(
+impl AbstractConcreteTypesHandler for InterfaceData {
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
+    ) -> ConcreteTypesRegistryKey {
+        self.generics
+            .register_concrete_types(concrete_types, generics_containing_indexes)
+    }
+
+    fn register_method_concrete_types(
         &mut self,
         key: Option<ConcreteTypesRegistryKey>,
         method_name: String,
@@ -93,17 +104,6 @@ impl InterfaceData {
             method_concrete_types,
             method_generics_containing_indexes,
         )
-    }
-}
-
-impl AbstractConcreteTypesHandler for InterfaceData {
-    fn register_concrete_types(
-        &mut self,
-        concrete_types: Vec<Type>,
-        generics_containing_indexes: Vec<usize>,
-    ) -> ConcreteTypesRegistryKey {
-        self.generics
-            .register_concrete_types(concrete_types, generics_containing_indexes)
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
