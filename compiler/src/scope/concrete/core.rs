@@ -52,6 +52,9 @@ impl ConcreteTypesTupleWithGenerics {
                 let mut result = vec![];
                 let generics_containing_indexes_len = self.generics_containing_indexes.len();
                 let concrete_types_len = self.concrete_types.len();
+                // TODO - instead of doing below thing, we can initialize a vector with
+                // same values as `self.concrete_types` and then only modify the 
+                // indexes present in `critical_index`.
                 for ty_combination in all_concrete_types_combination {
                     let mut v = vec![];
                     let mut start_index = 0;

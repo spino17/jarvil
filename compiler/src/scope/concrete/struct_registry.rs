@@ -182,10 +182,6 @@ impl<U: Default + Clone> StructTypeGenerics<U> {
         }
     }
 
-    pub fn register_implementing_struct(&mut self, key: Option<ConcreteTypesRegistryKey>) {
-        todo!()
-    }
-
     pub fn register_method_concrete_types(
         &mut self,
         key: Option<ConcreteTypesRegistryKey>,
