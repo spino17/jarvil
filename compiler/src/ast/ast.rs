@@ -558,7 +558,6 @@ pub struct CoreSkippedTokenNode {
 
 #[derive(Debug)]
 pub struct CoreSymbolSeparatedSequenceNode<T: Clone> {
-    // pub separator: Option<TokenNode>,
     pub entity: T,
     pub remaining_entities: Option<(TokenNode, SymbolSeparatedSequenceNode<T>)>,
 }

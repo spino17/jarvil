@@ -105,6 +105,15 @@ impl StructTypeData {
             None => None,
         }
     }
+
+    pub fn register_method_concrete_types_originate_from_interface(
+        &mut self,
+        method_name: String,
+        method_concrete_types: Vec<Type>,
+        generics_containing_indexes: Vec<usize>,
+    ) {
+        todo!()
+    }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
