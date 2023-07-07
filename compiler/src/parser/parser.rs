@@ -15,7 +15,6 @@ use crate::error::diagnostics::{
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
-use std::rc::Rc;
 use text_size::TextRange;
 
 pub trait Parser {
@@ -217,7 +216,7 @@ impl JarvilParser {
             TokenNode::new_with_ok(&token)
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            TokenNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
+            TokenNode::new_with_missing_tokens(&vec![symbol], &token)
         }
     }
 
@@ -287,7 +286,7 @@ impl JarvilParser {
             return IdentifierInDeclNode::new_with_ok(&ok_token_node, None);
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            return IdentifierInDeclNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token);
+            return IdentifierInDeclNode::new_with_missing_tokens(&vec![symbol], &token);
         }
     }
 
@@ -314,7 +313,7 @@ impl JarvilParser {
             }
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            IdentifierInUseNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
+            IdentifierInUseNode::new_with_missing_tokens(&vec![symbol], &token)
         }
     }
 
@@ -341,7 +340,7 @@ impl JarvilParser {
             }
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            return IdentifierInDeclNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token);
+            return IdentifierInDeclNode::new_with_missing_tokens(&vec![symbol], &token);
         }
     }
 
@@ -379,7 +378,7 @@ impl JarvilParser {
             }
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            return node_creation_method_with_err(&Rc::new(vec![symbol]), &token);
+            return node_creation_method_with_err(&vec![symbol], &token);
         }
     }
 
@@ -392,7 +391,7 @@ impl JarvilParser {
             IdentifierNode::new_with_ok(&ok_token_node)
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            IdentifierNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
+            IdentifierNode::new_with_missing_tokens(&vec![symbol], &token)
         }
     }
 
@@ -405,7 +404,7 @@ impl JarvilParser {
             SelfKeywordNode::new_with_ok(&ok_token_node)
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            SelfKeywordNode::new_with_missing_tokens(&Rc::new(vec![symbol]), &token)
+            SelfKeywordNode::new_with_missing_tokens(&vec![symbol], &token)
         }
     }
 
@@ -417,7 +416,7 @@ impl JarvilParser {
             return TokenNode::new_with_ok(&token);
         } else {
             self.log_missing_token_error(symbols, &token);
-            return TokenNode::new_with_missing_tokens(&Rc::new(symbols.to_vec()), &token);
+            return TokenNode::new_with_missing_tokens(&symbols.to_vec(), &token);
         }
     }
 
