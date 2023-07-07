@@ -23,7 +23,7 @@ impl Default for FunctionPrototype {
 #[derive(Debug)]
 pub struct FunctionData {
     pub prototype: FunctionPrototype,
-    pub generics: Option<GenericTypeParams>, // the concrete types registry for methods is handled by the struct registry
+    pub generics: Option<GenericTypeParams>,
 }
 
 impl FunctionData {

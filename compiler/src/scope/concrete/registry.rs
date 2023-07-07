@@ -1,6 +1,5 @@
 use super::core::ConcreteTypesRegistryKey;
 use super::core::ConcreteTypesTuple;
-use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::GenericTypeParams;
 use crate::types::core::Type;
 
