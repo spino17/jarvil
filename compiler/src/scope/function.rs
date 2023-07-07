@@ -63,7 +63,7 @@ impl AbstractConcreteTypesHandler for FunctionData {
     }
 
     fn has_generics(&self) -> bool {
-        unreachable!()
+        self.generics.is_some()
     }
 }
 

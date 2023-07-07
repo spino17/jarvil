@@ -1,7 +1,7 @@
 use super::{
     concrete::{
         core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
-        registry::ConcreteTypesRegistryForStructLikeConstructs,
+        registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
     },
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
     function::FunctionData,
@@ -55,7 +55,7 @@ impl InterfaceObject {
 pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
-    pub generics: ConcreteTypesRegistryForStructLikeConstructs,
+    pub generics: Option<GenericsSpecAndConcreteTypesRegistry>,
 }
 
 impl InterfaceData {
@@ -67,20 +67,38 @@ impl InterfaceData {
     ) {
         self.fields = fields;
         self.methods = methods;
-        self.generics = ConcreteTypesRegistryForStructLikeConstructs::new(generics_spec)
+        self.generics = match generics_spec {
+            Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
+                generics_spec,
+                concrete_types_registry: ConcreteTypesRegistryCore::default(),
+            }),
+            None => None,
+        }
     }
 }
 
 impl AbstractConcreteTypesHandler for InterfaceData {
     fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        self.generics.register_concrete_types(concrete_types)
+        match &mut self.generics {
+            Some(generics) => {
+                return generics
+                    .concrete_types_registry
+                    .register_concrete_types(concrete_types)
+            }
+            None => unreachable!(),
+        }
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.generics.get_concrete_types_at_key(key).clone()
+        match &self.generics {
+            Some(generics_spec) => generics_spec
+                .concrete_types_registry
+                .get_concrete_types_at_key(key),
+            None => unreachable!(),
+        }
     }
 
     fn has_generics(&self) -> bool {
-        self.generics.has_generics()
+        self.generics.is_some()
     }
 }

@@ -1,4 +1,6 @@
-use crate::scope::concrete::registry::ConcreteTypesRegistryForStructLikeConstructs;
+use crate::scope::concrete::registry::{
+    ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry,
+};
 use crate::scope::function::FunctionData;
 use crate::{
     scope::{
@@ -29,7 +31,7 @@ pub struct StructTypeData {
     pub constructor: FunctionData,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub class_methods: FxHashMap<String, (FunctionData, TextRange)>,
-    pub generics: ConcreteTypesRegistryForStructLikeConstructs,
+    pub generics: Option<GenericsSpecAndConcreteTypesRegistry>,
 }
 
 impl StructTypeData {
@@ -47,7 +49,13 @@ impl StructTypeData {
         if let Some((constructor_meta_data, _)) = constructor {
             self.constructor = constructor_meta_data;
         }
-        self.generics = ConcreteTypesRegistryForStructLikeConstructs::new(generics_spec)
+        self.generics = match generics_spec {
+            Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
+                generics_spec,
+                concrete_types_registry: ConcreteTypesRegistryCore::default(),
+            }),
+            None => None,
+        }
     }
 
     pub fn try_field(&self, field_name: &str) -> Option<(Type, TextRange)> {
@@ -67,14 +75,26 @@ impl StructTypeData {
 
 impl AbstractConcreteTypesHandler for StructTypeData {
     fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        self.generics.register_concrete_types(concrete_types)
+        match &mut self.generics {
+            Some(generics) => {
+                return generics
+                    .concrete_types_registry
+                    .register_concrete_types(concrete_types)
+            }
+            None => unreachable!(),
+        }
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.generics.get_concrete_types_at_key(key)
+        match &self.generics {
+            Some(generics_spec) => generics_spec
+                .concrete_types_registry
+                .get_concrete_types_at_key(key),
+            None => unreachable!(),
+        }
     }
 
     fn has_generics(&self) -> bool {
-        self.generics.has_generics()
+        self.generics.is_some()
     }
 }
