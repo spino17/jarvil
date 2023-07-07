@@ -1,8 +1,15 @@
 use super::core::OperatorCompatiblity;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey};
 use crate::scope::core::SymbolData;
+use crate::scope::function::{FunctionData, FunctionPrototype};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};
+
+#[derive(Debug)]
+pub enum LambdaKind {
+    Named((String, ConcreteSymbolData<UserDefinedTypeData>)),  // (name, semantic data)
+    Unnamed(FunctionPrototype)
+}
 
 #[derive(Debug)]
 pub struct Lambda {

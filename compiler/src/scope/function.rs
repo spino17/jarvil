@@ -1,5 +1,5 @@
 use super::{
-    concrete::core::ConcreteTypesRegistryKey,
+    concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple},
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
 };
 use crate::types::core::AbstractType;
@@ -73,6 +73,10 @@ impl FunctionData {
         }
         // TODO - check interface bounds also here!
         return true;
+    }
+
+    pub fn get_concrete_data_from_concrete_types(&self, concrete_types: &ConcreteTypesTuple) -> FunctionPrototype {
+        todo!()
     }
 }
 

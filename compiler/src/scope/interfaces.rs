@@ -59,7 +59,7 @@ pub struct InterfaceData {
 }
 
 impl InterfaceData {
-    fn set_meta_data(
+    pub fn set_meta_data(
         &mut self,
         fields: FxHashMap<String, (Type, TextRange)>,
         methods: FxHashMap<String, (FunctionData, TextRange)>,
@@ -74,6 +74,10 @@ impl InterfaceData {
             }),
             None => None,
         }
+    }
+
+    pub fn get_concrete_data_from_key(&self, key: ConcreteTypesRegistryKey) -> () {
+        todo!()
     }
 }
 
