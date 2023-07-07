@@ -24,7 +24,7 @@ impl LambdaTypeData {
                     params: param_types,
                     return_type,
                 },
-                generics: generics_spec
+                generics: generics_spec,
             },
         }
     }

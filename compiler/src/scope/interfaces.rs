@@ -1,6 +1,7 @@
 use super::{
     concrete::{
-        core::{ConcreteSymbolData, ConcreteTypesRegistryKey}, registry::ConcreteTypesRegistryForStructLikeConstructs,
+        core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
+        registry::ConcreteTypesRegistryForStructLikeConstructs,
     },
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
     function::FunctionData,

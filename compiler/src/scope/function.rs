@@ -1,4 +1,7 @@
-use super::{core::{GenericTypeParams, AbstractConcreteTypesHandler}, concrete::core::ConcreteTypesRegistryKey};
+use super::{
+    concrete::core::ConcreteTypesRegistryKey,
+    core::{AbstractConcreteTypesHandler, GenericTypeParams},
+};
 use crate::types::core::Type;
 use std::vec;
 

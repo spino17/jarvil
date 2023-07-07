@@ -1,8 +1,8 @@
 use super::core::ConcreteTypesRegistryKey;
 use super::core::ConcreteTypesTuple;
-use crate::types::core::Type;
 use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::GenericTypeParams;
+use crate::types::core::Type;
 
 #[derive(Debug)]
 pub struct GenericsSpecAndConcreteTypesRegistry {
@@ -50,12 +50,12 @@ pub enum ConcreteTypesRegistryForStructLikeConstructs {
 impl ConcreteTypesRegistryForStructLikeConstructs {
     pub fn new(generics_spec: Option<GenericTypeParams>) -> Self {
         match generics_spec {
-            Some(generics_spec) => {
-                ConcreteTypesRegistryForStructLikeConstructs::HasGenerics(GenericsSpecAndConcreteTypesRegistry {
+            Some(generics_spec) => ConcreteTypesRegistryForStructLikeConstructs::HasGenerics(
+                GenericsSpecAndConcreteTypesRegistry {
                     generics_spec,
                     concrete_types_registry: ConcreteTypesRegistryCore::default(),
-                })
-            }
+                },
+            ),
             None => ConcreteTypesRegistryForStructLikeConstructs::NoGenerics,
         }
     }
@@ -75,9 +75,11 @@ impl AbstractConcreteTypesHandler for ConcreteTypesRegistryForStructLikeConstruc
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
         match self {
-            ConcreteTypesRegistryForStructLikeConstructs::HasGenerics(generics_spec) => generics_spec
-                .concrete_types_registry
-                .get_concrete_types_at_key(key),
+            ConcreteTypesRegistryForStructLikeConstructs::HasGenerics(generics_spec) => {
+                generics_spec
+                    .concrete_types_registry
+                    .get_concrete_types_at_key(key)
+            }
             ConcreteTypesRegistryForStructLikeConstructs::NoGenerics => unreachable!(),
         }
     }
