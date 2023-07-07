@@ -2,6 +2,7 @@
 // cover and the representation of type expressions in terms of type objects.
 
 use super::resolver::Resolver;
+use crate::types::lambda::Lambda;
 use crate::{
     ast::{
         ast::{
@@ -39,11 +40,9 @@ use crate::{
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
-        core::SymbolData,
-        function::FunctionData,
+        function::FunctionPrototype,
         handler::{NamespaceHandler, SymbolDataRef},
         types::core::UserDefinedTypeData,
-        types::lambda_type::LambdaTypeData,
     },
     types::{
         atomic::Atomic,
@@ -194,14 +193,8 @@ impl TypeChecker {
             },
             _ => self.params_and_return_type_obj_from_expr(return_type, params),
         };
-        let symbol_data = SymbolData::new(
-            UserDefinedTypeData::Lambda(LambdaTypeData {
-                meta_data: FunctionData::new(params_vec.clone(), return_type.clone(), None),
-            }),
-            TextRange::default(),
-            true,
-        );
-        let lambda_type_obj = Type::new_with_lambda(None, &symbol_data, None, false);
+        let lambda_type_obj =
+            Type::new_with_lambda_unnamed(FunctionPrototype::new(params_vec, return_type));
         return lambda_type_obj;
     }
 
@@ -409,6 +402,45 @@ impl TypeChecker {
                                     &variable_symbol_data.0 .0.as_ref().borrow().data_type;
                                 match lambda_type.0.as_ref() {
                                     CoreType::Lambda(lambda_data) => {
+                                        match &*lambda_data {
+                                            Lambda::Named((_, semantic_data)) => {
+                                                match &*semantic_data
+                                                    .symbol_data
+                                                    .0
+                                                     .0
+                                                    .as_ref()
+                                                    .borrow()
+                                                {
+                                                    UserDefinedTypeData::Lambda(data) => {
+                                                        let expected_params =
+                                                            &data.meta_data.prototype.params;
+                                                        let return_type = data
+                                                            .meta_data
+                                                            .prototype
+                                                            .return_type
+                                                            .clone();
+                                                        let result = self
+                                                            .check_params_type_and_count(
+                                                                expected_params,
+                                                                params,
+                                                            );
+                                                        (result, return_type)
+                                                    }
+                                                    _ => unreachable!(),
+                                                }
+                                            }
+                                            Lambda::Unnamed(unnamed_lambda) => {
+                                                let expected_params = &unnamed_lambda.params;
+                                                let return_type =
+                                                    unnamed_lambda.return_type.clone();
+                                                let result = self.check_params_type_and_count(
+                                                    expected_params,
+                                                    params,
+                                                );
+                                                (result, return_type)
+                                            }
+                                        }
+                                        /*
                                         match &*lambda_data
                                             .semantic_data
                                             .symbol_data
@@ -429,7 +461,7 @@ impl TypeChecker {
                                                 (result, return_type)
                                             }
                                             _ => unreachable!(),
-                                        }
+                                        }*/
                                     }
                                     _ => {
                                         let err = IdentifierNotCallableError::new(
@@ -594,6 +626,61 @@ impl TypeChecker {
                 match &atom_type_obj.0.as_ref() {
                     CoreType::Lambda(lambda_data) => {
                         // check if the type is lambda
+                        match &*lambda_data {
+                            Lambda::Named((_, semantic_data)) => {
+                                match &*semantic_data.symbol_data.0 .0.as_ref().borrow() {
+                                    UserDefinedTypeData::Lambda(data) => {
+                                        let expected_param_types = &data.meta_data.prototype.params;
+                                        let return_type = &data.meta_data.prototype.return_type;
+                                        let result = self.check_params_type_and_count(
+                                            expected_param_types,
+                                            params,
+                                        );
+                                        match result {
+                                            ParamsTypeNCountResult::Ok => {
+                                                return (
+                                                    return_type.clone(),
+                                                    Some(atom_type_obj.clone()),
+                                                )
+                                            }
+                                            _ => {
+                                                self.log_params_type_and_count_check_error(
+                                                    atom.range(),
+                                                    result,
+                                                );
+                                                return (
+                                                    Type::new_with_unknown(),
+                                                    Some(atom_type_obj.clone()),
+                                                );
+                                            }
+                                        }
+                                    }
+                                    _ => unreachable!(),
+                                }
+                            }
+                            Lambda::Unnamed(unnamed_lambda) => {
+                                let expected_param_types = &unnamed_lambda.params;
+                                let return_type = &unnamed_lambda.return_type;
+                                let result =
+                                    self.check_params_type_and_count(expected_param_types, params);
+                                match result {
+                                    ParamsTypeNCountResult::Ok => {
+                                        return (return_type.clone(), Some(atom_type_obj.clone()))
+                                    }
+                                    _ => {
+                                        self.log_params_type_and_count_check_error(
+                                            atom.range(),
+                                            result,
+                                        );
+                                        return (
+                                            Type::new_with_unknown(),
+                                            Some(atom_type_obj.clone()),
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                        /*
                         match &*lambda_data.semantic_data.symbol_data.0 .0.as_ref().borrow() {
                             UserDefinedTypeData::Lambda(data) => {
                                 let expected_param_types = &data.meta_data.prototype.params;
@@ -617,7 +704,7 @@ impl TypeChecker {
                                 }
                             }
                             _ => unreachable!(),
-                        }
+                        }*/
                     }
                     _ => {
                         let err = ExpressionNotCallableError::new(atom.range());
@@ -677,18 +764,44 @@ impl TypeChecker {
                         StructPropertyCheckResult::PropertyExist(type_obj) => {
                             match &type_obj.0.as_ref() {
                                 CoreType::Lambda(lambda_data) => {
-                                    match &*lambda_data
-                                        .semantic_data
-                                        .symbol_data
-                                        .0
-                                         .0
-                                        .as_ref()
-                                        .borrow()
-                                    {
-                                        UserDefinedTypeData::Lambda(data) => {
-                                            let expected_param_types =
-                                                &data.meta_data.prototype.params;
-                                            let return_type = &data.meta_data.prototype.return_type;
+                                    match &*lambda_data {
+                                        Lambda::Named((_, semantic_data)) => {
+                                            match &*semantic_data.symbol_data.0 .0.as_ref().borrow()
+                                            {
+                                                UserDefinedTypeData::Lambda(data) => {
+                                                    let expected_param_types =
+                                                        &data.meta_data.prototype.params;
+                                                    let return_type =
+                                                        &data.meta_data.prototype.return_type;
+                                                    let result = self.check_params_type_and_count(
+                                                        expected_param_types,
+                                                        params,
+                                                    );
+                                                    match result {
+                                                        ParamsTypeNCountResult::Ok => {
+                                                            return (
+                                                                return_type.clone(),
+                                                                Some(atom_type_obj),
+                                                            )
+                                                        }
+                                                        _ => {
+                                                            self.log_params_type_and_count_check_error(
+                                                        ok_identifier.range(),
+                                                        result,
+                                                    );
+                                                            return (
+                                                                Type::new_with_unknown(),
+                                                                Some(atom_type_obj),
+                                                            );
+                                                        }
+                                                    }
+                                                }
+                                                _ => unreachable!(),
+                                            }
+                                        }
+                                        Lambda::Unnamed(unnamed_lambda) => {
+                                            let expected_param_types = &unnamed_lambda.params;
+                                            let return_type = &unnamed_lambda.return_type;
                                             let result = self.check_params_type_and_count(
                                                 expected_param_types,
                                                 params,
@@ -712,8 +825,44 @@ impl TypeChecker {
                                                 }
                                             }
                                         }
-                                        _ => unreachable!(),
-                                    }
+                                    } /*
+                                      match &*lambda_data
+                                          .semantic_data
+                                          .symbol_data
+                                          .0
+                                           .0
+                                          .as_ref()
+                                          .borrow()
+                                      {
+                                          UserDefinedTypeData::Lambda(data) => {
+                                              let expected_param_types =
+                                                  &data.meta_data.prototype.params;
+                                              let return_type = &data.meta_data.prototype.return_type;
+                                              let result = self.check_params_type_and_count(
+                                                  expected_param_types,
+                                                  params,
+                                              );
+                                              match result {
+                                                  ParamsTypeNCountResult::Ok => {
+                                                      return (
+                                                          return_type.clone(),
+                                                          Some(atom_type_obj),
+                                                      )
+                                                  }
+                                                  _ => {
+                                                      self.log_params_type_and_count_check_error(
+                                                          ok_identifier.range(),
+                                                          result,
+                                                      );
+                                                      return (
+                                                          Type::new_with_unknown(),
+                                                          Some(atom_type_obj),
+                                                      );
+                                                  }
+                                              }
+                                          }
+                                          _ => unreachable!(),
+                                      }*/
                                 }
                                 _ => {
                                     let err = StructFieldNotCallableError::new(

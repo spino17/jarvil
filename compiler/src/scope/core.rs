@@ -1,5 +1,5 @@
 use super::concrete::core::ConcreteTypesRegistryKey;
-use super::function::{FunctionData, FunctionPrototype};
+use super::function::{FunctionData, FunctionPrototype, FunctionKind};
 use super::handler::SymbolDataEntry;
 use super::interfaces::{InterfaceData, InterfaceObject};
 use super::types::lambda_type::LambdaTypeData;

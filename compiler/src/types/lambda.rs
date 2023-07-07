@@ -1,42 +1,40 @@
 use super::core::OperatorCompatiblity;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey};
 use crate::scope::core::SymbolData;
-use crate::scope::function::{FunctionData, FunctionPrototype};
+use crate::scope::function::FunctionPrototype;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};
 
 #[derive(Debug)]
-pub enum LambdaKind {
-    Named((String, ConcreteSymbolData<UserDefinedTypeData>)),  // (name, semantic data)
-    Unnamed(FunctionPrototype)
-}
-
-#[derive(Debug)]
-pub struct Lambda {
-    pub name: Option<String>,
-    pub semantic_data: ConcreteSymbolData<UserDefinedTypeData>,
+pub enum Lambda {
+    Named((String, ConcreteSymbolData<UserDefinedTypeData>)), // (name, semantic data)
+    Unnamed(FunctionPrototype),
 }
 
 impl Lambda {
-    pub fn new(
-        name: Option<String>,
+    pub fn new_with_named(
+        name: String,
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
-    ) -> Lambda {
-        Lambda {
+    ) -> Self {
+        Lambda::Named((
             name,
-            semantic_data: ConcreteSymbolData {
+            ConcreteSymbolData {
                 symbol_data: symbol_data.clone(),
                 index,
             },
-        }
+        ))
+    }
+
+    pub fn new_with_unnamed(func_prototype: FunctionPrototype) -> Self {
+        Lambda::Unnamed(func_prototype)
     }
 }
 
 impl AbstractType for Lambda {
     fn is_eq(&self, other_ty: &Type) -> bool {
         match other_ty.0.as_ref() {
-            CoreType::Lambda(lambda_data) => {
+            CoreType::Lambda(other_data) => {
                 // Lambda type has structural equivalence checks unlike struct type which is only compared by it's name
                 // This structural equivalence is important because we can have lambda types which are not named for example:
                 // let x = (...) -> <Type>: block would have `x` to be of type `Lambda` with no name but symbol_data.
@@ -44,6 +42,7 @@ impl AbstractType for Lambda {
                 // TODO - once generics gets integrated we have concrete types attached to the lambda type
                 // to enable structural equivalence of lambda type we have to get the concretized version of
                 // function prototype which then we would compare like non-generic lambda types.
+                /*
                 match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
                     UserDefinedTypeData::Lambda(self_data_ref) => {
                         match &*lambda_data.semantic_data.symbol_data.0 .0.as_ref().borrow() {
@@ -54,6 +53,20 @@ impl AbstractType for Lambda {
                         }
                     }
                     _ => unreachable!(),
+                }*/
+                match self {
+                    Lambda::Named((_, self_named)) => {
+                        match other_data {
+                            Lambda::Named((_, other_named)) => todo!(),
+                            Lambda::Unnamed(other_unnamed) => todo!()
+                        }
+                    }
+                    Lambda::Unnamed(self_unnamed) => {
+                        match other_data {
+                            Lambda::Named((_, other_named)) => todo!(),
+                            Lambda::Unnamed(other_unnamed) => todo!()
+                        }
+                    }
                 }
             }
             CoreType::Any => true,
@@ -64,6 +77,7 @@ impl AbstractType for Lambda {
 
 impl ToString for Lambda {
     fn to_string(&self) -> String {
+        /*
         match &self.name {
             Some(name) => format!("{}", name),
             None => match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
@@ -83,7 +97,8 @@ impl ToString for Lambda {
                 }
                 _ => unreachable!(),
             },
-        }
+        }*/
+        todo!()
     }
 }
 

@@ -7,6 +7,7 @@ use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::SymbolData;
+use crate::scope::function::FunctionPrototype;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
 use std::fmt::{Debug, Formatter};
@@ -108,15 +109,28 @@ impl Type {
         )
     }
 
-    pub fn new_with_lambda(
-        name: Option<String>,
+    pub fn new_with_lambda_named(
+        name: String,
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
         has_generics: bool,
     ) -> Type {
         Type(
-            Rc::new(CoreType::Lambda(Lambda::new(name, symbol_data, index))),
+            Rc::new(CoreType::Lambda(Lambda::new_with_named(
+                name,
+                symbol_data,
+                index,
+            ))),
             has_generics, // change this
+        )
+    }
+
+    pub fn new_with_lambda_unnamed(function_prototype: FunctionPrototype) -> Type {
+        Type(
+            Rc::new(CoreType::Lambda(Lambda::new_with_unnamed(
+                function_prototype,
+            ))),
+            false, // change this
         )
     }
 

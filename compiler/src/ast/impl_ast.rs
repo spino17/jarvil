@@ -1119,7 +1119,7 @@ impl UserDefinedTypeNode {
                             Type::new_with_struct(name, &symbol_data, None, false),
                         ),
                         UserDefinedTypeData::Lambda(_) => TypeResolveKind::Resolved(
-                            Type::new_with_lambda(Some(name), &symbol_data, None, false),
+                            Type::new_with_lambda_named(name, &symbol_data, None, false),
                         ),
                         UserDefinedTypeData::Generic(generic_data) => todo!(),
                     };
@@ -1156,8 +1156,8 @@ impl UserDefinedTypeNode {
                                 ));
                             }
                             UserDefinedTypeData::Lambda(_) => {
-                                return TypeResolveKind::Resolved(Type::new_with_lambda(
-                                    Some(name),
+                                return TypeResolveKind::Resolved(Type::new_with_lambda_named(
+                                    name,
                                     &symbol_data,
                                     None,
                                     false,

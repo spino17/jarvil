@@ -13,19 +13,6 @@ use crate::{
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
 
-#[derive(Debug)]
-pub enum GenericContainingLevel {
-    HasTypeAndMethodGenerics,
-    HasOnlyMethodGenerics,
-    NoGenerics,
-}
-
-impl Default for GenericContainingLevel {
-    fn default() -> Self {
-        GenericContainingLevel::NoGenerics
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct StructTypeData {
     pub fields: FxHashMap<String, (Type, TextRange)>,

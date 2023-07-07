@@ -2,12 +2,12 @@ use crate::{
     scope::{
         concrete::core::ConcreteTypesRegistryKey,
         core::{AbstractConcreteTypesHandler, GenericTypeParams},
-        function::{FunctionData, FunctionPrototype},
+        function::{FunctionData, FunctionKind},
     },
     types::core::Type,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct LambdaTypeData {
     pub meta_data: FunctionData,
 }
@@ -19,13 +19,7 @@ impl LambdaTypeData {
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         LambdaTypeData {
-            meta_data: FunctionData {
-                prototype: FunctionPrototype {
-                    params: param_types,
-                    return_type,
-                },
-                generics: generics_spec,
-            },
+            meta_data: FunctionData::new(param_types, return_type, generics_spec)
         }
     }
 }
