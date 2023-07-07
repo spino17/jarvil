@@ -71,7 +71,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
         _ => {
             parser.log_missing_token_error(&["struct", "lambda"], token);
             return TypeDeclarationNode::new_with_missing_tokens(
-                &Rc::new(["struct", "lambda"].to_vec()),
+                ["struct", "lambda"].to_vec(),
                 token,
             );
         }

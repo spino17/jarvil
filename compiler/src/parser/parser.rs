@@ -122,12 +122,12 @@ impl JarvilParser {
         loop {
             let token = &self.token_vec[self.lookahead].clone();
             if token.is_eq("\n") {
-                self.log_trailing_skipped_tokens_error(&skipped_tokens);
+                self.log_trailing_skipped_tokens_error(skipped_tokens.clone());
                 skipped_tokens.push(SkippedTokenNode::new(&token));
                 self.scan_next_token();
                 return skipped_tokens;
             } else if token.is_eq(ENDMARKER) {
-                self.log_trailing_skipped_tokens_error(&skipped_tokens);
+                self.log_trailing_skipped_tokens_error(skipped_tokens.clone());
                 skipped_tokens.push(SkippedTokenNode::new(&token));
                 // self.scan_next_token();
                 return skipped_tokens;
@@ -152,7 +152,7 @@ impl JarvilParser {
         self.errors.push(Diagnostics::MissingToken(err));
     }
 
-    pub fn log_trailing_skipped_tokens_error(&mut self, skipped_tokens: &Vec<SkippedTokenNode>) {
+    pub fn log_trailing_skipped_tokens_error(&mut self, skipped_tokens: Vec<SkippedTokenNode>) {
         if self.ignore_all_errors {
             return;
         }
@@ -216,7 +216,7 @@ impl JarvilParser {
             TokenNode::new_with_ok(&token)
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            TokenNode::new_with_missing_tokens(&vec![symbol], &token)
+            TokenNode::new_with_missing_tokens(vec![symbol], &token)
         }
     }
 
@@ -286,7 +286,7 @@ impl JarvilParser {
             return IdentifierInDeclNode::new_with_ok(&ok_token_node, None);
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            return IdentifierInDeclNode::new_with_missing_tokens(&vec![symbol], &token);
+            return IdentifierInDeclNode::new_with_missing_tokens(vec![symbol], &token);
         }
     }
 
@@ -313,7 +313,7 @@ impl JarvilParser {
             }
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            IdentifierInUseNode::new_with_missing_tokens(&vec![symbol], &token)
+            IdentifierInUseNode::new_with_missing_tokens(vec![symbol], &token)
         }
     }
 
@@ -340,7 +340,7 @@ impl JarvilParser {
             }
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            return IdentifierInDeclNode::new_with_missing_tokens(&vec![symbol], &token);
+            return IdentifierInDeclNode::new_with_missing_tokens(vec![symbol], &token);
         }
     }
 
@@ -391,7 +391,7 @@ impl JarvilParser {
             IdentifierNode::new_with_ok(&ok_token_node)
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            IdentifierNode::new_with_missing_tokens(&vec![symbol], &token)
+            IdentifierNode::new_with_missing_tokens(vec![symbol], &token)
         }
     }
 
@@ -404,7 +404,7 @@ impl JarvilParser {
             SelfKeywordNode::new_with_ok(&ok_token_node)
         } else {
             self.log_missing_token_error(&[symbol], &token);
-            SelfKeywordNode::new_with_missing_tokens(&vec![symbol], &token)
+            SelfKeywordNode::new_with_missing_tokens(vec![symbol], &token)
         }
     }
 
@@ -416,7 +416,7 @@ impl JarvilParser {
             return TokenNode::new_with_ok(&token);
         } else {
             self.log_missing_token_error(symbols, &token);
-            return TokenNode::new_with_missing_tokens(&symbols.to_vec(), &token);
+            return TokenNode::new_with_missing_tokens(symbols.to_vec(), &token);
         }
     }
 

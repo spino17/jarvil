@@ -53,7 +53,7 @@ pub fn type_expr(parser: &mut JarvilParser) -> TypeExpressionNode {
         _ => {
             parser.log_missing_token_error(&TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS, &token);
             return TypeExpressionNode::new_with_missing_tokens(
-                &Rc::new(TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec()),
+                TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec(),
                 &token,
             );
         }

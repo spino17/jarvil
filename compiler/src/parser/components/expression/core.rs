@@ -100,7 +100,7 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
     if !is_atomic_expression_starting_with(token) {
         parser.log_missing_token_error(&ATOMIC_EXPRESSION_STARTING_SYMBOLS, token);
         return AtomicExpressionNode::new_with_missing_tokens(
-            &Rc::new(ATOMIC_EXPRESSION_STARTING_SYMBOLS.to_vec()),
+            ATOMIC_EXPRESSION_STARTING_SYMBOLS.to_vec(),
             token,
         );
     }

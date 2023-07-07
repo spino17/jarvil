@@ -1928,12 +1928,12 @@ impl Node for OkTokenNode {
 }
 
 impl MissingTokenNode {
-    pub fn new(expected_symbols: &Vec<&'static str>, received_token: &Token) -> Self {
+    pub fn new(expected_symbols: Vec<&'static str>, received_token: &Token) -> Self {
         let node = Rc::new(CoreMissingTokenNode {
             // NOTE: Below is traditionally an expensive clone but in our case,
             // mostly `expected_symbols.len()` is less so we avoid runtime overhead of using `Rc`
             // which ideally should be used if length is large for example: in `BlockNode`, see `stmts` field.
-            expected_symbols: expected_symbols.clone(),
+            expected_symbols,
             received_token: received_token.clone(),
         });
         MissingTokenNode(node)
