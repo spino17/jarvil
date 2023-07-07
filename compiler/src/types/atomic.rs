@@ -55,8 +55,8 @@ impl Atomic {
 }
 
 impl AbstractType for Atomic {
-    fn is_eq(&self, base_type: &Type) -> bool {
-        match base_type.0.as_ref() {
+    fn is_eq(&self, other_ty: &Type) -> bool {
+        match other_ty.0.as_ref() {
             CoreType::Atomic(atomic_data) => match atomic_data {
                 Atomic::Int => self.is_int(),
                 Atomic::Float => self.is_float(),

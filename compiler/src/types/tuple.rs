@@ -44,8 +44,8 @@ impl Tuple {
 }
 
 impl AbstractType for Tuple {
-    fn is_eq(&self, base_type: &Type) -> bool {
-        match base_type.0.as_ref() {
+    fn is_eq(&self, other_ty: &Type) -> bool {
+        match other_ty.0.as_ref() {
             CoreType::Tuple(tuple_data) => {
                 if tuple_data.sub_types.len() != self.sub_types.len() {
                     return false;

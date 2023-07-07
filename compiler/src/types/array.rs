@@ -39,8 +39,8 @@ impl Array {
 }
 
 impl AbstractType for Array {
-    fn is_eq(&self, base_type: &Type) -> bool {
-        match base_type.0.as_ref() {
+    fn is_eq(&self, other_ty: &Type) -> bool {
+        match other_ty.0.as_ref() {
             CoreType::Array(array_data) => self.element_type.is_eq(&array_data.element_type),
             CoreType::Any => true,
             _ => false,

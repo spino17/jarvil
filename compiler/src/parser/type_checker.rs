@@ -258,9 +258,9 @@ impl TypeChecker {
         }
     }
 
-    pub fn is_indexable_with_type(&self, base_type: &Type, index_type: &Type) -> Option<Type> {
+    pub fn is_indexable_with_type(&self, other_ty: &Type, index_type: &Type) -> Option<Type> {
         // NOTE - case for `tuple` is already handled in the calling function
-        match base_type.0.as_ref() {
+        match other_ty.0.as_ref() {
             CoreType::Array(array) => {
                 if index_type.is_int() {
                     return Some(array.element_type.clone());

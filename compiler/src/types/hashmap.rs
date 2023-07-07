@@ -21,8 +21,8 @@ impl HashMap {
 }
 
 impl AbstractType for HashMap {
-    fn is_eq(&self, base_type: &Type) -> bool {
-        match base_type.0.as_ref() {
+    fn is_eq(&self, other_ty: &Type) -> bool {
+        match other_ty.0.as_ref() {
             CoreType::HashMap(hashmap_data) => {
                 self.key_type.is_eq(&hashmap_data.key_type)
                     && self.value_type.is_eq(&hashmap_data.value_type)

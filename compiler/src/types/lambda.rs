@@ -27,8 +27,8 @@ impl Lambda {
 }
 
 impl AbstractType for Lambda {
-    fn is_eq(&self, base_type: &Type) -> bool {
-        match base_type.0.as_ref() {
+    fn is_eq(&self, other_ty: &Type) -> bool {
+        match other_ty.0.as_ref() {
             CoreType::Lambda(lambda_data) => {
                 // Lambda type has structural equivalence checks unlike struct type which is only compared by it's name
                 // This structural equivalence is important because we can have lambda types which are not named for example:
@@ -40,29 +40,8 @@ impl AbstractType for Lambda {
                 match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
                     UserDefinedTypeData::Lambda(self_data_ref) => {
                         match &*lambda_data.semantic_data.symbol_data.0 .0.as_ref().borrow() {
-                            UserDefinedTypeData::Lambda(base_data_ref) => {
-                                let (self_param_types, self_return_type) = (
-                                    &self_data_ref.meta_data.prototype.params,
-                                    &self_data_ref.meta_data.prototype.return_type,
-                                );
-                                let (base_param_types, base_return_type) = (
-                                    &base_data_ref.meta_data.prototype.params,
-                                    &base_data_ref.meta_data.prototype.return_type,
-                                );
-                                let self_params_len = self_param_types.len();
-                                let base_params_len = base_param_types.len();
-                                if self_params_len != base_params_len {
-                                    return false;
-                                }
-                                if !self_return_type.is_eq(&base_return_type) {
-                                    return false;
-                                }
-                                for index in 0..self_params_len {
-                                    if !self_param_types[index].is_eq(&base_param_types[index]) {
-                                        return false;
-                                    }
-                                }
-                                return true;
+                            UserDefinedTypeData::Lambda(other_data_ref) => {
+                                return self_data_ref.meta_data.is_eq(&other_data_ref.meta_data);
                             }
                             _ => unreachable!(),
                         }

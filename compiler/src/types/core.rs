@@ -13,7 +13,7 @@ use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
 pub trait AbstractType {
-    fn is_eq(&self, base_type: &Type) -> bool;
+    fn is_eq(&self, other_ty: &Type) -> bool;
 }
 
 pub trait OperatorCompatiblity {
@@ -291,17 +291,17 @@ impl Type {
 }
 
 impl AbstractType for Type {
-    fn is_eq(&self, base_type: &Type) -> bool {
+    fn is_eq(&self, other_ty: &Type) -> bool {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => atomic_type.is_eq(base_type),
-            CoreType::Struct(struct_type) => struct_type.is_eq(base_type),
-            CoreType::Lambda(lambda_type) => lambda_type.is_eq(base_type),
-            CoreType::Array(array_type) => array_type.is_eq(base_type),
-            CoreType::Tuple(tuple_type) => tuple_type.is_eq(base_type),
-            CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(base_type),
-            CoreType::Generic(generic_type) => generic_type.is_eq(base_type),
+            CoreType::Atomic(atomic_type) => atomic_type.is_eq(other_ty),
+            CoreType::Struct(struct_type) => struct_type.is_eq(other_ty),
+            CoreType::Lambda(lambda_type) => lambda_type.is_eq(other_ty),
+            CoreType::Array(array_type) => array_type.is_eq(other_ty),
+            CoreType::Tuple(tuple_type) => tuple_type.is_eq(other_ty),
+            CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(other_ty),
+            CoreType::Generic(generic_type) => generic_type.is_eq(other_ty),
             CoreType::Unknown => return false,
-            CoreType::Void => match base_type.0.as_ref() {
+            CoreType::Void => match other_ty.0.as_ref() {
                 CoreType::Void => true,
                 _ => false,
             },

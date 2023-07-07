@@ -2,6 +2,7 @@ use crate::scope::concrete::registry::{
     ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry,
 };
 use crate::scope::function::FunctionData;
+use crate::scope::interfaces::InterfaceObject;
 use crate::{
     scope::{
         concrete::core::ConcreteTypesRegistryKey,
@@ -32,6 +33,7 @@ pub struct StructTypeData {
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub class_methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub generics: Option<GenericsSpecAndConcreteTypesRegistry>,
+    pub implementing_interfaces: Option<Vec<InterfaceObject>>,
 }
 
 impl StructTypeData {

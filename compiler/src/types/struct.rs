@@ -28,8 +28,8 @@ impl Struct {
 }
 
 impl AbstractType for Struct {
-    fn is_eq(&self, base_type: &Type) -> bool {
-        match base_type.0.as_ref() {
+    fn is_eq(&self, other_ty: &Type) -> bool {
+        match other_ty.0.as_ref() {
             CoreType::Struct(struct_data) => {
                 if struct_data.name.eq(&self.name) {
                     match self.semantic_data.index {

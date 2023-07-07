@@ -8,7 +8,6 @@ use crate::scope::variables::VariableData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::RefCell;
-use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use text_size::TextRange;
 
@@ -34,21 +33,6 @@ pub struct GenericTypeParams(Vec<(String, Vec<InterfaceObject>)>);
 
 #[derive(Debug)]
 pub struct SymbolDataCore<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>);
-
-impl<T: AbstractConcreteTypesHandler> PartialEq for SymbolDataCore<T> {
-    fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
-    }
-}
-
-impl<T: AbstractConcreteTypesHandler> Eq for SymbolDataCore<T> {}
-
-impl<T: AbstractConcreteTypesHandler> Hash for SymbolDataCore<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = Rc::as_ptr(&self.0);
-        ptr.hash(state);
-    }
-}
 
 impl<T: AbstractConcreteTypesHandler> Clone for SymbolDataCore<T> {
     fn clone(&self) -> Self {

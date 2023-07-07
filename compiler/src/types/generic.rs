@@ -17,13 +17,13 @@ impl Generic {
 }
 
 impl AbstractType for Generic {
-    fn is_eq(&self, base_type: &Type) -> bool {
-        match base_type.0.as_ref() {
+    fn is_eq(&self, other_ty: &Type) -> bool {
+        match other_ty.0.as_ref() {
             CoreType::Generic(base_generic_data) => {
                 match &*self.semantic_data.0 .0.as_ref().borrow() {
                     UserDefinedTypeData::Generic(self_generic_data_ref) => {
                         match &*base_generic_data.semantic_data.0 .0.as_ref().borrow() {
-                            // The generic types equivalence is calculated structurally by checking if both
+                            // The generic types equivalence is computed structurally by checking if both
                             // are bounded by the same set of interfaces
                             UserDefinedTypeData::Generic(base_generic_data_ref) => {
                                 let self_interface_bounds = &self_generic_data_ref.interface_bounds;
@@ -59,6 +59,7 @@ impl ToString for Generic {
 }
 
 impl OperatorCompatiblity for Generic {
+    // TODO - add implementations of below methods based on the interfaces bounding the generic type
     fn check_add(&self, _other: &Type) -> Option<Type> {
         None
     }
