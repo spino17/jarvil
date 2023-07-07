@@ -1,6 +1,3 @@
-use crate::types::core::Type;
-use std::vec;
-
 use super::{
     concrete::{
         callable_registry::CallableConcreteTypesRegistry,
@@ -8,6 +5,8 @@ use super::{
     },
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
 };
+use crate::types::core::Type;
+use std::vec;
 
 #[derive(Debug)]
 pub struct FunctionPrototype {
@@ -27,7 +26,7 @@ impl Default for FunctionPrototype {
 #[derive(Debug)]
 pub struct FunctionData {
     pub prototype: FunctionPrototype,
-    pub generics: Option<GenericsSpecAndConcreteTypesRegistry<CallableConcreteTypesRegistry>>,
+    pub generics: Option<GenericsSpecAndConcreteTypesRegistry>,
 }
 
 impl FunctionData {
@@ -70,29 +69,15 @@ impl FunctionData {
 }
 
 impl AbstractConcreteTypesHandler for FunctionData {
-    fn register_concrete_types(
-        &mut self,
-        concrete_types: Vec<Type>,
-        generics_containing_indexes: Vec<usize>,
-    ) -> ConcreteTypesRegistryKey {
+    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
         match &mut self.generics {
             Some(generics) => {
                 return generics
                     .concrete_types_registry
-                    .register_concrete_types(concrete_types, generics_containing_indexes)
+                    .register_concrete_types(concrete_types)
             }
             None => unreachable!(),
         }
-    }
-
-    fn register_method_concrete_types(
-        &mut self,
-        _key: Option<ConcreteTypesRegistryKey>,
-        _method_name: String,
-        _method_concrete_types: Vec<Type>,
-        _method_generics_containing_indexes: Vec<usize>,
-    ) {
-        unreachable!()
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {

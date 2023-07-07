@@ -67,14 +67,6 @@ impl AbstractType for Atomic {
             _ => false,
         }
     }
-
-    fn stringify(&self) -> String {
-        todo!()
-    }
-
-    fn concretize(&self) -> Vec<Type> {
-        unreachable!()
-    }
 }
 
 impl ToString for Atomic {

@@ -74,14 +74,6 @@ impl AbstractType for Lambda {
             _ => false,
         }
     }
-
-    fn stringify(&self) -> String {
-        todo!()
-    }
-
-    fn concretize(&self) -> Vec<Type> {
-        todo!()
-    }
 }
 
 impl ToString for Lambda {

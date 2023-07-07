@@ -29,21 +29,7 @@ impl VariableData {
 }
 
 impl AbstractConcreteTypesHandler for VariableData {
-    fn register_concrete_types(
-        &mut self,
-        _concrete_types: Vec<Type>,
-        _generics_containing_indexes: Vec<usize>,
-    ) -> ConcreteTypesRegistryKey {
-        unreachable!()
-    }
-
-    fn register_method_concrete_types(
-        &mut self,
-        _key: Option<ConcreteTypesRegistryKey>,
-        _method_name: String,
-        _method_concrete_types: Vec<Type>,
-        _method_generics_containing_indexes: Vec<usize>,
-    ) {
+    fn register_concrete_types(&mut self, _concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
         unreachable!()
     }
 

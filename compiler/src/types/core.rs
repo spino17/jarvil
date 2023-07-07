@@ -14,8 +14,6 @@ use std::rc::Rc;
 
 pub trait AbstractType {
     fn is_eq(&self, base_type: &Type) -> bool;
-    fn stringify(&self) -> String;
-    fn concretize(&self) -> Vec<Type>;
 }
 
 pub trait OperatorCompatiblity {
@@ -309,39 +307,6 @@ impl AbstractType for Type {
             },
             CoreType::Unset => return false,
             CoreType::Any => return true,
-        }
-    }
-
-    fn stringify(&self) -> String {
-        match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => atomic_type.stringify(),
-            CoreType::Struct(struct_type) => struct_type.stringify(),
-            CoreType::Lambda(lambda_type) => lambda_type.stringify(),
-            CoreType::Array(array_type) => array_type.stringify(),
-            CoreType::Tuple(tuple_type) => tuple_type.stringify(),
-            CoreType::HashMap(hashmap_type) => hashmap_type.stringify(),
-            CoreType::Generic(generic_type) => generic_type.stringify(),
-            CoreType::Unknown => unreachable!(),
-            CoreType::Void => unreachable!(),
-            CoreType::Unset => unreachable!(),
-            CoreType::Any => unreachable!(),
-        }
-    }
-
-    fn concretize(&self) -> Vec<Type> {
-        assert!(self.has_generics());
-        match self.0.as_ref() {
-            CoreType::Array(array_type) => array_type.concretize(),
-            CoreType::HashMap(hashmap_type) => hashmap_type.concretize(),
-            CoreType::Tuple(tuple_type) => tuple_type.concretize(),
-            CoreType::Struct(struct_type) => struct_type.concretize(),
-            CoreType::Lambda(lambda_type) => lambda_type.concretize(),
-            CoreType::Generic(generic_type) => generic_type.concretize(),
-            CoreType::Atomic(_)
-            | CoreType::Unknown
-            | CoreType::Unset
-            | CoreType::Void
-            | CoreType::Any => unreachable!(),
         }
     }
 }

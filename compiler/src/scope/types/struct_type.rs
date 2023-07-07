@@ -1,4 +1,4 @@
-use crate::scope::concrete::struct_registry::StructTypeGenerics;
+use crate::scope::concrete::struct_registry::StructConcreteTypesRegistry;
 use crate::{
     scope::{
         concrete::core::ConcreteTypesRegistryKey,
@@ -71,7 +71,7 @@ pub struct StructTypeData {
     pub constructor: MethodData,
     pub methods: FxHashMap<String, (MethodData, TextRange)>,
     pub class_methods: FxHashMap<String, (MethodData, TextRange)>,
-    pub generics: StructTypeGenerics<()>,
+    pub generics: StructConcreteTypesRegistry,
 }
 
 impl StructTypeData {
@@ -89,7 +89,7 @@ impl StructTypeData {
         if let Some((constructor_meta_data, _)) = constructor {
             self.constructor = constructor_meta_data;
         }
-        self.generics = StructTypeGenerics::new(generics_spec)
+        self.generics = StructConcreteTypesRegistry::new(generics_spec)
     }
 
     pub fn try_field(&self, field_name: &str) -> Option<(Type, TextRange)> {
@@ -105,40 +105,11 @@ impl StructTypeData {
             None => None,
         }
     }
-
-    pub fn register_method_concrete_types_originate_from_interface(
-        &mut self,
-        method_name: String,
-        method_concrete_types: Vec<Type>,
-        generics_containing_indexes: Vec<usize>,
-    ) {
-        todo!()
-    }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
-    fn register_concrete_types(
-        &mut self,
-        concrete_types: Vec<Type>,
-        generics_containing_indexes: Vec<usize>,
-    ) -> ConcreteTypesRegistryKey {
-        self.generics
-            .register_concrete_types(concrete_types, generics_containing_indexes)
-    }
-
-    fn register_method_concrete_types(
-        &mut self,
-        key: Option<ConcreteTypesRegistryKey>,
-        method_name: String,
-        method_concrete_types: Vec<Type>,
-        method_generics_containing_indexes: Vec<usize>,
-    ) {
-        self.generics.register_method_concrete_types(
-            key,
-            method_name,
-            method_concrete_types,
-            method_generics_containing_indexes,
-        )
+    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
+        self.generics.register_concrete_types(concrete_types)
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {

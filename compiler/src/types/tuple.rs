@@ -63,14 +63,6 @@ impl AbstractType for Tuple {
             _ => false,
         }
     }
-
-    fn stringify(&self) -> String {
-        todo!()
-    }
-
-    fn concretize(&self) -> Vec<Type> {
-        todo!()
-    }
 }
 
 impl ToString for Tuple {

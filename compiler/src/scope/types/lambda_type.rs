@@ -40,23 +40,8 @@ impl LambdaTypeData {
 }
 
 impl AbstractConcreteTypesHandler for LambdaTypeData {
-    fn register_concrete_types(
-        &mut self,
-        concrete_types: Vec<Type>,
-        generics_containing_indexes: Vec<usize>,
-    ) -> ConcreteTypesRegistryKey {
-        self.meta_data
-            .register_concrete_types(concrete_types, generics_containing_indexes)
-    }
-
-    fn register_method_concrete_types(
-        &mut self,
-        _key: Option<ConcreteTypesRegistryKey>,
-        _ethod_name: String,
-        _method_concrete_types: Vec<Type>,
-        _method_generics_containing_indexes: Vec<usize>,
-    ) {
-        unreachable!()
+    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
+        self.meta_data.register_concrete_types(concrete_types)
     }
 
     fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {

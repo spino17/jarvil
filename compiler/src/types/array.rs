@@ -46,19 +46,6 @@ impl AbstractType for Array {
             _ => false,
         }
     }
-
-    fn stringify(&self) -> String {
-        todo!()
-    }
-
-    fn concretize(&self) -> Vec<Type> {
-        let element_concrete_types = self.element_type.concretize();
-        let mut array_concrete_types = vec![];
-        for ty in element_concrete_types {
-            array_concrete_types.push(Type::new_with_array(&ty));
-        }
-        return array_concrete_types;
-    }
 }
 
 impl ToString for Array {
