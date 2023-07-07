@@ -1,56 +1,14 @@
 use crate::scope::concrete::struct_registry::StructConcreteTypesRegistry;
+use crate::scope::function::FunctionData;
 use crate::{
     scope::{
         concrete::core::ConcreteTypesRegistryKey,
         core::{AbstractConcreteTypesHandler, GenericTypeParams},
-        function::FunctionPrototype,
     },
     types::core::Type,
 };
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
-
-#[derive(Debug)]
-pub struct MethodData {
-    pub prototype: FunctionPrototype,
-    pub generics: Option<GenericTypeParams>, // the concrete types registry for methods is handled by the struct registry
-}
-
-impl MethodData {
-    pub fn new(params: Vec<Type>, return_type: Type, generics: Option<GenericTypeParams>) -> Self {
-        MethodData {
-            prototype: FunctionPrototype {
-                params,
-                return_type,
-            },
-            generics,
-        }
-    }
-
-    pub fn set_data(
-        &mut self,
-        params: Vec<Type>,
-        return_type: Type,
-        generics: Option<GenericTypeParams>,
-    ) {
-        self.prototype.params = params;
-        self.prototype.return_type = return_type;
-        self.generics = generics;
-    }
-
-    fn has_generics(&self) -> bool {
-        self.generics.is_some()
-    }
-}
-
-impl Default for MethodData {
-    fn default() -> Self {
-        MethodData {
-            prototype: FunctionPrototype::default(),
-            generics: None,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub enum GenericContainingLevel {
@@ -68,9 +26,9 @@ impl Default for GenericContainingLevel {
 #[derive(Debug, Default)]
 pub struct StructTypeData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
-    pub constructor: MethodData,
-    pub methods: FxHashMap<String, (MethodData, TextRange)>,
-    pub class_methods: FxHashMap<String, (MethodData, TextRange)>,
+    pub constructor: FunctionData,
+    pub methods: FxHashMap<String, (FunctionData, TextRange)>,
+    pub class_methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub generics: StructConcreteTypesRegistry,
 }
 
@@ -78,9 +36,9 @@ impl StructTypeData {
     pub fn set_meta_data(
         &mut self,
         fields: FxHashMap<String, (Type, TextRange)>,
-        constructor: Option<(MethodData, TextRange)>,
-        methods: FxHashMap<String, (MethodData, TextRange)>,
-        class_methods: FxHashMap<String, (MethodData, TextRange)>,
+        constructor: Option<(FunctionData, TextRange)>,
+        methods: FxHashMap<String, (FunctionData, TextRange)>,
+        class_methods: FxHashMap<String, (FunctionData, TextRange)>,
         generics_spec: Option<GenericTypeParams>,
     ) {
         self.fields = fields;
@@ -99,7 +57,7 @@ impl StructTypeData {
         }
     }
 
-    pub fn try_method(&self, method_name: &str) -> Option<(&MethodData, TextRange)> {
+    pub fn try_method(&self, method_name: &str) -> Option<(&FunctionData, TextRange)> {
         match self.methods.get(method_name) {
             Some(func_data) => Some((&func_data.0, func_data.1)),
             None => None,

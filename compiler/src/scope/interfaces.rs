@@ -4,7 +4,7 @@ use super::{
         struct_registry::StructConcreteTypesRegistry,
     },
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
-    types::struct_type::MethodData,
+    function::FunctionData,
 };
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
@@ -54,7 +54,7 @@ impl InterfaceObject {
 #[derive(Debug, Default)]
 pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
-    pub methods: FxHashMap<String, (MethodData, TextRange)>,
+    pub methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub generics: StructConcreteTypesRegistry,
 }
 
@@ -62,7 +62,7 @@ impl InterfaceData {
     fn set_meta_data(
         &mut self,
         fields: FxHashMap<String, (Type, TextRange)>,
-        methods: FxHashMap<String, (MethodData, TextRange)>,
+        methods: FxHashMap<String, (FunctionData, TextRange)>,
         generics_spec: Option<GenericTypeParams>,
     ) {
         self.fields = fields;

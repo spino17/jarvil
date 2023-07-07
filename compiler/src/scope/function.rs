@@ -1,10 +1,4 @@
-use super::{
-    concrete::{
-        callable_registry::CallableConcreteTypesRegistry,
-        core::{ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry},
-    },
-    core::{AbstractConcreteTypesHandler, GenericTypeParams},
-};
+use super::{core::{GenericTypeParams, AbstractConcreteTypesHandler}, concrete::core::ConcreteTypesRegistryKey};
 use crate::types::core::Type;
 use std::vec;
 
@@ -26,7 +20,7 @@ impl Default for FunctionPrototype {
 #[derive(Debug)]
 pub struct FunctionData {
     pub prototype: FunctionPrototype,
-    pub generics: Option<GenericsSpecAndConcreteTypesRegistry>,
+    pub generics: Option<GenericTypeParams>, // the concrete types registry for methods is handled by the struct registry
 }
 
 impl FunctionData {
@@ -40,13 +34,7 @@ impl FunctionData {
                 params,
                 return_type,
             },
-            generics: match generics_spec {
-                Some(generic_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
-                    generics_spec: generic_spec,
-                    concrete_types_registry: CallableConcreteTypesRegistry::default(),
-                }),
-                None => None,
-            },
+            generics: generics_spec,
         }
     }
 
@@ -58,39 +46,21 @@ impl FunctionData {
     ) {
         self.prototype.params = params;
         self.prototype.return_type = return_type;
-        self.generics = match generics_spec {
-            Some(generic_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
-                generics_spec: generic_spec,
-                concrete_types_registry: CallableConcreteTypesRegistry::default(),
-            }),
-            None => None,
-        }
+        self.generics = generics_spec;
     }
 }
 
 impl AbstractConcreteTypesHandler for FunctionData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        match &mut self.generics {
-            Some(generics) => {
-                return generics
-                    .concrete_types_registry
-                    .register_concrete_types(concrete_types)
-            }
-            None => unreachable!(),
-        }
+    fn register_concrete_types(&mut self, _concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
+        unreachable!()
     }
 
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        match &self.generics {
-            Some(generics) => generics
-                .concrete_types_registry
-                .get_concrete_types_at_key(key),
-            None => unreachable!(),
-        }
+    fn get_concrete_types_at_key(&self, _key: ConcreteTypesRegistryKey) -> Vec<Type> {
+        unreachable!()
     }
 
     fn has_generics(&self) -> bool {
-        self.generics.is_some()
+        unreachable!()
     }
 }
 

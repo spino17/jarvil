@@ -1,9 +1,6 @@
 use crate::{
     scope::{
-        concrete::{
-            callable_registry::CallableConcreteTypesRegistry,
-            core::{ConcreteTypesRegistryKey, GenericsSpecAndConcreteTypesRegistry},
-        },
+        concrete::core::ConcreteTypesRegistryKey,
         core::{AbstractConcreteTypesHandler, GenericTypeParams},
         function::{FunctionData, FunctionPrototype},
     },
@@ -27,13 +24,7 @@ impl LambdaTypeData {
                     params: param_types,
                     return_type,
                 },
-                generics: match generics_spec {
-                    Some(generic_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
-                        generics_spec: generic_spec,
-                        concrete_types_registry: CallableConcreteTypesRegistry::default(),
-                    }),
-                    None => None,
-                },
+                generics: generics_spec
             },
         }
     }

@@ -18,7 +18,6 @@ use crate::scope::core::VariableLookupResult;
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::lambda_type::LambdaTypeData;
-use crate::scope::types::struct_type::MethodData;
 use crate::types::core::CoreType;
 use crate::{
     ast::{
@@ -426,8 +425,8 @@ impl Resolver {
     }
 
     fn is_already_a_method(
-        methods: &FxHashMap<String, (MethodData, TextRange)>,
-        class_methods: &FxHashMap<String, (MethodData, TextRange)>,
+        methods: &FxHashMap<String, (FunctionData, TextRange)>,
+        class_methods: &FxHashMap<String, (FunctionData, TextRange)>,
         name: &str,
     ) -> Option<TextRange> {
         match methods.get(name) {
@@ -749,9 +748,9 @@ impl Resolver {
         assert!(result.is_ok());
 
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
-        let mut constructor: Option<(MethodData, TextRange)> = None;
-        let mut methods: FxHashMap<String, (MethodData, TextRange)> = FxHashMap::default();
-        let mut class_methods: FxHashMap<String, (MethodData, TextRange)> = FxHashMap::default();
+        let mut constructor: Option<(FunctionData, TextRange)> = None;
+        let mut methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
+        let mut class_methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
         for stmt in &*struct_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
@@ -813,7 +812,7 @@ impl Resolver {
                         core_func_decl.name.core_ref()
                     {
                         let func_meta_data =
-                            MethodData::new(param_types_vec, return_type.clone(), None);
+                            FunctionData::new(param_types_vec, return_type.clone(), None);
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") {
                             match constructor {
