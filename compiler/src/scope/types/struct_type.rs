@@ -1,4 +1,4 @@
-use crate::scope::concrete::struct_registry::StructConcreteTypesRegistry;
+use crate::scope::concrete::registry::ConcreteTypesRegistryForStructLikeConstructs;
 use crate::scope::function::FunctionData;
 use crate::{
     scope::{
@@ -29,7 +29,7 @@ pub struct StructTypeData {
     pub constructor: FunctionData,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
     pub class_methods: FxHashMap<String, (FunctionData, TextRange)>,
-    pub generics: StructConcreteTypesRegistry,
+    pub generics: ConcreteTypesRegistryForStructLikeConstructs,
 }
 
 impl StructTypeData {
@@ -47,7 +47,7 @@ impl StructTypeData {
         if let Some((constructor_meta_data, _)) = constructor {
             self.constructor = constructor_meta_data;
         }
-        self.generics = StructConcreteTypesRegistry::new(generics_spec)
+        self.generics = ConcreteTypesRegistryForStructLikeConstructs::new(generics_spec)
     }
 
     pub fn try_field(&self, field_name: &str) -> Option<(Type, TextRange)> {

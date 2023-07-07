@@ -73,7 +73,7 @@ impl Resolver {
     pub fn new(code: JarvilCode) -> Self {
         Resolver {
             scope_index: 0,
-            code: code,
+            code,
             errors: vec![],
             context: Context {
                 class_context_stack: vec![],

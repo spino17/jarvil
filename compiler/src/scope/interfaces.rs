@@ -1,7 +1,6 @@
 use super::{
     concrete::{
-        core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
-        struct_registry::StructConcreteTypesRegistry,
+        core::{ConcreteSymbolData, ConcreteTypesRegistryKey}, registry::ConcreteTypesRegistryForStructLikeConstructs,
     },
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
     function::FunctionData,
@@ -55,7 +54,7 @@ impl InterfaceObject {
 pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub methods: FxHashMap<String, (FunctionData, TextRange)>,
-    pub generics: StructConcreteTypesRegistry,
+    pub generics: ConcreteTypesRegistryForStructLikeConstructs,
 }
 
 impl InterfaceData {
@@ -67,7 +66,7 @@ impl InterfaceData {
     ) {
         self.fields = fields;
         self.methods = methods;
-        self.generics = StructConcreteTypesRegistry::new(generics_spec)
+        self.generics = ConcreteTypesRegistryForStructLikeConstructs::new(generics_spec)
     }
 }
 
