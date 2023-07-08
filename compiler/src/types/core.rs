@@ -121,7 +121,7 @@ impl Type {
                 symbol_data,
                 index,
             ))),
-            has_generics, // change this
+            has_generics,
         )
     }
 
@@ -130,7 +130,7 @@ impl Type {
             Rc::new(CoreType::Lambda(Lambda::new_with_unnamed(
                 function_prototype,
             ))),
-            false, // change this
+            false,
         )
     }
 

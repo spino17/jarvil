@@ -8,6 +8,7 @@ pub fn print_meta_data() -> CallableData {
         prototype: CallablePrototypeData {
             params: vec![Type::new_with_any()],
             return_type: Type::new_with_void(),
+            is_concretization_required: false,
         },
         kind: CallableKind::Function,
         generics: None,
@@ -20,6 +21,7 @@ pub fn range_meta_data() -> CallableData {
         prototype: CallablePrototypeData {
             params: vec![Type::new_with_atomic(INT), Type::new_with_atomic(INT)],
             return_type: Type::new_with_array(&Type::new_with_atomic(INT)),
+            is_concretization_required: false,
         },
         kind: CallableKind::Function,
         generics: None,

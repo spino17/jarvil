@@ -440,13 +440,15 @@ impl Resolver {
     pub fn declare_callable_prototype(
         &mut self,
         callable_prototype: &CallablePrototypeNode,
-    ) -> (Vec<Type>, Type, Option<TextRange>) {
+    ) -> (Vec<Type>, Type, Option<TextRange>, bool) {
+        // (params_vec, return_type, return_type_span, is_concretization_required)
         let core_callable_prototype = callable_prototype.core_ref();
         let params = &core_callable_prototype.params;
         let return_type = &core_callable_prototype.return_type;
         let rparen = &core_callable_prototype.rparen;
         let mut param_types_vec: Vec<Type> = vec![];
         let mut return_type_range: Option<TextRange> = None;
+        let mut is_concretization_required = false;
         let return_type: Type = match return_type {
             Some((_, return_type_expr)) => {
                 return_type_range = Some(return_type_expr.range());
@@ -455,6 +457,9 @@ impl Resolver {
             }
             None => Type::new_with_void(),
         };
+        if return_type.has_generics() {
+            is_concretization_required = true;
+        }
         let mut params_count: usize = 0;
         if let Some(params) = params {
             let params_iter = params.iter();
@@ -474,6 +479,9 @@ impl Resolver {
                     match result {
                         Ok(symbol_data) => {
                             self.bind_decl_to_identifier(ok_identifier, symbol_data);
+                            if param_type.has_generics() {
+                                is_concretization_required = true;
+                            }
                             param_types_vec.push(param_type);
                             params_count += 1;
                         }
@@ -500,34 +508,44 @@ impl Resolver {
             self.errors
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
-        (param_types_vec, return_type, return_type_range)
+        (
+            param_types_vec,
+            return_type,
+            return_type_range,
+            is_concretization_required,
+        )
     }
 
     pub fn visit_callable_body(
         &mut self,
         callable_body: &CallableBodyNode,
-    ) -> (Vec<Type>, Type, Option<TextRange>) {
+    ) -> (Vec<Type>, Type, Option<TextRange>, bool) {
         let core_callable_body = callable_body.core_ref();
         let callable_body = &core_callable_body.block;
         self.open_block();
-        let (param_types_vec, return_type, return_type_range) =
+        let (param_types_vec, return_type, return_type_range, is_concretization_required) =
             self.declare_callable_prototype(&core_callable_body.prototype);
         for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.close_block(callable_body);
-        (param_types_vec, return_type, return_type_range)
+        (
+            param_types_vec,
+            return_type,
+            return_type_range,
+            is_concretization_required,
+        )
     }
 
     pub fn visit_constructor_body(
         &mut self,
         callable_body: &CallableBodyNode,
-    ) -> (Vec<Type>, Type, Option<TextRange>, FxHashSet<String>) {
+    ) -> (Vec<Type>, Type, Option<TextRange>, FxHashSet<String>, bool) {
         let core_callable_body = callable_body.core_ref();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
         let callable_body = &core_callable_body.block;
         self.open_block();
-        let (param_types_vec, return_type, return_type_range) =
+        let (param_types_vec, return_type, return_type_range, is_concretization_required) =
             self.declare_callable_prototype(&core_callable_body.prototype);
         for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
@@ -565,6 +583,7 @@ impl Resolver {
             return_type,
             return_type_range,
             initialized_fields,
+            is_concretization_required,
         )
     }
 
@@ -609,11 +628,12 @@ impl Resolver {
                     }
                 };
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
-                let (params_vec, return_type, _) =
+                let (params_vec, return_type, _, is_concretization_required) =
                     self.visit_callable_body(&core_lambda_r_assign.body);
                 let lambda_type_obj = Type::new_with_lambda_unnamed(CallablePrototypeData::new(
                     params_vec,
                     return_type,
+                    is_concretization_required,
                 ));
                 if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
                     if let Some(symbol_data) = self
@@ -675,7 +695,8 @@ impl Resolver {
                 }
             }
         }
-        let (param_types_vec, return_type, _) = self.visit_callable_body(body);
+        let (param_types_vec, return_type, _, is_concretization_required) =
+            self.visit_callable_body(body);
         if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
@@ -685,6 +706,7 @@ impl Resolver {
                     param_types_vec,
                     return_type,
                     CallableKind::Function,
+                    is_concretization_required,
                     None,
                 );
             }
@@ -791,15 +813,26 @@ impl Resolver {
                             is_constructor = true;
                         }
                     }
-                    let (param_types_vec, return_type, return_type_range) = if is_constructor {
+                    let (
+                        param_types_vec,
+                        return_type,
+                        return_type_range,
+                        is_concretization_required,
+                    ) = if is_constructor {
                         let (
                             param_types_vec,
                             return_type,
                             return_type_range,
                             temp_initialized_fields,
+                            is_concretization_required,
                         ) = self.visit_constructor_body(&core_func_decl.body);
                         initialized_fields = temp_initialized_fields;
-                        (param_types_vec, return_type, return_type_range)
+                        (
+                            param_types_vec,
+                            return_type,
+                            return_type_range,
+                            is_concretization_required,
+                        )
                     } else {
                         self.visit_callable_body(&core_func_decl.body)
                     };
@@ -810,6 +843,7 @@ impl Resolver {
                             param_types_vec,
                             return_type.clone(),
                             CallableKind::Method,
+                            is_concretization_required,
                             None,
                         );
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
@@ -972,6 +1006,7 @@ impl Resolver {
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &LambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
         let mut types_vec: Vec<Type> = vec![];
+        let mut is_concretization_required = false;
         let type_tuple = &core_lambda_type_decl.type_tuple;
         let return_type = &core_lambda_type_decl.return_type;
         let rparen = &core_lambda_type_decl.rparen;
@@ -982,11 +1017,18 @@ impl Resolver {
             }
             None => Type::new_with_void(),
         };
+        if return_type.has_generics() {
+            is_concretization_required = true;
+        }
         let mut types_count = 0;
         if let Some(type_tuple) = type_tuple {
             let type_tuple_iter = type_tuple.iter();
             for data_type in type_tuple_iter {
-                types_vec.push(self.type_obj_from_expression(&data_type));
+                let ty = self.type_obj_from_expression(&data_type);
+                if ty.has_generics() {
+                    is_concretization_required = true;
+                }
+                types_vec.push(ty);
                 types_count += 1;
             }
         }
@@ -1009,6 +1051,7 @@ impl Resolver {
                     name,
                     types_vec,
                     return_type,
+                    is_concretization_required,
                     ok_identifier.range(),
                 );
             match result {

@@ -20,10 +20,11 @@ impl LambdaTypeData {
     pub fn new(
         param_types: Vec<Type>,
         return_type: Type,
+        is_concretization_required: bool,
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         LambdaTypeData {
-            prototype: CallablePrototypeData::new(param_types, return_type),
+            prototype: CallablePrototypeData::new(param_types, return_type, is_concretization_required),
             generics: match generics_spec {
                 Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
                     generics_spec,

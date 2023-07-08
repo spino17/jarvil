@@ -22,13 +22,19 @@ pub enum PrototypeConcretizationResult<'a> {
 pub struct CallablePrototypeData {
     pub params: Vec<Type>,
     pub return_type: Type,
+    pub is_concretization_required: bool,
 }
 
 impl CallablePrototypeData {
-    pub fn new(params: Vec<Type>, return_type: Type) -> CallablePrototypeData {
+    pub fn new(
+        params: Vec<Type>,
+        return_type: Type,
+        is_concretization_required: bool,
+    ) -> CallablePrototypeData {
         CallablePrototypeData {
             params,
             return_type,
+            is_concretization_required,
         }
     }
 
@@ -56,6 +62,9 @@ impl CallablePrototypeData {
         struct_concrete_types: &Vec<Type>,
         method_concrete_types: &Vec<Type>,
     ) -> PrototypeConcretizationResult {
+        if !self.is_concretization_required {
+            return PrototypeConcretizationResult::UnConcretized(self);
+        }
         todo!()
     }
 
@@ -63,6 +72,9 @@ impl CallablePrototypeData {
         &self,
         concrete_types: &Vec<Type>,
     ) -> PrototypeConcretizationResult {
+        if !self.is_concretization_required {
+            return PrototypeConcretizationResult::UnConcretized(self);
+        }
         todo!()
     }
 }
@@ -72,6 +84,7 @@ impl Default for CallablePrototypeData {
         CallablePrototypeData {
             params: vec![],
             return_type: Type::new_with_unset(),
+            is_concretization_required: false,
         }
     }
 }
@@ -88,12 +101,14 @@ impl CallableData {
         params: Vec<Type>,
         return_type: Type,
         kind: CallableKind,
+        is_concretization_required: bool,
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         CallableData {
             prototype: CallablePrototypeData {
                 params,
                 return_type,
+                is_concretization_required,
             },
             kind,
             generics: generics_spec,
@@ -113,10 +128,12 @@ impl CallableData {
         params: Vec<Type>,
         return_type: Type,
         kind: CallableKind,
+        is_concretization_required: bool,
         generics_spec: Option<GenericTypeParams>,
     ) {
         self.prototype.params = params;
         self.prototype.return_type = return_type;
+        self.prototype.is_concretization_required = is_concretization_required;
         self.generics = generics_spec;
         self.kind = kind;
     }

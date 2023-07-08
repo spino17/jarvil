@@ -465,6 +465,7 @@ impl Namespace {
         name: String,
         param_types: Vec<Type>,
         return_type: Type,
+        is_concretization_required: bool,
         decl_range: TextRange,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
         let lookup_func =
@@ -481,6 +482,7 @@ impl Namespace {
                 prototype: CallablePrototypeData {
                     params: param_types,
                     return_type,
+                    is_concretization_required,
                 },
                 generics: None,
             }),
