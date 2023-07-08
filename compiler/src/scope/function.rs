@@ -7,6 +7,12 @@ use crate::types::core::Type;
 use std::vec;
 
 #[derive(Debug)]
+pub enum CallableKind {
+    Function,
+    Method,
+}
+
+#[derive(Debug)]
 pub struct CallablePrototypeData {
     pub params: Vec<Type>,
     pub return_type: Type,
@@ -50,23 +56,34 @@ impl Default for CallablePrototypeData {
 }
 
 #[derive(Debug)]
-pub struct FunctionData {
+pub struct CallableData {
     pub prototype: CallablePrototypeData,
+    pub kind: CallableKind,
     pub generics: Option<GenericTypeParams>,
 }
 
-impl FunctionData {
+impl CallableData {
     pub fn new(
         params: Vec<Type>,
         return_type: Type,
+        kind: CallableKind,
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
-        FunctionData {
+        CallableData {
             prototype: CallablePrototypeData {
                 params,
                 return_type,
             },
+            kind,
             generics: generics_spec,
+        }
+    }
+
+    pub fn default_for_kind(kind: CallableKind) -> Self {
+        CallableData {
+            prototype: CallablePrototypeData::default(),
+            kind,
+            generics: None,
         }
     }
 
@@ -74,15 +91,17 @@ impl FunctionData {
         &mut self,
         params: Vec<Type>,
         return_type: Type,
+        kind: CallableKind,
         generics_spec: Option<GenericTypeParams>,
     ) {
         self.prototype.params = params;
         self.prototype.return_type = return_type;
         self.generics = generics_spec;
+        self.kind = kind;
     }
 }
 
-impl AbstractConcreteTypesHandler for FunctionData {
+impl AbstractConcreteTypesHandler for CallableData {
     fn register_concrete_types(&mut self, _concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
         unreachable!()
     }
@@ -93,14 +112,5 @@ impl AbstractConcreteTypesHandler for FunctionData {
 
     fn has_generics(&self) -> bool {
         self.generics.is_some()
-    }
-}
-
-impl Default for FunctionData {
-    fn default() -> Self {
-        FunctionData {
-            prototype: CallablePrototypeData::default(),
-            generics: None,
-        }
     }
 }

@@ -1,5 +1,5 @@
 use super::concrete::core::ConcreteTypesRegistryKey;
-use super::function::{CallablePrototypeData, FunctionData};
+use super::function::{CallableData, CallableKind, CallablePrototypeData};
 use super::handler::SymbolDataEntry;
 use super::interfaces::{InterfaceData, InterfaceObject};
 use super::types::lambda_type::LambdaTypeData;
@@ -252,7 +252,7 @@ pub enum NamespaceKind {
 pub struct Namespace {
     pub variables: Scope<VariableData>,
     pub types: Scope<UserDefinedTypeData>,
-    pub functions: Scope<FunctionData>,
+    pub functions: Scope<CallableData>,
     pub interfaces: Scope<InterfaceData>,
 }
 
@@ -289,7 +289,7 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<&SymbolData<FunctionData>> {
+    ) -> Option<&SymbolData<CallableData>> {
         self.functions.get(scope_index, key)
     }
 
@@ -354,7 +354,7 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<FunctionData>, usize, usize, bool)> {
+    ) -> Option<(SymbolData<CallableData>, usize, usize, bool)> {
         self.functions.lookup(scope_index, key)
     }
 
@@ -418,7 +418,7 @@ impl Namespace {
         name: String,
         decl_range: TextRange,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<FunctionData>, scope_index: usize, key: &str| match scope
+        let lookup_func = |scope: &Scope<CallableData>, scope_index: usize, key: &str| match scope
             .flattened_vec[scope_index]
             .get(key)
         {
@@ -428,7 +428,7 @@ impl Namespace {
         match self.functions.insert(
             scope_index,
             name,
-            FunctionData::default(),
+            CallableData::default_for_kind(CallableKind::Function),
             decl_range,
             lookup_func,
             true,

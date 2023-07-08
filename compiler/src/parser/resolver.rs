@@ -15,7 +15,7 @@ use crate::error::diagnostics::{
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
 use crate::scope::core::VariableLookupResult;
-use crate::scope::function::CallablePrototypeData;
+use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
 use crate::types::core::CoreType;
 use crate::{
@@ -31,7 +31,7 @@ use crate::{
     error::diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
     scope::{
         core::{Namespace, SymbolData},
-        function::FunctionData,
+        function::CallableData,
         variables::VariableData,
     },
     types::core::Type,
@@ -424,8 +424,8 @@ impl Resolver {
     }
 
     fn is_already_a_method(
-        methods: &FxHashMap<String, (FunctionData, TextRange)>,
-        class_methods: &FxHashMap<String, (FunctionData, TextRange)>,
+        methods: &FxHashMap<String, (CallableData, TextRange)>,
+        class_methods: &FxHashMap<String, (CallableData, TextRange)>,
         name: &str,
     ) -> Option<TextRange> {
         match methods.get(name) {
@@ -681,12 +681,12 @@ impl Resolver {
                 .namespace_handler
                 .get_function_symbol_data_ref(ok_identifier)
             {
-                symbol_data
-                    .0
-                     .0
-                    .as_ref()
-                    .borrow_mut()
-                    .set_data(param_types_vec, return_type, None);
+                symbol_data.0 .0.as_ref().borrow_mut().set_data(
+                    param_types_vec,
+                    return_type,
+                    CallableKind::Function,
+                    None,
+                );
             }
         }
     }
@@ -743,9 +743,9 @@ impl Resolver {
         assert!(result.is_ok());
 
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
-        let mut constructor: Option<(FunctionData, TextRange)> = None;
-        let mut methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
-        let mut class_methods: FxHashMap<String, (FunctionData, TextRange)> = FxHashMap::default();
+        let mut constructor: Option<(CallableData, TextRange)> = None;
+        let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
+        let mut class_methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
         for stmt in &*struct_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
@@ -806,8 +806,12 @@ impl Resolver {
                     if let CoreIdentifierNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
-                        let func_meta_data =
-                            FunctionData::new(param_types_vec, return_type.clone(), None);
+                        let func_meta_data = CallableData::new(
+                            param_types_vec,
+                            return_type.clone(),
+                            CallableKind::Method,
+                            None,
+                        );
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") {
                             match constructor {

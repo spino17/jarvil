@@ -1,6 +1,6 @@
 use super::{
     core::{Namespace, SymbolData},
-    function::FunctionData,
+    function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
     variables::VariableData,
@@ -12,14 +12,14 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 pub enum SymbolDataRef<'a> {
     Variable(&'a SymbolData<VariableData>),
-    Function(&'a SymbolData<FunctionData>),
+    Function(&'a SymbolData<CallableData>),
     Type(&'a SymbolData<UserDefinedTypeData>),
     Interface(&'a SymbolData<InterfaceData>),
 }
 
 pub enum SymbolDataEntry {
     Variable(SymbolData<VariableData>),
-    Function(SymbolData<FunctionData>),
+    Function(SymbolData<CallableData>),
     Type(SymbolData<UserDefinedTypeData>),
     Interface(SymbolData<InterfaceData>),
 }
@@ -79,7 +79,7 @@ impl NamespaceHandler {
     pub fn get_function_symbol_data_ref(
         &self,
         node: &OkIdentifierNode,
-    ) -> Option<&SymbolData<FunctionData>> {
+    ) -> Option<&SymbolData<CallableData>> {
         match self.identifier_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
                 SymbolDataEntry::Function(func_symbol_data) => Some(func_symbol_data),

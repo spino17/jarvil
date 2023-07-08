@@ -1,7 +1,7 @@
 use crate::scope::concrete::registry::{
     ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry,
 };
-use crate::scope::function::FunctionData;
+use crate::scope::function::{CallableData, CallableKind};
 use crate::scope::interfaces::InterfaceObject;
 use crate::{
     scope::{
@@ -13,12 +13,12 @@ use crate::{
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct StructTypeData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
-    pub constructor: FunctionData,
-    pub methods: FxHashMap<String, (FunctionData, TextRange)>,
-    pub class_methods: FxHashMap<String, (FunctionData, TextRange)>,
+    pub constructor: CallableData,
+    pub methods: FxHashMap<String, (CallableData, TextRange)>,
+    pub class_methods: FxHashMap<String, (CallableData, TextRange)>,
     pub generics: Option<GenericsSpecAndConcreteTypesRegistry>,
     pub implementing_interfaces: Option<Vec<InterfaceObject>>,
 }
@@ -27,9 +27,9 @@ impl StructTypeData {
     pub fn set_meta_data(
         &mut self,
         fields: FxHashMap<String, (Type, TextRange)>,
-        constructor: Option<(FunctionData, TextRange)>,
-        methods: FxHashMap<String, (FunctionData, TextRange)>,
-        class_methods: FxHashMap<String, (FunctionData, TextRange)>,
+        constructor: Option<(CallableData, TextRange)>,
+        methods: FxHashMap<String, (CallableData, TextRange)>,
+        class_methods: FxHashMap<String, (CallableData, TextRange)>,
         generics_spec: Option<GenericTypeParams>,
     ) {
         self.fields = fields;
@@ -54,7 +54,7 @@ impl StructTypeData {
         }
     }
 
-    pub fn try_method(&self, method_name: &str) -> Option<(&FunctionData, TextRange)> {
+    pub fn try_method(&self, method_name: &str) -> Option<(&CallableData, TextRange)> {
         match self.methods.get(method_name) {
             Some(func_data) => Some((&func_data.0, func_data.1)),
             None => None,
@@ -85,5 +85,18 @@ impl AbstractConcreteTypesHandler for StructTypeData {
 
     fn has_generics(&self) -> bool {
         self.generics.is_some()
+    }
+}
+
+impl Default for StructTypeData {
+    fn default() -> Self {
+        StructTypeData {
+            fields: FxHashMap::default(),
+            constructor: CallableData::default_for_kind(CallableKind::Method),
+            methods: FxHashMap::default(),
+            class_methods: FxHashMap::default(),
+            generics: Option::default(),
+            implementing_interfaces: Option::default(),
+        }
     }
 }
