@@ -33,25 +33,40 @@ impl AbstractType for Struct {
             CoreType::Struct(struct_data) => {
                 if struct_data.name.eq(&self.name) {
                     match self.semantic_data.index {
-                        Some(self_index) => match struct_data.semantic_data.index {
-                            Some(base_index) => {
-                                let self_concrete_types = self
-                                    .semantic_data
-                                    .symbol_data
-                                    .get_concrete_types_at_key(self_index);
-                                let base_concrete_types = struct_data
-                                    .semantic_data
-                                    .symbol_data
-                                    .get_concrete_types_at_key(base_index);
-                                let self_len = self_concrete_types.len();
-                                let base_len = base_concrete_types.len();
-                                assert!(self_len == base_len);
-                                for i in 0..self_len {
-                                    if !self_concrete_types[i].is_eq(&base_concrete_types[i]) {
-                                        return false;
+                        Some(self_key) => match struct_data.semantic_data.index {
+                            Some(other_key) => {
+                                match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
+                                    UserDefinedTypeData::Struct(self_struct_data) => {
+                                        match &*struct_data
+                                            .semantic_data
+                                            .symbol_data
+                                            .0
+                                             .0
+                                            .as_ref()
+                                            .borrow()
+                                        {
+                                            UserDefinedTypeData::Struct(other_struct_data) => {
+                                                let self_concrete_types =
+                                                    self_struct_data.get_concrete_types(self_key);
+                                                let other_concrete_types =
+                                                    other_struct_data.get_concrete_types(other_key);
+                                                let self_len = self_concrete_types.len();
+                                                let other_len = other_concrete_types.len();
+                                                assert!(self_len == other_len);
+                                                for i in 0..self_len {
+                                                    if !self_concrete_types[i]
+                                                        .is_eq(&other_concrete_types[i])
+                                                    {
+                                                        return false;
+                                                    }
+                                                }
+                                                return true;
+                                            }
+                                            _ => unreachable!(),
+                                        }
                                     }
+                                    _ => unreachable!(),
                                 }
-                                return true;
                             }
                             None => unreachable!(),
                         },

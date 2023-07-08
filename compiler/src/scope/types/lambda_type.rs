@@ -5,7 +5,7 @@ use crate::{
             registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
         },
         core::{AbstractConcreteTypesHandler, GenericTypeParams},
-        function::CallablePrototypeData,
+        function::{CallablePrototypeData, PrototypeConcretizationResult},
     },
     types::core::Type,
 };
@@ -34,19 +34,24 @@ impl LambdaTypeData {
         }
     }
 
-    pub fn get_concrete_prototype(&self, key: Option<ConcreteTypesRegistryKey>) -> &CallablePrototypeData {
+    pub fn get_concrete_prototype(
+        &self,
+        key: Option<ConcreteTypesRegistryKey>,
+    ) -> PrototypeConcretizationResult {
         match key {
             Some(key) => {
                 let index = key.0;
                 match &self.generics {
                     Some(generics) => {
                         let concrete_types = &generics.concrete_types_registry.0[index];
-                        return self.prototype.concretize_prototype(&concrete_types.concrete_types)
-                    },
-                    None => unreachable!()
+                        return self
+                            .prototype
+                            .concretize_prototype(concrete_types.get_concrete_types());
+                    }
+                    None => unreachable!(),
                 }
             }
-            None => return &self.prototype
+            None => return PrototypeConcretizationResult::UnConcretized(&self.prototype),
         }
     }
 }
@@ -59,15 +64,6 @@ impl AbstractConcreteTypesHandler for LambdaTypeData {
                     .concrete_types_registry
                     .register_concrete_types(concrete_types)
             }
-            None => unreachable!(),
-        }
-    }
-
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        match &self.generics {
-            Some(generics_spec) => generics_spec
-                .concrete_types_registry
-                .get_concrete_types_at_key(key),
             None => unreachable!(),
         }
     }

@@ -1,5 +1,5 @@
 use super::{
-    concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple},
+    concrete::core::ConcreteTypesRegistryKey,
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
 };
 use crate::types::core::AbstractType;
@@ -10,6 +10,12 @@ use std::vec;
 pub enum CallableKind {
     Function,
     Method,
+}
+
+#[derive(Debug)]
+pub enum PrototypeConcretizationResult<'a> {
+    UnConcretized(&'a CallablePrototypeData),
+    Concretized(CallablePrototypeData),
 }
 
 #[derive(Debug)]
@@ -45,11 +51,18 @@ impl CallablePrototypeData {
         return true;
     }
 
-    pub fn concretize_method_prototype(&self, struct_concrete_types: &Vec<Type>, method_concrete_types: &Vec<Type>) -> &CallablePrototypeData {
+    pub fn concretize_method_prototype(
+        &self,
+        struct_concrete_types: &Vec<Type>,
+        method_concrete_types: &Vec<Type>,
+    ) -> PrototypeConcretizationResult {
         todo!()
     }
 
-    pub fn concretize_prototype(&self, concrete_types: &Vec<Type>) -> &CallablePrototypeData {
+    pub fn concretize_prototype(
+        &self,
+        concrete_types: &Vec<Type>,
+    ) -> PrototypeConcretizationResult {
         todo!()
     }
 }
@@ -111,10 +124,6 @@ impl CallableData {
 
 impl AbstractConcreteTypesHandler for CallableData {
     fn register_concrete_types(&mut self, _concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        unreachable!()
-    }
-
-    fn get_concrete_types_at_key(&self, _key: ConcreteTypesRegistryKey) -> Vec<Type> {
         unreachable!()
     }
 

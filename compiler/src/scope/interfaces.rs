@@ -23,20 +23,17 @@ impl InterfaceObject {
         if self.0 .0.eq(&other.0 .0) {
             // names of interfaces should be same
             match self.0 .1.index {
-                Some(self_index) => match other.0 .1.index {
-                    Some(other_index) => {
-                        let self_concrete_types =
-                            self.0 .1.symbol_data.get_concrete_types_at_key(self_index);
-                        let base_concrete_types = other
-                            .0
-                             .1
-                            .symbol_data
-                            .get_concrete_types_at_key(other_index);
+                Some(self_key) => match other.0 .1.index {
+                    Some(other_key) => {
+                        let self_ref = &*self.0 .1.symbol_data.0 .0.as_ref().borrow();
+                        let other_ref = &*other.0 .1.symbol_data.0 .0.as_ref().borrow();
+                        let self_concrete_types = self_ref.get_concrete_types(self_key);
+                        let other_concrete_types = other_ref.get_concrete_types(other_key);
                         let self_len = self_concrete_types.len();
-                        let base_len = base_concrete_types.len();
-                        assert!(self_len == base_len);
+                        let other_len = other_concrete_types.len();
+                        assert!(self_len == other_len);
                         for i in 0..self_len {
-                            if !self_concrete_types[i].is_eq(&base_concrete_types[i]) {
+                            if !self_concrete_types[i].is_eq(&other_concrete_types[i]) {
                                 return false;
                             }
                         }
@@ -75,6 +72,17 @@ impl InterfaceData {
             None => None,
         }
     }
+
+    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &Vec<Type> {
+        match &self.generics {
+            Some(generics) => {
+                return generics
+                    .concrete_types_registry
+                    .get_concrete_types_at_key(key)
+            }
+            None => unreachable!(),
+        }
+    }
 }
 
 impl AbstractConcreteTypesHandler for InterfaceData {
@@ -85,15 +93,6 @@ impl AbstractConcreteTypesHandler for InterfaceData {
                     .concrete_types_registry
                     .register_concrete_types(concrete_types)
             }
-            None => unreachable!(),
-        }
-    }
-
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        match &self.generics {
-            Some(generics_spec) => generics_spec
-                .concrete_types_registry
-                .get_concrete_types_at_key(key),
             None => unreachable!(),
         }
     }

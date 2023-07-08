@@ -19,7 +19,7 @@ pub enum VariableLookupResult {
 
 pub trait AbstractConcreteTypesHandler {
     fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey;
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type>;
+    // fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type>;
     fn has_generics(&self) -> bool;
 }
 
@@ -62,10 +62,6 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
             .as_ref()
             .borrow_mut()
             .register_concrete_types(concrete_types)
-    }
-
-    pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        self.0 .0.as_ref().borrow().get_concrete_types_at_key(key)
     }
 
     pub fn has_generics(&self) -> bool {

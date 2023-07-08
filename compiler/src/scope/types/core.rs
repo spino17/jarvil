@@ -49,18 +49,6 @@ impl AbstractConcreteTypesHandler for UserDefinedTypeData {
         }
     }
 
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        match self {
-            UserDefinedTypeData::Struct(struct_type_data) => {
-                struct_type_data.get_concrete_types_at_key(key)
-            }
-            UserDefinedTypeData::Lambda(lambda_type_data) => {
-                lambda_type_data.get_concrete_types_at_key(key)
-            }
-            UserDefinedTypeData::Generic(_) => unreachable!(),
-        }
-    }
-
     fn has_generics(&self) -> bool {
         match self {
             UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.has_generics(),

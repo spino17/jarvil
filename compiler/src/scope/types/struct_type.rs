@@ -60,6 +60,17 @@ impl StructTypeData {
             None => None,
         }
     }
+
+    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &Vec<Type> {
+        match &self.generics {
+            Some(generics) => {
+                return generics
+                    .concrete_types_registry
+                    .get_concrete_types_at_key(key)
+            }
+            None => unreachable!(),
+        }
+    }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
@@ -70,15 +81,6 @@ impl AbstractConcreteTypesHandler for StructTypeData {
                     .concrete_types_registry
                     .register_concrete_types(concrete_types)
             }
-            None => unreachable!(),
-        }
-    }
-
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        match &self.generics {
-            Some(generics_spec) => generics_spec
-                .concrete_types_registry
-                .get_concrete_types_at_key(key),
             None => unreachable!(),
         }
     }

@@ -33,10 +33,6 @@ impl AbstractConcreteTypesHandler for VariableData {
         unreachable!()
     }
 
-    fn get_concrete_types_at_key(&self, _key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        unreachable!()
-    }
-
     fn has_generics(&self) -> bool {
         false
     }

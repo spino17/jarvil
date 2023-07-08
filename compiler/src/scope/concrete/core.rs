@@ -15,8 +15,8 @@ impl ConcreteTypesTuple {
         ConcreteTypesTuple { concrete_types }
     }
 
-    pub fn get_concrete_types(&self) -> Vec<Type> {
-        self.concrete_types.clone()
+    pub fn get_concrete_types(&self) -> &Vec<Type> {
+        &self.concrete_types
     }
 }
 

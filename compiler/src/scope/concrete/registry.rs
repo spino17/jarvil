@@ -35,7 +35,7 @@ impl ConcreteTypesRegistryCore {
         ConcreteTypesRegistryKey(index)
     }
 
-    pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
+    pub fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> &Vec<Type> {
         self.0[key.0].get_concrete_types()
     }
 }
