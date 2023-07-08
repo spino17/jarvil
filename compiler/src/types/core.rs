@@ -7,14 +7,33 @@ use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::SymbolData;
-use crate::scope::function::CallablePrototypeData;
+use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
+use phf;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
 pub trait AbstractType {
     fn is_eq(&self, other_ty: &Type) -> bool;
+}
+
+pub trait AbstractNonStructTypes {
+    fn try_method(&self, method_name: &str) -> Option<PrototypeConcretizationResult::<'static>>;
+    fn core_try_method<'a>(
+        &self,
+        method_name: &str,
+        buildin_methods: &'a phf::Map<&'static str, CallablePrototypeData>,
+    ) -> Option<PrototypeConcretizationResult<'a>> {
+        match buildin_methods.get(method_name) {
+            Some(prototype) => {
+                let concrete_types = self.get_concrete_types();
+                return Some(prototype.concretize_prototype(concrete_types));
+            }
+            None => return None,
+        }
+    }
+    fn get_concrete_types(&self) -> &Vec<Type>;
 }
 
 pub trait OperatorCompatiblity {

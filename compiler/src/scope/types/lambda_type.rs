@@ -24,7 +24,11 @@ impl LambdaTypeData {
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         LambdaTypeData {
-            prototype: CallablePrototypeData::new(param_types, return_type, is_concretization_required),
+            prototype: CallablePrototypeData::new(
+                param_types,
+                return_type,
+                is_concretization_required,
+            ),
             generics: match generics_spec {
                 Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
                     generics_spec,
