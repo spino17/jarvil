@@ -75,10 +75,6 @@ impl InterfaceData {
             None => None,
         }
     }
-
-    pub fn get_concrete_data_from_key(&self, key: ConcreteTypesRegistryKey) -> () {
-        todo!()
-    }
 }
 
 impl AbstractConcreteTypesHandler for InterfaceData {

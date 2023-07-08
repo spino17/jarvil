@@ -12,7 +12,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct LambdaTypeData {
-    pub meta_data: CallablePrototypeData,
+    pub prototype: CallablePrototypeData,
     pub generics: Option<GenericsSpecAndConcreteTypesRegistry>,
 }
 
@@ -23,7 +23,7 @@ impl LambdaTypeData {
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         LambdaTypeData {
-            meta_data: CallablePrototypeData::new(param_types, return_type),
+            prototype: CallablePrototypeData::new(param_types, return_type),
             generics: match generics_spec {
                 Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
                     generics_spec,

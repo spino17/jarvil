@@ -483,7 +483,7 @@ impl Namespace {
             scope_index,
             name,
             UserDefinedTypeData::Lambda(LambdaTypeData {
-                meta_data: CallablePrototypeData {
+                prototype: CallablePrototypeData {
                     params: param_types,
                     return_type,
                 },
