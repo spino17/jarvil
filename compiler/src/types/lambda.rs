@@ -1,7 +1,7 @@
 use super::core::OperatorCompatiblity;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey};
 use crate::scope::core::SymbolData;
-use crate::scope::function::CallablePrototypeData;
+use crate::scope::function::{CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};
 
@@ -42,26 +42,71 @@ impl AbstractType for Lambda {
                 // TODO - once generics gets integrated we have concrete types attached to the lambda type
                 // to enable structural equivalence of lambda type we have to get the concretized version of
                 // function prototype which then we would compare like non-generic lambda types.
-                /*
-                match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
-                    UserDefinedTypeData::Lambda(self_data_ref) => {
-                        match &*lambda_data.semantic_data.symbol_data.0 .0.as_ref().borrow() {
-                            UserDefinedTypeData::Lambda(other_data_ref) => {
-                                return self_data_ref.meta_data.is_eq(&other_data_ref.meta_data);
+                match self {
+                    Lambda::Named((_, self_named)) => {
+                        match &*self_named.symbol_data.0 .0.as_ref().borrow() {
+                            UserDefinedTypeData::Lambda(self_data) => {
+                                match self_data.get_concrete_prototype(self_named.index) {
+                                    PrototypeConcretizationResult::Concretized(
+                                        self_concrete_prototype,
+                                    ) => match other_data {
+                                        Lambda::Named((_, other_named)) => {
+                                            match &*other_named.symbol_data.0.0.as_ref().borrow() {
+                                                UserDefinedTypeData::Lambda(other_data) => {
+                                                    match other_data.get_concrete_prototype(other_named.index) {
+                                                        PrototypeConcretizationResult::Concretized(other_concrete_prototype) => return other_concrete_prototype.is_eq(&self_concrete_prototype),
+                                                        PrototypeConcretizationResult::UnConcretized(other_prototype) => return other_prototype.is_eq(&self_concrete_prototype)
+                                                    }
+                                                }
+                                                _ => unreachable!()
+                                            }
+                                        }
+                                        Lambda::Unnamed(other_prototype) => {
+                                            self_concrete_prototype.is_eq(other_prototype)
+                                        }
+                                    },
+                                    PrototypeConcretizationResult::UnConcretized(
+                                        self_prototype,
+                                    ) => match other_data {
+                                        Lambda::Named((_, other_named)) => {
+                                            match &*other_named.symbol_data.0.0.as_ref().borrow() {
+                                                UserDefinedTypeData::Lambda(other_data) => {
+                                                    match other_data.get_concrete_prototype(other_named.index) {
+                                                        PrototypeConcretizationResult::Concretized(other_concrete_prototype) => return other_concrete_prototype.is_eq(self_prototype),
+                                                        PrototypeConcretizationResult::UnConcretized(other_prototype) => return other_prototype.is_eq(self_prototype)
+                                                    }
+                                                }
+                                                _ => unreachable!()
+                                            }
+                                        }
+                                        Lambda::Unnamed(other_prototype) => {
+                                            return self_prototype.is_eq(other_prototype)
+                                        }
+                                    },
+                                }
                             }
                             _ => unreachable!(),
                         }
                     }
-                    _ => unreachable!(),
-                }*/
-                match self {
-                    Lambda::Named((_, self_named)) => match other_data {
-                        Lambda::Named((_, other_named)) => todo!(),
-                        Lambda::Unnamed(other_unnamed) => todo!(),
-                    },
-                    Lambda::Unnamed(self_unnamed) => match other_data {
-                        Lambda::Named((_, other_named)) => todo!(),
-                        Lambda::Unnamed(other_unnamed) => todo!(),
+                    Lambda::Unnamed(self_prototype) => match other_data {
+                        Lambda::Named((_, other_named)) => {
+                            match &*other_named.symbol_data.0 .0.as_ref().borrow() {
+                                UserDefinedTypeData::Lambda(other_data) => {
+                                    match other_data.get_concrete_prototype(other_named.index) {
+                                        PrototypeConcretizationResult::Concretized(
+                                            other_concrete_prototype,
+                                        ) => return other_concrete_prototype.is_eq(self_prototype),
+                                        PrototypeConcretizationResult::UnConcretized(
+                                            other_prototype,
+                                        ) => return other_prototype.is_eq(self_prototype),
+                                    }
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        Lambda::Unnamed(other_prototype) => {
+                            return self_prototype.is_eq(other_prototype)
+                        }
                     },
                 }
             }

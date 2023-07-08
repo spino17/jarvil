@@ -39,18 +39,15 @@ impl LambdaTypeData {
         key: Option<ConcreteTypesRegistryKey>,
     ) -> PrototypeConcretizationResult {
         match key {
-            Some(key) => {
-                let index = key.0;
-                match &self.generics {
-                    Some(generics) => {
-                        let concrete_types = &generics.concrete_types_registry.0[index];
-                        return self
-                            .prototype
-                            .concretize_prototype(concrete_types.get_concrete_types());
-                    }
-                    None => unreachable!(),
+            Some(key) => match &self.generics {
+                Some(generics) => {
+                    let concrete_types = generics
+                        .concrete_types_registry
+                        .get_concrete_types_at_key(key);
+                    return self.prototype.concretize_prototype(concrete_types);
                 }
-            }
+                None => unreachable!(),
+            },
             None => return PrototypeConcretizationResult::UnConcretized(&self.prototype),
         }
     }
