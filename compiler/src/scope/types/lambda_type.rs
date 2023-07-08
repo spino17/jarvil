@@ -33,6 +33,22 @@ impl LambdaTypeData {
             },
         }
     }
+
+    pub fn get_concrete_prototype(&self, key: Option<ConcreteTypesRegistryKey>) -> &CallablePrototypeData {
+        match key {
+            Some(key) => {
+                let index = key.0;
+                match &self.generics {
+                    Some(generics) => {
+                        let concrete_types = &generics.concrete_types_registry.0[index];
+                        return self.prototype.concretize_prototype(&concrete_types.concrete_types)
+                    },
+                    None => unreachable!()
+                }
+            }
+            None => return &self.prototype
+        }
+    }
 }
 
 impl AbstractConcreteTypesHandler for LambdaTypeData {

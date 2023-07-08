@@ -19,7 +19,7 @@ impl GenericsSpecAndConcreteTypesRegistry {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct ConcreteTypesRegistryCore(Vec<ConcreteTypesTuple>);
+pub struct ConcreteTypesRegistryCore(pub Vec<ConcreteTypesTuple>);
 
 impl ConcreteTypesRegistryCore {
     pub fn new_with_entries(entries: Vec<ConcreteTypesTuple>) -> Self {

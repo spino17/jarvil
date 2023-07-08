@@ -1,5 +1,5 @@
 use super::{
-    concrete::core::ConcreteTypesRegistryKey,
+    concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple},
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
 };
 use crate::types::core::AbstractType;
@@ -43,6 +43,14 @@ impl CallablePrototypeData {
             }
         }
         return true;
+    }
+
+    pub fn concretize_method_prototype(&self, struct_concrete_types: &Vec<Type>, method_concrete_types: &Vec<Type>) -> &CallablePrototypeData {
+        todo!()
+    }
+
+    pub fn concretize_prototype(&self, concrete_types: &Vec<Type>) -> &CallablePrototypeData {
+        todo!()
     }
 }
 
