@@ -6,7 +6,7 @@ use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use std::vec;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CallableKind {
     Function,
     Method,
@@ -61,7 +61,9 @@ impl CallablePrototypeData {
         &self,
         struct_concrete_types: &Vec<Type>,
         method_concrete_types: &Vec<Type>,
+        kind: CallableKind,
     ) -> PrototypeConcretizationResult {
+        assert!(kind == CallableKind::Method);
         if !self.is_concretization_required {
             return PrototypeConcretizationResult::UnConcretized(self);
         }

@@ -1,5 +1,12 @@
-use super::core::OperatorCompatiblity;
+use std::collections::HashMap;
+use text_size::TextRange;
+
+use super::core::{AbstractNonStructTypes, OperatorCompatiblity};
 use crate::lexer::token::BinaryOperatorKind;
+use crate::scope::core::SymbolData;
+use crate::scope::function::{CallableData, CallableKind};
+use crate::scope::types::core::UserDefinedTypeData;
+use crate::scope::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use crate::{
     constants::common::BOOL,
     types::core::{AbstractType, CoreType, Type},
@@ -101,3 +108,24 @@ impl OperatorCompatiblity for Array {
         None
     }
 }
+
+impl AbstractNonStructTypes for Array {
+    fn get_concrete_types(&self) -> Vec<Type> {
+        vec![self.element_type.clone()]
+    }
+
+    fn get_builtin_methods(&self) -> &'static HashMap<&'static str, CallableData> {
+        BUILTIN_METHODS.with(|use_default| *use_default)
+    }
+}
+
+thread_local!(
+    static BUILTIN_METHODS: &'static HashMap<&'static str, CallableData> =
+        Box::leak(Box::new(HashMap::from([
+            ("append", CallableData::new(vec![Type::new_with_generic(&SymbolData::new(UserDefinedTypeData::Generic(GenericTypeData {
+                category: GenericTypeDeclarationPlaceCategory::InStruct,
+                index: 0,
+                interface_bounds: vec![]
+            }), TextRange::default(), true))], Type::new_with_void(), CallableKind::Method, true, None)),
+        ])))
+);

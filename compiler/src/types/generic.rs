@@ -3,14 +3,12 @@ use crate::scope::{core::SymbolData, types::core::UserDefinedTypeData};
 
 #[derive(Debug)]
 pub struct Generic {
-    pub name: String,
     pub semantic_data: SymbolData<UserDefinedTypeData>,
 }
 
 impl Generic {
-    pub fn new(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Generic {
+    pub fn new(symbol_data: &SymbolData<UserDefinedTypeData>) -> Generic {
         Generic {
-            name,
             semantic_data: symbol_data.clone(),
         }
     }

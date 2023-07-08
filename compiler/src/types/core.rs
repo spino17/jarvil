@@ -10,7 +10,7 @@ use crate::scope::core::SymbolData;
 use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::{array::Array, atomic::Atomic};
-use phf;
+use std::collections::HashMap as StdHashMap;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
@@ -19,21 +19,22 @@ pub trait AbstractType {
 }
 
 pub trait AbstractNonStructTypes {
-    fn try_method(&self, method_name: &str) -> Option<PrototypeConcretizationResult::<'static>>;
-    fn core_try_method<'a>(
-        &self,
-        method_name: &str,
-        buildin_methods: &'a phf::Map<&'static str, CallablePrototypeData>,
-    ) -> Option<PrototypeConcretizationResult<'a>> {
-        match buildin_methods.get(method_name) {
-            Some(prototype) => {
+    fn get_concrete_types(&self) -> Vec<Type>;
+    fn get_builtin_methods(&self) -> &'static StdHashMap<&'static str, CallableData>;
+    fn try_method(&self, method_name: &str) -> Option<PrototypeConcretizationResult<'static>> {
+        let builtin_methods = self.get_builtin_methods();
+        match builtin_methods.get(method_name) {
+            Some(callable_data) => {
                 let concrete_types = self.get_concrete_types();
-                return Some(prototype.concretize_prototype(concrete_types));
+                return Some(
+                    callable_data
+                        .prototype
+                        .concretize_method_prototype(&concrete_types, &vec![], callable_data.kind),
+                );
             }
             None => return None,
         }
     }
-    fn get_concrete_types(&self) -> &Vec<Type>;
 }
 
 pub trait OperatorCompatiblity {
@@ -153,11 +154,8 @@ impl Type {
         )
     }
 
-    pub fn new_with_generic(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
-        Type(
-            Rc::new(CoreType::Generic(Generic::new(name, symbol_data))),
-            true,
-        )
+    pub fn new_with_generic(symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
+        Type(Rc::new(CoreType::Generic(Generic::new(symbol_data))), true)
     }
 
     pub fn new_with_unknown() -> Type {
