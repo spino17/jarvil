@@ -73,28 +73,23 @@ impl AbstractType for Lambda {
 
 impl ToString for Lambda {
     fn to_string(&self) -> String {
-        /*
-        match &self.name {
-            Some(name) => format!("{}", name),
-            None => match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
-                UserDefinedTypeData::Lambda(data) => {
-                    let self_param_types = &data.meta_data.prototype.params;
-                    let self_return_type = &data.meta_data.prototype.return_type;
-                    let mut params_str = "".to_string();
-                    let mut flag = false;
-                    for param in self_param_types {
-                        if flag {
-                            params_str.push_str(", ")
-                        }
-                        params_str.push_str(&format!("{}", param.to_string()));
-                        flag = true;
+        match self {
+            Lambda::Named((name, _)) => name.to_string(),
+            Lambda::Unnamed(unnamed) => {
+                let self_param_types = &unnamed.params;
+                let self_return_type = &unnamed.return_type;
+                let mut params_str = "".to_string();
+                let mut flag = false;
+                for param in self_param_types {
+                    if flag {
+                        params_str.push_str(", ")
                     }
-                    format!("lambda({}) -> {}", params_str, self_return_type)
+                    params_str.push_str(&format!("{}", param.to_string()));
+                    flag = true;
                 }
-                _ => unreachable!(),
-            },
-        }*/
-        todo!()
+                format!("lambda({}) -> {}", params_str, self_return_type)
+            }
+        }
     }
 }
 
