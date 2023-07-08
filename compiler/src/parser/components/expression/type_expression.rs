@@ -4,7 +4,6 @@ use crate::ast::ast::TypeExpressionNode;
 use crate::constants::common::{ATOMIC_TYPE, IDENTIFIER};
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
-use std::rc::Rc;
 
 pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 5] =
     [ATOMIC_TYPE, IDENTIFIER, "[", "{", "("];

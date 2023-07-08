@@ -1,5 +1,5 @@
 use super::{
-    concrete::{core::ConcreteTypesRegistryKey, registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry}},
+    concrete::core::ConcreteTypesRegistryKey,
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
 };
 use crate::types::core::AbstractType;
@@ -7,32 +7,22 @@ use crate::types::core::Type;
 use std::vec;
 
 #[derive(Debug)]
-pub enum FunctionKind {
-    Function,
-    Method,
-    Lambda
-}
-
-#[derive(Debug)]
-pub struct FunctionPrototype {
+pub struct CallablePrototypeData {
     pub params: Vec<Type>,
     pub return_type: Type,
 }
 
-impl FunctionPrototype {
-    pub fn new(params: Vec<Type>, return_type: Type) -> FunctionPrototype {
-        FunctionPrototype {
+impl CallablePrototypeData {
+    pub fn new(params: Vec<Type>, return_type: Type) -> CallablePrototypeData {
+        CallablePrototypeData {
             params,
             return_type,
-            
         }
     }
 
-    pub fn is_eq(&self, other: &FunctionPrototype) -> bool {
-        let (self_param_types, self_return_type) =
-            (&self.params, &self.return_type);
-        let (other_param_types, other_return_type) =
-            (&other.params, &other.return_type);
+    pub fn is_eq(&self, other: &CallablePrototypeData) -> bool {
+        let (self_param_types, self_return_type) = (&self.params, &self.return_type);
+        let (other_param_types, other_return_type) = (&other.params, &other.return_type);
         let self_params_len = self_param_types.len();
         let other_params_len = other_param_types.len();
         if self_params_len != other_params_len {
@@ -50,9 +40,9 @@ impl FunctionPrototype {
     }
 }
 
-impl Default for FunctionPrototype {
+impl Default for CallablePrototypeData {
     fn default() -> Self {
-        FunctionPrototype {
+        CallablePrototypeData {
             params: vec![],
             return_type: Type::new_with_unset(),
         }
@@ -61,8 +51,8 @@ impl Default for FunctionPrototype {
 
 #[derive(Debug)]
 pub struct FunctionData {
-    pub prototype: FunctionPrototype,
-    pub generics: Option<GenericsSpecAndConcreteTypesRegistry>,
+    pub prototype: CallablePrototypeData,
+    pub generics: Option<GenericTypeParams>,
 }
 
 impl FunctionData {
@@ -72,17 +62,11 @@ impl FunctionData {
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         FunctionData {
-            prototype: FunctionPrototype {
+            prototype: CallablePrototypeData {
                 params,
                 return_type,
             },
-            generics: match generics_spec {
-                Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
-                    generics_spec,
-                    concrete_types_registry: ConcreteTypesRegistryCore::default(),
-                }),
-                None => None,
-            },
+            generics: generics_spec,
         }
     }
 
@@ -94,35 +78,17 @@ impl FunctionData {
     ) {
         self.prototype.params = params;
         self.prototype.return_type = return_type;
-        self.generics = match generics_spec {
-            Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
-                generics_spec,
-                concrete_types_registry: ConcreteTypesRegistryCore::default(),
-            }),
-            None => None,
-        };
+        self.generics = generics_spec;
     }
 }
 
 impl AbstractConcreteTypesHandler for FunctionData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        match &mut self.generics {
-            Some(generics) => {
-                return generics
-                    .concrete_types_registry
-                    .register_concrete_types(concrete_types)
-            }
-            None => unreachable!(),
-        }
+    fn register_concrete_types(&mut self, _concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
+        unreachable!()
     }
 
-    fn get_concrete_types_at_key(&self, key: ConcreteTypesRegistryKey) -> Vec<Type> {
-        match &self.generics {
-            Some(generics_spec) => generics_spec
-                .concrete_types_registry
-                .get_concrete_types_at_key(key),
-            None => unreachable!(),
-        }
+    fn get_concrete_types_at_key(&self, _key: ConcreteTypesRegistryKey) -> Vec<Type> {
+        unreachable!()
     }
 
     fn has_generics(&self) -> bool {
@@ -133,9 +99,8 @@ impl AbstractConcreteTypesHandler for FunctionData {
 impl Default for FunctionData {
     fn default() -> Self {
         FunctionData {
-            prototype: FunctionPrototype::default(),
+            prototype: CallablePrototypeData::default(),
             generics: None,
         }
     }
 }
-

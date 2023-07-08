@@ -40,7 +40,7 @@ use crate::{
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
-        function::FunctionPrototype,
+        function::CallablePrototypeData,
         handler::{NamespaceHandler, SymbolDataRef},
         types::core::UserDefinedTypeData,
     },
@@ -194,7 +194,7 @@ impl TypeChecker {
             _ => self.params_and_return_type_obj_from_expr(return_type, params),
         };
         let lambda_type_obj =
-            Type::new_with_lambda_unnamed(FunctionPrototype::new(params_vec, return_type));
+            Type::new_with_lambda_unnamed(CallablePrototypeData::new(params_vec, return_type));
         return lambda_type_obj;
     }
 
@@ -413,12 +413,9 @@ impl TypeChecker {
                                                 {
                                                     UserDefinedTypeData::Lambda(data) => {
                                                         let expected_params =
-                                                            &data.meta_data.prototype.params;
-                                                        let return_type = data
-                                                            .meta_data
-                                                            .prototype
-                                                            .return_type
-                                                            .clone();
+                                                            &data.meta_data.params;
+                                                        let return_type =
+                                                            data.meta_data.return_type.clone();
                                                         let result = self
                                                             .check_params_type_and_count(
                                                                 expected_params,
@@ -630,8 +627,8 @@ impl TypeChecker {
                             Lambda::Named((_, semantic_data)) => {
                                 match &*semantic_data.symbol_data.0 .0.as_ref().borrow() {
                                     UserDefinedTypeData::Lambda(data) => {
-                                        let expected_param_types = &data.meta_data.prototype.params;
-                                        let return_type = &data.meta_data.prototype.return_type;
+                                        let expected_param_types = &data.meta_data.params;
+                                        let return_type = &data.meta_data.return_type;
                                         let result = self.check_params_type_and_count(
                                             expected_param_types,
                                             params,
@@ -770,9 +767,8 @@ impl TypeChecker {
                                             {
                                                 UserDefinedTypeData::Lambda(data) => {
                                                     let expected_param_types =
-                                                        &data.meta_data.prototype.params;
-                                                    let return_type =
-                                                        &data.meta_data.prototype.return_type;
+                                                        &data.meta_data.params;
+                                                    let return_type = &data.meta_data.return_type;
                                                     let result = self.check_params_type_and_count(
                                                         expected_param_types,
                                                         params,

@@ -1,5 +1,5 @@
 use super::concrete::core::ConcreteTypesRegistryKey;
-use super::function::{FunctionData, FunctionPrototype, FunctionKind};
+use super::function::{CallablePrototypeData, FunctionData};
 use super::handler::SymbolDataEntry;
 use super::interfaces::{InterfaceData, InterfaceObject};
 use super::types::lambda_type::LambdaTypeData;
@@ -483,13 +483,11 @@ impl Namespace {
             scope_index,
             name,
             UserDefinedTypeData::Lambda(LambdaTypeData {
-                meta_data: FunctionData {
-                    prototype: FunctionPrototype {
-                        params: param_types,
-                        return_type,
-                    },
-                    generics: None,
+                meta_data: CallablePrototypeData {
+                    params: param_types,
+                    return_type,
                 },
+                generics: None,
             }),
             decl_range,
             lookup_func,

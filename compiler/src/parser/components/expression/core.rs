@@ -6,7 +6,6 @@ use crate::{
     lexer::token::{CoreToken, Token},
     parser::parser::JarvilParser,
 };
-use std::rc::Rc;
 
 // all the unary operators are right assosiative and all the binary operators are left assosiative.
 // below is the operator precedence in jarvil (lower to higher). This may be quite resembling with Python programming language.

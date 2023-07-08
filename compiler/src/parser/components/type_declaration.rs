@@ -3,7 +3,6 @@ use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::constants::common::DEF;
 use crate::lexer::token::CoreToken;
 use crate::{constants::common::IDENTIFIER, parser::parser::JarvilParser};
-use std::rc::Rc;
 
 pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
     let type_keyword_node = parser.expect("type");

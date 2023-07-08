@@ -1,14 +1,14 @@
 use super::core::OperatorCompatiblity;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey};
 use crate::scope::core::SymbolData;
-use crate::scope::function::FunctionPrototype;
+use crate::scope::function::CallablePrototypeData;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};
 
 #[derive(Debug)]
 pub enum Lambda {
     Named((String, ConcreteSymbolData<UserDefinedTypeData>)), // (name, semantic data)
-    Unnamed(FunctionPrototype),
+    Unnamed(CallablePrototypeData),
 }
 
 impl Lambda {
@@ -26,7 +26,7 @@ impl Lambda {
         ))
     }
 
-    pub fn new_with_unnamed(func_prototype: FunctionPrototype) -> Self {
+    pub fn new_with_unnamed(func_prototype: CallablePrototypeData) -> Self {
         Lambda::Unnamed(func_prototype)
     }
 }
@@ -55,18 +55,14 @@ impl AbstractType for Lambda {
                     _ => unreachable!(),
                 }*/
                 match self {
-                    Lambda::Named((_, self_named)) => {
-                        match other_data {
-                            Lambda::Named((_, other_named)) => todo!(),
-                            Lambda::Unnamed(other_unnamed) => todo!()
-                        }
-                    }
-                    Lambda::Unnamed(self_unnamed) => {
-                        match other_data {
-                            Lambda::Named((_, other_named)) => todo!(),
-                            Lambda::Unnamed(other_unnamed) => todo!()
-                        }
-                    }
+                    Lambda::Named((_, self_named)) => match other_data {
+                        Lambda::Named((_, other_named)) => todo!(),
+                        Lambda::Unnamed(other_unnamed) => todo!(),
+                    },
+                    Lambda::Unnamed(self_unnamed) => match other_data {
+                        Lambda::Named((_, other_named)) => todo!(),
+                        Lambda::Unnamed(other_unnamed) => todo!(),
+                    },
                 }
             }
             CoreType::Any => true,
