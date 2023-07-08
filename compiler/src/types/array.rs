@@ -115,12 +115,12 @@ impl AbstractNonStructTypes for Array {
     }
 
     fn get_builtin_methods(&self) -> &'static HashMap<&'static str, CallableData> {
-        BUILTIN_METHODS.with(|use_default| *use_default)
+        ARRAY_BUILTIN_METHODS.with(|use_default| *use_default)
     }
 }
 
 thread_local!(
-    static BUILTIN_METHODS: &'static HashMap<&'static str, CallableData> =
+    static ARRAY_BUILTIN_METHODS: &'static HashMap<&'static str, CallableData> =
         Box::leak(Box::new(HashMap::from([
             ("append", CallableData::new(vec![Type::new_with_generic(&SymbolData::new(UserDefinedTypeData::Generic(GenericTypeData {
                 category: GenericTypeDeclarationPlaceCategory::InStruct,
