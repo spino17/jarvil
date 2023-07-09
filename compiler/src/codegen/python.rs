@@ -416,6 +416,10 @@ impl Visitor for PythonCodeGenerator {
                 self.print_type_decl(type_decl);
                 return None;
             }
+            ASTNode::InterfaceDeclaration(_) => {
+                self.add_str_to_python_code("\n");
+                return None;
+            }
             ASTNode::ClassMethodCall(class_method_call) => {
                 self.print_class_method_call(class_method_call);
                 return None;

@@ -130,6 +130,8 @@ pub enum CoreStatementNode {
     BoundedMethodWrapper(BoundedMethodWrapperNode),
     TypeDeclaration(TypeDeclarationNode),
     StructPropertyDeclaration(StructPropertyDeclarationNode),
+    InterfaceDeclaration(InterfaceDeclarationNode),
+    InterfaceMethodPrototypeWrapper(InterfaceMethodPrototypeWrapperNode),
 }
 
 #[derive(Debug)]

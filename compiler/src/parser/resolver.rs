@@ -1097,6 +1097,7 @@ impl Visitor for Resolver {
                 self.declare_struct_type(struct_decl);
                 return None;
             }
+            ASTNode::InterfaceDeclaration(interface_decl) => todo!(),
             ASTNode::LambdaTypeDeclaration(lambda_type_decl) => {
                 self.declare_lambda_type(lambda_type_decl);
                 return None;

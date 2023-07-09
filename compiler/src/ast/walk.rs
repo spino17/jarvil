@@ -349,6 +349,16 @@ pub trait Visitor {
                 CoreStatementNode::StructPropertyDeclaration(struct_stmt) => {
                     self.walk_struct_property_declaration(struct_stmt);
                 }
+                CoreStatementNode::InterfaceDeclaration(interface_decl) => {
+                    self.walk_interface_decl(interface_decl);
+                }
+                CoreStatementNode::InterfaceMethodPrototypeWrapper(
+                    interface_method_prototype_wrapper,
+                ) => {
+                    self.walk_interface_method_prototype_wrapper(
+                        interface_method_prototype_wrapper,
+                    );
+                }
                 CoreStatementNode::Return(return_stmt) => {
                     self.walk_return_stmt(return_stmt);
                 }
