@@ -60,7 +60,10 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
             let type_decl_node = parser.type_decl();
             StatementNode::new_with_type_declaration(&type_decl_node)
         }
-        CoreToken::INTERFACE_KEYWORD => todo!(),
+        CoreToken::INTERFACE_KEYWORD => {
+            let interface_decl = parser.interface_decl();
+            StatementNode::new_with_interface_declaration(&interface_decl)
+        }
         CoreToken::RETURN => {
             let return_node = parser.expect("return");
             let token = &parser.curr_token();

@@ -1,10 +1,10 @@
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode, GenericTypeDeclNode,
-    IdentifierInDeclNode, IdentifierInUseNode, IdentifierNode, InterfaceMethodPrototypeWrapperNode,
-    NameTypeSpecNode, Node, OkTokenNode, SelfKeywordNode, SkippedTokenNode, StatementNode,
-    SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    UnaryExpressionNode, VariableDeclarationNode,
+    IdentifierInDeclNode, IdentifierInUseNode, IdentifierNode, InterfaceDeclarationNode,
+    InterfaceMethodPrototypeWrapperNode, NameTypeSpecNode, Node, OkTokenNode, SelfKeywordNode,
+    SkippedTokenNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode,
+    TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::code::JarvilCode;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
@@ -623,6 +623,10 @@ impl JarvilParser {
 
     pub fn interface_method_prototype_wrapper(&mut self) -> InterfaceMethodPrototypeWrapperNode {
         components::interface_declaration::interface_method_prototype_wrapper(self)
+    }
+
+    pub fn interface_decl(&mut self) -> InterfaceDeclarationNode {
+        components::interface_declaration::interface_decl(self)
     }
 
     pub fn type_decl(&mut self) -> TypeDeclarationNode {

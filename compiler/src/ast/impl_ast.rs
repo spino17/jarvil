@@ -227,6 +227,13 @@ impl StatementNode {
         StatementNode(node)
     }
 
+    pub fn new_with_interface_declaration(interface_decl: &InterfaceDeclarationNode) -> Self {
+        let node = Rc::new(CoreStatementNode::InterfaceDeclaration(
+            interface_decl.clone(),
+        ));
+        StatementNode(node)
+    }
+
     pub fn new_with_interface_method_prototype_wrapper(
         interface_method_prototype: &InterfaceMethodPrototypeWrapperNode,
     ) -> Self {
