@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode, GenericTypeDeclNode,
@@ -29,7 +31,7 @@ pub struct JarvilParser {
     code: JarvilCode,
     ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
-    errors: Vec<Diagnostics>,
+    errors: RefCell<Vec<Diagnostics>>,
 }
 
 impl JarvilParser {
@@ -41,7 +43,7 @@ impl JarvilParser {
             code,
             ignore_all_errors: false,
             correction_indent: 0,
-            errors: vec![],
+            errors: RefCell::new(vec![]),
         }
     }
 }
@@ -49,7 +51,7 @@ impl JarvilParser {
 impl Parser for JarvilParser {
     fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCode) {
         let code_node = self.code(token_vec);
-        (code_node, self.errors, self.code)
+        (code_node, self.errors.into_inner(), self.code)
     }
 }
 
@@ -141,7 +143,7 @@ impl JarvilParser {
 
     // ------------------- error logging utilities for terminal-based compilation -------------------
     pub fn log_missing_token_error(
-        &mut self,
+        &self,
         expected_symbols: &[&'static str],
         received_token: &Token,
     ) {
@@ -150,10 +152,10 @@ impl JarvilParser {
         }
         // -> TODO - check whether error on same line already exists
         let err = MissingTokenError::new(expected_symbols, received_token);
-        self.errors.push(Diagnostics::MissingToken(err));
+        self.errors.borrow_mut().push(Diagnostics::MissingToken(err));
     }
 
-    pub fn log_trailing_skipped_tokens_error(&mut self, skipped_tokens: Vec<SkippedTokenNode>) {
+    pub fn log_trailing_skipped_tokens_error(&self, skipped_tokens: Vec<SkippedTokenNode>) {
         if self.ignore_all_errors {
             return;
         }
@@ -165,11 +167,11 @@ impl JarvilParser {
                 .end()
                 .into(),
         );
-        self.errors.push(Diagnostics::InvalidTrailingTokens(err));
+        self.errors.borrow_mut().push(Diagnostics::InvalidTrailingTokens(err));
     }
 
     pub fn log_incorrectly_indented_block_error(
-        &mut self,
+        &self,
         range: TextRange,
         expected_indent: i64,
         received_indent: i64,
@@ -179,33 +181,33 @@ impl JarvilParser {
         }
         // -> TODO - check whether error on same line already exists
         let err = IncorrectlyIndentedBlockError::new(expected_indent, received_indent, range);
-        self.errors.push(Diagnostics::IncorrectlyIndentedBlock(err));
+        self.errors.borrow_mut().push(Diagnostics::IncorrectlyIndentedBlock(err));
     }
 
-    pub fn log_no_valid_statement_inside_block_error(&mut self, range: TextRange) {
+    pub fn log_no_valid_statement_inside_block_error(&self, range: TextRange) {
         if self.ignore_all_errors {
             return;
         }
         let err = NoValidStatementFoundInsideBlockBodyError::new(range);
-        self.errors
+        self.errors.borrow_mut()
             .push(Diagnostics::NoValidStatementFoundInsideBlockBody(err));
     }
 
-    pub fn log_invalid_l_value_error(&mut self, range: TextRange) {
+    pub fn log_invalid_l_value_error(&self, range: TextRange) {
         if self.ignore_all_errors {
             return;
         }
         // -> TODO - check whether error on same line already exists
         let err = InvalidLValueError::new(range);
-        self.errors.push(Diagnostics::InvalidLValue(err));
+        self.errors.borrow_mut().push(Diagnostics::InvalidLValue(err));
     }
 
-    pub fn log_single_sub_type_in_tuple_error(&mut self, range: TextRange) {
+    pub fn log_single_sub_type_in_tuple_error(&self, range: TextRange) {
         if self.ignore_all_errors {
             return;
         }
         let err = SingleSubTypeFoundInTupleError::new(range);
-        self.errors
+        self.errors.borrow_mut()
             .push(Diagnostics::SingleSubTypeFoundInTuple(err));
     }
 
