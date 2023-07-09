@@ -1,16 +1,13 @@
-use std::collections::HashMap;
-use text_size::TextRange;
-
-use super::core::{AbstractNonStructTypes, OperatorCompatiblity};
 use crate::lexer::token::BinaryOperatorKind;
-use crate::scope::core::SymbolData;
-use crate::scope::function::{CallableData, CallableKind};
-use crate::scope::types::core::UserDefinedTypeData;
-use crate::scope::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
+use crate::scope::function::CallableData;
+use crate::types::core::{AbstractNonStructTypes, OperatorCompatiblity};
 use crate::{
     constants::common::BOOL,
     types::core::{AbstractType, CoreType, Type},
 };
+use std::collections::HashMap;
+
+use super::builtin::ARRAY_BUILTIN_METHODS;
 
 #[derive(Debug)]
 pub struct Array {
@@ -118,14 +115,3 @@ impl AbstractNonStructTypes for Array {
         ARRAY_BUILTIN_METHODS.with(|use_default| *use_default)
     }
 }
-
-thread_local!(
-    static ARRAY_BUILTIN_METHODS: &'static HashMap<&'static str, CallableData> =
-        Box::leak(Box::new(HashMap::from([
-            ("append", CallableData::new(vec![Type::new_with_generic(&SymbolData::new(UserDefinedTypeData::Generic(GenericTypeData {
-                category: GenericTypeDeclarationPlaceCategory::InStruct,
-                index: 0,
-                interface_bounds: vec![]
-            }), TextRange::default(), true))], Type::new_with_void(), CallableKind::Method, true, None)),
-        ])))
-);

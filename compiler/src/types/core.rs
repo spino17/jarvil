@@ -9,7 +9,7 @@ use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::types::core::UserDefinedTypeData;
-use crate::types::{array::Array, atomic::Atomic};
+use crate::types::{array::core::Array, atomic::Atomic};
 use std::collections::HashMap as StdHashMap;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
@@ -26,11 +26,11 @@ pub trait AbstractNonStructTypes {
         match builtin_methods.get(method_name) {
             Some(callable_data) => {
                 let concrete_types = self.get_concrete_types();
-                return Some(
-                    callable_data
-                        .prototype
-                        .concretize_method_prototype(&concrete_types, &vec![], callable_data.kind),
-                );
+                return Some(callable_data.prototype.concretize_method_prototype(
+                    &concrete_types,
+                    &vec![],
+                    callable_data.kind,
+                ));
             }
             None => return None,
         }
