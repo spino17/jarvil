@@ -6,17 +6,29 @@ use crate::types::core::Type;
 pub struct ConcreteTypesRegistryKey(pub usize);
 
 #[derive(Debug, Clone)]
-pub struct ConcreteTypesTuple {
-    pub concrete_types: Vec<Type>,
-}
+pub struct ConcreteTypesTuple(pub Vec<Type>);
 
 impl ConcreteTypesTuple {
     pub fn new(concrete_types: Vec<Type>) -> Self {
-        ConcreteTypesTuple { concrete_types }
+        ConcreteTypesTuple(concrete_types)
     }
 
-    pub fn get_concrete_types(&self) -> &Vec<Type> {
-        &self.concrete_types
+    pub fn get_concrete_types(&self) -> &ConcreteTypesTuple {
+        self
+    }
+}
+
+impl ToString for ConcreteTypesTuple {
+    fn to_string(&self) -> String {
+        let mut s = "".to_string();
+        let concrete_types = &self.0;
+        let len = concrete_types.len();
+        s.push_str(&concrete_types[0].to_string());
+        for i in 1..len {
+            s.push_str(", ");
+            s.push_str(&concrete_types[i].to_string());
+        }
+        return s;
     }
 }
 

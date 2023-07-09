@@ -46,10 +46,12 @@ impl AbstractType for Struct {
                                             .borrow()
                                         {
                                             UserDefinedTypeData::Struct(other_struct_data) => {
-                                                let self_concrete_types =
-                                                    self_struct_data.get_concrete_types(self_key);
-                                                let other_concrete_types =
-                                                    other_struct_data.get_concrete_types(other_key);
+                                                let self_concrete_types = &self_struct_data
+                                                    .get_concrete_types(self_key)
+                                                    .0;
+                                                let other_concrete_types = &other_struct_data
+                                                    .get_concrete_types(other_key)
+                                                    .0;
                                                 let self_len = self_concrete_types.len();
                                                 let other_len = other_concrete_types.len();
                                                 assert!(self_len == other_len);
@@ -88,7 +90,7 @@ impl AbstractType for Struct {
         let concretized_concrete_types =
             match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
                 UserDefinedTypeData::Struct(struct_data) => {
-                    let concrete_types = struct_data.get_concrete_types(index);
+                    let concrete_types = &struct_data.get_concrete_types(index).0;
                     let mut concretized_concrete_types = concrete_types.clone();
                     for (index, ty) in concrete_types.iter().enumerate() {
                         if ty.has_generics() {
@@ -114,7 +116,22 @@ impl AbstractType for Struct {
 
 impl ToString for Struct {
     fn to_string(&self) -> String {
-        self.name.clone()
+        let mut s = self.name.to_string();
+        match self.semantic_data.index {
+            Some(index) => {
+                s.push('<');
+                match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
+                    UserDefinedTypeData::Struct(struct_data) => {
+                        let concrete_types = struct_data.get_concrete_types(index);
+                        s.push_str(&concrete_types.to_string());
+                    }
+                    _ => unreachable!(),
+                };
+                s.push('>');
+                return s;
+            }
+            None => return s,
+        }
     }
 }
 

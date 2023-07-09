@@ -1,7 +1,7 @@
 use crate::{
     scope::{
         concrete::{
-            core::ConcreteTypesRegistryKey,
+            core::{ConcreteTypesRegistryKey, ConcreteTypesTuple},
             registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
         },
         core::{AbstractConcreteTypesHandler, GenericTypeParams},
@@ -39,7 +39,7 @@ impl LambdaTypeData {
         }
     }
 
-    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &Vec<Type> {
+    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
         match &self.generics {
             Some(generics) => {
                 return generics
@@ -60,7 +60,7 @@ impl LambdaTypeData {
                     let concrete_types = generics
                         .concrete_types_registry
                         .get_concrete_types_at_key(key);
-                    return self.prototype.concretize_prototype(concrete_types);
+                    return self.prototype.concretize_prototype(&concrete_types.0);
                 }
                 None => unreachable!(),
             },

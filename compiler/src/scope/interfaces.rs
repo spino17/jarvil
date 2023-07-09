@@ -1,6 +1,8 @@
+use std::borrow::Borrow;
+
 use super::{
     concrete::{
-        core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
+        core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
         registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
     },
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
@@ -12,23 +14,23 @@ use rustc_hash::FxHashMap;
 use text_size::TextRange;
 
 #[derive(Debug, Clone)]
-pub struct InterfaceObject((String, ConcreteSymbolData<InterfaceData>)); // (name, semantic data)
+pub struct InterfaceObject(String, ConcreteSymbolData<InterfaceData>); // (name, semantic data)
 
 impl InterfaceObject {
     pub fn new(name: String, concrete_symbol_data: &ConcreteSymbolData<InterfaceData>) -> Self {
-        InterfaceObject((name, concrete_symbol_data.clone()))
+        InterfaceObject(name, concrete_symbol_data.clone())
     }
 
     pub fn is_eq(&self, other: &InterfaceObject) -> bool {
-        if self.0 .0.eq(&other.0 .0) {
+        if self.0.eq(&other.0) {
             // names of interfaces should be same
-            match self.0 .1.index {
-                Some(self_key) => match other.0 .1.index {
+            match self.1.index {
+                Some(self_key) => match other.1.index {
                     Some(other_key) => {
-                        let self_ref = &*self.0 .1.symbol_data.0 .0.as_ref().borrow();
-                        let other_ref = &*other.0 .1.symbol_data.0 .0.as_ref().borrow();
-                        let self_concrete_types = self_ref.get_concrete_types(self_key);
-                        let other_concrete_types = other_ref.get_concrete_types(other_key);
+                        let self_ref = &*self.1.symbol_data.0 .0.as_ref().borrow();
+                        let other_ref = &*other.1.symbol_data.0 .0.as_ref().borrow();
+                        let self_concrete_types = &self_ref.get_concrete_types(self_key).0;
+                        let other_concrete_types = &other_ref.get_concrete_types(other_key).0;
                         let self_len = self_concrete_types.len();
                         let other_len = other_concrete_types.len();
                         assert!(self_len == other_len);
@@ -45,6 +47,22 @@ impl InterfaceObject {
             }
         }
         return false;
+    }
+}
+
+impl ToString for InterfaceObject {
+    fn to_string(&self) -> String {
+        let mut s = self.0.to_string();
+        match self.1.index {
+            Some(index) => {
+                let interface_data_ref = &*self.1.symbol_data.0 .0.as_ref().borrow();
+                s.push('<');
+                s.push_str(&interface_data_ref.get_concrete_types(index).to_string());
+                s.push('>');
+                return s;
+            }
+            None => return s,
+        }
     }
 }
 
@@ -73,7 +91,7 @@ impl InterfaceData {
         }
     }
 
-    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &Vec<Type> {
+    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
         match &self.generics {
             Some(generics) => {
                 return generics

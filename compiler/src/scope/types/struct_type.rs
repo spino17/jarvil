@@ -1,3 +1,4 @@
+use crate::scope::concrete::core::ConcreteTypesTuple;
 use crate::scope::concrete::registry::{
     ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry,
 };
@@ -61,7 +62,7 @@ impl StructTypeData {
         }
     }
 
-    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &Vec<Type> {
+    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
         match &self.generics {
             Some(generics) => {
                 return generics

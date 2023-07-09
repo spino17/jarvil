@@ -40,10 +40,6 @@ impl AbstractType for Lambda {
                 // Lambda type has structural equivalence checks unlike struct type which is only compared by it's name
                 // This structural equivalence is important because we can have lambda types which are not named for example:
                 // let x = (...) -> <Type>: block would have `x` to be of type `Lambda` with no name but symbol_data.
-
-                // TODO - once generics gets integrated we have concrete types attached to the lambda type
-                // to enable structural equivalence of lambda type we have to get the concretized version of
-                // function prototype which then we would compare like non-generic lambda types.
                 match self {
                     Lambda::Named((_, self_named)) => {
                         match &*self_named.symbol_data.0 .0.as_ref().borrow() {
@@ -127,7 +123,7 @@ impl AbstractType for Lambda {
                 let concretized_concrete_types = match &*named.1.symbol_data.0 .0.as_ref().borrow()
                 {
                     UserDefinedTypeData::Lambda(lambda_data) => {
-                        let concrete_types = lambda_data.get_concrete_types(index);
+                        let concrete_types = &lambda_data.get_concrete_types(index).0;
                         let mut concretized_concrete_types = concrete_types.clone();
                         for (index, ty) in concrete_types.iter().enumerate() {
                             if ty.has_generics() {
@@ -157,7 +153,24 @@ impl AbstractType for Lambda {
 impl ToString for Lambda {
     fn to_string(&self) -> String {
         match self {
-            Lambda::Named((name, _)) => name.to_string(),
+            Lambda::Named((name, semantic_data)) => {
+                let mut s = name.to_string();
+                match semantic_data.index {
+                    Some(index) => {
+                        s.push('<');
+                        match &*semantic_data.symbol_data.0 .0.as_ref().borrow() {
+                            UserDefinedTypeData::Lambda(lambda_data) => {
+                                let concrete_types = lambda_data.get_concrete_types(index);
+                                s.push_str(&concrete_types.to_string());
+                            }
+                            _ => unreachable!(),
+                        };
+                        s.push('>');
+                        return s;
+                    }
+                    None => return s,
+                }
+            }
             Lambda::Unnamed(unnamed) => {
                 let self_param_types = &unnamed.params;
                 let self_return_type = &unnamed.return_type;
