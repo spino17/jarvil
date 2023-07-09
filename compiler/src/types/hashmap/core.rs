@@ -1,9 +1,12 @@
-use super::core::OperatorCompatiblity;
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
-    types::core::{AbstractType, CoreType, Type},
+    scope::function::CallableData,
+    types::core::{AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type},
 };
+use std::collections::HashMap as StdHashMap;
+
+use super::builtin::HASHMAP_BUILTIN_METHODS;
 
 #[derive(Debug)]
 pub struct HashMap {
@@ -94,5 +97,15 @@ impl OperatorCompatiblity for HashMap {
 
     fn check_or(&self, _other: &Type) -> Option<Type> {
         None
+    }
+}
+
+impl AbstractNonStructTypes for HashMap {
+    fn get_concrete_types(&self) -> Vec<Type> {
+        return vec![self.key_type.clone(), self.value_type.clone()];
+    }
+
+    fn get_builtin_methods(&self) -> &'static StdHashMap<&'static str, CallableData> {
+        HASHMAP_BUILTIN_METHODS.with(|use_default| *use_default)
     }
 }

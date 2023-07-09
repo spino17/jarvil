@@ -1,5 +1,5 @@
 use super::generic::Generic;
-use super::hashmap::HashMap;
+use super::hashmap::core::HashMap;
 use super::lambda::Lambda;
 use super::r#struct::Struct;
 use super::tuple::Tuple;
