@@ -39,6 +39,17 @@ impl LambdaTypeData {
         }
     }
 
+    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &Vec<Type> {
+        match &self.generics {
+            Some(generics) => {
+                return generics
+                    .concrete_types_registry
+                    .get_concrete_types_at_key(key)
+            }
+            None => unreachable!(),
+        }
+    }
+
     pub fn get_concrete_prototype(
         &self,
         key: Option<ConcreteTypesRegistryKey>,

@@ -118,7 +118,39 @@ impl AbstractType for Lambda {
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
-        todo!()
+        match self {
+            Lambda::Named(named) => {
+                let index = match named.1.index {
+                    Some(key) => key,
+                    None => unreachable!(),
+                };
+                let concretized_concrete_types = match &*named.1.symbol_data.0 .0.as_ref().borrow()
+                {
+                    UserDefinedTypeData::Lambda(lambda_data) => {
+                        let concrete_types = lambda_data.get_concrete_types(index);
+                        let mut concretized_concrete_types = concrete_types.clone();
+                        for (index, ty) in concrete_types.iter().enumerate() {
+                            if ty.has_generics() {
+                                concretized_concrete_types[index] = ty.concretize(context);
+                            }
+                        }
+                        concretized_concrete_types
+                    }
+                    _ => unreachable!(),
+                };
+                let new_key = named
+                    .1
+                    .symbol_data
+                    .register_concrete_types(concretized_concrete_types);
+                return Type::new_with_lambda_named(
+                    named.0.to_string(),
+                    &named.1.symbol_data,
+                    Some(new_key),
+                    false,
+                );
+            }
+            Lambda::Unnamed(_) => unreachable!(),
+        }
     }
 }
 

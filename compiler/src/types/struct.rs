@@ -81,7 +81,34 @@ impl AbstractType for Struct {
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
-        todo!()
+        let index = match self.semantic_data.index {
+            Some(key) => key,
+            None => unreachable!(),
+        };
+        let concretized_concrete_types =
+            match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
+                UserDefinedTypeData::Struct(struct_data) => {
+                    let concrete_types = struct_data.get_concrete_types(index);
+                    let mut concretized_concrete_types = concrete_types.clone();
+                    for (index, ty) in concrete_types.iter().enumerate() {
+                        if ty.has_generics() {
+                            concretized_concrete_types[index] = ty.concretize(context);
+                        }
+                    }
+                    concretized_concrete_types
+                }
+                _ => unreachable!(),
+            };
+        let new_key = self
+            .semantic_data
+            .symbol_data
+            .register_concrete_types(concretized_concrete_types);
+        return Type::new_with_struct(
+            self.name.to_string(),
+            &self.semantic_data.symbol_data,
+            Some(new_key),
+            false,
+        );
     }
 }
 
