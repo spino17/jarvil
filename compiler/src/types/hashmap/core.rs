@@ -1,12 +1,11 @@
+use super::builtin::HASHMAP_BUILTIN_METHODS;
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
-    scope::function::CallableData,
+    scope::{concrete::core::ConcretizationContext, function::CallableData},
     types::core::{AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type},
 };
 use std::collections::HashMap as StdHashMap;
-
-use super::builtin::HASHMAP_BUILTIN_METHODS;
 
 #[derive(Debug)]
 pub struct HashMap {
@@ -15,10 +14,10 @@ pub struct HashMap {
 }
 
 impl HashMap {
-    pub fn new(key_type: &Type, value_type: &Type) -> HashMap {
+    pub fn new(key_type: Type, value_type: Type) -> HashMap {
         HashMap {
-            key_type: key_type.clone(),
-            value_type: value_type.clone(),
+            key_type,
+            value_type,
         }
     }
 }
@@ -33,6 +32,20 @@ impl AbstractType for HashMap {
             CoreType::Any => true,
             _ => false,
         }
+    }
+
+    fn concretize(&self, context: &ConcretizationContext) -> Type {
+        let concrete_key_ty = if self.key_type.has_generics() {
+            self.key_type.concretize(context)
+        } else {
+            self.key_type.clone()
+        };
+        let concrete_value_ty = if self.value_type.has_generics() {
+            self.value_type.concretize(context)
+        } else {
+            self.value_type.clone()
+        };
+        return Type::new_with_hashmap(concrete_key_ty, concrete_value_ty);
     }
 }
 

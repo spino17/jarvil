@@ -1,5 +1,7 @@
 use super::core::OperatorCompatiblity;
-use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey};
+use crate::scope::concrete::core::{
+    ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext,
+};
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::types::core::UserDefinedTypeData;
@@ -113,6 +115,10 @@ impl AbstractType for Lambda {
             CoreType::Any => true,
             _ => false,
         }
+    }
+
+    fn concretize(&self, context: &ConcretizationContext) -> Type {
+        todo!()
     }
 }
 

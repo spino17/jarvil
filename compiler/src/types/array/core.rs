@@ -1,4 +1,6 @@
+use super::builtin::ARRAY_BUILTIN_METHODS;
 use crate::lexer::token::BinaryOperatorKind;
+use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::function::CallableData;
 use crate::types::core::{AbstractNonStructTypes, OperatorCompatiblity};
 use crate::{
@@ -7,18 +9,14 @@ use crate::{
 };
 use std::collections::HashMap;
 
-use super::builtin::ARRAY_BUILTIN_METHODS;
-
 #[derive(Debug)]
 pub struct Array {
     pub element_type: Type,
 }
 
 impl Array {
-    pub fn new(element_type: &Type) -> Array {
-        Array {
-            element_type: element_type.clone(),
-        }
+    pub fn new(element_type: Type) -> Array {
+        Array { element_type }
     }
 
     fn check_operator_for_array(
@@ -50,6 +48,10 @@ impl AbstractType for Array {
             _ => false,
         }
     }
+
+    fn concretize(&self, context: &ConcretizationContext) -> Type {
+        Type::new_with_array(self.element_type.concretize(context))
+    }
 }
 
 impl ToString for Array {
@@ -64,7 +66,7 @@ impl OperatorCompatiblity for Array {
             CoreType::Array(array) => {
                 let sub_type = &array.element_type;
                 if self.element_type.is_eq(sub_type) {
-                    return Some(Type::new_with_array(sub_type));
+                    return Some(Type::new_with_array(sub_type.clone()));
                 } else {
                     return None;
                 }

@@ -20,7 +20,7 @@ pub fn range_meta_data() -> CallableData {
     CallableData {
         prototype: CallablePrototypeData {
             params: vec![Type::new_with_atomic(INT), Type::new_with_atomic(INT)],
-            return_type: Type::new_with_array(&Type::new_with_atomic(INT)),
+            return_type: Type::new_with_array(Type::new_with_atomic(INT)),
             is_concretization_required: false,
         },
         kind: CallableKind::Function,

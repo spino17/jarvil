@@ -5,7 +5,7 @@ use super::r#struct::Struct;
 use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
-use crate::scope::concrete::core::ConcreteTypesRegistryKey;
+use crate::scope::concrete::core::{ConcreteTypesRegistryKey, ConcretizationContext};
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::types::core::UserDefinedTypeData;
@@ -16,6 +16,7 @@ use std::rc::Rc;
 
 pub trait AbstractType {
     fn is_eq(&self, other_ty: &Type) -> bool;
+    fn concretize(&self, context: &ConcretizationContext) -> Type;
 }
 
 pub trait AbstractNonStructTypes {
@@ -26,10 +27,8 @@ pub trait AbstractNonStructTypes {
         match builtin_methods.get(method_name) {
             Some(callable_data) => {
                 let concrete_types = self.get_concrete_types();
-                return Some(callable_data.prototype.concretize_method_prototype(
-                    &concrete_types,
-                    &vec![],
-                    callable_data.kind,
+                return Some(callable_data.prototype.concretize_prototype_core(
+                    &ConcretizationContext::new(&concrete_types, &vec![]),
                 ));
             }
             None => return None,
@@ -90,10 +89,11 @@ impl Type {
         Type(Rc::new(CoreType::Atomic(Atomic::new(name))), false)
     }
 
-    pub fn new_with_array(element_type: &Type) -> Type {
+    pub fn new_with_array(element_type: Type) -> Type {
+        let has_generics = element_type.has_generics();
         Type(
             Rc::new(CoreType::Array(Array::new(element_type))),
-            element_type.has_generics(),
+            has_generics,
         )
     }
 
@@ -109,10 +109,11 @@ impl Type {
         Type(Rc::new(CoreType::Tuple(Tuple::new(types))), has_generics)
     }
 
-    pub fn new_with_hashmap(key_type: &Type, value_type: &Type) -> Type {
+    pub fn new_with_hashmap(key_type: Type, value_type: Type) -> Type {
+        let has_generics = key_type.has_generics() || value_type.has_generics();
         Type(
             Rc::new(CoreType::HashMap(HashMap::new(key_type, value_type))),
-            key_type.has_generics() || value_type.has_generics(),
+            has_generics,
         )
     }
 
@@ -338,6 +339,23 @@ impl AbstractType for Type {
             },
             CoreType::Unset => return false,
             CoreType::Any => return true,
+        }
+    }
+
+    fn concretize(&self, context: &ConcretizationContext) -> Type {
+        assert!(self.has_generics());
+        match self.0.as_ref() {
+            CoreType::Struct(struct_type) => struct_type.concretize(context),
+            CoreType::Lambda(lambda_type) => lambda_type.concretize(context),
+            CoreType::Array(array_type) => array_type.concretize(context),
+            CoreType::Tuple(tuple_type) => tuple_type.concretize(context),
+            CoreType::HashMap(hashmap_type) => hashmap_type.concretize(context),
+            CoreType::Generic(generic_type) => generic_type.concretize(context),
+            CoreType::Atomic(_)
+            | CoreType::Unknown
+            | CoreType::Void
+            | CoreType::Unset
+            | CoreType::Any => unreachable!(),
         }
     }
 }

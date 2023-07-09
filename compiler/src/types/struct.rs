@@ -1,6 +1,6 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::scope::{
-    concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
+    concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext},
     core::SymbolData,
     types::core::UserDefinedTypeData,
 };
@@ -78,6 +78,10 @@ impl AbstractType for Struct {
             CoreType::Any => true,
             _ => false,
         }
+    }
+
+    fn concretize(&self, context: &ConcretizationContext) -> Type {
+        todo!()
     }
 }
 

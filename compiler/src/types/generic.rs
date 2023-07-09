@@ -1,5 +1,9 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
-use crate::scope::{core::SymbolData, types::core::UserDefinedTypeData};
+use crate::scope::{
+    concrete::core::ConcretizationContext,
+    core::SymbolData,
+    types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
+};
 
 #[derive(Debug)]
 pub struct Generic {
@@ -46,6 +50,24 @@ impl AbstractType for Generic {
             }
             CoreType::Any => true,
             _ => false,
+        }
+    }
+
+    fn concretize(&self, context: &ConcretizationContext) -> Type {
+        match &*self.semantic_data.0 .0.as_ref().borrow() {
+            UserDefinedTypeData::Generic(generic_data) => {
+                let index = generic_data.index;
+                let category = &generic_data.category;
+                match category {
+                    GenericTypeDeclarationPlaceCategory::InStruct => {
+                        return context.struct_concrete_types[index].clone()
+                    }
+                    GenericTypeDeclarationPlaceCategory::InCallable => {
+                        return context.function_local_concrete_types[index].clone()
+                    }
+                }
+            }
+            _ => unreachable!(),
         }
     }
 }

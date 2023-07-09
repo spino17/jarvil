@@ -1,4 +1,5 @@
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
+use crate::scope::concrete::core::ConcretizationContext;
 use crate::types::core::{AbstractType, CoreType, Type};
 
 use super::core::OperatorCompatiblity;
@@ -66,6 +67,10 @@ impl AbstractType for Atomic {
             CoreType::Any => true,
             _ => false,
         }
+    }
+
+    fn concretize(&self, _context: &ConcretizationContext) -> Type {
+        unreachable!()
     }
 }
 

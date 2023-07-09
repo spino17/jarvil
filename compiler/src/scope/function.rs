@@ -1,5 +1,5 @@
 use super::{
-    concrete::core::ConcreteTypesRegistryKey,
+    concrete::core::{ConcreteTypesRegistryKey, ConcretizationContext},
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
 };
 use crate::types::core::AbstractType;
@@ -57,17 +57,28 @@ impl CallablePrototypeData {
         return true;
     }
 
-    pub fn concretize_method_prototype(
+    pub fn concretize_prototype_core(
         &self,
-        struct_concrete_types: &Vec<Type>,
-        method_concrete_types: &Vec<Type>,
-        kind: CallableKind,
+        context: &ConcretizationContext,
     ) -> PrototypeConcretizationResult {
-        assert!(kind == CallableKind::Method);
         if !self.is_concretization_required {
             return PrototypeConcretizationResult::UnConcretized(self);
         }
-        todo!()
+        let mut concrete_params = self.params.clone();
+        let mut concrete_return_type = self.return_type.clone();
+        for (index, param_ty) in self.params.iter().enumerate() {
+            if param_ty.has_generics() {
+                concrete_params[index] = param_ty.concretize(context);
+            }
+        }
+        if self.return_type.has_generics() {
+            concrete_return_type = self.return_type.concretize(context);
+        }
+        return PrototypeConcretizationResult::Concretized(CallablePrototypeData::new(
+            concrete_params,
+            concrete_return_type,
+            false,
+        ));
     }
 
     pub fn concretize_prototype(
@@ -77,7 +88,8 @@ impl CallablePrototypeData {
         if !self.is_concretization_required {
             return PrototypeConcretizationResult::UnConcretized(self);
         }
-        todo!()
+        return self
+            .concretize_prototype_core(&ConcretizationContext::new(&vec![], concrete_types));
     }
 }
 

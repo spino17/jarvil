@@ -865,7 +865,7 @@ impl ArrayTypeNode {
             .type_obj_before_resolved(resolver, scope_index)
         {
             TypeResolveKind::Resolved(element_type) => {
-                return TypeResolveKind::Resolved(Type::new_with_array(&element_type))
+                return TypeResolveKind::Resolved(Type::new_with_array(element_type))
             }
             TypeResolveKind::Unresolved(identifier_node) => {
                 return TypeResolveKind::Unresolved(identifier_node)
@@ -885,7 +885,7 @@ impl ArrayTypeNode {
             .type_obj_after_resolved(code, namespace_handler)
         {
             TypeResolveKind::Resolved(element_type) => {
-                return TypeResolveKind::Resolved(Type::new_with_array(&element_type))
+                return TypeResolveKind::Resolved(Type::new_with_array(element_type))
             }
             TypeResolveKind::Unresolved(identifier_node) => {
                 return TypeResolveKind::Unresolved(identifier_node)
@@ -1008,18 +1008,15 @@ impl HashMapTypeNode {
         match key_result {
             TypeResolveKind::Resolved(key_type) => match value_result {
                 TypeResolveKind::Resolved(value_type) => {
-                    return TypeResolveKind::Resolved(Type::new_with_hashmap(
-                        &key_type,
-                        &value_type,
-                    ))
+                    return TypeResolveKind::Resolved(Type::new_with_hashmap(key_type, value_type))
                 }
                 TypeResolveKind::Unresolved(unresolved_vec) => {
                     return TypeResolveKind::Unresolved(unresolved_vec)
                 }
                 TypeResolveKind::Invalid => {
                     return TypeResolveKind::Resolved(Type::new_with_hashmap(
-                        &key_type,
-                        &Type::new_with_unknown(),
+                        key_type,
+                        Type::new_with_unknown(),
                     ))
                 }
             },
@@ -1036,8 +1033,8 @@ impl HashMapTypeNode {
             TypeResolveKind::Invalid => match value_result {
                 TypeResolveKind::Resolved(value_type) => {
                     return TypeResolveKind::Resolved(Type::new_with_hashmap(
-                        &Type::new_with_unknown(),
-                        &value_type,
+                        Type::new_with_unknown(),
+                        value_type,
                     ))
                 }
                 TypeResolveKind::Unresolved(unresolved_vec) => {

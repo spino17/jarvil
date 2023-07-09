@@ -2,6 +2,7 @@ use super::core::OperatorCompatiblity;
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
+    scope::concrete::core::ConcretizationContext,
     types::core::{AbstractType, CoreType, Type},
 };
 use std::cmp;
@@ -62,6 +63,16 @@ impl AbstractType for Tuple {
             CoreType::Any => true,
             _ => false,
         }
+    }
+
+    fn concretize(&self, context: &ConcretizationContext) -> Type {
+        let mut concrete_types = self.sub_types.clone();
+        for (index, ty) in self.sub_types.iter().enumerate() {
+            if ty.has_generics() {
+                concrete_types[index] = ty.concretize(context);
+            }
+        }
+        return Type::new_with_tuple(concrete_types);
     }
 }
 
