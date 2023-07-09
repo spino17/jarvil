@@ -9,7 +9,7 @@ pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 5] =
     [ATOMIC_TYPE, IDENTIFIER, "[", "{", "("];
 
 pub fn type_expr(parser: &mut JarvilParser) -> TypeExpressionNode {
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     match token.core_token {
         CoreToken::ATOMIC_TYPE => {
             let atomic_type_node = parser.expect(ATOMIC_TYPE);

@@ -54,8 +54,8 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
                 return BlockNode::new(stmts_vec, &newline_node);
             }
         };
-        while !is_starting_with_fn(&parser.curr_token()) {
-            let token = &parser.curr_token();
+        while !is_starting_with_fn(parser.curr_token()) {
+            let token = parser.curr_token();
             leading_skipped_tokens.push(SkippedTokenNode::new(token));
             parser.log_missing_token_error(expected_symbols, token);
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
@@ -70,7 +70,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
                 )),
             ));
         }
-        let token = &parser.curr_token();
+        let token = parser.curr_token();
         if token.is_eq(ENDMARKER) {
             parser.set_indent_level(parser.curr_indent_level() - 1);
             if !has_atleast_one_stmt {

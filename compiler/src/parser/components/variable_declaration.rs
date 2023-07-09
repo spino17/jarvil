@@ -8,7 +8,7 @@ pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
     let identifier_node = parser.expect_ident(); // decl - generic args will only for lambdas
                                                  // TODO - add optional type-casting expression here
     let equal_node = parser.expect("=");
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     let r_node = match token.core_token {
         CoreToken::LAMBDA_KEYWORD => {
             let lambda_keyword_node = parser.expect(LAMBDA_KEYWORD);

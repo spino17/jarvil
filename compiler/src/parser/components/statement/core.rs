@@ -46,7 +46,7 @@ pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
 // method to allow or disallow certain statements inside the block for example: in struct block
 // no other statement is allowed except ones starting with `<identifier>` and `def`.
 pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     let statement_node = match token.core_token {
         CoreToken::LET => {
             let variable_decl_node = parser.variable_decl();
@@ -66,7 +66,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         }
         CoreToken::RETURN => {
             let return_node = parser.expect("return");
-            let token = &parser.curr_token();
+            let token = parser.curr_token();
             match token.core_token {
                 CoreToken::NEWLINE | CoreToken::ENDMARKER => {
                     let newline_node = parser.expect_terminators();
@@ -87,7 +87,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         CoreToken::CONTINUE => todo!(),
         _ => {
             let expr_node = parser.expr();
-            let token = &parser.curr_token();
+            let token = parser.curr_token();
             match token.core_token {
                 CoreToken::EQUAL => {
                     let assignment_node = parser.assignment(&expr_node);
@@ -104,7 +104,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
 }
 
 pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     match token.core_token {
         CoreToken::IDENTIFIER => {
             let name_type_spec_node = parser.name_type_spec();
@@ -119,7 +119,7 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
 }
 
 pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     match token.core_token {
         CoreToken::IDENTIFIER => {
             let name_type_spec_node = parser.name_type_spec();

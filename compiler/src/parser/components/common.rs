@@ -18,7 +18,7 @@ pub fn name_type_spec(parser: &mut JarvilParser) -> NameTypeSpecNode {
 
 pub fn name_type_specs(parser: &mut JarvilParser) -> SymbolSeparatedSequenceNode<NameTypeSpecNode> {
     let first_arg_node = parser.name_type_spec();
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     match token.core_token {
         CoreToken::COMMA => {
             let comma_node = parser.expect(",");
@@ -37,7 +37,7 @@ pub fn type_tuple(
     parser: &mut JarvilParser,
 ) -> (SymbolSeparatedSequenceNode<TypeExpressionNode>, usize) {
     let first_type_node = parser.type_expr();
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     // TODO - check that atleast two types are parsed inside tuple type expression
     match token.core_token {
         CoreToken::COMMA => {

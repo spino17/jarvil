@@ -36,7 +36,7 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
 }
 
 pub fn unary_expr(parser: &mut JarvilParser) -> UnaryExpressionNode {
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     let unary_expr_node = match token.core_token {
         CoreToken::PLUS => {
             let plus_node = parser.expect("+");
@@ -95,7 +95,7 @@ pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 8] = [
 ];
 
 pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     if !is_atomic_expression_starting_with(token) {
         parser.log_missing_token_error(&ATOMIC_EXPRESSION_STARTING_SYMBOLS, token);
         return AtomicExpressionNode::new_with_missing_tokens(

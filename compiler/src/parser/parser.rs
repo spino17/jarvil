@@ -93,8 +93,8 @@ impl JarvilParser {
         self.correction_indent = self.correction_indent + addition;
     }
 
-    pub fn curr_token(&mut self) -> Token {
-        self.token_vec[self.lookahead].clone()
+    pub fn curr_token(&self) -> &Token {
+        &self.token_vec[self.lookahead]
     }
 
     pub fn check_curr_token(&self, symbol: &str) -> bool {
@@ -123,7 +123,7 @@ impl JarvilParser {
     pub fn skip_to_newline(&mut self) -> Vec<SkippedTokenNode> {
         let mut skipped_tokens: Vec<SkippedTokenNode> = vec![];
         loop {
-            let token = &self.token_vec[self.lookahead].clone();
+            let token = self.curr_token();
             if token.is_eq("\n") {
                 self.log_trailing_skipped_tokens_error(skipped_tokens.clone());
                 skipped_tokens.push(SkippedTokenNode::new(&token));
@@ -152,7 +152,9 @@ impl JarvilParser {
         }
         // -> TODO - check whether error on same line already exists
         let err = MissingTokenError::new(expected_symbols, received_token);
-        self.errors.borrow_mut().push(Diagnostics::MissingToken(err));
+        self.errors
+            .borrow_mut()
+            .push(Diagnostics::MissingToken(err));
     }
 
     pub fn log_trailing_skipped_tokens_error(&self, skipped_tokens: Vec<SkippedTokenNode>) {
@@ -167,7 +169,9 @@ impl JarvilParser {
                 .end()
                 .into(),
         );
-        self.errors.borrow_mut().push(Diagnostics::InvalidTrailingTokens(err));
+        self.errors
+            .borrow_mut()
+            .push(Diagnostics::InvalidTrailingTokens(err));
     }
 
     pub fn log_incorrectly_indented_block_error(
@@ -181,7 +185,9 @@ impl JarvilParser {
         }
         // -> TODO - check whether error on same line already exists
         let err = IncorrectlyIndentedBlockError::new(expected_indent, received_indent, range);
-        self.errors.borrow_mut().push(Diagnostics::IncorrectlyIndentedBlock(err));
+        self.errors
+            .borrow_mut()
+            .push(Diagnostics::IncorrectlyIndentedBlock(err));
     }
 
     pub fn log_no_valid_statement_inside_block_error(&self, range: TextRange) {
@@ -189,7 +195,8 @@ impl JarvilParser {
             return;
         }
         let err = NoValidStatementFoundInsideBlockBodyError::new(range);
-        self.errors.borrow_mut()
+        self.errors
+            .borrow_mut()
             .push(Diagnostics::NoValidStatementFoundInsideBlockBody(err));
     }
 
@@ -199,7 +206,9 @@ impl JarvilParser {
         }
         // -> TODO - check whether error on same line already exists
         let err = InvalidLValueError::new(range);
-        self.errors.borrow_mut().push(Diagnostics::InvalidLValue(err));
+        self.errors
+            .borrow_mut()
+            .push(Diagnostics::InvalidLValue(err));
     }
 
     pub fn log_single_sub_type_in_tuple_error(&self, range: TextRange) {
@@ -207,7 +216,8 @@ impl JarvilParser {
             return;
         }
         let err = SingleSubTypeFoundInTupleError::new(range);
-        self.errors.borrow_mut()
+        self.errors
+            .borrow_mut()
             .push(Diagnostics::SingleSubTypeFoundInTuple(err));
     }
 
@@ -215,8 +225,9 @@ impl JarvilParser {
     pub fn expect(&mut self, symbol: &'static str) -> TokenNode {
         let token = self.curr_token();
         if token.is_eq(symbol) {
+            let token_node = TokenNode::new_with_ok(&token);
             self.scan_next_token();
-            TokenNode::new_with_ok(&token)
+            token_node
         } else {
             self.log_missing_token_error(&[symbol], &token);
             TokenNode::new_with_missing_tokens(vec![symbol], &token)
@@ -284,8 +295,8 @@ impl JarvilParser {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
-            self.scan_next_token();
             let ok_token_node = OkTokenNode::new(&token);
+            self.scan_next_token();
             return IdentifierInDeclNode::new_with_ok(&ok_token_node, None);
         } else {
             self.log_missing_token_error(&[symbol], &token);
@@ -297,8 +308,8 @@ impl JarvilParser {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
-            self.scan_next_token();
             let ok_token_node = OkTokenNode::new(&token);
+            self.scan_next_token();
             let next_token = self.curr_token();
             match next_token.core_token {
                 CoreToken::LBRACKET => {
@@ -324,8 +335,8 @@ impl JarvilParser {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
-            self.scan_next_token();
             let ok_token_node = OkTokenNode::new(&token);
+            self.scan_next_token();
             let next_token = self.curr_token();
             match next_token.core_token {
                 CoreToken::LBRACKET => {
@@ -362,8 +373,8 @@ impl JarvilParser {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
-            self.scan_next_token();
             let ok_token_node = OkTokenNode::new(&token);
+            self.scan_next_token();
             let next_token = self.curr_token();
             match next_token.core_token {
                 CoreToken::LBRACKET => {
@@ -389,8 +400,8 @@ impl JarvilParser {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {
-            self.scan_next_token();
             let ok_token_node = OkTokenNode::new(&token);
+            self.scan_next_token();
             IdentifierNode::new_with_ok(&ok_token_node)
         } else {
             self.log_missing_token_error(&[symbol], &token);
@@ -402,8 +413,8 @@ impl JarvilParser {
         let token = self.curr_token();
         let symbol = SELF;
         if token.is_eq(symbol) {
-            self.scan_next_token();
             let ok_token_node = OkTokenNode::new(&token);
+            self.scan_next_token();
             SelfKeywordNode::new_with_ok(&ok_token_node)
         } else {
             self.log_missing_token_error(&[symbol], &token);
@@ -415,8 +426,9 @@ impl JarvilParser {
         let symbols = &["\n", ENDMARKER];
         let token = self.curr_token();
         if token.is_eq("\n") || token.is_eq(ENDMARKER) {
+            let token_node = TokenNode::new_with_ok(&token);
             self.scan_next_token();
-            return TokenNode::new_with_ok(&token);
+            return token_node;
         } else {
             self.log_missing_token_error(symbols, &token);
             return TokenNode::new_with_missing_tokens(symbols.to_vec(), &token);

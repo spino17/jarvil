@@ -5,12 +5,12 @@ use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
 
 pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> AtomNode {
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     match token.core_token {
         CoreToken::DOT => {
             let dot_node = parser.expect(".");
             let property_or_method_name_node = parser.expect_ident(); // usage
-            match &parser.curr_token().core_token {
+            match parser.curr_token().core_token {
                 CoreToken::LPAREN => {
                     let lparen_node = parser.expect("(");
                     let mut params_node: Option<&SymbolSeparatedSequenceNode<ExpressionNode>> =
@@ -73,11 +73,11 @@ pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> At
 }
 
 pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     match token.core_token {
         CoreToken::IDENTIFIER => {
             let leading_identifier_node = parser.expect_ident(); // usage
-            let token = &parser.curr_token();
+            let token = parser.curr_token();
             match token.core_token {
                 CoreToken::LPAREN => {
                     let lparen_node = parser.expect("(");

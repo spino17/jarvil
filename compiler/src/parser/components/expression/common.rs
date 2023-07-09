@@ -4,7 +4,7 @@ use crate::parser::parser::JarvilParser;
 
 pub fn params(parser: &mut JarvilParser) -> SymbolSeparatedSequenceNode<ExpressionNode> {
     let first_param_node = parser.expr();
-    let token = &parser.curr_token();
+    let token = parser.curr_token();
     match token.core_token {
         CoreToken::COMMA => {
             let comma_node = parser.expect(",");
