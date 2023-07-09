@@ -143,11 +143,17 @@ pub struct CoreInterfaceDeclarationNode {
 }
 
 #[derive(Debug)]
+pub enum InterfaceMethodTerminalNode {
+    NoDefaultBody(TokenNode), // newline
+    HasDefaultBody(TokenNode, BlockNode),
+}
+
+#[derive(Debug)]
 pub struct CoreInterfaceMethodPrototypeWrapperNode {
     pub def_keyword: TokenNode,
     pub name: IdentifierInDeclNode,
     pub prototype: CallablePrototypeNode,
-    pub optional_default_body: Option<(TokenNode, BlockNode)>,
+    pub terminal: InterfaceMethodTerminalNode,
 }
 
 #[derive(Debug)]

@@ -23,14 +23,14 @@ use super::ast::{
     ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode,
     HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode, IdentifierNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InterfaceDeclarationNode,
-    InterfaceMethodPrototypeWrapperNode, InvalidLValueNode, LambdaDeclarationNode,
-    LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode, OkAssignmentNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkIdentifierNode, OkSelfKeywordNode,
-    OkTokenNode, OnlyUnaryExpressionNode, ParenthesisedExpressionNode, PropertyAccessNode,
-    RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode,
-    SkippedTokenNode, StatemenIndentWrapperNode, StatementNode, StructDeclarationNode,
-    StructPropertyDeclarationNode, SymbolSeparatedSequenceNode, TokenNode, TupleTypeNode,
-    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
+    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, InvalidLValueNode,
+    LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode,
+    OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkIdentifierNode,
+    OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode, ParenthesisedExpressionNode,
+    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
+    SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode, StatementNode,
+    StructDeclarationNode, StructPropertyDeclarationNode, SymbolSeparatedSequenceNode, TokenNode,
+    TupleTypeNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
     UserDefinedTypeNode, VariableDeclarationNode,
 };
 use super::iterators::SymbolSeparatedSequenceIterator;
@@ -223,6 +223,15 @@ impl StatementNode {
     pub fn new_with_struct_stmt(struct_stmt: &StructPropertyDeclarationNode) -> Self {
         let node = Rc::new(CoreStatementNode::StructPropertyDeclaration(
             struct_stmt.clone(),
+        ));
+        StatementNode(node)
+    }
+
+    pub fn new_with_interface_method_prototype_wrapper(
+        interface_method_prototype: &InterfaceMethodPrototypeWrapperNode,
+    ) -> Self {
+        let node = Rc::new(CoreStatementNode::InterfaceMethodPrototypeWrapper(
+            interface_method_prototype.clone(),
         ));
         StatementNode(node)
     }
@@ -655,7 +664,7 @@ impl Node for VariableDeclarationNode {
 }
 
 impl InterfaceDeclarationNode {
-    fn new(
+    pub fn new(
         interface_keyword: &TokenNode,
         name: &IdentifierInDeclNode,
         colon: &TokenNode,
@@ -683,20 +692,17 @@ impl Node for InterfaceDeclarationNode {
 }
 
 impl InterfaceMethodPrototypeWrapperNode {
-    fn new(
+    pub fn new(
         def_keyword: &TokenNode,
         name: &IdentifierInDeclNode,
         prototype: &CallablePrototypeNode,
-        optional_default_body: Option<(&TokenNode, &BlockNode)>,
+        terminal: InterfaceMethodTerminalNode,
     ) -> Self {
         let node = Rc::new(CoreInterfaceMethodPrototypeWrapperNode {
             def_keyword: def_keyword.clone(),
             name: name.clone(),
             prototype: prototype.clone(),
-            optional_default_body: match optional_default_body {
-                Some((colon, block)) => Some((colon.clone(), block.clone())),
-                None => None,
-            },
+            terminal,
         });
         InterfaceMethodPrototypeWrapperNode(node)
     }
@@ -706,11 +712,13 @@ impl InterfaceMethodPrototypeWrapperNode {
 
 impl Node for InterfaceMethodPrototypeWrapperNode {
     fn range(&self) -> TextRange {
-        match &self.0.as_ref().optional_default_body {
-            Some((_, optional_default_body)) => {
-                impl_range!(self.0.as_ref().def_keyword, optional_default_body)
+        match &self.0.as_ref().terminal {
+            InterfaceMethodTerminalNode::NoDefaultBody(newline) => {
+                impl_range!(self.0.as_ref().def_keyword, newline)
             }
-            None => impl_range!(self.0.as_ref().def_keyword, self.0.as_ref().prototype),
+            InterfaceMethodTerminalNode::HasDefaultBody(_, block) => {
+                impl_range!(self.0.as_ref().def_keyword, block)
+            }
         }
     }
     fn start_line_number(&self) -> usize {

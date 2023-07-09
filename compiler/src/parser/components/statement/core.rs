@@ -114,3 +114,24 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
         _ => unreachable!(),
     }
 }
+
+pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
+    let token = &parser.curr_token();
+    match token.core_token {
+        CoreToken::IDENTIFIER => {
+            let name_type_spec_node = parser.name_type_spec();
+            let newline_node = parser.expect_terminators();
+            let struct_stmt =
+                StructPropertyDeclarationNode::new(&name_type_spec_node, &newline_node);
+            return StatementNode::new_with_struct_stmt(&struct_stmt);
+        }
+        CoreToken::DEF => {
+            let interface_method_prototype_wrapper_node =
+                parser.interface_method_prototype_wrapper();
+            return StatementNode::new_with_interface_method_prototype_wrapper(
+                &interface_method_prototype_wrapper_node,
+            );
+        }
+        _ => unreachable!(),
+    }
+}

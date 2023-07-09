@@ -2,19 +2,18 @@
 // cover and the representation of type expressions in terms of type objects.
 
 use super::resolver::Resolver;
-use crate::ast::ast::InterfaceDeclarationNode;
+use crate::ast::ast::InterfaceMethodTerminalNode;
 use crate::types::lambda::Lambda;
 use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
             BinaryExpressionNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode,
-            CallableBodyNode, CallablePrototypeNode, ComparisonNode, CoreAssignmentNode,
-            CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
-            CoreIdentifierNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode,
-            LambdaDeclarationNode, NameTypeSpecNode, Node, OkIdentifierNode,
+            CallablePrototypeNode, ComparisonNode, CoreAssignmentNode, CoreAtomNode,
+            CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode, CoreIdentifierNode,
+            CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatemenIndentWrapperNode,
+            CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreUnaryExpressionNode,
+            ExpressionNode, LambdaDeclarationNode, NameTypeSpecNode, Node, OkIdentifierNode,
             OnlyUnaryExpressionNode, RAssignmentNode, RVariableDeclarationNode,
             ReturnStatementNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode,
             TypeExpressionNode, TypeResolveKind, UnaryExpressionNode, VariableDeclarationNode,
@@ -1346,8 +1345,8 @@ impl TypeChecker {
             ) => {
                 let core_interface_method_prototype_wrapper =
                     interface_method_prototype_wrapper.core_ref();
-                if let Some((_, optional_default_body)) =
-                    &core_interface_method_prototype_wrapper.optional_default_body
+                if let InterfaceMethodTerminalNode::HasDefaultBody(_, optional_default_body) =
+                    &core_interface_method_prototype_wrapper.terminal
                 {
                     self.check_callable_body(
                         &core_interface_method_prototype_wrapper.prototype,

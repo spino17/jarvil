@@ -1,7 +1,8 @@
 use super::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, GenericTypeDeclNode, IdentifierInDeclNode,
     IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, SymbolSeparatedSequenceNode, TupleTypeNode,
+    InterfaceMethodTerminalNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    SymbolSeparatedSequenceNode, TupleTypeNode,
 };
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
@@ -417,11 +418,12 @@ pub trait Visitor {
                 self.walk_token(&core_interface_method_prototype_wrapper.def_keyword);
                 self.walk_identifier_in_decl(&core_interface_method_prototype_wrapper.name);
                 self.walk_callable_prototype(&core_interface_method_prototype_wrapper.prototype);
-                if let Some((colon, block)) =
-                    &core_interface_method_prototype_wrapper.optional_default_body
-                {
-                    self.walk_token(colon);
-                    self.walk_block(block);
+                match &core_interface_method_prototype_wrapper.terminal {
+                    InterfaceMethodTerminalNode::HasDefaultBody(colon, block) => {
+                        self.walk_token(colon);
+                        self.walk_block(block);
+                    }
+                    InterfaceMethodTerminalNode::NoDefaultBody(newline) => self.walk_token(newline),
                 }
             }
             ASTNode::StructDeclaration(struct_decl_node) => {
