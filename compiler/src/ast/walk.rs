@@ -1,3 +1,8 @@
+use super::ast::{
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, GenericTypeDeclNode, IdentifierInDeclNode,
+    IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, SymbolSeparatedSequenceNode, TupleTypeNode,
+};
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
     AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
@@ -15,11 +20,6 @@ use crate::ast::ast::{
     StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
     TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
     VariableDeclarationNode,
-};
-use super::ast::{
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, GenericTypeDeclNode, IdentifierInDeclNode,
-    IdentifierInUseNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
-    SymbolSeparatedSequenceNode, TupleTypeNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -52,6 +52,16 @@ pub trait Visitor {
         walk_skipped_token,
         SkippedTokenNode,
         new_with_SkippedTokenNode
+    );
+    impl_node_walk!(
+        walk_interface_decl,
+        InterfaceDeclarationNode,
+        new_with_InterfaceDeclarationNode
+    );
+    impl_node_walk!(
+        walk_interface_method_prototype_wrapper,
+        InterfaceMethodPrototypeWrapperNode,
+        new_with_InterfaceMethodPrototypeWrapperNode
     );
     impl_node_walk!(
         walk_expr_stmt,
@@ -384,6 +394,26 @@ pub trait Visitor {
                     self.walk_missing_tokens(missing_tokens);
                 }
             },
+            ASTNode::InterfaceDeclaration(interface_decl_node) => {
+                let core_interface_decl = interface_decl_node.core_ref();
+                self.walk_token(&core_interface_decl.interface_keyword);
+                self.walk_identifier_in_decl(&core_interface_decl.name);
+                self.walk_token(&core_interface_decl.colon);
+                self.walk_block(&core_interface_decl.block);
+            }
+            ASTNode::InterfaceMethodPrototypeWrapper(interface_method_prototype_wrapper_node) => {
+                let core_interface_method_prototype_wrapper =
+                    interface_method_prototype_wrapper_node.core_ref();
+                self.walk_token(&core_interface_method_prototype_wrapper.def_keyword);
+                self.walk_identifier_in_decl(&core_interface_method_prototype_wrapper.name);
+                self.walk_callable_prototype(&core_interface_method_prototype_wrapper.prototype);
+                if let Some((colon, block)) =
+                    &core_interface_method_prototype_wrapper.optional_default_body
+                {
+                    self.walk_token(colon);
+                    self.walk_block(block);
+                }
+            }
             ASTNode::StructDeclaration(struct_decl_node) => {
                 let core_struct_decl = struct_decl_node.core_ref();
                 self.walk_token(&core_struct_decl.type_keyword);

@@ -110,7 +110,7 @@ impl PythonCodeGenerator {
                     }
                     return "";
                 }
-                SymbolDataEntry::Interface(_) => unreachable!()
+                SymbolDataEntry::Interface(_) => unreachable!(),
             },
             None => return "",
         };
