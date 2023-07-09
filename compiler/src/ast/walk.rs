@@ -16,7 +16,6 @@ use crate::ast::ast::{
     TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
     VariableDeclarationNode,
 };
-
 use super::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, GenericTypeDeclNode, IdentifierInDeclNode,
     IdentifierInUseNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
