@@ -965,7 +965,8 @@ impl TypeChecker {
                 self.check_expr(&expr_stmt.core_ref().expr)
             }
             CoreRVariableDeclarationNode::Lambda(lambda) => {
-                self.check_callable_body(&lambda.core_ref().body, false);
+                let body = &lambda.core_ref().body.core_ref();
+                self.check_callable_body(&body.prototype, &body.block, false);
                 return self.type_of_lambda(lambda);
             }
         }
@@ -1210,14 +1211,19 @@ impl TypeChecker {
         return_type_obj
     }
 
-    pub fn check_callable_body(&mut self, callable_body: &CallableBodyNode, is_constructor: bool) {
-        let core_callable_body = callable_body.0.as_ref();
-        let return_type_obj = self.check_callable_prototype(&core_callable_body.prototype);
+    pub fn check_callable_body(
+        &mut self,
+        prototype: &CallablePrototypeNode,
+        block: &BlockNode,
+        is_constructor: bool,
+    ) {
+        // let core_callable_body = callable_body.0.as_ref();
+        let return_type_obj = self.check_callable_prototype(prototype);
         self.context
             .func_stack
             .push((is_constructor, return_type_obj.clone()));
         let mut has_return_stmt: Option<TextRange> = None;
-        for stmt in &*core_callable_body.block.0.as_ref().stmts.as_ref() {
+        for stmt in &*block.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
@@ -1244,13 +1250,7 @@ impl TypeChecker {
             }
         } else {
             if !has_return_stmt.is_some() && !return_type_obj.is_void() {
-                let (_, return_type_node) = callable_body
-                    .core_ref()
-                    .prototype
-                    .core_ref()
-                    .return_type
-                    .as_ref()
-                    .unwrap();
+                let (_, return_type_node) = prototype.core_ref().return_type.as_ref().unwrap();
                 let err = NoReturnStatementInFunctionError::new(return_type_node.range());
                 self.log_error(Diagnostics::NoReturnStatementInFunction(err));
             }
@@ -1270,10 +1270,12 @@ impl TypeChecker {
             },
             None => false,
         };
-        self.check_callable_body(
-            &core_bounded_method_wrapper.func_decl.core_ref().body,
-            is_constructor,
-        );
+        let body = &core_bounded_method_wrapper
+            .func_decl
+            .core_ref()
+            .body
+            .core_ref();
+        self.check_callable_body(&body.prototype, &body.block, is_constructor);
     }
 
     pub fn check_return_stmt(&self, return_stmt: &ReturnStatementNode) {
@@ -1319,7 +1321,8 @@ impl TypeChecker {
                 self.check_variable_decl(variable_decl);
             }
             CoreStatementNode::FunctionWrapper(func_wrapper) => {
-                self.check_callable_body(&func_wrapper.core_ref().func_decl.core_ref().body, false);
+                let body = &func_wrapper.core_ref().func_decl.core_ref().body.core_ref();
+                self.check_callable_body(&body.prototype, &body.block, false);
             }
             CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                 self.check_bounded_method(bounded_method_wrapper);
@@ -1337,15 +1340,22 @@ impl TypeChecker {
             },
             CoreStatementNode::InterfaceDeclaration(interface_decl) => {
                 self.walk_block(&interface_decl.core_ref().block);
-            },
+            }
             CoreStatementNode::InterfaceMethodPrototypeWrapper(
                 interface_method_prototype_wrapper,
             ) => {
-                let core_interface_method_prototype_wrapper = interface_method_prototype_wrapper.core_ref();
-                if let Some((_, optional_default_body)) = &core_interface_method_prototype_wrapper.optional_default_body {
-                    todo!()
+                let core_interface_method_prototype_wrapper =
+                    interface_method_prototype_wrapper.core_ref();
+                if let Some((_, optional_default_body)) =
+                    &core_interface_method_prototype_wrapper.optional_default_body
+                {
+                    self.check_callable_body(
+                        &core_interface_method_prototype_wrapper.prototype,
+                        optional_default_body,
+                        false,
+                    );
                 }
-            },
+            }
             CoreStatementNode::StructPropertyDeclaration(_) => return,
         }
     }

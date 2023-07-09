@@ -1,7 +1,7 @@
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
     CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode,
-    LambdaTypeDeclarationNode, OkSelfKeywordNode,
+    InterfaceDeclarationNode, LambdaTypeDeclarationNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -1003,6 +1003,10 @@ impl Resolver {
         self.context.class_context_stack.pop();
     }
 
+    pub fn declare_interface(&mut self, interface_decl: &InterfaceDeclarationNode) {
+        todo!()
+    }
+
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &LambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
         let mut types_vec: Vec<Type> = vec![];
@@ -1097,7 +1101,10 @@ impl Visitor for Resolver {
                 self.declare_struct_type(struct_decl);
                 return None;
             }
-            ASTNode::InterfaceDeclaration(interface_decl) => todo!(),
+            ASTNode::InterfaceDeclaration(interface_decl) => {
+                self.declare_interface(interface_decl);
+                return None;
+            }
             ASTNode::LambdaTypeDeclaration(lambda_type_decl) => {
                 self.declare_lambda_type(lambda_type_decl);
                 return None;
