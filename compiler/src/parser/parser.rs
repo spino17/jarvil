@@ -425,10 +425,12 @@ impl JarvilParser {
     pub fn expect_terminators(&mut self) -> TokenNode {
         let symbols = &["\n", ENDMARKER];
         let token = self.curr_token();
-        if token.is_eq("\n") || token.is_eq(ENDMARKER) {
+        if token.is_eq("\n") {
             let token_node = TokenNode::new_with_ok(&token);
             self.scan_next_token();
-            return token_node;
+            return token_node
+        } else if token.is_eq(ENDMARKER) {
+            return TokenNode::new_with_ok(&token);
         } else {
             self.log_missing_token_error(symbols, &token);
             return TokenNode::new_with_missing_tokens(symbols.to_vec(), &token);
