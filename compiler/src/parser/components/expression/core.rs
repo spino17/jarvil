@@ -1,4 +1,5 @@
 use crate::ast::ast::ErrornousNode;
+use crate::parser::errors::log_missing_token_error;
 use crate::{
     ast::ast::{AtomicExpressionNode, ExpressionNode, UnaryExpressionNode},
     constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, TRUE},
@@ -97,7 +98,7 @@ pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 8] = [
 pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
     let token = parser.curr_token();
     if !is_atomic_expression_starting_with(token) {
-        parser.log_missing_token_error(&ATOMIC_EXPRESSION_STARTING_SYMBOLS, token);
+        log_missing_token_error(parser, &ATOMIC_EXPRESSION_STARTING_SYMBOLS, token);
         return AtomicExpressionNode::new_with_missing_tokens(
             ATOMIC_EXPRESSION_STARTING_SYMBOLS.to_vec(),
             token,

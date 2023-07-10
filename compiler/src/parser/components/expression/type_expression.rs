@@ -3,6 +3,8 @@ use crate::ast::ast::Node;
 use crate::ast::ast::TypeExpressionNode;
 use crate::constants::common::{ATOMIC_TYPE, IDENTIFIER};
 use crate::lexer::token::CoreToken;
+use crate::parser::errors::log_missing_token_error;
+use crate::parser::errors::log_single_sub_type_in_tuple_error;
 use crate::parser::parser::JarvilParser;
 
 pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&'static str; 5] =
@@ -31,7 +33,7 @@ pub fn type_expr(parser: &mut JarvilParser) -> TypeExpressionNode {
             // TODO - check here that `num_types` > 1 as tuple type should have atleast two subtypes
             let rparen_node = parser.expect(")");
             if num_types < 2 {
-                parser.log_single_sub_type_in_tuple_error(types_node.range());
+                log_single_sub_type_in_tuple_error(parser, types_node.range());
             }
             TypeExpressionNode::new_with_tuple_type(&lparen_node, &rparen_node, &types_node)
         }
@@ -50,7 +52,7 @@ pub fn type_expr(parser: &mut JarvilParser) -> TypeExpressionNode {
             )
         }
         _ => {
-            parser.log_missing_token_error(&TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS, &token);
+            log_missing_token_error(parser, &TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS, &token);
             return TypeExpressionNode::new_with_missing_tokens(
                 TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec(),
                 &token,

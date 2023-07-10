@@ -1,5 +1,4 @@
-use std::cell::RefCell;
-
+use super::errors::{log_missing_token_error, log_trailing_skipped_tokens_error};
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode, GenericTypeDeclNode,
@@ -11,14 +10,11 @@ use crate::ast::ast::{
 use crate::code::JarvilCode;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
-use crate::error::diagnostics::{
-    Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
-    MissingTokenError, NoValidStatementFoundInsideBlockBodyError, SingleSubTypeFoundInTupleError,
-};
+use crate::error::diagnostics::Diagnostics;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
-use text_size::TextRange;
+use std::cell::RefCell;
 
 pub trait Parser {
     fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCode);
@@ -29,9 +25,9 @@ pub struct JarvilParser {
     lookahead: usize,
     indent_level: i64,
     code: JarvilCode,
-    ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
+    pub ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
-    errors: RefCell<Vec<Diagnostics>>,
+    pub errors: RefCell<Vec<Diagnostics>>,
 }
 
 impl JarvilParser {
@@ -125,12 +121,12 @@ impl JarvilParser {
         loop {
             let token = self.curr_token();
             if token.is_eq("\n") {
-                self.log_trailing_skipped_tokens_error(skipped_tokens.clone());
+                log_trailing_skipped_tokens_error(self, skipped_tokens.clone());
                 skipped_tokens.push(SkippedTokenNode::new(&token));
                 self.scan_next_token();
                 return skipped_tokens;
             } else if token.is_eq(ENDMARKER) {
-                self.log_trailing_skipped_tokens_error(skipped_tokens.clone());
+                log_trailing_skipped_tokens_error(self, skipped_tokens.clone());
                 skipped_tokens.push(SkippedTokenNode::new(&token));
                 // self.scan_next_token();
                 return skipped_tokens;
@@ -141,86 +137,6 @@ impl JarvilParser {
         }
     }
 
-    // ------------------- error logging utilities for terminal-based compilation -------------------
-    pub fn log_missing_token_error(
-        &self,
-        expected_symbols: &[&'static str],
-        received_token: &Token,
-    ) {
-        if self.ignore_all_errors {
-            return;
-        }
-        // -> TODO - check whether error on same line already exists
-        let err = MissingTokenError::new(expected_symbols, received_token);
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::MissingToken(err));
-    }
-
-    pub fn log_trailing_skipped_tokens_error(&self, skipped_tokens: Vec<SkippedTokenNode>) {
-        if self.ignore_all_errors {
-            return;
-        }
-        // -> TODO - check whether error on same line already exists
-        let err = InvalidTrailingTokensError::new(
-            skipped_tokens[0].range().start().into(),
-            skipped_tokens[skipped_tokens.len() - 1]
-                .range()
-                .end()
-                .into(),
-        );
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::InvalidTrailingTokens(err));
-    }
-
-    pub fn log_incorrectly_indented_block_error(
-        &self,
-        range: TextRange,
-        expected_indent: i64,
-        received_indent: i64,
-    ) {
-        if self.ignore_all_errors {
-            return;
-        }
-        // -> TODO - check whether error on same line already exists
-        let err = IncorrectlyIndentedBlockError::new(expected_indent, received_indent, range);
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::IncorrectlyIndentedBlock(err));
-    }
-
-    pub fn log_no_valid_statement_inside_block_error(&self, range: TextRange) {
-        if self.ignore_all_errors {
-            return;
-        }
-        let err = NoValidStatementFoundInsideBlockBodyError::new(range);
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::NoValidStatementFoundInsideBlockBody(err));
-    }
-
-    pub fn log_invalid_l_value_error(&self, range: TextRange) {
-        if self.ignore_all_errors {
-            return;
-        }
-        // -> TODO - check whether error on same line already exists
-        let err = InvalidLValueError::new(range);
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::InvalidLValue(err));
-    }
-
-    pub fn log_single_sub_type_in_tuple_error(&self, range: TextRange) {
-        if self.ignore_all_errors {
-            return;
-        }
-        let err = SingleSubTypeFoundInTupleError::new(range);
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::SingleSubTypeFoundInTuple(err));
-    }
-
     // ------------------- parsing routines for terminals and block indentation -------------------
     pub fn expect(&mut self, symbol: &'static str) -> TokenNode {
         let token = self.curr_token();
@@ -229,7 +145,7 @@ impl JarvilParser {
             self.scan_next_token();
             token_node
         } else {
-            self.log_missing_token_error(&[symbol], &token);
+            log_missing_token_error(self, &[symbol], &token);
             TokenNode::new_with_missing_tokens(vec![symbol], &token)
         }
     }
@@ -291,79 +207,12 @@ impl JarvilParser {
         return self.expect_symbol_separated_sequence(parsing_fn, ",");
     }
 
-    pub fn expect_identifier(&mut self) -> IdentifierInDeclNode {
-        let token = self.curr_token();
-        let symbol = IDENTIFIER;
-        if token.is_eq(symbol) {
-            let ok_token_node = OkTokenNode::new(&token);
-            self.scan_next_token();
-            return IdentifierInDeclNode::new_with_ok(&ok_token_node, None);
-        } else {
-            self.log_missing_token_error(&[symbol], &token);
-            return IdentifierInDeclNode::new_with_missing_tokens(vec![symbol], &token);
-        }
-    }
-
-    pub fn expect_identifier_in_use(&mut self) -> IdentifierInUseNode {
-        let token = self.curr_token();
-        let symbol = IDENTIFIER;
-        if token.is_eq(symbol) {
-            let ok_token_node = OkTokenNode::new(&token);
-            self.scan_next_token();
-            let next_token = self.curr_token();
-            match next_token.core_token {
-                CoreToken::LBRACKET => {
-                    let langle_node = self.expect("<");
-                    let generic_type_args_node = self.expect_generic_type_args();
-                    let rangle_node = self.expect(">");
-                    return IdentifierInUseNode::new_with_ok(
-                        &ok_token_node,
-                        Some((&langle_node, &generic_type_args_node, &rangle_node)),
-                    );
-                }
-                _ => {
-                    return IdentifierInUseNode::new_with_ok(&ok_token_node, None);
-                }
-            }
-        } else {
-            self.log_missing_token_error(&[symbol], &token);
-            IdentifierInUseNode::new_with_missing_tokens(vec![symbol], &token)
-        }
-    }
-
-    pub fn expect_identifier_in_decl(&mut self) -> IdentifierInDeclNode {
-        let token = self.curr_token();
-        let symbol = IDENTIFIER;
-        if token.is_eq(symbol) {
-            let ok_token_node = OkTokenNode::new(&token);
-            self.scan_next_token();
-            let next_token = self.curr_token();
-            match next_token.core_token {
-                CoreToken::LBRACKET => {
-                    let langle_node = self.expect("<");
-                    let generic_type_decls_node = self.expect_generic_type_decls();
-                    let rangle_node = self.expect(">");
-                    return IdentifierInDeclNode::new_with_ok(
-                        &ok_token_node,
-                        Some((&langle_node, &generic_type_decls_node, &rangle_node)),
-                    );
-                }
-                _ => {
-                    return IdentifierInDeclNode::new_with_ok(&ok_token_node, None);
-                }
-            }
-        } else {
-            self.log_missing_token_error(&[symbol], &token);
-            return IdentifierInDeclNode::new_with_missing_tokens(vec![symbol], &token);
-        }
-    }
-
     pub fn expect_identifier_in<
         T,
         U: Clone,
         F: Fn(&mut JarvilParser) -> SymbolSeparatedSequenceNode<U>,
         V: Fn(&OkTokenNode, Option<(&TokenNode, &SymbolSeparatedSequenceNode<U>, &TokenNode)>) -> T,
-        W: Fn(&Vec<&'static str>, &Token) -> T,
+        W: Fn(Vec<&'static str>, &Token) -> T,
     >(
         &mut self,
         angle_bracketed_content_parsing_fn: F,
@@ -391,11 +240,79 @@ impl JarvilParser {
                 }
             }
         } else {
-            self.log_missing_token_error(&[symbol], &token);
-            return node_creation_method_with_err(&vec![symbol], &token);
+            log_missing_token_error(self, &[symbol], &token);
+            return node_creation_method_with_err(vec![symbol], &token);
         }
     }
 
+    pub fn expect_identifier(&mut self) -> IdentifierInDeclNode {
+        let token = self.curr_token();
+        let symbol = IDENTIFIER;
+        if token.is_eq(symbol) {
+            let ok_token_node = OkTokenNode::new(&token);
+            self.scan_next_token();
+            return IdentifierInDeclNode::new_with_ok(&ok_token_node, None);
+        } else {
+            log_missing_token_error(self, &[symbol], &token);
+            return IdentifierInDeclNode::new_with_missing_tokens(vec![symbol], &token);
+        }
+    }
+
+    pub fn expect_identifier_in_use(&mut self) -> IdentifierInUseNode {
+        let angle_bracketed_content_parsing_fn =
+            |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<TypeExpressionNode> {
+                return parser.expect_generic_type_args();
+            };
+        let node_creation_method_with_some = |ident_name: &OkTokenNode,
+                                              symbol_separated_sequence: Option<(
+            &TokenNode,
+            &SymbolSeparatedSequenceNode<TypeExpressionNode>,
+            &TokenNode,
+        )>| {
+            return IdentifierInUseNode::new_with_ok(ident_name, symbol_separated_sequence);
+        };
+        let node_creation_method_with_err =
+            |expected_symbols: Vec<&'static str>, received_token: &Token| {
+                return IdentifierInUseNode::new_with_missing_tokens(
+                    expected_symbols,
+                    received_token,
+                );
+            };
+        return self.expect_identifier_in(
+            angle_bracketed_content_parsing_fn,
+            node_creation_method_with_some,
+            node_creation_method_with_err,
+        );
+    }
+
+    pub fn expect_identifier_in_decl(&mut self) -> IdentifierInDeclNode {
+        let angle_bracketed_content_parsing_fn =
+            |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<GenericTypeDeclNode> {
+                return parser.expect_generic_type_decls();
+            };
+        let node_creation_method_with_some = |ident_name: &OkTokenNode,
+                                              symbol_separated_sequence: Option<(
+            &TokenNode,
+            &SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
+            &TokenNode,
+        )>| {
+            return IdentifierInDeclNode::new_with_ok(ident_name, symbol_separated_sequence);
+        };
+        let node_creation_method_with_err =
+            |expected_symbols: Vec<&'static str>, received_token: &Token| {
+                return IdentifierInDeclNode::new_with_missing_tokens(
+                    expected_symbols,
+                    received_token,
+                );
+            };
+        return self.expect_identifier_in(
+            angle_bracketed_content_parsing_fn,
+            node_creation_method_with_some,
+            node_creation_method_with_err,
+        );
+    }
+
+    // TODO - this will soon be deprecated (infact the `IdentifierNode` will be gone!)
     pub fn expect_ident(&mut self) -> IdentifierNode {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
@@ -404,7 +321,7 @@ impl JarvilParser {
             self.scan_next_token();
             IdentifierNode::new_with_ok(&ok_token_node)
         } else {
-            self.log_missing_token_error(&[symbol], &token);
+            log_missing_token_error(self, &[symbol], &token);
             IdentifierNode::new_with_missing_tokens(vec![symbol], &token)
         }
     }
@@ -417,7 +334,7 @@ impl JarvilParser {
             self.scan_next_token();
             SelfKeywordNode::new_with_ok(&ok_token_node)
         } else {
-            self.log_missing_token_error(&[symbol], &token);
+            log_missing_token_error(self, &[symbol], &token);
             SelfKeywordNode::new_with_missing_tokens(vec![symbol], &token)
         }
     }
@@ -428,11 +345,11 @@ impl JarvilParser {
         if token.is_eq("\n") {
             let token_node = TokenNode::new_with_ok(&token);
             self.scan_next_token();
-            return token_node
+            return token_node;
         } else if token.is_eq(ENDMARKER) {
             return TokenNode::new_with_ok(&token);
         } else {
-            self.log_missing_token_error(symbols, &token);
+            log_missing_token_error(self, symbols, &token);
             return TokenNode::new_with_missing_tokens(symbols.to_vec(), &token);
         }
     }
@@ -464,13 +381,13 @@ impl JarvilParser {
                     indent_spaces = (token.start_index()
                         - self.code.get_line_start_index(token.line_number))
                         as i64;
-                    let alternate_line_index = match &token.trivia {
-                        Some(trivia) => {
-                            // this index is bounded as we only have `Some` trivia if it's length > 0
-                            trivia[0].start_index()
-                        }
-                        None => token.start_index(),
-                    };
+                    //let alternate_line_index = match &token.trivia {
+                    //    Some(trivia) => {
+                    //        // this index is bounded as we only have `Some` trivia if it's length > 0
+                    //        trivia[0].start_index()
+                    //    }
+                    //    None => token.start_index(),
+                    //};
                     // assert!(alternate_line_index == self.code.get_line_start_index(token.line_number));
                     expected_indent_spaces = expected_indent_spaces + self.correction_indent();
                     if indent_spaces == expected_indent_spaces {

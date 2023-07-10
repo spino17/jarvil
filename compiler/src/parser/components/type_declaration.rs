@@ -2,6 +2,7 @@ use crate::ast::ast::{ErrornousNode, SymbolSeparatedSequenceNode, TokenNode, Typ
 use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::constants::common::DEF;
 use crate::lexer::token::CoreToken;
+use crate::parser::errors::log_missing_token_error;
 use crate::{constants::common::IDENTIFIER, parser::parser::JarvilParser};
 
 pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
@@ -68,7 +69,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             TypeDeclarationNode::new_with_lambda(&lambda_node)
         }
         _ => {
-            parser.log_missing_token_error(&["struct", "lambda"], token);
+            log_missing_token_error(parser, &["struct", "lambda"], token);
             return TypeDeclarationNode::new_with_missing_tokens(
                 ["struct", "lambda"].to_vec(),
                 token,

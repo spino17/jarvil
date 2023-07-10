@@ -1,6 +1,6 @@
 use crate::{
     ast::ast::{
-        InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode
+        InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode,
     },
     constants::common::{DEF, IDENTIFIER},
     lexer::token::CoreToken,
