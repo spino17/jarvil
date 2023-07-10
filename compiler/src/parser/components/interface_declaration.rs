@@ -4,12 +4,7 @@ use crate::{
     },
     constants::common::{DEF, IDENTIFIER},
     lexer::token::CoreToken,
-    parser::{
-        components::statement::core::{
-            is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
-        },
-        parser::JarvilParser,
-    },
+    parser::parser::JarvilParser,
 };
 
 pub fn interface_decl(parser: &mut JarvilParser) -> InterfaceDeclarationNode {
@@ -39,6 +34,14 @@ pub fn interface_method_prototype_wrapper(
     let def_keyword_node = parser.expect("def");
     let func_name_node = parser.expect_identifier_in_decl(); // decl
     let prototype = parser.callable_prototype();
+    let newline = parser.expect_terminators();
+    return InterfaceMethodPrototypeWrapperNode::new(
+        &def_keyword_node,
+        &func_name_node,
+        &prototype,
+        InterfaceMethodTerminalNode::NoDefaultBody(newline),
+    );
+    /*
     let curr_token = parser.curr_token();
     match curr_token.core_token {
         CoreToken::COLON => {
@@ -64,5 +67,5 @@ pub fn interface_method_prototype_wrapper(
                 InterfaceMethodTerminalNode::NoDefaultBody(newline),
             );
         }
-    }
+    }*/
 }

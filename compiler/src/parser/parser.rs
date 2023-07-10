@@ -3,7 +3,7 @@ use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode, GenericTypeDeclNode,
     IdentifierInDeclNode, IdentifierInUseNode, IdentifierNode, InterfaceDeclarationNode,
-    InterfaceMethodPrototypeWrapperNode, NameTypeSpecNode, Node, OkTokenNode, SelfKeywordNode,
+    InterfaceMethodPrototypeWrapperNode, NameTypeSpecNode, OkTokenNode, SelfKeywordNode,
     SkippedTokenNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode,
     TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
 };
