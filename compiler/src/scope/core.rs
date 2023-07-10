@@ -75,6 +75,112 @@ impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
 }
 
 #[derive(Debug)]
+pub struct SymbolDataRegistry<T: AbstractConcreteTypesHandler>(Vec<SymbolData<T>>);
+
+impl<T: AbstractConcreteTypesHandler> SymbolDataRegistry<T> {
+    fn register_symbol_data(&mut self, symbol_data: SymbolData<T>) -> usize {
+        let index = self.0.len();
+        self.0.push(symbol_data);
+        index
+    }
+
+    fn get_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<T> {
+        &self.0[index]
+    }
+
+    fn get_symbol_data_mut_ref_at_index(&mut self, index: usize) -> &mut SymbolData<T> {
+        &mut self.0[index]
+    }
+}
+
+impl<T: AbstractConcreteTypesHandler> Default for SymbolDataRegistry<T> {
+    fn default() -> Self {
+        SymbolDataRegistry(vec![])
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct GlobalSymbolDataRegistry {
+    variables_registry: SymbolDataRegistry<VariableData>,
+    functions_registry: SymbolDataRegistry<CallableData>,
+    types_registry: SymbolDataRegistry<UserDefinedTypeData>,
+    interfaces_registry: SymbolDataRegistry<InterfaceData>,
+}
+
+impl GlobalSymbolDataRegistry {
+    fn register_variables_symbol_data(&mut self, symbol_data: SymbolData<VariableData>) -> usize {
+        let index = self.variables_registry.0.len();
+        self.variables_registry.0.push(symbol_data);
+        index
+    }
+
+    fn get_variables_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<VariableData> {
+        &self.variables_registry.0[index]
+    }
+
+    fn get_variables_symbol_data_mut_ref_at_index(
+        &mut self,
+        index: usize,
+    ) -> &mut SymbolData<VariableData> {
+        &mut self.variables_registry.0[index]
+    }
+
+    fn register_functions_symbol_data(&mut self, symbol_data: SymbolData<CallableData>) -> usize {
+        let index = self.functions_registry.0.len();
+        self.functions_registry.0.push(symbol_data);
+        index
+    }
+
+    fn get_functions_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<CallableData> {
+        &self.functions_registry.0[index]
+    }
+
+    fn get_functions_symbol_data_mut_ref_at_index(
+        &mut self,
+        index: usize,
+    ) -> &mut SymbolData<CallableData> {
+        &mut self.functions_registry.0[index]
+    }
+
+    fn register_types_symbol_data(
+        &mut self,
+        symbol_data: SymbolData<UserDefinedTypeData>,
+    ) -> usize {
+        let index = self.types_registry.0.len();
+        self.types_registry.0.push(symbol_data);
+        index
+    }
+
+    fn get_types_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<UserDefinedTypeData> {
+        &self.types_registry.0[index]
+    }
+
+    fn get_types_symbol_data_mut_ref_at_index(
+        &mut self,
+        index: usize,
+    ) -> &mut SymbolData<UserDefinedTypeData> {
+        &mut self.types_registry.0[index]
+    }
+
+    fn register_interfaces_symbol_data(&mut self, symbol_data: SymbolData<InterfaceData>) -> usize {
+        let index = self.interfaces_registry.0.len();
+        self.interfaces_registry.0.push(symbol_data);
+        index
+    }
+
+    fn get_interfaces_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<InterfaceData> {
+        &self.interfaces_registry.0[index]
+    }
+
+    fn get_interfaces_symbol_data_mut_ref_at_index(
+        &mut self,
+        index: usize,
+    ) -> &mut SymbolData<InterfaceData> {
+        &mut self.interfaces_registry.0[index]
+    }
+}
+
+#[derive(Debug)]
 pub struct CoreScope<T: AbstractConcreteTypesHandler> {
     symbol_table: FxHashMap<String, SymbolData<T>>,
     pub parent_scope: Option<usize>, // points to the index in the global flattened scope vec

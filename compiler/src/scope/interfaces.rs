@@ -100,6 +100,14 @@ impl InterfaceObject {
         }
         return false;
     }
+
+    pub fn try_field(&self, field_name: &str) -> Option<(Type, TextRange)> {
+        todo!()
+    }
+
+    pub fn try_method(&self, method_name: &str) -> Option<(&CallableData, TextRange)> {
+        todo!()
+    }
 }
 
 impl ToString for InterfaceObject {
