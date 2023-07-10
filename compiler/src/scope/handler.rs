@@ -1,5 +1,5 @@
 use super::{
-    core::{Namespace, SymbolData},
+    core::{Namespace, SymbolData, GlobalSymbolDataRegistry},
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
@@ -26,6 +26,7 @@ pub enum SymbolDataEntry {
 
 pub struct NamespaceHandler {
     pub namespace: Namespace,
+    pub symbol_data_registry: GlobalSymbolDataRegistry,
     pub identifier_binding_table: FxHashMap<OkIdentifierNode, SymbolDataEntry>, // node -> (scope_index, namespace_kind)
     pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
     pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashMap<String, bool>)>, // block_node -> (non_locally resolved variables, (non_locally resolved functions -> is_in_global_scope))
@@ -36,6 +37,7 @@ impl NamespaceHandler {
     pub fn new() -> Self {
         NamespaceHandler {
             namespace: Namespace::new(),
+            symbol_data_registry: GlobalSymbolDataRegistry::default(),
             identifier_binding_table: FxHashMap::default(),
             self_keyword_binding_table: FxHashMap::default(),
             block_non_locals: FxHashMap::default(),
