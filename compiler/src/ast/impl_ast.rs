@@ -1203,7 +1203,9 @@ impl UserDefinedTypeNode {
                         UserDefinedTypeData::Lambda(_) => TypeResolveKind::Resolved(
                             Type::new_with_lambda_named(name, &symbol_data, None, false),
                         ),
-                        UserDefinedTypeData::Generic(generic_data) => todo!(),
+                        UserDefinedTypeData::Generic(generic_data) => {
+                            TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data))
+                        },
                     };
                     resolver.bind_decl_to_identifier(
                         ok_identifier,
