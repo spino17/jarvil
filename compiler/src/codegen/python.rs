@@ -34,14 +34,14 @@ pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
     }
 }
 
-pub struct PythonCodeGenerator {
+pub struct PythonCodeGenerator<'a> {
     indent_level: usize,
     generate_code: String,
     code: JarvilCode,
-    namespace_handler: NamespaceHandler,
+    namespace_handler: NamespaceHandler<'a>,
 }
 
-impl PythonCodeGenerator {
+impl<'a> PythonCodeGenerator<'a> {
     pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
@@ -92,19 +92,31 @@ impl PythonCodeGenerator {
             .get(identifier)
         {
             Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Variable(variable_symbol_data) => {
+                SymbolDataEntry::Variable(symbol_data_index) => {
+                    let variable_symbol_data = self
+                        .namespace_handler
+                        .symbol_data_registry
+                        .get_variables_symbol_data_ref_at_index(*symbol_data_index);
                     if variable_symbol_data.2 {
                         return "_var";
                     }
                     return "";
                 }
-                SymbolDataEntry::Function(func_symbol_data) => {
+                SymbolDataEntry::Function(symbol_data_index) => {
+                    let func_symbol_data = self
+                        .namespace_handler
+                        .symbol_data_registry
+                        .get_functions_symbol_data_ref_at_index(*symbol_data_index);
                     if func_symbol_data.2 {
                         return "_func";
                     }
                     return "";
                 }
-                SymbolDataEntry::Type(type_symbol_data) => {
+                SymbolDataEntry::Type(symbol_data_index) => {
+                    let type_symbol_data = self
+                        .namespace_handler
+                        .symbol_data_registry
+                        .get_types_symbol_data_ref_at_index(*symbol_data_index);
                     if type_symbol_data.2 {
                         return "_ty";
                     }
@@ -322,7 +334,7 @@ impl PythonCodeGenerator {
     }
 }
 
-impl Visitor for PythonCodeGenerator {
+impl<'a> Visitor for PythonCodeGenerator<'a> {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {

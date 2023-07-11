@@ -12,7 +12,7 @@ use std::rc::Rc;
 use text_size::TextRange;
 
 pub enum VariableLookupResult {
-    Ok((SymbolData<VariableData>, usize, usize)),
+    Ok((usize, usize, usize)),
     NotInitialized(TextRange),
     Err,
 }
@@ -78,17 +78,17 @@ impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
 pub struct SymbolDataRegistry<T: AbstractConcreteTypesHandler>(Vec<SymbolData<T>>);
 
 impl<T: AbstractConcreteTypesHandler> SymbolDataRegistry<T> {
-    fn register_symbol_data(&mut self, symbol_data: SymbolData<T>) -> usize {
+    pub fn register_symbol_data(&mut self, symbol_data: SymbolData<T>) -> usize {
         let index = self.0.len();
         self.0.push(symbol_data);
         index
     }
 
-    fn get_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<T> {
+    pub fn get_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<T> {
         &self.0[index]
     }
 
-    fn get_symbol_data_mut_ref_at_index(&mut self, index: usize) -> &mut SymbolData<T> {
+    pub fn get_symbol_data_mut_ref_at_index(&mut self, index: usize) -> &mut SymbolData<T> {
         &mut self.0[index]
     }
 }
@@ -101,106 +101,114 @@ impl<T: AbstractConcreteTypesHandler> Default for SymbolDataRegistry<T> {
 
 #[derive(Debug, Default)]
 pub struct GlobalSymbolDataRegistry {
-    variables_registry: SymbolDataRegistry<VariableData>,
-    functions_registry: SymbolDataRegistry<CallableData>,
-    types_registry: SymbolDataRegistry<UserDefinedTypeData>,
-    interfaces_registry: SymbolDataRegistry<InterfaceData>,
+    pub variables_registry: SymbolDataRegistry<VariableData>,
+    pub functions_registry: SymbolDataRegistry<CallableData>,
+    pub types_registry: SymbolDataRegistry<UserDefinedTypeData>,
+    pub interfaces_registry: SymbolDataRegistry<InterfaceData>,
 }
 
 impl GlobalSymbolDataRegistry {
-    fn register_variables_symbol_data(&mut self, symbol_data: SymbolData<VariableData>) -> usize {
-        let index = self.variables_registry.0.len();
-        self.variables_registry.0.push(symbol_data);
-        index
+    pub fn register_variables_symbol_data(
+        &mut self,
+        symbol_data: SymbolData<VariableData>,
+    ) -> usize {
+        self.variables_registry.register_symbol_data(symbol_data)
     }
 
-    fn get_variables_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<VariableData> {
-        &self.variables_registry.0[index]
+    pub fn get_variables_symbol_data_ref_at_index(
+        &self,
+        index: usize,
+    ) -> &SymbolData<VariableData> {
+        self.variables_registry.get_symbol_data_ref_at_index(index)
     }
 
-    fn get_variables_symbol_data_mut_ref_at_index(
+    pub fn get_variables_symbol_data_mut_ref_at_index(
         &mut self,
         index: usize,
     ) -> &mut SymbolData<VariableData> {
-        &mut self.variables_registry.0[index]
+        self.variables_registry
+            .get_symbol_data_mut_ref_at_index(index)
     }
 
-    fn register_functions_symbol_data(&mut self, symbol_data: SymbolData<CallableData>) -> usize {
-        let index = self.functions_registry.0.len();
-        self.functions_registry.0.push(symbol_data);
-        index
+    pub fn register_functions_symbol_data(
+        &mut self,
+        symbol_data: SymbolData<CallableData>,
+    ) -> usize {
+        self.functions_registry.register_symbol_data(symbol_data)
     }
 
-    fn get_functions_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<CallableData> {
-        &self.functions_registry.0[index]
+    pub fn get_functions_symbol_data_ref_at_index(
+        &self,
+        index: usize,
+    ) -> &SymbolData<CallableData> {
+        self.functions_registry.get_symbol_data_ref_at_index(index)
     }
 
-    fn get_functions_symbol_data_mut_ref_at_index(
+    pub fn get_functions_symbol_data_mut_ref_at_index(
         &mut self,
         index: usize,
     ) -> &mut SymbolData<CallableData> {
-        &mut self.functions_registry.0[index]
+        self.functions_registry
+            .get_symbol_data_mut_ref_at_index(index)
     }
 
-    fn register_types_symbol_data(
+    pub fn register_types_symbol_data(
         &mut self,
         symbol_data: SymbolData<UserDefinedTypeData>,
     ) -> usize {
-        let index = self.types_registry.0.len();
-        self.types_registry.0.push(symbol_data);
-        index
+        self.types_registry.register_symbol_data(symbol_data)
     }
 
-    fn get_types_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<UserDefinedTypeData> {
-        &self.types_registry.0[index]
+    pub fn get_types_symbol_data_ref_at_index(
+        &self,
+        index: usize,
+    ) -> &SymbolData<UserDefinedTypeData> {
+        self.types_registry.get_symbol_data_ref_at_index(index)
     }
 
-    fn get_types_symbol_data_mut_ref_at_index(
+    pub fn get_types_symbol_data_mut_ref_at_index(
         &mut self,
         index: usize,
     ) -> &mut SymbolData<UserDefinedTypeData> {
-        &mut self.types_registry.0[index]
+        self.types_registry.get_symbol_data_mut_ref_at_index(index)
     }
 
-    fn register_interfaces_symbol_data(&mut self, symbol_data: SymbolData<InterfaceData>) -> usize {
-        let index = self.interfaces_registry.0.len();
-        self.interfaces_registry.0.push(symbol_data);
-        index
+    pub fn register_interfaces_symbol_data(
+        &mut self,
+        symbol_data: SymbolData<InterfaceData>,
+    ) -> usize {
+        self.interfaces_registry.register_symbol_data(symbol_data)
     }
 
-    fn get_interfaces_symbol_data_ref_at_index(&self, index: usize) -> &SymbolData<InterfaceData> {
-        &self.interfaces_registry.0[index]
+    pub fn get_interfaces_symbol_data_ref_at_index(
+        &self,
+        index: usize,
+    ) -> &SymbolData<InterfaceData> {
+        self.interfaces_registry.get_symbol_data_ref_at_index(index)
     }
 
-    fn get_interfaces_symbol_data_mut_ref_at_index(
+    pub fn get_interfaces_symbol_data_mut_ref_at_index(
         &mut self,
         index: usize,
     ) -> &mut SymbolData<InterfaceData> {
-        &mut self.interfaces_registry.0[index]
+        self.interfaces_registry
+            .get_symbol_data_mut_ref_at_index(index)
     }
 }
 
 #[derive(Debug)]
-pub struct CoreScope<T: AbstractConcreteTypesHandler> {
-    symbol_table: FxHashMap<String, SymbolData<T>>,
+pub struct CoreScope {
+    symbol_table: FxHashMap<String, usize>,
     pub parent_scope: Option<usize>, // points to the index in the global flattened scope vec
     is_global: bool,
 }
 
-impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
-    fn set(
-        &mut self,
-        name: String,
-        meta_data: T,
-        decl_range: TextRange,
-        is_suffix_required: bool,
-    ) -> SymbolData<T> {
-        let symbol_data = SymbolData::new(meta_data, decl_range, is_suffix_required);
-        self.symbol_table.insert(name, symbol_data.clone());
-        symbol_data
+impl CoreScope {
+    fn set(&mut self, name: String, symbol_data_index: usize) {
+        self.symbol_table.insert(name, symbol_data_index);
     }
 
-    pub fn get(&self, name: &str) -> Option<&SymbolData<T>> {
+    pub fn get(&self, name: &str) -> Option<&usize> {
         self.symbol_table.get(name)
     }
 
@@ -208,8 +216,8 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
         &self,
         scope_index: usize,
         key: &str,
-        global_scope_vec: &Vec<CoreScope<T>>,
-    ) -> Option<(SymbolData<T>, usize, usize, bool)> { 
+        global_scope_vec: &Vec<CoreScope>,
+    ) -> Option<(usize, usize, usize, bool)> {
         // (symbol_data, scope_index, depth, is_global)
         match self.get(key) {
             Some(value) => Some((value.clone(), scope_index, 0, self.is_global)),
@@ -232,6 +240,7 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
         }
     }
 
+    /*
     pub fn lookup_and_get_symbol_data_ref<'a>(
         &'a self,
         scope_index: usize,
@@ -258,15 +267,15 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
                 return None;
             }
         }
-    }
+    }*/
 }
 
 #[derive(Debug)]
-pub struct Scope<T: AbstractConcreteTypesHandler> {
-    pub flattened_vec: Vec<CoreScope<T>>,
+pub struct Scope {
+    pub flattened_vec: Vec<CoreScope>,
 }
 
-impl<T: AbstractConcreteTypesHandler> Scope<T> {
+impl Scope {
     fn new() -> Self {
         Scope {
             flattened_vec: vec![CoreScope {
@@ -287,19 +296,25 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         return new_scope_index;
     }
 
-    pub fn force_insert(
+    pub fn force_insert<T: AbstractConcreteTypesHandler>(
         &mut self,
         scope_index: usize,
         key: String,
         meta_data: T,
         decl_range: TextRange,
         is_suffix_required: bool,
+        symbol_data_registry: &mut SymbolDataRegistry<T>,
     ) {
         // use this method only for builtin function where we know that no entry already exist in the scope
-        self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
+        let symbol_data = SymbolData::new(meta_data, decl_range, is_suffix_required);
+        let symbol_data_index = symbol_data_registry.register_symbol_data(symbol_data);
+        self.flattened_vec[scope_index].set(key, symbol_data_index);
     }
 
-    pub fn insert<U: Fn(&Scope<T>, usize, &str) -> Option<TextRange>>(
+    pub fn insert<
+        T: AbstractConcreteTypesHandler,
+        U: Fn(&Scope, usize, &str, &SymbolDataRegistry<T>) -> Option<TextRange>,
+    >(
         &mut self,
         scope_index: usize,
         key: String,
@@ -307,28 +322,32 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         decl_range: TextRange,
         lookup_fn: U,
         is_suffix_required: bool,
-    ) -> Result<SymbolData<T>, (String, TextRange)> {
-        if let Some(previous_decl_range) = lookup_fn(self, scope_index, &key) {
+        symbol_data_registry: &mut SymbolDataRegistry<T>,
+    ) -> Result<usize, (String, TextRange)> {
+        if let Some(previous_decl_range) = lookup_fn(self, scope_index, &key, &symbol_data_registry)
+        {
             return Err((key, previous_decl_range));
         }
-        let symbol_data =
-            self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
-        Ok(symbol_data)
+        let symbol_data = SymbolData::new(meta_data, decl_range, is_suffix_required);
+        let symbol_data_index = symbol_data_registry.register_symbol_data(symbol_data);
+        self.flattened_vec[scope_index].set(key, symbol_data_index);
+        Ok(symbol_data_index)
     }
 
-    pub fn get(&self, scope_index: usize, key: &str) -> Option<&SymbolData<T>> {
+    pub fn get(&self, scope_index: usize, key: &str) -> Option<&usize> {
         self.flattened_vec[scope_index].get(key)
     }
 
-    fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, usize, bool)> {
+    pub fn lookup(&self, scope_index: usize, key: &str) -> Option<(usize, usize, usize, bool)> {
         self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
     }
 
+    /*
     pub fn lookup_and_get_symbol_data_ref(
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<T>, usize, usize, bool)> {
+    ) -> Option<(usize, usize, usize, bool)> {
         match self.flattened_vec[scope_index].lookup_and_get_symbol_data_ref(
             scope_index,
             key,
@@ -339,7 +358,7 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
             }
             None => None,
         }
-    }
+    }*/
 }
 
 #[derive(Debug)]
@@ -351,10 +370,10 @@ pub enum NamespaceKind {
 
 #[derive(Debug)]
 pub struct Namespace {
-    pub variables: Scope<VariableData>,
-    pub types: Scope<UserDefinedTypeData>,
-    pub functions: Scope<CallableData>,
-    pub interfaces: Scope<InterfaceData>,
+    pub variables: Scope,
+    pub types: Scope,
+    pub functions: Scope,
+    pub interfaces: Scope,
 }
 
 impl Namespace {
@@ -378,35 +397,19 @@ impl Namespace {
         self.interfaces.add_new_scope(curr_scope_index)
     }
 
-    pub fn get_from_variables_namespace(
-        &self,
-        scope_index: usize,
-        key: &str,
-    ) -> Option<&SymbolData<VariableData>> {
+    pub fn get_from_variables_namespace(&self, scope_index: usize, key: &str) -> Option<&usize> {
         self.variables.get(scope_index, key)
     }
 
-    pub fn get_from_functions_namespace(
-        &self,
-        scope_index: usize,
-        key: &str,
-    ) -> Option<&SymbolData<CallableData>> {
+    pub fn get_from_functions_namespace(&self, scope_index: usize, key: &str) -> Option<&usize> {
         self.functions.get(scope_index, key)
     }
 
-    pub fn get_from_types_namespace(
-        &self,
-        scope_index: usize,
-        key: &str,
-    ) -> Option<&SymbolData<UserDefinedTypeData>> {
+    pub fn get_from_types_namespace(&self, scope_index: usize, key: &str) -> Option<&usize> {
         self.types.get(scope_index, key)
     }
 
-    pub fn get_from_interfaces_namespace(
-        &self,
-        scope_index: usize,
-        key: &str,
-    ) -> Option<&SymbolData<InterfaceData>> {
+    pub fn get_from_interfaces_namespace(&self, scope_index: usize, key: &str) -> Option<&usize> {
         self.interfaces.get(scope_index, key)
     }
 
@@ -414,7 +417,7 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<VariableData>, usize, usize, bool)> {
+    ) -> Option<(usize, usize, usize, bool)> {
         self.variables.lookup(scope_index, key)
     }
 
@@ -422,11 +425,18 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
+        symbol_data_registry: &GlobalSymbolDataRegistry,
     ) -> VariableLookupResult {
         match self.variables.lookup(scope_index, key) {
-            Some((symbol_data, resolved_scope_index, depth, _)) => {
+            Some((symbol_data_index, resolved_scope_index, depth, _)) => {
+                let symbol_data =
+                    symbol_data_registry.get_variables_symbol_data_ref_at_index(symbol_data_index);
                 if symbol_data.0 .0.as_ref().borrow().is_initialized() {
-                    return VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth));
+                    return VariableLookupResult::Ok((
+                        symbol_data_index,
+                        resolved_scope_index,
+                        depth,
+                    ));
                 } else {
                     return VariableLookupResult::NotInitialized(symbol_data.1);
                 }
@@ -439,7 +449,7 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<UserDefinedTypeData>, usize, usize, bool)> {
+    ) -> Option<(usize, usize, usize, bool)> {
         self.types.lookup(scope_index, key)
     }
 
@@ -447,7 +457,7 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<InterfaceData>, usize, usize, bool)> {
+    ) -> Option<(usize, usize, usize, bool)> {
         self.interfaces.lookup(scope_index, key)
     }
 
@@ -455,7 +465,7 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<CallableData>, usize, usize, bool)> {
+    ) -> Option<(usize, usize, usize, bool)> {
         self.functions.lookup(scope_index, key)
     }
 
@@ -464,14 +474,23 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
+        symbol_data_registry: &mut GlobalSymbolDataRegistry,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
-            .flattened_vec[scope_index]
-            .get(key)
-        {
-            Some(symbol_data) => Some(symbol_data.1),
-            None => None,
-        };
+        let lookup_func =
+            |scope: &Scope,
+             scope_index: usize,
+             key: &str,
+             symbol_data_registry: &SymbolDataRegistry<VariableData>| match scope
+                .flattened_vec[scope_index]
+                .get(key)
+            {
+                Some(&symbol_data_index) => {
+                    let symbol_data =
+                        symbol_data_registry.get_symbol_data_ref_at_index(symbol_data_index);
+                    Some(symbol_data.1)
+                }
+                None => None,
+            };
         match self.variables.insert(
             scope_index,
             name,
@@ -479,6 +498,7 @@ impl Namespace {
             decl_range,
             lookup_func,
             true,
+            &mut symbol_data_registry.variables_registry,
         ) {
             Ok(symbol_data) => return Ok(SymbolDataEntry::Variable(symbol_data)),
             Err(err) => return Err(err),
@@ -492,14 +512,23 @@ impl Namespace {
         variable_type: &Type,
         decl_range: TextRange,
         is_init: bool,
+        symbol_data_registry: &mut GlobalSymbolDataRegistry,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
-            .flattened_vec[scope_index]
-            .get(key)
-        {
-            Some(symbol_data) => Some(symbol_data.1),
-            None => None,
-        };
+        let lookup_func =
+            |scope: &Scope,
+             scope_index: usize,
+             key: &str,
+             symbol_data_registry: &SymbolDataRegistry<VariableData>| match scope
+                .flattened_vec[scope_index]
+                .get(key)
+            {
+                Some(&symbol_data_index) => {
+                    let symbol_data =
+                        symbol_data_registry.get_symbol_data_ref_at_index(symbol_data_index);
+                    Some(symbol_data.1)
+                }
+                None => None,
+            };
         match self.variables.insert(
             scope_index,
             name,
@@ -507,6 +536,7 @@ impl Namespace {
             decl_range,
             lookup_func,
             true,
+            &mut symbol_data_registry.variables_registry,
         ) {
             Ok(symbol_data) => return Ok(SymbolDataEntry::Variable(symbol_data)),
             Err(err) => return Err(err),
@@ -518,14 +548,23 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
+        symbol_data_registry: &mut GlobalSymbolDataRegistry,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<CallableData>, scope_index: usize, key: &str| match scope
-            .flattened_vec[scope_index]
-            .get(key)
-        {
-            Some(symbol_data) => Some(symbol_data.1),
-            None => None,
-        };
+        let lookup_func =
+            |scope: &Scope,
+             scope_index: usize,
+             key: &str,
+             symbol_data_registry: &SymbolDataRegistry<CallableData>| match scope
+                .flattened_vec[scope_index]
+                .get(key)
+            {
+                Some(&symbol_data_index) => {
+                    let symbol_data =
+                        symbol_data_registry.get_symbol_data_ref_at_index(symbol_data_index);
+                    Some(symbol_data.1)
+                }
+                None => None,
+            };
         match self.functions.insert(
             scope_index,
             name,
@@ -533,6 +572,7 @@ impl Namespace {
             decl_range,
             lookup_func,
             true,
+            &mut symbol_data_registry.functions_registry,
         ) {
             Ok(symbol_data) => return Ok(SymbolDataEntry::Function(symbol_data)),
             Err(err) => return Err(err),
@@ -544,12 +584,20 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
+        symbol_data_registry: &mut GlobalSymbolDataRegistry,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
         let lookup_func =
-            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
+            |scope: &Scope,
+             scope_index: usize,
+             key: &str,
+             symbol_data_registry: &SymbolDataRegistry<UserDefinedTypeData>| match scope
                 .lookup(scope_index, key)
             {
-                Some((symbol_data, _, _, _)) => Some(symbol_data.1),
+                Some((symbol_data_index, _, _, _)) => {
+                    let symbol_data =
+                        symbol_data_registry.get_symbol_data_ref_at_index(symbol_data_index);
+                    Some(symbol_data.1)
+                }
                 None => None,
             };
         match self.types.insert(
@@ -559,6 +607,7 @@ impl Namespace {
             decl_range,
             lookup_func,
             true,
+            &mut symbol_data_registry.types_registry,
         ) {
             Ok(symbol_data) => return Ok(SymbolDataEntry::Type(symbol_data)),
             Err(err) => return Err(err),
@@ -573,12 +622,20 @@ impl Namespace {
         return_type: Type,
         is_concretization_required: bool,
         decl_range: TextRange,
+        symbol_data_registry: &mut GlobalSymbolDataRegistry,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
         let lookup_func =
-            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
+            |scope: &Scope,
+             scope_index: usize,
+             key: &str,
+             symbol_data_registry: &SymbolDataRegistry<UserDefinedTypeData>| match scope
                 .lookup(scope_index, key)
             {
-                Some((symbol_data, _, _, _)) => Some(symbol_data.1),
+                Some((symbol_data_index, _, _, _)) => {
+                    let symbol_data =
+                        symbol_data_registry.get_symbol_data_ref_at_index(symbol_data_index);
+                    Some(symbol_data.1)
+                }
                 None => None,
             };
         match self.types.insert(
@@ -595,6 +652,7 @@ impl Namespace {
             decl_range,
             lookup_func,
             true,
+            &mut symbol_data_registry.types_registry,
         ) {
             Ok(symbol_data) => return Ok(SymbolDataEntry::Type(symbol_data)),
             Err(err) => return Err(err),
@@ -606,13 +664,22 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
+        symbol_data_registry: &mut GlobalSymbolDataRegistry,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| match scope
-            .lookup(scope_index, key)
-        {
-            Some((symbol_data, _, _, _)) => Some(symbol_data.1),
-            None => None,
-        };
+        let lookup_func =
+            |scope: &Scope,
+             scope_index: usize,
+             key: &str,
+             symbol_data_registry: &SymbolDataRegistry<InterfaceData>| match scope
+                .lookup(scope_index, key)
+            {
+                Some((symbol_data_index, _, _, _)) => {
+                    let symbol_data =
+                        symbol_data_registry.get_symbol_data_ref_at_index(symbol_data_index);
+                    Some(symbol_data.1)
+                }
+                None => None,
+            };
         match self.interfaces.insert(
             scope_index,
             name,
@@ -620,6 +687,7 @@ impl Namespace {
             decl_range,
             lookup_func,
             true,
+            &mut symbol_data_registry.interfaces_registry,
         ) {
             Ok(symbol_data) => return Ok(SymbolDataEntry::Interface(symbol_data)),
             Err(err) => return Err(err),

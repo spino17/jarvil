@@ -14,7 +14,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
-use crate::scope::core::VariableLookupResult;
+use crate::scope::core::{GlobalSymbolDataRegistry, VariableLookupResult};
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
 use crate::types::core::CoreType;
@@ -59,17 +59,17 @@ pub struct Context {
     block_context_stack: Vec<BlockContext>,
 }
 
-pub struct Resolver {
+pub struct Resolver<'a> {
     scope_index: usize,
     pub code: JarvilCode,
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
-    pub namespace_handler: NamespaceHandler,
+    pub namespace_handler: NamespaceHandler<'a>,
 }
 
-impl Resolver {
-    pub fn new(code: JarvilCode) -> Self {
+impl<'a> Resolver<'a> {
+    pub fn new(code: JarvilCode, symbol_data_registry: &'a mut GlobalSymbolDataRegistry) -> Self {
         Resolver {
             scope_index: 0,
             code,
@@ -82,14 +82,14 @@ impl Resolver {
                 }],
             },
             indent_level: 0,
-            namespace_handler: NamespaceHandler::new(),
+            namespace_handler: NamespaceHandler::new(symbol_data_registry),
         }
     }
 
     pub fn resolve_ast(
         mut self,
         ast: &BlockNode,
-    ) -> (NamespaceHandler, Vec<Diagnostics>, JarvilCode) {
+    ) -> (NamespaceHandler<'a>, Vec<Diagnostics>, JarvilCode) {
         let code_block = &*ast.0.as_ref();
         // setting builtin functions to global scope
         self.namespace_handler.namespace.functions.force_insert(
@@ -98,6 +98,10 @@ impl Resolver {
             print_meta_data(),
             TextRange::default(),
             false,
+            &mut self
+                .namespace_handler
+                .symbol_data_registry
+                .functions_registry,
         );
         self.namespace_handler.namespace.functions.force_insert(
             self.scope_index,
@@ -105,6 +109,10 @@ impl Resolver {
             range_meta_data(),
             TextRange::default(),
             false,
+            &mut self
+                .namespace_handler
+                .symbol_data_registry
+                .functions_registry,
         );
         for stmt in &*code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
@@ -115,7 +123,11 @@ impl Resolver {
             .functions
             .get(self.scope_index, "main")
         {
-            Some(symbol_data) => {
+            Some(symbol_data_index) => {
+                let symbol_data = self
+                    .namespace_handler
+                    .symbol_data_registry
+                    .get_functions_symbol_data_ref_at_index(*symbol_data_index);
                 let func_meta_data = &*symbol_data.0 .0.as_ref().borrow();
                 let params = &func_meta_data.prototype.params;
                 let return_type = &func_meta_data.prototype.return_type;
@@ -222,11 +234,11 @@ impl Resolver {
     pub fn bind_decl_to_self_keyword(
         &mut self,
         node: &OkSelfKeywordNode,
-        symbol_data: SymbolData<VariableData>,
+        symbol_data_index: usize,
     ) {
         self.namespace_handler
             .self_keyword_binding_table
-            .insert(node.clone(), symbol_data);
+            .insert(node.clone(), symbol_data_index);
     }
 
     pub fn try_resolving<
@@ -254,8 +266,11 @@ impl Resolver {
         match self
             .namespace_handler
             .namespace
-            .lookup_in_variables_namespace_with_is_init(self.scope_index, &name)
-        {
+            .lookup_in_variables_namespace_with_is_init(
+                self.scope_index,
+                &name,
+                self.namespace_handler.symbol_data_registry,
+            ) {
             VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth)) => {
                 self.bind_decl_to_identifier(
                     identifier,
@@ -273,7 +288,7 @@ impl Resolver {
     pub fn try_resolving_self_keyword(
         &mut self,
         self_keyword: &OkSelfKeywordNode,
-    ) -> Option<(SymbolData<VariableData>, usize)> {
+    ) -> Option<(usize, usize)> {
         let name = self_keyword.token_value(&self.code);
         assert!(name == "self".to_string());
         match self
@@ -281,9 +296,9 @@ impl Resolver {
             .namespace
             .lookup_in_variables_namespace(self.scope_index, &name)
         {
-            Some((symbol_data, _, depth, _)) => {
-                self.bind_decl_to_self_keyword(self_keyword, symbol_data.clone());
-                return Some((symbol_data, depth));
+            Some((symbol_data_index, _, depth, _)) => {
+                self.bind_decl_to_self_keyword(self_keyword, symbol_data_index);
+                return Some((symbol_data_index, depth));
             }
             None => return None,
         }
@@ -315,6 +330,7 @@ impl Resolver {
             usize,
             String,
             TextRange,
+            &mut GlobalSymbolDataRegistry,
         ) -> Result<SymbolDataEntry, (String, TextRange)>,
     >(
         &mut self,
@@ -327,6 +343,7 @@ impl Resolver {
             self.scope_index,
             name,
             identifier.range(),
+            self.namespace_handler.symbol_data_registry,
         );
         match symbol_data {
             Ok(symbol_data) => {
@@ -342,8 +359,12 @@ impl Resolver {
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
         let declare_fn =
-            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-                namespace.declare_variable(scope_index, name, decl_range)
+            |namespace: &mut Namespace,
+             scope_index: usize,
+             name: String,
+             decl_range: TextRange,
+             symbol_data_registry: &mut GlobalSymbolDataRegistry| {
+                namespace.declare_variable(scope_index, name, decl_range, symbol_data_registry)
             };
         self.try_declare_and_bind(identifier, declare_fn)
     }
@@ -353,8 +374,12 @@ impl Resolver {
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
         let declare_fn =
-            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-                namespace.declare_function(scope_index, name, decl_range)
+            |namespace: &mut Namespace,
+             scope_index: usize,
+             name: String,
+             decl_range: TextRange,
+             symbol_data_registry: &mut GlobalSymbolDataRegistry| {
+                namespace.declare_function(scope_index, name, decl_range, symbol_data_registry)
             };
         self.try_declare_and_bind(identifier, declare_fn)
     }
@@ -364,8 +389,12 @@ impl Resolver {
         identifier: &OkIdentifierNode,
     ) -> Option<(String, TextRange)> {
         let declare_fn =
-            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-                namespace.declare_struct_type(scope_index, name, decl_range)
+            |namespace: &mut Namespace,
+             scope_index: usize,
+             name: String,
+             decl_range: TextRange,
+             symbol_data_registry: &mut GlobalSymbolDataRegistry| {
+                namespace.declare_struct_type(scope_index, name, decl_range, symbol_data_registry)
             };
         self.try_declare_and_bind(identifier, declare_fn)
     }
@@ -475,6 +504,7 @@ impl Resolver {
                         &param_type,
                         ok_identifier.range(),
                         true,
+                        self.namespace_handler.symbol_data_registry,
                     );
                     match result {
                         Ok(symbol_data) => {
@@ -761,6 +791,7 @@ impl Resolver {
             &struct_type_obj,
             core_struct_decl.name.range(),
             true,
+            self.namespace_handler.symbol_data_registry,
         );
         assert!(result.is_ok());
 
@@ -1057,6 +1088,7 @@ impl Resolver {
                     return_type,
                     is_concretization_required,
                     ok_identifier.range(),
+                    self.namespace_handler.symbol_data_registry,
                 );
             match result {
                 Ok(symbol_data) => {
@@ -1077,7 +1109,7 @@ impl Resolver {
     }
 }
 
-impl Visitor for Resolver {
+impl<'a> Visitor for Resolver<'a> {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {
@@ -1164,14 +1196,18 @@ impl Visitor for Resolver {
                                 .namespace
                                 .lookup_in_functions_namespace(self.scope_index, &name)
                             {
-                                Some((symbol_data, _, depth, is_global)) => {
+                                Some((symbol_data_index, _, depth, is_global)) => {
                                     // function is resolved to nonlocal scope and should be non-builtin
+                                    let symbol_data = self
+                                        .namespace_handler
+                                        .symbol_data_registry
+                                        .get_functions_symbol_data_ref_at_index(symbol_data_index);
                                     if depth > 0 && symbol_data.2 {
                                         self.set_to_function_non_locals(name, is_global);
                                     }
                                     self.bind_decl_to_identifier(
                                         ok_identifier,
-                                        SymbolDataEntry::Function(symbol_data),
+                                        SymbolDataEntry::Function(symbol_data_index),
                                     );
                                 }
                                 None => match self

@@ -1189,9 +1189,13 @@ impl UserDefinedTypeNode {
                 .namespace_handler
                 .namespace
                 .types
-                .lookup_and_get_symbol_data_ref(scope_index, &name)
+                .lookup(scope_index, &name)
             {
-                Some((symbol_data, _, _, _)) => {
+                Some((symbol_data_index, _, _, _)) => {
+                    let symbol_data = resolver
+                        .namespace_handler
+                        .symbol_data_registry
+                        .get_types_symbol_data_ref_at_index(symbol_data_index);
                     let result = match &*symbol_data.0 .0.as_ref().borrow() {
                         UserDefinedTypeData::Struct(_) => TypeResolveKind::Resolved(
                             Type::new_with_struct(name, &symbol_data, None, false),
@@ -1201,8 +1205,10 @@ impl UserDefinedTypeNode {
                         ),
                         UserDefinedTypeData::Generic(generic_data) => todo!(),
                     };
-                    resolver
-                        .bind_decl_to_identifier(ok_identifier, SymbolDataEntry::Type(symbol_data));
+                    resolver.bind_decl_to_identifier(
+                        ok_identifier,
+                        SymbolDataEntry::Type(symbol_data_index),
+                    );
                     return result;
                 }
                 None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
@@ -1223,7 +1229,10 @@ impl UserDefinedTypeNode {
                 .get(ok_identifier)
             {
                 Some(symbol_data) => match symbol_data {
-                    SymbolDataEntry::Type(symbol_data) => {
+                    SymbolDataEntry::Type(symbol_data_index) => {
+                        let symbol_data = namespace_handler
+                            .symbol_data_registry
+                            .get_types_symbol_data_ref_at_index(*symbol_data_index);
                         match &*symbol_data.0 .0.as_ref().borrow() {
                             UserDefinedTypeData::Struct(_) => {
                                 return TypeResolveKind::Resolved(Type::new_with_struct(

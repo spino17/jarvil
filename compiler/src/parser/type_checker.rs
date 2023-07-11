@@ -3,6 +3,7 @@
 
 use super::resolver::Resolver;
 use crate::ast::ast::InterfaceMethodTerminalNode;
+use crate::scope::handler::SymbolDataEntry;
 use crate::types::lambda::Lambda;
 use crate::{
     ast::{
@@ -40,8 +41,7 @@ use crate::{
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
-        function::CallablePrototypeData,
-        handler::{NamespaceHandler, SymbolDataRef},
+        function::CallablePrototypeData, handler::NamespaceHandler,
         types::core::UserDefinedTypeData,
     },
     types::{
@@ -84,15 +84,15 @@ pub enum TupleIndexCheckResult {
     NegativeIndexOutOfBound,
 }
 
-pub struct TypeChecker {
+pub struct TypeChecker<'a> {
     code: JarvilCode,
     errors: UnsafeCell<Vec<Diagnostics>>,
     context: Context,
-    namespace_handler: NamespaceHandler,
+    namespace_handler: NamespaceHandler<'a>,
 }
 
-impl TypeChecker {
-    pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler) -> Self {
+impl<'a> TypeChecker<'a> {
+    pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler<'a>) -> Self {
         TypeChecker {
             code,
             errors: UnsafeCell::new(vec![]),
@@ -117,7 +117,7 @@ impl TypeChecker {
         mut self,
         ast: &BlockNode,
         global_errors: &mut Vec<Diagnostics>,
-    ) -> (NamespaceHandler, JarvilCode) {
+    ) -> (NamespaceHandler<'a>, JarvilCode) {
         let core_block = ast.0.as_ref();
         for stmt in &*core_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
@@ -381,8 +381,12 @@ impl TypeChecker {
                             .namespace_handler
                             .get_self_keyword_symbol_data_ref(ok_self_keyword)
                         {
-                            Some(symbol_data) => {
-                                return symbol_data.0 .0.as_ref().borrow().data_type.clone()
+                            Some(symbol_data_index) => {
+                                let symbol_data = self
+                                    .namespace_handler
+                                    .symbol_data_registry
+                                    .get_variables_symbol_data_ref_at_index(*symbol_data_index);
+                                return symbol_data.0 .0.as_ref().borrow().data_type.clone();
                             }
                             None => return Type::new_with_unknown(),
                         }
@@ -399,7 +403,11 @@ impl TypeChecker {
                         self.namespace_handler.get_symbol_data_ref(ok_identifier)
                     {
                         let (result, return_type) = match symbol_data {
-                            SymbolDataRef::Function(func_symbol_data) => {
+                            SymbolDataEntry::Function(symbol_data_index) => {
+                                let func_symbol_data = self
+                                    .namespace_handler
+                                    .symbol_data_registry
+                                    .get_functions_symbol_data_ref_at_index(*symbol_data_index);
                                 let func_data = &*func_symbol_data.0 .0.as_ref().borrow();
                                 let expected_params = &func_data.prototype.params;
                                 let return_type = &func_data.prototype.return_type;
@@ -407,7 +415,11 @@ impl TypeChecker {
                                     self.check_params_type_and_count(expected_params, params);
                                 (result, return_type.clone())
                             }
-                            SymbolDataRef::Variable(variable_symbol_data) => {
+                            SymbolDataEntry::Variable(symbol_data_index) => {
+                                let variable_symbol_data = self
+                                    .namespace_handler
+                                    .symbol_data_registry
+                                    .get_variables_symbol_data_ref_at_index(*symbol_data_index);
                                 let lambda_type =
                                     &variable_symbol_data.0 .0.as_ref().borrow().data_type;
                                 match lambda_type.0.as_ref() {
@@ -448,8 +460,12 @@ impl TypeChecker {
                                     }
                                 }
                             }
-                            SymbolDataRef::Interface(_) => unreachable!(),
-                            SymbolDataRef::Type(user_defined_type_symbol_data) => {
+                            SymbolDataEntry::Interface(_) => unreachable!(),
+                            SymbolDataEntry::Type(symbol_data_index) => {
+                                let user_defined_type_symbol_data = self
+                                    .namespace_handler
+                                    .symbol_data_registry
+                                    .get_types_symbol_data_ref_at_index(*symbol_data_index);
                                 match &*user_defined_type_symbol_data.0 .0.as_ref().borrow() {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
                                         let constructor_meta_data = &struct_symbol_data.constructor;
@@ -1383,7 +1399,7 @@ impl TypeChecker {
     }
 }
 
-impl Visitor for TypeChecker {
+impl<'a> Visitor for TypeChecker<'a> {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Statement(stmt) => {
