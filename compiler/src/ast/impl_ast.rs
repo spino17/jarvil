@@ -1250,7 +1250,9 @@ impl UserDefinedTypeNode {
                                     false,
                                 ));
                             }
-                            UserDefinedTypeData::Generic(generic_data) => todo!(),
+                            UserDefinedTypeData::Generic(_) => {
+                                return TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data))
+                            },
                         }
                     }
                     SymbolDataEntry::Function(_)
