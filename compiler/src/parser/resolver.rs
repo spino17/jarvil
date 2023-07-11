@@ -59,17 +59,17 @@ pub struct Context {
     block_context_stack: Vec<BlockContext>,
 }
 
-pub struct Resolver<'a> {
+pub struct Resolver {
     scope_index: usize,
     pub code: JarvilCode,
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
-    pub namespace_handler: NamespaceHandler<'a>,
+    pub namespace_handler: NamespaceHandler,
 }
 
-impl<'a> Resolver<'a> {
-    pub fn new(code: JarvilCode, symbol_data_registry: &'a mut GlobalSymbolDataRegistry) -> Self {
+impl Resolver {
+    pub fn new(code: JarvilCode) -> Self {
         Resolver {
             scope_index: 0,
             code,
@@ -82,14 +82,14 @@ impl<'a> Resolver<'a> {
                 }],
             },
             indent_level: 0,
-            namespace_handler: NamespaceHandler::new(symbol_data_registry),
+            namespace_handler: NamespaceHandler::new(),
         }
     }
 
     pub fn resolve_ast(
         mut self,
         ast: &BlockNode,
-    ) -> (NamespaceHandler<'a>, Vec<Diagnostics>, JarvilCode) {
+    ) -> (NamespaceHandler, Vec<Diagnostics>, JarvilCode) {
         let code_block = &*ast.0.as_ref();
         // setting builtin functions to global scope
         self.namespace_handler.namespace.functions.force_insert(
@@ -269,7 +269,7 @@ impl<'a> Resolver<'a> {
             .lookup_in_variables_namespace_with_is_init(
                 self.scope_index,
                 &name,
-                self.namespace_handler.symbol_data_registry,
+                &self.namespace_handler.symbol_data_registry,
             ) {
             VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth)) => {
                 self.bind_decl_to_identifier(
@@ -343,7 +343,7 @@ impl<'a> Resolver<'a> {
             self.scope_index,
             name,
             identifier.range(),
-            self.namespace_handler.symbol_data_registry,
+            &mut self.namespace_handler.symbol_data_registry,
         );
         match symbol_data {
             Ok(symbol_data) => {
@@ -504,7 +504,7 @@ impl<'a> Resolver<'a> {
                         &param_type,
                         ok_identifier.range(),
                         true,
-                        self.namespace_handler.symbol_data_registry,
+                        &mut self.namespace_handler.symbol_data_registry,
                     );
                     match result {
                         Ok(symbol_data) => {
@@ -791,7 +791,7 @@ impl<'a> Resolver<'a> {
             &struct_type_obj,
             core_struct_decl.name.range(),
             true,
-            self.namespace_handler.symbol_data_registry,
+            &mut self.namespace_handler.symbol_data_registry,
         );
         assert!(result.is_ok());
 
@@ -1088,7 +1088,7 @@ impl<'a> Resolver<'a> {
                     return_type,
                     is_concretization_required,
                     ok_identifier.range(),
-                    self.namespace_handler.symbol_data_registry,
+                    &mut self.namespace_handler.symbol_data_registry,
                 );
             match result {
                 Ok(symbol_data) => {
@@ -1109,7 +1109,7 @@ impl<'a> Resolver<'a> {
     }
 }
 
-impl<'a> Visitor for Resolver<'a> {
+impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {

@@ -34,14 +34,14 @@ pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
     }
 }
 
-pub struct PythonCodeGenerator<'a> {
+pub struct PythonCodeGenerator {
     indent_level: usize,
     generate_code: String,
     code: JarvilCode,
-    namespace_handler: NamespaceHandler<'a>,
+    namespace_handler: NamespaceHandler,
 }
 
-impl<'a> PythonCodeGenerator<'a> {
+impl PythonCodeGenerator {
     pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
@@ -334,7 +334,7 @@ impl<'a> PythonCodeGenerator<'a> {
     }
 }
 
-impl<'a> Visitor for PythonCodeGenerator<'a> {
+impl Visitor for PythonCodeGenerator {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {

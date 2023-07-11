@@ -51,10 +51,9 @@ pub fn build_ast(mut code: JarvilCode) -> (BlockNode, Vec<Diagnostics>, JarvilCo
 
 pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> {
     let (ast, mut errors, code) = build_ast(code);
-    let mut symbol_data_registry = GlobalSymbolDataRegistry::default();
 
     // name-resolver
-    let resolver = Resolver::new(code, &mut symbol_data_registry);
+    let resolver = Resolver::new(code);
     let (namespace_handler, mut semantic_errors, code) = resolver.resolve_ast(&ast);
     errors.append(&mut semantic_errors);
 

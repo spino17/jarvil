@@ -84,15 +84,15 @@ pub enum TupleIndexCheckResult {
     NegativeIndexOutOfBound,
 }
 
-pub struct TypeChecker<'a> {
+pub struct TypeChecker {
     code: JarvilCode,
     errors: UnsafeCell<Vec<Diagnostics>>,
     context: Context,
-    namespace_handler: NamespaceHandler<'a>,
+    namespace_handler: NamespaceHandler,
 }
 
-impl<'a> TypeChecker<'a> {
-    pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler<'a>) -> Self {
+impl TypeChecker {
+    pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler) -> Self {
         TypeChecker {
             code,
             errors: UnsafeCell::new(vec![]),
@@ -117,7 +117,7 @@ impl<'a> TypeChecker<'a> {
         mut self,
         ast: &BlockNode,
         global_errors: &mut Vec<Diagnostics>,
-    ) -> (NamespaceHandler<'a>, JarvilCode) {
+    ) -> (NamespaceHandler, JarvilCode) {
         let core_block = ast.0.as_ref();
         for stmt in &*core_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
@@ -1399,7 +1399,7 @@ impl<'a> TypeChecker<'a> {
     }
 }
 
-impl<'a> Visitor for TypeChecker<'a> {
+impl Visitor for TypeChecker {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Statement(stmt) => {
