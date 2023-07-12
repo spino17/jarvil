@@ -1199,7 +1199,9 @@ impl UserDefinedTypeNode {
                         UserDefinedTypeData::Lambda(_) => TypeResolveKind::Resolved(
                             Type::new_with_lambda_named(name, &symbol_data, None, false),
                         ),
-                        UserDefinedTypeData::Generic(generic_data) => todo!(),
+                        UserDefinedTypeData::Generic(_) => TypeResolveKind::Resolved(
+                            Type::new_with_generic(&symbol_data)
+                        ),
                     };
                     resolver
                         .bind_decl_to_identifier(ok_identifier, SymbolDataEntry::Type(symbol_data));
@@ -1241,7 +1243,9 @@ impl UserDefinedTypeNode {
                                     false,
                                 ));
                             }
-                            UserDefinedTypeData::Generic(generic_data) => todo!(),
+                            UserDefinedTypeData::Generic(_) => {
+                                return TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data))
+                            },
                         }
                     }
                     SymbolDataEntry::Function(_)
