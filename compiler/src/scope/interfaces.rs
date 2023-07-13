@@ -79,8 +79,8 @@ impl InterfaceObject {
             match self.1.index {
                 Some(self_key) => match other.1.index {
                     Some(other_key) => {
-                        let self_ref = &*self.1.symbol_data.0 .0.as_ref().borrow();
-                        let other_ref = &*other.1.symbol_data.0 .0.as_ref().borrow();
+                        let self_ref = &*self.1.get_core_ref();
+                        let other_ref = &*other.1.get_core_ref();
                         let self_concrete_types = &self_ref.get_concrete_types(self_key).0;
                         let other_concrete_types = &other_ref.get_concrete_types(other_key).0;
                         let self_len = self_concrete_types.len();
@@ -115,7 +115,7 @@ impl ToString for InterfaceObject {
         let mut s = self.0.to_string();
         match self.1.index {
             Some(index) => {
-                let interface_data_ref = &*self.1.symbol_data.0 .0.as_ref().borrow();
+                let interface_data_ref = &*self.1.get_core_ref();
                 s.push('<');
                 s.push_str(&interface_data_ref.get_concrete_types(index).to_string());
                 s.push('>');

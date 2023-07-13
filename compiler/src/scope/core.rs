@@ -40,39 +40,32 @@ impl<T: AbstractConcreteTypesHandler> Clone for SymbolDataCore<T> {
 }
 
 #[derive(Debug)]
-pub struct SymbolData<T: AbstractConcreteTypesHandler>(
-    pub SymbolDataCore<T>,
-    pub TextRange,
-    pub bool,
-); // (identifier_meta_data, decl_line_number, should_add_prefix)
+pub struct SymbolData<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
 
 impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn new(core_data: T, decl_range: TextRange, is_suffix_required: bool) -> Self {
         SymbolData(
-            SymbolDataCore(Rc::new(RefCell::new(core_data))),
+            Rc::new(RefCell::new(core_data)),
             decl_range,
             is_suffix_required,
         )
     }
 
     pub fn get_core_ref<'a>(&'a self) -> Ref<'a, T> {
-        self.0 .0.as_ref().borrow()
+        self.0.as_ref().borrow()
     }
 
     pub fn get_core_mut_ref<'a>(&'a self) -> RefMut<'a, T> {
-        self.0 .0.as_ref().borrow_mut()
+        self.0.as_ref().borrow_mut()
     }
 
     pub fn register_concrete_types(&self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        self.0
-             .0
-            .as_ref()
-            .borrow_mut()
+        self.get_core_mut_ref()
             .register_concrete_types(concrete_types)
     }
 
     pub fn has_generics(&self) -> bool {
-        self.0 .0.as_ref().borrow().has_generics()
+        self.0.as_ref().borrow().has_generics()
     }
 }
 
@@ -327,7 +320,7 @@ impl Namespace {
     ) -> VariableLookupResult {
         match self.variables.lookup(scope_index, key) {
             Some((symbol_data, resolved_scope_index, depth, _)) => {
-                if symbol_data.0 .0.as_ref().borrow().is_initialized() {
+                if symbol_data.get_core_ref().is_initialized() {
                     return VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth));
                 } else {
                     return VariableLookupResult::NotInitialized(symbol_data.1);

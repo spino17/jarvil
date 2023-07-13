@@ -1192,7 +1192,7 @@ impl UserDefinedTypeNode {
                 .lookup_and_get_symbol_data_ref(scope_index, &name)
             {
                 Some((symbol_data, _, _, _)) => {
-                    let result = match &*symbol_data.0 .0.as_ref().borrow() {
+                    let result = match &*symbol_data.get_core_ref() {
                         UserDefinedTypeData::Struct(_) => TypeResolveKind::Resolved(
                             Type::new_with_struct(name, &symbol_data, None, false),
                         ),
@@ -1225,31 +1225,27 @@ impl UserDefinedTypeNode {
                 .get(ok_identifier)
             {
                 Some(symbol_data) => match symbol_data {
-                    SymbolDataEntry::Type(symbol_data) => {
-                        match &*symbol_data.0 .0.as_ref().borrow() {
-                            UserDefinedTypeData::Struct(_) => {
-                                return TypeResolveKind::Resolved(Type::new_with_struct(
-                                    name,
-                                    &symbol_data,
-                                    None,
-                                    false,
-                                ));
-                            }
-                            UserDefinedTypeData::Lambda(_) => {
-                                return TypeResolveKind::Resolved(Type::new_with_lambda_named(
-                                    name,
-                                    &symbol_data,
-                                    None,
-                                    false,
-                                ));
-                            }
-                            UserDefinedTypeData::Generic(_) => {
-                                return TypeResolveKind::Resolved(Type::new_with_generic(
-                                    &symbol_data,
-                                ))
-                            }
+                    SymbolDataEntry::Type(symbol_data) => match &*symbol_data.get_core_ref() {
+                        UserDefinedTypeData::Struct(_) => {
+                            return TypeResolveKind::Resolved(Type::new_with_struct(
+                                name,
+                                &symbol_data,
+                                None,
+                                false,
+                            ));
                         }
-                    }
+                        UserDefinedTypeData::Lambda(_) => {
+                            return TypeResolveKind::Resolved(Type::new_with_lambda_named(
+                                name,
+                                &symbol_data,
+                                None,
+                                false,
+                            ));
+                        }
+                        UserDefinedTypeData::Generic(_) => {
+                            return TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data))
+                        }
+                    },
                     SymbolDataEntry::Function(_)
                     | SymbolDataEntry::Variable(_)
                     | SymbolDataEntry::Interface(_) => unreachable!(),

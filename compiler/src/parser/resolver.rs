@@ -116,7 +116,7 @@ impl Resolver {
             .get(self.scope_index, "main")
         {
             Some(symbol_data) => {
-                let func_meta_data = &*symbol_data.0 .0.as_ref().borrow();
+                let func_meta_data = &*symbol_data.get_core_ref();
                 let params = &func_meta_data.prototype.params;
                 let return_type = &func_meta_data.prototype.return_type;
                 if params.len() > 0 || !return_type.is_void() {
@@ -624,7 +624,7 @@ impl Resolver {
                         .namespace_handler
                         .get_variable_symbol_data_ref(ok_identifier)
                     {
-                        symbol_data.0 .0.as_ref().borrow_mut().set_is_init(true);
+                        symbol_data.get_core_mut_ref().set_is_init(true);
                     }
                 };
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
@@ -641,10 +641,7 @@ impl Resolver {
                         .get_variable_symbol_data_ref(ok_identifier)
                     {
                         symbol_data
-                            .0
-                             .0
-                            .as_ref()
-                            .borrow_mut()
+                            .get_core_mut_ref()
                             .set_data_type(&lambda_type_obj);
                     }
                 };
@@ -658,7 +655,7 @@ impl Resolver {
                 .namespace_handler
                 .get_variable_symbol_data_ref(ok_identifier)
             {
-                symbol_data.0 .0.as_ref().borrow_mut().set_is_init(true);
+                symbol_data.get_core_mut_ref().set_is_init(true);
             }
         };
     }
@@ -702,7 +699,7 @@ impl Resolver {
                 .namespace_handler
                 .get_function_symbol_data_ref(ok_identifier)
             {
-                symbol_data.0 .0.as_ref().borrow_mut().set_data(
+                symbol_data.get_core_mut_ref().set_data(
                     param_types_vec,
                     return_type,
                     CallableKind::Function,
@@ -992,10 +989,7 @@ impl Resolver {
                 .get_type_symbol_data_ref(ok_identifier)
             {
                 symbol_data
-                    .0
-                     .0
-                    .as_ref()
-                    .borrow_mut()
+                    .get_core_mut_ref()
                     .get_struct_data_mut_ref()
                     .set_meta_data(fields_map, constructor, methods, class_methods, None);
             }
