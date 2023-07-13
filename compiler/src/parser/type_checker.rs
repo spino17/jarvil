@@ -1168,7 +1168,7 @@ impl TypeChecker {
     pub fn check_callable_body(
         &mut self,
         prototype: &CallablePrototypeNode,
-        block: &BlockNode,
+        body: &BlockNode,
         is_constructor: bool,
     ) {
         // let core_callable_body = callable_body.0.as_ref();
@@ -1177,7 +1177,7 @@ impl TypeChecker {
             .func_stack
             .push((is_constructor, return_type_obj.clone()));
         let mut has_return_stmt: Option<TextRange> = None;
-        for stmt in &*block.0.as_ref().stmts.as_ref() {
+        for stmt in &*body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
