@@ -1,8 +1,9 @@
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
-    CoreIdentifierInDeclNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-    CoreTypeExpressionNode, FunctionWrapperNode, IdentifierInUseNode, InterfaceDeclarationNode,
-    LambdaTypeDeclarationNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreOkIdentifierInUseNode,
+    CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode,
+    IdentifierInUseNode, InterfaceDeclarationNode, LambdaTypeDeclarationNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -427,10 +428,12 @@ impl Resolver {
 
     fn interface_obj_from_expression(
         &mut self,
-        interface_expr: &IdentifierInUseNode,
+        interface_expr: &OkIdentifierInUseNode,
     ) -> InterfaceObject {
-        // resolve the name of the interface and provide the concrete types tuple to form the
-        // interface object
+        // resolve the name of the interface and register the concrete types tuple to get the key
+        // use that key to form interface object
+        let concrete_types =
+            self.extract_angle_bracket_content_from_identifier_in_use(interface_expr);
         todo!()
     }
 
@@ -460,8 +463,12 @@ impl Resolver {
                         };
                     if let Some((_, interface_bounds)) = &core_generic_type_decl.interface_bounds {
                         for interface_expr in interface_bounds.iter() {
-                            interface_bounds_vec
-                                .push(self.interface_obj_from_expression(&interface_expr))
+                            if let CoreIdentifierInUseNode::Ok(interface_expr) =
+                                interface_expr.core_ref()
+                            {
+                                interface_bounds_vec
+                                    .push(self.interface_obj_from_expression(&interface_expr))
+                            }
                         }
                     }
                     generic_type_params_vec.push((generic_type_name, interface_bounds_vec));
