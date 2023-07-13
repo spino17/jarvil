@@ -7,7 +7,7 @@ use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 use text_size::TextRange;
 
@@ -53,6 +53,14 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
             decl_range,
             is_suffix_required,
         )
+    }
+
+    pub fn get_core_ref<'a>(&'a self) -> Ref<'a, T> {
+        self.0 .0.as_ref().borrow()
+    }
+
+    pub fn get_core_mut_ref<'a>(&'a self) -> RefMut<'a, T> {
+        self.0 .0.as_ref().borrow_mut()
     }
 
     pub fn register_concrete_types(&self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {

@@ -21,32 +21,40 @@ impl Generic {
 impl AbstractType for Generic {
     fn is_eq(&self, other_ty: &Type) -> bool {
         match other_ty.0.as_ref() {
-            CoreType::Generic(base_generic_data) => {
+            CoreType::Generic(generic_data) => {
+                let self_symbol_data = self.semantic_data.get_core_ref();
+                let self_generic_data = self_symbol_data.get_generic_data_ref();
+                let self_interface_bounds = &self_generic_data.interface_bounds;
+                let self_len = self_interface_bounds.len();
+
+                let other_symbol_data = generic_data.semantic_data.get_core_ref();
+                let other_generic_data = other_symbol_data.get_generic_data_ref();
+                let other_interface_bounds = &other_generic_data.interface_bounds;
+                let other_len = other_interface_bounds.len();
+
+                if self_len != other_len {
+                    return false;
+                }
+                for i in 0..self_len {
+                    if !self_interface_bounds[i].is_eq(&other_interface_bounds[i]) {
+                        return false;
+                    }
+                }
+                return true;
+                /*
                 match &*self.semantic_data.0 .0.as_ref().borrow() {
                     UserDefinedTypeData::Generic(self_generic_data_ref) => {
                         match &*base_generic_data.semantic_data.0 .0.as_ref().borrow() {
                             // The generic types equivalence is computed structurally by checking if both
                             // are bounded by the same set of interfaces
                             UserDefinedTypeData::Generic(base_generic_data_ref) => {
-                                let self_interface_bounds = &self_generic_data_ref.interface_bounds;
-                                let base_interface_bounds = &base_generic_data_ref.interface_bounds;
-                                let self_len = self_interface_bounds.len();
-                                let base_len = base_interface_bounds.len();
-                                if self_len != base_len {
-                                    return false;
-                                }
-                                for i in 0..self_len {
-                                    if !self_interface_bounds[i].is_eq(&base_interface_bounds[i]) {
-                                        return false;
-                                    }
-                                }
-                                return true;
+
                             }
                             _ => unreachable!(),
                         }
                     }
                     _ => unreachable!(),
-                }
+                }*/
             }
             CoreType::Any => true,
             _ => false,
@@ -54,20 +62,17 @@ impl AbstractType for Generic {
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
-        match &*self.semantic_data.0 .0.as_ref().borrow() {
-            UserDefinedTypeData::Generic(generic_data) => {
-                let index = generic_data.index;
-                let category = &generic_data.category;
-                match category {
-                    GenericTypeDeclarationPlaceCategory::InStruct => {
-                        return context.struct_concrete_types[index].clone()
-                    }
-                    GenericTypeDeclarationPlaceCategory::InCallable => {
-                        return context.function_local_concrete_types[index].clone()
-                    }
-                }
+        let symbol_data = self.semantic_data.get_core_ref();
+        let generic_data = symbol_data.get_generic_data_ref();
+        let index = generic_data.index;
+        let category = &generic_data.category;
+        match category {
+            GenericTypeDeclarationPlaceCategory::InStruct => {
+                return context.struct_concrete_types[index].clone()
             }
-            _ => unreachable!(),
+            GenericTypeDeclarationPlaceCategory::InCallable => {
+                return context.function_local_concrete_types[index].clone()
+            }
         }
     }
 }

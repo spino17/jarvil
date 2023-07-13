@@ -1,3 +1,6 @@
+use std::cell::Ref;
+use std::cell::RefMut;
+
 use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::SymbolData;
 use crate::types::core::Type;
@@ -36,6 +39,16 @@ impl ToString for ConcreteTypesTuple {
 pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler> {
     pub symbol_data: SymbolData<T>,
     pub index: Option<ConcreteTypesRegistryKey>, // This will be `None` for symbol data which does not have any generic type params
+}
+
+impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
+    pub fn get_core_ref<'a>(&'a self) -> Ref<'a, T> {
+        self.symbol_data.get_core_ref::<'a>()
+    }
+
+    pub fn get_core_mut_ref<'a>(&'a self) -> RefMut<'a, T> {
+        self.symbol_data.get_core_mut_ref::<'a>()
+    }
 }
 
 impl<T: AbstractConcreteTypesHandler> Clone for ConcreteSymbolData<T> {

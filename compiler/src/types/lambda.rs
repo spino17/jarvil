@@ -42,64 +42,71 @@ impl AbstractType for Lambda {
                 // let x = (...) -> <Type>: block would have `x` to be of type `Lambda` with no name but symbol_data.
                 match self {
                     Lambda::Named((_, self_named)) => {
-                        match &*self_named.symbol_data.0 .0.as_ref().borrow() {
-                            UserDefinedTypeData::Lambda(self_data) => {
-                                match self_data.get_concrete_prototype(self_named.index) {
-                                    PrototypeConcretizationResult::Concretized(
-                                        self_concrete_prototype,
-                                    ) => match other_data {
-                                        Lambda::Named((_, other_named)) => {
-                                            match &*other_named.symbol_data.0.0.as_ref().borrow() {
-                                                UserDefinedTypeData::Lambda(other_data) => {
-                                                    match other_data.get_concrete_prototype(other_named.index) {
-                                                        PrototypeConcretizationResult::Concretized(other_concrete_prototype) => return other_concrete_prototype.is_eq(&self_concrete_prototype),
-                                                        PrototypeConcretizationResult::UnConcretized(other_prototype) => return other_prototype.is_eq(&self_concrete_prototype)
-                                                    }
-                                                }
-                                                _ => unreachable!()
+                        let self_symbol_data = self_named.get_core_ref();
+                        let self_data = self_symbol_data.get_lambda_data_ref();
+                        match self_data.get_concrete_prototype(self_named.index) {
+                            PrototypeConcretizationResult::Concretized(self_concrete_prototype) => {
+                                match other_data {
+                                    Lambda::Named((_, other_named)) => {
+                                        let other_symbol_data =
+                                            other_named.symbol_data.get_core_ref();
+                                        let other_data = other_symbol_data.get_lambda_data_ref();
+                                        match other_data.get_concrete_prototype(other_named.index) {
+                                            PrototypeConcretizationResult::Concretized(
+                                                other_concrete_prototype,
+                                            ) => {
+                                                return other_concrete_prototype
+                                                    .is_eq(&self_concrete_prototype)
+                                            }
+                                            PrototypeConcretizationResult::UnConcretized(
+                                                other_prototype,
+                                            ) => {
+                                                return other_prototype
+                                                    .is_eq(&self_concrete_prototype)
                                             }
                                         }
-                                        Lambda::Unnamed(other_prototype) => {
-                                            self_concrete_prototype.is_eq(other_prototype)
-                                        }
-                                    },
-                                    PrototypeConcretizationResult::UnConcretized(
-                                        self_prototype,
-                                    ) => match other_data {
-                                        Lambda::Named((_, other_named)) => {
-                                            match &*other_named.symbol_data.0.0.as_ref().borrow() {
-                                                UserDefinedTypeData::Lambda(other_data) => {
-                                                    match other_data.get_concrete_prototype(other_named.index) {
-                                                        PrototypeConcretizationResult::Concretized(other_concrete_prototype) => return other_concrete_prototype.is_eq(self_prototype),
-                                                        PrototypeConcretizationResult::UnConcretized(other_prototype) => return other_prototype.is_eq(self_prototype)
-                                                    }
-                                                }
-                                                _ => unreachable!()
-                                            }
-                                        }
-                                        Lambda::Unnamed(other_prototype) => {
-                                            return self_prototype.is_eq(other_prototype)
-                                        }
-                                    },
+                                    }
+                                    Lambda::Unnamed(other_prototype) => {
+                                        self_concrete_prototype.is_eq(other_prototype)
+                                    }
                                 }
                             }
-                            _ => unreachable!(),
+                            PrototypeConcretizationResult::UnConcretized(self_prototype) => {
+                                match other_data {
+                                    Lambda::Named((_, other_named)) => {
+                                        let other_symbol_data =
+                                            other_named.symbol_data.get_core_ref();
+                                        let other_data = other_symbol_data.get_lambda_data_ref();
+                                        match other_data.get_concrete_prototype(other_named.index) {
+                                            PrototypeConcretizationResult::Concretized(
+                                                other_concrete_prototype,
+                                            ) => {
+                                                return other_concrete_prototype
+                                                    .is_eq(self_prototype)
+                                            }
+                                            PrototypeConcretizationResult::UnConcretized(
+                                                other_prototype,
+                                            ) => return other_prototype.is_eq(self_prototype),
+                                        }
+                                    }
+                                    Lambda::Unnamed(other_prototype) => {
+                                        return self_prototype.is_eq(other_prototype)
+                                    }
+                                }
+                            }
                         }
                     }
                     Lambda::Unnamed(self_prototype) => match other_data {
                         Lambda::Named((_, other_named)) => {
-                            match &*other_named.symbol_data.0 .0.as_ref().borrow() {
-                                UserDefinedTypeData::Lambda(other_data) => {
-                                    match other_data.get_concrete_prototype(other_named.index) {
-                                        PrototypeConcretizationResult::Concretized(
-                                            other_concrete_prototype,
-                                        ) => return other_concrete_prototype.is_eq(self_prototype),
-                                        PrototypeConcretizationResult::UnConcretized(
-                                            other_prototype,
-                                        ) => return other_prototype.is_eq(self_prototype),
-                                    }
+                            let other_symbol_data = other_named.get_core_ref();
+                            let other_data = other_symbol_data.get_lambda_data_ref();
+                            match other_data.get_concrete_prototype(other_named.index) {
+                                PrototypeConcretizationResult::Concretized(
+                                    other_concrete_prototype,
+                                ) => return other_concrete_prototype.is_eq(self_prototype),
+                                PrototypeConcretizationResult::UnConcretized(other_prototype) => {
+                                    return other_prototype.is_eq(self_prototype)
                                 }
-                                _ => unreachable!(),
                             }
                         }
                         Lambda::Unnamed(other_prototype) => {
@@ -120,20 +127,15 @@ impl AbstractType for Lambda {
                     Some(key) => key,
                     None => unreachable!(),
                 };
-                let concretized_concrete_types = match &*named.1.symbol_data.0 .0.as_ref().borrow()
-                {
-                    UserDefinedTypeData::Lambda(lambda_data) => {
-                        let concrete_types = &lambda_data.get_concrete_types(index).0;
-                        let mut concretized_concrete_types = concrete_types.clone();
-                        for (index, ty) in concrete_types.iter().enumerate() {
-                            if ty.has_generics() {
-                                concretized_concrete_types[index] = ty.concretize(context);
-                            }
-                        }
-                        concretized_concrete_types
+                let symbol_data = named.1.get_core_ref();
+                let lambda_data = symbol_data.get_lambda_data_ref();
+                let concrete_types = &lambda_data.get_concrete_types(index).0;
+                let mut concretized_concrete_types = concrete_types.clone();
+                for (index, ty) in concrete_types.iter().enumerate() {
+                    if ty.has_generics() {
+                        concretized_concrete_types[index] = ty.concretize(context);
                     }
-                    _ => unreachable!(),
-                };
+                }
                 let new_key = named
                     .1
                     .symbol_data
@@ -158,13 +160,10 @@ impl ToString for Lambda {
                 match semantic_data.index {
                     Some(index) => {
                         s.push('<');
-                        match &*semantic_data.symbol_data.0 .0.as_ref().borrow() {
-                            UserDefinedTypeData::Lambda(lambda_data) => {
-                                let concrete_types = lambda_data.get_concrete_types(index);
-                                s.push_str(&concrete_types.to_string());
-                            }
-                            _ => unreachable!(),
-                        };
+                        let symbol_data = semantic_data.get_core_ref();
+                        let lambda_data = symbol_data.get_lambda_data_ref();
+                        let concrete_types = lambda_data.get_concrete_types(index);
+                        s.push_str(&concrete_types.to_string());
                         s.push('>');
                         return s;
                     }

@@ -34,6 +34,34 @@ impl UserDefinedTypeData {
             _ => unreachable!(),
         }
     }
+
+    pub fn get_lambda_data_ref(&self) -> &LambdaTypeData {
+        match self {
+            UserDefinedTypeData::Lambda(data) => data,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_lambda_data_mut_ref(&mut self) -> &mut LambdaTypeData {
+        match self {
+            UserDefinedTypeData::Lambda(data) => data,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_generic_data_ref(&self) -> &GenericTypeData {
+        match self {
+            UserDefinedTypeData::Generic(data) => data,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_generic_data_mut_ref(&mut self) -> &mut GenericTypeData {
+        match self {
+            UserDefinedTypeData::Generic(data) => data,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl AbstractConcreteTypesHandler for UserDefinedTypeData {

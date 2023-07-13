@@ -1,5 +1,3 @@
-use text_size::TextRange;
-
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::scope::{
     concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext},
@@ -38,6 +36,26 @@ impl AbstractType for Struct {
                     match self.semantic_data.index {
                         Some(self_key) => match struct_data.semantic_data.index {
                             Some(other_key) => {
+                                let self_symbol_data = self.semantic_data.get_core_ref();
+                                let self_struct_data = self_symbol_data.get_struct_data_ref();
+                                let self_concrete_types =
+                                    &self_struct_data.get_concrete_types(self_key).0;
+                                let self_len = self_concrete_types.len();
+
+                                let other_symbol_data = struct_data.semantic_data.get_core_ref();
+                                let other_struct_data = other_symbol_data.get_struct_data_ref();
+                                let other_concrete_types =
+                                    &other_struct_data.get_concrete_types(other_key).0;
+                                let other_len = other_concrete_types.len();
+
+                                assert!(self_len == other_len);
+                                for i in 0..self_len {
+                                    if !self_concrete_types[i].is_eq(&other_concrete_types[i]) {
+                                        return false;
+                                    }
+                                }
+                                return true;
+                                /*
                                 match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
                                     UserDefinedTypeData::Struct(self_struct_data) => {
                                         match &*struct_data
@@ -72,6 +90,7 @@ impl AbstractType for Struct {
                                     }
                                     _ => unreachable!(),
                                 }
+                                 */
                             }
                             None => unreachable!(),
                         },
@@ -90,20 +109,15 @@ impl AbstractType for Struct {
             Some(key) => key,
             None => unreachable!(),
         };
-        let concretized_concrete_types =
-            match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
-                UserDefinedTypeData::Struct(struct_data) => {
-                    let concrete_types = &struct_data.get_concrete_types(index).0;
-                    let mut concretized_concrete_types = concrete_types.clone();
-                    for (index, ty) in concrete_types.iter().enumerate() {
-                        if ty.has_generics() {
-                            concretized_concrete_types[index] = ty.concretize(context);
-                        }
-                    }
-                    concretized_concrete_types
-                }
-                _ => unreachable!(),
-            };
+        let symbol_data = self.semantic_data.get_core_ref();
+        let struct_data = symbol_data.get_struct_data_ref();
+        let concrete_types = &struct_data.get_concrete_types(index).0;
+        let mut concretized_concrete_types = concrete_types.clone();
+        for (index, ty) in concrete_types.iter().enumerate() {
+            if ty.has_generics() {
+                concretized_concrete_types[index] = ty.concretize(context);
+            }
+        }
         let new_key = self
             .semantic_data
             .symbol_data
@@ -123,13 +137,10 @@ impl ToString for Struct {
         match self.semantic_data.index {
             Some(index) => {
                 s.push('<');
-                match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
-                    UserDefinedTypeData::Struct(struct_data) => {
-                        let concrete_types = struct_data.get_concrete_types(index);
-                        s.push_str(&concrete_types.to_string());
-                    }
-                    _ => unreachable!(),
-                };
+                let symbol_data = self.semantic_data.get_core_ref();
+                let struct_data = symbol_data.get_struct_data_ref();
+                let concrete_types = struct_data.get_concrete_types(index);
+                s.push_str(&concrete_types.to_string());
                 s.push('>');
                 return s;
             }
