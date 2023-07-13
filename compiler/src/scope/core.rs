@@ -31,15 +31,6 @@ pub enum ConcreteTypesRegistrationKind {
 pub struct GenericTypeParams(Vec<(String, Vec<InterfaceObject>)>);
 
 #[derive(Debug)]
-pub struct SymbolDataCore<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>);
-
-impl<T: AbstractConcreteTypesHandler> Clone for SymbolDataCore<T> {
-    fn clone(&self) -> Self {
-        SymbolDataCore(self.0.clone())
-    }
-}
-
-#[derive(Debug)]
 pub struct SymbolData<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
 
 impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
