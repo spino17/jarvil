@@ -80,11 +80,13 @@ impl InterfaceObject {
                 Some(self_key) => match other.1.index {
                     Some(other_key) => {
                         let self_ref = &*self.1.get_core_ref();
-                        let other_ref = &*other.1.get_core_ref();
                         let self_concrete_types = &self_ref.get_concrete_types(self_key).0;
-                        let other_concrete_types = &other_ref.get_concrete_types(other_key).0;
                         let self_len = self_concrete_types.len();
+
+                        let other_ref = &*other.1.get_core_ref();
+                        let other_concrete_types = &other_ref.get_concrete_types(other_key).0;    
                         let other_len = other_concrete_types.len();
+                        
                         assert!(self_len == other_len);
                         for i in 0..self_len {
                             if !self_concrete_types[i].is_eq(&other_concrete_types[i]) {

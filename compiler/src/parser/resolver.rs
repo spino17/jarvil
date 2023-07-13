@@ -3,7 +3,7 @@ use crate::ast::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreOkIdentifierInUseNode,
     CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode,
     IdentifierInUseNode, InterfaceDeclarationNode, LambdaTypeDeclarationNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -371,6 +371,18 @@ impl Resolver {
                 namespace.declare_struct_type(scope_index, name, decl_range)
             };
         self.try_declare_and_bind(identifier, declare_fn)
+    }
+
+    pub fn try_declare_and_bind_interface(
+        &mut self,
+        name: &OkTokenNode,
+    ) -> Option<(String, TextRange)> {
+        let declare_fn =
+            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
+                namespace.declare_interface(scope_index, name, decl_range)
+            };
+        // self.try_declare_and_bind(identifier, declare_fn)
+        todo!()
     }
 
     pub fn pre_type_checking<T: Fn(&mut Resolver, TextRange)>(
@@ -1072,7 +1084,28 @@ impl Resolver {
     pub fn declare_interface(&mut self, interface_decl: &InterfaceDeclarationNode) {
         let core_interface_decl = interface_decl.core_ref();
         let name = &core_interface_decl.name;
+        let mut generic_type_decls: Option<GenericTypeParams> = None;
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
+            // setting the interface first in scope enables the generic type declaration to use this interface
+            // having recursive referencing
+            if let Some((_, previous_decl_range)) = self.try_declare_and_bind_interface(&ok_identifier_in_decl.core_ref().name) {
+                // TODO - raise error `Already Declared`
+                todo!()
+            }
+            // Now if angle bracket content contains this interface, it will be successfully resolved
+            generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(ok_identifier_in_decl);
+        }
         let body = &core_interface_decl.block;
+        self.open_block();
+        let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
+        let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
+        // traverse the body
+        // ensure that the method name is not `__init__` etc.
+        self.close_block(body);
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
+            let ok_token_node = &ok_identifier_in_decl.core_ref().name;
+            // TODO - get the symbol_data from the namespace_handler and set the collected data
+        }
         todo!()
     }
 
