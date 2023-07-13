@@ -1,7 +1,8 @@
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
-    CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode,
-    InterfaceDeclarationNode, LambdaTypeDeclarationNode, OkSelfKeywordNode,
+    CoreIdentifierInDeclNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
+    CoreTypeExpressionNode, FunctionWrapperNode, IdentifierInUseNode, InterfaceDeclarationNode,
+    LambdaTypeDeclarationNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -14,9 +15,10 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
-use crate::scope::core::VariableLookupResult;
+use crate::scope::core::{GenericTypeParams, VariableLookupResult};
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
+use crate::scope::interfaces::InterfaceObject;
 use crate::types::core::CoreType;
 use crate::{
     ast::{
@@ -420,6 +422,69 @@ impl Resolver {
                 return Type::new_with_unknown();
             }
             TypeResolveKind::Invalid => Type::new_with_unknown(),
+        }
+    }
+
+    fn interface_obj_from_expression(
+        &mut self,
+        interface_expr: &IdentifierInUseNode,
+    ) -> InterfaceObject {
+        // resolve the name of the interface and provide the concrete types tuple to form the
+        // interface object
+        todo!()
+    }
+
+    fn extract_angle_bracket_content_from_identifier_in_decl(
+        &mut self,
+        ok_identifier_in_decl: &OkIdentifierInDeclNode,
+    ) -> Option<GenericTypeParams> {
+        match &ok_identifier_in_decl.core_ref().generic_type_decls {
+            Some((_, generic_type_decls, _)) => {
+                let mut generic_type_params_vec: Vec<(String, Vec<InterfaceObject>)> = vec![];
+                for generic_type_decl in generic_type_decls.iter() {
+                    let core_generic_type_decl = generic_type_decl.core_ref();
+                    let mut interface_bounds_vec: Vec<InterfaceObject> = vec![];
+                    let generic_type_name =
+                        match core_generic_type_decl.generic_type_name.core_ref() {
+                            CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) => {
+                                assert!(ok_identifier_in_decl
+                                    .core_ref()
+                                    .generic_type_decls
+                                    .is_none());
+                                ok_identifier_in_decl
+                                    .core_ref()
+                                    .name
+                                    .token_value(&self.code)
+                            }
+                            CoreIdentifierInDeclNode::MissingTokens(_) => continue,
+                        };
+                    if let Some((_, interface_bounds)) = &core_generic_type_decl.interface_bounds {
+                        for interface_expr in interface_bounds.iter() {
+                            interface_bounds_vec
+                                .push(self.interface_obj_from_expression(&interface_expr))
+                        }
+                    }
+                    generic_type_params_vec.push((generic_type_name, interface_bounds_vec));
+                }
+                return Some(GenericTypeParams(generic_type_params_vec));
+            }
+            None => return None,
+        }
+    }
+
+    fn extract_angle_bracket_content_from_identifier_in_use(
+        &mut self,
+        ok_identifier_in_use: &OkIdentifierInUseNode,
+    ) -> Option<Vec<Type>> {
+        match &ok_identifier_in_use.core_ref().generic_type_args {
+            Some((_, generic_type_args, _)) => {
+                let mut concrete_types: Vec<Type> = vec![];
+                for generic_type_expr in generic_type_args.iter() {
+                    concrete_types.push(self.type_obj_from_expression(&generic_type_expr));
+                }
+                return Some(concrete_types);
+            }
+            None => return None,
         }
     }
 
@@ -998,6 +1063,9 @@ impl Resolver {
     }
 
     pub fn declare_interface(&mut self, interface_decl: &InterfaceDeclarationNode) {
+        let core_interface_decl = interface_decl.core_ref();
+        let name = &core_interface_decl.name;
+        let body = &core_interface_decl.block;
         todo!()
     }
 
