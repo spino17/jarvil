@@ -217,12 +217,10 @@ impl Resolver {
         &mut self,
         node: &OkIdentifierInDeclNode,
         symbol_data: SymbolDataEntry,
-    ) -> Option<GenericTypeParams> {
+    ) {
         self.namespace_handler
             .identifier_in_decl_binding_table
             .insert(node.clone(), symbol_data);
-        let generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(node);
-        return generic_type_decls
     }
 
     pub fn bind_decl_to_identifier_in_use(
@@ -363,6 +361,8 @@ impl Resolver {
                 // TODO - OVERRIDE GENERIC_TYPE_DECLS
                 // return Ok(self.bind_decl_to_identifier(identifier, symbol_data));
                 self.bind_decl_to_identifier(identifier, symbol_data);
+                // let generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(node);
+                // Ok(generic_type_decls)
                 Ok(())
             }
             Err(err) => Err(err),
@@ -809,17 +809,21 @@ impl Resolver {
                 self.errors
                     .push(Diagnostics::BuiltinFunctionNameOverlap(err));
             } else {
-                if let Err((name, previous_decl_range)) =
-                    self.try_declare_and_bind_function(ok_identifier)
-                {
-                    let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::Function,
-                        name.to_string(),
-                        previous_decl_range,
-                        ok_identifier.range(),
-                    );
-                    self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                match self.try_declare_and_bind_function(ok_identifier) {
+                    Ok(local_generic_type_decls) => {
+                        // TODO - OVERRIDE GENERIC_TYPE_DECLS
+                        // generic_type_decls = local_generic_type_decls
+                    }
+                    Err((name, previous_decl_range)) => {
+                        let err = IdentifierAlreadyDeclaredError::new(
+                            IdentKind::Function,
+                            name.to_string(),
+                            previous_decl_range,
+                            ok_identifier.range(),
+                        );
+                        self.errors
+                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                    }
                 }
             }
         }
@@ -863,7 +867,9 @@ impl Resolver {
                                 .push(Diagnostics::IdentifierAlreadyDeclared(err));
                             Type::new_with_unknown()
                         }
-                        Ok(()) => {
+                        Ok(local_generic_type_decls) => {
+                            // TODO - OVERRIDE GENERIC_TYPE_DECLS
+                            // generic_type_decls = local_generic_type_decls;
                             match self
                                 .namespace_handler
                                 .get_type_symbol_data_ref(ok_identifier)
@@ -1123,7 +1129,14 @@ impl Resolver {
                 symbol_data
                     .get_core_mut_ref()
                     .get_struct_data_mut_ref()
-                    .set_meta_data(fields_map, constructor, methods, class_methods, generic_type_decls, None);
+                    .set_meta_data(
+                        fields_map,
+                        constructor,
+                        methods,
+                        class_methods,
+                        generic_type_decls,
+                        None,
+                    );
             }
         }
         self.context.class_context_stack.pop();
@@ -1141,6 +1154,16 @@ impl Resolver {
             {
                 // TODO - raise error `Already Declared`
                 todo!()
+            }
+            match self.try_declare_and_bind_interface(&ok_identifier_in_decl.core_ref().name) {
+                Ok(local_generic_type_decls) => {
+                    // TODO - OVERRIDE GENERIC_TYPE_DECLS
+                    // generic_type_decls = local_generic_type_decls;
+                }
+                Err((_, previous_decl_range)) => {
+                    // TODO - raise error `Already Declared`
+                    todo!()
+                }
             }
             // Now if angle bracket content contains this interface, it will be successfully resolved
             generic_type_decls =
@@ -1201,6 +1224,8 @@ impl Resolver {
         let mut generic_type_decls: Option<GenericTypeParams> = None;
         if let CoreIdentifierNode::Ok(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
+            // TODO - OVERRIDE GENERIC_TYPE_DECLS
+            // generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(ok_identifier);
             let result = self
                 .namespace_handler
                 .namespace
@@ -1215,8 +1240,6 @@ impl Resolver {
                 );
             match result {
                 Ok(symbol_data) => {
-                    // TODO - OVERRIDE GENERIC_TYPE_DECLS
-                    // generic_type_decls = self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_data);
                     self.bind_decl_to_identifier(ok_identifier, symbol_data);
                 }
                 Err((name, previous_decl_range)) => {
