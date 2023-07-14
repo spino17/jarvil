@@ -10,13 +10,6 @@ use crate::ast::ast::{
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 
-pub enum SymbolDataRef<'a> {
-    Variable(&'a SymbolData<VariableData>),
-    Function(&'a SymbolData<CallableData>),
-    Type(&'a SymbolData<UserDefinedTypeData>),
-    Interface(&'a SymbolData<InterfaceData>),
-}
-
 pub enum SymbolDataEntry {
     Variable(SymbolData<VariableData>),
     Function(SymbolData<CallableData>),

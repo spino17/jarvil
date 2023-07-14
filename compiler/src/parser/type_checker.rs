@@ -42,7 +42,7 @@ use crate::{
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
         function::CallablePrototypeData,
-        handler::{NamespaceHandler, SymbolDataRef},
+        handler::NamespaceHandler,
         types::core::UserDefinedTypeData,
     },
     types::{
