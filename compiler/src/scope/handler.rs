@@ -1,12 +1,17 @@
 use super::{
+    concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
     core::{Namespace, SymbolData},
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
-    variables::VariableData, concrete::core::ConcreteSymbolData,
+    variables::VariableData,
 };
-use crate::ast::ast::{
-    BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierNode, OkSelfKeywordNode, OkIdentifierInUseNode, OkIdentifierInDeclNode,
+use crate::{
+    ast::ast::{
+        BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierInDeclNode,
+        OkIdentifierInUseNode, OkIdentifierNode, OkSelfKeywordNode,
+    },
+    types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -17,6 +22,28 @@ pub enum SymbolDataEntry {
     Interface(SymbolData<InterfaceData>),
 }
 
+impl SymbolDataEntry {
+    pub fn register_concrete_types(
+        &self,
+        concrete_types: Option<Vec<Type>>,
+    ) -> Option<ConcreteTypesRegistryKey> {
+        match self {
+            SymbolDataEntry::Variable(variable_symbol_data) => {
+                variable_symbol_data.register_concrete_types(concrete_types)
+            }
+            SymbolDataEntry::Function(func_symbol_data) => {
+                func_symbol_data.register_concrete_types(concrete_types)
+            }
+            SymbolDataEntry::Type(type_symbol_data) => {
+                type_symbol_data.register_concrete_types(concrete_types)
+            }
+            SymbolDataEntry::Interface(interface_symbol_data) => {
+                interface_symbol_data.register_concrete_types(concrete_types)
+            }
+        }
+    }
+}
+
 pub enum ConcreteSymbolDataEntry {
     Variable(ConcreteSymbolData<VariableData>),
     Function(ConcreteSymbolData<CallableData>),
@@ -24,9 +51,31 @@ pub enum ConcreteSymbolDataEntry {
     Interface(ConcreteSymbolData<InterfaceData>),
 }
 
+impl ConcreteSymbolDataEntry {
+    pub fn new(symbol_data: SymbolDataEntry, index: Option<ConcreteTypesRegistryKey>) -> Self {
+        match symbol_data {
+            SymbolDataEntry::Variable(variable_symbol_data) => ConcreteSymbolDataEntry::Variable(
+                ConcreteSymbolData::new(variable_symbol_data, index),
+            ),
+            SymbolDataEntry::Function(func_symbol_data) => {
+                ConcreteSymbolDataEntry::Function(ConcreteSymbolData::new(func_symbol_data, index))
+            }
+            SymbolDataEntry::Type(type_symbol_data) => {
+                ConcreteSymbolDataEntry::Type(ConcreteSymbolData::new(type_symbol_data, index))
+            }
+            SymbolDataEntry::Interface(interface_symbol_data) => {
+                ConcreteSymbolDataEntry::Interface(ConcreteSymbolData::new(
+                    interface_symbol_data,
+                    index,
+                ))
+            }
+        }
+    }
+}
+
 pub enum IdentifierNodeWrapper<'a> {
     InDecl(&'a OkIdentifierInDeclNode),
-    InUse(&'a OkIdentifierInUseNode)
+    InUse(&'a OkIdentifierInUseNode),
 }
 
 // This contains all the relevant semantic information collected over various AST passes
@@ -53,11 +102,17 @@ impl NamespaceHandler {
         }
     }
 
-    pub fn get_symbol_data_for_identifier_in_decl(&self, identifier: &OkIdentifierInDeclNode) -> Option<&SymbolDataEntry> {
+    pub fn get_symbol_data_for_identifier_in_decl(
+        &self,
+        identifier: &OkIdentifierInDeclNode,
+    ) -> Option<&SymbolDataEntry> {
         self.identifier_in_decl_binding_table.get(identifier)
     }
 
-    pub fn get_symbol_data_for_identifier_in_use(&self, identifier: &OkIdentifierInUseNode) -> Option<&ConcreteSymbolDataEntry> {
+    pub fn get_symbol_data_for_identifier_in_use(
+        &self,
+        identifier: &OkIdentifierInUseNode,
+    ) -> Option<&ConcreteSymbolDataEntry> {
         self.identifier_in_use_binding_table.get(identifier)
     }
 
@@ -84,7 +139,9 @@ impl NamespaceHandler {
     ) -> Option<&ConcreteSymbolData<VariableData>> {
         match self.identifier_in_use_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Variable(variable_symbol_data) => Some(variable_symbol_data),
+                ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
+                    Some(variable_symbol_data)
+                }
                 _ => unreachable!(),
             },
             None => None,
@@ -201,7 +258,9 @@ impl NamespaceHandler {
     ) -> Option<&ConcreteSymbolData<InterfaceData>> {
         match self.identifier_in_use_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Interface(interface_symbol_data) => Some(interface_symbol_data),
+                ConcreteSymbolDataEntry::Interface(interface_symbol_data) => {
+                    Some(interface_symbol_data)
+                }
                 _ => unreachable!(),
             },
             None => None,

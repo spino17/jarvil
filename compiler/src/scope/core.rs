@@ -50,9 +50,19 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
         self.0.as_ref().borrow_mut()
     }
 
-    pub fn register_concrete_types(&self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        self.get_core_mut_ref()
-            .register_concrete_types(concrete_types)
+    pub fn register_concrete_types(
+        &self,
+        concrete_types: Option<Vec<Type>>,
+    ) -> Option<ConcreteTypesRegistryKey> {
+        match concrete_types {
+            Some(concrete_types) => {
+                return Some(
+                    self.get_core_mut_ref()
+                        .register_concrete_types(concrete_types),
+                )
+            }
+            None => return None,
+        }
     }
 
     pub fn has_generics(&self) -> bool {

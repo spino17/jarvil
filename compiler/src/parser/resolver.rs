@@ -18,7 +18,7 @@ use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
 use crate::scope::core::{GenericTypeParams, VariableLookupResult};
 use crate::scope::function::{CallableKind, CallablePrototypeData};
-use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
+use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
 use crate::scope::interfaces::InterfaceObject;
 use crate::types::core::CoreType;
 use crate::{
@@ -210,6 +210,29 @@ impl Resolver {
             .function_non_locals
             .get(name)
             .is_some()
+    }
+
+    pub fn bind_decl_to_identifier_in_decl(
+        &mut self,
+        node: &OkIdentifierInDeclNode,
+        symbol_data: SymbolDataEntry,
+    ) {
+        self.namespace_handler
+            .identifier_in_decl_binding_table
+            .insert(node.clone(), symbol_data);
+    }
+
+    pub fn bind_decl_to_identifier_in_use(
+        &mut self,
+        node: &OkIdentifierInUseNode,
+        symbol_data: SymbolDataEntry,
+    ) {
+        let concrete_types = self.extract_angle_bracket_content_from_identifier_in_use(node);
+        let index = symbol_data.register_concrete_types(concrete_types);
+        let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data, index);
+        self.namespace_handler
+            .identifier_in_use_binding_table
+            .insert(node.clone(), concrete_symbol_data);
     }
 
     pub fn bind_decl_to_identifier(

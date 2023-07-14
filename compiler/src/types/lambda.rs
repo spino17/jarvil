@@ -139,11 +139,11 @@ impl AbstractType for Lambda {
                 let new_key = named
                     .1
                     .symbol_data
-                    .register_concrete_types(concretized_concrete_types);
+                    .register_concrete_types(Some(concretized_concrete_types));
                 return Type::new_with_lambda_named(
                     named.0.to_string(),
                     &named.1.symbol_data,
-                    Some(new_key),
+                    new_key,
                     false,
                 );
             }

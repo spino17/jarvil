@@ -120,11 +120,11 @@ impl AbstractType for Struct {
         let new_key = self
             .semantic_data
             .symbol_data
-            .register_concrete_types(concretized_concrete_types);
+            .register_concrete_types(Some(concretized_concrete_types));
         return Type::new_with_struct(
             self.name.to_string(),
             &self.semantic_data.symbol_data,
-            Some(new_key),
+            new_key,
             false,
         );
     }

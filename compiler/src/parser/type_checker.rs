@@ -3,7 +3,7 @@
 
 use super::resolver::Resolver;
 use crate::ast::ast::InterfaceMethodTerminalNode;
-use crate::scope::handler::{SymbolDataEntry, IdentifierNodeWrapper};
+use crate::scope::handler::SymbolDataEntry;
 use crate::types::lambda::Lambda;
 use crate::{
     ast::{
@@ -41,8 +41,7 @@ use crate::{
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
-        function::CallablePrototypeData,
-        handler::NamespaceHandler,
+        function::CallablePrototypeData, handler::NamespaceHandler,
         types::core::UserDefinedTypeData,
     },
     types::{

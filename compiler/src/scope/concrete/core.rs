@@ -42,6 +42,10 @@ pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler> {
 }
 
 impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
+    pub fn new(symbol_data: SymbolData<T>, index: Option<ConcreteTypesRegistryKey>) -> Self {
+        ConcreteSymbolData { symbol_data, index }
+    }
+
     pub fn get_core_ref<'a>(&'a self) -> Ref<'a, T> {
         self.symbol_data.get_core_ref::<'a>()
     }
