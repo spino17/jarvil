@@ -16,7 +16,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
-use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey};
+use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::{GenericTypeParams, VariableLookupResult};
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
