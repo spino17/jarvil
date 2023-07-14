@@ -1189,7 +1189,7 @@ impl UserDefinedTypeNode {
                 .namespace_handler
                 .namespace
                 .types
-                .lookup_and_get_symbol_data_ref(scope_index, &name)
+                .lookup(scope_index, &name)
             {
                 Some((symbol_data, _, _, _)) => {
                     let result = match &*symbol_data.get_core_ref() {

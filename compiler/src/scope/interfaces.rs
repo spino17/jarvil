@@ -3,7 +3,7 @@ use super::{
         core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
         registry::GenericsSpecAndConcreteTypesRegistry,
     },
-    core::{AbstractConcreteTypesHandler, GenericTypeParams},
+    core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
     function::CallableData,
 };
 use crate::types::core::AbstractType;
@@ -55,8 +55,12 @@ impl AbstractConcreteTypesHandler for InterfaceData {
 pub struct InterfaceObject(String, ConcreteSymbolData<InterfaceData>); // (name, semantic data)
 
 impl InterfaceObject {
-    pub fn new(name: String, concrete_symbol_data: &ConcreteSymbolData<InterfaceData>) -> Self {
-        InterfaceObject(name, concrete_symbol_data.clone())
+    pub fn new(
+        name: String,
+        symbol_data: SymbolData<InterfaceData>,
+        index: Option<ConcreteTypesRegistryKey>,
+    ) -> Self {
+        InterfaceObject(name, ConcreteSymbolData::new(symbol_data, index))
     }
 
     pub fn is_eq(&self, other: &InterfaceObject) -> bool {

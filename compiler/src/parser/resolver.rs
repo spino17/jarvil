@@ -16,6 +16,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
+use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey};
 use crate::scope::core::{GenericTypeParams, VariableLookupResult};
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
@@ -226,13 +227,14 @@ impl Resolver {
         &mut self,
         node: &OkIdentifierInUseNode,
         symbol_data: SymbolDataEntry,
-    ) {
+    ) -> Option<ConcreteTypesRegistryKey> {
         let concrete_types = self.extract_angle_bracket_content_from_identifier_in_use(node);
         let index = symbol_data.register_concrete_types(concrete_types);
         let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data, index);
         self.namespace_handler
             .identifier_in_use_binding_table
             .insert(node.clone(), concrete_symbol_data);
+        return index;
     }
 
     pub fn bind_decl_to_identifier(
@@ -464,12 +466,26 @@ impl Resolver {
     fn interface_obj_from_expression(
         &mut self,
         interface_expr: &OkIdentifierInUseNode,
-    ) -> InterfaceObject {
-        // resolve the name of the interface and register the concrete types tuple to get the key
-        // use that key to form interface object
-        let concrete_types =
-            self.extract_angle_bracket_content_from_identifier_in_use(interface_expr);
-        todo!()
+    ) -> Option<InterfaceObject> {
+        let name = interface_expr.core_ref().name.token_value(&self.code);
+        match self
+            .namespace_handler
+            .namespace
+            .interfaces
+            .lookup(self.scope_index, &name)
+        {
+            Some((symbol_data, _, _, _)) => {
+                let index = self.bind_decl_to_identifier_in_use(
+                    interface_expr,
+                    SymbolDataEntry::Interface(symbol_data.clone()),
+                );
+                return Some(InterfaceObject::new(name, symbol_data, index));
+            }
+            None => {
+                // TODO - raise error `Interface not found in scope`
+                todo!()
+            }
+        }
     }
 
     fn extract_angle_bracket_content_from_identifier_in_decl(
@@ -501,8 +517,11 @@ impl Resolver {
                             if let CoreIdentifierInUseNode::Ok(interface_expr) =
                                 interface_expr.core_ref()
                             {
-                                interface_bounds_vec
-                                    .push(self.interface_obj_from_expression(&interface_expr))
+                                if let Some(interface_obj) =
+                                    self.interface_obj_from_expression(&interface_expr)
+                                {
+                                    interface_bounds_vec.push(interface_obj)
+                                }
                             }
                         }
                     }

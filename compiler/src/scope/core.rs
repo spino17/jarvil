@@ -127,34 +127,6 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
             }
         }
     }
-
-    pub fn lookup_and_get_symbol_data_ref<'a>(
-        &'a self,
-        scope_index: usize,
-        key: &str,
-        global_scope_vec: &'a Vec<CoreScope<T>>,
-    ) -> Option<(&SymbolData<T>, usize, usize, bool)> {
-        match self.get(key) {
-            Some(value) => return Some((value, scope_index, 0, self.is_global)),
-            None => {
-                let mut curr_scope = self;
-                let mut depth: usize = 1;
-                while let Some(parent_scope_index) = curr_scope.parent_scope {
-                    curr_scope = &global_scope_vec[parent_scope_index];
-                    if let Some(symbol_data) = curr_scope.get(key) {
-                        return Some((
-                            symbol_data,
-                            parent_scope_index,
-                            depth,
-                            curr_scope.is_global,
-                        ));
-                    }
-                    depth = depth + 1;
-                }
-                return None;
-            }
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -216,25 +188,12 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         self.flattened_vec[scope_index].get(key)
     }
 
-    fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, usize, bool)> {
-        self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
-    }
-
-    pub fn lookup_and_get_symbol_data_ref(
+    pub fn lookup(
         &self,
         scope_index: usize,
         key: &str,
     ) -> Option<(SymbolData<T>, usize, usize, bool)> {
-        match self.flattened_vec[scope_index].lookup_and_get_symbol_data_ref(
-            scope_index,
-            key,
-            &self.flattened_vec,
-        ) {
-            Some((symbol_data, scope_index, depth, is_global)) => {
-                Some((symbol_data.clone(), scope_index, depth, is_global))
-            }
-            None => None,
-        }
+        self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
     }
 }
 
