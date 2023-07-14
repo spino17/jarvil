@@ -3,10 +3,10 @@ use super::{
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
-    variables::VariableData,
+    variables::VariableData, concrete::core::ConcreteSymbolData,
 };
 use crate::ast::ast::{
-    BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierNode, OkSelfKeywordNode,
+    BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -24,8 +24,17 @@ pub enum SymbolDataEntry {
     Interface(SymbolData<InterfaceData>),
 }
 
+pub enum ConcreteSymbolDataEntry {
+    Variable(ConcreteSymbolData<VariableData>),
+    Function(ConcreteSymbolData<CallableData>),
+    Type(ConcreteSymbolData<UserDefinedTypeData>),
+    Interface(ConcreteSymbolData<InterfaceData>),
+}
+
+// This contains all the relevant semantic information collected over various AST passes
 pub struct NamespaceHandler {
     pub namespace: Namespace,
+    pub identifier_in_decl_binding_table: FxHashMap<OkTokenNode, SymbolDataEntry>,
     pub identifier_binding_table: FxHashMap<OkIdentifierNode, SymbolDataEntry>, // node -> (scope_index, namespace_kind)
     pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
     pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashMap<String, bool>)>, // block_node -> (non_locally resolved variables, (non_locally resolved functions -> is_in_global_scope))
@@ -36,6 +45,7 @@ impl NamespaceHandler {
     pub fn new() -> Self {
         NamespaceHandler {
             namespace: Namespace::new(),
+            identifier_in_decl_binding_table: FxHashMap::default(),
             identifier_binding_table: FxHashMap::default(),
             self_keyword_binding_table: FxHashMap::default(),
             block_non_locals: FxHashMap::default(),
