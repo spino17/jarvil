@@ -217,10 +217,12 @@ impl Resolver {
         &mut self,
         node: &OkIdentifierInDeclNode,
         symbol_data: SymbolDataEntry,
-    ) {
+    ) -> Option<GenericTypeParams> {
         self.namespace_handler
             .identifier_in_decl_binding_table
             .insert(node.clone(), symbol_data);
+        let generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(node);
+        return generic_type_decls
     }
 
     pub fn bind_decl_to_identifier_in_use(
@@ -348,7 +350,7 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierNode,
         declare_fn: U,
-    ) -> Option<(String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let name = identifier.token_value(&self.code);
         let symbol_data = declare_fn(
             &mut self.namespace_handler.namespace,
@@ -358,17 +360,19 @@ impl Resolver {
         );
         match symbol_data {
             Ok(symbol_data) => {
+                // TODO - OVERRIDE GENERIC_TYPE_DECLS
+                // return Ok(self.bind_decl_to_identifier(identifier, symbol_data));
                 self.bind_decl_to_identifier(identifier, symbol_data);
-                None
+                Ok(())
             }
-            Err((name, previous_decl_range)) => Some((name, previous_decl_range)),
+            Err(err) => Err(err),
         }
     }
 
     pub fn try_declare_and_bind_variable(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_variable(scope_index, name, decl_range)
@@ -379,7 +383,7 @@ impl Resolver {
     pub fn try_declare_and_bind_function(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_function(scope_index, name, decl_range)
@@ -390,7 +394,7 @@ impl Resolver {
     pub fn try_declare_and_bind_struct_type(
         &mut self,
         identifier: &OkIdentifierNode,
-    ) -> Option<(String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_struct_type(scope_index, name, decl_range)
@@ -401,7 +405,7 @@ impl Resolver {
     pub fn try_declare_and_bind_interface(
         &mut self,
         name: &OkTokenNode,
-    ) -> Option<(String, TextRange)> {
+    ) -> Result<(), (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_interface(scope_index, name, decl_range)
@@ -725,7 +729,7 @@ impl Resolver {
                 self.errors
                     .push(Diagnostics::IdentifierFoundInNonLocals(err));
             } else {
-                if let Some((name, previous_decl_range)) =
+                if let Err((name, previous_decl_range)) =
                     self.try_declare_and_bind_variable(ok_identifier)
                 {
                     let err = IdentifierAlreadyDeclaredError::new(
@@ -790,6 +794,7 @@ impl Resolver {
         let core_func_decl = func_wrapper.core_ref().func_decl.core_ref();
         let func_name = &core_func_decl.name;
         let body = &core_func_decl.body;
+        let mut generic_type_decls: Option<GenericTypeParams> = None;
         if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
             if self.is_function_in_non_locals(&name) {
@@ -804,7 +809,7 @@ impl Resolver {
                 self.errors
                     .push(Diagnostics::BuiltinFunctionNameOverlap(err));
             } else {
-                if let Some((name, previous_decl_range)) =
+                if let Err((name, previous_decl_range)) =
                     self.try_declare_and_bind_function(ok_identifier)
                 {
                     let err = IdentifierAlreadyDeclaredError::new(
@@ -830,7 +835,7 @@ impl Resolver {
                     return_type,
                     CallableKind::Function,
                     is_concretization_required,
-                    None,
+                    generic_type_decls,
                 );
             }
         }
@@ -842,11 +847,12 @@ impl Resolver {
         });
         let core_struct_decl = struct_decl.core_ref();
         let struct_body = &core_struct_decl.block;
+        let mut generic_type_decls: Option<GenericTypeParams> = None;
         let (struct_type_obj, struct_name) = match core_struct_decl.name.core_ref() {
             CoreIdentifierNode::Ok(ok_identifier) => {
                 let temp_struct_type_obj =
                     match self.try_declare_and_bind_struct_type(ok_identifier) {
-                        Some((name, previous_decl_range)) => {
+                        Err((name, previous_decl_range)) => {
                             let err = IdentifierAlreadyDeclaredError::new(
                                 IdentKind::Type,
                                 name.to_string(),
@@ -857,7 +863,7 @@ impl Resolver {
                                 .push(Diagnostics::IdentifierAlreadyDeclared(err));
                             Type::new_with_unknown()
                         }
-                        None => {
+                        Ok(()) => {
                             match self
                                 .namespace_handler
                                 .get_type_symbol_data_ref(ok_identifier)
@@ -1117,7 +1123,7 @@ impl Resolver {
                 symbol_data
                     .get_core_mut_ref()
                     .get_struct_data_mut_ref()
-                    .set_meta_data(fields_map, constructor, methods, class_methods, None, None);
+                    .set_meta_data(fields_map, constructor, methods, class_methods, generic_type_decls, None);
             }
         }
         self.context.class_context_stack.pop();
@@ -1130,7 +1136,7 @@ impl Resolver {
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             // setting the interface first in scope enables the generic type declaration to use this interface
             // having recursive referencing
-            if let Some((_, previous_decl_range)) =
+            if let Err((_, previous_decl_range)) =
                 self.try_declare_and_bind_interface(&ok_identifier_in_decl.core_ref().name)
             {
                 // TODO - raise error `Already Declared`
@@ -1192,6 +1198,7 @@ impl Resolver {
             self.errors
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
+        let mut generic_type_decls: Option<GenericTypeParams> = None;
         if let CoreIdentifierNode::Ok(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
             let result = self
@@ -1203,11 +1210,13 @@ impl Resolver {
                     types_vec,
                     return_type,
                     is_concretization_required,
-                    None, // change this to GenericTypeParams
+                    generic_type_decls,
                     ok_identifier.range(),
                 );
             match result {
                 Ok(symbol_data) => {
+                    // TODO - OVERRIDE GENERIC_TYPE_DECLS
+                    // generic_type_decls = self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_data);
                     self.bind_decl_to_identifier(ok_identifier, symbol_data);
                 }
                 Err((name, previous_decl_range)) => {
