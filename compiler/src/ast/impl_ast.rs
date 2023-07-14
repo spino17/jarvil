@@ -2145,6 +2145,21 @@ impl Node for OkIdentifierInUseNode {
     }
 }
 
+impl PartialEq for OkIdentifierInUseNode {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for OkIdentifierInUseNode {}
+
+impl Hash for OkIdentifierInUseNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
+
 impl OkIdentifierInDeclNode {
     fn new(
         token: &OkTokenNode,
@@ -2178,6 +2193,21 @@ impl Node for OkIdentifierInDeclNode {
     }
     fn start_line_number(&self) -> usize {
         self.core_ref().name.start_line_number()
+    }
+}
+
+impl PartialEq for OkIdentifierInDeclNode {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for OkIdentifierInDeclNode {}
+
+impl Hash for OkIdentifierInDeclNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
     }
 }
 

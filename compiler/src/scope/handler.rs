@@ -1,12 +1,12 @@
 use super::{
-    core::{Namespace, SymbolData, AbstractConcreteTypesHandler},
+    core::{Namespace, SymbolData},
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
     variables::VariableData, concrete::core::ConcreteSymbolData,
 };
 use crate::ast::ast::{
-    BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OkIdentifierInUseNode,
+    BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierNode, OkSelfKeywordNode, OkIdentifierInUseNode, OkIdentifierInDeclNode,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -32,14 +32,15 @@ pub enum ConcreteSymbolDataEntry {
 }
 
 pub enum IdentifierNodeWrapper<'a> {
-    InDecl(&'a OkTokenNode),
-    InUse(&'a OkIdentifierNode)
+    InDecl(&'a OkIdentifierInDeclNode),
+    InUse(&'a OkIdentifierInUseNode)
 }
 
 // This contains all the relevant semantic information collected over various AST passes
 pub struct NamespaceHandler {
     pub namespace: Namespace,
-    pub identifier_in_decl_binding_table: FxHashMap<OkTokenNode, SymbolDataEntry>,
+    pub identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
+    pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
     pub identifier_binding_table: FxHashMap<OkIdentifierNode, SymbolDataEntry>, // node -> (scope_index, namespace_kind)
     pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
     pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashMap<String, bool>)>, // block_node -> (non_locally resolved variables, (non_locally resolved functions -> is_in_global_scope))
@@ -51,6 +52,7 @@ impl NamespaceHandler {
         NamespaceHandler {
             namespace: Namespace::new(),
             identifier_in_decl_binding_table: FxHashMap::default(),
+            identifier_in_use_binding_table: FxHashMap::default(),
             identifier_binding_table: FxHashMap::default(),
             self_keyword_binding_table: FxHashMap::default(),
             block_non_locals: FxHashMap::default(),
@@ -58,20 +60,43 @@ impl NamespaceHandler {
         }
     }
 
-    pub fn get_symbol_data_entry_for_node(&self, node: IdentifierNodeWrapper) -> Option<&SymbolDataEntry> {
-        match node {
-            IdentifierNodeWrapper::InDecl(ok_token) => {
-                return self.identifier_in_decl_binding_table.get(ok_token)
-            }
-            IdentifierNodeWrapper::InUse(ok_identifier_in_use) => {
-                return self.identifier_binding_table.get(ok_identifier_in_use)
-            }
+    pub fn get_symbol_data_for_identifier_in_decl(&self, identifier: &OkIdentifierInDeclNode) -> Option<&SymbolDataEntry> {
+        self.identifier_in_decl_binding_table.get(identifier)
+    }
+
+    pub fn get_symbol_data_for_identifier_in_use(&self, identifier: &OkIdentifierInUseNode) -> Option<&ConcreteSymbolDataEntry> {
+        self.identifier_in_use_binding_table.get(identifier)
+    }
+
+    pub fn get_symbol_data_entry(&self, node: &OkIdentifierNode) -> Option<&SymbolDataEntry> {
+        self.identifier_binding_table.get(node)
+    }
+
+    pub fn get_variable_symbol_data_for_identifier_in_decl(
+        &self,
+        node: &OkIdentifierInDeclNode,
+    ) -> Option<&SymbolData<VariableData>> {
+        match self.identifier_in_decl_binding_table.get(node) {
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Variable(variable_symbol_data) => Some(variable_symbol_data),
+                _ => unreachable!(),
+            },
+            None => None,
         }
     }
 
-    //pub fn get_symbol_data_entry(&self, node: &OkIdentifierNode) -> Option<&SymbolDataEntry> {
-    //    self.identifier_binding_table.get(node)
-    //}
+    pub fn get_variable_symbol_data_for_identifier_in_use(
+        &self,
+        node: &OkIdentifierInUseNode,
+    ) -> Option<&ConcreteSymbolData<VariableData>> {
+        match self.identifier_in_use_binding_table.get(node) {
+            Some(symbol_data) => match symbol_data {
+                ConcreteSymbolDataEntry::Variable(variable_symbol_data) => Some(variable_symbol_data),
+                _ => unreachable!(),
+            },
+            None => None,
+        }
+    }
 
     pub fn get_variable_symbol_data_ref(
         &self,
@@ -80,6 +105,32 @@ impl NamespaceHandler {
         match self.identifier_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
                 SymbolDataEntry::Variable(variable_symbol_data) => Some(variable_symbol_data),
+                _ => unreachable!(),
+            },
+            None => None,
+        }
+    }
+
+    pub fn get_function_symbol_data_for_identifier_in_decl(
+        &self,
+        node: &OkIdentifierInDeclNode,
+    ) -> Option<&SymbolData<CallableData>> {
+        match self.identifier_in_decl_binding_table.get(node) {
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Function(func_symbol_data) => Some(func_symbol_data),
+                _ => unreachable!(),
+            },
+            None => None,
+        }
+    }
+
+    pub fn get_function_symbol_data_for_identifier_in_use(
+        &self,
+        node: &OkIdentifierInUseNode,
+    ) -> Option<&ConcreteSymbolData<CallableData>> {
+        match self.identifier_in_use_binding_table.get(node) {
+            Some(symbol_data) => match symbol_data {
+                ConcreteSymbolDataEntry::Function(func_symbol_data) => Some(func_symbol_data),
                 _ => unreachable!(),
             },
             None => None,
@@ -99,6 +150,32 @@ impl NamespaceHandler {
         }
     }
 
+    pub fn get_type_symbol_data_for_identifier_in_decl(
+        &self,
+        node: &OkIdentifierInDeclNode,
+    ) -> Option<&SymbolData<UserDefinedTypeData>> {
+        match self.identifier_in_decl_binding_table.get(node) {
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data),
+                _ => unreachable!(),
+            },
+            None => None,
+        }
+    }
+
+    pub fn get_type_symbol_data_for_identifier_in_use(
+        &self,
+        node: &OkIdentifierInUseNode,
+    ) -> Option<&ConcreteSymbolData<UserDefinedTypeData>> {
+        match self.identifier_in_use_binding_table.get(node) {
+            Some(symbol_data) => match symbol_data {
+                ConcreteSymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data),
+                _ => unreachable!(),
+            },
+            None => None,
+        }
+    }
+
     pub fn get_type_symbol_data_ref(
         &self,
         node: &OkIdentifierNode,
@@ -106,6 +183,45 @@ impl NamespaceHandler {
         match self.identifier_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
                 SymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data),
+                _ => unreachable!(),
+            },
+            None => None,
+        }
+    }
+
+    pub fn get_interface_symbol_data_for_identifier_in_decl(
+        &self,
+        node: &OkIdentifierInDeclNode,
+    ) -> Option<&SymbolData<InterfaceData>> {
+        match self.identifier_in_decl_binding_table.get(node) {
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Interface(interface_symbol_data) => Some(interface_symbol_data),
+                _ => unreachable!(),
+            },
+            None => None,
+        }
+    }
+
+    pub fn get_interface_symbol_data_for_identifier_in_use(
+        &self,
+        node: &OkIdentifierInUseNode,
+    ) -> Option<&ConcreteSymbolData<InterfaceData>> {
+        match self.identifier_in_use_binding_table.get(node) {
+            Some(symbol_data) => match symbol_data {
+                ConcreteSymbolDataEntry::Interface(interface_symbol_data) => Some(interface_symbol_data),
+                _ => unreachable!(),
+            },
+            None => None,
+        }
+    }
+
+    pub fn get_interface_symbol_data_ref(
+        &self,
+        node: &OkIdentifierNode,
+    ) -> Option<&SymbolData<InterfaceData>> {
+        match self.identifier_binding_table.get(node) {
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Interface(interface_symbol_data) => Some(interface_symbol_data),
                 _ => unreachable!(),
             },
             None => None,

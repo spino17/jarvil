@@ -391,7 +391,7 @@ impl TypeChecker {
                 let params = &core_call_expr.params;
                 if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
                     if let Some(symbol_data) =
-                        self.namespace_handler.get_symbol_data_entry_for_node(IdentifierNodeWrapper::InUse(ok_identifier))
+                        self.namespace_handler.get_symbol_data_entry(ok_identifier)
                     {
                         let (result, return_type) = match symbol_data {
                             SymbolDataEntry::Function(func_symbol_data) => {
