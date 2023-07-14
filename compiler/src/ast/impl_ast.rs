@@ -1887,6 +1887,8 @@ impl OkIdentifierNode {
     pub fn token_value(&self, code: &JarvilCode) -> String {
         self.0.as_ref().token.token_value(code)
     }
+
+    impl_core_ref!(CoreOkIdentifierNode);
 }
 
 impl Node for OkIdentifierNode {
@@ -2004,6 +2006,21 @@ impl Node for OkTokenNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().token.line_number
+    }
+}
+
+impl PartialEq for OkTokenNode {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for OkTokenNode {}
+
+impl Hash for OkTokenNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
     }
 }
 

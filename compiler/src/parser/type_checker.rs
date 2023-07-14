@@ -3,6 +3,7 @@
 
 use super::resolver::Resolver;
 use crate::ast::ast::InterfaceMethodTerminalNode;
+use crate::scope::handler::{SymbolDataEntry, IdentifierNodeWrapper};
 use crate::types::lambda::Lambda;
 use crate::{
     ast::{
@@ -390,10 +391,10 @@ impl TypeChecker {
                 let params = &core_call_expr.params;
                 if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
                     if let Some(symbol_data) =
-                        self.namespace_handler.get_symbol_data_ref(ok_identifier)
+                        self.namespace_handler.get_symbol_data_entry_for_node(IdentifierNodeWrapper::InUse(ok_identifier))
                     {
                         let (result, return_type) = match symbol_data {
-                            SymbolDataRef::Function(func_symbol_data) => {
+                            SymbolDataEntry::Function(func_symbol_data) => {
                                 let func_data = &*func_symbol_data.get_core_ref();
                                 let expected_params = &func_data.prototype.params;
                                 let return_type = &func_data.prototype.return_type;
@@ -401,7 +402,7 @@ impl TypeChecker {
                                     self.check_params_type_and_count(expected_params, params);
                                 (result, return_type.clone())
                             }
-                            SymbolDataRef::Variable(variable_symbol_data) => {
+                            SymbolDataEntry::Variable(variable_symbol_data) => {
                                 let lambda_type = &variable_symbol_data.get_core_ref().data_type;
                                 match lambda_type.0.as_ref() {
                                     CoreType::Lambda(lambda_data) => match &*lambda_data {
@@ -437,8 +438,8 @@ impl TypeChecker {
                                     }
                                 }
                             }
-                            SymbolDataRef::Interface(_) => unreachable!(),
-                            SymbolDataRef::Type(user_defined_type_symbol_data) => {
+                            SymbolDataEntry::Interface(_) => unreachable!(),
+                            SymbolDataEntry::Type(user_defined_type_symbol_data) => {
                                 match &*user_defined_type_symbol_data.get_core_ref() {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
                                         let constructor_meta_data = &struct_symbol_data.constructor;

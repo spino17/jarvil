@@ -1,12 +1,12 @@
 use super::{
-    core::{Namespace, SymbolData},
+    core::{Namespace, SymbolData, AbstractConcreteTypesHandler},
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
     variables::VariableData, concrete::core::ConcreteSymbolData,
 };
 use crate::ast::ast::{
-    BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode,
+    BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OkIdentifierInUseNode,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -31,6 +31,11 @@ pub enum ConcreteSymbolDataEntry {
     Interface(ConcreteSymbolData<InterfaceData>),
 }
 
+pub enum IdentifierNodeWrapper<'a> {
+    InDecl(&'a OkTokenNode),
+    InUse(&'a OkIdentifierNode)
+}
+
 // This contains all the relevant semantic information collected over various AST passes
 pub struct NamespaceHandler {
     pub namespace: Namespace,
@@ -53,25 +58,20 @@ impl NamespaceHandler {
         }
     }
 
-    pub fn get_symbol_data_ref(&self, node: &OkIdentifierNode) -> Option<SymbolDataRef> {
-        match self.identifier_binding_table.get(node) {
-            Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Variable(variable_symbol_data) => {
-                    Some(SymbolDataRef::Variable(variable_symbol_data))
-                }
-                SymbolDataEntry::Function(func_symbol_data) => {
-                    Some(SymbolDataRef::Function(func_symbol_data))
-                }
-                SymbolDataEntry::Type(type_symbol_data) => {
-                    Some(SymbolDataRef::Type(type_symbol_data))
-                }
-                SymbolDataEntry::Interface(interface_symbol_data) => {
-                    Some(SymbolDataRef::Interface(interface_symbol_data))
-                }
-            },
-            None => None,
+    pub fn get_symbol_data_entry_for_node(&self, node: IdentifierNodeWrapper) -> Option<&SymbolDataEntry> {
+        match node {
+            IdentifierNodeWrapper::InDecl(ok_token) => {
+                return self.identifier_in_decl_binding_table.get(ok_token)
+            }
+            IdentifierNodeWrapper::InUse(ok_identifier_in_use) => {
+                return self.identifier_binding_table.get(ok_identifier_in_use)
+            }
         }
     }
+
+    //pub fn get_symbol_data_entry(&self, node: &OkIdentifierNode) -> Option<&SymbolDataEntry> {
+    //    self.identifier_binding_table.get(node)
+    //}
 
     pub fn get_variable_symbol_data_ref(
         &self,
