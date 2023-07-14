@@ -1,7 +1,5 @@
 use crate::scope::concrete::core::ConcreteTypesTuple;
-use crate::scope::concrete::registry::{
-    GenericsSpecAndConcreteTypesRegistry,
-};
+use crate::scope::concrete::registry::GenericsSpecAndConcreteTypesRegistry;
 use crate::scope::function::{CallableData, CallableKind};
 use crate::scope::interfaces::InterfaceObject;
 use crate::{
