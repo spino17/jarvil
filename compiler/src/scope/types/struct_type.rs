@@ -20,7 +20,7 @@ pub struct StructTypeData {
     pub constructor: CallableData,
     pub methods: FxHashMap<String, (CallableData, TextRange)>,
     pub class_methods: FxHashMap<String, (CallableData, TextRange)>,
-    pub generics: Option<GenericsSpecAndConcreteTypesRegistry>,
+    pub generics: GenericsSpecAndConcreteTypesRegistry,
     pub implementing_interfaces: Option<Vec<InterfaceObject>>,
 }
 
@@ -32,6 +32,7 @@ impl StructTypeData {
         methods: FxHashMap<String, (CallableData, TextRange)>,
         class_methods: FxHashMap<String, (CallableData, TextRange)>,
         generics_spec: Option<GenericTypeParams>,
+        implementing_interfaces: Option<Vec<InterfaceObject>>,
     ) {
         self.fields = fields;
         self.methods = methods;
@@ -39,13 +40,8 @@ impl StructTypeData {
         if let Some((constructor_meta_data, _)) = constructor {
             self.constructor = constructor_meta_data;
         }
-        self.generics = match generics_spec {
-            Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
-                generics_spec,
-                concrete_types_registry: ConcreteTypesRegistryCore::default(),
-            }),
-            None => None,
-        }
+        self.generics.generics_spec = generics_spec;
+        self.implementing_interfaces = implementing_interfaces;
     }
 
     pub fn try_field(&self, field_name: &str) -> Option<(Type, TextRange)> {
@@ -63,31 +59,23 @@ impl StructTypeData {
     }
 
     pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        match &self.generics {
-            Some(generics) => {
-                return generics
-                    .concrete_types_registry
-                    .get_concrete_types_at_key(key)
-            }
-            None => unreachable!(),
-        }
+        return self
+            .generics
+            .concrete_types_registry
+            .get_concrete_types_at_key(key);
     }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
     fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        match &mut self.generics {
-            Some(generics) => {
-                return generics
-                    .concrete_types_registry
-                    .register_concrete_types(concrete_types)
-            }
-            None => unreachable!(),
-        }
+        return self
+            .generics
+            .concrete_types_registry
+            .register_concrete_types(concrete_types);
     }
 
     fn has_generics(&self) -> bool {
-        self.generics.is_some()
+        self.generics.generics_spec.is_some()
     }
 }
 
@@ -98,7 +86,7 @@ impl Default for StructTypeData {
             constructor: CallableData::default_for_kind(CallableKind::Method),
             methods: FxHashMap::default(),
             class_methods: FxHashMap::default(),
-            generics: Option::default(),
+            generics: GenericsSpecAndConcreteTypesRegistry::default(),
             implementing_interfaces: Option::default(),
         }
     }

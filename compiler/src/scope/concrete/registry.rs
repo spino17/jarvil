@@ -5,16 +5,22 @@ use crate::types::core::Type;
 
 #[derive(Debug)]
 pub struct GenericsSpecAndConcreteTypesRegistry {
-    pub generics_spec: GenericTypeParams,
+    pub generics_spec: Option<GenericTypeParams>,
     pub concrete_types_registry: ConcreteTypesRegistryCore,
 }
 
 impl GenericsSpecAndConcreteTypesRegistry {
-    fn new(generics_spec: GenericTypeParams) -> Self {
+    pub fn new(generics_spec: Option<GenericTypeParams>) -> Self {
         GenericsSpecAndConcreteTypesRegistry {
             generics_spec,
             concrete_types_registry: ConcreteTypesRegistryCore::default(),
         }
+    }
+}
+
+impl Default for GenericsSpecAndConcreteTypesRegistry {
+    fn default() -> Self {
+        GenericsSpecAndConcreteTypesRegistry::new(None)
     }
 }
 

@@ -1,19 +1,15 @@
 use crate::{
     scope::{
-        concrete::{
-            core::{ConcreteTypesRegistryKey, ConcreteTypesTuple},
-            registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
-        },
+        concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple},
         core::{AbstractConcreteTypesHandler, GenericTypeParams},
-        function::{CallablePrototypeData, PrototypeConcretizationResult},
+        function::{CallableData, CallableKind, PrototypeConcretizationResult},
     },
     types::core::Type,
 };
 
 #[derive(Debug)]
 pub struct LambdaTypeData {
-    pub prototype: CallablePrototypeData,
-    pub generics: Option<GenericsSpecAndConcreteTypesRegistry>,
+    pub meta_data: CallableData,
 }
 
 impl LambdaTypeData {
@@ -24,30 +20,18 @@ impl LambdaTypeData {
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         LambdaTypeData {
-            prototype: CallablePrototypeData::new(
+            meta_data: CallableData::new(
                 param_types,
                 return_type,
+                CallableKind::LambdaType,
                 is_concretization_required,
+                generics_spec,
             ),
-            generics: match generics_spec {
-                Some(generics_spec) => Some(GenericsSpecAndConcreteTypesRegistry {
-                    generics_spec,
-                    concrete_types_registry: ConcreteTypesRegistryCore::default(),
-                }),
-                None => None,
-            },
         }
     }
 
     pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        match &self.generics {
-            Some(generics) => {
-                return generics
-                    .concrete_types_registry
-                    .get_concrete_types_at_key(key)
-            }
-            None => unreachable!(),
-        }
+        return self.meta_data.get_concrete_types(key);
     }
 
     pub fn get_concrete_prototype(
@@ -55,33 +39,24 @@ impl LambdaTypeData {
         key: Option<ConcreteTypesRegistryKey>,
     ) -> PrototypeConcretizationResult {
         match key {
-            Some(key) => match &self.generics {
-                Some(generics) => {
-                    let concrete_types = generics
-                        .concrete_types_registry
-                        .get_concrete_types_at_key(key);
-                    return self.prototype.concretize_prototype(&concrete_types.0);
-                }
-                None => unreachable!(),
-            },
-            None => return PrototypeConcretizationResult::UnConcretized(&self.prototype),
+            Some(key) => {
+                let concrete_types = self.meta_data.get_concrete_types(key);
+                return self
+                    .meta_data
+                    .prototype
+                    .concretize_prototype(&concrete_types.0);
+            }
+            None => return PrototypeConcretizationResult::UnConcretized(&self.meta_data.prototype),
         }
     }
 }
 
 impl AbstractConcreteTypesHandler for LambdaTypeData {
     fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        match &mut self.generics {
-            Some(generics) => {
-                return generics
-                    .concrete_types_registry
-                    .register_concrete_types(concrete_types)
-            }
-            None => unreachable!(),
-        }
+        return self.meta_data.register_concrete_types(concrete_types);
     }
 
     fn has_generics(&self) -> bool {
-        self.generics.is_some()
+        self.meta_data.has_generics()
     }
 }

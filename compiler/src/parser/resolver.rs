@@ -1,9 +1,9 @@
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreOkIdentifierInUseNode,
-    CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode,
-    IdentifierInUseNode, InterfaceDeclarationNode, LambdaTypeDeclarationNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode,
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
+    CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode, InterfaceDeclarationNode,
+    LambdaTypeDeclarationNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
+    OkTokenNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
@@ -783,7 +783,7 @@ impl Resolver {
                 .namespace_handler
                 .get_function_symbol_data_ref(ok_identifier)
             {
-                symbol_data.get_core_mut_ref().set_data(
+                symbol_data.get_core_mut_ref().set_meta_data(
                     param_types_vec,
                     return_type,
                     CallableKind::Function,
@@ -1075,7 +1075,7 @@ impl Resolver {
                 symbol_data
                     .get_core_mut_ref()
                     .get_struct_data_mut_ref()
-                    .set_meta_data(fields_map, constructor, methods, class_methods, None);
+                    .set_meta_data(fields_map, constructor, methods, class_methods, None, None);
             }
         }
         self.context.class_context_stack.pop();
@@ -1088,12 +1088,15 @@ impl Resolver {
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             // setting the interface first in scope enables the generic type declaration to use this interface
             // having recursive referencing
-            if let Some((_, previous_decl_range)) = self.try_declare_and_bind_interface(&ok_identifier_in_decl.core_ref().name) {
+            if let Some((_, previous_decl_range)) =
+                self.try_declare_and_bind_interface(&ok_identifier_in_decl.core_ref().name)
+            {
                 // TODO - raise error `Already Declared`
                 todo!()
             }
             // Now if angle bracket content contains this interface, it will be successfully resolved
-            generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(ok_identifier_in_decl);
+            generic_type_decls =
+                self.extract_angle_bracket_content_from_identifier_in_decl(ok_identifier_in_decl);
         }
         let body = &core_interface_decl.block;
         self.open_block();
@@ -1158,6 +1161,7 @@ impl Resolver {
                     types_vec,
                     return_type,
                     is_concretization_required,
+                    None, // change this to GenericTypeParams
                     ok_identifier.range(),
                 );
             match result {

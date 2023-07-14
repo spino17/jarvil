@@ -1,5 +1,5 @@
 use super::concrete::core::ConcreteTypesRegistryKey;
-use super::function::{CallableData, CallableKind, CallablePrototypeData};
+use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
 use super::interfaces::{InterfaceData, InterfaceObject};
 use super::types::lambda_type::LambdaTypeData;
@@ -458,6 +458,7 @@ impl Namespace {
         param_types: Vec<Type>,
         return_type: Type,
         is_concretization_required: bool,
+        generics_spec: Option<GenericTypeParams>,
         decl_range: TextRange,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
         let lookup_func =
@@ -470,14 +471,12 @@ impl Namespace {
         match self.types.insert(
             scope_index,
             name,
-            UserDefinedTypeData::Lambda(LambdaTypeData {
-                prototype: CallablePrototypeData {
-                    params: param_types,
-                    return_type,
-                    is_concretization_required,
-                },
-                generics: None,
-            }),
+            UserDefinedTypeData::Lambda(LambdaTypeData::new(
+                param_types,
+                return_type,
+                is_concretization_required,
+                generics_spec,
+            )),
             decl_range,
             lookup_func,
             true,

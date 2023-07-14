@@ -408,8 +408,9 @@ impl TypeChecker {
                                         Lambda::Named((_, semantic_data)) => {
                                             let symbol_data = semantic_data.get_core_ref();
                                             let data = symbol_data.get_lambda_data_ref();
-                                            let expected_params = &data.prototype.params;
-                                            let return_type = data.prototype.return_type.clone();
+                                            let expected_params = &data.meta_data.prototype.params;
+                                            let return_type =
+                                                data.meta_data.prototype.return_type.clone();
                                             let result = self.check_params_type_and_count(
                                                 expected_params,
                                                 params,
@@ -593,8 +594,8 @@ impl TypeChecker {
                             Lambda::Named((_, semantic_data)) => {
                                 let symbol_data = semantic_data.get_core_ref();
                                 let data = symbol_data.get_lambda_data_ref();
-                                let expected_param_types = &data.prototype.params;
-                                let return_type = &data.prototype.return_type;
+                                let expected_param_types = &data.meta_data.prototype.params;
+                                let return_type = &data.meta_data.prototype.return_type;
                                 let result =
                                     self.check_params_type_and_count(expected_param_types, params);
                                 match result {
@@ -697,8 +698,8 @@ impl TypeChecker {
                                     Lambda::Named((_, semantic_data)) => {
                                         let symbol_data = semantic_data.get_core_ref();
                                         let data = symbol_data.get_lambda_data_ref();
-                                        let expected_param_types = &data.prototype.params;
-                                        let return_type = &data.prototype.return_type;
+                                        let expected_param_types = &data.meta_data.prototype.params;
+                                        let return_type = &data.meta_data.prototype.return_type;
                                         let result = self.check_params_type_and_count(
                                             expected_param_types,
                                             params,

@@ -1,5 +1,8 @@
 use super::{
-    concrete::core::{ConcreteTypesRegistryKey, ConcretizationContext},
+    concrete::{
+        core::{ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext},
+        registry::GenericsSpecAndConcreteTypesRegistry,
+    },
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
 };
 use crate::types::core::AbstractType;
@@ -10,6 +13,7 @@ use std::vec;
 pub enum CallableKind {
     Function,
     Method,
+    LambdaType,
 }
 
 #[derive(Debug)]
@@ -107,7 +111,7 @@ impl Default for CallablePrototypeData {
 pub struct CallableData {
     pub prototype: CallablePrototypeData,
     pub kind: CallableKind,
-    pub generics: Option<GenericTypeParams>,
+    pub generics: GenericsSpecAndConcreteTypesRegistry,
 }
 
 impl CallableData {
@@ -125,7 +129,7 @@ impl CallableData {
                 is_concretization_required,
             },
             kind,
-            generics: generics_spec,
+            generics: GenericsSpecAndConcreteTypesRegistry::new(generics_spec),
         }
     }
 
@@ -133,11 +137,11 @@ impl CallableData {
         CallableData {
             prototype: CallablePrototypeData::default(),
             kind,
-            generics: None,
+            generics: GenericsSpecAndConcreteTypesRegistry::default(),
         }
     }
 
-    pub fn set_data(
+    pub fn set_meta_data(
         &mut self,
         params: Vec<Type>,
         return_type: Type,
@@ -148,17 +152,27 @@ impl CallableData {
         self.prototype.params = params;
         self.prototype.return_type = return_type;
         self.prototype.is_concretization_required = is_concretization_required;
-        self.generics = generics_spec;
+        self.generics.generics_spec = generics_spec;
         self.kind = kind;
+    }
+
+    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
+        return self
+            .generics
+            .concrete_types_registry
+            .get_concrete_types_at_key(key);
     }
 }
 
 impl AbstractConcreteTypesHandler for CallableData {
-    fn register_concrete_types(&mut self, _concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        unreachable!()
+    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
+        return self
+            .generics
+            .concrete_types_registry
+            .register_concrete_types(concrete_types);
     }
 
     fn has_generics(&self) -> bool {
-        self.generics.is_some()
+        self.generics.generics_spec.is_some()
     }
 }
