@@ -18,7 +18,7 @@ pub fn type_expr(parser: &mut JarvilParser) -> TypeExpressionNode {
             TypeExpressionNode::new_with_atomic_type(&atomic_type_node)
         }
         CoreToken::IDENTIFIER => {
-            let identifier_node = parser.expect_ident(); // usage
+            let identifier_node = parser.expect_identifier_in_use();
             TypeExpressionNode::new_with_user_defined_type(&identifier_node)
         }
         CoreToken::LSQUARE => {

@@ -261,13 +261,13 @@ impl Resolver {
         U: Fn(&Namespace, usize, &str) -> Option<(SymbolDataEntry, usize, usize, bool)>,
     >(
         &mut self,
-        identifier: &OkIdentifierNode,
+        identifier: &OkIdentifierInUseNode,
         lookup_fn: U,
     ) -> ResolveResult {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
             Some((symbol_data, _, depth, _)) => {
-                self.bind_decl_to_identifier(identifier, symbol_data);
+                self.bind_decl_to_identifier_in_use(identifier, symbol_data);
                 ResolveResult::Ok(depth)
             }
             None => ResolveResult::Err(name),
@@ -276,7 +276,7 @@ impl Resolver {
 
     pub fn try_resolving_variable(
         &mut self,
-        identifier: &OkIdentifierNode,
+        identifier: &OkIdentifierInUseNode,
     ) -> VariableLookupResult {
         let name = identifier.token_value(&self.code);
         match self
@@ -285,7 +285,7 @@ impl Resolver {
             .lookup_in_variables_namespace_with_is_init(self.scope_index, &name)
         {
             VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth)) => {
-                self.bind_decl_to_identifier(
+                self.bind_decl_to_identifier_in_use(
                     identifier,
                     SymbolDataEntry::Variable(symbol_data.clone()),
                 );
@@ -319,7 +319,7 @@ impl Resolver {
 
     pub fn try_resolving_user_defined_type(
         &mut self,
-        identifier: &OkIdentifierNode,
+        identifier: &OkIdentifierInUseNode,
     ) -> ResolveResult {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| match namespace
             .lookup_in_types_namespace(scope_index, key)
@@ -346,9 +346,9 @@ impl Resolver {
         ) -> Result<SymbolDataEntry, (String, TextRange)>,
     >(
         &mut self,
-        identifier: &OkIdentifierNode,
+        identifier: &OkIdentifierInDeclNode,
         declare_fn: U,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<Option<GenericTypeParams>, (String, TextRange)> {
         let name = identifier.token_value(&self.code);
         let symbol_data = declare_fn(
             &mut self.namespace_handler.namespace,
@@ -360,10 +360,9 @@ impl Resolver {
             Ok(symbol_data) => {
                 // TODO - OVERRIDE GENERIC_TYPE_DECLS
                 // return Ok(self.bind_decl_to_identifier(identifier, symbol_data));
-                self.bind_decl_to_identifier(identifier, symbol_data);
-                // let generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(node);
-                // Ok(generic_type_decls)
-                Ok(())
+                self.bind_decl_to_identifier_in_decl(identifier, symbol_data);
+                let generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(identifier);
+                Ok(generic_type_decls)
             }
             Err(err) => Err(err),
         }
@@ -371,8 +370,8 @@ impl Resolver {
 
     pub fn try_declare_and_bind_variable(
         &mut self,
-        identifier: &OkIdentifierNode,
-    ) -> Result<(), (String, TextRange)> {
+        identifier: &OkIdentifierInDeclNode,
+    ) -> Result<Option<GenericTypeParams>, (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_variable(scope_index, name, decl_range)
@@ -382,8 +381,8 @@ impl Resolver {
 
     pub fn try_declare_and_bind_function(
         &mut self,
-        identifier: &OkIdentifierNode,
-    ) -> Result<(), (String, TextRange)> {
+        identifier: &OkIdentifierInDeclNode,
+    ) -> Result<Option<GenericTypeParams>, (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_function(scope_index, name, decl_range)
@@ -393,8 +392,8 @@ impl Resolver {
 
     pub fn try_declare_and_bind_struct_type(
         &mut self,
-        identifier: &OkIdentifierNode,
-    ) -> Result<(), (String, TextRange)> {
+        identifier: &OkIdentifierInDeclNode,
+    ) -> Result<Option<GenericTypeParams>, (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_struct_type(scope_index, name, decl_range)
@@ -404,14 +403,13 @@ impl Resolver {
 
     pub fn try_declare_and_bind_interface(
         &mut self,
-        name: &OkTokenNode,
-    ) -> Result<(), (String, TextRange)> {
+        identifier: &OkIdentifierInDeclNode,
+    ) -> Result<Option<GenericTypeParams>, (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_interface(scope_index, name, decl_range)
             };
-        // self.try_declare_and_bind(identifier, declare_fn)
-        todo!()
+        self.try_declare_and_bind(identifier, declare_fn)
     }
 
     pub fn pre_type_checking<T: Fn(&mut Resolver, TextRange)>(
@@ -602,7 +600,7 @@ impl Resolver {
             for param in params_iter {
                 let core_param = param.core_ref();
                 let param_name = &core_param.name;
-                if let CoreIdentifierNode::Ok(ok_identifier) = param_name.core_ref() {
+                if let CoreIdentifierInDeclNode::Ok(ok_identifier) = param_name.core_ref() {
                     let param_name = ok_identifier.token_value(&self.code);
                     let param_type = self.type_obj_from_expression(&core_param.data_type);
                     let result = self.namespace_handler.namespace.declare_variable_with_type(
@@ -614,7 +612,7 @@ impl Resolver {
                     );
                     match result {
                         Ok(symbol_data) => {
-                            self.bind_decl_to_identifier(ok_identifier, symbol_data);
+                            self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_data);
                             if param_type.has_generics() {
                                 generics_containing_params_indexes.push(param_types_vec.len());
                             }
@@ -720,7 +718,7 @@ impl Resolver {
                     if let CoreAtomNode::PropertyAccess(property_access) = l_atom.core_ref() {
                         let core_property_access = property_access.core_ref();
                         let property_name = &core_property_access.propertry;
-                        if let CoreIdentifierNode::Ok(property_name) = property_name.core_ref() {
+                        if let CoreIdentifierInUseNode::Ok(property_name) = property_name.core_ref() {
                             let atom = &core_property_access.atom;
                             if let CoreAtomNode::AtomStart(atom_start) = atom.core_ref() {
                                 if let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref() {
@@ -746,7 +744,7 @@ impl Resolver {
 
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
             if self.is_variable_in_non_locals(&name) {
                 let err = IdentifierFoundInNonLocalsError::new(
@@ -776,10 +774,10 @@ impl Resolver {
             CoreRVariableDeclarationNode::Lambda(lambda_r_assign) => {
                 // For case of lambda variable, it is allowed to be referenced inside the body to
                 // enable recursive definitions
-                if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
+                if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
                     if let Some(symbol_data) = self
                         .namespace_handler
-                        .get_variable_symbol_data_ref(ok_identifier)
+                        .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
                     {
                         symbol_data.get_core_mut_ref().set_is_init(true);
                     }
@@ -792,10 +790,10 @@ impl Resolver {
                     return_type,
                     is_concretization_required,
                 ));
-                if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
+                if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
                     if let Some(symbol_data) = self
                         .namespace_handler
-                        .get_variable_symbol_data_ref(ok_identifier)
+                        .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
                     {
                         symbol_data
                             .get_core_mut_ref()
@@ -807,10 +805,10 @@ impl Resolver {
                 self.walk_expr_stmt(expr_r_assign);
             }
         }
-        if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
-                .get_variable_symbol_data_ref(ok_identifier)
+                .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
             {
                 symbol_data.get_core_mut_ref().set_is_init(true);
             }
@@ -822,7 +820,7 @@ impl Resolver {
         let func_name = &core_func_decl.name;
         let body = &core_func_decl.body;
         let mut generic_type_decls: Option<GenericTypeParams> = None;
-        if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
             if self.is_function_in_non_locals(&name) {
                 let err = IdentifierFoundInNonLocalsError::new(
@@ -856,10 +854,10 @@ impl Resolver {
         }
         let (param_types_vec, return_type, _, is_concretization_required) =
             self.visit_callable_body(body);
-        if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
-                .get_function_symbol_data_ref(ok_identifier)
+                .get_function_symbol_data_for_identifier_in_decl(ok_identifier)
             {
                 symbol_data.get_core_mut_ref().set_meta_data(
                     param_types_vec,
@@ -880,7 +878,7 @@ impl Resolver {
         let struct_body = &core_struct_decl.block;
         let mut generic_type_decls: Option<GenericTypeParams> = None;
         let (struct_type_obj, struct_name) = match core_struct_decl.name.core_ref() {
-            CoreIdentifierNode::Ok(ok_identifier) => {
+            CoreIdentifierInDeclNode::Ok(ok_identifier) => {
                 let temp_struct_type_obj =
                     match self.try_declare_and_bind_struct_type(ok_identifier) {
                         Err((name, previous_decl_range)) => {
@@ -899,7 +897,7 @@ impl Resolver {
                             // generic_type_decls = local_generic_type_decls;
                             match self
                                 .namespace_handler
-                                .get_type_symbol_data_ref(ok_identifier)
+                                .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
                             {
                                 Some(symbol_data) => {
                                     let name = ok_identifier.token_value(&self.code);
@@ -941,7 +939,7 @@ impl Resolver {
                 CoreStatementNode::StructPropertyDeclaration(struct_property_decl) => {
                     let core_struct_stmt = struct_property_decl.core_ref();
                     let name = &core_struct_stmt.name_type_spec.core_ref().name;
-                    if let CoreIdentifierNode::Ok(ok_identifier) = name.core_ref() {
+                    if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier.token_value(&self.code);
                         let type_obj = self.type_obj_from_expression(
                             &core_struct_stmt.name_type_spec.core_ref().data_type,
@@ -967,7 +965,7 @@ impl Resolver {
                     self.set_curr_class_context_is_containing_self(false);
                     let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
                     let mut is_constructor = false;
-                    if let CoreIdentifierNode::Ok(ok_bounded_method_name) =
+                    if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
@@ -998,7 +996,7 @@ impl Resolver {
                     } else {
                         self.visit_callable_body(&core_func_decl.body)
                     };
-                    if let CoreIdentifierNode::Ok(ok_bounded_method_name) =
+                    if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
                         let func_meta_data = CallableData::new(
@@ -1110,7 +1108,7 @@ impl Resolver {
             }
         }
         self.close_block(struct_body);
-        if let CoreIdentifierNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             match constructor {
                 Some((_, construct_span)) => {
                     let mut missing_fields_from_constructor: Vec<&str> = vec![];
@@ -1151,7 +1149,7 @@ impl Resolver {
             }
             if let Some(symbol_data) = self
                 .namespace_handler
-                .get_type_symbol_data_ref(ok_identifier)
+                .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
             {
                 symbol_data
                     .get_core_mut_ref()
@@ -1177,12 +1175,12 @@ impl Resolver {
             // setting the interface first in scope enables the generic type declaration to use this interface
             // having recursive referencing
             if let Err((_, previous_decl_range)) =
-                self.try_declare_and_bind_interface(&ok_identifier_in_decl.core_ref().name)
+                self.try_declare_and_bind_interface(&ok_identifier_in_decl)
             {
                 // TODO - raise error `Already Declared`
                 todo!()
             }
-            match self.try_declare_and_bind_interface(&ok_identifier_in_decl.core_ref().name) {
+            match self.try_declare_and_bind_interface(&ok_identifier_in_decl) {
                 Ok(local_generic_type_decls) => {
                     // TODO - OVERRIDE GENERIC_TYPE_DECLS
                     // generic_type_decls = local_generic_type_decls;
@@ -1250,7 +1248,7 @@ impl Resolver {
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
         let mut generic_type_decls: Option<GenericTypeParams> = None;
-        if let CoreIdentifierNode::Ok(ok_identifier) = core_lambda_type_decl.name.core_ref() {
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
             // TODO - OVERRIDE GENERIC_TYPE_DECLS
             // generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(ok_identifier);
@@ -1277,7 +1275,7 @@ impl Resolver {
                 );
             match result {
                 Ok(symbol_data) => {
-                    self.bind_decl_to_identifier(ok_identifier, symbol_data);
+                    self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_data);
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
@@ -1329,7 +1327,7 @@ impl Visitor for Resolver {
             ASTNode::AtomStart(atom_start) => {
                 match atom_start.core_ref() {
                     CoreAtomStartNode::Identifier(identifier) => {
-                        if let CoreIdentifierNode::Ok(ok_identifier) = identifier.core_ref() {
+                        if let CoreIdentifierInUseNode::Ok(ok_identifier) = identifier.core_ref() {
                             let name = ok_identifier.token_value(&self.code);
                             match self.try_resolving_variable(ok_identifier) {
                                 VariableLookupResult::Ok((_, _, depth)) => {
@@ -1371,7 +1369,7 @@ impl Visitor for Resolver {
                     }
                     CoreAtomStartNode::Call(func_call) => {
                         let core_func_call = func_call.core_ref();
-                        if let CoreIdentifierNode::Ok(ok_identifier) =
+                        if let CoreIdentifierInUseNode::Ok(ok_identifier) =
                             core_func_call.function_name.core_ref()
                         {
                             // order of namespace search: function => type => variable
@@ -1386,7 +1384,7 @@ impl Visitor for Resolver {
                                     if depth > 0 && symbol_data.2 {
                                         self.set_to_function_non_locals(name, is_global);
                                     }
-                                    self.bind_decl_to_identifier(
+                                    self.bind_decl_to_identifier_in_use(
                                         ok_identifier,
                                         SymbolDataEntry::Function(symbol_data),
                                     );
@@ -1397,7 +1395,7 @@ impl Visitor for Resolver {
                                     .lookup_in_types_namespace(self.scope_index, &name)
                                 {
                                     Some((symbol_data, _, _, _)) => {
-                                        self.bind_decl_to_identifier(
+                                        self.bind_decl_to_identifier_in_use(
                                             ok_identifier,
                                             SymbolDataEntry::Type(symbol_data),
                                         );
@@ -1438,7 +1436,7 @@ impl Visitor for Resolver {
                     }
                     CoreAtomStartNode::ClassMethodCall(class_method_call) => {
                         let core_class_method_call = class_method_call.core_ref();
-                        if let CoreIdentifierNode::Ok(ok_identifier) =
+                        if let CoreIdentifierInUseNode::Ok(ok_identifier) =
                             core_class_method_call.class_name.core_ref()
                         {
                             if let ResolveResult::Err(_) =

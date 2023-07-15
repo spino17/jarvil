@@ -313,6 +313,7 @@ impl JarvilParser {
     }
 
     // TODO - this will soon be deprecated (infact the `IdentifierNode` will be gone!)
+    /*
     pub fn expect_ident(&mut self) -> IdentifierNode {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
@@ -325,6 +326,7 @@ impl JarvilParser {
             IdentifierNode::new_with_missing_tokens(vec![symbol], &token)
         }
     }
+     */
 
     pub fn expect_self(&mut self) -> SelfKeywordNode {
         let token = self.curr_token();

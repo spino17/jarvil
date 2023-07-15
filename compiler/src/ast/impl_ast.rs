@@ -41,7 +41,8 @@ use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::Resolver;
-use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
+use crate::scope::concrete::core::ConcreteSymbolData;
+use crate::scope::handler::{NamespaceHandler, SymbolDataEntry, ConcreteSymbolDataEntry};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
 use std::hash::{Hash, Hasher};
@@ -394,7 +395,7 @@ impl Node for StructPropertyDeclarationNode {
 
 impl TypeDeclarationNode {
     pub fn new_with_struct(
-        name: &IdentifierNode,
+        name: &IdentifierInDeclNode,
         block: &BlockNode,
         type_keyword: &TokenNode,
         struct_keyword: &TokenNode,
@@ -421,7 +422,7 @@ default_errornous_node_impl!(TypeDeclarationNode, CoreTypeDeclarationNode);
 
 impl StructDeclarationNode {
     pub fn new(
-        name: &IdentifierNode,
+        name: &IdentifierInDeclNode,
         block: &BlockNode,
         type_keyword: &TokenNode,
         struct_keyword: &TokenNode,
@@ -451,7 +452,7 @@ impl Node for StructDeclarationNode {
 
 impl LambdaTypeDeclarationNode {
     pub fn new(
-        name: &IdentifierNode,
+        name: &IdentifierInDeclNode,
         type_keyword: &TokenNode,
         lambda_keyword: &TokenNode,
         equal: &TokenNode,
@@ -546,7 +547,7 @@ impl Node for CallableBodyNode {
 }
 
 impl FunctionDeclarationNode {
-    pub fn new(name: &IdentifierNode, def_keyword: &TokenNode, body: &CallableBodyNode) -> Self {
+    pub fn new(name: &IdentifierInDeclNode, def_keyword: &TokenNode, body: &CallableBodyNode) -> Self {
         let node = Rc::new(CoreFunctionDeclarationNode {
             name: name.clone(),
             def_keyword: def_keyword.clone(),
@@ -621,7 +622,7 @@ impl Hash for BoundedMethodWrapperNode {
 }
 
 impl LambdaDeclarationNode {
-    pub fn new(name: &IdentifierNode, lambda_keyword: &TokenNode, body: &CallableBodyNode) -> Self {
+    pub fn new(name: &IdentifierInDeclNode, lambda_keyword: &TokenNode, body: &CallableBodyNode) -> Self {
         let node = Rc::new(CoreLambdaDeclarationNode {
             name: name.clone(),
             lambda_keyword: lambda_keyword.clone(),
@@ -644,7 +645,7 @@ impl Node for LambdaDeclarationNode {
 
 impl VariableDeclarationNode {
     pub fn new(
-        name: &IdentifierNode,
+        name: &IdentifierInDeclNode,
         r_node: &RVariableDeclarationNode,
         let_keyword: &TokenNode,
         equal: &TokenNode,
@@ -764,7 +765,7 @@ impl Node for ReturnStatementNode {
 
 impl NameTypeSpecNode {
     pub fn new(
-        param_name: &IdentifierNode,
+        param_name: &IdentifierInDeclNode,
         param_type: &TypeExpressionNode,
         colon: &TokenNode,
     ) -> Self {
@@ -796,7 +797,7 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
-    pub fn new_with_user_defined_type(identifier: &IdentifierNode) -> Self {
+    pub fn new_with_user_defined_type(identifier: &IdentifierInUseNode) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::UserDefined(
             UserDefinedTypeNode::new(identifier),
         ));
@@ -1006,7 +1007,7 @@ impl TupleTypeNode {
         resolver: &mut Resolver,
         scope_index: usize,
     ) -> TypeResolveKind {
-        let mut unresolved_identifiers: Vec<OkIdentifierNode> = vec![];
+        let mut unresolved_identifiers: Vec<OkIdentifierInUseNode> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
             match ty.type_obj_before_resolved(resolver, scope_index) {
@@ -1031,7 +1032,7 @@ impl TupleTypeNode {
         code: &JarvilCode,
         namespace_handler: &NamespaceHandler,
     ) -> TypeResolveKind {
-        let mut unresolved_identifiers: Vec<OkIdentifierNode> = vec![];
+        let mut unresolved_identifiers: Vec<OkIdentifierInUseNode> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
             match ty.type_obj_after_resolved(code, namespace_handler) {
@@ -1171,7 +1172,7 @@ impl Node for HashMapTypeNode {
 }
 
 impl UserDefinedTypeNode {
-    pub fn new(identifier: &IdentifierNode) -> Self {
+    pub fn new(identifier: &IdentifierInUseNode) -> Self {
         let node = Rc::new(CoreUserDefinedTypeNode {
             name: identifier.clone(),
         });
@@ -1183,7 +1184,7 @@ impl UserDefinedTypeNode {
         resolver: &mut Resolver,
         scope_index: usize,
     ) -> TypeResolveKind {
-        if let CoreIdentifierNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(&resolver.code);
             match resolver
                 .namespace_handler
@@ -1204,7 +1205,7 @@ impl UserDefinedTypeNode {
                         }
                     };
                     resolver
-                        .bind_decl_to_identifier(ok_identifier, SymbolDataEntry::Type(symbol_data));
+                        .bind_decl_to_identifier_in_use(ok_identifier, SymbolDataEntry::Type(symbol_data));
                     return result;
                 }
                 None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
@@ -1218,37 +1219,40 @@ impl UserDefinedTypeNode {
         code: &JarvilCode,
         namespace_handler: &NamespaceHandler,
     ) -> TypeResolveKind {
-        if let CoreIdentifierNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(code);
             match namespace_handler
-                .identifier_binding_table
-                .get(ok_identifier)
+                .get_symbol_data_for_identifier_in_use(ok_identifier)
             {
                 Some(symbol_data) => match symbol_data {
-                    SymbolDataEntry::Type(symbol_data) => match &*symbol_data.get_core_ref() {
+                    ConcreteSymbolDataEntry::Type(concrete_symbol_data) => {
+                        let index = concrete_symbol_data.index;
+                        let symbol_data = &concrete_symbol_data.symbol_data;
+                        match &*concrete_symbol_data.get_core_ref() {
                         UserDefinedTypeData::Struct(_) => {
                             return TypeResolveKind::Resolved(Type::new_with_struct(
                                 name,
-                                &symbol_data,
-                                None,
+                                symbol_data,
+                                index,
                                 false,
                             ));
                         }
                         UserDefinedTypeData::Lambda(_) => {
                             return TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                 name,
-                                &symbol_data,
-                                None,
+                                symbol_data,
+                                index,
                                 false,
                             ));
                         }
                         UserDefinedTypeData::Generic(_) => {
-                            return TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data))
+                            assert!(index.is_none());
+                            return TypeResolveKind::Resolved(Type::new_with_generic(symbol_data))
                         }
-                    },
-                    SymbolDataEntry::Function(_)
-                    | SymbolDataEntry::Variable(_)
-                    | SymbolDataEntry::Interface(_) => unreachable!(),
+                    }},
+                    ConcreteSymbolDataEntry::Function(_)
+                    | ConcreteSymbolDataEntry::Variable(_)
+                    | ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
                 },
                 None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
             }
@@ -1571,7 +1575,7 @@ impl<T: Clone + Node> Node for SymbolSeparatedSequenceNode<T> {
 
 impl CallExpressionNode {
     pub fn new(
-        function_name: &IdentifierNode,
+        function_name: &IdentifierInUseNode,
         params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1599,8 +1603,8 @@ impl Node for CallExpressionNode {
 
 impl ClassMethodCallNode {
     pub fn new(
-        class_name: &IdentifierNode,
-        class_method_name: &IdentifierNode,
+        class_name: &IdentifierInUseNode,
+        class_method_name: &IdentifierInUseNode,
         params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
@@ -1649,7 +1653,7 @@ impl AtomNode {
 
     pub fn new_with_propertry_access(
         atom: &AtomNode,
-        propertry: &IdentifierNode,
+        propertry: &IdentifierInUseNode,
         dot: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreAtomNode::PropertyAccess(PropertyAccessNode::new(
@@ -1660,7 +1664,7 @@ impl AtomNode {
 
     pub fn new_with_method_access(
         atom: &AtomNode,
-        method_name: &IdentifierNode,
+        method_name: &IdentifierInUseNode,
         params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1709,7 +1713,7 @@ impl AtomNode {
 }
 
 impl AtomStartNode {
-    pub fn new_with_identifier(token: &IdentifierNode) -> Self {
+    pub fn new_with_identifier(token: &IdentifierInUseNode) -> Self {
         let node = Rc::new(CoreAtomStartNode::Identifier(token.clone()));
         AtomStartNode(node)
     }
@@ -1725,8 +1729,8 @@ impl AtomStartNode {
     }
 
     pub fn new_with_class_method_call(
-        class_name: &IdentifierNode,
-        class_method_name: &IdentifierNode,
+        class_name: &IdentifierInUseNode,
+        class_method_name: &IdentifierInUseNode,
         params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
@@ -1785,7 +1789,7 @@ impl Node for CallNode {
 }
 
 impl PropertyAccessNode {
-    pub fn new(atom: &AtomNode, propertry: &IdentifierNode, dot: &TokenNode) -> Self {
+    pub fn new(atom: &AtomNode, propertry: &IdentifierInUseNode, dot: &TokenNode) -> Self {
         let node = Rc::new(CorePropertyAccessNode {
             dot: dot.clone(),
             atom: atom.clone(),
@@ -1809,7 +1813,7 @@ impl Node for PropertyAccessNode {
 impl MethodAccessNode {
     pub fn new(
         atom: &AtomNode,
-        method_name: &IdentifierNode,
+        method_name: &IdentifierInUseNode,
         params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -2130,6 +2134,10 @@ impl OkIdentifierInUseNode {
         OkIdentifierInUseNode(node)
     }
 
+    pub fn token_value(&self, code: &JarvilCode) -> String {
+        self.0.as_ref().name.token_value(code)
+    }
+
     impl_core_ref!(CoreOkIdentifierInUseNode);
 }
 
@@ -2179,6 +2187,10 @@ impl OkIdentifierInDeclNode {
             },
         });
         OkIdentifierInDeclNode(node)
+    }
+
+    pub fn token_value(&self, code: &JarvilCode) -> String {
+        self.0.as_ref().name.token_value(code)
     }
 
     impl_core_ref!(CoreOkIdentifierInDeclNode);

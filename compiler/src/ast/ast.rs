@@ -78,13 +78,13 @@ pub enum ASTNode {
     NameTypeSpecs(SymbolSeparatedSequenceNode<NameTypeSpecNode>),
     NameTypeSpec(NameTypeSpecNode),
     Params(SymbolSeparatedSequenceNode<ExpressionNode>),
-    Identifier(IdentifierNode),
+    //Identifier(IdentifierNode),
     IdentifierInUse(IdentifierInUseNode),
     IdentifierInDecl(IdentifierInDeclNode),
     OkIdentifierInUse(OkIdentifierInUseNode),
     OkIdentifierInDecl(OkIdentifierInDeclNode),
     GenericTypeDecl(GenericTypeDeclNode),
-    OkIdentifier(OkIdentifierNode),
+    // OkIdentifier(OkIdentifierNode),
     SelfKeyword(SelfKeywordNode),
     OkSelfKeyword(OkSelfKeywordNode),
     Token(TokenNode),
@@ -167,7 +167,7 @@ pub struct CoreReturnStatementNode {
 pub struct CoreVariableDeclarationNode {
     pub let_keyword: TokenNode,
     pub equal: TokenNode,
-    pub name: IdentifierNode,
+    pub name: IdentifierInDeclNode,
     pub r_node: RVariableDeclarationNode,
 }
 
@@ -214,7 +214,7 @@ pub struct CoreStructDeclarationNode {
     pub type_keyword: TokenNode,
     pub colon: TokenNode,
     pub struct_keyword: TokenNode,
-    pub name: IdentifierNode,
+    pub name: IdentifierInDeclNode,
     pub block: BlockNode,
 }
 
@@ -228,7 +228,7 @@ pub struct CoreStructPropertyDeclarationNode {
 pub struct CoreLambdaTypeDeclarationNode {
     pub type_keyword: TokenNode,
     pub lambda_keyword: TokenNode,
-    pub name: IdentifierNode,
+    pub name: IdentifierInDeclNode,
     pub equal: TokenNode,
     pub lparen: TokenNode,
     pub rparen: TokenNode,
@@ -278,7 +278,7 @@ pub struct CoreHashMapTypeNode {
 
 #[derive(Debug)]
 pub struct CoreUserDefinedTypeNode {
-    pub name: IdentifierNode,
+    pub name: IdentifierInUseNode,
 }
 
 #[derive(Debug)]
@@ -299,7 +299,7 @@ pub struct CoreCallableBodyNode {
 #[derive(Debug)]
 pub struct CoreFunctionDeclarationNode {
     pub def_keyword: TokenNode,
-    pub name: IdentifierNode,
+    pub name: IdentifierInDeclNode,
     pub body: CallableBodyNode,
 }
 
@@ -316,7 +316,7 @@ pub struct CoreBoundedMethodWrapperNode {
 #[derive(Debug)]
 pub struct CoreLambdaDeclarationNode {
     pub lambda_keyword: TokenNode,
-    pub name: IdentifierNode,
+    pub name: IdentifierInDeclNode,
     pub body: CallableBodyNode,
 }
 
@@ -382,7 +382,7 @@ pub struct CoreComparisonNode {
 pub struct CoreCallExpressionNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
-    pub function_name: IdentifierNode,
+    pub function_name: IdentifierInUseNode,
     pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
 }
 
@@ -397,7 +397,7 @@ pub enum CoreAtomNode {
 
 #[derive(Debug, Node)]
 pub enum CoreAtomStartNode {
-    Identifier(IdentifierNode),           // id
+    Identifier(IdentifierInUseNode),      // id
     SelfKeyword(SelfKeywordNode),         // self
     Call(CallExpressionNode),             // id(...)
     ClassMethodCall(ClassMethodCallNode), // id::id(...)
@@ -407,7 +407,7 @@ pub enum CoreAtomStartNode {
 pub struct CorePropertyAccessNode {
     pub dot: TokenNode,
     pub atom: AtomNode,
-    pub propertry: IdentifierNode,
+    pub propertry: IdentifierInUseNode,
 }
 
 #[derive(Debug)]
@@ -416,7 +416,7 @@ pub struct CoreMethodAccessNode {
     pub rparen: TokenNode,
     pub dot: TokenNode,
     pub atom: AtomNode,
-    pub method_name: IdentifierNode,
+    pub method_name: IdentifierInUseNode,
     pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
 }
 
@@ -441,15 +441,15 @@ pub struct CoreClassMethodCallNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
     pub double_colon: TokenNode,
-    pub class_name: IdentifierNode,
-    pub class_method_name: IdentifierNode,
+    pub class_name: IdentifierInUseNode,
+    pub class_method_name: IdentifierInUseNode,
     pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
 }
 
 #[derive(Debug)]
 pub struct CoreNameTypeSpecNode {
     pub colon: TokenNode,
-    pub name: IdentifierNode,
+    pub name: IdentifierInDeclNode,
     pub data_type: TypeExpressionNode,
 }
 
@@ -667,7 +667,7 @@ pub struct OkIdentifierInDeclNode(pub Rc<CoreOkIdentifierInDeclNode>);
 // misc "kind" enums
 pub enum TypeResolveKind {
     Resolved(Type),
-    Unresolved(Vec<OkIdentifierNode>),
+    Unresolved(Vec<OkIdentifierInUseNode>),
     Invalid,
 }
 

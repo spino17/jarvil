@@ -4,14 +4,14 @@ use crate::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
             ClassMethodCallNode, CoreIdentifierNode, CoreRVariableDeclarationNode,
             CoreStatemenIndentWrapperNode, CoreTokenNode, CoreTypeDeclarationNode, IdentifierNode,
-            OkIdentifierNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
+            OkIdentifierNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode, IdentifierInDeclNode, IdentifierInUseNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
         },
         walk::Visitor,
     },
     code::JarvilCode,
     context,
     lexer::token::{CoreToken, Token},
-    scope::handler::{NamespaceHandler, SymbolDataEntry},
+    scope::handler::{NamespaceHandler, SymbolDataEntry, ConcreteSymbolDataEntry},
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::convert::TryInto;
@@ -84,6 +84,7 @@ impl PythonCodeGenerator {
         self.namespace_handler.get_non_locals_ref(block)
     }
 
+    /*
     pub fn get_suffix_str_for_identifier(&self, identifier: &OkIdentifierNode) -> &'static str {
         // TODO - use OkIdenifierNode and generic type arguments to generate the name
         match self
@@ -111,6 +112,68 @@ impl PythonCodeGenerator {
                     return "";
                 }
                 SymbolDataEntry::Interface(_) => unreachable!(),
+            },
+            None => return "",
+        };
+    }*/
+
+    pub fn get_suffix_str_for_identifier_in_decl(&self, identifier: &OkIdentifierInDeclNode) -> &'static str {
+        // TODO - use OkIdenifierNode and generic type arguments to generate the name
+        match self
+            .namespace_handler
+            .get_symbol_data_for_identifier_in_decl(identifier)
+        {
+            Some(symbol_data) => match symbol_data {
+                SymbolDataEntry::Variable(variable_symbol_data) => {
+                    if variable_symbol_data.2 {
+                        return "_var";
+                    }
+                    return "";
+                }
+                SymbolDataEntry::Function(func_symbol_data) => {
+                    if func_symbol_data.2 {
+                        return "_func";
+                    }
+                    return "";
+                }
+                SymbolDataEntry::Type(type_symbol_data) => {
+                    if type_symbol_data.2 {
+                        return "_ty";
+                    }
+                    return "";
+                }
+                SymbolDataEntry::Interface(_) => unreachable!(),
+            },
+            None => return "",
+        };
+    }
+
+    pub fn get_suffix_str_for_identifier_in_use(&self, identifier: &OkIdentifierInUseNode) -> &'static str {
+        // TODO - use OkIdenifierNode and generic type arguments to generate the name
+        match self
+            .namespace_handler
+            .get_symbol_data_for_identifier_in_use(identifier)
+        {
+            Some(symbol_data) => match symbol_data {
+                ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
+                    if variable_symbol_data.symbol_data.2 {
+                        return "_var";
+                    }
+                    return "";
+                }
+                ConcreteSymbolDataEntry::Function(func_symbol_data) => {
+                    if func_symbol_data.symbol_data.2 {
+                        return "_func";
+                    }
+                    return "";
+                }
+                ConcreteSymbolDataEntry::Type(type_symbol_data) => {
+                    if type_symbol_data.symbol_data.2 {
+                        return "_ty";
+                    }
+                    return "";
+                }
+                ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
             },
             None => return "",
         };
@@ -175,6 +238,7 @@ impl PythonCodeGenerator {
         }
     }
 
+    /*
     pub fn print_identifier(&mut self, identifier: &IdentifierNode) {
         let identifier = match identifier.core_ref() {
             CoreIdentifierNode::Ok(ok_identifier) => ok_identifier,
@@ -191,13 +255,71 @@ impl PythonCodeGenerator {
         self.print_trivia(trivia);
         self.add_str_to_python_code(&token_value);
     }
+     */
 
+    pub fn print_identifier_in_decl(&mut self, identifier: &IdentifierInDeclNode) {
+        let identifier = match identifier.core_ref() {
+            CoreIdentifierInDeclNode::Ok(ok_identifier) => ok_identifier,
+            _ => unreachable!(),
+        };
+        let suffix_str = self.get_suffix_str_for_identifier_in_decl(identifier);
+        let mut token_value = identifier.token_value(&self.code);
+        token_value.push_str(suffix_str);
+        let token = &identifier.0.as_ref().name.core_ref().token;
+        let trivia = match &token.trivia {
+            Some(trivia) => Some(trivia),
+            None => None,
+        };
+        self.print_trivia(trivia);
+        self.add_str_to_python_code(&token_value);
+    }
+
+    pub fn print_identifier_in_use(&mut self, identifier: &IdentifierInUseNode) {
+        let identifier = match identifier.core_ref() {
+            CoreIdentifierInUseNode::Ok(ok_identifier) => ok_identifier,
+            _ => unreachable!(),
+        };
+        let suffix_str = self.get_suffix_str_for_identifier_in_use(identifier);
+        let mut token_value = identifier.token_value(&self.code);
+        token_value.push_str(suffix_str);
+        let token = &identifier.0.as_ref().name.core_ref().token;
+        let trivia = match &token.trivia {
+            Some(trivia) => Some(trivia),
+            None => None,
+        };
+        self.print_trivia(trivia);
+        self.add_str_to_python_code(&token_value);
+    }
+
+    /*
     pub fn print_identifier_without_trivia(&mut self, identifier: &IdentifierNode) {
         let identifier = match identifier.core_ref() {
             CoreIdentifierNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
         let suffix_str = self.get_suffix_str_for_identifier(identifier);
+        let mut token_value = identifier.token_value(&self.code);
+        token_value.push_str(suffix_str);
+        self.add_str_to_python_code(&token_value);
+    }*/
+
+    pub fn print_identifier_in_decl_without_trivia(&mut self, identifier: &IdentifierInDeclNode) {
+        let identifier = match identifier.core_ref() {
+            CoreIdentifierInDeclNode::Ok(ok_identifier) => ok_identifier,
+            _ => unreachable!(),
+        };
+        let suffix_str = self.get_suffix_str_for_identifier_in_decl(identifier);
+        let mut token_value = identifier.token_value(&self.code);
+        token_value.push_str(suffix_str);
+        self.add_str_to_python_code(&token_value);
+    }
+
+    pub fn print_identifier_in_use_without_trivia(&mut self, identifier: &IdentifierInUseNode) {
+        let identifier = match identifier.core_ref() {
+            CoreIdentifierInUseNode::Ok(ok_identifier) => ok_identifier,
+            _ => unreachable!(),
+        };
+        let suffix_str = self.get_suffix_str_for_identifier_in_use(identifier);
         let mut token_value = identifier.token_value(&self.code);
         token_value.push_str(suffix_str);
         self.add_str_to_python_code(&token_value);
@@ -213,14 +335,14 @@ impl PythonCodeGenerator {
         self.print_trivia(trivia);
         match r_node.core_ref() {
             CoreRVariableDeclarationNode::Expression(expr_stmt) => {
-                self.print_identifier_without_trivia(name);
+                self.print_identifier_in_decl_without_trivia(name);
                 self.print_token_node(equal);
                 self.walk_expr_stmt(expr_stmt);
             }
             CoreRVariableDeclarationNode::Lambda(lambda_decl) => {
                 let callable_body = &lambda_decl.core_ref().body;
                 self.add_str_to_python_code("def");
-                self.print_identifier(name);
+                self.print_identifier_in_decl(name);
                 self.walk_callable_body(callable_body);
             }
         }
@@ -250,7 +372,7 @@ impl PythonCodeGenerator {
                 let trivia = get_trivia_from_token_node(type_keyword);
                 self.print_trivia(trivia);
                 self.add_str_to_python_code("class");
-                self.print_identifier(struct_name);
+                self.print_identifier_in_decl(struct_name);
                 self.print_token_node(colon);
                 self.walk_block(block);
             }
@@ -268,9 +390,9 @@ impl PythonCodeGenerator {
         let class_name = &core_class_method_call.class_name;
         let class_method_name = &core_class_method_call.class_method_name;
         let params = &core_class_method_call.params;
-        self.print_identifier(class_name);
+        self.print_identifier_in_use(class_name);
         self.add_str_to_python_code(".");
-        self.print_identifier(class_method_name);
+        self.print_identifier_in_use(class_method_name);
         self.print_token_node(lparen);
         if let Some(params) = params {
             self.walk_params(params);
@@ -307,7 +429,7 @@ impl PythonCodeGenerator {
                 let params = &prototype.params;
 
                 self.print_token_node(def_keyword);
-                self.print_identifier(name);
+                self.print_identifier_in_decl(name);
                 self.print_token_node(lparen);
                 self.add_str_to_python_code("self");
                 if let Some(params) = params {
@@ -409,7 +531,7 @@ impl Visitor for PythonCodeGenerator {
                 // This is where type-annotations are evapored in the generated Python code
                 let core_name_type_spec = name_type_spec.core_ref();
                 let name = &core_name_type_spec.name;
-                self.print_identifier(name);
+                self.print_identifier_in_decl(name);
                 return None;
             }
             ASTNode::TypeDeclaration(type_decl) => {
@@ -424,9 +546,17 @@ impl Visitor for PythonCodeGenerator {
                 self.print_class_method_call(class_method_call);
                 return None;
             }
-            ASTNode::Identifier(identifier) => {
-                self.print_identifier(identifier);
+            //ASTNode::Identifier(identifier) => {
+            //    self.print_identifier(identifier);
+            //    return None;
+            //}
+            ASTNode::IdentifierInDecl(identifier_in_decl) => {
+                self.print_identifier_in_decl(identifier_in_decl);
                 return None;
+            }
+            ASTNode::IdentifierInUse(identifier_in_use) => {
+                self.print_identifier_in_use(identifier_in_use);
+                return None
             }
             ASTNode::OkToken(token) => {
                 self.print_token(&token.core_ref().token);

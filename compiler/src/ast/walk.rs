@@ -223,12 +223,12 @@ pub trait Visitor {
         new_with_ReturnStatementNode
     );
     impl_node_walk!(walk_ok_token, OkTokenNode, new_with_OkTokenNode);
-    impl_node_walk!(
-        walk_ok_identifier,
-        OkIdentifierNode,
-        new_with_OkIdentifierNode
-    );
-    impl_node_walk!(walk_identifier, IdentifierNode, new_with_IdentifierNode);
+    //impl_node_walk!(
+    //    walk_ok_identifier,
+    //    OkIdentifierNode,
+    //    new_with_OkIdentifierNode
+    //);
+    //impl_node_walk!(walk_identifier, IdentifierNode, new_with_IdentifierNode);
     impl_node_walk!(
         walk_identifier_in_use,
         IdentifierInUseNode,
@@ -429,7 +429,7 @@ pub trait Visitor {
             ASTNode::StructDeclaration(struct_decl_node) => {
                 let core_struct_decl = struct_decl_node.core_ref();
                 self.walk_token(&core_struct_decl.type_keyword);
-                self.walk_identifier(&core_struct_decl.name);
+                self.walk_identifier_in_decl(&core_struct_decl.name);
                 self.walk_token(&core_struct_decl.struct_keyword);
                 self.walk_token(&core_struct_decl.colon);
                 self.walk_block(&core_struct_decl.block);
@@ -437,7 +437,7 @@ pub trait Visitor {
             ASTNode::LambdaTypeDeclaration(lambda_decl_node) => {
                 let core_lambda_decl = lambda_decl_node.core_ref();
                 self.walk_token(&core_lambda_decl.type_keyword);
-                self.walk_identifier(&core_lambda_decl.name);
+                self.walk_identifier_in_decl(&core_lambda_decl.name);
                 self.walk_token(&core_lambda_decl.lambda_keyword);
                 self.walk_token(&core_lambda_decl.equal);
                 self.walk_token(&core_lambda_decl.lparen);
@@ -479,7 +479,7 @@ pub trait Visitor {
             ASTNode::FunctionDeclaration(function_decl_node) => {
                 let core_func_decl = function_decl_node.core_ref();
                 self.walk_token(&core_func_decl.def_keyword);
-                self.walk_identifier(&core_func_decl.name);
+                self.walk_identifier_in_decl(&core_func_decl.name);
                 self.walk_callable_body(&core_func_decl.body);
             }
             ASTNode::FunctionWrapper(func_wrapper) => {
@@ -491,7 +491,7 @@ pub trait Visitor {
             ASTNode::VariableDeclaration(variable_decl_node) => {
                 let core_variable_decl = variable_decl_node.core_ref();
                 self.walk_token(&core_variable_decl.let_keyword);
-                self.walk_identifier(&core_variable_decl.name);
+                self.walk_identifier_in_decl(&core_variable_decl.name);
                 self.walk_token(&core_variable_decl.equal);
                 self.walk_r_variable_declaration(&core_variable_decl.r_node);
             }
@@ -528,7 +528,7 @@ pub trait Visitor {
             }
             ASTNode::NameTypeSpec(name_type_spec_node) => {
                 let core_name_type_spec = name_type_spec_node.core_ref();
-                self.walk_identifier(&core_name_type_spec.name);
+                self.walk_identifier_in_decl(&core_name_type_spec.name);
                 self.walk_token(&core_name_type_spec.colon);
                 self.walk_type_expression(&core_name_type_spec.data_type);
             }
@@ -589,7 +589,7 @@ pub trait Visitor {
             }
             ASTNode::UserDefinedType(user_defined_type) => {
                 let core_user_defined_type = user_defined_type.core_ref();
-                self.walk_identifier(&core_user_defined_type.name)
+                self.walk_identifier_in_use(&core_user_defined_type.name)
             }
             ASTNode::Expression(expression_node) => {
                 let core_expr = expression_node.core_ref();
@@ -678,7 +678,7 @@ pub trait Visitor {
             }
             ASTNode::CallExpression(call_expression_node) => {
                 let core_call_expr = call_expression_node.core_ref();
-                self.walk_identifier(&core_call_expr.function_name);
+                self.walk_identifier_in_use(&core_call_expr.function_name);
                 self.walk_token(&core_call_expr.lparen);
                 if let Some(params) = &core_call_expr.params {
                     self.walk_params(params)
@@ -687,9 +687,9 @@ pub trait Visitor {
             }
             ASTNode::ClassMethodCall(class_method_call_node) => {
                 let core_class_method_call = class_method_call_node.core_ref();
-                self.walk_identifier(&core_class_method_call.class_name);
+                self.walk_identifier_in_use(&core_class_method_call.class_name);
                 self.walk_token(&core_class_method_call.double_colon);
-                self.walk_identifier(&core_class_method_call.class_method_name);
+                self.walk_identifier_in_use(&core_class_method_call.class_method_name);
                 self.walk_token(&core_class_method_call.lparen);
                 if let Some(params) = &core_class_method_call.params {
                     self.walk_params(params);
@@ -720,7 +720,7 @@ pub trait Visitor {
                 let core_atom_start = atom_start_node.core_ref();
                 match core_atom_start {
                     CoreAtomStartNode::Identifier(token) => {
-                        self.walk_identifier(token);
+                        self.walk_identifier_in_use(token);
                     }
                     CoreAtomStartNode::SelfKeyword(self_keyword) => {
                         self.walk_self_keyword(self_keyword);
@@ -746,13 +746,13 @@ pub trait Visitor {
                 let core_property_access = property_access_node.core_ref();
                 self.walk_atom(&core_property_access.atom);
                 self.walk_token(&core_property_access.dot);
-                self.walk_identifier(&core_property_access.propertry);
+                self.walk_identifier_in_use(&core_property_access.propertry);
             }
             ASTNode::MethodAccess(method_access_node) => {
                 let core_method_access = method_access_node.core_ref();
                 self.walk_atom(&core_method_access.atom);
                 self.walk_token(&core_method_access.dot);
-                self.walk_identifier(&core_method_access.method_name);
+                self.walk_identifier_in_use(&core_method_access.method_name);
                 self.walk_token(&core_method_access.lparen);
                 if let Some(params) = &core_method_access.params {
                     self.walk_params(params);
@@ -775,18 +775,18 @@ pub trait Visitor {
                     }
                 }
             }
-            ASTNode::Identifier(identifier) => {
-                let core_identifier = identifier.core_ref();
-                match core_identifier {
-                    CoreIdentifierNode::Ok(ok_identifier) => self.walk_ok_identifier(ok_identifier),
-                    CoreIdentifierNode::MissingTokens(missing_tokens) => {
-                        self.walk_missing_tokens(missing_tokens)
-                    }
-                }
-            }
-            ASTNode::OkIdentifier(ok_identifier) => {
-                self.walk_ok_token(&ok_identifier.0.as_ref().token);
-            }
+            //ASTNode::Identifier(identifier) => {
+            //    let core_identifier = identifier.core_ref();
+            //    match core_identifier {
+            //        CoreIdentifierNode::Ok(ok_identifier) => self.walk_ok_identifier(ok_identifier),
+            //        CoreIdentifierNode::MissingTokens(missing_tokens) => {
+            //            self.walk_missing_tokens(missing_tokens)
+            //        }
+            //    }
+            //}
+            //ASTNode::OkIdentifier(ok_identifier) => {
+            //    self.walk_ok_token(&ok_identifier.0.as_ref().token);
+            //}
             ASTNode::SelfKeyword(self_keyword) => {
                 let core_self_keyword = self_keyword.core_ref();
                 match core_self_keyword {

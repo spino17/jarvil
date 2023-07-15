@@ -2,8 +2,8 @@
 // cover and the representation of type expressions in terms of type objects.
 
 use super::resolver::Resolver;
-use crate::ast::ast::InterfaceMethodTerminalNode;
-use crate::scope::handler::SymbolDataEntry;
+use crate::ast::ast::{InterfaceMethodTerminalNode, CoreIdentifierInDeclNode, OkIdentifierInDeclNode, CoreIdentifierInUseNode, CoreOkIdentifierInUseNode, OkIdentifierInUseNode};
+use crate::scope::handler::{SymbolDataEntry, ConcreteSymbolDataEntry};
 use crate::types::lambda::Lambda;
 use crate::{
     ast::{
@@ -129,9 +129,9 @@ impl TypeChecker {
         (self.namespace_handler, self.code)
     }
 
-    pub fn is_resolved(&self, node: &OkIdentifierNode) -> bool {
+    pub fn is_resolved(&self, node: &OkIdentifierInDeclNode) -> bool {
         self.namespace_handler
-            .identifier_binding_table
+            .identifier_in_decl_binding_table
             .get(node)
             .is_some()
     }
@@ -170,7 +170,7 @@ impl TypeChecker {
             for param in params_iter {
                 let core_param = param.core_ref();
                 let name = &core_param.name;
-                if let CoreIdentifierNode::Ok(ok_identifier) = name.core_ref() {
+                if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                     if self.is_resolved(ok_identifier) {
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         if type_obj.has_generics() {
@@ -202,9 +202,9 @@ impl TypeChecker {
         let params = &prototype.params;
         let return_type = &prototype.return_type;
         let (params_vec, return_type, is_concretization_required) = match lambda_name.core_ref() {
-            CoreIdentifierNode::Ok(ok_identifier) => match self
+            CoreIdentifierInDeclNode::Ok(ok_identifier) => match self
                 .namespace_handler
-                .get_variable_symbol_data_ref(ok_identifier)
+                .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
             {
                 Some(symbol_data) => return symbol_data.get_core_ref().data_type.clone(),
                 None => self.params_and_return_type_obj_from_expr(return_type, params),
@@ -365,10 +365,10 @@ impl TypeChecker {
         let core_atom_start = atom_start.core_ref();
         match core_atom_start {
             CoreAtomStartNode::Identifier(token) => match token.core_ref() {
-                CoreIdentifierNode::Ok(ok_identifier) => {
+                CoreIdentifierInUseNode::Ok(ok_identifier) => {
                     match self
                         .namespace_handler
-                        .get_variable_symbol_data_ref(ok_identifier)
+                        .get_variable_symbol_data_for_identifier_in_use(ok_identifier)
                     {
                         Some(variable_symbol_data) => {
                             return variable_symbol_data.get_core_ref().data_type.clone()
@@ -399,12 +399,12 @@ impl TypeChecker {
                 let core_call_expr = call_expr.core_ref();
                 let func_name = &core_call_expr.function_name;
                 let params = &core_call_expr.params;
-                if let CoreIdentifierNode::Ok(ok_identifier) = func_name.core_ref() {
+                if let CoreIdentifierInUseNode::Ok(ok_identifier) = func_name.core_ref() {
                     if let Some(symbol_data) =
-                        self.namespace_handler.get_symbol_data_entry(ok_identifier)
+                        self.namespace_handler.get_symbol_data_for_identifier_in_use(ok_identifier)
                     {
                         let (result, return_type) = match symbol_data {
-                            SymbolDataEntry::Function(func_symbol_data) => {
+                            ConcreteSymbolDataEntry::Function(func_symbol_data) => {
                                 let func_data = &*func_symbol_data.get_core_ref();
                                 let expected_params = &func_data.prototype.params;
                                 let return_type = &func_data.prototype.return_type;
@@ -412,7 +412,7 @@ impl TypeChecker {
                                     self.check_params_type_and_count(expected_params, params);
                                 (result, return_type.clone())
                             }
-                            SymbolDataEntry::Variable(variable_symbol_data) => {
+                            ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
                                 let lambda_type = &variable_symbol_data.get_core_ref().data_type;
                                 match lambda_type.0.as_ref() {
                                     CoreType::Lambda(lambda_data) => match &*lambda_data {
@@ -448,8 +448,8 @@ impl TypeChecker {
                                     }
                                 }
                             }
-                            SymbolDataEntry::Interface(_) => unreachable!(),
-                            SymbolDataEntry::Type(user_defined_type_symbol_data) => {
+                            ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
+                            ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
                                 match &*user_defined_type_symbol_data.get_core_ref() {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
                                         let constructor_meta_data = &struct_symbol_data.constructor;
@@ -505,16 +505,16 @@ impl TypeChecker {
                 let class = &core_class_method.class_name;
                 let class_method = &core_class_method.class_method_name;
                 let params = &core_class_method.params;
-                if let CoreIdentifierNode::Ok(ok_identifier) = class.core_ref() {
+                if let CoreIdentifierInUseNode::Ok(ok_identifier) = class.core_ref() {
                     let class_name = ok_identifier.token_value(&self.code);
                     match self
                         .namespace_handler
-                        .get_type_symbol_data_ref(ok_identifier)
+                        .get_type_symbol_data_for_identifier_in_use(ok_identifier)
                     {
                         Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
                             UserDefinedTypeData::Struct(struct_data) => {
                                 let class_method_name = match class_method.core_ref() {
-                                    CoreIdentifierNode::Ok(class_method) => {
+                                    CoreIdentifierInUseNode::Ok(class_method) => {
                                         class_method.token_value(&self.code)
                                     }
                                     _ => return Type::new_with_unknown(),
@@ -568,7 +568,7 @@ impl TypeChecker {
     pub fn check_struct_property(
         &self,
         atom_type_obj: &Type,
-        property_name: &OkIdentifierNode,
+        property_name: &OkIdentifierInUseNode,
     ) -> StructPropertyCheckResult {
         let property_name_str = property_name.token_value(&self.code);
         match atom_type_obj.0.as_ref() {
@@ -660,7 +660,7 @@ impl TypeChecker {
                 let atom = &core_property_access.atom;
                 let (atom_type_obj, _) = self.check_atom(atom);
                 let property = &core_property_access.propertry;
-                if let CoreIdentifierNode::Ok(ok_identifier) = property.core_ref() {
+                if let CoreIdentifierInUseNode::Ok(ok_identifier) = property.core_ref() {
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     match result {
                         StructPropertyCheckResult::PropertyExist(type_obj) => {
@@ -696,7 +696,7 @@ impl TypeChecker {
                 let (atom_type_obj, _) = self.check_atom(atom);
                 let method = &core_method_access.method_name;
                 let params = &core_method_access.params;
-                if let CoreIdentifierNode::Ok(ok_identifier) = method.core_ref() {
+                if let CoreIdentifierInUseNode::Ok(ok_identifier) = method.core_ref() {
                     // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
                     // (for example: a field with lambda type) and then it goes on to find it in methods.
                     // This is in sync with what Python does.
@@ -1157,10 +1157,10 @@ impl TypeChecker {
             let err = RightSideWithVoidTypeNotAllowedError::new(r_variable_decl.range());
             self.log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
         }
-        if let CoreIdentifierNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
-                .get_variable_symbol_data_ref(ok_identifier)
+                .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
             {
                 symbol_data.get_core_mut_ref().set_data_type(&r_type);
             }
