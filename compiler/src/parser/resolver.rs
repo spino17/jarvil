@@ -1190,11 +1190,14 @@ impl Resolver {
         // traverse the body
         // ensure that the method name is not `__init__` etc.
         self.close_block(body);
-        if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
-            let ok_token_node = &ok_identifier_in_decl.core_ref().name;
-            // TODO - get the symbol_data from the namespace_handler and set the collected data
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
+            if let Some(symbol_data) = self
+                .namespace_handler
+                .get_interface_symbol_data_for_identifier_in_decl(ok_identifier)
+            {
+                symbol_data.get_core_mut_ref().set_meta_data(fields_map, methods, generic_type_decls);
+            }
         }
-        todo!()
     }
 
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &LambdaTypeDeclarationNode) {
