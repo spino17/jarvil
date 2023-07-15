@@ -26,19 +26,20 @@ impl SymbolDataEntry {
     pub fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
+        has_generics: bool,
     ) -> Option<ConcreteTypesRegistryKey> {
         match self {
             SymbolDataEntry::Variable(variable_symbol_data) => {
-                variable_symbol_data.register_concrete_types(concrete_types)
+                variable_symbol_data.register_concrete_types(concrete_types, has_generics)
             }
             SymbolDataEntry::Function(func_symbol_data) => {
-                func_symbol_data.register_concrete_types(concrete_types)
+                func_symbol_data.register_concrete_types(concrete_types, has_generics)
             }
             SymbolDataEntry::Type(type_symbol_data) => {
-                type_symbol_data.register_concrete_types(concrete_types)
+                type_symbol_data.register_concrete_types(concrete_types, has_generics)
             }
             SymbolDataEntry::Interface(interface_symbol_data) => {
-                interface_symbol_data.register_concrete_types(concrete_types)
+                interface_symbol_data.register_concrete_types(concrete_types, has_generics)
             }
         }
     }

@@ -18,7 +18,12 @@ pub enum VariableLookupResult {
 }
 
 pub trait AbstractConcreteTypesHandler {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey;
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: Vec<Type>,
+        has_generics: bool,
+    ) -> ConcreteTypesRegistryKey;
+    fn is_generics_present_in_tuple_at_index(&self, index: ConcreteTypesRegistryKey) -> bool;
     fn has_generics(&self) -> bool;
 }
 
@@ -53,15 +58,28 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
+        has_generics: bool,
     ) -> Option<ConcreteTypesRegistryKey> {
         match concrete_types {
             Some(concrete_types) => {
                 return Some(
                     self.get_core_mut_ref()
-                        .register_concrete_types(concrete_types),
+                        .register_concrete_types(concrete_types, has_generics),
                 )
             }
             None => return None,
+        }
+    }
+
+    pub fn is_generics_present_in_tuple_at_index(
+        &self,
+        index: Option<ConcreteTypesRegistryKey>,
+    ) -> bool {
+        match index {
+            Some(index) => self
+                .get_core_ref()
+                .is_generics_present_in_tuple_at_index(index),
+            None => false,
         }
     }
 

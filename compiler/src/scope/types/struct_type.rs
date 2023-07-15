@@ -65,11 +65,22 @@ impl StructTypeData {
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: Vec<Type>,
+        has_generics: bool,
+    ) -> ConcreteTypesRegistryKey {
         return self
             .generics
             .concrete_types_registry
-            .register_concrete_types(concrete_types);
+            .register_concrete_types(concrete_types, has_generics);
+    }
+
+    fn is_generics_present_in_tuple_at_index(&self, index: ConcreteTypesRegistryKey) -> bool {
+        self.generics
+            .concrete_types_registry
+            .get_concrete_types_at_key(index)
+            .1
     }
 
     fn has_generics(&self) -> bool {

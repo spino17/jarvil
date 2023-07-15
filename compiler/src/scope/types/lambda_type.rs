@@ -52,8 +52,22 @@ impl LambdaTypeData {
 }
 
 impl AbstractConcreteTypesHandler for LambdaTypeData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        return self.meta_data.register_concrete_types(concrete_types);
+    fn register_concrete_types(
+        &mut self,
+        concrete_types: Vec<Type>,
+        has_generics: bool,
+    ) -> ConcreteTypesRegistryKey {
+        return self
+            .meta_data
+            .register_concrete_types(concrete_types, has_generics);
+    }
+
+    fn is_generics_present_in_tuple_at_index(&self, index: ConcreteTypesRegistryKey) -> bool {
+        self.meta_data
+            .generics
+            .concrete_types_registry
+            .get_concrete_types_at_key(index)
+            .1
     }
 
     fn has_generics(&self) -> bool {

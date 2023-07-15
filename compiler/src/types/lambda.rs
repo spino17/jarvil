@@ -127,6 +127,10 @@ impl AbstractType for Lambda {
                     Some(key) => key,
                     None => unreachable!(),
                 };
+                assert!(named
+                    .1
+                    .symbol_data
+                    .is_generics_present_in_tuple_at_index(Some(index)));
                 let symbol_data = named.1.get_core_ref();
                 let lambda_data = symbol_data.get_lambda_data_ref();
                 let concrete_types = &lambda_data.get_concrete_types(index).0;
@@ -139,7 +143,7 @@ impl AbstractType for Lambda {
                 let new_key = named
                     .1
                     .symbol_data
-                    .register_concrete_types(Some(concretized_concrete_types));
+                    .register_concrete_types(Some(concretized_concrete_types), false);
                 return Type::new_with_lambda_named(
                     named.0.to_string(),
                     &named.1.symbol_data,

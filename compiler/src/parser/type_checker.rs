@@ -2,8 +2,11 @@
 // cover and the representation of type expressions in terms of type objects.
 
 use super::resolver::Resolver;
-use crate::ast::ast::{InterfaceMethodTerminalNode, CoreIdentifierInDeclNode, OkIdentifierInDeclNode, CoreIdentifierInUseNode, CoreOkIdentifierInUseNode, OkIdentifierInUseNode};
-use crate::scope::handler::{SymbolDataEntry, ConcreteSymbolDataEntry};
+use crate::ast::ast::{
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreOkIdentifierInUseNode,
+    InterfaceMethodTerminalNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+};
+use crate::scope::handler::{ConcreteSymbolDataEntry, SymbolDataEntry};
 use crate::types::lambda::Lambda;
 use crate::{
     ast::{
@@ -14,10 +17,10 @@ use crate::{
             CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
             CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatemenIndentWrapperNode,
             CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreUnaryExpressionNode,
-            ExpressionNode, LambdaDeclarationNode, NameTypeSpecNode, Node,
-            OnlyUnaryExpressionNode, RAssignmentNode, RVariableDeclarationNode,
-            ReturnStatementNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode,
-            TypeExpressionNode, TypeResolveKind, UnaryExpressionNode, VariableDeclarationNode,
+            ExpressionNode, LambdaDeclarationNode, NameTypeSpecNode, Node, OnlyUnaryExpressionNode,
+            RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, StatementNode,
+            SymbolSeparatedSequenceNode, TokenNode, TypeExpressionNode, TypeResolveKind,
+            UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -400,8 +403,9 @@ impl TypeChecker {
                 let func_name = &core_call_expr.function_name;
                 let params = &core_call_expr.params;
                 if let CoreIdentifierInUseNode::Ok(ok_identifier) = func_name.core_ref() {
-                    if let Some(symbol_data) =
-                        self.namespace_handler.get_symbol_data_for_identifier_in_use(ok_identifier)
+                    if let Some(symbol_data) = self
+                        .namespace_handler
+                        .get_symbol_data_for_identifier_in_use(ok_identifier)
                     {
                         let (result, return_type) = match symbol_data {
                             ConcreteSymbolDataEntry::Function(func_symbol_data) => {

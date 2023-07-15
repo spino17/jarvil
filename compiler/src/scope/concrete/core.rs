@@ -9,11 +9,11 @@ use crate::types::core::Type;
 pub struct ConcreteTypesRegistryKey(pub usize);
 
 #[derive(Debug, Clone)]
-pub struct ConcreteTypesTuple(pub Vec<Type>);
+pub struct ConcreteTypesTuple(pub Vec<Type>, pub bool);
 
 impl ConcreteTypesTuple {
-    pub fn new(concrete_types: Vec<Type>) -> Self {
-        ConcreteTypesTuple(concrete_types)
+    pub fn new(concrete_types: Vec<Type>, has_generics: bool) -> Self {
+        ConcreteTypesTuple(concrete_types, has_generics)
     }
 
     pub fn get_concrete_types(&self) -> &ConcreteTypesTuple {

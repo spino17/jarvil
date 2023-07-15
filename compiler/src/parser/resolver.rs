@@ -25,9 +25,9 @@ use crate::types::core::CoreType;
 use crate::{
     ast::{
         ast::{
-            ASTNode, BlockNode, CoreAtomStartNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, Node,
-            StructDeclarationNode, TypeExpressionNode, TypeResolveKind, VariableDeclarationNode,
+            ASTNode, BlockNode, CoreAtomStartNode, CoreStatemenIndentWrapperNode,
+            CoreStatementNode, Node, StructDeclarationNode, TypeExpressionNode, TypeResolveKind,
+            VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -227,14 +227,16 @@ impl Resolver {
         &mut self,
         node: &OkIdentifierInUseNode,
         symbol_data: SymbolDataEntry,
-    ) -> Option<ConcreteTypesRegistryKey> {
-        let concrete_types = self.extract_angle_bracket_content_from_identifier_in_use(node);
-        let index = symbol_data.register_concrete_types(concrete_types);
+    ) -> (Option<ConcreteTypesRegistryKey>, bool) {
+        // (index to the registry, has_generics)
+        let (concrete_types, has_generics) =
+            self.extract_angle_bracket_content_from_identifier_in_use(node);
+        let index = symbol_data.register_concrete_types(concrete_types, has_generics);
         let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data, index);
         self.namespace_handler
             .identifier_in_use_binding_table
             .insert(node.clone(), concrete_symbol_data);
-        return index;
+        return (index, has_generics);
     }
 
     pub fn bind_decl_to_self_keyword(
@@ -348,10 +350,9 @@ impl Resolver {
         );
         match symbol_data {
             Ok(symbol_data) => {
-                // TODO - OVERRIDE GENERIC_TYPE_DECLS
-                // return Ok(self.bind_decl_to_identifier(identifier, symbol_data));
                 self.bind_decl_to_identifier_in_decl(identifier, symbol_data);
-                let generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(identifier);
+                let generic_type_decls =
+                    self.extract_angle_bracket_content_from_identifier_in_decl(identifier);
                 Ok(generic_type_decls)
             }
             Err(err) => Err(err),
@@ -467,7 +468,7 @@ impl Resolver {
             .lookup(self.scope_index, &name)
         {
             Some((symbol_data, _, _, _)) => {
-                let index = self.bind_decl_to_identifier_in_use(
+                let (index, _) = self.bind_decl_to_identifier_in_use(
                     interface_expr,
                     SymbolDataEntry::Interface(symbol_data.clone()),
                 );
@@ -528,16 +529,21 @@ impl Resolver {
     fn extract_angle_bracket_content_from_identifier_in_use(
         &mut self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
-    ) -> Option<Vec<Type>> {
+    ) -> (Option<Vec<Type>>, bool) {
         match &ok_identifier_in_use.core_ref().generic_type_args {
             Some((_, generic_type_args, _)) => {
+                let mut has_generics = false;
                 let mut concrete_types: Vec<Type> = vec![];
                 for generic_type_expr in generic_type_args.iter() {
-                    concrete_types.push(self.type_obj_from_expression(&generic_type_expr));
+                    let ty = self.type_obj_from_expression(&generic_type_expr);
+                    if ty.has_generics() {
+                        has_generics = true;
+                    }
+                    concrete_types.push(ty);
                 }
-                return Some(concrete_types);
+                return (Some(concrete_types), has_generics);
             }
-            None => return None,
+            None => return (None, false),
         }
     }
 
@@ -708,7 +714,8 @@ impl Resolver {
                     if let CoreAtomNode::PropertyAccess(property_access) = l_atom.core_ref() {
                         let core_property_access = property_access.core_ref();
                         let property_name = &core_property_access.propertry;
-                        if let CoreIdentifierInUseNode::Ok(property_name) = property_name.core_ref() {
+                        if let CoreIdentifierInUseNode::Ok(property_name) = property_name.core_ref()
+                        {
                             let atom = &core_property_access.atom;
                             if let CoreAtomNode::AtomStart(atom_start) = atom.core_ref() {
                                 if let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref() {
@@ -764,7 +771,9 @@ impl Resolver {
             CoreRVariableDeclarationNode::Lambda(lambda_r_assign) => {
                 // For case of lambda variable, it is allowed to be referenced inside the body to
                 // enable recursive definitions
-                if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
+                if let CoreIdentifierInDeclNode::Ok(ok_identifier) =
+                    core_variable_decl.name.core_ref()
+                {
                     if let Some(symbol_data) = self
                         .namespace_handler
                         .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
@@ -780,7 +789,9 @@ impl Resolver {
                     return_type,
                     is_concretization_required,
                 ));
-                if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
+                if let CoreIdentifierInDeclNode::Ok(ok_identifier) =
+                    core_variable_decl.name.core_ref()
+                {
                     if let Some(symbol_data) = self
                         .namespace_handler
                         .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
@@ -825,10 +836,7 @@ impl Resolver {
                     .push(Diagnostics::BuiltinFunctionNameOverlap(err));
             } else {
                 match self.try_declare_and_bind_function(ok_identifier) {
-                    Ok(local_generic_type_decls) => {
-                        // TODO - OVERRIDE GENERIC_TYPE_DECLS
-                        // generic_type_decls = local_generic_type_decls
-                    }
+                    Ok(local_generic_type_decls) => generic_type_decls = local_generic_type_decls,
                     Err((name, previous_decl_range)) => {
                         let err = IdentifierAlreadyDeclaredError::new(
                             IdentKind::Function,
@@ -883,8 +891,8 @@ impl Resolver {
                             Type::new_with_unknown()
                         }
                         Ok(local_generic_type_decls) => {
-                            // TODO - OVERRIDE GENERIC_TYPE_DECLS
-                            // generic_type_decls = local_generic_type_decls;
+                            generic_type_decls = local_generic_type_decls;
+                            // TODO - migrate this to `Self` type so that we don't require concrete time just as now
                             match self
                                 .namespace_handler
                                 .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
@@ -892,6 +900,7 @@ impl Resolver {
                                 Some(symbol_data) => {
                                     let name = ok_identifier.token_value(&self.code);
                                     Type::new_with_struct(name, &symbol_data, None, false)
+                                    // TODO - change this
                                 }
                                 None => unreachable!(),
                             }
@@ -1164,25 +1173,15 @@ impl Resolver {
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             // setting the interface first in scope enables the generic type declaration to use this interface
             // having recursive referencing
-            if let Err((_, previous_decl_range)) =
-                self.try_declare_and_bind_interface(&ok_identifier_in_decl)
-            {
-                // TODO - raise error `Already Declared`
-                todo!()
-            }
             match self.try_declare_and_bind_interface(&ok_identifier_in_decl) {
                 Ok(local_generic_type_decls) => {
-                    // TODO - OVERRIDE GENERIC_TYPE_DECLS
-                    // generic_type_decls = local_generic_type_decls;
+                    generic_type_decls = local_generic_type_decls;
                 }
                 Err((_, previous_decl_range)) => {
                     // TODO - raise error `Already Declared`
                     todo!()
                 }
             }
-            // Now if angle bracket content contains this interface, it will be successfully resolved
-            generic_type_decls =
-                self.extract_angle_bracket_content_from_identifier_in_decl(ok_identifier_in_decl);
         }
         let body = &core_interface_decl.block;
         self.open_block();
@@ -1240,8 +1239,8 @@ impl Resolver {
         let mut generic_type_decls: Option<GenericTypeParams> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
-            // TODO - OVERRIDE GENERIC_TYPE_DECLS
-            // generic_type_decls = self.extract_angle_bracket_content_from_identifier_in_decl(ok_identifier);
+            generic_type_decls =
+                self.extract_angle_bracket_content_from_identifier_in_decl(ok_identifier);
             let result = self
                 .namespace_handler
                 .namespace

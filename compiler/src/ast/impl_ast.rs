@@ -8,12 +8,11 @@ use super::ast::{
     CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode, CoreExpressionNode,
     CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
     CoreGenericTypeDeclNode, CoreHashMapTypeNode, CoreIdentifierInDeclNode,
-    CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode,
-    CoreIndexAccessNode, CoreInterfaceDeclarationNode, CoreInterfaceMethodPrototypeWrapperNode,
-    CoreInvalidLValueNode, CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode,
-    CoreMethodAccessNode, CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode,
-    CoreOkIdentifierInDeclNode, CoreOkIdentifierInUseNode,
-    CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
+    CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode,
+    CoreInterfaceDeclarationNode, CoreInterfaceMethodPrototypeWrapperNode, CoreInvalidLValueNode,
+    CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMethodAccessNode,
+    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
+    CoreOkIdentifierInUseNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
     CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
     CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
@@ -21,17 +20,16 @@ use super::ast::{
     CoreTokenNode, CoreTupleTypeNode, CoreTypeDeclarationNode, CoreTypeExpressionNode,
     CoreUnaryExpressionNode, CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode,
     ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode,
-    HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode,
-    IncorrectlyIndentedStatementNode, IndexAccessNode, InterfaceDeclarationNode,
-    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, InvalidLValueNode,
-    LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode,
-    OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
-    OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode, ParenthesisedExpressionNode,
-    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
-    SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode, StatementNode,
-    StructDeclarationNode, StructPropertyDeclarationNode, SymbolSeparatedSequenceNode, TokenNode,
-    TupleTypeNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-    UserDefinedTypeNode, VariableDeclarationNode,
+    HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode, IncorrectlyIndentedStatementNode,
+    IndexAccessNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
+    InterfaceMethodTerminalNode, InvalidLValueNode, LambdaDeclarationNode,
+    LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode, OkAssignmentNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode,
+    OnlyUnaryExpressionNode, ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode,
+    RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
+    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    SymbolSeparatedSequenceNode, TokenNode, TupleTypeNode, TypeDeclarationNode, TypeExpressionNode,
+    TypeResolveKind, UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
 use super::iterators::SymbolSeparatedSequenceIterator;
 use crate::ast::ast::ErrornousNode;
@@ -41,7 +39,7 @@ use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::Resolver;
-use crate::scope::handler::{NamespaceHandler, SymbolDataEntry, ConcreteSymbolDataEntry};
+use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
 use std::hash::{Hash, Hasher};
@@ -546,7 +544,11 @@ impl Node for CallableBodyNode {
 }
 
 impl FunctionDeclarationNode {
-    pub fn new(name: &IdentifierInDeclNode, def_keyword: &TokenNode, body: &CallableBodyNode) -> Self {
+    pub fn new(
+        name: &IdentifierInDeclNode,
+        def_keyword: &TokenNode,
+        body: &CallableBodyNode,
+    ) -> Self {
         let node = Rc::new(CoreFunctionDeclarationNode {
             name: name.clone(),
             def_keyword: def_keyword.clone(),
@@ -621,7 +623,11 @@ impl Hash for BoundedMethodWrapperNode {
 }
 
 impl LambdaDeclarationNode {
-    pub fn new(name: &IdentifierInDeclNode, lambda_keyword: &TokenNode, body: &CallableBodyNode) -> Self {
+    pub fn new(
+        name: &IdentifierInDeclNode,
+        lambda_keyword: &TokenNode,
+        body: &CallableBodyNode,
+    ) -> Self {
         let node = Rc::new(CoreLambdaDeclarationNode {
             name: name.clone(),
             lambda_keyword: lambda_keyword.clone(),
@@ -1192,19 +1198,22 @@ impl UserDefinedTypeNode {
                 .lookup(scope_index, &name)
             {
                 Some((symbol_data, _, _, _)) => {
+                    let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
+                        ok_identifier,
+                        SymbolDataEntry::Type(symbol_data.clone()),
+                    );
                     let result = match &*symbol_data.get_core_ref() {
                         UserDefinedTypeData::Struct(_) => TypeResolveKind::Resolved(
-                            Type::new_with_struct(name, &symbol_data, None, false),
+                            Type::new_with_struct(name, &symbol_data, index, has_generics),
                         ),
                         UserDefinedTypeData::Lambda(_) => TypeResolveKind::Resolved(
-                            Type::new_with_lambda_named(name, &symbol_data, None, false),
+                            Type::new_with_lambda_named(name, &symbol_data, index, has_generics),
                         ),
                         UserDefinedTypeData::Generic(_) => {
+                            assert!(index.is_none());
                             TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data))
                         }
                     };
-                    resolver
-                        .bind_decl_to_identifier_in_use(ok_identifier, SymbolDataEntry::Type(symbol_data));
                     return result;
                 }
                 None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
@@ -1220,35 +1229,37 @@ impl UserDefinedTypeNode {
     ) -> TypeResolveKind {
         if let CoreIdentifierInUseNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(code);
-            match namespace_handler
-                .get_symbol_data_for_identifier_in_use(ok_identifier)
-            {
+            match namespace_handler.get_symbol_data_for_identifier_in_use(ok_identifier) {
                 Some(symbol_data) => match symbol_data {
                     ConcreteSymbolDataEntry::Type(concrete_symbol_data) => {
                         let index = concrete_symbol_data.index;
                         let symbol_data = &concrete_symbol_data.symbol_data;
+                        let has_generics = symbol_data.is_generics_present_in_tuple_at_index(index);
                         match &*concrete_symbol_data.get_core_ref() {
-                        UserDefinedTypeData::Struct(_) => {
-                            return TypeResolveKind::Resolved(Type::new_with_struct(
-                                name,
-                                symbol_data,
-                                index,
-                                false,
-                            ));
+                            UserDefinedTypeData::Struct(_) => {
+                                return TypeResolveKind::Resolved(Type::new_with_struct(
+                                    name,
+                                    symbol_data,
+                                    index,
+                                    has_generics,
+                                ));
+                            }
+                            UserDefinedTypeData::Lambda(_) => {
+                                return TypeResolveKind::Resolved(Type::new_with_lambda_named(
+                                    name,
+                                    symbol_data,
+                                    index,
+                                    has_generics,
+                                ));
+                            }
+                            UserDefinedTypeData::Generic(_) => {
+                                assert!(index.is_none());
+                                return TypeResolveKind::Resolved(Type::new_with_generic(
+                                    symbol_data,
+                                ));
+                            }
                         }
-                        UserDefinedTypeData::Lambda(_) => {
-                            return TypeResolveKind::Resolved(Type::new_with_lambda_named(
-                                name,
-                                symbol_data,
-                                index,
-                                false,
-                            ));
-                        }
-                        UserDefinedTypeData::Generic(_) => {
-                            assert!(index.is_none());
-                            return TypeResolveKind::Resolved(Type::new_with_generic(symbol_data))
-                        }
-                    }},
+                    }
                     ConcreteSymbolDataEntry::Function(_)
                     | ConcreteSymbolDataEntry::Variable(_)
                     | ConcreteSymbolDataEntry::Interface(_) => unreachable!(),

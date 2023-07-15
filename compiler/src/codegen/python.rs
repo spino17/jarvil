@@ -2,16 +2,18 @@ use crate::{
     ast::{
         ast::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
-            ClassMethodCallNode, CoreRVariableDeclarationNode,
-            CoreStatemenIndentWrapperNode, CoreTokenNode, CoreTypeDeclarationNode,
-            TokenNode, TypeDeclarationNode, VariableDeclarationNode, IdentifierInDeclNode, IdentifierInUseNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+            ClassMethodCallNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
+            CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode, CoreTokenNode,
+            CoreTypeDeclarationNode, IdentifierInDeclNode, IdentifierInUseNode,
+            OkIdentifierInDeclNode, OkIdentifierInUseNode, TokenNode, TypeDeclarationNode,
+            VariableDeclarationNode,
         },
         walk::Visitor,
     },
     code::JarvilCode,
     context,
     lexer::token::{CoreToken, Token},
-    scope::handler::{NamespaceHandler, SymbolDataEntry, ConcreteSymbolDataEntry},
+    scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry},
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::convert::TryInto;
@@ -84,7 +86,10 @@ impl PythonCodeGenerator {
         self.namespace_handler.get_non_locals_ref(block)
     }
 
-    pub fn get_suffix_str_for_identifier_in_decl(&self, identifier: &OkIdentifierInDeclNode) -> &'static str {
+    pub fn get_suffix_str_for_identifier_in_decl(
+        &self,
+        identifier: &OkIdentifierInDeclNode,
+    ) -> &'static str {
         match self
             .namespace_handler
             .get_symbol_data_for_identifier_in_decl(identifier)
@@ -114,7 +119,10 @@ impl PythonCodeGenerator {
         };
     }
 
-    pub fn get_suffix_str_for_identifier_in_use(&self, identifier: &OkIdentifierInUseNode) -> &'static str {
+    pub fn get_suffix_str_for_identifier_in_use(
+        &self,
+        identifier: &OkIdentifierInUseNode,
+    ) -> &'static str {
         match self
             .namespace_handler
             .get_symbol_data_for_identifier_in_use(identifier)
@@ -486,7 +494,7 @@ impl Visitor for PythonCodeGenerator {
             }
             ASTNode::IdentifierInUse(identifier_in_use) => {
                 self.print_identifier_in_use(identifier_in_use);
-                return None
+                return None;
             }
             ASTNode::OkToken(token) => {
                 self.print_token(&token.core_ref().token);

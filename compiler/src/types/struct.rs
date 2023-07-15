@@ -108,6 +108,10 @@ impl AbstractType for Struct {
             Some(key) => key,
             None => unreachable!(),
         };
+        assert!(self
+            .semantic_data
+            .symbol_data
+            .is_generics_present_in_tuple_at_index(Some(index)));
         let symbol_data = self.semantic_data.get_core_ref();
         let struct_data = symbol_data.get_struct_data_ref();
         let concrete_types = &struct_data.get_concrete_types(index).0;
@@ -120,7 +124,7 @@ impl AbstractType for Struct {
         let new_key = self
             .semantic_data
             .symbol_data
-            .register_concrete_types(Some(concretized_concrete_types));
+            .register_concrete_types(Some(concretized_concrete_types), false);
         return Type::new_with_struct(
             self.name.to_string(),
             &self.semantic_data.symbol_data,
