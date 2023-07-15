@@ -426,7 +426,7 @@ impl Namespace {
         name: String,
         param_types: Vec<Type>,
         return_type: Type,
-        is_concretization_required: bool,
+        is_concretization_required: Option<(Vec<usize>, bool)>,
         generics_spec: Option<GenericTypeParams>,
         decl_range: TextRange,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {

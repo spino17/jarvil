@@ -151,9 +151,10 @@ impl TypeChecker {
         &self,
         return_type: &Option<(TokenNode, TypeExpressionNode)>,
         params: &Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
-    ) -> (Vec<Type>, Type, bool) {
+    ) -> (Vec<Type>, Type, Option<(Vec<usize>, bool)>) {
         let mut params_vec: Vec<Type> = vec![];
-        let mut is_concretization_required = false;
+        let mut generics_containing_params_indexes = vec![];
+        let mut is_concretization_required_for_return_type = false;
         let return_type: Type = match return_type {
             Some((_, return_type_expr)) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -162,7 +163,7 @@ impl TypeChecker {
             None => Type::new_with_void(),
         };
         if return_type.has_generics() {
-            is_concretization_required = true;
+            is_concretization_required_for_return_type = true;
         }
         if let Some(params) = params {
             let params_iter = params.iter();
@@ -173,13 +174,23 @@ impl TypeChecker {
                     if self.is_resolved(ok_identifier) {
                         let type_obj = self.type_obj_from_expression(&core_param.data_type);
                         if type_obj.has_generics() {
-                            is_concretization_required = true;
+                            generics_containing_params_indexes.push(params_vec.len());
                         }
                         params_vec.push(type_obj);
                     }
                 }
             }
         }
+        let is_concretization_required = if generics_containing_params_indexes.len() == 0
+            && !is_concretization_required_for_return_type
+        {
+            None
+        } else {
+            Some((
+                generics_containing_params_indexes,
+                is_concretization_required_for_return_type,
+            ))
+        };
         (params_vec, return_type, is_concretization_required)
     }
 

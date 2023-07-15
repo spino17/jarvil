@@ -570,7 +570,12 @@ impl Resolver {
     pub fn declare_callable_prototype(
         &mut self,
         callable_prototype: &CallablePrototypeNode,
-    ) -> (Vec<Type>, Type, Option<TextRange>, bool) {
+    ) -> (
+        Vec<Type>,
+        Type,
+        Option<TextRange>,
+        Option<(Vec<usize>, bool)>,
+    ) {
         // (params_vec, return_type, return_type_span, is_concretization_required)
         let core_callable_prototype = callable_prototype.core_ref();
         let params = &core_callable_prototype.params;
@@ -578,7 +583,8 @@ impl Resolver {
         let rparen = &core_callable_prototype.rparen;
         let mut param_types_vec: Vec<Type> = vec![];
         let mut return_type_range: Option<TextRange> = None;
-        let mut is_concretization_required = false;
+        let mut is_concretization_required_for_return_type = false;
+        let mut generics_containing_params_indexes = vec![];
         let return_type: Type = match return_type {
             Some((_, return_type_expr)) => {
                 return_type_range = Some(return_type_expr.range());
@@ -588,7 +594,7 @@ impl Resolver {
             None => Type::new_with_void(),
         };
         if return_type.has_generics() {
-            is_concretization_required = true;
+            is_concretization_required_for_return_type = true;
         }
         let mut params_count: usize = 0;
         if let Some(params) = params {
@@ -610,7 +616,7 @@ impl Resolver {
                         Ok(symbol_data) => {
                             self.bind_decl_to_identifier(ok_identifier, symbol_data);
                             if param_type.has_generics() {
-                                is_concretization_required = true;
+                                generics_containing_params_indexes.push(param_types_vec.len());
                             }
                             param_types_vec.push(param_type);
                             params_count += 1;
@@ -638,6 +644,16 @@ impl Resolver {
             self.errors
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
+        let is_concretization_required = if generics_containing_params_indexes.len() == 0
+            && !is_concretization_required_for_return_type
+        {
+            None
+        } else {
+            Some((
+                generics_containing_params_indexes,
+                is_concretization_required_for_return_type,
+            ))
+        };
         (
             param_types_vec,
             return_type,
@@ -649,7 +665,12 @@ impl Resolver {
     pub fn visit_callable_body(
         &mut self,
         callable_body: &CallableBodyNode,
-    ) -> (Vec<Type>, Type, Option<TextRange>, bool) {
+    ) -> (
+        Vec<Type>,
+        Type,
+        Option<TextRange>,
+        Option<(Vec<usize>, bool)>,
+    ) {
         let core_callable_body = callable_body.core_ref();
         let callable_body = &core_callable_body.block;
         self.open_block();
@@ -670,7 +691,13 @@ impl Resolver {
     pub fn visit_constructor_body(
         &mut self,
         callable_body: &CallableBodyNode,
-    ) -> (Vec<Type>, Type, Option<TextRange>, FxHashSet<String>, bool) {
+    ) -> (
+        Vec<Type>,
+        Type,
+        Option<TextRange>,
+        FxHashSet<String>,
+        Option<(Vec<usize>, bool)>,
+    ) {
         let core_callable_body = callable_body.core_ref();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
         let callable_body = &core_callable_body.block;
@@ -1186,10 +1213,11 @@ impl Resolver {
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &LambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
         let mut types_vec: Vec<Type> = vec![];
-        let mut is_concretization_required = false;
         let type_tuple = &core_lambda_type_decl.type_tuple;
         let return_type = &core_lambda_type_decl.return_type;
         let rparen = &core_lambda_type_decl.rparen;
+        let mut generics_containing_params_indexes = vec![];
+        let mut is_concretization_required_for_return_type = false;
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -1198,7 +1226,7 @@ impl Resolver {
             None => Type::new_with_void(),
         };
         if return_type.has_generics() {
-            is_concretization_required = true;
+            is_concretization_required_for_return_type = true;
         }
         let mut types_count = 0;
         if let Some(type_tuple) = type_tuple {
@@ -1206,7 +1234,7 @@ impl Resolver {
             for data_type in type_tuple_iter {
                 let ty = self.type_obj_from_expression(&data_type);
                 if ty.has_generics() {
-                    is_concretization_required = true;
+                    generics_containing_params_indexes.push(types_vec.len());
                 }
                 types_vec.push(ty);
                 types_count += 1;
@@ -1234,7 +1262,16 @@ impl Resolver {
                     name,
                     types_vec,
                     return_type,
-                    is_concretization_required,
+                    if generics_containing_params_indexes.len() == 0
+                        && !is_concretization_required_for_return_type
+                    {
+                        None
+                    } else {
+                        Some((
+                            generics_containing_params_indexes,
+                            is_concretization_required_for_return_type,
+                        ))
+                    },
                     generic_type_decls,
                     ok_identifier.range(),
                 );
