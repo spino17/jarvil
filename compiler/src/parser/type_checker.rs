@@ -3,10 +3,10 @@
 
 use super::resolver::Resolver;
 use crate::ast::ast::{
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreOkIdentifierInUseNode,
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
     InterfaceMethodTerminalNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
 };
-use crate::scope::handler::{ConcreteSymbolDataEntry, SymbolDataEntry};
+use crate::scope::handler::ConcreteSymbolDataEntry;
 use crate::types::lambda::Lambda;
 use crate::{
     ast::{

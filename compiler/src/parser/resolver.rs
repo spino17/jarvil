@@ -3,7 +3,6 @@ use crate::ast::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
     CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode, InterfaceDeclarationNode,
     LambdaTypeDeclarationNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
-    OkTokenNode,
 };
 use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
