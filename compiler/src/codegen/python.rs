@@ -2,9 +2,9 @@ use crate::{
     ast::{
         ast::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
-            ClassMethodCallNode, CoreIdentifierNode, CoreRVariableDeclarationNode,
-            CoreStatemenIndentWrapperNode, CoreTokenNode, CoreTypeDeclarationNode, IdentifierNode,
-            OkIdentifierNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode, IdentifierInDeclNode, IdentifierInUseNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+            ClassMethodCallNode, CoreRVariableDeclarationNode,
+            CoreStatemenIndentWrapperNode, CoreTokenNode, CoreTypeDeclarationNode,
+            TokenNode, TypeDeclarationNode, VariableDeclarationNode, IdentifierInDeclNode, IdentifierInUseNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
         },
         walk::Visitor,
     },
@@ -84,41 +84,7 @@ impl PythonCodeGenerator {
         self.namespace_handler.get_non_locals_ref(block)
     }
 
-    /*
-    pub fn get_suffix_str_for_identifier(&self, identifier: &OkIdentifierNode) -> &'static str {
-        // TODO - use OkIdenifierNode and generic type arguments to generate the name
-        match self
-            .namespace_handler
-            .identifier_binding_table
-            .get(identifier)
-        {
-            Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Variable(variable_symbol_data) => {
-                    if variable_symbol_data.2 {
-                        return "_var";
-                    }
-                    return "";
-                }
-                SymbolDataEntry::Function(func_symbol_data) => {
-                    if func_symbol_data.2 {
-                        return "_func";
-                    }
-                    return "";
-                }
-                SymbolDataEntry::Type(type_symbol_data) => {
-                    if type_symbol_data.2 {
-                        return "_ty";
-                    }
-                    return "";
-                }
-                SymbolDataEntry::Interface(_) => unreachable!(),
-            },
-            None => return "",
-        };
-    }*/
-
     pub fn get_suffix_str_for_identifier_in_decl(&self, identifier: &OkIdentifierInDeclNode) -> &'static str {
-        // TODO - use OkIdenifierNode and generic type arguments to generate the name
         match self
             .namespace_handler
             .get_symbol_data_for_identifier_in_decl(identifier)
@@ -149,7 +115,6 @@ impl PythonCodeGenerator {
     }
 
     pub fn get_suffix_str_for_identifier_in_use(&self, identifier: &OkIdentifierInUseNode) -> &'static str {
-        // TODO - use OkIdenifierNode and generic type arguments to generate the name
         match self
             .namespace_handler
             .get_symbol_data_for_identifier_in_use(identifier)
@@ -238,25 +203,6 @@ impl PythonCodeGenerator {
         }
     }
 
-    /*
-    pub fn print_identifier(&mut self, identifier: &IdentifierNode) {
-        let identifier = match identifier.core_ref() {
-            CoreIdentifierNode::Ok(ok_identifier) => ok_identifier,
-            _ => unreachable!(),
-        };
-        let suffix_str = self.get_suffix_str_for_identifier(identifier);
-        let mut token_value = identifier.token_value(&self.code);
-        token_value.push_str(suffix_str);
-        let token = &identifier.0.as_ref().token.core_ref().token;
-        let trivia = match &token.trivia {
-            Some(trivia) => Some(trivia),
-            None => None,
-        };
-        self.print_trivia(trivia);
-        self.add_str_to_python_code(&token_value);
-    }
-     */
-
     pub fn print_identifier_in_decl(&mut self, identifier: &IdentifierInDeclNode) {
         let identifier = match identifier.core_ref() {
             CoreIdentifierInDeclNode::Ok(ok_identifier) => ok_identifier,
@@ -290,18 +236,6 @@ impl PythonCodeGenerator {
         self.print_trivia(trivia);
         self.add_str_to_python_code(&token_value);
     }
-
-    /*
-    pub fn print_identifier_without_trivia(&mut self, identifier: &IdentifierNode) {
-        let identifier = match identifier.core_ref() {
-            CoreIdentifierNode::Ok(ok_identifier) => ok_identifier,
-            _ => unreachable!(),
-        };
-        let suffix_str = self.get_suffix_str_for_identifier(identifier);
-        let mut token_value = identifier.token_value(&self.code);
-        token_value.push_str(suffix_str);
-        self.add_str_to_python_code(&token_value);
-    }*/
 
     pub fn print_identifier_in_decl_without_trivia(&mut self, identifier: &IdentifierInDeclNode) {
         let identifier = match identifier.core_ref() {
@@ -546,10 +480,6 @@ impl Visitor for PythonCodeGenerator {
                 self.print_class_method_call(class_method_call);
                 return None;
             }
-            //ASTNode::Identifier(identifier) => {
-            //    self.print_identifier(identifier);
-            //    return None;
-            //}
             ASTNode::IdentifierInDecl(identifier_in_decl) => {
                 self.print_identifier_in_decl(identifier_in_decl);
                 return None;

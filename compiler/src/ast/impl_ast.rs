@@ -8,11 +8,11 @@ use super::ast::{
     CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode, CoreExpressionNode,
     CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
     CoreGenericTypeDeclNode, CoreHashMapTypeNode, CoreIdentifierInDeclNode,
-    CoreIdentifierInUseNode, CoreIdentifierNode, CoreIncorrectlyIndentedStatementNode,
+    CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode,
     CoreIndexAccessNode, CoreInterfaceDeclarationNode, CoreInterfaceMethodPrototypeWrapperNode,
     CoreInvalidLValueNode, CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode,
     CoreMethodAccessNode, CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode,
-    CoreOkIdentifierInDeclNode, CoreOkIdentifierInUseNode, CoreOkIdentifierNode,
+    CoreOkIdentifierInDeclNode, CoreOkIdentifierInUseNode,
     CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
     CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
@@ -21,11 +21,11 @@ use super::ast::{
     CoreTokenNode, CoreTupleTypeNode, CoreTypeDeclarationNode, CoreTypeExpressionNode,
     CoreUnaryExpressionNode, CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode,
     ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode,
-    HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode, IdentifierNode,
+    HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InterfaceDeclarationNode,
     InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, InvalidLValueNode,
     LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode,
-    OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkIdentifierNode,
+    OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
     OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode, ParenthesisedExpressionNode,
     PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
     SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode, StatementNode,
@@ -41,7 +41,6 @@ use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::Resolver;
-use crate::scope::concrete::core::ConcreteSymbolData;
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry, ConcreteSymbolDataEntry};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
@@ -1867,55 +1866,6 @@ impl Node for IndexAccessNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().atom.start_line_number()
-    }
-}
-
-impl IdentifierNode {
-    pub fn new_with_ok(token: &OkTokenNode) -> Self {
-        let node = Rc::new(CoreIdentifierNode::Ok(OkIdentifierNode::new(token)));
-        IdentifierNode(node)
-    }
-
-    impl_core_ref!(CoreIdentifierNode);
-}
-default_errornous_node_impl!(IdentifierNode, CoreIdentifierNode);
-
-impl OkIdentifierNode {
-    pub fn new(token: &OkTokenNode) -> Self {
-        let node = Rc::new(CoreOkIdentifierNode {
-            token: token.clone(),
-        });
-        OkIdentifierNode(node)
-    }
-
-    pub fn token_value(&self, code: &JarvilCode) -> String {
-        self.0.as_ref().token.token_value(code)
-    }
-
-    impl_core_ref!(CoreOkIdentifierNode);
-}
-
-impl Node for OkIdentifierNode {
-    fn range(&self) -> TextRange {
-        self.0.as_ref().token.range()
-    }
-    fn start_line_number(&self) -> usize {
-        self.0.as_ref().token.start_line_number()
-    }
-}
-
-impl PartialEq for OkIdentifierNode {
-    fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
-    }
-}
-
-impl Eq for OkIdentifierNode {}
-
-impl Hash for OkIdentifierNode {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = Rc::as_ptr(&self.0);
-        ptr.hash(state);
     }
 }
 

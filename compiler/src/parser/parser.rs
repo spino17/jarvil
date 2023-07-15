@@ -2,7 +2,7 @@ use super::errors::{log_missing_token_error, log_trailing_skipped_tokens_error};
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode, GenericTypeDeclNode,
-    IdentifierInDeclNode, IdentifierInUseNode, IdentifierNode, InterfaceDeclarationNode,
+    IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
     InterfaceMethodPrototypeWrapperNode, NameTypeSpecNode, OkTokenNode, SelfKeywordNode,
     SkippedTokenNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode,
     TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,

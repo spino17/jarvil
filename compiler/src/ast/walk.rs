@@ -9,13 +9,13 @@ use crate::ast::ast::{
     AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
     CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
     CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreExpressionNode, CoreIdentifierNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
+    CoreExpressionNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
     CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
     CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode, ExpressionStatementNode,
-    FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode, IdentifierNode,
+    FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
     LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
-    OkAssignmentNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
+    OkAssignmentNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
     ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
     ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, SkippedTokensNode,
     StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
@@ -223,12 +223,6 @@ pub trait Visitor {
         new_with_ReturnStatementNode
     );
     impl_node_walk!(walk_ok_token, OkTokenNode, new_with_OkTokenNode);
-    //impl_node_walk!(
-    //    walk_ok_identifier,
-    //    OkIdentifierNode,
-    //    new_with_OkIdentifierNode
-    //);
-    //impl_node_walk!(walk_identifier, IdentifierNode, new_with_IdentifierNode);
     impl_node_walk!(
         walk_identifier_in_use,
         IdentifierInUseNode,
@@ -775,18 +769,6 @@ pub trait Visitor {
                     }
                 }
             }
-            //ASTNode::Identifier(identifier) => {
-            //    let core_identifier = identifier.core_ref();
-            //    match core_identifier {
-            //        CoreIdentifierNode::Ok(ok_identifier) => self.walk_ok_identifier(ok_identifier),
-            //        CoreIdentifierNode::MissingTokens(missing_tokens) => {
-            //            self.walk_missing_tokens(missing_tokens)
-            //        }
-            //    }
-            //}
-            //ASTNode::OkIdentifier(ok_identifier) => {
-            //    self.walk_ok_token(&ok_identifier.0.as_ref().token);
-            //}
             ASTNode::SelfKeyword(self_keyword) => {
                 let core_self_keyword = self_keyword.core_ref();
                 match core_self_keyword {

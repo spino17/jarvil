@@ -25,8 +25,8 @@ use crate::types::core::CoreType;
 use crate::{
     ast::{
         ast::{
-            ASTNode, BlockNode, CoreAtomStartNode, CoreIdentifierNode,
-            CoreStatemenIndentWrapperNode, CoreStatementNode, Node, OkIdentifierNode,
+            ASTNode, BlockNode, CoreAtomStartNode,
+            CoreStatemenIndentWrapperNode, CoreStatementNode, Node,
             StructDeclarationNode, TypeExpressionNode, TypeResolveKind, VariableDeclarationNode,
         },
         walk::Visitor,
@@ -235,16 +235,6 @@ impl Resolver {
             .identifier_in_use_binding_table
             .insert(node.clone(), concrete_symbol_data);
         return index;
-    }
-
-    pub fn bind_decl_to_identifier(
-        &mut self,
-        node: &OkIdentifierNode,
-        symbol_data: SymbolDataEntry,
-    ) {
-        self.namespace_handler
-            .identifier_binding_table
-            .insert(node.clone(), symbol_data);
     }
 
     pub fn bind_decl_to_self_keyword(

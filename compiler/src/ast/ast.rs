@@ -78,13 +78,11 @@ pub enum ASTNode {
     NameTypeSpecs(SymbolSeparatedSequenceNode<NameTypeSpecNode>),
     NameTypeSpec(NameTypeSpecNode),
     Params(SymbolSeparatedSequenceNode<ExpressionNode>),
-    //Identifier(IdentifierNode),
     IdentifierInUse(IdentifierInUseNode),
     IdentifierInDecl(IdentifierInDeclNode),
     OkIdentifierInUse(OkIdentifierInUseNode),
     OkIdentifierInDecl(OkIdentifierInDeclNode),
     GenericTypeDecl(GenericTypeDeclNode),
-    // OkIdentifier(OkIdentifierNode),
     SelfKeyword(SelfKeywordNode),
     OkSelfKeyword(OkSelfKeywordNode),
     Token(TokenNode),
@@ -454,17 +452,6 @@ pub struct CoreNameTypeSpecNode {
 }
 
 #[derive(Debug, Node)]
-pub enum CoreIdentifierNode {
-    Ok(OkIdentifierNode),
-    MissingTokens(MissingTokenNode),
-}
-
-#[derive(Debug)]
-pub struct CoreOkIdentifierNode {
-    pub token: OkTokenNode,
-}
-
-#[derive(Debug, Node)]
 pub enum CoreSelfKeywordNode {
     Ok(OkSelfKeywordNode),
     MissingTokens(MissingTokenNode),
@@ -635,10 +622,6 @@ pub struct CallNode(pub Rc<CoreCallNode>);
 pub struct ClassMethodCallNode(pub Rc<CoreClassMethodCallNode>);
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(pub Rc<CoreNameTypeSpecNode>);
-#[derive(Debug, Clone)]
-pub struct IdentifierNode(pub Rc<CoreIdentifierNode>);
-#[derive(Debug, Clone)]
-pub struct OkIdentifierNode(pub Rc<CoreOkIdentifierNode>);
 #[derive(Debug, Clone)]
 pub struct SelfKeywordNode(pub Rc<CoreSelfKeywordNode>);
 #[derive(Debug, Clone)]
