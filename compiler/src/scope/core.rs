@@ -124,7 +124,7 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
         key: &str,
         global_scope_vec: &Vec<CoreScope<T>>,
     ) -> Option<(SymbolData<T>, usize, usize, bool)> {
-        // (symbol_data, scope_index, depth, is_global)
+        // (symbol_data, resolved_scope_index, depth, is_global)
         match self.get(key) {
             Some(value) => Some((value.clone(), scope_index, 0, self.is_global)),
             None => {
