@@ -3,8 +3,8 @@
 
 use super::resolver::Resolver;
 use crate::ast::ast::{
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
-    InterfaceMethodTerminalNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, InterfaceMethodTerminalNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode,
 };
 use crate::scope::handler::ConcreteSymbolDataEntry;
 use crate::types::lambda::Lambda;

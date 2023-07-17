@@ -2,12 +2,14 @@ use super::concrete::core::ConcreteTypesRegistryKey;
 use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
 use super::interfaces::{InterfaceData, InterfaceObject};
+use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use super::types::lambda_type::LambdaTypeData;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::{Ref, RefCell, RefMut};
+use std::ops::IndexMut;
 use std::rc::Rc;
 use text_size::TextRange;
 
@@ -412,10 +414,11 @@ impl Namespace {
         }
     }
 
-    pub fn declare_struct_type(
+    pub fn declare_user_defined_type(
         &mut self,
         scope_index: usize,
         name: String,
+        meta_data: UserDefinedTypeData,
         decl_range: TextRange,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
         let lookup_func =
@@ -425,17 +428,23 @@ impl Namespace {
                 Some((symbol_data, _, _, _)) => Some(symbol_data.1),
                 None => None,
             };
-        match self.types.insert(
-            scope_index,
-            name,
-            UserDefinedTypeData::default_with_struct(),
-            decl_range,
-            lookup_func,
-            true,
-        ) {
+        match self
+            .types
+            .insert(scope_index, name, meta_data, decl_range, lookup_func, true)
+        {
             Ok(symbol_data) => return Ok(SymbolDataEntry::Type(symbol_data)),
             Err(err) => return Err(err),
         }
+    }
+
+    pub fn declare_struct_type(
+        &mut self,
+        scope_index: usize,
+        name: String,
+        decl_range: TextRange,
+    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+        let meta_data = UserDefinedTypeData::default_with_struct();
+        self.declare_user_defined_type(scope_index, name, meta_data, decl_range)
     }
 
     pub fn declare_lambda_type_with_meta_data(
@@ -448,29 +457,27 @@ impl Namespace {
         generics_spec: Option<GenericTypeParams>,
         decl_range: TextRange,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
-        let lookup_func =
-            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
-                .lookup(scope_index, key)
-            {
-                Some((symbol_data, _, _, _)) => Some(symbol_data.1),
-                None => None,
-            };
-        match self.types.insert(
-            scope_index,
-            name,
-            UserDefinedTypeData::Lambda(LambdaTypeData::new(
-                param_types,
-                return_type,
-                is_concretization_required,
-                generics_spec,
-            )),
-            decl_range,
-            lookup_func,
-            true,
-        ) {
-            Ok(symbol_data) => return Ok(SymbolDataEntry::Type(symbol_data)),
-            Err(err) => return Err(err),
-        }
+        let meta_data = UserDefinedTypeData::Lambda(LambdaTypeData::new(
+            param_types,
+            return_type,
+            is_concretization_required,
+            generics_spec,
+        ));
+        self.declare_user_defined_type(scope_index, name, meta_data, decl_range)
+    }
+
+    pub fn declare_generic_type_with_meta_data(
+        &mut self,
+        scope_index: usize,
+        name: String,
+        index: usize,
+        category: GenericTypeDeclarationPlaceCategory,
+        interface_bounds: Vec<InterfaceObject>,
+        decl_range: TextRange,
+    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+        let meta_data =
+            UserDefinedTypeData::Generic(GenericTypeData::new(index, category, interface_bounds));
+        self.declare_user_defined_type(scope_index, name, meta_data, decl_range)
     }
 
     pub fn declare_interface(

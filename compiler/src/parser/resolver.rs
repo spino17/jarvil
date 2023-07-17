@@ -1194,7 +1194,11 @@ impl Resolver {
                 .namespace_handler
                 .get_interface_symbol_data_for_identifier_in_decl(ok_identifier)
             {
-                symbol_data.get_core_mut_ref().set_meta_data(fields_map, methods, generic_type_decls);
+                symbol_data.get_core_mut_ref().set_meta_data(
+                    fields_map,
+                    methods,
+                    generic_type_decls,
+                );
             }
         }
     }
