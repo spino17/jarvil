@@ -15,11 +15,14 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
+use crate::scope::concrete;
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::{GenericTypeParams, VariableLookupResult};
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
 use crate::scope::interfaces::InterfaceObject;
+use crate::scope::types::core::UserDefinedTypeData;
+use crate::scope::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use crate::types::core::CoreType;
 use crate::{
     ast::{
@@ -486,21 +489,25 @@ impl Resolver {
     ) -> Option<GenericTypeParams> {
         match &ok_identifier_in_decl.core_ref().generic_type_decls {
             Some((_, generic_type_decls, _)) => {
-                let mut generic_type_params_vec: Vec<(String, Vec<InterfaceObject>)> = vec![];
+                let mut generic_type_params_vec: Vec<(String, Vec<InterfaceObject>, TextRange)> =
+                    vec![];
                 for generic_type_decl in generic_type_decls.iter() {
                     let core_generic_type_decl = generic_type_decl.core_ref();
                     let mut interface_bounds_vec: Vec<InterfaceObject> = vec![];
-                    let generic_type_name =
+                    let (generic_type_name, decl_range) =
                         match core_generic_type_decl.generic_type_name.core_ref() {
                             CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) => {
                                 assert!(ok_identifier_in_decl
                                     .core_ref()
                                     .generic_type_decls
                                     .is_none());
-                                ok_identifier_in_decl
-                                    .core_ref()
-                                    .name
-                                    .token_value(&self.code)
+                                (
+                                    ok_identifier_in_decl
+                                        .core_ref()
+                                        .name
+                                        .token_value(&self.code),
+                                    ok_identifier_in_decl.range(),
+                                )
                             }
                             CoreIdentifierInDeclNode::MissingTokens(_) => continue,
                         };
@@ -517,7 +524,11 @@ impl Resolver {
                             }
                         }
                     }
-                    generic_type_params_vec.push((generic_type_name, interface_bounds_vec));
+                    generic_type_params_vec.push((
+                        generic_type_name,
+                        interface_bounds_vec,
+                        decl_range,
+                    ));
                 }
                 return Some(GenericTypeParams(generic_type_params_vec));
             }
@@ -543,6 +554,31 @@ impl Resolver {
                 return (Some(concrete_types), has_generics);
             }
             None => return (None, false),
+        }
+    }
+
+    fn generic_type_decls_to_concrete_types_tuple(
+        &self,
+        generic_type_decls: &Option<GenericTypeParams>,
+        decl_place_category: GenericTypeDeclarationPlaceCategory,
+    ) -> Option<Vec<Type>> {
+        match generic_type_decls {
+            Some(generic_type_decls) => {
+                let mut concrete_types_tuple: Vec<Type> = vec![];
+                for (index, (generic_ty_name, interface_objects, decl_range)) in
+                    generic_type_decls.0.iter().enumerate()
+                {
+                    let meta_data = UserDefinedTypeData::Generic(GenericTypeData::new(
+                        index,
+                        decl_place_category,
+                        interface_objects.clone(),
+                    ));
+                    let symbol_data = SymbolData::new(meta_data, *decl_range, true);
+                    concrete_types_tuple.push(Type::new_with_generic(&symbol_data));
+                }
+                return Some(concrete_types_tuple);
+            }
+            None => return None,
         }
     }
 
@@ -893,15 +929,20 @@ impl Resolver {
                         }
                         Ok(local_generic_type_decls) => {
                             generic_type_decls = local_generic_type_decls;
-                            // TODO - migrate this to `Self` type so that we don't require concrete time just as now
                             match self
                                 .namespace_handler
                                 .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
                             {
                                 Some(symbol_data) => {
                                     let name = ok_identifier.token_value(&self.code);
-                                    Type::new_with_struct(name, &symbol_data, None, false)
-                                    // TODO - change this
+                                    let concrete_types = self
+                                        .generic_type_decls_to_concrete_types_tuple(
+                                            &generic_type_decls,
+                                            GenericTypeDeclarationPlaceCategory::InStruct,
+                                        );
+                                    let index =
+                                        symbol_data.register_concrete_types(concrete_types, true);
+                                    Type::new_with_struct(name, &symbol_data, index, true)
                                 }
                                 None => unreachable!(),
                             }
@@ -922,6 +963,7 @@ impl Resolver {
             core_struct_decl.name.range(),
             true,
         );
+        // TODO - add `generic_type_decls` also into the scope
         assert!(result.is_ok());
 
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();

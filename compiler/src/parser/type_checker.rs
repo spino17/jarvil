@@ -454,6 +454,11 @@ impl TypeChecker {
                             }
                             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
                             ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
+                                let index = user_defined_type_symbol_data.index;
+                                let name = ok_identifier.token_value(&self.code);
+                                let has_generics = user_defined_type_symbol_data
+                                    .symbol_data
+                                    .is_generics_present_in_tuple_at_index(index);
                                 match &*user_defined_type_symbol_data.get_core_ref() {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
                                         let constructor_meta_data = &struct_symbol_data.constructor;
@@ -463,21 +468,17 @@ impl TypeChecker {
                                         );
                                         (
                                             result,
-                                            constructor_meta_data.prototype.return_type.clone(),
+                                            // constructor_meta_data.prototype.return_type.clone(),
+                                            Type::new_with_struct(
+                                                name,
+                                                &user_defined_type_symbol_data.symbol_data,
+                                                index,
+                                                has_generics,
+                                            ),
                                         )
                                     }
-                                    UserDefinedTypeData::Lambda(_) => {
-                                        let type_name = ok_identifier.token_value(&self.code);
-                                        let err = ConstructorNotFoundForTypeError::new(
-                                            type_name,
-                                            ok_identifier.range(),
-                                        );
-                                        self.log_error(Diagnostics::ConstructorNotFoundForType(
-                                            err,
-                                        ));
-                                        return Type::new_with_unknown();
-                                    }
-                                    UserDefinedTypeData::Generic(_) => {
+                                    UserDefinedTypeData::Lambda(_)
+                                    | UserDefinedTypeData::Generic(_) => {
                                         let type_name = ok_identifier.token_value(&self.code);
                                         let err = ConstructorNotFoundForTypeError::new(
                                             type_name,
