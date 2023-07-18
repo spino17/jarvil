@@ -9,7 +9,6 @@ use crate::scope::variables::VariableData;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::{Ref, RefCell, RefMut};
-use std::ops::IndexMut;
 use std::rc::Rc;
 use text_size::TextRange;
 
@@ -472,11 +471,14 @@ impl Namespace {
         name: String,
         index: usize,
         category: GenericTypeDeclarationPlaceCategory,
-        interface_bounds: Vec<InterfaceObject>,
+        interface_bounds: &Vec<InterfaceObject>,
         decl_range: TextRange,
     ) -> Result<SymbolDataEntry, (String, TextRange)> {
-        let meta_data =
-            UserDefinedTypeData::Generic(GenericTypeData::new(index, category, interface_bounds));
+        let meta_data = UserDefinedTypeData::Generic(GenericTypeData::new(
+            index,
+            category,
+            interface_bounds.clone(),
+        ));
         self.declare_user_defined_type(scope_index, name, meta_data, decl_range)
     }
 

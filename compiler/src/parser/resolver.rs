@@ -658,6 +658,7 @@ impl Resolver {
     pub fn visit_callable_body(
         &mut self,
         callable_body: &CallableBodyNode,
+        generic_type_decls: &Option<GenericTypeParams>,
     ) -> (
         Vec<Type>,
         Type,
@@ -667,6 +668,7 @@ impl Resolver {
         let core_callable_body = callable_body.core_ref();
         let callable_body = &core_callable_body.block;
         self.open_block();
+        // TODO - set generic types from `generic_type_decls` to the scope
         let (param_types_vec, return_type, return_type_range, is_concretization_required) =
             self.declare_callable_prototype(&core_callable_body.prototype);
         for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
@@ -782,7 +784,7 @@ impl Resolver {
                 };
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
                 let (params_vec, return_type, _, is_concretization_required) =
-                    self.visit_callable_body(&core_lambda_r_assign.body);
+                    self.visit_callable_body(&core_lambda_r_assign.body, &None);
                 let lambda_type_obj = Type::new_with_lambda_unnamed(CallablePrototypeData::new(
                     params_vec,
                     return_type,
@@ -850,7 +852,7 @@ impl Resolver {
             }
         }
         let (param_types_vec, return_type, _, is_concretization_required) =
-            self.visit_callable_body(body);
+            self.visit_callable_body(body, &generic_type_decls);
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
@@ -963,12 +965,21 @@ impl Resolver {
                     self.set_curr_class_context_is_containing_self(false);
                     let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
                     let mut is_constructor = false;
+                    let mut generic_type_decls: Option<GenericTypeParams> = None;
                     if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
+                        generic_type_decls = self
+                            .extract_angle_bracket_content_from_identifier_in_decl(
+                                ok_bounded_method_name,
+                            );
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") && constructor.is_none() {
                             is_constructor = true;
+                            if generic_type_decls.is_some() {
+                                // TODO - raise error `generic type parameters not allowed in constructor declaration`
+                                generic_type_decls = None;
+                            }
                         }
                     }
                     let (
@@ -992,7 +1003,7 @@ impl Resolver {
                             is_concretization_required,
                         )
                     } else {
-                        self.visit_callable_body(&core_func_decl.body)
+                        self.visit_callable_body(&core_func_decl.body, &generic_type_decls)
                     };
                     if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
@@ -1002,7 +1013,7 @@ impl Resolver {
                             return_type.clone(),
                             CallableKind::Method,
                             is_concretization_required,
-                            None,
+                            generic_type_decls,
                         );
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") {
