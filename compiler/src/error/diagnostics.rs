@@ -432,7 +432,10 @@ impl IdentifierAlreadyDeclaredError {
                 format!("constructor is not allowed to be redeclared")
             }
             IdentifierKind::Interface => {
-                format!("{}s are not allowed to be redeclared inside the complete scope chain", identifier_kind)
+                format!(
+                    "{}s are not allowed to be redeclared inside the complete scope chain",
+                    identifier_kind
+                )
             }
         };
         IdentifierAlreadyDeclaredError {

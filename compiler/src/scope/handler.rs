@@ -1,6 +1,6 @@
 use super::{
     concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
-    core::{Namespace, SymbolData},
+    core::{AbstractConcreteTypesHandler, Namespace, SymbolData},
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
@@ -14,6 +14,13 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
+
+pub enum IdentifierKind {
+    Variable,
+    Function,
+    UserDefinedType,
+    Interface,
+}
 
 pub enum SymbolDataEntry {
     Variable(SymbolData<VariableData>),

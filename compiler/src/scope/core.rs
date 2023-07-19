@@ -28,6 +28,10 @@ pub trait AbstractConcreteTypesHandler {
     fn has_generics(&self) -> bool;
 }
 
+pub trait AbstractSymbolData {
+    fn get_entry(&self) -> SymbolDataEntry;
+}
+
 pub enum ConcreteTypesRegistrationKind {
     Primary,
     Method,
@@ -92,6 +96,42 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
 impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone(), self.1, self.2)
+    }
+}
+
+#[derive(Debug)]
+pub struct VariableSymbolData(SymbolData<VariableData>);
+
+impl AbstractSymbolData for VariableSymbolData {
+    fn get_entry(&self) -> SymbolDataEntry {
+        SymbolDataEntry::Variable(self.0.clone())
+    }
+}
+
+#[derive(Debug)]
+pub struct FunctionSymbolData(SymbolData<CallableData>);
+
+impl AbstractSymbolData for FunctionSymbolData {
+    fn get_entry(&self) -> SymbolDataEntry {
+        SymbolDataEntry::Function(self.0.clone())
+    }
+}
+
+#[derive(Debug)]
+pub struct UserDefinedTypeSymbolData(SymbolData<UserDefinedTypeData>);
+
+impl AbstractSymbolData for UserDefinedTypeSymbolData {
+    fn get_entry(&self) -> SymbolDataEntry {
+        SymbolDataEntry::Type(self.0.clone())
+    }
+}
+
+#[derive(Debug)]
+pub struct InterfaceSymbolData(SymbolData<InterfaceData>);
+
+impl AbstractSymbolData for InterfaceSymbolData {
+    fn get_entry(&self) -> SymbolDataEntry {
+        SymbolDataEntry::Interface(self.0.clone())
     }
 }
 
@@ -338,7 +378,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+    ) -> Result<VariableSymbolData, (String, TextRange)> {
         let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
             .flattened_vec[scope_index]
             .get(key)
@@ -354,8 +394,8 @@ impl Namespace {
             lookup_func,
             true,
         ) {
-            Ok(symbol_data) => return Ok(SymbolDataEntry::Variable(symbol_data)),
-            Err(err) => return Err(err),
+            Ok(symbol_data) => Ok(VariableSymbolData(symbol_data)),
+            Err(err) => Err(err),
         }
     }
 
@@ -366,7 +406,7 @@ impl Namespace {
         variable_type: &Type,
         decl_range: TextRange,
         is_init: bool,
-    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+    ) -> Result<VariableSymbolData, (String, TextRange)> {
         let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
             .flattened_vec[scope_index]
             .get(key)
@@ -382,8 +422,8 @@ impl Namespace {
             lookup_func,
             true,
         ) {
-            Ok(symbol_data) => return Ok(SymbolDataEntry::Variable(symbol_data)),
-            Err(err) => return Err(err),
+            Ok(symbol_data) => Ok(VariableSymbolData(symbol_data)),
+            Err(err) => Err(err),
         }
     }
 
@@ -392,7 +432,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+    ) -> Result<FunctionSymbolData, (String, TextRange)> {
         let lookup_func = |scope: &Scope<CallableData>, scope_index: usize, key: &str| match scope
             .flattened_vec[scope_index]
             .get(key)
@@ -408,8 +448,8 @@ impl Namespace {
             lookup_func,
             true,
         ) {
-            Ok(symbol_data) => return Ok(SymbolDataEntry::Function(symbol_data)),
-            Err(err) => return Err(err),
+            Ok(symbol_data) => Ok(FunctionSymbolData(symbol_data)),
+            Err(err) => Err(err),
         }
     }
 
@@ -419,7 +459,7 @@ impl Namespace {
         name: String,
         meta_data: UserDefinedTypeData,
         decl_range: TextRange,
-    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let lookup_func =
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
@@ -431,8 +471,8 @@ impl Namespace {
             .types
             .insert(scope_index, name, meta_data, decl_range, lookup_func, true)
         {
-            Ok(symbol_data) => return Ok(SymbolDataEntry::Type(symbol_data)),
-            Err(err) => return Err(err),
+            Ok(symbol_data) => Ok(UserDefinedTypeSymbolData(symbol_data)),
+            Err(err) => Err(err),
         }
     }
 
@@ -441,7 +481,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let meta_data = UserDefinedTypeData::default_with_struct();
         self.declare_user_defined_type(scope_index, name, meta_data, decl_range)
     }
@@ -455,7 +495,7 @@ impl Namespace {
         is_concretization_required: Option<(Vec<usize>, bool)>,
         generics_spec: Option<GenericTypeParams>,
         decl_range: TextRange,
-    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let meta_data = UserDefinedTypeData::Lambda(LambdaTypeData::new(
             param_types,
             return_type,
@@ -473,7 +513,7 @@ impl Namespace {
         category: GenericTypeDeclarationPlaceCategory,
         interface_bounds: &Vec<InterfaceObject>,
         decl_range: TextRange,
-    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let meta_data = UserDefinedTypeData::Generic(GenericTypeData::new(
             index,
             category,
@@ -487,7 +527,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
-    ) -> Result<SymbolDataEntry, (String, TextRange)> {
+    ) -> Result<InterfaceSymbolData, (String, TextRange)> {
         let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| match scope
             .lookup(scope_index, key)
         {
@@ -502,8 +542,8 @@ impl Namespace {
             lookup_func,
             true,
         ) {
-            Ok(symbol_data) => return Ok(SymbolDataEntry::Interface(symbol_data)),
-            Err(err) => return Err(err),
+            Ok(symbol_data) => Ok(InterfaceSymbolData(symbol_data)),
+            Err(err) => Err(err),
         }
     }
 }
