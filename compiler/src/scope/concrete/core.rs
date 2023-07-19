@@ -1,6 +1,5 @@
 use std::cell::Ref;
 use std::cell::RefMut;
-
 use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::SymbolData;
 use crate::types::core::Type;
