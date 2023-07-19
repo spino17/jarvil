@@ -47,7 +47,7 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::vec;
+use std::{option, vec};
 use text_size::TextRange;
 
 pub enum ResolveResult {
@@ -504,6 +504,7 @@ impl Resolver {
         }
     }
 
+    /*
     fn generic_type_decls_to_concrete_types_tuple(
         &self,
         generic_type_decls: &Option<GenericTypeParams>,
@@ -527,27 +528,13 @@ impl Resolver {
             }
             None => return None,
         }
-    }
-
-    fn is_already_a_method(
-        methods: &FxHashMap<String, (CallableData, TextRange)>,
-        class_methods: &FxHashMap<String, (CallableData, TextRange)>,
-        name: &str,
-    ) -> Option<TextRange> {
-        match methods.get(name) {
-            Some((_, previous_decl_range)) => return Some(*previous_decl_range),
-            None => match class_methods.get(name) {
-                Some((_, previous_decl_range)) => return Some(*previous_decl_range),
-                None => return None,
-            },
-        }
-    }
+    }*/
 
     fn declare_angle_bracket_content_from_identifier_in_decl(
         &mut self,
         ok_identifier_in_decl: &OkIdentifierInDeclNode,
         decl_place_category: GenericTypeDeclarationPlaceCategory,
-    ) -> Option<GenericTypeParams> {
+    ) -> (Option<GenericTypeParams>, Option<Vec<Type>>) {
         match &ok_identifier_in_decl.core_ref().generic_type_decls {
             Some((_, generic_type_decls, _)) => {
                 let mut generic_type_params_vec: Vec<(Vec<InterfaceObject>, TextRange)> = vec![];
@@ -595,7 +582,8 @@ impl Resolver {
                                     symbol_data.get_entry(),
                                 );
                                 generic_type_params_vec
-                                    .push((interface_bounds_vec, ok_identifier_in_decl.range()))
+                                    .push((interface_bounds_vec, ok_identifier_in_decl.range()));
+                                concrete_types.push(Type::new_with_generic(&symbol_data.0))
                             }
                             Err((param_name, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -610,9 +598,26 @@ impl Resolver {
                         }
                     }
                 }
-                return Some(GenericTypeParams(generic_type_params_vec));
+                return (
+                    Some((GenericTypeParams(generic_type_params_vec))),
+                    Some(concrete_types),
+                );
             }
-            None => return None,
+            None => return (None, None),
+        }
+    }
+
+    fn is_already_a_method(
+        methods: &FxHashMap<String, (CallableData, TextRange)>,
+        class_methods: &FxHashMap<String, (CallableData, TextRange)>,
+        name: &str,
+    ) -> Option<TextRange> {
+        match methods.get(name) {
+            Some((_, previous_decl_range)) => return Some(*previous_decl_range),
+            None => match class_methods.get(name) {
+                Some((_, previous_decl_range)) => return Some(*previous_decl_range),
+                None => return None,
+            },
         }
     }
 
@@ -730,10 +735,13 @@ impl Resolver {
         self.open_block();
         // TODO - set generic types from `generic_type_decls` to the scope
         let generic_type_decls = match optional_identifier_in_decl {
-            Some(ok_identifier) => self.declare_angle_bracket_content_from_identifier_in_decl(
-                ok_identifier,
-                GenericTypeDeclarationPlaceCategory::InCallable,
-            ),
+            Some(ok_identifier) => {
+                self.declare_angle_bracket_content_from_identifier_in_decl(
+                    ok_identifier,
+                    GenericTypeDeclarationPlaceCategory::InCallable,
+                )
+                .0
+            }
             None => None,
         };
         let (param_types_vec, return_type, return_type_range, is_concretization_required) =
@@ -890,9 +898,9 @@ impl Resolver {
         let func_name = &core_func_decl.name;
         let body = &core_func_decl.body;
         // let mut generic_type_decls: Option<GenericTypeParams> = None;
-        let optional_ok_identifier_node = None;
+        let mut optional_ok_identifier_node = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
-            let optional_ok_identifier_node = Some(ok_identifier);
+            optional_ok_identifier_node = Some(ok_identifier);
             let name = ok_identifier.token_value(&self.code);
             if self.is_function_in_non_locals(&name) {
                 let err = IdentifierFoundInNonLocalsError::new(
@@ -952,52 +960,79 @@ impl Resolver {
         let core_struct_decl = struct_decl.core_ref();
         let struct_body = &core_struct_decl.block;
         // let mut generic_type_decls: Option<GenericTypeParams> = None;
-        let optional_ok_identifier_node = None;
-        let (struct_type_obj, struct_name) = match core_struct_decl.name.core_ref() {
+        let mut optional_ok_identifier_node = None;
+        let struct_name = match core_struct_decl.name.core_ref() {
             CoreIdentifierInDeclNode::Ok(ok_identifier) => {
                 optional_ok_identifier_node = Some(ok_identifier);
-                let temp_struct_type_obj =
-                    match self.try_declare_and_bind_struct_type(ok_identifier) {
-                        Err((name, previous_decl_range)) => {
-                            let err = IdentifierAlreadyDeclaredError::new(
-                                IdentKind::Type,
-                                name.to_string(),
-                                previous_decl_range,
-                                ok_identifier.range(),
-                            );
-                            self.errors
-                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                            Type::new_with_unknown()
-                        }
-                        Ok(_) => {
-                            // generic_type_decls = local_generic_type_decls;
-                            match self
-                                .namespace_handler
-                                .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
-                            {
-                                Some(symbol_data) => {
-                                    let name = ok_identifier.token_value(&self.code);
-                                    let concrete_types = self
-                                        .generic_type_decls_to_concrete_types_tuple(
-                                            &generic_type_decls,
-                                            GenericTypeDeclarationPlaceCategory::InStruct,
-                                        );
-                                    let index =
-                                        symbol_data.register_concrete_types(concrete_types, true);
-                                    Type::new_with_struct(name, &symbol_data, index, true)
-                                }
-                                None => unreachable!(),
+                if let Err((name, previous_decl_range)) =
+                    self.try_declare_and_bind_struct_type(ok_identifier)
+                {
+                    /*
+                    Err((name, previous_decl_range)) => {
+
+                    }
+                    Ok(_) => {
+                        // generic_type_decls = local_generic_type_decls;
+                        /*
+                        match self
+                            .namespace_handler
+                            .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
+                        {
+                            Some(symbol_data) => {
+                                let name = ok_identifier.token_value(&self.code);
+                                let concrete_types = self
+                                    .generic_type_decls_to_concrete_types_tuple(
+                                        &generic_type_decls,
+                                        GenericTypeDeclarationPlaceCategory::InStruct,
+                                    );
+                                let index =
+                                    symbol_data.register_concrete_types(concrete_types, true);
+                                Type::new_with_struct(name, &symbol_data, index, true)
                             }
-                        }
-                    };
-                (
-                    temp_struct_type_obj,
-                    Some(ok_identifier.token_value(&self.code)),
-                )
+                            None => unreachable!(),
+                        }*/
+                        todo!()
+                    }*/
+                    let err = IdentifierAlreadyDeclaredError::new(
+                        IdentKind::Type,
+                        name.to_string(),
+                        previous_decl_range,
+                        ok_identifier.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                    // Type::new_with_unknown()
+                }
+                Some(ok_identifier.token_value(&self.code))
             }
-            _ => (Type::new_with_unknown(), None),
+            _ => None,
         };
         self.open_block();
+        // TODO - add `generic_type_decls` also into the scope
+        let (struct_generic_type_decls, concrete_types) = match optional_ok_identifier_node {
+            Some(ok_identifier) => self.declare_angle_bracket_content_from_identifier_in_decl(
+                ok_identifier,
+                GenericTypeDeclarationPlaceCategory::InStruct,
+            ),
+            None => (None, None),
+        };
+
+        let struct_type_obj = match optional_ok_identifier_node {
+            Some(ok_identifier) => {
+                match self
+                    .namespace_handler
+                    .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
+                {
+                    Some(symbol_data) => {
+                        let name = ok_identifier.token_value(&self.code);
+                        let index = symbol_data.register_concrete_types(concrete_types, true);
+                        Type::new_with_struct(name, &symbol_data, index, true)
+                    }
+                    None => unreachable!(),
+                }
+            }
+            None => Type::new_with_unknown(),
+        };
         let result = self.namespace_handler.namespace.declare_variable_with_type(
             self.scope_index,
             "self".to_string(),
@@ -1005,14 +1040,7 @@ impl Resolver {
             core_struct_decl.name.range(),
             true,
         );
-        // TODO - add `generic_type_decls` also into the scope
         assert!(result.is_ok());
-        if let Some(ok_identifier) = optional_ok_identifier_node {
-            self.declare_angle_bracket_content_from_identifier_in_decl(
-                ok_identifier,
-                GenericTypeDeclarationPlaceCategory::InStruct,
-            );
-        }
 
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let mut constructor: Option<(CallableData, TextRange)> = None;
@@ -1055,21 +1083,19 @@ impl Resolver {
                     self.set_curr_class_context_is_containing_self(false);
                     let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
                     let mut is_constructor = false;
-                    let mut generic_type_decls: Option<GenericTypeParams> = None;
+                    // let mut generic_type_decls: Option<GenericTypeParams> = None;
+                    let mut optional_ok_identifier_node = None;
                     if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
-                        generic_type_decls = self
-                            .extract_angle_bracket_content_from_identifier_in_decl(
-                                ok_bounded_method_name,
-                            );
+                        //generic_type_decls = self
+                        //    .extract_angle_bracket_content_from_identifier_in_decl(
+                        //        ok_bounded_method_name,
+                        //    );
+                        optional_ok_identifier_node = Some(ok_bounded_method_name);
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") && constructor.is_none() {
                             is_constructor = true;
-                            if generic_type_decls.is_some() {
-                                // TODO - raise error `generic type parameters not allowed in constructor declaration`
-                                generic_type_decls = None;
-                            }
                         }
                     }
                     let (
@@ -1077,6 +1103,7 @@ impl Resolver {
                         return_type,
                         return_type_range,
                         is_concretization_required,
+                        method_generic_type_decls,
                     ) = if is_constructor {
                         let (
                             param_types_vec,
@@ -1091,9 +1118,10 @@ impl Resolver {
                             return_type,
                             return_type_range,
                             is_concretization_required,
+                            None,
                         )
                     } else {
-                        self.visit_callable_body(&core_func_decl.body, &generic_type_decls)
+                        self.visit_callable_body(&core_func_decl.body, optional_ok_identifier_node)
                     };
                     if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
@@ -1103,7 +1131,7 @@ impl Resolver {
                             return_type.clone(),
                             CallableKind::Method,
                             is_concretization_required,
-                            generic_type_decls,
+                            method_generic_type_decls,
                         );
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") {
@@ -1258,7 +1286,7 @@ impl Resolver {
                         constructor,
                         methods,
                         class_methods,
-                        generic_type_decls,
+                        struct_generic_type_decls,
                         None,
                     );
             }
@@ -1269,22 +1297,31 @@ impl Resolver {
     pub fn declare_interface(&mut self, interface_decl: &InterfaceDeclarationNode) {
         let core_interface_decl = interface_decl.core_ref();
         let name = &core_interface_decl.name;
-        let mut generic_type_decls: Option<GenericTypeParams> = None;
+        // let mut generic_type_decls: Option<GenericTypeParams> = None;
+        let mut optional_ok_identifier_in_decl = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
+            optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
             // setting the interface first in scope enables the generic type declaration to use this interface
             // having recursive referencing
-            match self.try_declare_and_bind_interface(&ok_identifier_in_decl) {
-                Ok(local_generic_type_decls) => {
-                    generic_type_decls = local_generic_type_decls;
-                }
-                Err((_, previous_decl_range)) => {
-                    // TODO - raise error `Already Declared`
-                    todo!()
-                }
+            if let Err((_, previous_decl_range)) =
+                self.try_declare_and_bind_interface(&ok_identifier_in_decl)
+            {
+                // TODO - raise error `Already Declared`
+                todo!()
             }
         }
         let body = &core_interface_decl.block;
         self.open_block();
+        let generic_type_decls = match optional_ok_identifier_in_decl {
+            Some(ok_identifier) => {
+                self.declare_angle_bracket_content_from_identifier_in_decl(
+                    ok_identifier,
+                    GenericTypeDeclarationPlaceCategory::InStruct,
+                )
+                .0
+            }
+            None => None,
+        };
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         // traverse the body
@@ -1346,8 +1383,12 @@ impl Resolver {
         let mut generic_type_decls: Option<GenericTypeParams> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
-            generic_type_decls =
-                self.extract_angle_bracket_content_from_identifier_in_decl(ok_identifier);
+            generic_type_decls = self
+                .declare_angle_bracket_content_from_identifier_in_decl(
+                    ok_identifier,
+                    GenericTypeDeclarationPlaceCategory::InCallable,
+                )
+                .0;
             let result = self
                 .namespace_handler
                 .namespace

@@ -118,7 +118,7 @@ impl AbstractSymbolData for FunctionSymbolData {
 }
 
 #[derive(Debug)]
-pub struct UserDefinedTypeSymbolData(SymbolData<UserDefinedTypeData>);
+pub struct UserDefinedTypeSymbolData(pub SymbolData<UserDefinedTypeData>);
 
 impl AbstractSymbolData for UserDefinedTypeSymbolData {
     fn get_entry(&self) -> SymbolDataEntry {
