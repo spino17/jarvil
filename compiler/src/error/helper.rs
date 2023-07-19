@@ -11,6 +11,7 @@ pub enum IdentifierKind {
     Field,
     Method,
     Constructor,
+    Interface,
 }
 
 impl Display for IdentifierKind {
@@ -23,6 +24,7 @@ impl Display for IdentifierKind {
             IdentifierKind::Field => write!(f, "field"),
             IdentifierKind::Method => write!(f, "method"),
             IdentifierKind::Constructor => write!(f, "constructor"),
+            IdentifierKind::Interface => write!(f, "interface"),
         }
     }
 }
