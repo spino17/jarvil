@@ -353,8 +353,6 @@ impl Resolver {
         match result {
             Ok(symbol_data) => {
                 self.bind_decl_to_identifier_in_decl(identifier, symbol_data.get_entry());
-                //let generic_type_decls =
-                //    self.extract_angle_bracket_content_from_identifier_in_decl(identifier);
                 Ok(())
             }
             Err(err) => Err(err),
@@ -504,32 +502,6 @@ impl Resolver {
         }
     }
 
-    /*
-    fn generic_type_decls_to_concrete_types_tuple(
-        &self,
-        generic_type_decls: &Option<GenericTypeParams>,
-        decl_place_category: GenericTypeDeclarationPlaceCategory,
-    ) -> Option<Vec<Type>> {
-        match generic_type_decls {
-            Some(generic_type_decls) => {
-                let mut concrete_types_tuple: Vec<Type> = vec![];
-                for (index, (interface_objects, decl_range)) in
-                    generic_type_decls.0.iter().enumerate()
-                {
-                    let meta_data = UserDefinedTypeData::Generic(GenericTypeData::new(
-                        index,
-                        decl_place_category,
-                        interface_objects.clone(),
-                    ));
-                    let symbol_data = SymbolData::new(meta_data, *decl_range, true);
-                    concrete_types_tuple.push(Type::new_with_generic(&symbol_data));
-                }
-                return Some(concrete_types_tuple);
-            }
-            None => return None,
-        }
-    }*/
-
     fn declare_angle_bracket_content_from_identifier_in_decl(
         &mut self,
         ok_identifier_in_decl: &OkIdentifierInDeclNode,
@@ -599,7 +571,7 @@ impl Resolver {
                     }
                 }
                 return (
-                    Some((GenericTypeParams(generic_type_params_vec))),
+                    Some(GenericTypeParams(generic_type_params_vec)),
                     Some(concrete_types),
                 );
             }
@@ -733,7 +705,6 @@ impl Resolver {
         let core_callable_body = callable_body.core_ref();
         let callable_body = &core_callable_body.block;
         self.open_block();
-        // TODO - set generic types from `generic_type_decls` to the scope
         let generic_type_decls = match optional_identifier_in_decl {
             Some(ok_identifier) => {
                 self.declare_angle_bracket_content_from_identifier_in_decl(
@@ -914,13 +885,6 @@ impl Resolver {
                 self.errors
                     .push(Diagnostics::BuiltinFunctionNameOverlap(err));
             } else {
-                /*
-                match self.try_declare_and_bind_function(ok_identifier) {
-                    Ok(local_generic_type_decls) => generic_type_decls = local_generic_type_decls,
-                    Err((name, previous_decl_range)) => {
-
-                    }
-                }*/
                 if let Err((name, previous_decl_range)) =
                     self.try_declare_and_bind_function(ok_identifier)
                 {
@@ -967,32 +931,6 @@ impl Resolver {
                 if let Err((name, previous_decl_range)) =
                     self.try_declare_and_bind_struct_type(ok_identifier)
                 {
-                    /*
-                    Err((name, previous_decl_range)) => {
-
-                    }
-                    Ok(_) => {
-                        // generic_type_decls = local_generic_type_decls;
-                        /*
-                        match self
-                            .namespace_handler
-                            .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
-                        {
-                            Some(symbol_data) => {
-                                let name = ok_identifier.token_value(&self.code);
-                                let concrete_types = self
-                                    .generic_type_decls_to_concrete_types_tuple(
-                                        &generic_type_decls,
-                                        GenericTypeDeclarationPlaceCategory::InStruct,
-                                    );
-                                let index =
-                                    symbol_data.register_concrete_types(concrete_types, true);
-                                Type::new_with_struct(name, &symbol_data, index, true)
-                            }
-                            None => unreachable!(),
-                        }*/
-                        todo!()
-                    }*/
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::Type,
                         name.to_string(),
@@ -1001,25 +939,19 @@ impl Resolver {
                     );
                     self.errors
                         .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                    // Type::new_with_unknown()
                 }
                 Some(ok_identifier.token_value(&self.code))
             }
             _ => None,
         };
         self.open_block();
-        // TODO - add `generic_type_decls` also into the scope
-        let (struct_generic_type_decls, concrete_types) = match optional_ok_identifier_node {
-            Some(ok_identifier) => self.declare_angle_bracket_content_from_identifier_in_decl(
-                ok_identifier,
-                GenericTypeDeclarationPlaceCategory::InStruct,
-            ),
-            None => (None, None),
-        };
-
-        let struct_type_obj = match optional_ok_identifier_node {
+        let (struct_generic_type_decls, struct_ty) = match optional_ok_identifier_node {
             Some(ok_identifier) => {
-                match self
+                let (struct_generic_type_decls, concrete_types) = self.declare_angle_bracket_content_from_identifier_in_decl(
+                    ok_identifier,
+                    GenericTypeDeclarationPlaceCategory::InStruct,
+                );
+                let struct_ty = match self
                     .namespace_handler
                     .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
                 {
@@ -1029,14 +961,16 @@ impl Resolver {
                         Type::new_with_struct(name, &symbol_data, index, true)
                     }
                     None => unreachable!(),
-                }
+                };
+                (struct_generic_type_decls, struct_ty)
             }
-            None => Type::new_with_unknown(),
+            None => (None, Type::new_with_unknown()),
         };
+
         let result = self.namespace_handler.namespace.declare_variable_with_type(
             self.scope_index,
             "self".to_string(),
-            &struct_type_obj,
+            &struct_ty,
             core_struct_decl.name.range(),
             true,
         );
@@ -1083,19 +1017,17 @@ impl Resolver {
                     self.set_curr_class_context_is_containing_self(false);
                     let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
                     let mut is_constructor = false;
-                    // let mut generic_type_decls: Option<GenericTypeParams> = None;
                     let mut optional_ok_identifier_node = None;
                     if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
-                        //generic_type_decls = self
-                        //    .extract_angle_bracket_content_from_identifier_in_decl(
-                        //        ok_bounded_method_name,
-                        //    );
                         optional_ok_identifier_node = Some(ok_bounded_method_name);
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") && constructor.is_none() {
                             is_constructor = true;
+                            if ok_bounded_method_name.core_ref().generic_type_decls.is_some() {
+                                // TODO - raise error `Generic type declarations are not allowed in constructor`
+                            }
                         }
                     }
                     let (
@@ -1147,6 +1079,7 @@ impl Resolver {
                                         .push(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
                                 None => {
+                                    // TODO - change this condition
                                     match return_type_range {
                                         Some(return_type_range) => match return_type.0.as_ref() {
                                             CoreType::Struct(struct_data) => {
