@@ -19,7 +19,7 @@ pub enum Diagnostics {
     IdentifierFoundInNonLocals(IdentifierFoundInNonLocalsError),
     IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
-    VoidConstructorReturnType(VoidConstructorReturnTypeError),
+    NonVoidConstructorReturnType(NonVoidConstructorReturnTypeError),
     NonStructConstructorReturnType(NonStructConstructorReturnTypeError),
     MismatchedConstructorReturnType(MismatchedConstructorReturnTypeError),
     SelfNotFound(SelfNotFoundError),
@@ -80,7 +80,7 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::VoidConstructorReturnType(diagonstic) => Report::new(diagonstic.clone()),
+            Diagnostics::NonVoidConstructorReturnType(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::NonStructConstructorReturnType(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
@@ -309,21 +309,21 @@ impl InvalidLValueError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("void constructor return-type")]
+#[error("return-type in constructor declaration found")]
 #[diagnostic(code("SemanticError"))]
-pub struct VoidConstructorReturnTypeError {
-    #[label("constructor cannot have a void return-type")]
+pub struct NonVoidConstructorReturnTypeError {
+    #[label("constructor cannot have a return-type")]
     pub span: SourceSpan,
     #[help]
     pub help: Option<String>, // any value derived from a function call is not assignable
 }
 
-impl VoidConstructorReturnTypeError {
+impl NonVoidConstructorReturnTypeError {
     pub fn new(range: TextRange) -> Self {
-        VoidConstructorReturnTypeError {
+        NonVoidConstructorReturnTypeError {
             span: range_to_span(range).into(),
             help: Some(
-                "constructor should have return-type same as the struct it is defined in"
+                "constructor should not have any return-type"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),

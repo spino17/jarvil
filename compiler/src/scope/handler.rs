@@ -1,6 +1,6 @@
 use super::{
     concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
-    core::{AbstractConcreteTypesHandler, Namespace, SymbolData},
+    core::{Namespace, SymbolData},
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,

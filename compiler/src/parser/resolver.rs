@@ -9,24 +9,22 @@ use crate::error::diagnostics::{
     BuiltinFunctionNameOverlapError, ConstructorNotFoundInsideStructDeclarationError,
     FieldsNotInitializedInConstructorError, IdentifierFoundInNonLocalsError,
     IdentifierNotFoundInAnyNamespaceError, MainFunctionNotFoundError, MainFunctionWrongTypeError,
-    MismatchedConstructorReturnTypeError, MoreThanMaxLimitParamsPassedError,
-    NonHashableTypeInIndexError, NonStructConstructorReturnTypeError, SelfNotFoundError,
-    VariableReferencedBeforeAssignmentError, VoidConstructorReturnTypeError,
+    MoreThanMaxLimitParamsPassedError,
+    NonHashableTypeInIndexError,
+    NonVoidConstructorReturnTypeError, SelfNotFoundError, VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
-use crate::scope::concrete;
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::{
-    AbstractConcreteTypesHandler, AbstractSymbolData, GenericTypeParams, VariableLookupResult,
+    AbstractSymbolData, GenericTypeParams, VariableLookupResult,
 };
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{
-    ConcreteSymbolDataEntry, IdentifierKind, NamespaceHandler, SymbolDataEntry,
+    ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry,
 };
 use crate::scope::interfaces::InterfaceObject;
-use crate::scope::types::core::UserDefinedTypeData;
-use crate::scope::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
+use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::CoreType;
 use crate::{
     ast::{
@@ -47,7 +45,7 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::{option, vec};
+use std::vec;
 use text_size::TextRange;
 
 pub enum ResolveResult {
@@ -925,9 +923,8 @@ impl Resolver {
         let struct_body = &core_struct_decl.block;
         // let mut generic_type_decls: Option<GenericTypeParams> = None;
         let mut optional_ok_identifier_node = None;
-        let struct_name = match core_struct_decl.name.core_ref() {
-            CoreIdentifierInDeclNode::Ok(ok_identifier) => {
-                optional_ok_identifier_node = Some(ok_identifier);
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
+            optional_ok_identifier_node = Some(ok_identifier);
                 if let Err((name, previous_decl_range)) =
                     self.try_declare_and_bind_struct_type(ok_identifier)
                 {
@@ -940,17 +937,15 @@ impl Resolver {
                     self.errors
                         .push(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
-                Some(ok_identifier.token_value(&self.code))
-            }
-            _ => None,
         };
         self.open_block();
         let (struct_generic_type_decls, struct_ty) = match optional_ok_identifier_node {
             Some(ok_identifier) => {
-                let (struct_generic_type_decls, concrete_types) = self.declare_angle_bracket_content_from_identifier_in_decl(
-                    ok_identifier,
-                    GenericTypeDeclarationPlaceCategory::InStruct,
-                );
+                let (struct_generic_type_decls, concrete_types) = self
+                    .declare_angle_bracket_content_from_identifier_in_decl(
+                        ok_identifier,
+                        GenericTypeDeclarationPlaceCategory::InStruct,
+                    );
                 let struct_ty = match self
                     .namespace_handler
                     .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
@@ -1025,7 +1020,11 @@ impl Resolver {
                         let method_name_str = ok_bounded_method_name.token_value(&self.code);
                         if method_name_str.eq("__init__") && constructor.is_none() {
                             is_constructor = true;
-                            if ok_bounded_method_name.core_ref().generic_type_decls.is_some() {
+                            if ok_bounded_method_name
+                                .core_ref()
+                                .generic_type_decls
+                                .is_some()
+                            {
                                 // TODO - raise error `Generic type declarations are not allowed in constructor`
                             }
                         }
@@ -1079,39 +1078,12 @@ impl Resolver {
                                         .push(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
                                 None => {
-                                    // TODO - change this condition
-                                    match return_type_range {
-                                        Some(return_type_range) => match return_type.0.as_ref() {
-                                            CoreType::Struct(struct_data) => {
-                                                if let Some(struct_name) = &struct_name {
-                                                    if !struct_data.name.eq(struct_name) {
-                                                        let err = MismatchedConstructorReturnTypeError::new(
-                                                                struct_name.to_string(),
-                                                                return_type_range
-                                                        );
-                                                        self.errors.push(Diagnostics::MismatchedConstructorReturnType(err));
-                                                    }
-                                                }
-                                            }
-                                            CoreType::Void => unreachable!(),
-                                            _ => {
-                                                let err = NonStructConstructorReturnTypeError::new(
-                                                    return_type_range,
-                                                );
-                                                self.errors.push(
-                                                    Diagnostics::NonStructConstructorReturnType(
-                                                        err,
-                                                    ),
-                                                );
-                                            }
-                                        },
-                                        None => {
-                                            let err = VoidConstructorReturnTypeError::new(
-                                                ok_bounded_method_name.range(),
-                                            );
-                                            self.errors
-                                                .push(Diagnostics::VoidConstructorReturnType(err));
-                                        }
+                                    if let Some(return_type_range) = return_type_range {
+                                        let err = NonVoidConstructorReturnTypeError::new(
+                                            return_type_range
+                                        );
+                                        self.errors
+                                            .push(Diagnostics::NonVoidConstructorReturnType(err));
                                     }
                                     constructor =
                                         Some((func_meta_data, ok_bounded_method_name.range()));
