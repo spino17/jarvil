@@ -7,6 +7,7 @@ use crate::ast::ast::{
     OkIdentifierInDeclNode, OkIdentifierInUseNode,
 };
 use crate::scope::handler::ConcreteSymbolDataEntry;
+use crate::types::core::AbstractNonStructTypes;
 use crate::types::lambda::Lambda;
 use crate::{
     ast::{
@@ -821,14 +822,59 @@ impl TypeChecker {
                             }
                         }
                         StructPropertyCheckResult::NonStructType => {
-                            let err = PropertyDoesNotExistError::new(
-                                PropertyKind::Method,
-                                atom_type_obj.to_string(),
-                                method.range(),
-                                atom.range(),
-                            );
-                            self.log_error(Diagnostics::PropertyDoesNotExist(err));
-                            return (Type::new_with_unknown(), Some(atom_type_obj));
+                            // TODO - check if the type has inbuilt method like array or hashmap
+                            let result: Result<CallablePrototypeData, ()> = match &atom_type_obj
+                                .0
+                                .as_ref()
+                            {
+                                CoreType::Array(array) => match array.try_method(&method_name) {
+                                    Some(prototype) => Ok(prototype),
+                                    None => Err(()),
+                                },
+                                CoreType::HashMap(hashmap) => {
+                                    match hashmap.try_method(&method_name) {
+                                        Some(prototype) => Ok(prototype),
+                                        None => Err(()),
+                                    }
+                                }
+                                _ => Err(()),
+                            };
+                            match result {
+                                Ok(prototype) => {
+                                    let expected_params = &prototype.params;
+                                    let return_type = &prototype.return_type;
+                                    let result =
+                                        self.check_params_type_and_count(expected_params, params);
+                                    match result {
+                                        ParamsTypeNCountResult::Ok => {
+                                            return (
+                                                return_type.clone(),
+                                                Some(atom_type_obj.clone()),
+                                            )
+                                        }
+                                        _ => {
+                                            self.log_params_type_and_count_check_error(
+                                                method.range(),
+                                                result,
+                                            );
+                                            return (
+                                                Type::new_with_unknown(),
+                                                Some(atom_type_obj.clone()),
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(_) => {
+                                    let err = PropertyDoesNotExistError::new(
+                                        PropertyKind::Method,
+                                        atom_type_obj.to_string(),
+                                        method.range(),
+                                        atom.range(),
+                                    );
+                                    self.log_error(Diagnostics::PropertyDoesNotExist(err));
+                                    return (Type::new_with_unknown(), Some(atom_type_obj));
+                                }
+                            }
                         }
                     }
                 }
