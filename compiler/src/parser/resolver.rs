@@ -15,7 +15,10 @@ use crate::error::diagnostics::{
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
-use crate::scope::core::{AbstractSymbolData, GenericTypeParams, VariableLookupResult, VariableSymbolData, FunctionSymbolData, UserDefinedTypeSymbolData, InterfaceSymbolData};
+use crate::scope::core::{
+    AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData,
+    UserDefinedTypeSymbolData, VariableLookupResult, VariableSymbolData,
+};
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
 use crate::scope::interfaces::InterfaceObject;
@@ -834,9 +837,9 @@ impl Resolver {
                 ));
                 if let Some(symbol_data) = &symbol_data {
                     symbol_data
-                            .0
-                            .get_core_mut_ref()
-                            .set_data_type(&lambda_type_obj);
+                        .0
+                        .get_core_mut_ref()
+                        .set_data_type(&lambda_type_obj);
                 }
             }
             CoreRVariableDeclarationNode::Expression(expr_r_assign) => {
@@ -870,9 +873,7 @@ impl Resolver {
                     .push(Diagnostics::BuiltinFunctionNameOverlap(err));
             } else {
                 match self.try_declare_and_bind_function(ok_identifier) {
-                    Ok(local_symbol_data) => {
-                        symbol_data = Some(local_symbol_data)
-                    }
+                    Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
                     Err((name, previous_decl_range)) => {
                         let err = IdentifierAlreadyDeclaredError::new(
                             IdentKind::Function,
@@ -1283,9 +1284,7 @@ impl Resolver {
             // setting the interface first in scope enables the generic type declaration to use this interface
             // having recursive referencing
             match self.try_declare_and_bind_interface(ok_identifier_in_decl) {
-                Ok(local_symbol_data) => {
-                    symbol_data = Some(local_symbol_data)
-                }
+                Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
                 Err((name, previous_decl_range)) => {
                     // TODO - raise error `Already Declared`
                     todo!()
@@ -1310,11 +1309,10 @@ impl Resolver {
         // ensure that the method name is not `__init__` etc.
         self.close_block(body);
         if let Some(symbol_data) = &symbol_data {
-            symbol_data.0.get_core_mut_ref().set_meta_data(
-                fields_map,
-                methods,
-                generic_type_decls,
-            );
+            symbol_data
+                .0
+                .get_core_mut_ref()
+                .set_meta_data(fields_map, methods, generic_type_decls);
         }
     }
 }

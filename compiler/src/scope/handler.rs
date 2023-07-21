@@ -54,7 +54,7 @@ impl SymbolDataEntry {
     pub fn is_variable(&self) -> bool {
         match self {
             SymbolDataEntry::Variable(_) => true,
-            _ => false
+            _ => false,
         }
     }
 }

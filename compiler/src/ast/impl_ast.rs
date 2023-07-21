@@ -1229,41 +1229,34 @@ impl UserDefinedTypeNode {
     ) -> TypeResolveKind {
         if let CoreIdentifierInUseNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(code);
-            match namespace_handler.get_symbol_data_for_identifier_in_use(ok_identifier) {
-                Some(symbol_data) => match symbol_data {
-                    ConcreteSymbolDataEntry::Type(concrete_symbol_data) => {
-                        let index = concrete_symbol_data.index;
-                        let symbol_data = &concrete_symbol_data.symbol_data;
-                        let has_generics = symbol_data.is_generics_present_in_tuple_at_index(index);
-                        match &*concrete_symbol_data.get_core_ref() {
-                            UserDefinedTypeData::Struct(_) => {
-                                return TypeResolveKind::Resolved(Type::new_with_struct(
-                                    name,
-                                    symbol_data,
-                                    index,
-                                    has_generics,
-                                ));
-                            }
-                            UserDefinedTypeData::Lambda(_) => {
-                                return TypeResolveKind::Resolved(Type::new_with_lambda_named(
-                                    name,
-                                    symbol_data,
-                                    index,
-                                    has_generics,
-                                ));
-                            }
-                            UserDefinedTypeData::Generic(_) => {
-                                assert!(index.is_none());
-                                return TypeResolveKind::Resolved(Type::new_with_generic(
-                                    symbol_data,
-                                ));
-                            }
+            match namespace_handler.get_type_symbol_data_for_identifier_in_use(ok_identifier) {
+                Some(concrete_symbol_data) => {
+                    let index = concrete_symbol_data.index;
+                    let symbol_data = &concrete_symbol_data.symbol_data;
+                    let has_generics = symbol_data.is_generics_present_in_tuple_at_index(index);
+                    match &*concrete_symbol_data.get_core_ref() {
+                        UserDefinedTypeData::Struct(_) => {
+                            return TypeResolveKind::Resolved(Type::new_with_struct(
+                                name,
+                                symbol_data,
+                                index,
+                                has_generics,
+                            ));
+                        }
+                        UserDefinedTypeData::Lambda(_) => {
+                            return TypeResolveKind::Resolved(Type::new_with_lambda_named(
+                                name,
+                                symbol_data,
+                                index,
+                                has_generics,
+                            ));
+                        }
+                        UserDefinedTypeData::Generic(_) => {
+                            assert!(index.is_none());
+                            return TypeResolveKind::Resolved(Type::new_with_generic(symbol_data));
                         }
                     }
-                    ConcreteSymbolDataEntry::Function(_)
-                    | ConcreteSymbolDataEntry::Variable(_)
-                    | ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
-                },
+                }
                 None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
             }
         }
