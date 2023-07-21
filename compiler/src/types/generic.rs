@@ -41,20 +41,6 @@ impl AbstractType for Generic {
                     }
                 }
                 return true;
-                /*
-                match &*self.semantic_data.0 .0.as_ref().borrow() {
-                    UserDefinedTypeData::Generic(self_generic_data_ref) => {
-                        match &*base_generic_data.semantic_data.0 .0.as_ref().borrow() {
-                            // The generic types equivalence is computed structurally by checking if both
-                            // are bounded by the same set of interfaces
-                            UserDefinedTypeData::Generic(base_generic_data_ref) => {
-
-                            }
-                            _ => unreachable!(),
-                        }
-                    }
-                    _ => unreachable!(),
-                }*/
             }
             CoreType::Any => true,
             _ => false,

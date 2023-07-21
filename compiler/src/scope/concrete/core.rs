@@ -1,8 +1,8 @@
-use std::cell::Ref;
-use std::cell::RefMut;
 use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::SymbolData;
 use crate::types::core::Type;
+use std::cell::Ref;
+use std::cell::RefMut;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ConcreteTypesRegistryKey(pub usize);

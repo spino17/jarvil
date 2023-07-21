@@ -19,6 +19,10 @@ impl GenericTypeData {
             interface_bounds,
         }
     }
+
+    pub fn get_index(&self) -> usize {
+        self.index
+    }
 }
 
 #[derive(Debug, Copy, Clone)]

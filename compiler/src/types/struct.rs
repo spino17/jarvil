@@ -54,42 +54,6 @@ impl AbstractType for Struct {
                                     }
                                 }
                                 return true;
-                                /*
-                                match &*self.semantic_data.symbol_data.0 .0.as_ref().borrow() {
-                                    UserDefinedTypeData::Struct(self_struct_data) => {
-                                        match &*struct_data
-                                            .semantic_data
-                                            .symbol_data
-                                            .0
-                                             .0
-                                            .as_ref()
-                                            .borrow()
-                                        {
-                                            UserDefinedTypeData::Struct(other_struct_data) => {
-                                                let self_concrete_types = &self_struct_data
-                                                    .get_concrete_types(self_key)
-                                                    .0;
-                                                let other_concrete_types = &other_struct_data
-                                                    .get_concrete_types(other_key)
-                                                    .0;
-                                                let self_len = self_concrete_types.len();
-                                                let other_len = other_concrete_types.len();
-                                                assert!(self_len == other_len);
-                                                for i in 0..self_len {
-                                                    if !self_concrete_types[i]
-                                                        .is_eq(&other_concrete_types[i])
-                                                    {
-                                                        return false;
-                                                    }
-                                                }
-                                                return true;
-                                            }
-                                            _ => unreachable!(),
-                                        }
-                                    }
-                                    _ => unreachable!(),
-                                }
-                                 */
                             }
                             None => unreachable!(),
                         },

@@ -80,7 +80,9 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::NonVoidConstructorReturnType(diagonstic) => Report::new(diagonstic.clone()),
+            Diagnostics::NonVoidConstructorReturnType(diagonstic) => {
+                Report::new(diagonstic.clone())
+            }
             Diagnostics::NonStructConstructorReturnType(diagnostic) => {
                 Report::new(diagnostic.clone())
             }

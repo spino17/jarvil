@@ -312,22 +312,6 @@ impl JarvilParser {
         );
     }
 
-    // TODO - this will soon be deprecated (infact the `IdentifierNode` will be gone!)
-    /*
-    pub fn expect_ident(&mut self) -> IdentifierNode {
-        let token = self.curr_token();
-        let symbol = IDENTIFIER;
-        if token.is_eq(symbol) {
-            let ok_token_node = OkTokenNode::new(&token);
-            self.scan_next_token();
-            IdentifierNode::new_with_ok(&ok_token_node)
-        } else {
-            log_missing_token_error(self, &[symbol], &token);
-            IdentifierNode::new_with_missing_tokens(vec![symbol], &token)
-        }
-    }
-     */
-
     pub fn expect_self(&mut self) -> SelfKeywordNode {
         let token = self.curr_token();
         let symbol = SELF;

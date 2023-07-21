@@ -9,20 +9,15 @@ use crate::error::diagnostics::{
     BuiltinFunctionNameOverlapError, ConstructorNotFoundInsideStructDeclarationError,
     FieldsNotInitializedInConstructorError, IdentifierFoundInNonLocalsError,
     IdentifierNotFoundInAnyNamespaceError, MainFunctionNotFoundError, MainFunctionWrongTypeError,
-    MoreThanMaxLimitParamsPassedError,
-    NonHashableTypeInIndexError,
+    MoreThanMaxLimitParamsPassedError, NonHashableTypeInIndexError,
     NonVoidConstructorReturnTypeError, SelfNotFoundError, VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
-use crate::scope::core::{
-    AbstractSymbolData, GenericTypeParams, VariableLookupResult,
-};
+use crate::scope::core::{AbstractSymbolData, GenericTypeParams, VariableLookupResult};
 use crate::scope::function::{CallableKind, CallablePrototypeData};
-use crate::scope::handler::{
-    ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry,
-};
+use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
 use crate::scope::interfaces::InterfaceObject;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::CoreType;
@@ -925,18 +920,18 @@ impl Resolver {
         let mut optional_ok_identifier_node = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
-                if let Err((name, previous_decl_range)) =
-                    self.try_declare_and_bind_struct_type(ok_identifier)
-                {
-                    let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::Type,
-                        name.to_string(),
-                        previous_decl_range,
-                        ok_identifier.range(),
-                    );
-                    self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                }
+            if let Err((name, previous_decl_range)) =
+                self.try_declare_and_bind_struct_type(ok_identifier)
+            {
+                let err = IdentifierAlreadyDeclaredError::new(
+                    IdentKind::Type,
+                    name.to_string(),
+                    previous_decl_range,
+                    ok_identifier.range(),
+                );
+                self.errors
+                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
+            }
         };
         self.open_block();
         let (struct_generic_type_decls, struct_ty) = match optional_ok_identifier_node {
@@ -1080,7 +1075,7 @@ impl Resolver {
                                 None => {
                                     if let Some(return_type_range) = return_type_range {
                                         let err = NonVoidConstructorReturnTypeError::new(
-                                            return_type_range
+                                            return_type_range,
                                         );
                                         self.errors
                                             .push(Diagnostics::NonVoidConstructorReturnType(err));
