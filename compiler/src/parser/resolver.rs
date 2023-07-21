@@ -934,16 +934,13 @@ impl Resolver {
                         ok_identifier,
                         GenericTypeDeclarationPlaceCategory::InStruct,
                     );
-                let struct_ty = match self
-                    .namespace_handler
-                    .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
-                {
+                let struct_ty = match &symbol_data {
                     Some(symbol_data) => {
                         let name = ok_identifier.token_value(&self.code);
-                        let index = symbol_data.register_concrete_types(concrete_types, true);
-                        Type::new_with_struct(name, &symbol_data, index, true)
+                        let index = symbol_data.0.register_concrete_types(concrete_types, true);
+                        Type::new_with_struct(name, &symbol_data.0, index, true)
                     }
-                    None => unreachable!(),
+                    None => Type::new_with_unknown(),
                 };
                 (struct_generic_type_decls, struct_ty)
             }
