@@ -100,7 +100,7 @@ impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
 }
 
 #[derive(Debug)]
-pub struct VariableSymbolData(SymbolData<VariableData>);
+pub struct VariableSymbolData(pub SymbolData<VariableData>);
 
 impl AbstractSymbolData for VariableSymbolData {
     fn get_entry(&self) -> SymbolDataEntry {
@@ -109,7 +109,7 @@ impl AbstractSymbolData for VariableSymbolData {
 }
 
 #[derive(Debug)]
-pub struct FunctionSymbolData(SymbolData<CallableData>);
+pub struct FunctionSymbolData(pub SymbolData<CallableData>);
 
 impl AbstractSymbolData for FunctionSymbolData {
     fn get_entry(&self) -> SymbolDataEntry {
@@ -127,7 +127,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
 }
 
 #[derive(Debug)]
-pub struct InterfaceSymbolData(SymbolData<InterfaceData>);
+pub struct InterfaceSymbolData(pub SymbolData<InterfaceData>);
 
 impl AbstractSymbolData for InterfaceSymbolData {
     fn get_entry(&self) -> SymbolDataEntry {

@@ -15,10 +15,11 @@ use crate::error::diagnostics::{
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
-use crate::scope::core::{AbstractSymbolData, GenericTypeParams, VariableLookupResult};
+use crate::scope::core::{AbstractSymbolData, GenericTypeParams, VariableLookupResult, VariableSymbolData, FunctionSymbolData, UserDefinedTypeSymbolData, InterfaceSymbolData};
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
 use crate::scope::interfaces::InterfaceObject;
+use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::CoreType;
 use crate::{
@@ -228,8 +229,13 @@ impl Resolver {
         symbol_data: SymbolDataEntry,
     ) -> (Option<ConcreteTypesRegistryKey>, bool) {
         // (index to the registry, has_generics)
-        let (concrete_types, has_generics) =
+        let (mut concrete_types, mut has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
+        if concrete_types.is_some() && symbol_data.is_variable() {
+            // TODO - raise error `no generic type arguments expected`
+            concrete_types = None;
+            has_generics = false;
+        }
         let index = symbol_data.register_concrete_types(concrete_types, has_generics);
         let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data, index);
         self.namespace_handler
@@ -335,7 +341,7 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierInDeclNode,
         declare_fn: U,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<T, (String, TextRange)> {
         let name = identifier.token_value(&self.code);
         let result = declare_fn(
             &mut self.namespace_handler.namespace,
@@ -346,7 +352,7 @@ impl Resolver {
         match result {
             Ok(symbol_data) => {
                 self.bind_decl_to_identifier_in_decl(identifier, symbol_data.get_entry());
-                Ok(())
+                Ok(symbol_data)
             }
             Err(err) => Err(err),
         }
@@ -355,7 +361,7 @@ impl Resolver {
     pub fn try_declare_and_bind_variable(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<VariableSymbolData, (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_variable(scope_index, name, decl_range)
@@ -366,7 +372,7 @@ impl Resolver {
     pub fn try_declare_and_bind_function(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<FunctionSymbolData, (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_function(scope_index, name, decl_range)
@@ -377,7 +383,7 @@ impl Resolver {
     pub fn try_declare_and_bind_struct_type(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_struct_type(scope_index, name, decl_range)
@@ -388,7 +394,7 @@ impl Resolver {
     pub fn try_declare_and_bind_interface(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
-    ) -> Result<(), (String, TextRange)> {
+    ) -> Result<InterfaceSymbolData, (String, TextRange)> {
         let declare_fn =
             |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
                 namespace.declare_interface(scope_index, name, decl_range)
@@ -782,6 +788,7 @@ impl Resolver {
 
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
+        let mut symbol_data: Option<VariableSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             let name = ok_identifier.token_value(&self.code);
             if self.is_variable_in_non_locals(&name) {
@@ -792,17 +799,20 @@ impl Resolver {
                 self.errors
                     .push(Diagnostics::IdentifierFoundInNonLocals(err));
             } else {
-                if let Err((name, previous_decl_range)) =
-                    self.try_declare_and_bind_variable(ok_identifier)
-                {
-                    let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::Variable,
-                        name,
-                        previous_decl_range,
-                        ok_identifier.range(),
-                    );
-                    self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                match self.try_declare_and_bind_variable(ok_identifier) {
+                    Ok(local_symbol_data) => {
+                        symbol_data = Some(local_symbol_data);
+                    }
+                    Err((name, previous_decl_range)) => {
+                        let err = IdentifierAlreadyDeclaredError::new(
+                            IdentKind::Variable,
+                            name,
+                            previous_decl_range,
+                            ok_identifier.range(),
+                        );
+                        self.errors
+                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                    }
                 }
             }
         }
@@ -812,16 +822,9 @@ impl Resolver {
             CoreRVariableDeclarationNode::Lambda(lambda_r_assign) => {
                 // For case of lambda variable, it is allowed to be referenced inside the body to
                 // enable recursive definitions
-                if let CoreIdentifierInDeclNode::Ok(ok_identifier) =
-                    core_variable_decl.name.core_ref()
-                {
-                    if let Some(symbol_data) = self
-                        .namespace_handler
-                        .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
-                    {
-                        symbol_data.get_core_mut_ref().set_is_init(true);
-                    }
-                };
+                if let Some(symbol_data) = &symbol_data {
+                    symbol_data.0.get_core_mut_ref().set_is_init(true);
+                }
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
                 let (params_vec, return_type, _, is_concretization_required, _) =
                     self.visit_callable_body(&core_lambda_r_assign.body, None);
@@ -830,39 +833,28 @@ impl Resolver {
                     return_type,
                     is_concretization_required,
                 ));
-                if let CoreIdentifierInDeclNode::Ok(ok_identifier) =
-                    core_variable_decl.name.core_ref()
-                {
-                    if let Some(symbol_data) = self
-                        .namespace_handler
-                        .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
-                    {
-                        symbol_data
+                if let Some(symbol_data) = &symbol_data {
+                    symbol_data
+                            .0
                             .get_core_mut_ref()
                             .set_data_type(&lambda_type_obj);
-                    }
-                };
+                }
             }
             CoreRVariableDeclarationNode::Expression(expr_r_assign) => {
                 self.walk_expr_stmt(expr_r_assign);
             }
         }
-        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
-            if let Some(symbol_data) = self
-                .namespace_handler
-                .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
-            {
-                symbol_data.get_core_mut_ref().set_is_init(true);
-            }
-        };
+        if let Some(symbol_data) = &symbol_data {
+            symbol_data.0.get_core_mut_ref().set_is_init(true);
+        }
     }
 
     pub fn declare_function(&mut self, func_wrapper: &FunctionWrapperNode) {
         let core_func_decl = func_wrapper.core_ref().func_decl.core_ref();
         let func_name = &core_func_decl.name;
         let body = &core_func_decl.body;
-        // let mut generic_type_decls: Option<GenericTypeParams> = None;
         let mut optional_ok_identifier_node = None;
+        let mut symbol_data: Option<FunctionSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
             let name = ok_identifier.token_value(&self.code);
@@ -878,35 +870,33 @@ impl Resolver {
                 self.errors
                     .push(Diagnostics::BuiltinFunctionNameOverlap(err));
             } else {
-                if let Err((name, previous_decl_range)) =
-                    self.try_declare_and_bind_function(ok_identifier)
-                {
-                    let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::Function,
-                        name.to_string(),
-                        previous_decl_range,
-                        ok_identifier.range(),
-                    );
-                    self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                match self.try_declare_and_bind_function(ok_identifier) {
+                    Ok(local_symbol_data) => {
+                        symbol_data = Some(local_symbol_data)
+                    }
+                    Err((name, previous_decl_range)) => {
+                        let err = IdentifierAlreadyDeclaredError::new(
+                            IdentKind::Function,
+                            name.to_string(),
+                            previous_decl_range,
+                            ok_identifier.range(),
+                        );
+                        self.errors
+                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                    }
                 }
             }
         }
         let (param_types_vec, return_type, _, is_concretization_required, generic_type_decls) =
             self.visit_callable_body(body, optional_ok_identifier_node);
-        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
-            if let Some(symbol_data) = self
-                .namespace_handler
-                .get_function_symbol_data_for_identifier_in_decl(ok_identifier)
-            {
-                symbol_data.get_core_mut_ref().set_meta_data(
-                    param_types_vec,
-                    return_type,
-                    CallableKind::Function,
-                    is_concretization_required,
-                    generic_type_decls,
-                );
-            }
+        if let Some(symbol_data) = &symbol_data {
+            symbol_data.0.get_core_mut_ref().set_meta_data(
+                param_types_vec,
+                return_type,
+                CallableKind::Function,
+                is_concretization_required,
+                generic_type_decls,
+            );
         }
     }
 
@@ -916,21 +906,24 @@ impl Resolver {
         });
         let core_struct_decl = struct_decl.core_ref();
         let struct_body = &core_struct_decl.block;
-        // let mut generic_type_decls: Option<GenericTypeParams> = None;
         let mut optional_ok_identifier_node = None;
+        let mut symbol_data: Option<UserDefinedTypeSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
-            if let Err((name, previous_decl_range)) =
-                self.try_declare_and_bind_struct_type(ok_identifier)
-            {
-                let err = IdentifierAlreadyDeclaredError::new(
-                    IdentKind::Type,
-                    name.to_string(),
-                    previous_decl_range,
-                    ok_identifier.range(),
-                );
-                self.errors
-                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
+            match self.try_declare_and_bind_struct_type(ok_identifier) {
+                Ok(local_symbol_data) => {
+                    symbol_data = Some(local_symbol_data);
+                }
+                Err((name, previous_decl_range)) => {
+                    let err = IdentifierAlreadyDeclaredError::new(
+                        IdentKind::Type,
+                        name.to_string(),
+                        previous_decl_range,
+                        ok_identifier.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                }
             }
         };
         self.open_block();
@@ -971,6 +964,8 @@ impl Resolver {
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
+        let mut implementing_interfaces: Option<Vec<InterfaceObject>> = None;
+        // TODO - check if the struct implements some interfaces
         for stmt in &*struct_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
@@ -1174,11 +1169,9 @@ impl Resolver {
                         .push(Diagnostics::ConstructorNotFoundInsideStructDeclaration(err));
                 }
             }
-            if let Some(symbol_data) = self
-                .namespace_handler
-                .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
-            {
+            if let Some(symbol_data) = &symbol_data {
                 symbol_data
+                    .0
                     .get_core_mut_ref()
                     .get_struct_data_mut_ref()
                     .set_meta_data(
@@ -1187,58 +1180,11 @@ impl Resolver {
                         methods,
                         class_methods,
                         struct_generic_type_decls,
-                        None,
+                        implementing_interfaces,
                     );
             }
         }
         self.context.class_context_stack.pop();
-    }
-
-    pub fn declare_interface(&mut self, interface_decl: &InterfaceDeclarationNode) {
-        let core_interface_decl = interface_decl.core_ref();
-        let name = &core_interface_decl.name;
-        // let mut generic_type_decls: Option<GenericTypeParams> = None;
-        let mut optional_ok_identifier_in_decl = None;
-        if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
-            optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
-            // setting the interface first in scope enables the generic type declaration to use this interface
-            // having recursive referencing
-            if let Err((_, previous_decl_range)) =
-                self.try_declare_and_bind_interface(&ok_identifier_in_decl)
-            {
-                // TODO - raise error `Already Declared`
-                todo!()
-            }
-        }
-        let body = &core_interface_decl.block;
-        self.open_block();
-        let generic_type_decls = match optional_ok_identifier_in_decl {
-            Some(ok_identifier) => {
-                self.declare_angle_bracket_content_from_identifier_in_decl(
-                    ok_identifier,
-                    GenericTypeDeclarationPlaceCategory::InStruct,
-                )
-                .0
-            }
-            None => None,
-        };
-        let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
-        let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
-        // traverse the body
-        // ensure that the method name is not `__init__` etc.
-        self.close_block(body);
-        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
-            if let Some(symbol_data) = self
-                .namespace_handler
-                .get_interface_symbol_data_for_identifier_in_decl(ok_identifier)
-            {
-                symbol_data.get_core_mut_ref().set_meta_data(
-                    fields_map,
-                    methods,
-                    generic_type_decls,
-                );
-            }
-        }
     }
 
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &LambdaTypeDeclarationNode) {
@@ -1325,6 +1271,51 @@ impl Resolver {
                         .push(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
             }
+        }
+    }
+
+    pub fn declare_interface(&mut self, interface_decl: &InterfaceDeclarationNode) {
+        let core_interface_decl = interface_decl.core_ref();
+        let name = &core_interface_decl.name;
+        let mut optional_ok_identifier_in_decl = None;
+        let mut symbol_data: Option<InterfaceSymbolData> = None;
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
+            optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
+            // setting the interface first in scope enables the generic type declaration to use this interface
+            // having recursive referencing
+            match self.try_declare_and_bind_interface(ok_identifier_in_decl) {
+                Ok(local_symbol_data) => {
+                    symbol_data = Some(local_symbol_data)
+                }
+                Err((name, previous_decl_range)) => {
+                    // TODO - raise error `Already Declared`
+                    todo!()
+                }
+            }
+        }
+        let body = &core_interface_decl.block;
+        self.open_block();
+        let generic_type_decls = match optional_ok_identifier_in_decl {
+            Some(ok_identifier) => {
+                self.declare_angle_bracket_content_from_identifier_in_decl(
+                    ok_identifier,
+                    GenericTypeDeclarationPlaceCategory::InStruct,
+                )
+                .0
+            }
+            None => None,
+        };
+        let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
+        let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
+        // traverse the body
+        // ensure that the method name is not `__init__` etc.
+        self.close_block(body);
+        if let Some(symbol_data) = &symbol_data {
+            symbol_data.0.get_core_mut_ref().set_meta_data(
+                fields_map,
+                methods,
+                generic_type_decls,
+            );
         }
     }
 }
