@@ -19,7 +19,6 @@ use crate::scope::core::{AbstractSymbolData, GenericTypeParams, VariableLookupRe
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
 use crate::scope::interfaces::InterfaceObject;
-use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::CoreType;
 use crate::{
