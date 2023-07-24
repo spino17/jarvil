@@ -84,5 +84,3 @@ pub const YIELD_KEYWORD: &'static str           = "yield";
 pub const ASYNC_KEYWORD: &'static str           = "async";
 pub const AWAIT_KEYWORD: &'static str           = "await";
 pub const PEG_PARSER: &'static str              = "__peg_parser__";
-
-pub const EIGHT_BIT_MAX_VALUE: usize = 250;

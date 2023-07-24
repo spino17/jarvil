@@ -4,13 +4,13 @@ use crate::ast::ast::{
     CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode, InterfaceDeclarationNode,
     LambdaTypeDeclarationNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
 };
-use crate::constants::common::EIGHT_BIT_MAX_VALUE;
+//use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
     BuiltinFunctionNameOverlapError, ConstructorNotFoundInsideStructDeclarationError,
     FieldsNotInitializedInConstructorError, IdentifierFoundInNonLocalsError,
     IdentifierNotFoundInAnyNamespaceError, MainFunctionNotFoundError, MainFunctionWrongTypeError,
-    MoreThanMaxLimitParamsPassedError, NonHashableTypeInIndexError,
-    NonVoidConstructorReturnTypeError, SelfNotFoundError, VariableReferencedBeforeAssignmentError,
+    NonHashableTypeInIndexError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
+    VariableReferencedBeforeAssignmentError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
@@ -667,15 +667,6 @@ impl Resolver {
                 }
             }
         }
-        if params_count > EIGHT_BIT_MAX_VALUE {
-            let err = MoreThanMaxLimitParamsPassedError::new(
-                params_count,
-                EIGHT_BIT_MAX_VALUE,
-                rparen.range(),
-            );
-            self.errors
-                .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
-        }
         let is_concretization_required = if generics_containing_params_indexes.len() == 0
             && !is_concretization_required_for_return_type
         {
@@ -1228,15 +1219,6 @@ impl Resolver {
                 types_vec.push(ty);
                 types_count += 1;
             }
-        }
-        if types_count > EIGHT_BIT_MAX_VALUE {
-            let err = MoreThanMaxLimitParamsPassedError::new(
-                types_count,
-                EIGHT_BIT_MAX_VALUE,
-                rparen.range(),
-            );
-            self.errors
-                .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
         self.close_block(None);
         if let Some(ok_identifier) = optional_ok_identifier_node {
