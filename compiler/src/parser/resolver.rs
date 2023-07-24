@@ -43,7 +43,7 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::vec;
+use std::{option, vec};
 use text_size::TextRange;
 
 pub enum ResolveResult {
@@ -152,7 +152,7 @@ impl Resolver {
         });
     }
 
-    pub fn close_block(&mut self, block: &BlockNode) {
+    pub fn close_block(&mut self, block: Option<&BlockNode>) {
         let parent_scope_index = match self
             .namespace_handler
             .namespace
@@ -167,11 +167,13 @@ impl Resolver {
             Some(block_context) => block_context,
             None => unreachable!(),
         };
-        self.namespace_handler.set_non_locals(
-            block,
-            non_locals.variable_non_locals,
-            non_locals.function_non_locals,
-        );
+        if let Some(block) = block {
+            self.namespace_handler.set_non_locals(
+                block,
+                non_locals.variable_non_locals,
+                non_locals.function_non_locals,
+            );
+        }
     }
 
     pub fn set_curr_class_context_is_containing_self(&mut self, value: bool) {
@@ -721,7 +723,7 @@ impl Resolver {
         for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        self.close_block(callable_body);
+        self.close_block(Some(callable_body));
         (
             param_types_vec,
             return_type,
@@ -778,7 +780,7 @@ impl Resolver {
                 }
             }
         }
-        self.close_block(callable_body);
+        self.close_block(Some(callable_body));
         (
             param_types_vec,
             return_type,
@@ -1126,7 +1128,7 @@ impl Resolver {
                 _ => unreachable!(),
             }
         }
-        self.close_block(struct_body);
+        self.close_block(Some(struct_body));
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             match constructor {
                 Some((_, construct_span)) => {
@@ -1192,6 +1194,19 @@ impl Resolver {
         let rparen = &core_lambda_type_decl.rparen;
         let mut generics_containing_params_indexes = vec![];
         let mut is_concretization_required_for_return_type = false;
+        let mut optional_ok_identifier_node: Option<&OkIdentifierInDeclNode> = None;
+        let mut generic_type_decls: Option<GenericTypeParams> = None;
+        self.open_block();
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_lambda_type_decl.name.core_ref() {
+            optional_ok_identifier_node = Some(ok_identifier);
+            generic_type_decls = self
+                .declare_angle_bracket_content_from_identifier_in_decl(
+                    ok_identifier,
+                    GenericTypeDeclarationPlaceCategory::InCallable,
+                )
+                .0;
+        }
+
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -1223,15 +1238,9 @@ impl Resolver {
             self.errors
                 .push(Diagnostics::MoreThanMaxLimitParamsPassed(err));
         }
-        let mut generic_type_decls: Option<GenericTypeParams> = None;
-        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_lambda_type_decl.name.core_ref() {
+        self.close_block(None);
+        if let Some(ok_identifier) = optional_ok_identifier_node {
             let name = ok_identifier.token_value(&self.code);
-            generic_type_decls = self
-                .declare_angle_bracket_content_from_identifier_in_decl(
-                    ok_identifier,
-                    GenericTypeDeclarationPlaceCategory::InCallable,
-                )
-                .0;
             let result = self
                 .namespace_handler
                 .namespace
@@ -1304,7 +1313,7 @@ impl Resolver {
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         // traverse the body
         // ensure that the method name is not `__init__` etc.
-        self.close_block(body);
+        self.close_block(Some(body));
         if let Some(symbol_data) = &symbol_data {
             symbol_data
                 .0
@@ -1323,7 +1332,7 @@ impl Visitor for Resolver {
                 for stmt in &*core_block.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
-                self.close_block(block);
+                self.close_block(Some(block));
                 return None;
             }
             ASTNode::VariableDeclaration(variable_decl) => {
