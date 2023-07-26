@@ -4,7 +4,6 @@ use crate::ast::ast::{
     CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode, InterfaceDeclarationNode,
     LambdaTypeDeclarationNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
 };
-//use crate::constants::common::EIGHT_BIT_MAX_VALUE;
 use crate::error::diagnostics::{
     BuiltinFunctionNameOverlapError, ConstructorNotFoundInsideStructDeclarationError,
     FieldsNotInitializedInConstructorError, IdentifierFoundInNonLocalsError,
@@ -235,7 +234,7 @@ impl Resolver {
         // (index to the registry, has_generics)
         let (mut concrete_types, mut has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
-        if concrete_types.is_some() && symbol_data.is_variable() {
+        if concrete_types.is_some() && !symbol_data.is_generics_allowed() {
             // TODO - raise error `no generic type arguments expected`
             concrete_types = None;
             has_generics = false;

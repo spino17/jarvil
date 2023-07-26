@@ -51,10 +51,14 @@ impl SymbolDataEntry {
         }
     }
 
-    pub fn is_variable(&self) -> bool {
+    pub fn is_generics_allowed(&self) -> bool {
         match self {
-            SymbolDataEntry::Variable(_) => true,
-            _ => false,
+            SymbolDataEntry::Variable(_) => false,
+            SymbolDataEntry::Type(user_defined_ty) => match &*user_defined_ty.get_core_ref() {
+                UserDefinedTypeData::Generic(_) => return false,
+                UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Struct(_) => return true,
+            },
+            _ => true,
         }
     }
 }
