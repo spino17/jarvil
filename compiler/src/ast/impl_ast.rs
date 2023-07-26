@@ -1020,18 +1020,23 @@ impl TupleTypeNode {
         scope_index: usize,
     ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<OkIdentifierInUseNode> = vec![];
+        let mut generics_outside_scope_identifiers: Vec<OkIdentifierInUseNode> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
             match ty.type_obj_before_resolved(resolver, scope_index) {
                 TypeResolveKind::Resolved(type_obj) => resolved_types.push(type_obj),
-                TypeResolveKind::Unresolved(mut identifier) => {
-                    unresolved_identifiers.append(&mut identifier)
+                TypeResolveKind::Unresolved((mut unresolved, mut generics_outside_scope)) => {
+                    unresolved_identifiers.append(&mut unresolved);
+                    generics_outside_scope_identifiers.append(&mut generics_outside_scope);
                 }
                 TypeResolveKind::Invalid => resolved_types.push(Type::new_with_unknown()),
             }
         }
-        if unresolved_identifiers.len() > 0 {
-            return TypeResolveKind::Unresolved(unresolved_identifiers);
+        if unresolved_identifiers.len() > 0 || generics_outside_scope_identifiers.len() > 0 {
+            return TypeResolveKind::Unresolved((
+                unresolved_identifiers,
+                generics_outside_scope_identifiers,
+            ));
         } else if resolved_types.len() > 0 {
             return TypeResolveKind::Resolved(Type::new_with_tuple(resolved_types));
         } else {
@@ -1045,18 +1050,23 @@ impl TupleTypeNode {
         namespace_handler: &NamespaceHandler,
     ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<OkIdentifierInUseNode> = vec![];
+        let mut generics_outside_scope_identifiers: Vec<OkIdentifierInUseNode> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
             match ty.type_obj_after_resolved(code, namespace_handler) {
                 TypeResolveKind::Resolved(type_obj) => resolved_types.push(type_obj),
-                TypeResolveKind::Unresolved(mut identifier) => {
-                    unresolved_identifiers.append(&mut identifier)
+                TypeResolveKind::Unresolved((mut unresolved, mut generics_outside_scope)) => {
+                    unresolved_identifiers.append(&mut unresolved);
+                    generics_outside_scope_identifiers.append(&mut generics_outside_scope);
                 }
                 TypeResolveKind::Invalid => resolved_types.push(Type::new_with_unknown()),
             }
         }
-        if unresolved_identifiers.len() > 0 {
-            return TypeResolveKind::Unresolved(unresolved_identifiers);
+        if unresolved_identifiers.len() > 0 || generics_outside_scope_identifiers.len() > 0 {
+            return TypeResolveKind::Unresolved((
+                unresolved_identifiers,
+                generics_outside_scope_identifiers,
+            ));
         } else if resolved_types.len() > 0 {
             return TypeResolveKind::Resolved(Type::new_with_tuple(resolved_types));
         } else {
@@ -1114,15 +1124,33 @@ impl HashMapTypeNode {
                     ))
                 }
             },
-            TypeResolveKind::Unresolved(mut key_unresolved_vec) => match value_result {
+            TypeResolveKind::Unresolved((
+                mut key_unresolved_vec,
+                mut key_generics_outside_scope_vec,
+            )) => match value_result {
                 TypeResolveKind::Resolved(_) => {
-                    return TypeResolveKind::Unresolved(key_unresolved_vec)
+                    return TypeResolveKind::Unresolved((
+                        key_unresolved_vec,
+                        key_generics_outside_scope_vec,
+                    ))
                 }
-                TypeResolveKind::Unresolved(mut value_unresolved_vec) => {
+                TypeResolveKind::Unresolved((
+                    mut value_unresolved_vec,
+                    mut value_generics_outside_scope_vec,
+                )) => {
                     key_unresolved_vec.append(&mut value_unresolved_vec);
-                    return TypeResolveKind::Unresolved(key_unresolved_vec);
+                    key_generics_outside_scope_vec.append(&mut value_generics_outside_scope_vec);
+                    return TypeResolveKind::Unresolved((
+                        key_unresolved_vec,
+                        key_generics_outside_scope_vec,
+                    ));
                 }
-                TypeResolveKind::Invalid => return TypeResolveKind::Unresolved(key_unresolved_vec),
+                TypeResolveKind::Invalid => {
+                    return TypeResolveKind::Unresolved((
+                        key_unresolved_vec,
+                        key_generics_outside_scope_vec,
+                    ))
+                }
             },
             TypeResolveKind::Invalid => match value_result {
                 TypeResolveKind::Resolved(value_type) => {
@@ -1204,7 +1232,8 @@ impl UserDefinedTypeNode {
                 .types
                 .lookup(scope_index, &name)
             {
-                Some((symbol_data, _, _, _)) => {
+                Some((symbol_data, resolved_scope_index, _, _)) => {
+                    // TODO - check that resolved_scope_index == enclosing_generics_declarative_scope_index
                     let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
                         ok_identifier,
                         SymbolDataEntry::Type(symbol_data.clone()),
@@ -1223,7 +1252,7 @@ impl UserDefinedTypeNode {
                     };
                     return result;
                 }
-                None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
+                None => return TypeResolveKind::Unresolved((vec![ok_identifier.clone()], vec![])),
             }
         }
         return TypeResolveKind::Invalid;
@@ -1264,7 +1293,7 @@ impl UserDefinedTypeNode {
                         }
                     }
                 }
-                None => return TypeResolveKind::Unresolved(vec![ok_identifier.clone()]),
+                None => return TypeResolveKind::Unresolved((vec![ok_identifier.clone()], vec![])),
             }
         }
         return TypeResolveKind::Invalid;

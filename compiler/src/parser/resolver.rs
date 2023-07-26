@@ -502,13 +502,16 @@ impl Resolver {
                 // structure of the type.
                 return Self::pre_type_checking(&type_obj, type_expr, Some((log_error_fn, self)));
             }
-            TypeResolveKind::Unresolved(identifier) => {
-                for unresolved_identifier in identifier {
+            TypeResolveKind::Unresolved((unresolved, generics_outside_scope)) => {
+                for unresolved_identifier in unresolved {
                     let err = IdentifierNotDeclaredError::new(
                         IdentKind::Type,
                         unresolved_identifier.range(),
                     );
                     self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                }
+                for generic_identifier in generics_outside_scope {
+                    // TODO - raise error `Generic type resolved to outside scope, try to declare local generic type`
                 }
                 return Type::new_with_unknown();
             }

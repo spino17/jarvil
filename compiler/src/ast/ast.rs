@@ -652,7 +652,7 @@ pub struct OkIdentifierInDeclNode(pub Rc<CoreOkIdentifierInDeclNode>);
 // misc "kind" enums
 pub enum TypeResolveKind {
     Resolved(Type),
-    Unresolved(Vec<OkIdentifierInUseNode>),
+    Unresolved((Vec<OkIdentifierInUseNode>, Vec<OkIdentifierInUseNode>)),
     Invalid,
 }
 
