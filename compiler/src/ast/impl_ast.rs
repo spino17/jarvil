@@ -38,7 +38,7 @@ use crate::ast::ast::Node;
 use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
-use crate::parser::resolver::Resolver;
+use crate::parser::resolver::{BlockKind, Resolver};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
@@ -48,13 +48,20 @@ use text_size::TextRange;
 use text_size::TextSize;
 
 impl BlockNode {
-    pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: &TokenNode) -> Self {
+    pub fn new(
+        stmts: Vec<StatemenIndentWrapperNode>,
+        newline: &TokenNode,
+        kind: BlockKind,
+    ) -> Self {
         let node = Rc::new(CoreBlockNode {
             newline: newline.clone(),
             stmts: Rc::new(stmts),
+            kind,
         });
         BlockNode(node)
     }
+
+    impl_core_ref!(CoreBlockNode);
 }
 
 impl Node for BlockNode {

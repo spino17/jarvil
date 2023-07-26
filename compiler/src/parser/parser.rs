@@ -1,4 +1,5 @@
 use super::errors::{log_missing_token_error, log_trailing_skipped_tokens_error};
+use super::resolver::BlockKind;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode, GenericTypeDeclNode,
@@ -414,12 +415,14 @@ impl JarvilParser {
         is_starting_with_fn: F,
         statement_parsing_fn: G,
         expected_symbols: &[&'static str],
+        kind: BlockKind,
     ) -> BlockNode {
         components::block::block(
             self,
             is_starting_with_fn,
             statement_parsing_fn,
             expected_symbols,
+            kind,
         )
     }
 
@@ -528,8 +531,8 @@ impl JarvilParser {
         components::common::callable_prototype(self)
     }
 
-    pub fn callable_body(&mut self) -> CallableBodyNode {
-        components::common::callable_body(self)
+    pub fn callable_body(&mut self, block_kind: BlockKind) -> CallableBodyNode {
+        components::common::callable_body(self, block_kind)
     }
 
     pub fn struct_stmt(&mut self) -> StatementNode {

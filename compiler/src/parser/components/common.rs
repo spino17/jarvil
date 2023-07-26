@@ -1,3 +1,4 @@
+use super::block;
 use super::statement::core::{
     is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
 };
@@ -8,6 +9,7 @@ use crate::ast::ast::{
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
+use crate::parser::resolver::BlockKind;
 
 pub fn name_type_spec(parser: &mut JarvilParser) -> NameTypeSpecNode {
     let name_node = parser.expect_identifier();
@@ -82,13 +84,14 @@ pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
     }
 }
 
-pub fn callable_body(parser: &mut JarvilParser) -> CallableBodyNode {
+pub fn callable_body(parser: &mut JarvilParser, block_kind: BlockKind) -> CallableBodyNode {
     let callable_prototype = parser.callable_prototype();
     let colon_node = parser.expect(":");
     let func_block_node = parser.block(
         |token| is_statement_within_function_starting_with(token),
         |parser| parser.stmt(),
         &STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
+        block_kind,
     );
     return CallableBodyNode::new(&func_block_node, &colon_node, &callable_prototype);
 }
@@ -96,7 +99,11 @@ pub fn callable_body(parser: &mut JarvilParser) -> CallableBodyNode {
 pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> StatementNode {
     let def_keyword_node = parser.expect("def");
     let func_name_node = parser.expect_identifier_in_decl();
-    let callable_body = parser.callable_body();
+    let block_kind = match callable_kind {
+        CallableKind::Function => BlockKind::Function,
+        CallableKind::Method => BlockKind::Method,
+    };
+    let callable_body = parser.callable_body(block_kind);
     let func_decl_node =
         FunctionDeclarationNode::new(&func_name_node, &def_keyword_node, &callable_body);
     match callable_kind {

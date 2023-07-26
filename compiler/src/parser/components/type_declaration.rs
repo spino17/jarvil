@@ -3,6 +3,7 @@ use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::constants::common::DEF;
 use crate::lexer::token::CoreToken;
 use crate::parser::errors::log_missing_token_error;
+use crate::parser::resolver::BlockKind;
 use crate::{constants::common::IDENTIFIER, parser::parser::JarvilParser};
 
 pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
@@ -21,6 +22,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 },
                 |parser| parser.struct_stmt(),
                 &[IDENTIFIER, DEF],
+                BlockKind::Struct,
             );
             TypeDeclarationNode::new_with_struct(
                 &type_name_node,

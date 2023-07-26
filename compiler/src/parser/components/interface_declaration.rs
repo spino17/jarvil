@@ -4,7 +4,7 @@ use crate::{
     },
     constants::common::{DEF, IDENTIFIER},
     lexer::token::CoreToken,
-    parser::parser::JarvilParser,
+    parser::{parser::JarvilParser, resolver::BlockKind},
 };
 
 pub fn interface_decl(parser: &mut JarvilParser) -> InterfaceDeclarationNode {
@@ -19,6 +19,7 @@ pub fn interface_decl(parser: &mut JarvilParser) -> InterfaceDeclarationNode {
         },
         |parser| parser.interface_stmt(),
         &[IDENTIFIER, DEF],
+        BlockKind::Interface,
     );
     InterfaceDeclarationNode::new(
         &interface_keyword_node,

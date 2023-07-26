@@ -12,6 +12,7 @@ use jarvil_macros::Nodify;
 use jarvil_macros::Node;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
+use crate::parser::resolver::BlockKind;
 use crate::{lexer::token::Token, types::core::Type};
 use std::rc::Rc;
 use text_size::{TextRange, TextSize};
@@ -95,6 +96,7 @@ pub enum ASTNode {
 pub struct CoreBlockNode {
     pub newline: TokenNode,
     pub stmts: Rc<Vec<StatemenIndentWrapperNode>>,
+    pub kind: BlockKind,
 }
 
 #[derive(Debug, Node)]

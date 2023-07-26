@@ -20,6 +20,7 @@ use crate::parser::errors::{
 };
 use crate::parser::helper::IndentResultKind;
 use crate::parser::parser::JarvilParser;
+use crate::parser::resolver::BlockKind;
 use std::mem;
 
 pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
@@ -27,6 +28,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
     is_starting_with_fn: F,
     statement_parsing_fn: G,
     expected_symbols: &[&'static str],
+    kind: BlockKind,
 ) -> BlockNode {
     let newline_node = parser.expect_terminators();
     parser.set_indent_level(parser.curr_indent_level() + 1);
@@ -55,7 +57,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
                 if !has_atleast_one_stmt {
                     log_no_valid_statement_inside_block_error(parser, newline_node.range());
                 }
-                return BlockNode::new(stmts_vec, &newline_node);
+                return BlockNode::new(stmts_vec, &newline_node, kind);
             }
         };
         while !is_starting_with_fn(parser.curr_token()) {
@@ -80,7 +82,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
             if !has_atleast_one_stmt {
                 log_no_valid_statement_inside_block_error(parser, newline_node.range());
             }
-            return BlockNode::new(stmts_vec, &newline_node);
+            return BlockNode::new(stmts_vec, &newline_node, kind);
         }
         if token.is_eq("\n") {
             continue;

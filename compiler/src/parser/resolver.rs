@@ -50,6 +50,18 @@ pub enum ResolveResult {
     Err(String), // name of the identifier
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum BlockKind {
+    Function,
+    Lambda,
+    LambdaType,
+    Struct,
+    Interface,
+    Method,
+    Conditional,
+    Loop,
+}
+
 pub struct ClassContext {
     is_containing_self: bool,
 }
@@ -138,7 +150,7 @@ impl Resolver {
         (self.namespace_handler, self.errors, self.code)
     }
 
-    pub fn open_block(&mut self) {
+    pub fn open_block(&mut self, block_kind: BlockKind) {
         let new_scope_index = self
             .namespace_handler
             .namespace
@@ -697,7 +709,7 @@ impl Resolver {
     ) {
         let core_callable_body = callable_body.core_ref();
         let callable_body = &core_callable_body.block;
-        self.open_block();
+        self.open_block(callable_body.core_ref().kind);
         let generic_type_decls = match optional_identifier_in_decl {
             Some(ok_identifier) => {
                 self.declare_angle_bracket_content_from_identifier_in_decl(
@@ -736,7 +748,7 @@ impl Resolver {
         let core_callable_body = callable_body.core_ref();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
         let callable_body = &core_callable_body.block;
-        self.open_block();
+        self.open_block(callable_body.core_ref().kind);
         let (param_types_vec, return_type, return_type_range, is_concretization_required) =
             self.declare_callable_prototype(&core_callable_body.prototype);
         for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
@@ -918,7 +930,7 @@ impl Resolver {
                 }
             }
         };
-        self.open_block();
+        self.open_block(struct_body.core_ref().kind);
         let (struct_generic_type_decls, struct_ty) = match optional_ok_identifier_node {
             Some(ok_identifier) => {
                 let (struct_generic_type_decls, concrete_types) = self
@@ -1186,7 +1198,7 @@ impl Resolver {
         let mut is_concretization_required_for_return_type = false;
         let mut optional_ok_identifier_node: Option<&OkIdentifierInDeclNode> = None;
         let mut generic_type_decls: Option<GenericTypeParams> = None;
-        self.open_block();
+        self.open_block(BlockKind::LambdaType);
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_lambda_type_decl.name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
             generic_type_decls = self
@@ -1279,7 +1291,7 @@ impl Resolver {
             }
         }
         let body = &core_interface_decl.block;
-        self.open_block();
+        self.open_block(body.core_ref().kind);
         let generic_type_decls = match optional_ok_identifier_in_decl {
             Some(ok_identifier) => {
                 self.declare_angle_bracket_content_from_identifier_in_decl(
@@ -1308,8 +1320,8 @@ impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {
-                self.open_block();
                 let core_block = block.0.as_ref();
+                self.open_block(core_block.kind);
                 for stmt in &*core_block.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
