@@ -42,7 +42,7 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::{option, vec};
+use std::vec;
 use text_size::TextRange;
 
 pub enum ResolveResult {
@@ -62,6 +62,26 @@ pub enum BlockKind {
     Loop,
 }
 
+impl BlockKind {
+    fn is_generics_declarative(&self) -> bool {
+        match self {
+            BlockKind::Function
+            | BlockKind::Method
+            | BlockKind::LambdaType
+            | BlockKind::Struct
+            | BlockKind::Interface => true,
+            BlockKind::Lambda | BlockKind::Conditional | BlockKind::Loop => false,
+        }
+    }
+
+    fn is_method(&self) -> bool {
+        match self {
+            BlockKind::Method => true,
+            _ => false,
+        }
+    }
+}
+
 pub struct ClassContext {
     is_containing_self: bool,
 }
@@ -69,6 +89,8 @@ pub struct ClassContext {
 pub struct BlockContext {
     variable_non_locals: FxHashSet<String>,
     function_non_locals: FxHashMap<String, bool>,
+    block_kind: BlockKind,
+    scope_index: usize,
 }
 
 pub struct Context {
@@ -96,6 +118,8 @@ impl Resolver {
                 block_context_stack: vec![BlockContext {
                     variable_non_locals: FxHashSet::default(),
                     function_non_locals: FxHashMap::default(),
+                    block_kind: BlockKind::Function,
+                    scope_index: 0,
                 }],
             },
             indent_level: 0,
@@ -160,6 +184,8 @@ impl Resolver {
         self.context.block_context_stack.push(BlockContext {
             variable_non_locals: FxHashSet::default(),
             function_non_locals: FxHashMap::default(),
+            block_kind,
+            scope_index: new_scope_index,
         });
     }
 
@@ -226,6 +252,26 @@ impl Resolver {
             .function_non_locals
             .get(name)
             .is_some()
+    }
+
+    pub fn get_enclosing_generics_declarative_scope_index(&self) -> (usize, Option<usize>) {
+        // (enclosing_scope, enclosing_class_scope `if enclosing scope is method`)
+        let mut index = self.context.block_context_stack.len() - 1;
+        while index >= 0 {
+            let block_context = &self.context.block_context_stack[index];
+            if block_context.block_kind.is_generics_declarative() {
+                if block_context.block_kind.is_method() {
+                    return (
+                        block_context.scope_index,
+                        Some(self.context.block_context_stack[index - 1].scope_index),
+                    );
+                } else {
+                    return (block_context.scope_index, None);
+                }
+            }
+            index = index - 1;
+        }
+        unreachable!()
     }
 
     pub fn bind_decl_to_identifier_in_decl(
@@ -1290,8 +1336,8 @@ impl Resolver {
                 }
             }
         }
-        let body = &core_interface_decl.block;
-        self.open_block(body.core_ref().kind);
+        let interface_body = &core_interface_decl.block;
+        self.open_block(interface_body.core_ref().kind);
         let generic_type_decls = match optional_ok_identifier_in_decl {
             Some(ok_identifier) => {
                 self.declare_angle_bracket_content_from_identifier_in_decl(
@@ -1306,7 +1352,7 @@ impl Resolver {
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         // traverse the body
         // ensure that the method name is not `__init__` etc.
-        self.close_block(Some(body));
+        self.close_block(Some(interface_body));
         if let Some(symbol_data) = &symbol_data {
             symbol_data
                 .0
