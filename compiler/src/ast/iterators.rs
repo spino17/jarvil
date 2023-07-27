@@ -1,28 +1,28 @@
 use super::ast::SymbolSeparatedSequenceNode;
 
-pub struct SymbolSeparatedSequenceIterator<T: Clone> {
-    node: Option<SymbolSeparatedSequenceNode<T>>,
+pub struct SymbolSeparatedSequenceIterator<'a, T: Clone> {
+    node: Option<&'a SymbolSeparatedSequenceNode<T>>,
 }
 
-impl<T: Clone> SymbolSeparatedSequenceIterator<T> {
-    pub fn new(node: &SymbolSeparatedSequenceNode<T>) -> Self {
+impl<'a, T: Clone> SymbolSeparatedSequenceIterator<'a, T> {
+    pub fn new(node: &'a SymbolSeparatedSequenceNode<T>) -> Self {
         SymbolSeparatedSequenceIterator {
-            node: Some(node.clone()),
+            node: Some(node),
         }
     }
 }
 
-impl<T: Clone> Iterator for SymbolSeparatedSequenceIterator<T> {
-    type Item = T;
+impl<'a, T: Clone> Iterator for SymbolSeparatedSequenceIterator<'a, T> {
+    type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
         let ok_entity = match &self.node {
             Some(node) => node.clone(),
             None => return None,
         };
         self.node = match &ok_entity.core_ref().remaining_entities {
-            Some((_, remaining_params)) => Some(remaining_params.clone()),
+            Some((_, remaining_params)) => Some(remaining_params),
             None => None,
         };
-        Some(ok_entity.core_ref().entity.clone())
+        Some(&ok_entity.core_ref().entity)
     }
 }
