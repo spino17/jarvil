@@ -18,7 +18,7 @@ pub enum UserDefinedTypeData {
 pub enum UserDefineTypeKind {
     Struct,
     Lambda,
-    Generic
+    Generic,
 }
 
 impl UserDefinedTypeData {
@@ -30,7 +30,7 @@ impl UserDefinedTypeData {
         match self {
             UserDefinedTypeData::Struct(_) => UserDefineTypeKind::Struct,
             UserDefinedTypeData::Lambda(_) => UserDefineTypeKind::Lambda,
-            UserDefinedTypeData::Generic(_) => UserDefineTypeKind::Generic
+            UserDefinedTypeData::Generic(_) => UserDefineTypeKind::Generic,
         }
     }
 

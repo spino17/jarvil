@@ -41,7 +41,7 @@ use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
-use crate::scope::types::core::{UserDefinedTypeData, UserDefineTypeKind};
+use crate::scope::types::core::{UserDefineTypeKind, UserDefinedTypeData};
 use crate::types::core::Type;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
@@ -1209,19 +1209,33 @@ impl UserDefinedTypeNode {
                     // TODO - check that resolved_scope_index == enclosing_generics_declarative_scope_index
                     //let (expected_scope_index, possible_expected_class_scope_index) =
                     //    resolver.get_enclosing_generics_declarative_scope_index();
-                    let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
-                        ok_identifier,
-                        SymbolDataEntry::Type(symbol_data.clone()),
-                    );
-                    let result = match symbol_data.get_core_ref().get_kind() {
-                        UserDefineTypeKind::Struct => TypeResolveKind::Resolved(
-                            Type::new_with_struct(name, &symbol_data, index, has_generics),
-                        ),
-                        UserDefineTypeKind::Lambda => TypeResolveKind::Resolved(
-                            Type::new_with_lambda_named(name, &symbol_data, index, has_generics),
-                        ),
+                    let ty_kind = symbol_data.get_core_ref().get_kind();
+                    let result = match ty_kind {
+                        UserDefineTypeKind::Struct => {
+                            let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
+                                ok_identifier,
+                                SymbolDataEntry::Type(symbol_data.clone()),
+                            );
+                            TypeResolveKind::Resolved(Type::new_with_struct(
+                                name,
+                                &symbol_data,
+                                index,
+                                has_generics,
+                            ))
+                        }
+                        UserDefineTypeKind::Lambda => {
+                            let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
+                                ok_identifier,
+                                SymbolDataEntry::Type(symbol_data.clone()),
+                            );
+                            TypeResolveKind::Resolved(Type::new_with_lambda_named(
+                                name,
+                                &symbol_data,
+                                index,
+                                has_generics,
+                            ))
+                        }
                         UserDefineTypeKind::Generic => {
-                            assert!(index.is_none());
                             let (expected_scope_index, possible_expected_class_scope_index) =
                                 resolver.get_enclosing_generics_declarative_scope_index();
                             let result = if resolved_scope_index != expected_scope_index {
@@ -1243,8 +1257,19 @@ impl UserDefinedTypeNode {
                                 Ok(())
                             };
                             match result {
-                                Ok(_) => TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data)),
-                                Err(_) => TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::GenericResolvedToOutsideScope(ok_identifier)])
+                                Ok(_) => {
+                                    let (index, _) = resolver.bind_decl_to_identifier_in_use(
+                                        ok_identifier,
+                                        SymbolDataEntry::Type(symbol_data.clone()),
+                                    );
+                                    assert!(index.is_none());
+                                    TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data))
+                                }
+                                Err(_) => TypeResolveKind::Unresolved(vec![
+                                    UnresolvedIdentifier::GenericResolvedToOutsideScope(
+                                        ok_identifier,
+                                    ),
+                                ]),
                             }
                         }
                     };
