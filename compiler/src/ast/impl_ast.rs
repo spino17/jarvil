@@ -1095,11 +1095,11 @@ impl HashMapTypeNode {
         HashMapTypeNode(node)
     }
 
-    fn aggregate_key_value_result(
-        &self,
-        key_result: TypeResolveKind,
-        value_result: TypeResolveKind,
-    ) -> TypeResolveKind {
+    fn aggregate_key_value_result<'a>(
+        &'a self,
+        key_result: TypeResolveKind<'a>,
+        value_result: TypeResolveKind<'a>,
+    ) -> TypeResolveKind<'a> {
         match key_result {
             TypeResolveKind::Resolved(key_type) => match value_result {
                 TypeResolveKind::Resolved(value_type) => {
@@ -1227,7 +1227,7 @@ impl UserDefinedTypeNode {
                 }
                 None => {
                     return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::Unresolved(
-                        ok_identifier.clone(),
+                        ok_identifier,
                     )])
                 }
             }
@@ -1272,7 +1272,7 @@ impl UserDefinedTypeNode {
                 }
                 None => {
                     return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::Unresolved(
-                        ok_identifier.clone(),
+                        ok_identifier,
                     )])
                 }
             }
