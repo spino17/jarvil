@@ -1224,10 +1224,28 @@ impl UserDefinedTypeNode {
                             assert!(index.is_none());
                             let (expected_scope_index, possible_expected_class_scope_index) =
                                 resolver.get_enclosing_generics_declarative_scope_index();
-                            if resolved_scope_index != expected_scope_index {
-                                println!("generics resolved outside function!");
+                            let result = if resolved_scope_index != expected_scope_index {
+                                match possible_expected_class_scope_index {
+                                    Some(class_scope_index) => {
+                                        if resolved_scope_index != class_scope_index {
+                                            println!("class scope also not matched");
+                                            Err(())
+                                        } else {
+                                            Ok(())
+                                        }
+                                    }
+                                    None => {
+                                        println!("generics resolved outside scope");
+                                        Err(())
+                                    }
+                                }
+                            } else {
+                                Ok(())
+                            };
+                            match result {
+                                Ok(_) => TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data)),
+                                Err(_) => TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::GenericResolvedToOutsideScope(ok_identifier)])
                             }
-                            TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data))
                         }
                     };
                     return result;
