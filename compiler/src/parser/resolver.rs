@@ -64,14 +64,15 @@ pub enum BlockKind {
 }
 
 impl BlockKind {
-    fn is_generics_declarative(&self) -> bool {
+    fn is_generics_shielding_block(&self) -> bool {
         match self {
             BlockKind::Function
             | BlockKind::Method
             | BlockKind::LambdaType
             | BlockKind::Struct
-            | BlockKind::Interface => true,
-            BlockKind::Lambda | BlockKind::Conditional | BlockKind::Loop => false,
+            | BlockKind::Interface
+            | BlockKind::Lambda => true,
+            BlockKind::Conditional | BlockKind::Loop => false,
         }
     }
 
@@ -260,7 +261,7 @@ impl Resolver {
         let mut index = self.context.block_context_stack.len() - 1;
         while index >= 0 {
             let block_context = &self.context.block_context_stack[index];
-            if block_context.block_kind.is_generics_declarative() {
+            if block_context.block_kind.is_generics_shielding_block() {
                 if block_context.block_kind.is_method() {
                     return (
                         block_context.scope_index,

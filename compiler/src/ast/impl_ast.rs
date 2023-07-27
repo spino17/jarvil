@@ -1207,6 +1207,8 @@ impl UserDefinedTypeNode {
             {
                 Some((symbol_data, resolved_scope_index, _, _)) => {
                     // TODO - check that resolved_scope_index == enclosing_generics_declarative_scope_index
+                    //let (expected_scope_index, possible_expected_class_scope_index) =
+                    //    resolver.get_enclosing_generics_declarative_scope_index();
                     let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
                         ok_identifier,
                         SymbolDataEntry::Type(symbol_data.clone()),

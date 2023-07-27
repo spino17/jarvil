@@ -6,9 +6,7 @@ pub struct SymbolSeparatedSequenceIterator<'a, T: Clone> {
 
 impl<'a, T: Clone> SymbolSeparatedSequenceIterator<'a, T> {
     pub fn new(node: &'a SymbolSeparatedSequenceNode<T>) -> Self {
-        SymbolSeparatedSequenceIterator {
-            node: Some(node),
-        }
+        SymbolSeparatedSequenceIterator { node: Some(node) }
     }
 }
 
