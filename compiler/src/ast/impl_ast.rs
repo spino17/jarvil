@@ -1206,9 +1206,6 @@ impl UserDefinedTypeNode {
                 .lookup(scope_index, &name)
             {
                 Some((symbol_data, resolved_scope_index, _, _)) => {
-                    // TODO - check that resolved_scope_index == enclosing_generics_declarative_scope_index
-                    //let (expected_scope_index, possible_expected_class_scope_index) =
-                    //    resolver.get_enclosing_generics_declarative_scope_index();
                     let ty_kind = symbol_data.get_core_ref().get_kind();
                     let result = match ty_kind {
                         UserDefineTypeKind::Struct => {
@@ -1236,22 +1233,20 @@ impl UserDefinedTypeNode {
                             ))
                         }
                         UserDefineTypeKind::Generic => {
+                            // NOTE: generic types are only allowed to be resolved inside local scope (of function, method, struct etc.)
+                            // This kind of check is similiar to how `Rust` programming language expects generic type resolution.
                             let (expected_scope_index, possible_expected_class_scope_index) =
                                 resolver.get_enclosing_generics_declarative_scope_index();
                             let result = if resolved_scope_index != expected_scope_index {
                                 match possible_expected_class_scope_index {
                                     Some(class_scope_index) => {
                                         if resolved_scope_index != class_scope_index {
-                                            println!("class scope also not matched");
                                             Err(())
                                         } else {
                                             Ok(())
                                         }
                                     }
-                                    None => {
-                                        println!("generics resolved outside scope");
-                                        Err(())
-                                    }
+                                    None => Err(()),
                                 }
                             } else {
                                 Ok(())
