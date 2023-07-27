@@ -1222,6 +1222,11 @@ impl UserDefinedTypeNode {
                         ),
                         UserDefinedTypeData::Generic(_) => {
                             assert!(index.is_none());
+                            let (expected_scope_index, possible_expected_class_scope_index) =
+                                resolver.get_enclosing_generics_declarative_scope_index();
+                            if resolved_scope_index != expected_scope_index {
+                                println!("generics resolved outside function!");
+                            }
                             TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data))
                         }
                     };

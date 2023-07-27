@@ -65,7 +65,20 @@ impl AbstractType for Generic {
 
 impl ToString for Generic {
     fn to_string(&self) -> String {
-        todo!()
+        let mut s = "T{".to_string();
+        let symbol_data = self.semantic_data.get_core_ref();
+        let generic_data = symbol_data.get_generic_data_ref();
+        let interface_bounds = &generic_data.interface_bounds;
+        let len = interface_bounds.len();
+        if len > 0 {
+            s.push_str(&interface_bounds[0].to_string());
+        }
+        for i in 1..len {
+            s.push_str(" + ");
+            s.push_str(&interface_bounds[i].to_string());
+        }
+        s.push('}');
+        s
     }
 }
 
