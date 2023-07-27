@@ -649,10 +649,15 @@ pub struct OkIdentifierInUseNode(pub Rc<CoreOkIdentifierInUseNode>);
 #[derive(Debug, Clone)]
 pub struct OkIdentifierInDeclNode(pub Rc<CoreOkIdentifierInDeclNode>);
 
+pub enum UnresolvedIdentifier {
+    Unresolved(OkIdentifierInUseNode),
+    GenericResolvedToOutsideScope(OkIdentifierInUseNode),
+}
+
 // misc "kind" enums
 pub enum TypeResolveKind {
     Resolved(Type),
-    Unresolved((Vec<OkIdentifierInUseNode>, Vec<OkIdentifierInUseNode>)),
+    Unresolved(Vec<UnresolvedIdentifier>),
     Invalid,
 }
 
