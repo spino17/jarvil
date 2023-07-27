@@ -1258,7 +1258,10 @@ impl UserDefinedTypeNode {
                                         SymbolDataEntry::Type(symbol_data.clone()),
                                     );
                                     assert!(index.is_none());
-                                    TypeResolveKind::Resolved(Type::new_with_generic(&symbol_data))
+                                    TypeResolveKind::Resolved(Type::new_with_generic(
+                                        name,
+                                        &symbol_data,
+                                    ))
                                 }
                                 Err(_) => TypeResolveKind::Unresolved(vec![
                                     UnresolvedIdentifier::GenericResolvedToOutsideScope(
@@ -1311,7 +1314,10 @@ impl UserDefinedTypeNode {
                         }
                         UserDefinedTypeData::Generic(_) => {
                             assert!(index.is_none());
-                            return TypeResolveKind::Resolved(Type::new_with_generic(symbol_data));
+                            return TypeResolveKind::Resolved(Type::new_with_generic(
+                                name,
+                                symbol_data,
+                            ));
                         }
                     }
                 }

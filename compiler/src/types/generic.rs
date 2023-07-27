@@ -7,12 +7,14 @@ use crate::scope::{
 
 #[derive(Debug)]
 pub struct Generic {
+    pub name: String,
     pub semantic_data: SymbolData<UserDefinedTypeData>,
 }
 
 impl Generic {
-    pub fn new(symbol_data: &SymbolData<UserDefinedTypeData>) -> Generic {
+    pub fn new(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Generic {
         Generic {
+            name,
             semantic_data: symbol_data.clone(),
         }
     }
@@ -22,25 +24,11 @@ impl AbstractType for Generic {
     fn is_eq(&self, other_ty: &Type) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Generic(generic_data) => {
-                let self_symbol_data = self.semantic_data.get_core_ref();
-                let self_generic_data = self_symbol_data.get_generic_data_ref();
-                let self_interface_bounds = &self_generic_data.interface_bounds;
-                let self_len = self_interface_bounds.len();
-
-                let other_symbol_data = generic_data.semantic_data.get_core_ref();
-                let other_generic_data = other_symbol_data.get_generic_data_ref();
-                let other_interface_bounds = &other_generic_data.interface_bounds;
-                let other_len = other_interface_bounds.len();
-
-                if self_len != other_len {
-                    return false;
+                if self.name == generic_data.name {
+                    true
+                } else {
+                    false
                 }
-                for i in 0..self_len {
-                    if !self_interface_bounds[i].is_eq(&other_interface_bounds[i]) {
-                        return false;
-                    }
-                }
-                return true;
             }
             CoreType::Any => true,
             _ => false,
@@ -65,7 +53,7 @@ impl AbstractType for Generic {
 
 impl ToString for Generic {
     fn to_string(&self) -> String {
-        let mut s = "T{".to_string();
+        let mut s = format!("{}{{", self.name);
         let symbol_data = self.semantic_data.get_core_ref();
         let generic_data = symbol_data.get_generic_data_ref();
         let interface_bounds = &generic_data.interface_bounds;

@@ -38,7 +38,7 @@ pub enum ConcreteTypesRegistrationKind {
 }
 
 #[derive(Debug)]
-pub struct GenericTypeParams(pub Vec<(Vec<InterfaceObject>, TextRange)>);
+pub struct GenericTypeParams(pub Vec<(String, Vec<InterfaceObject>, TextRange)>);
 
 #[derive(Debug)]
 pub struct SymbolData<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)

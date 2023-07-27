@@ -160,8 +160,11 @@ impl Type {
         )
     }
 
-    pub fn new_with_generic(symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
-        Type(Rc::new(CoreType::Generic(Generic::new(symbol_data))), true)
+    pub fn new_with_generic(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
+        Type(
+            Rc::new(CoreType::Generic(Generic::new(name, symbol_data))),
+            true,
+        )
     }
 
     pub fn new_with_unknown() -> Type {

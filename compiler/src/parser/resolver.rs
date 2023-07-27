@@ -578,7 +578,8 @@ impl Resolver {
     ) -> (Option<GenericTypeParams>, Option<Vec<Type>>) {
         match &ok_identifier_in_decl.core_ref().generic_type_decls {
             Some((_, generic_type_decls, _)) => {
-                let mut generic_type_params_vec: Vec<(Vec<InterfaceObject>, TextRange)> = vec![];
+                let mut generic_type_params_vec: Vec<(String, Vec<InterfaceObject>, TextRange)> =
+                    vec![];
                 let mut concrete_types: Vec<Type> = vec![];
                 for (index, generic_type_decl) in generic_type_decls.iter().enumerate() {
                     let core_generic_type_decl = generic_type_decl.core_ref();
@@ -611,7 +612,7 @@ impl Resolver {
                             .namespace
                             .declare_generic_type_with_meta_data(
                                 self.scope_index,
-                                generic_ty_name,
+                                generic_ty_name.to_string(),
                                 index,
                                 decl_place_category,
                                 &interface_bounds_vec,
@@ -622,9 +623,13 @@ impl Resolver {
                                     ok_identifier_in_decl,
                                     symbol_data.get_entry(),
                                 );
-                                generic_type_params_vec
-                                    .push((interface_bounds_vec, ok_identifier_in_decl.range()));
-                                concrete_types.push(Type::new_with_generic(&symbol_data.0))
+                                generic_type_params_vec.push((
+                                    generic_ty_name.to_string(),
+                                    interface_bounds_vec,
+                                    ok_identifier_in_decl.range(),
+                                ));
+                                concrete_types
+                                    .push(Type::new_with_generic(generic_ty_name, &symbol_data.0))
                             }
                             Err((param_name, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -671,7 +676,7 @@ impl Resolver {
         Type,
         Option<TextRange>,
         Option<(Vec<usize>, bool)>,
-        Option<GenericTypeParams>
+        Option<GenericTypeParams>,
     ) {
         let generic_type_decls = match optional_identifier_in_decl {
             Some(ok_identifier) => {
@@ -757,7 +762,7 @@ impl Resolver {
             return_type,
             return_type_range,
             is_concretization_required,
-            generic_type_decls
+            generic_type_decls,
         )
     }
 
@@ -775,8 +780,14 @@ impl Resolver {
         let core_callable_body = callable_body.core_ref();
         let callable_body = &core_callable_body.block;
         self.open_block(callable_body.core_ref().kind);
-        let (param_types_vec, return_type, return_type_range, is_concretization_required, generic_type_decls) =
-            self.declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
+        let (
+            param_types_vec,
+            return_type,
+            return_type_range,
+            is_concretization_required,
+            generic_type_decls,
+        ) = self
+            .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
         for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
