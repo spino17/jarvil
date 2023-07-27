@@ -14,9 +14,24 @@ pub enum UserDefinedTypeData {
     Generic(GenericTypeData),
 }
 
+#[derive(Debug)]
+pub enum UserDefineTypeKind {
+    Struct,
+    Lambda,
+    Generic
+}
+
 impl UserDefinedTypeData {
     pub fn default_with_struct() -> Self {
         UserDefinedTypeData::Struct(StructTypeData::default())
+    }
+
+    pub fn get_kind(&self) -> UserDefineTypeKind {
+        match self {
+            UserDefinedTypeData::Struct(_) => UserDefineTypeKind::Struct,
+            UserDefinedTypeData::Lambda(_) => UserDefineTypeKind::Lambda,
+            UserDefinedTypeData::Generic(_) => UserDefineTypeKind::Generic
+        }
     }
 
     // Below methods should only be called if getting the desired variant is guarenteed

@@ -41,7 +41,7 @@ use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
-use crate::scope::types::core::UserDefinedTypeData;
+use crate::scope::types::core::{UserDefinedTypeData, UserDefineTypeKind};
 use crate::types::core::Type;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
@@ -1213,14 +1213,14 @@ impl UserDefinedTypeNode {
                         ok_identifier,
                         SymbolDataEntry::Type(symbol_data.clone()),
                     );
-                    let result = match &*symbol_data.get_core_ref() {
-                        UserDefinedTypeData::Struct(_) => TypeResolveKind::Resolved(
+                    let result = match symbol_data.get_core_ref().get_kind() {
+                        UserDefineTypeKind::Struct => TypeResolveKind::Resolved(
                             Type::new_with_struct(name, &symbol_data, index, has_generics),
                         ),
-                        UserDefinedTypeData::Lambda(_) => TypeResolveKind::Resolved(
+                        UserDefineTypeKind::Lambda => TypeResolveKind::Resolved(
                             Type::new_with_lambda_named(name, &symbol_data, index, has_generics),
                         ),
-                        UserDefinedTypeData::Generic(_) => {
+                        UserDefineTypeKind::Generic => {
                             assert!(index.is_none());
                             let (expected_scope_index, possible_expected_class_scope_index) =
                                 resolver.get_enclosing_generics_declarative_scope_index();
