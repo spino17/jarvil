@@ -665,17 +665,28 @@ impl Resolver {
     pub fn declare_callable_prototype(
         &mut self,
         callable_prototype: &CallablePrototypeNode,
+        optional_identifier_in_decl: Option<&OkIdentifierInDeclNode>,
     ) -> (
         Vec<Type>,
         Type,
         Option<TextRange>,
         Option<(Vec<usize>, bool)>,
+        Option<GenericTypeParams>
     ) {
+        let generic_type_decls = match optional_identifier_in_decl {
+            Some(ok_identifier) => {
+                self.declare_angle_bracket_content_from_identifier_in_decl(
+                    ok_identifier,
+                    GenericTypeDeclarationPlaceCategory::InCallable,
+                )
+                .0
+            }
+            None => None,
+        };
         // (params_vec, return_type, return_type_span, is_concretization_required)
         let core_callable_prototype = callable_prototype.core_ref();
         let params = &core_callable_prototype.params;
         let return_type = &core_callable_prototype.return_type;
-        let rparen = &core_callable_prototype.rparen;
         let mut param_types_vec: Vec<Type> = vec![];
         let mut return_type_range: Option<TextRange> = None;
         let mut is_concretization_required_for_return_type = false;
@@ -691,7 +702,6 @@ impl Resolver {
         if return_type.has_generics() {
             is_concretization_required_for_return_type = true;
         }
-        let mut params_count: usize = 0;
         if let Some(params) = params {
             let params_iter = params.iter();
             for param in params_iter {
@@ -717,7 +727,6 @@ impl Resolver {
                                 generics_containing_params_indexes.push(param_types_vec.len());
                             }
                             param_types_vec.push(param_type);
-                            params_count += 1;
                         }
                         Err((param_name, previous_decl_range)) => {
                             let err = IdentifierAlreadyDeclaredError::new(
@@ -748,6 +757,7 @@ impl Resolver {
             return_type,
             return_type_range,
             is_concretization_required,
+            generic_type_decls
         )
     }
 
@@ -765,18 +775,8 @@ impl Resolver {
         let core_callable_body = callable_body.core_ref();
         let callable_body = &core_callable_body.block;
         self.open_block(callable_body.core_ref().kind);
-        let generic_type_decls = match optional_identifier_in_decl {
-            Some(ok_identifier) => {
-                self.declare_angle_bracket_content_from_identifier_in_decl(
-                    ok_identifier,
-                    GenericTypeDeclarationPlaceCategory::InCallable,
-                )
-                .0
-            }
-            None => None,
-        };
-        let (param_types_vec, return_type, return_type_range, is_concretization_required) =
-            self.declare_callable_prototype(&core_callable_body.prototype);
+        let (param_types_vec, return_type, return_type_range, is_concretization_required, generic_type_decls) =
+            self.declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
         for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
@@ -804,8 +804,8 @@ impl Resolver {
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
         let callable_body = &core_callable_body.block;
         self.open_block(callable_body.core_ref().kind);
-        let (param_types_vec, return_type, return_type_range, is_concretization_required) =
-            self.declare_callable_prototype(&core_callable_body.prototype);
+        let (param_types_vec, return_type, return_type_range, is_concretization_required, _) =
+            self.declare_callable_prototype(&core_callable_body.prototype, None);
         for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
