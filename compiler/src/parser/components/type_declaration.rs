@@ -1,4 +1,6 @@
-use crate::ast::ast::{ErrornousNode, SymbolSeparatedSequenceNode, TokenNode, TypeExpressionNode};
+use crate::ast::ast::{
+    ErrornousNode, IdentifierInUseNode, SymbolSeparatedSequenceNode, TokenNode, TypeExpressionNode,
+};
 use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
 use crate::constants::common::DEF;
 use crate::lexer::token::CoreToken;
@@ -12,7 +14,19 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
     let token = parser.curr_token();
     let type_decl_node = match token.core_token {
         CoreToken::STRUCT_KEYWORD => {
+            let mut implementing_interfaces_node: Option<(
+                TokenNode,
+                SymbolSeparatedSequenceNode<IdentifierInUseNode>,
+            )> = None;
             let struct_keyword_node = parser.expect("struct");
+            if parser.curr_token().is_eq("implements") {
+                let implements_keyword_node = parser.expect("implements");
+                let interfaces_nodes = parser.expect_symbol_separated_sequence(
+                    |parser: &mut JarvilParser| return parser.expect_identifier_in_use(),
+                    ",",
+                );
+                implementing_interfaces_node = Some((implements_keyword_node, interfaces_nodes));
+            }
             let colon_node = parser.expect(":");
             let block_node = parser.block(
                 |token| match token.core_token {
@@ -29,7 +43,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 &block_node,
                 &type_keyword_node,
                 &struct_keyword_node,
-                None,
+                implementing_interfaces_node,
                 &colon_node,
             )
         }

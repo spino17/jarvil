@@ -977,6 +977,7 @@ impl Resolver {
         });
         let core_struct_decl = struct_decl.core_ref();
         let struct_body = &core_struct_decl.block;
+        let implementing_interfaces_node = &core_struct_decl.implementing_interfaces;
         let mut optional_ok_identifier_node = None;
         let mut symbol_data: Option<UserDefinedTypeSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
@@ -1027,13 +1028,30 @@ impl Resolver {
         );
         assert!(result.is_ok());
 
+        let mut implementing_interfaces: Option<InterfaceBounds> = None;
+        if let Some((_, interfaces_node)) = implementing_interfaces_node {
+            let mut interfaces = InterfaceBounds::default();
+            for interface_expr in interfaces_node.iter() {
+                if let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref() {
+                    if let Some(interface_obj) = self.interface_obj_from_expression(&interface_expr)
+                    {
+                        if !interfaces.insert(interface_obj) {
+                            // TODO - raise error `Interface object is already present in the bounds`
+                        }
+                    }
+                }
+            }
+            if interfaces.len() > 0 {
+                implementing_interfaces = Some(interfaces);
+            }
+        }
+        // TODO - check in the body of struct that all the methods expected by the above implementing_interfaces are present!
+
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let mut constructor: Option<(CallableData, TextRange)> = None;
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
-        let mut implementing_interfaces: Option<InterfaceBounds> = None;
-        // TODO - check if the struct implements some interfaces
         for stmt in &*struct_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
