@@ -1278,7 +1278,6 @@ impl Resolver {
         let mut types_vec: Vec<Type> = vec![];
         let type_tuple = &core_lambda_type_decl.type_tuple;
         let return_type = &core_lambda_type_decl.return_type;
-        let rparen = &core_lambda_type_decl.rparen;
         let mut generics_containing_params_indexes = vec![];
         let mut is_concretization_required_for_return_type = false;
         let mut optional_ok_identifier_node: Option<&OkIdentifierInDeclNode> = None;
