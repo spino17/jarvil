@@ -59,11 +59,11 @@ impl ToString for Generic {
         let interface_bounds = &generic_data.interface_bounds;
         let len = interface_bounds.len();
         if len > 0 {
-            s.push_str(&interface_bounds[0].to_string());
+            s.push_str(&interface_bounds.interfaces[0].to_string());
         }
         for i in 1..len {
             s.push_str(" + ");
-            s.push_str(&interface_bounds[i].to_string());
+            s.push_str(&interface_bounds.interfaces[i].to_string());
         }
         s.push('}');
         s

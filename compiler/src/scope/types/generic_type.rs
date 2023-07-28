@@ -1,17 +1,17 @@
-use crate::scope::interfaces::InterfaceObject;
+use crate::scope::interfaces::{InterfaceObject, InterfaceBounds};
 
 #[derive(Debug)]
 pub struct GenericTypeData {
     pub index: usize, // index in the sequence of all generic type params in declaration
     pub category: GenericTypeDeclarationPlaceCategory,
-    pub interface_bounds: Vec<InterfaceObject>,
+    pub interface_bounds: InterfaceBounds,
 }
 
 impl GenericTypeData {
     pub fn new(
         index: usize,
         category: GenericTypeDeclarationPlaceCategory,
-        interface_bounds: Vec<InterfaceObject>,
+        interface_bounds: InterfaceBounds,
     ) -> Self {
         GenericTypeData {
             index,

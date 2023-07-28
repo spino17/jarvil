@@ -4,7 +4,7 @@ use crate::scope::{
     types::{
         core::UserDefinedTypeData,
         generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory},
-    },
+    }, interfaces::InterfaceBounds,
 };
 use text_size::TextRange;
 
@@ -15,7 +15,7 @@ pub fn get_unbounded_generic_type_with_declaration_index(index: usize) -> Type {
             UserDefinedTypeData::Generic(GenericTypeData {
                 category: GenericTypeDeclarationPlaceCategory::InStruct,
                 index,
-                interface_bounds: vec![],
+                interface_bounds: InterfaceBounds::new(vec![]),
             }),
             TextRange::default(),
             true,

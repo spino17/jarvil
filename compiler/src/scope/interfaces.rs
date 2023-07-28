@@ -134,21 +134,27 @@ impl ToString for InterfaceObject {
 // which would require us to make `InterfaceObject` hashable. We already have the notion
 // of equality between `InterfaceObject` but to construct a hash function which adheres
 // to the following constraint: k1 == k1 => Hash(k1) == Hash(k2) is not at all obvious.
-// One approach can be to construct `Vec<String>` from names of interfaces and types but that
+// One approach can be to construct `Vec<String>` (which is hashable) from names of interfaces and types but that
 // can contain a lot of collision for example:
 // [ExampleInterface<genericType>, AnotherInterface] => ["ExampleInterface", "genericType", "AnotherInterface"]
 // [ExampleInterface, genericType, AnotherInterface] => ["ExampleInterface", "genericType", "AnotherInterface"]
 // Furthermore the equality of lambda types is structural so that complicates the process.
+// To actually realize a hash implementation of `InterfaceObject` requires more advanced name-mangling approach which for now
+// we choose to skip.
 // Given all the above factors we used the brute force approach (which is fine for small number of interfaces which often times
 // is the case).
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 pub struct InterfaceBounds {
-    interfaces: Vec<InterfaceObject>,
+    pub interfaces: Vec<InterfaceObject>,
 }
 
 impl InterfaceBounds {
     pub fn new(interfaces: Vec<InterfaceObject>) -> Self {
         InterfaceBounds { interfaces }
+    }
+
+    pub fn len(&self) -> usize {
+        self.interfaces.len()
     }
 
     pub fn contains(&self, obj: &InterfaceObject) -> bool {

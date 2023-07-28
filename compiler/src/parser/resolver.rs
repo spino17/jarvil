@@ -21,7 +21,7 @@ use crate::scope::core::{
 };
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
-use crate::scope::interfaces::InterfaceObject;
+use crate::scope::interfaces::{InterfaceObject, InterfaceBounds};
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::CoreType;
 use crate::{
@@ -578,7 +578,7 @@ impl Resolver {
     ) -> (Option<GenericTypeParams>, Option<Vec<Type>>) {
         match &ok_identifier_in_decl.core_ref().generic_type_decls {
             Some((_, generic_type_decls, _)) => {
-                let mut generic_type_params_vec: Vec<(String, Vec<InterfaceObject>, TextRange)> =
+                let mut generic_type_params_vec: Vec<(String, InterfaceBounds, TextRange)> =
                     vec![];
                 let mut concrete_types: Vec<Type> = vec![];
                 for (index, generic_type_decl) in generic_type_decls.iter().enumerate() {
@@ -591,7 +591,7 @@ impl Resolver {
                             .generic_type_decls
                             .is_none());
                         let generic_ty_name = ok_identifier_in_decl.token_value(&self.code);
-                        let mut interface_bounds_vec: Vec<InterfaceObject> = vec![];
+                        let mut interface_bounds_vec = InterfaceBounds::default();
                         if let Some((_, interface_bounds)) =
                             &core_generic_type_decl.interface_bounds
                         {
@@ -602,7 +602,9 @@ impl Resolver {
                                     if let Some(interface_obj) =
                                         self.interface_obj_from_expression(&interface_expr)
                                     {
-                                        interface_bounds_vec.push(interface_obj)
+                                        if !interface_bounds_vec.insert(interface_obj) {
+                                            // TODO - raise error `Interface object is already present in the bounds`
+                                        }
                                     }
                                 }
                             }
@@ -1031,7 +1033,7 @@ impl Resolver {
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
-        let mut implementing_interfaces: Option<Vec<InterfaceObject>> = None;
+        let mut implementing_interfaces: Option<InterfaceBounds> = None;
         // TODO - check if the struct implements some interfaces
         for stmt in &*struct_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {

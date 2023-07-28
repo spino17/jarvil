@@ -1,7 +1,7 @@
 use super::concrete::core::ConcreteTypesRegistryKey;
 use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
-use super::interfaces::{InterfaceData, InterfaceObject};
+use super::interfaces::{InterfaceData, InterfaceObject, InterfaceBounds};
 use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use super::types::lambda_type::LambdaTypeData;
 use crate::scope::types::core::UserDefinedTypeData;
@@ -38,7 +38,7 @@ pub enum ConcreteTypesRegistrationKind {
 }
 
 #[derive(Debug)]
-pub struct GenericTypeParams(pub Vec<(String, Vec<InterfaceObject>, TextRange)>);
+pub struct GenericTypeParams(pub Vec<(String, InterfaceBounds, TextRange)>);
 
 #[derive(Debug)]
 pub struct SymbolData<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
@@ -511,7 +511,7 @@ impl Namespace {
         name: String,
         index: usize,
         category: GenericTypeDeclarationPlaceCategory,
-        interface_bounds: &Vec<InterfaceObject>,
+        interface_bounds: &InterfaceBounds,
         decl_range: TextRange,
     ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let meta_data = UserDefinedTypeData::Generic(GenericTypeData::new(

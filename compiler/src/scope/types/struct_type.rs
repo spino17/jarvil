@@ -1,7 +1,7 @@
 use crate::scope::concrete::core::ConcreteTypesTuple;
 use crate::scope::concrete::registry::GenericsSpecAndConcreteTypesRegistry;
 use crate::scope::function::{CallableData, CallableKind};
-use crate::scope::interfaces::InterfaceObject;
+use crate::scope::interfaces::{InterfaceObject, InterfaceBounds};
 use crate::{
     scope::{
         concrete::core::ConcreteTypesRegistryKey,
@@ -19,7 +19,7 @@ pub struct StructTypeData {
     pub methods: FxHashMap<String, (CallableData, TextRange)>,
     pub class_methods: FxHashMap<String, (CallableData, TextRange)>,
     pub generics: GenericsSpecAndConcreteTypesRegistry,
-    pub implementing_interfaces: Option<Vec<InterfaceObject>>,
+    pub implementing_interfaces: Option<InterfaceBounds>,
 }
 
 impl StructTypeData {
@@ -30,7 +30,7 @@ impl StructTypeData {
         methods: FxHashMap<String, (CallableData, TextRange)>,
         class_methods: FxHashMap<String, (CallableData, TextRange)>,
         generics_spec: Option<GenericTypeParams>,
-        implementing_interfaces: Option<Vec<InterfaceObject>>,
+        implementing_interfaces: Option<InterfaceBounds>,
     ) {
         self.fields = fields;
         self.methods = methods;
