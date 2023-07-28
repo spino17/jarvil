@@ -1,10 +1,11 @@
 use super::core::Type;
 use crate::scope::{
     core::SymbolData,
+    interfaces::InterfaceBounds,
     types::{
         core::UserDefinedTypeData,
         generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory},
-    }, interfaces::InterfaceBounds,
+    },
 };
 use text_size::TextRange;
 

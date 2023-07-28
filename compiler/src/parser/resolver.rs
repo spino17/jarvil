@@ -21,7 +21,7 @@ use crate::scope::core::{
 };
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
-use crate::scope::interfaces::{InterfaceObject, InterfaceBounds};
+use crate::scope::interfaces::{InterfaceBounds, InterfaceObject};
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::CoreType;
 use crate::{
@@ -578,8 +578,7 @@ impl Resolver {
     ) -> (Option<GenericTypeParams>, Option<Vec<Type>>) {
         match &ok_identifier_in_decl.core_ref().generic_type_decls {
             Some((_, generic_type_decls, _)) => {
-                let mut generic_type_params_vec: Vec<(String, InterfaceBounds, TextRange)> =
-                    vec![];
+                let mut generic_type_params_vec: Vec<(String, InterfaceBounds, TextRange)> = vec![];
                 let mut concrete_types: Vec<Type> = vec![];
                 for (index, generic_type_decl) in generic_type_decls.iter().enumerate() {
                     let core_generic_type_decl = generic_type_decl.core_ref();
@@ -591,18 +590,18 @@ impl Resolver {
                             .generic_type_decls
                             .is_none());
                         let generic_ty_name = ok_identifier_in_decl.token_value(&self.code);
-                        let mut interface_bounds_vec = InterfaceBounds::default();
-                        if let Some((_, interface_bounds)) =
+                        let mut interface_bounds = InterfaceBounds::default();
+                        if let Some((_, interface_bounds_node)) =
                             &core_generic_type_decl.interface_bounds
                         {
-                            for interface_expr in interface_bounds.iter() {
+                            for interface_expr in interface_bounds_node.iter() {
                                 if let CoreIdentifierInUseNode::Ok(interface_expr) =
                                     interface_expr.core_ref()
                                 {
                                     if let Some(interface_obj) =
                                         self.interface_obj_from_expression(&interface_expr)
                                     {
-                                        if !interface_bounds_vec.insert(interface_obj) {
+                                        if !interface_bounds.insert(interface_obj) {
                                             // TODO - raise error `Interface object is already present in the bounds`
                                         }
                                     }
@@ -617,7 +616,7 @@ impl Resolver {
                                 generic_ty_name.to_string(),
                                 index,
                                 decl_place_category,
-                                &interface_bounds_vec,
+                                &interface_bounds,
                                 ok_identifier_in_decl.range(),
                             ) {
                             Ok(symbol_data) => {
@@ -627,7 +626,7 @@ impl Resolver {
                                 );
                                 generic_type_params_vec.push((
                                     generic_ty_name.to_string(),
-                                    interface_bounds_vec,
+                                    interface_bounds,
                                     ok_identifier_in_decl.range(),
                                 ));
                                 concrete_types

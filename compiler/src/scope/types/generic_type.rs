@@ -1,4 +1,4 @@
-use crate::scope::interfaces::{InterfaceObject, InterfaceBounds};
+use crate::scope::interfaces::{InterfaceBounds, InterfaceObject};
 
 #[derive(Debug)]
 pub struct GenericTypeData {

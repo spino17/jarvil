@@ -1,7 +1,7 @@
 use super::concrete::core::ConcreteTypesRegistryKey;
 use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
-use super::interfaces::{InterfaceData, InterfaceObject, InterfaceBounds};
+use super::interfaces::{InterfaceBounds, InterfaceData, InterfaceObject};
 use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use super::types::lambda_type::LambdaTypeData;
 use crate::scope::types::core::UserDefinedTypeData;
