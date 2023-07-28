@@ -425,6 +425,10 @@ pub trait Visitor {
                 self.walk_token(&core_struct_decl.type_keyword);
                 self.walk_identifier_in_decl(&core_struct_decl.name);
                 self.walk_token(&core_struct_decl.struct_keyword);
+                if let Some((implements_keyword, interfaces)) = &core_struct_decl.implementing_interfaces {
+                    self.walk_token(implements_keyword);
+                    self.walk_interface_bounds(interfaces);
+                }
                 self.walk_token(&core_struct_decl.colon);
                 self.walk_block(&core_struct_decl.block);
             }

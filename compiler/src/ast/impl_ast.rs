@@ -404,6 +404,7 @@ impl TypeDeclarationNode {
         block: &BlockNode,
         type_keyword: &TokenNode,
         struct_keyword: &TokenNode,
+        implementing_interfaces: Option<(&TokenNode, &SymbolSeparatedSequenceNode<IdentifierInUseNode>)>,
         colon: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreTypeDeclarationNode::Struct(StructDeclarationNode::new(
@@ -411,6 +412,7 @@ impl TypeDeclarationNode {
             block,
             type_keyword,
             struct_keyword,
+            implementing_interfaces,
             colon,
         )));
         TypeDeclarationNode(node)
@@ -431,12 +433,17 @@ impl StructDeclarationNode {
         block: &BlockNode,
         type_keyword: &TokenNode,
         struct_keyword: &TokenNode,
+        implementing_interfaces: Option<(&TokenNode, &SymbolSeparatedSequenceNode<IdentifierInUseNode>)>,
         colon: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreStructDeclarationNode {
             type_keyword: type_keyword.clone(),
             colon: colon.clone(),
             struct_keyword: struct_keyword.clone(),
+            implementing_interfaces: match implementing_interfaces {
+                Some((implements_keyword, interfaces)) => Some((implements_keyword.clone(), interfaces.clone())),
+                None => None
+            },
             name: name.clone(),
             block: block.clone(),
         });

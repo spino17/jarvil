@@ -29,6 +29,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 &block_node,
                 &type_keyword_node,
                 &struct_keyword_node,
+                None,
                 &colon_node,
             )
         }

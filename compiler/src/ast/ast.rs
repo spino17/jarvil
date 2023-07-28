@@ -214,6 +214,7 @@ pub struct CoreStructDeclarationNode {
     pub type_keyword: TokenNode,
     pub colon: TokenNode,
     pub struct_keyword: TokenNode,
+    pub implementing_interfaces: Option<(TokenNode, SymbolSeparatedSequenceNode<IdentifierInUseNode>)>,  // (`implements`, [...])
     pub name: IdentifierInDeclNode,
     pub block: BlockNode,
 }
