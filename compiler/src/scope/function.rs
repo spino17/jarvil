@@ -162,6 +162,10 @@ impl CallableData {
             .concrete_types_registry
             .get_concrete_types_at_key(key);
     }
+
+    pub fn is_eq(&self, other: &CallableData) -> bool {
+        todo!()
+    }
 }
 
 impl AbstractConcreteTypesHandler for CallableData {

@@ -183,4 +183,8 @@ impl InterfaceBounds {
         }
         return true;
     }
+
+    pub fn is_eq(&self, other: &InterfaceBounds) -> bool {
+        self.is_subset(other) && other.is_subset(self)
+    }
 }
