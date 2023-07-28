@@ -1008,9 +1008,10 @@ impl Resolver {
                     );
                 let struct_ty = match &symbol_data {
                     Some(symbol_data) => {
+                        let has_generics = if struct_generic_type_decls.is_some() { true } else { false };
                         let name = ok_identifier.token_value(&self.code);
-                        let index = symbol_data.0.register_concrete_types(concrete_types, true);
-                        Type::new_with_struct(name, &symbol_data.0, index, true)
+                        let index = symbol_data.0.register_concrete_types(concrete_types, has_generics);
+                        Type::new_with_struct(name, &symbol_data.0, index, has_generics)
                     }
                     None => Type::new_with_unknown(),
                 };
