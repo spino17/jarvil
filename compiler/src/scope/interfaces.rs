@@ -1,4 +1,3 @@
-use std::rc::Rc;
 use super::{
     concrete::{
         core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
@@ -10,6 +9,7 @@ use super::{
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
+use std::rc::Rc;
 use text_size::TextRange;
 
 #[derive(Debug, Default)]
@@ -127,5 +127,54 @@ impl ToString for InterfaceObject {
             }
             None => return s,
         }
+    }
+}
+
+// NOTE - More efficient way to implement interface bounds is to use `HashSet<InterfaceObject>`
+// which would require us to make `InterfaceObject` hashable. We already have the notion
+// of equality between `InterfaceObject` but to construct a hash function which adheres
+// to the following constraint: k1 == k1 => Hash(k1) == Hash(k2) is not at all obvious.
+// One approach can be to construct `Vec<String>` from names of interfaces and types but that
+// can contain a lot of collision for example:
+// [ExampleInterface<genericType>, AnotherInterface] => ["ExampleInterface", "genericType", "AnotherInterface"]
+// [ExampleInterface, genericType, AnotherInterface] => ["ExampleInterface", "genericType", "AnotherInterface"]
+// Furthermore the equality of lambda types is structural so that complicates the process.
+// Given all the above factors we used the brute force approach (which is fine for small number of interfaces which often times
+// is the case).
+#[derive(Debug)]
+pub struct InterfaceBounds {
+    interfaces: Vec<InterfaceObject>,
+}
+
+impl InterfaceBounds {
+    pub fn new(interfaces: Vec<InterfaceObject>) -> Self {
+        InterfaceBounds { interfaces }
+    }
+
+    pub fn contains(&self, obj: &InterfaceObject) -> bool {
+        for entry in &self.interfaces {
+            if entry.is_eq(obj) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    pub fn insert(&mut self, obj: InterfaceObject) -> bool {
+        if self.contains(&obj) {
+            return false;
+        } else {
+            self.interfaces.push(obj);
+            return true;
+        }
+    }
+
+    pub fn is_subset(&self, other: &InterfaceBounds) -> bool {
+        for self_entry in &self.interfaces {
+            if !other.contains(&self_entry) {
+                return false;
+            }
+        }
+        return true;
     }
 }
