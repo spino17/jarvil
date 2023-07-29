@@ -16,6 +16,7 @@ use std::rc::Rc;
 
 pub trait AbstractType {
     fn is_eq(&self, other_ty: &Type) -> bool;
+    // fn is_structurally_eq(&self, other_ty: &Type) -> bool;
     fn concretize(&self, context: &ConcretizationContext) -> Type;
 }
 
