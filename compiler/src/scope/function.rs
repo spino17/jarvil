@@ -61,7 +61,7 @@ impl CallablePrototypeData {
         return true;
     }
 
-    pub fn concretize_prototype_core(
+    fn concretize_prototype_core(
         &self,
         context: &ConcretizationContext,
     ) -> PrototypeConcretizationResult {
@@ -90,10 +90,11 @@ impl CallablePrototypeData {
 
     pub fn concretize_prototype(
         &self,
-        concrete_types: &Vec<Type>,
+        global_concrete_types: &Vec<Type>,
+        local_concrete_types: &Vec<Type>,
     ) -> PrototypeConcretizationResult {
         return self
-            .concretize_prototype_core(&ConcretizationContext::new(&vec![], concrete_types));
+            .concretize_prototype_core(&ConcretizationContext::new(global_concrete_types, local_concrete_types));
     }
 }
 
