@@ -1212,8 +1212,7 @@ impl UserDefinedTypeNode {
             match resolver
                 .namespace_handler
                 .namespace
-                .types
-                .lookup(scope_index, &name)
+                .lookup_in_types_namespace(scope_index, &name)
             {
                 Some((symbol_data, resolved_scope_index, _, _)) => {
                     let ty_kind = symbol_data.get_core_ref().get_kind();

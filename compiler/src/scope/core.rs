@@ -247,7 +247,7 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         self.flattened_vec[scope_index].get(key)
     }
 
-    pub fn lookup(
+    fn lookup(
         &self,
         scope_index: usize,
         key: &str,

@@ -533,8 +533,7 @@ impl Resolver {
         match self
             .namespace_handler
             .namespace
-            .interfaces
-            .lookup(self.scope_index, &name)
+            .lookup_in_interfaces_namespace(self.scope_index, &name)
         {
             Some((symbol_data, _, _, _)) => {
                 let (index, _) = self.bind_decl_to_identifier_in_use(
