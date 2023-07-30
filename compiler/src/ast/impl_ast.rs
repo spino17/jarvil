@@ -1301,6 +1301,7 @@ impl UserDefinedTypeNode {
         if let CoreIdentifierInUseNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(code);
             match namespace_handler.get_type_symbol_data_for_identifier_in_use(ok_identifier) {
+                // TODO - check <...> is correct
                 Some(concrete_symbol_data) => {
                     let index = concrete_symbol_data.index;
                     let symbol_data = &concrete_symbol_data.symbol_data;

@@ -4,7 +4,7 @@
 use super::resolver::Resolver;
 use crate::ast::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, InterfaceMethodTerminalNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, StructDeclarationNode,
 };
 use crate::scope::handler::ConcreteSymbolDataEntry;
 use crate::scope::interfaces::InterfaceBounds;
@@ -416,6 +416,13 @@ impl TypeChecker {
                 let func_name = &core_call_expr.function_name;
                 let params = &core_call_expr.params;
                 if let CoreIdentifierInUseNode::Ok(ok_identifier) = func_name.core_ref() {
+                    // TODO - check if <...> is correct
+                    // there are four cases to be considered
+                    // 1. <> in decl and in usage => check if the concrete types are bounded by the interfaces and then `params_type_and_count`
+                    // 2. <> in decl but not in usage => infer concrete types from the parameters and then check 
+                    // the whether they are bounded by the interfaces
+                    // 3. <> not in decl but in usage => raise error `generics type not expected`
+                    // 4. <> not in decl and not in usage => do the basic check like below
                     if let Some(symbol_data) = self
                         .namespace_handler
                         .get_symbol_data_for_identifier_in_use(ok_identifier)
@@ -524,6 +531,7 @@ impl TypeChecker {
                 let class_method = &core_class_method.class_method_name;
                 let params = &core_class_method.params;
                 if let CoreIdentifierInUseNode::Ok(ok_identifier) = class.core_ref() {
+                    // TODO - check if <...> is correct
                     let class_name = ok_identifier.token_value(&self.code);
                     match self
                         .namespace_handler
@@ -533,11 +541,14 @@ impl TypeChecker {
                             UserDefinedTypeData::Struct(struct_data) => {
                                 let class_method_name = match class_method.core_ref() {
                                     CoreIdentifierInUseNode::Ok(class_method) => {
+                                        // TODO - check if <...> is correct
                                         class_method.token_value(&self.code)
                                     }
                                     _ => return Type::new_with_unknown(),
                                 };
                                 match struct_data.class_methods.get(&class_method_name) {
+                                    // use above two types of concrete types to form `ConcretizationContext`
+                                    // to do the `params_type_and_count` check and get the return type
                                     Some((func_data, _)) => {
                                         let expected_params = &func_data.prototype.params;
                                         let return_type = &func_data.prototype.return_type;
@@ -679,6 +690,7 @@ impl TypeChecker {
                 let (atom_type_obj, _) = self.check_atom(atom);
                 let property = &core_property_access.propertry;
                 if let CoreIdentifierInUseNode::Ok(ok_identifier) = property.core_ref() {
+                    // TODO - check that <...> should not exist as it's a variable!
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     match result {
                         StructPropertyCheckResult::PropertyExist(type_obj) => {
@@ -718,6 +730,8 @@ impl TypeChecker {
                     // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
                     // (for example: a field with lambda type) and then it goes on to find it in methods.
                     // This is in sync with what Python does.
+
+                    // TODO - check if <...> is correct
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     let method_name = ok_identifier.token_value(&self.code);
                     match result {
@@ -1337,6 +1351,13 @@ impl TypeChecker {
         }
     }
 
+    pub fn check_struct_declaration(&mut self, struct_decl: &StructDeclarationNode) {
+        let core_struct_decl = struct_decl.core_ref();
+        // TODO - check the implementing_interfaces => first whether <...> is correct
+        // then whether the methods expected by the interfaces are there or not
+        self.walk_block(&core_struct_decl.block);
+    }
+
     pub fn check_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
             CoreStatementNode::Expression(expr_stmt) => {
@@ -1361,7 +1382,8 @@ impl TypeChecker {
             }
             CoreStatementNode::TypeDeclaration(type_decl) => match type_decl.core_ref() {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {
-                    self.walk_block(&struct_decl.core_ref().block);
+                    // self.walk_block(&struct_decl.core_ref().block);
+                    self.check_struct_declaration(struct_decl);
                 }
                 CoreTypeDeclarationNode::Lambda(_) | CoreTypeDeclarationNode::MissingTokens(_) => {
                     return

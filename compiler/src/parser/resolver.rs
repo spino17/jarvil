@@ -689,6 +689,7 @@ impl Resolver {
             }
             None => None,
         };
+        // TODO - set generic_type_decls to the function_object
         // (params_vec, return_type, return_type_span, is_concretization_required)
         let core_callable_prototype = callable_prototype.core_ref();
         let params = &core_callable_prototype.params;
@@ -1304,7 +1305,6 @@ impl Resolver {
         if return_type.has_generics() {
             is_concretization_required_for_return_type = true;
         }
-        let mut types_count = 0;
         if let Some(type_tuple) = type_tuple {
             let type_tuple_iter = type_tuple.iter();
             for data_type in type_tuple_iter {
@@ -1313,7 +1313,6 @@ impl Resolver {
                     generics_containing_params_indexes.push(types_vec.len());
                 }
                 types_vec.push(ty);
-                types_count += 1;
             }
         }
         self.close_block(None);
