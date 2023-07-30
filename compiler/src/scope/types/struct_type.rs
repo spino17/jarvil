@@ -29,8 +29,6 @@ impl StructTypeData {
         constructor: Option<(CallableData, TextRange)>,
         methods: FxHashMap<String, (CallableData, TextRange)>,
         class_methods: FxHashMap<String, (CallableData, TextRange)>,
-        generics_spec: Option<GenericTypeParams>,
-        implementing_interfaces: Option<InterfaceBounds>,
     ) {
         self.fields = fields;
         self.methods = methods;
@@ -38,6 +36,13 @@ impl StructTypeData {
         if let Some((constructor_meta_data, _)) = constructor {
             self.constructor = constructor_meta_data;
         }
+    }
+
+    pub fn set_generics_and_interfaces(
+        &mut self,
+        generics_spec: Option<GenericTypeParams>,
+        implementing_interfaces: Option<InterfaceBounds>,
+    ) {
         self.generics.generics_spec = generics_spec;
         self.implementing_interfaces = implementing_interfaces;
     }

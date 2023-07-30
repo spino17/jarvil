@@ -772,6 +772,46 @@ impl Resolver {
         &mut self,
         callable_body: &CallableBodyNode,
         optional_identifier_in_decl: Option<&OkIdentifierInDeclNode>,
+        symbol_data: &Option<FunctionSymbolData>,
+    ) -> (
+        Vec<Type>,
+        Type,
+        Option<TextRange>,
+        Option<(Vec<usize>, bool)>,
+    ) {
+        let core_callable_body = callable_body.core_ref();
+        let callable_body = &core_callable_body.block;
+        self.open_block(callable_body.core_ref().kind);
+        let (
+            param_types_vec,
+            return_type,
+            return_type_range,
+            is_concretization_required,
+            generic_type_decls,
+        ) = self
+            .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
+        if let Some(symbol_data) = symbol_data {
+            symbol_data
+                .0
+                .get_core_mut_ref()
+                .set_generics(generic_type_decls);
+        }
+        for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
+            self.walk_stmt_indent_wrapper(stmt);
+        }
+        self.close_block(Some(callable_body));
+        (
+            param_types_vec,
+            return_type,
+            return_type_range,
+            is_concretization_required,
+        )
+    }
+
+    pub fn visit_method_body(
+        &mut self,
+        callable_body: &CallableBodyNode,
+        optional_identifier_in_decl: Option<&OkIdentifierInDeclNode>,
     ) -> (
         Vec<Type>,
         Type,
@@ -900,8 +940,8 @@ impl Resolver {
                     symbol_data.0.get_core_mut_ref().set_is_init(true);
                 }
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
-                let (params_vec, return_type, _, is_concretization_required, _) =
-                    self.visit_callable_body(&core_lambda_r_assign.body, None);
+                let (params_vec, return_type, _, is_concretization_required) =
+                    self.visit_callable_body(&core_lambda_r_assign.body, None, &None);
                 let lambda_type_obj = Type::new_with_lambda_unnamed(CallablePrototypeData::new(
                     params_vec,
                     return_type,
@@ -959,15 +999,14 @@ impl Resolver {
                 }
             }
         }
-        let (param_types_vec, return_type, _, is_concretization_required, generic_type_decls) =
-            self.visit_callable_body(body, optional_ok_identifier_node);
+        let (param_types_vec, return_type, _, is_concretization_required) =
+            self.visit_callable_body(body, optional_ok_identifier_node, &symbol_data);
         if let Some(symbol_data) = &symbol_data {
             symbol_data.0.get_core_mut_ref().set_meta_data(
                 param_types_vec,
                 return_type,
                 CallableKind::Function,
                 is_concretization_required,
-                generic_type_decls,
             );
         }
     }
@@ -1009,9 +1048,15 @@ impl Resolver {
                     );
                 let struct_ty = match &symbol_data {
                     Some(symbol_data) => {
-                        let has_generics = if struct_generic_type_decls.is_some() { true } else { false };
+                        let has_generics = if struct_generic_type_decls.is_some() {
+                            true
+                        } else {
+                            false
+                        };
                         let name = ok_identifier.token_value(&self.code);
-                        let index = symbol_data.0.register_concrete_types(concrete_types, has_generics);
+                        let index = symbol_data
+                            .0
+                            .register_concrete_types(concrete_types, has_generics);
                         Type::new_with_struct(name, &symbol_data.0, index, has_generics)
                     }
                     None => Type::new_with_unknown(),
@@ -1047,7 +1092,13 @@ impl Resolver {
                 implementing_interfaces = Some(interfaces);
             }
         }
-        // TODO - check in the body of struct that all the methods expected by the above implementing_interfaces are present!
+        if let Some(symbol_data) = &symbol_data {
+            symbol_data
+                .0
+                .get_core_mut_ref()
+                .get_struct_data_mut_ref()
+                .set_generics_and_interfaces(struct_generic_type_decls, implementing_interfaces);
+        }
 
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let mut constructor: Option<(CallableData, TextRange)> = None;
@@ -1130,7 +1181,7 @@ impl Resolver {
                             None,
                         )
                     } else {
-                        self.visit_callable_body(&core_func_decl.body, optional_ok_identifier_node)
+                        self.visit_method_body(&core_func_decl.body, optional_ok_identifier_node)
                     };
                     if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
@@ -1262,14 +1313,7 @@ impl Resolver {
                     .0
                     .get_core_mut_ref()
                     .get_struct_data_mut_ref()
-                    .set_meta_data(
-                        fields_map,
-                        constructor,
-                        methods,
-                        class_methods,
-                        struct_generic_type_decls,
-                        implementing_interfaces,
-                    );
+                    .set_meta_data(fields_map, constructor, methods, class_methods);
             }
         }
         self.context.class_context_stack.pop();
@@ -1386,6 +1430,12 @@ impl Resolver {
             }
             None => None,
         };
+        if let Some(symbol_data) = &symbol_data {
+            symbol_data
+                .0
+                .get_core_mut_ref()
+                .set_generics(generic_type_decls);
+        }
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         // traverse the body
@@ -1395,7 +1445,7 @@ impl Resolver {
             symbol_data
                 .0
                 .get_core_mut_ref()
-                .set_meta_data(fields_map, methods, generic_type_decls);
+                .set_meta_data(fields_map, methods);
         }
     }
 }

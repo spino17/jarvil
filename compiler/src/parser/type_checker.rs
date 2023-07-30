@@ -327,7 +327,7 @@ impl TypeChecker {
             // array and hashmaps would implement `Iterator` interface
             CoreType::Struct(struct_data) => todo!(),
             CoreType::Generic(generic_data) => todo!(),
-            _ => return false
+            _ => return false,
         };
         interface_bounds.is_subset(&ty_implementing_interfaces)
     }
@@ -419,7 +419,7 @@ impl TypeChecker {
                     // TODO - check if <...> is correct
                     // there are four cases to be considered
                     // 1. <> in decl and in usage => check if the concrete types are bounded by the interfaces and then `params_type_and_count`
-                    // 2. <> in decl but not in usage => infer concrete types from the parameters and then check 
+                    // 2. <> in decl but not in usage => infer concrete types from the parameters and then check
                     // the whether they are bounded by the interfaces
                     // 3. <> not in decl but in usage => raise error `generics type not expected`
                     // 4. <> not in decl and not in usage => do the basic check like below

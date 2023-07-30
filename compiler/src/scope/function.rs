@@ -93,8 +93,10 @@ impl CallablePrototypeData {
         global_concrete_types: &Vec<Type>,
         local_concrete_types: &Vec<Type>,
     ) -> PrototypeConcretizationResult {
-        return self
-            .concretize_prototype_core(&ConcretizationContext::new(global_concrete_types, local_concrete_types));
+        return self.concretize_prototype_core(&ConcretizationContext::new(
+            global_concrete_types,
+            local_concrete_types,
+        ));
     }
 }
 
@@ -148,13 +150,15 @@ impl CallableData {
         return_type: Type,
         kind: CallableKind,
         is_concretization_required: Option<(Vec<usize>, bool)>,
-        generics_spec: Option<GenericTypeParams>,
     ) {
         self.prototype.params = params;
         self.prototype.return_type = return_type;
         self.prototype.is_concretization_required = is_concretization_required;
-        self.generics.generics_spec = generics_spec;
         self.kind = kind;
+    }
+
+    pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
+        self.generics.generics_spec = generics_spec;
     }
 
     pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {

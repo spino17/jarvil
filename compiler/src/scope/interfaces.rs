@@ -24,10 +24,12 @@ impl InterfaceData {
         &mut self,
         fields: FxHashMap<String, (Type, TextRange)>,
         methods: FxHashMap<String, (CallableData, TextRange)>,
-        generics_spec: Option<GenericTypeParams>,
     ) {
         self.fields = fields;
         self.methods = methods;
+    }
+
+    pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
         self.generics.generics_spec = generics_spec;
     }
 
