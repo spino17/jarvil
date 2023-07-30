@@ -689,7 +689,6 @@ impl Resolver {
             }
             None => None,
         };
-        // TODO - set generic_type_decls to the function_object
         // (params_vec, return_type, return_type_span, is_concretization_required)
         let core_callable_prototype = callable_prototype.core_ref();
         let params = &core_callable_prototype.params;
