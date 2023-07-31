@@ -18,7 +18,7 @@ pub struct LookupData<T: AbstractSymbolData> {
     pub symbol_data: T,
     pub resolved_scope_index: usize,
     pub depth: usize,
-    pub is_global: bool
+    pub is_global: bool,
 }
 
 impl<T: AbstractSymbolData> LookupData<T> {
@@ -27,7 +27,7 @@ impl<T: AbstractSymbolData> LookupData<T> {
             symbol_data,
             resolved_scope_index,
             depth,
-            is_global
+            is_global,
         }
     }
 }
@@ -35,14 +35,14 @@ impl<T: AbstractSymbolData> LookupData<T> {
 pub enum LookupResult<T: AbstractSymbolData> {
     Ok(LookupData<T>),
     NotInitialized(TextRange),
-    Err,
+    Unresolved,
 }
 
 #[derive(Debug)]
 pub enum IntermediateLookupResult<T: AbstractConcreteTypesHandler> {
     Ok((SymbolData<T>, usize, usize, bool)),
     NotInitialized(TextRange),
-    Err,
+    Unresolved,
 }
 
 pub trait AbstractConcreteTypesHandler {
@@ -275,11 +275,7 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         self.flattened_vec[scope_index].get(key)
     }
 
-    fn lookup(
-        &self,
-        scope_index: usize,
-        key: &str,
-    ) -> Option<(SymbolData<T>, usize, usize, bool)> {
+    fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, usize, bool)> {
         self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
     }
 
@@ -287,12 +283,17 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         match self.lookup(scope_index, key) {
             Some((symbol_data, resolved_scope_index, depth, is_global)) => {
                 if symbol_data.get_core_ref().is_initialized() {
-                    return IntermediateLookupResult::Ok((symbol_data, resolved_scope_index, depth, is_global))
+                    return IntermediateLookupResult::Ok((
+                        symbol_data,
+                        resolved_scope_index,
+                        depth,
+                        is_global,
+                    ));
                 } else {
-                    return IntermediateLookupResult::NotInitialized(symbol_data.1)
+                    return IntermediateLookupResult::NotInitialized(symbol_data.1);
                 }
             }
-            None => return IntermediateLookupResult::Err,
+            None => return IntermediateLookupResult::Unresolved,
         }
     }
 }
@@ -371,9 +372,14 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<VariableSymbolData> {
         match self.variables.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(VariableSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(
+                VariableSymbolData(data.0),
+                data.1,
+                data.2,
+                data.3,
+            )),
             IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
-            IntermediateLookupResult::Err => LookupResult::Err
+            IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
         }
     }
 
@@ -383,17 +389,31 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<FunctionSymbolData> {
         match self.functions.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(FunctionSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(
+                FunctionSymbolData(data.0),
+                data.1,
+                data.2,
+                data.3,
+            )),
             IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
-            IntermediateLookupResult::Err => LookupResult::Err
+            IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
         }
     }
 
-    pub fn lookup_in_types_namespace(&self, scope_index: usize, key: &str) -> LookupResult<UserDefinedTypeSymbolData> {
+    pub fn lookup_in_types_namespace(
+        &self,
+        scope_index: usize,
+        key: &str,
+    ) -> LookupResult<UserDefinedTypeSymbolData> {
         match self.types.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(UserDefinedTypeSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(
+                UserDefinedTypeSymbolData(data.0),
+                data.1,
+                data.2,
+                data.3,
+            )),
             IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
-            IntermediateLookupResult::Err => LookupResult::Err
+            IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
         }
     }
 
@@ -403,9 +423,14 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<InterfaceSymbolData> {
         match self.interfaces.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(InterfaceSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(
+                InterfaceSymbolData(data.0),
+                data.1,
+                data.2,
+                data.3,
+            )),
             IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
-            IntermediateLookupResult::Err => LookupResult::Err
+            IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
         }
     }
 

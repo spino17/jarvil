@@ -1287,10 +1287,10 @@ impl UserDefinedTypeNode {
                 }
                 LookupResult::NotInitialized(_) => {
                     return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::NotInitialized(
-                        ok_identifier
+                        ok_identifier,
                     )])
                 }
-                LookupResult::Err => {
+                LookupResult::Unresolved => {
                     return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::Unresolved(
                         ok_identifier,
                     )])

@@ -16,8 +16,8 @@ use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::{
-    AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData,
-    UserDefinedTypeSymbolData, VariableSymbolData, LookupResult, LookupData,
+    AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData, LookupData,
+    LookupResult, UserDefinedTypeSymbolData, VariableSymbolData,
 };
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
@@ -51,7 +51,7 @@ pub enum ResolveResult<T: AbstractSymbolData> {
     Ok(LookupData<T>, Option<ConcreteTypesRegistryKey>, bool),
     InvalidGenericTypeArgsProvided,
     NotInitialized(TextRange),
-    Unresolved
+    Unresolved,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -331,11 +331,14 @@ impl Resolver {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
             LookupResult::Ok(lookup_data) => {
-                let (key, has_generics) = self.bind_decl_to_identifier_in_use(identifier, lookup_data.symbol_data.get_entry());
+                let (key, has_generics) = self.bind_decl_to_identifier_in_use(
+                    identifier,
+                    lookup_data.symbol_data.get_entry(),
+                );
                 ResolveResult::Ok(lookup_data, key, has_generics)
             }
             LookupResult::NotInitialized(range) => ResolveResult::NotInitialized(range),
-            LookupResult::Err => ResolveResult::Unresolved,
+            LookupResult::Unresolved => ResolveResult::Unresolved,
         }
     }
 
@@ -397,7 +400,7 @@ impl Resolver {
                 return Some((symbol_data.0, depth));
             }
             LookupResult::NotInitialized(_) => unreachable!(),
-            LookupResult::Err => return None
+            LookupResult::Unresolved => return None,
         }
     }
 
@@ -544,17 +547,15 @@ impl Resolver {
         {
             LookupResult::Ok(lookup_data) => {
                 let symbol_data = lookup_data.symbol_data;
-                let (index, _) = self.bind_decl_to_identifier_in_use(
-                    interface_expr,
-                    symbol_data.get_entry(),
-                );
+                let (index, _) =
+                    self.bind_decl_to_identifier_in_use(interface_expr, symbol_data.get_entry());
                 return Some(InterfaceObject::new(name, symbol_data.0, index));
             }
             LookupResult::NotInitialized(range) => {
                 // TODO - raise error `Interface not initialized`
                 todo!()
-            },
-            LookupResult::Err => {
+            }
+            LookupResult::Unresolved => {
                 // TODO - raise error `Interface not found in scope`
                 todo!()
             }
@@ -1523,7 +1524,7 @@ impl Visitor for Resolver {
                                 ResolveResult::InvalidGenericTypeArgsProvided => {
                                     // TODO - raise error `variable cannot have generic type arguments`
                                     todo!()
-                                },
+                                }
                             }
                         }
                     }
@@ -1557,7 +1558,7 @@ impl Visitor for Resolver {
                                     let depth = lookup_data.depth;
                                     let is_global = lookup_data.is_global;
                                     // function is resolved to nonlocal scope and should be non-builtin
-                                    if depth > 0 && symbol_data.0.2 {
+                                    if depth > 0 && symbol_data.0 .2 {
                                         self.set_to_function_non_locals(name, is_global);
                                     }
                                     self.bind_decl_to_identifier_in_use(
@@ -1566,7 +1567,7 @@ impl Visitor for Resolver {
                                     );
                                 }
                                 LookupResult::NotInitialized(_) => unreachable!(),
-                                LookupResult::Err => match self
+                                LookupResult::Unresolved => match self
                                     .namespace_handler
                                     .namespace
                                     .lookup_in_types_namespace(self.scope_index, &name)
@@ -1581,7 +1582,9 @@ impl Visitor for Resolver {
                                     LookupResult::NotInitialized(_) => {
                                         // TODO - raise error `Type not initialized`
                                     }
-                                    LookupResult::Err => match self.try_resolving_variable(ok_identifier) {
+                                    LookupResult::Unresolved => match self
+                                        .try_resolving_variable(ok_identifier)
+                                    {
                                         ResolveResult::Ok(lookup_data, _, _) => {
                                             let depth = lookup_data.depth;
                                             if depth > 0 {
@@ -1628,7 +1631,7 @@ impl Visitor for Resolver {
                             match self.try_resolving_user_defined_type(ok_identifier) {
                                 ResolveResult::NotInitialized(range) => {
                                     // TODO - raise error `type is not initialized`
-                                },
+                                }
                                 ResolveResult::Unresolved => {
                                     let err = IdentifierNotDeclaredError::new(
                                         IdentKind::Type,

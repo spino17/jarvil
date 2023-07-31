@@ -126,7 +126,7 @@ impl AbstractConcreteTypesHandler for UserDefinedTypeData {
     fn is_initialized(&self) -> bool {
         match self {
             UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.is_initialized(),
-            UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => true
+            UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => true,
         }
     }
 }
