@@ -34,6 +34,13 @@ impl UserDefinedTypeData {
         }
     }
 
+    pub fn is_initialized(&self) -> bool {
+        match self {
+            UserDefinedTypeData::Struct(struct_data) => struct_data.is_init,
+            UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => true,
+        }
+    }
+
     // Below methods should only be called if getting the desired variant is guarenteed
     // that's why interally it uses `unreachable!()`
     pub fn get_struct_data_ref(&self) -> &StructTypeData {
@@ -113,6 +120,13 @@ impl AbstractConcreteTypesHandler for UserDefinedTypeData {
             UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.has_generics(),
             UserDefinedTypeData::Lambda(lambda_type_data) => lambda_type_data.has_generics(),
             UserDefinedTypeData::Generic(_) => false,
+        }
+    }
+
+    fn is_initialized(&self) -> bool {
+        match self {
+            UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.is_initialized(),
+            UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => true
         }
     }
 }

@@ -17,6 +17,7 @@ pub struct InterfaceData {
     pub fields: FxHashMap<String, (Type, TextRange)>,
     pub methods: FxHashMap<String, (CallableData, TextRange)>,
     pub generics: GenericsSpecAndConcreteTypesRegistry,
+    pub is_init: bool,
 }
 
 impl InterfaceData {
@@ -31,6 +32,7 @@ impl InterfaceData {
 
     pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
         self.generics.generics_spec = generics_spec;
+        self.is_init = true;
     }
 
     pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
@@ -62,6 +64,10 @@ impl AbstractConcreteTypesHandler for InterfaceData {
 
     fn has_generics(&self) -> bool {
         self.generics.generics_spec.is_some()
+    }
+
+    fn is_initialized(&self) -> bool {
+        self.is_init
     }
 }
 

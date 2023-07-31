@@ -195,4 +195,8 @@ impl AbstractConcreteTypesHandler for CallableData {
     fn has_generics(&self) -> bool {
         self.generics.generics_spec.is_some()
     }
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
 }

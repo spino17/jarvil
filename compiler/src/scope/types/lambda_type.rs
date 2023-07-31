@@ -73,4 +73,8 @@ impl AbstractConcreteTypesHandler for LambdaTypeData {
     fn has_generics(&self) -> bool {
         self.meta_data.has_generics()
     }
+
+    fn is_initialized(&self) -> bool {
+        unreachable!()
+    }
 }

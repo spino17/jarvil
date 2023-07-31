@@ -22,10 +22,6 @@ impl VariableData {
     pub fn set_is_init(&mut self, is_init: bool) {
         self.is_init = is_init
     }
-
-    pub fn is_initialized(&self) -> bool {
-        self.is_init
-    }
 }
 
 impl AbstractConcreteTypesHandler for VariableData {
@@ -43,6 +39,10 @@ impl AbstractConcreteTypesHandler for VariableData {
 
     fn has_generics(&self) -> bool {
         false
+    }
+
+    fn is_initialized(&self) -> bool {
+        self.is_init
     }
 }
 

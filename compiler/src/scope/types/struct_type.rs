@@ -20,6 +20,7 @@ pub struct StructTypeData {
     pub class_methods: FxHashMap<String, (CallableData, TextRange)>,
     pub generics: GenericsSpecAndConcreteTypesRegistry,
     pub implementing_interfaces: Option<InterfaceBounds>,
+    pub is_init: bool,
 }
 
 impl StructTypeData {
@@ -45,6 +46,7 @@ impl StructTypeData {
     ) {
         self.generics.generics_spec = generics_spec;
         self.implementing_interfaces = implementing_interfaces;
+        self.is_init = true;
     }
 
     pub fn try_field(&self, field_name: &str) -> Option<(Type, TextRange)> {
@@ -91,6 +93,10 @@ impl AbstractConcreteTypesHandler for StructTypeData {
     fn has_generics(&self) -> bool {
         self.generics.generics_spec.is_some()
     }
+
+    fn is_initialized(&self) -> bool {
+        self.is_init
+    }
 }
 
 impl Default for StructTypeData {
@@ -102,6 +108,7 @@ impl Default for StructTypeData {
             class_methods: FxHashMap::default(),
             generics: GenericsSpecAndConcreteTypesRegistry::default(),
             implementing_interfaces: Option::default(),
+            is_init: false,
         }
     }
 }

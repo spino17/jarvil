@@ -2,6 +2,7 @@ use super::concrete::core::ConcreteTypesRegistryKey;
 use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
 use super::interfaces::{InterfaceBounds, InterfaceData, InterfaceObject};
+use super::types::core::UserDefineTypeKind;
 use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use super::types::lambda_type::LambdaTypeData;
 use crate::scope::types::core::UserDefinedTypeData;
@@ -18,6 +19,12 @@ pub enum VariableLookupResult {
     Err,
 }
 
+pub enum LookupResult<T: AbstractConcreteTypesHandler> {
+    Ok((SymbolData<T>, usize, usize)),
+    NotInitialized(TextRange),
+    Err,
+}
+
 pub trait AbstractConcreteTypesHandler {
     fn register_concrete_types(
         &mut self,
@@ -26,6 +33,7 @@ pub trait AbstractConcreteTypesHandler {
     ) -> ConcreteTypesRegistryKey;
     fn is_generics_present_in_tuple_at_index(&self, index: ConcreteTypesRegistryKey) -> bool;
     fn has_generics(&self) -> bool;
+    fn is_initialized(&self) -> bool;
 }
 
 pub trait AbstractSymbolData {
@@ -254,6 +262,19 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
     ) -> Option<(SymbolData<T>, usize, usize, bool)> {
         self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
     }
+
+    fn lookup_with_is_init(&self, scope_index: usize, key: &str) -> LookupResult<T> {
+        match self.lookup(scope_index, key) {
+            Some((symbol_data, resolved_scope_index, depth, _)) => {
+                if symbol_data.get_core_ref().is_initialized() {
+                    return LookupResult::Ok((symbol_data, resolved_scope_index, depth))
+                } else {
+                    return LookupResult::NotInitialized(symbol_data.1)
+                }
+            }
+            None => return LookupResult::Err,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -355,6 +376,10 @@ impl Namespace {
         key: &str,
     ) -> Option<(SymbolData<UserDefinedTypeData>, usize, usize, bool)> {
         self.types.lookup(scope_index, key)
+    }
+
+    pub fn lookup_in_types_namespace_with_is_init(&self, scope_index: usize, key: &str) -> LookupResult<UserDefinedTypeData> {
+        self.types.lookup_with_is_init(scope_index, key)
     }
 
     pub fn lookup_in_interfaces_namespace(
