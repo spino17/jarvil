@@ -17,7 +17,7 @@ use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::{
     AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData,
-    UserDefinedTypeSymbolData, VariableLookupResult, VariableSymbolData,
+    UserDefinedTypeSymbolData, VariableLookupResult, VariableSymbolData, LookupResult,
 };
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
@@ -344,17 +344,17 @@ impl Resolver {
             .namespace
             .lookup_in_variables_namespace_with_is_init(self.scope_index, &name)
         {
-            VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth)) => {
+            LookupResult::Ok((symbol_data, resolved_scope_index, depth)) => {
                 self.bind_decl_to_identifier_in_use(
                     identifier,
                     SymbolDataEntry::Variable(symbol_data.clone()),
                 );
                 return VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth));
             }
-            VariableLookupResult::NotInitialized(decl_range) => {
+            LookupResult::NotInitialized(decl_range) => {
                 return VariableLookupResult::NotInitialized(decl_range)
             }
-            VariableLookupResult::Err => return VariableLookupResult::Err,
+            LookupResult::Err => return VariableLookupResult::Err,
         }
     }
 
@@ -367,13 +367,14 @@ impl Resolver {
         match self
             .namespace_handler
             .namespace
-            .lookup_in_variables_namespace(self.scope_index, &name)
+            .lookup_in_variables_namespace_with_is_init(self.scope_index, &name)
         {
-            Some((symbol_data, _, depth, _)) => {
+            LookupResult::Ok((symbol_data, _, depth)) => {
                 self.bind_decl_to_self_keyword(self_keyword, symbol_data.clone());
                 return Some((symbol_data, depth));
             }
-            None => return None,
+            LookupResult::NotInitialized(_) => unreachable!(),
+            LookupResult::Err => return None
         }
     }
 

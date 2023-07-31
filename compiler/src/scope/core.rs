@@ -345,29 +345,21 @@ impl Namespace {
         self.interfaces.get(scope_index, key)
     }
 
+    /*
     pub fn lookup_in_variables_namespace(
         &self,
         scope_index: usize,
         key: &str,
     ) -> Option<(SymbolData<VariableData>, usize, usize, bool)> {
         self.variables.lookup(scope_index, key)
-    }
+    }*/
 
     pub fn lookup_in_variables_namespace_with_is_init(
         &self,
         scope_index: usize,
         key: &str,
-    ) -> VariableLookupResult {
-        match self.variables.lookup(scope_index, key) {
-            Some((symbol_data, resolved_scope_index, depth, _)) => {
-                if symbol_data.get_core_ref().is_initialized() {
-                    return VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth));
-                } else {
-                    return VariableLookupResult::NotInitialized(symbol_data.1);
-                }
-            }
-            None => return VariableLookupResult::Err,
-        }
+    ) -> LookupResult<VariableData> {
+        self.variables.lookup_with_is_init(scope_index, key)
     }
 
     pub fn lookup_in_types_namespace(
