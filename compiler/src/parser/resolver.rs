@@ -344,7 +344,7 @@ impl Resolver {
             .namespace
             .lookup_in_variables_namespace(self.scope_index, &name)
         {
-            LookupResult::Ok((symbol_data, resolved_scope_index, depth)) => {
+            LookupResult::Ok((symbol_data, resolved_scope_index, depth, _)) => {
                 self.bind_decl_to_identifier_in_use(
                     identifier,
                     SymbolDataEntry::Variable(symbol_data.clone()),
@@ -369,7 +369,7 @@ impl Resolver {
             .namespace
             .lookup_in_variables_namespace(self.scope_index, &name)
         {
-            LookupResult::Ok((symbol_data, _, depth)) => {
+            LookupResult::Ok((symbol_data, _, depth, _)) => {
                 self.bind_decl_to_self_keyword(self_keyword, symbol_data.clone());
                 return Some((symbol_data, depth));
             }
@@ -536,14 +536,18 @@ impl Resolver {
             .namespace
             .lookup_in_interfaces_namespace(self.scope_index, &name)
         {
-            Some((symbol_data, _, _, _)) => {
+            LookupResult::Ok((symbol_data, _, _, _)) => {
                 let (index, _) = self.bind_decl_to_identifier_in_use(
                     interface_expr,
                     SymbolDataEntry::Interface(symbol_data.clone()),
                 );
                 return Some(InterfaceObject::new(name, symbol_data, index));
             }
-            None => {
+            LookupResult::NotInitialized(range) => {
+                // TODO - raise error `Interface not initialized`
+                todo!()
+            },
+            LookupResult::Err => {
                 // TODO - raise error `Interface not found in scope`
                 todo!()
             }
@@ -1536,7 +1540,7 @@ impl Visitor for Resolver {
                                 .namespace
                                 .lookup_in_functions_namespace(self.scope_index, &name)
                             {
-                                Some((symbol_data, _, depth, is_global)) => {
+                                LookupResult::Ok((symbol_data, _, depth, is_global)) => {
                                     // function is resolved to nonlocal scope and should be non-builtin
                                     if depth > 0 && symbol_data.2 {
                                         self.set_to_function_non_locals(name, is_global);
@@ -1546,7 +1550,8 @@ impl Visitor for Resolver {
                                         SymbolDataEntry::Function(symbol_data),
                                     );
                                 }
-                                None => match self
+                                LookupResult::NotInitialized(_) => unreachable!(),
+                                LookupResult::Err => match self
                                     .namespace_handler
                                     .namespace
                                     .lookup_in_types_namespace(self.scope_index, &name)

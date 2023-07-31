@@ -20,7 +20,7 @@ pub enum VariableLookupResult {
 }
 
 pub enum LookupResult<T: AbstractConcreteTypesHandler> {
-    Ok((SymbolData<T>, usize, usize)),
+    Ok((SymbolData<T>, usize, usize, bool)),
     NotInitialized(TextRange),
     Err,
 }
@@ -265,9 +265,9 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
 
     fn lookup_with_is_init(&self, scope_index: usize, key: &str) -> LookupResult<T> {
         match self.lookup(scope_index, key) {
-            Some((symbol_data, resolved_scope_index, depth, _)) => {
+            Some((symbol_data, resolved_scope_index, depth, is_global)) => {
                 if symbol_data.get_core_ref().is_initialized() {
-                    return LookupResult::Ok((symbol_data, resolved_scope_index, depth))
+                    return LookupResult::Ok((symbol_data, resolved_scope_index, depth, is_global))
                 } else {
                     return LookupResult::NotInitialized(symbol_data.1)
                 }
@@ -378,16 +378,16 @@ impl Namespace {
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<InterfaceData>, usize, usize, bool)> {
-        self.interfaces.lookup(scope_index, key)
+    ) -> LookupResult<InterfaceData> {
+        self.interfaces.lookup_with_is_init(scope_index, key)
     }
 
     pub fn lookup_in_functions_namespace(
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<CallableData>, usize, usize, bool)> {
-        self.functions.lookup(scope_index, key)
+    ) -> LookupResult<CallableData> {
+        self.functions.lookup_with_is_init(scope_index, key)
     }
 
     pub fn declare_variable(
