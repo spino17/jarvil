@@ -13,18 +13,32 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 use text_size::TextRange;
 
-pub enum VariableLookupResult {
-    Ok((SymbolData<VariableData>, usize, usize)),
-    NotInitialized(TextRange),
-    Err,
+#[derive(Debug)]
+pub struct LookupData<T: AbstractSymbolData> {
+    pub symbol_data: T,
+    pub resolved_scope_index: usize,
+    pub depth: usize,
+    pub is_global: bool
+}
+
+impl<T: AbstractSymbolData> LookupData<T> {
+    fn new(symbol_data: T, resolved_scope_index: usize, depth: usize, is_global: bool) -> Self {
+        LookupData {
+            symbol_data,
+            resolved_scope_index,
+            depth,
+            is_global
+        }
+    }
 }
 
 pub enum LookupResult<T: AbstractSymbolData> {
-    Ok((T, usize, usize, bool)),
+    Ok(LookupData<T>),
     NotInitialized(TextRange),
     Err,
 }
 
+#[derive(Debug)]
 pub enum IntermediateLookupResult<T: AbstractConcreteTypesHandler> {
     Ok((SymbolData<T>, usize, usize, bool)),
     NotInitialized(TextRange),
@@ -357,7 +371,7 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<VariableSymbolData> {
         match self.variables.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok((VariableSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(VariableSymbolData(data.0), data.1, data.2, data.3)),
             IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
             IntermediateLookupResult::Err => LookupResult::Err
         }
@@ -369,7 +383,7 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<FunctionSymbolData> {
         match self.functions.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok((FunctionSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(FunctionSymbolData(data.0), data.1, data.2, data.3)),
             IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
             IntermediateLookupResult::Err => LookupResult::Err
         }
@@ -377,7 +391,7 @@ impl Namespace {
 
     pub fn lookup_in_types_namespace(&self, scope_index: usize, key: &str) -> LookupResult<UserDefinedTypeSymbolData> {
         match self.types.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok((UserDefinedTypeSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(UserDefinedTypeSymbolData(data.0), data.1, data.2, data.3)),
             IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
             IntermediateLookupResult::Err => LookupResult::Err
         }
@@ -389,7 +403,7 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<InterfaceSymbolData> {
         match self.interfaces.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok((InterfaceSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(InterfaceSymbolData(data.0), data.1, data.2, data.3)),
             IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
             IntermediateLookupResult::Err => LookupResult::Err
         }

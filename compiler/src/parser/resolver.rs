@@ -17,7 +17,7 @@ use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::{
     AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData,
-    UserDefinedTypeSymbolData, VariableLookupResult, VariableSymbolData, LookupResult,
+    UserDefinedTypeSymbolData, VariableSymbolData, LookupResult,
 };
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
@@ -45,11 +45,6 @@ use crate::{
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::vec;
 use text_size::TextRange;
-
-pub enum ResolveResult {
-    Ok(usize),   // depth
-    Err(String), // name of the identifier
-}
 
 #[derive(Debug, Clone, Copy)]
 pub enum BlockKind {
@@ -327,9 +322,9 @@ impl Resolver {
     ) -> LookupResult<T> {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
-            LookupResult::Ok((symbol_data, resolved_scope_index, depth, is_global)) => {
-                self.bind_decl_to_identifier_in_use(identifier, symbol_data.get_entry());
-                LookupResult::Ok((symbol_data, resolved_scope_index, depth, is_global))
+            LookupResult::Ok(lookup_data) => {
+                self.bind_decl_to_identifier_in_use(identifier, lookup_data.symbol_data.get_entry());
+                LookupResult::Ok(lookup_data)
             }
             LookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
             LookupResult::Err => LookupResult::Err,
@@ -377,7 +372,9 @@ impl Resolver {
             .namespace
             .lookup_in_variables_namespace(self.scope_index, &name)
         {
-            LookupResult::Ok((symbol_data, _, depth, _)) => {
+            LookupResult::Ok(lookup_data) => {
+                let symbol_data = lookup_data.symbol_data;
+                let depth = lookup_data.depth;
                 self.bind_decl_to_self_keyword(self_keyword, symbol_data.0.clone());
                 return Some((symbol_data.0, depth));
             }
@@ -527,10 +524,11 @@ impl Resolver {
             .namespace
             .lookup_in_interfaces_namespace(self.scope_index, &name)
         {
-            LookupResult::Ok((symbol_data, _, _, _)) => {
+            LookupResult::Ok(lookup_data) => {
+                let symbol_data = lookup_data.symbol_data;
                 let (index, _) = self.bind_decl_to_identifier_in_use(
                     interface_expr,
-                    SymbolDataEntry::Interface(symbol_data.0.clone()),
+                    symbol_data.get_entry(),
                 );
                 return Some(InterfaceObject::new(name, symbol_data.0, index));
             }
@@ -1482,7 +1480,8 @@ impl Visitor for Resolver {
                         if let CoreIdentifierInUseNode::Ok(ok_identifier) = identifier.core_ref() {
                             let name = ok_identifier.token_value(&self.code);
                             match self.try_resolving_variable(ok_identifier) {
-                                LookupResult::Ok((_, _, depth, _)) => {
+                                LookupResult::Ok(lookup_data) => {
+                                    let depth = lookup_data.depth;
                                     if depth > 0 {
                                         self.set_to_variable_non_locals(name);
                                     }
@@ -1531,14 +1530,17 @@ impl Visitor for Resolver {
                                 .namespace
                                 .lookup_in_functions_namespace(self.scope_index, &name)
                             {
-                                LookupResult::Ok((symbol_data, _, depth, is_global)) => {
+                                LookupResult::Ok(lookup_data) => {
+                                    let symbol_data = lookup_data.symbol_data;
+                                    let depth = lookup_data.depth;
+                                    let is_global = lookup_data.is_global;
                                     // function is resolved to nonlocal scope and should be non-builtin
                                     if depth > 0 && symbol_data.0.2 {
                                         self.set_to_function_non_locals(name, is_global);
                                     }
                                     self.bind_decl_to_identifier_in_use(
                                         ok_identifier,
-                                        SymbolDataEntry::Function(symbol_data.0),
+                                        symbol_data.get_entry(),
                                     );
                                 }
                                 LookupResult::NotInitialized(_) => unreachable!(),
@@ -1547,7 +1549,8 @@ impl Visitor for Resolver {
                                     .namespace
                                     .lookup_in_types_namespace(self.scope_index, &name)
                                 {
-                                    LookupResult::Ok((symbol_data, _, _, _)) => {
+                                    LookupResult::Ok(lookup_data) => {
+                                        let symbol_data = lookup_data.symbol_data;
                                         self.bind_decl_to_identifier_in_use(
                                             ok_identifier,
                                             symbol_data.get_entry(),
@@ -1557,7 +1560,8 @@ impl Visitor for Resolver {
                                         // TODO - raise error `Type not initialized`
                                     }
                                     LookupResult::Err => match self.try_resolving_variable(ok_identifier) {
-                                        LookupResult::Ok((_, _, depth, _)) => {
+                                        LookupResult::Ok(lookup_data) => {
+                                            let depth = lookup_data.depth;
                                             if depth > 0 {
                                                 self.set_to_variable_non_locals(name);
                                             }

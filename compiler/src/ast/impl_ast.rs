@@ -1215,8 +1215,9 @@ impl UserDefinedTypeNode {
                 .namespace
                 .lookup_in_types_namespace(scope_index, &name)
             {
-                LookupResult::Ok((symbol_data, resolved_scope_index, _, _)) => {
-                    let symbol_data = symbol_data.0;
+                LookupResult::Ok(lookup_data) => {
+                    let symbol_data = lookup_data.symbol_data.0;
+                    let resolved_scope_index = lookup_data.resolved_scope_index;
                     let ty_kind = symbol_data.get_core_ref().get_kind();
                     let result = match ty_kind {
                         UserDefineTypeKind::Struct => {
