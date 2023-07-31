@@ -332,6 +332,7 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierInUseNode,
         lookup_fn: U,
+        ident_kind: IdentKind,
     ) -> ResolveResult<T> {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
@@ -354,7 +355,7 @@ impl Resolver {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_variables_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn)
+        self.try_resolving(identifier, lookup_fn, IdentKind::Variable)
     }
 
     pub fn try_resolving_function(
@@ -364,7 +365,7 @@ impl Resolver {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_functions_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn)
+        self.try_resolving(identifier, lookup_fn, IdentKind::Function)
     }
 
     pub fn try_resolving_user_defined_type(
@@ -374,7 +375,7 @@ impl Resolver {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_types_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn)
+        self.try_resolving(identifier, lookup_fn, IdentKind::UserDefinedType)
     }
 
     pub fn try_resolving_interface(
@@ -384,7 +385,7 @@ impl Resolver {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_interfaces_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn)
+        self.try_resolving(identifier, lookup_fn, IdentKind::Interface)
     }
 
     pub fn try_resolving_self_keyword(
@@ -521,7 +522,7 @@ impl Resolver {
                     match unresolved_identifier {
                         UnresolvedIdentifier::Unresolved(identifier) => {
                             let err = IdentifierNotDeclaredError::new(
-                                IdentKind::Type,
+                                IdentKind::UserDefinedType,
                                 identifier.range(),
                             );
                             self.errors.push(Diagnostics::IdentifierNotDeclared(err));
@@ -647,7 +648,7 @@ impl Resolver {
                             }
                             Err((param_name, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
-                                    IdentKind::Type,
+                                    IdentKind::UserDefinedType,
                                     param_name,
                                     previous_decl_range,
                                     ok_identifier_in_decl.range(),
@@ -1040,7 +1041,7 @@ impl Resolver {
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::Type,
+                        IdentKind::UserDefinedType,
                         name.to_string(),
                         previous_decl_range,
                         ok_identifier.range(),
@@ -1401,7 +1402,7 @@ impl Resolver {
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::Type,
+                        IdentKind::UserDefinedType,
                         name,
                         previous_decl_range,
                         ok_identifier.range(),
@@ -1564,7 +1565,7 @@ impl Visitor for Resolver {
                                 }
                                 ResolveResult::Unresolved => {
                                     match self.try_resolving_user_defined_type(ok_identifier) {
-                                        ResolveResult::Ok(_, _, _, _) => {},
+                                        ResolveResult::Ok(_, _, _, _) => {}
                                         ResolveResult::NotInitialized(_, _) => {
                                             // TODO - raise error `Type not initialized`
                                         }
@@ -1581,16 +1582,12 @@ impl Visitor for Resolver {
                                                     }
                                                 }
                                                 ResolveResult::NotInitialized(decl_range, name) => {
-                                                    let err = VariableReferencedBeforeAssignmentError::new(
-                                                name,
-                                                decl_range,
-                                                ok_identifier.range(),
-                                            );
+                                                    let err = VariableReferencedBeforeAssignmentError::new(name, decl_range, ok_identifier.range());
                                                     self.errors.push(
-                                                Diagnostics::VariableReferencedBeforeAssignment(
-                                                    err,
-                                                ),
-                                            );
+                                                        Diagnostics::VariableReferencedBeforeAssignment(
+                                                            err,
+                                                        ),
+                                                    );
                                                 }
                                                 ResolveResult::Unresolved => {
                                                     let err =
@@ -1598,8 +1595,8 @@ impl Visitor for Resolver {
                                                             ok_identifier.range(),
                                                         );
                                                     self.errors.push(
-                                                Diagnostics::IdentifierNotFoundInAnyNamespace(err),
-                                            );
+                                                        Diagnostics::IdentifierNotFoundInAnyNamespace(err),
+                                                    );
                                                 }
                                                 ResolveResult::InvalidGenericTypeArgsProvided => {
                                                     // TODO - raise error `Variable cannot have generic type arguments`
@@ -1666,7 +1663,7 @@ impl Visitor for Resolver {
                                 }
                                 ResolveResult::Unresolved => {
                                     let err = IdentifierNotDeclaredError::new(
-                                        IdentKind::Type,
+                                        IdentKind::UserDefinedType,
                                         ok_identifier.range(),
                                     );
                                     self.errors.push(Diagnostics::IdentifierNotDeclared(err));

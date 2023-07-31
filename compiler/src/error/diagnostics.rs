@@ -408,6 +408,18 @@ impl IdentifierAlreadyDeclaredError {
                     identifier_kind
                 )
             }
+            IdentifierKind::UserDefinedType => {
+                format!(
+                    "{}s are not allowed to be redeclared inside the complete scope chain",
+                    identifier_kind
+                )
+            }
+            IdentifierKind::Interface => {
+                format!(
+                    "{}s are not allowed to be redeclared inside the complete scope chain",
+                    identifier_kind
+                )
+            }
             IdentifierKind::Argument => {
                 format!(
                     "{}s are not allowed to be redeclared in the same function defintion",
@@ -417,23 +429,11 @@ impl IdentifierAlreadyDeclaredError {
             IdentifierKind::Field => {
                 format!("all fields of struct should have distinct names")
             }
-            IdentifierKind::Type => {
-                format!(
-                    "{}s are not allowed to be redeclared inside the complete scope chain",
-                    identifier_kind
-                )
-            }
             IdentifierKind::Method => {
                 format!("all methods of struct should have distinct names")
             }
             IdentifierKind::Constructor => {
                 format!("constructor is not allowed to be redeclared")
-            }
-            IdentifierKind::Interface => {
-                format!(
-                    "{}s are not allowed to be redeclared inside the complete scope chain",
-                    identifier_kind
-                )
             }
         };
         IdentifierAlreadyDeclaredError {

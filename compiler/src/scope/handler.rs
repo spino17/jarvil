@@ -15,13 +15,6 @@ use crate::{
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 
-pub enum IdentifierKind {
-    Variable,
-    Function,
-    UserDefinedType,
-    Interface,
-}
-
 pub enum SymbolDataEntry {
     Variable(SymbolData<VariableData>),
     Function(SymbolData<CallableData>),
