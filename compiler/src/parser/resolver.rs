@@ -342,7 +342,7 @@ impl Resolver {
         match self
             .namespace_handler
             .namespace
-            .lookup_in_variables_namespace_with_is_init(self.scope_index, &name)
+            .lookup_in_variables_namespace(self.scope_index, &name)
         {
             LookupResult::Ok((symbol_data, resolved_scope_index, depth)) => {
                 self.bind_decl_to_identifier_in_use(
@@ -367,7 +367,7 @@ impl Resolver {
         match self
             .namespace_handler
             .namespace
-            .lookup_in_variables_namespace_with_is_init(self.scope_index, &name)
+            .lookup_in_variables_namespace(self.scope_index, &name)
         {
             LookupResult::Ok((symbol_data, _, depth)) => {
                 self.bind_decl_to_self_keyword(self_keyword, symbol_data.clone());

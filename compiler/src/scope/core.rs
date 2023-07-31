@@ -354,7 +354,7 @@ impl Namespace {
         self.variables.lookup(scope_index, key)
     }*/
 
-    pub fn lookup_in_variables_namespace_with_is_init(
+    pub fn lookup_in_variables_namespace(
         &self,
         scope_index: usize,
         key: &str,
