@@ -17,7 +17,7 @@ use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta
 use crate::scope::concrete::core::ConcreteTypesRegistryKey;
 use crate::scope::core::{
     AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData,
-    UserDefinedTypeSymbolData, VariableSymbolData, LookupResult,
+    UserDefinedTypeSymbolData, VariableSymbolData, LookupResult, LookupData,
 };
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
@@ -45,6 +45,14 @@ use crate::{
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::vec;
 use text_size::TextRange;
+
+#[derive(Debug)]
+pub enum ResolveResult<T: AbstractSymbolData> {
+    Ok(LookupData<T>, Option<ConcreteTypesRegistryKey>, bool),
+    InvalidGenericTypeArgsProvided,
+    NotInitialized(TextRange),
+    Unresolved
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum BlockKind {
@@ -319,24 +327,34 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierInUseNode,
         lookup_fn: U,
-    ) -> LookupResult<T> {
+    ) -> ResolveResult<T> {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
             LookupResult::Ok(lookup_data) => {
-                self.bind_decl_to_identifier_in_use(identifier, lookup_data.symbol_data.get_entry());
-                LookupResult::Ok(lookup_data)
+                let (key, has_generics) = self.bind_decl_to_identifier_in_use(identifier, lookup_data.symbol_data.get_entry());
+                ResolveResult::Ok(lookup_data, key, has_generics)
             }
-            LookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
-            LookupResult::Err => LookupResult::Err,
+            LookupResult::NotInitialized(range) => ResolveResult::NotInitialized(range),
+            LookupResult::Err => ResolveResult::Unresolved,
         }
     }
 
     pub fn try_resolving_variable(
         &mut self,
         identifier: &OkIdentifierInUseNode,
-    ) -> LookupResult<VariableSymbolData> {
+    ) -> ResolveResult<VariableSymbolData> {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_variables_namespace(scope_index, key)
+        };
+        self.try_resolving(identifier, lookup_fn)
+    }
+
+    pub fn try_resolving_function(
+        &mut self,
+        identifier: &OkIdentifierInUseNode,
+    ) -> ResolveResult<FunctionSymbolData> {
+        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
+            namespace.lookup_in_functions_namespace(scope_index, key)
         };
         self.try_resolving(identifier, lookup_fn)
     }
@@ -344,7 +362,7 @@ impl Resolver {
     pub fn try_resolving_user_defined_type(
         &mut self,
         identifier: &OkIdentifierInUseNode,
-    ) -> LookupResult<UserDefinedTypeSymbolData> {
+    ) -> ResolveResult<UserDefinedTypeSymbolData> {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_types_namespace(scope_index, key)
         };
@@ -354,7 +372,7 @@ impl Resolver {
     pub fn try_resolving_interface(
         &mut self,
         identifier: &OkIdentifierInUseNode,
-    ) -> LookupResult<InterfaceSymbolData> {
+    ) -> ResolveResult<InterfaceSymbolData> {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_interfaces_namespace(scope_index, key)
         };
@@ -1480,13 +1498,13 @@ impl Visitor for Resolver {
                         if let CoreIdentifierInUseNode::Ok(ok_identifier) = identifier.core_ref() {
                             let name = ok_identifier.token_value(&self.code);
                             match self.try_resolving_variable(ok_identifier) {
-                                LookupResult::Ok(lookup_data) => {
+                                ResolveResult::Ok(lookup_data, _, _) => {
                                     let depth = lookup_data.depth;
                                     if depth > 0 {
                                         self.set_to_variable_non_locals(name);
                                     }
                                 }
-                                LookupResult::NotInitialized(decl_range) => {
+                                ResolveResult::NotInitialized(decl_range) => {
                                     let err = VariableReferencedBeforeAssignmentError::new(
                                         name.to_string(),
                                         decl_range,
@@ -1495,13 +1513,17 @@ impl Visitor for Resolver {
                                     self.errors
                                         .push(Diagnostics::VariableReferencedBeforeAssignment(err));
                                 }
-                                LookupResult::Err => {
+                                ResolveResult::Unresolved => {
                                     let err = IdentifierNotDeclaredError::new(
                                         IdentKind::Variable,
                                         ok_identifier.range(),
                                     );
                                     self.errors.push(Diagnostics::IdentifierNotDeclared(err));
                                 }
+                                ResolveResult::InvalidGenericTypeArgsProvided => {
+                                    // TODO - raise error `variable cannot have generic type arguments`
+                                    todo!()
+                                },
                             }
                         }
                     }
@@ -1560,13 +1582,13 @@ impl Visitor for Resolver {
                                         // TODO - raise error `Type not initialized`
                                     }
                                     LookupResult::Err => match self.try_resolving_variable(ok_identifier) {
-                                        LookupResult::Ok(lookup_data) => {
+                                        ResolveResult::Ok(lookup_data, _, _) => {
                                             let depth = lookup_data.depth;
                                             if depth > 0 {
                                                 self.set_to_variable_non_locals(name);
                                             }
                                         }
-                                        LookupResult::NotInitialized(decl_range) => {
+                                        ResolveResult::NotInitialized(decl_range) => {
                                             let err = VariableReferencedBeforeAssignmentError::new(
                                                 name,
                                                 decl_range,
@@ -1578,13 +1600,17 @@ impl Visitor for Resolver {
                                                 ),
                                             );
                                         }
-                                        LookupResult::Err => {
+                                        ResolveResult::Unresolved => {
                                             let err = IdentifierNotFoundInAnyNamespaceError::new(
                                                 ok_identifier.range(),
                                             );
                                             self.errors.push(
                                                 Diagnostics::IdentifierNotFoundInAnyNamespace(err),
                                             );
+                                        }
+                                        ResolveResult::InvalidGenericTypeArgsProvided => {
+                                            // TODO - raise error `Variable cannot have generic type arguments`
+                                            todo!()
                                         }
                                     },
                                 },
@@ -1599,14 +1625,22 @@ impl Visitor for Resolver {
                         if let CoreIdentifierInUseNode::Ok(ok_identifier) =
                             core_class_method_call.class_name.core_ref()
                         {
-                            if let LookupResult::Err =
-                                self.try_resolving_user_defined_type(ok_identifier)
-                            {
-                                let err = IdentifierNotDeclaredError::new(
-                                    IdentKind::Type,
-                                    ok_identifier.range(),
-                                );
-                                self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                            match self.try_resolving_user_defined_type(ok_identifier) {
+                                ResolveResult::NotInitialized(range) => {
+                                    // TODO - raise error `type is not initialized`
+                                },
+                                ResolveResult::Unresolved => {
+                                    let err = IdentifierNotDeclaredError::new(
+                                        IdentKind::Type,
+                                        ok_identifier.range(),
+                                    );
+                                    self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                                }
+                                ResolveResult::InvalidGenericTypeArgsProvided => {
+                                    // TODO - raise error `Type does not expected generic type arguments`
+                                    todo!()
+                                }
+                                ResolveResult::Ok(_, _, _) => {}
                             }
                         }
                         if let Some(params) = &core_class_method_call.params {
