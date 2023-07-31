@@ -318,44 +318,52 @@ impl Resolver {
     }
 
     pub fn try_resolving<
-        U: Fn(&Namespace, usize, &str) -> Option<(SymbolDataEntry, usize, usize, bool)>,
+        T: AbstractSymbolData,
+        U: Fn(&Namespace, usize, &str) -> LookupResult<T>,
     >(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         lookup_fn: U,
-    ) -> ResolveResult {
+    ) -> LookupResult<T> {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
-            Some((symbol_data, _, depth, _)) => {
-                self.bind_decl_to_identifier_in_use(identifier, symbol_data);
-                ResolveResult::Ok(depth)
+            LookupResult::Ok((symbol_data, resolved_scope_index, depth, is_global)) => {
+                self.bind_decl_to_identifier_in_use(identifier, symbol_data.get_entry());
+                LookupResult::Ok((symbol_data, resolved_scope_index, depth, is_global))
             }
-            None => ResolveResult::Err(name),
+            LookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
+            LookupResult::Err => LookupResult::Err,
         }
     }
 
     pub fn try_resolving_variable(
         &mut self,
         identifier: &OkIdentifierInUseNode,
-    ) -> VariableLookupResult {
-        let name = identifier.token_value(&self.code);
-        match self
-            .namespace_handler
-            .namespace
-            .lookup_in_variables_namespace(self.scope_index, &name)
-        {
-            LookupResult::Ok((symbol_data, resolved_scope_index, depth, _)) => {
-                self.bind_decl_to_identifier_in_use(
-                    identifier,
-                    SymbolDataEntry::Variable(symbol_data.clone()),
-                );
-                return VariableLookupResult::Ok((symbol_data, resolved_scope_index, depth));
-            }
-            LookupResult::NotInitialized(decl_range) => {
-                return VariableLookupResult::NotInitialized(decl_range)
-            }
-            LookupResult::Err => return VariableLookupResult::Err,
-        }
+    ) -> LookupResult<VariableSymbolData> {
+        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
+            namespace.lookup_in_variables_namespace(scope_index, key)
+        };
+        self.try_resolving(identifier, lookup_fn)
+    }
+
+    pub fn try_resolving_user_defined_type(
+        &mut self,
+        identifier: &OkIdentifierInUseNode,
+    ) -> LookupResult<UserDefinedTypeSymbolData> {
+        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
+            namespace.lookup_in_types_namespace(scope_index, key)
+        };
+        self.try_resolving(identifier, lookup_fn)
+    }
+
+    pub fn try_resolving_interface(
+        &mut self,
+        identifier: &OkIdentifierInUseNode,
+    ) -> LookupResult<InterfaceSymbolData> {
+        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
+            namespace.lookup_in_interfaces_namespace(scope_index, key)
+        };
+        self.try_resolving(identifier, lookup_fn)
     }
 
     pub fn try_resolving_self_keyword(
@@ -370,32 +378,12 @@ impl Resolver {
             .lookup_in_variables_namespace(self.scope_index, &name)
         {
             LookupResult::Ok((symbol_data, _, depth, _)) => {
-                self.bind_decl_to_self_keyword(self_keyword, symbol_data.clone());
-                return Some((symbol_data, depth));
+                self.bind_decl_to_self_keyword(self_keyword, symbol_data.0.clone());
+                return Some((symbol_data.0, depth));
             }
             LookupResult::NotInitialized(_) => unreachable!(),
             LookupResult::Err => return None
         }
-    }
-
-    pub fn try_resolving_user_defined_type(
-        &mut self,
-        identifier: &OkIdentifierInUseNode,
-    ) -> ResolveResult {
-        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| match namespace
-            .lookup_in_types_namespace(scope_index, key)
-        {
-            Some(result) => {
-                return Some((
-                    SymbolDataEntry::Type(result.0),
-                    result.1,
-                    result.2,
-                    result.3,
-                ))
-            }
-            None => return None,
-        };
-        self.try_resolving(identifier, lookup_fn)
     }
 
     pub fn try_declare_and_bind<
@@ -518,6 +506,9 @@ impl Resolver {
                         UnresolvedIdentifier::GenericResolvedToOutsideScope(identifier) => {
                             // TODO - raise error `Generic type resolved to outside scope, try to declare local generic type`
                         }
+                        UnresolvedIdentifier::NotInitialized(identifier) => {
+                            // TODO - raise error `Type not initialized`
+                        }
                     }
                 }
                 return Type::new_with_unknown();
@@ -539,9 +530,9 @@ impl Resolver {
             LookupResult::Ok((symbol_data, _, _, _)) => {
                 let (index, _) = self.bind_decl_to_identifier_in_use(
                     interface_expr,
-                    SymbolDataEntry::Interface(symbol_data.clone()),
+                    SymbolDataEntry::Interface(symbol_data.0.clone()),
                 );
-                return Some(InterfaceObject::new(name, symbol_data, index));
+                return Some(InterfaceObject::new(name, symbol_data.0, index));
             }
             LookupResult::NotInitialized(range) => {
                 // TODO - raise error `Interface not initialized`
@@ -1491,12 +1482,12 @@ impl Visitor for Resolver {
                         if let CoreIdentifierInUseNode::Ok(ok_identifier) = identifier.core_ref() {
                             let name = ok_identifier.token_value(&self.code);
                             match self.try_resolving_variable(ok_identifier) {
-                                VariableLookupResult::Ok((_, _, depth)) => {
+                                LookupResult::Ok((_, _, depth, _)) => {
                                     if depth > 0 {
                                         self.set_to_variable_non_locals(name);
                                     }
                                 }
-                                VariableLookupResult::NotInitialized(decl_range) => {
+                                LookupResult::NotInitialized(decl_range) => {
                                     let err = VariableReferencedBeforeAssignmentError::new(
                                         name.to_string(),
                                         decl_range,
@@ -1505,7 +1496,7 @@ impl Visitor for Resolver {
                                     self.errors
                                         .push(Diagnostics::VariableReferencedBeforeAssignment(err));
                                 }
-                                VariableLookupResult::Err => {
+                                LookupResult::Err => {
                                     let err = IdentifierNotDeclaredError::new(
                                         IdentKind::Variable,
                                         ok_identifier.range(),
@@ -1542,12 +1533,12 @@ impl Visitor for Resolver {
                             {
                                 LookupResult::Ok((symbol_data, _, depth, is_global)) => {
                                     // function is resolved to nonlocal scope and should be non-builtin
-                                    if depth > 0 && symbol_data.2 {
+                                    if depth > 0 && symbol_data.0.2 {
                                         self.set_to_function_non_locals(name, is_global);
                                     }
                                     self.bind_decl_to_identifier_in_use(
                                         ok_identifier,
-                                        SymbolDataEntry::Function(symbol_data),
+                                        SymbolDataEntry::Function(symbol_data.0),
                                     );
                                 }
                                 LookupResult::NotInitialized(_) => unreachable!(),
@@ -1556,19 +1547,22 @@ impl Visitor for Resolver {
                                     .namespace
                                     .lookup_in_types_namespace(self.scope_index, &name)
                                 {
-                                    Some((symbol_data, _, _, _)) => {
+                                    LookupResult::Ok((symbol_data, _, _, _)) => {
                                         self.bind_decl_to_identifier_in_use(
                                             ok_identifier,
-                                            SymbolDataEntry::Type(symbol_data),
+                                            symbol_data.get_entry(),
                                         );
                                     }
-                                    None => match self.try_resolving_variable(ok_identifier) {
-                                        VariableLookupResult::Ok((_, _, depth)) => {
+                                    LookupResult::NotInitialized(_) => {
+                                        // TODO - raise error `Type not initialized`
+                                    }
+                                    LookupResult::Err => match self.try_resolving_variable(ok_identifier) {
+                                        LookupResult::Ok((_, _, depth, _)) => {
                                             if depth > 0 {
                                                 self.set_to_variable_non_locals(name);
                                             }
                                         }
-                                        VariableLookupResult::NotInitialized(decl_range) => {
+                                        LookupResult::NotInitialized(decl_range) => {
                                             let err = VariableReferencedBeforeAssignmentError::new(
                                                 name,
                                                 decl_range,
@@ -1580,7 +1574,7 @@ impl Visitor for Resolver {
                                                 ),
                                             );
                                         }
-                                        VariableLookupResult::Err => {
+                                        LookupResult::Err => {
                                             let err = IdentifierNotFoundInAnyNamespaceError::new(
                                                 ok_identifier.range(),
                                             );
@@ -1601,7 +1595,7 @@ impl Visitor for Resolver {
                         if let CoreIdentifierInUseNode::Ok(ok_identifier) =
                             core_class_method_call.class_name.core_ref()
                         {
-                            if let ResolveResult::Err(_) =
+                            if let LookupResult::Err =
                                 self.try_resolving_user_defined_type(ok_identifier)
                             {
                                 let err = IdentifierNotDeclaredError::new(

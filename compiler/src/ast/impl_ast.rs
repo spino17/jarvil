@@ -40,6 +40,7 @@ use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
+use crate::scope::core::LookupResult;
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
 use crate::scope::types::core::{UserDefineTypeKind, UserDefinedTypeData};
 use crate::types::core::Type;
@@ -1214,7 +1215,8 @@ impl UserDefinedTypeNode {
                 .namespace
                 .lookup_in_types_namespace(scope_index, &name)
             {
-                Some((symbol_data, resolved_scope_index, _, _)) => {
+                LookupResult::Ok((symbol_data, resolved_scope_index, _, _)) => {
+                    let symbol_data = symbol_data.0;
                     let ty_kind = symbol_data.get_core_ref().get_kind();
                     let result = match ty_kind {
                         UserDefineTypeKind::Struct => {
@@ -1282,7 +1284,12 @@ impl UserDefinedTypeNode {
                     };
                     return result;
                 }
-                None => {
+                LookupResult::NotInitialized(_) => {
+                    return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::NotInitialized(
+                        ok_identifier
+                    )])
+                }
+                LookupResult::Err => {
                     return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::Unresolved(
                         ok_identifier,
                     )])

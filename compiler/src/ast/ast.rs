@@ -654,6 +654,7 @@ pub struct OkIdentifierInDeclNode(pub Rc<CoreOkIdentifierInDeclNode>);
 pub enum UnresolvedIdentifier<'a> {
     Unresolved(&'a OkIdentifierInUseNode),
     GenericResolvedToOutsideScope(&'a OkIdentifierInUseNode),
+    NotInitialized(&'a OkIdentifierInUseNode)
 }
 
 // misc "kind" enums

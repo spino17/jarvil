@@ -19,7 +19,13 @@ pub enum VariableLookupResult {
     Err,
 }
 
-pub enum LookupResult<T: AbstractConcreteTypesHandler> {
+pub enum LookupResult<T: AbstractSymbolData> {
+    Ok((T, usize, usize, bool)),
+    NotInitialized(TextRange),
+    Err,
+}
+
+pub enum IntermediateLookupResult<T: AbstractConcreteTypesHandler> {
     Ok((SymbolData<T>, usize, usize, bool)),
     NotInitialized(TextRange),
     Err,
@@ -263,16 +269,16 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
     }
 
-    fn lookup_with_is_init(&self, scope_index: usize, key: &str) -> LookupResult<T> {
+    fn lookup_with_is_init(&self, scope_index: usize, key: &str) -> IntermediateLookupResult<T> {
         match self.lookup(scope_index, key) {
             Some((symbol_data, resolved_scope_index, depth, is_global)) => {
                 if symbol_data.get_core_ref().is_initialized() {
-                    return LookupResult::Ok((symbol_data, resolved_scope_index, depth, is_global))
+                    return IntermediateLookupResult::Ok((symbol_data, resolved_scope_index, depth, is_global))
                 } else {
-                    return LookupResult::NotInitialized(symbol_data.1)
+                    return IntermediateLookupResult::NotInitialized(symbol_data.1)
                 }
             }
-            None => return LookupResult::Err,
+            None => return IntermediateLookupResult::Err,
         }
     }
 }
@@ -345,49 +351,48 @@ impl Namespace {
         self.interfaces.get(scope_index, key)
     }
 
-    /*
     pub fn lookup_in_variables_namespace(
         &self,
         scope_index: usize,
         key: &str,
-    ) -> Option<(SymbolData<VariableData>, usize, usize, bool)> {
-        self.variables.lookup(scope_index, key)
-    }*/
-
-    pub fn lookup_in_variables_namespace(
-        &self,
-        scope_index: usize,
-        key: &str,
-    ) -> LookupResult<VariableData> {
-        self.variables.lookup_with_is_init(scope_index, key)
-    }
-
-    pub fn lookup_in_types_namespace(
-        &self,
-        scope_index: usize,
-        key: &str,
-    ) -> Option<(SymbolData<UserDefinedTypeData>, usize, usize, bool)> {
-        self.types.lookup(scope_index, key)
-    }
-
-    pub fn lookup_in_types_namespace_with_is_init(&self, scope_index: usize, key: &str) -> LookupResult<UserDefinedTypeData> {
-        self.types.lookup_with_is_init(scope_index, key)
-    }
-
-    pub fn lookup_in_interfaces_namespace(
-        &self,
-        scope_index: usize,
-        key: &str,
-    ) -> LookupResult<InterfaceData> {
-        self.interfaces.lookup_with_is_init(scope_index, key)
+    ) -> LookupResult<VariableSymbolData> {
+        match self.variables.lookup_with_is_init(scope_index, key) {
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok((VariableSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
+            IntermediateLookupResult::Err => LookupResult::Err
+        }
     }
 
     pub fn lookup_in_functions_namespace(
         &self,
         scope_index: usize,
         key: &str,
-    ) -> LookupResult<CallableData> {
-        self.functions.lookup_with_is_init(scope_index, key)
+    ) -> LookupResult<FunctionSymbolData> {
+        match self.functions.lookup_with_is_init(scope_index, key) {
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok((FunctionSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
+            IntermediateLookupResult::Err => LookupResult::Err
+        }
+    }
+
+    pub fn lookup_in_types_namespace(&self, scope_index: usize, key: &str) -> LookupResult<UserDefinedTypeSymbolData> {
+        match self.types.lookup_with_is_init(scope_index, key) {
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok((UserDefinedTypeSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
+            IntermediateLookupResult::Err => LookupResult::Err
+        }
+    }
+
+    pub fn lookup_in_interfaces_namespace(
+        &self,
+        scope_index: usize,
+        key: &str,
+    ) -> LookupResult<InterfaceSymbolData> {
+        match self.interfaces.lookup_with_is_init(scope_index, key) {
+            IntermediateLookupResult::Ok(data) => LookupResult::Ok((InterfaceSymbolData(data.0), data.1, data.2, data.3)),
+            IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
+            IntermediateLookupResult::Err => LookupResult::Err
+        }
     }
 
     pub fn declare_variable(
