@@ -4,6 +4,7 @@ use crate::types::core::Type;
 pub fn check_concrete_types_bounded_by(
     generic_type_decls: &Option<GenericTypeParams>,
     concrete_types: &Option<Vec<Type>>,
+    is_concrete_types_none_allowed: bool,
 ) -> Result<(), GenericTypeArgsCheckError> {
     match concrete_types {
         Some(concrete_types) => match generic_type_decls {
@@ -13,7 +14,13 @@ pub fn check_concrete_types_bounded_by(
             None => return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected),
         },
         None => match generic_type_decls {
-            Some(_) => return Err(GenericTypeArgsCheckError::GenericTypeArgsExpected),
+            Some(_) => {
+                if is_concrete_types_none_allowed {
+                    return Ok(());
+                } else {
+                    return Err(GenericTypeArgsCheckError::GenericTypeArgsExpected);
+                }
+            }
             None => return Ok(()),
         },
     }

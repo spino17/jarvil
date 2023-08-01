@@ -4,6 +4,7 @@ use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
 use super::helper::check_concrete_types_bounded_by;
 use super::interfaces::{InterfaceBounds, InterfaceData};
+use super::types::core::UserDefineTypeKind;
 use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use super::types::lambda_type::LambdaTypeData;
 use crate::scope::types::core::UserDefinedTypeData;
@@ -67,6 +68,7 @@ pub trait AbstractSymbolData {
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
+        is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError>;
     fn is_generics_allowed(&self) -> bool;
 }
@@ -184,6 +186,7 @@ impl AbstractSymbolData for VariableSymbolData {
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
+        _is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
         if concrete_types.is_some() {
             return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
@@ -215,10 +218,11 @@ impl AbstractSymbolData for FunctionSymbolData {
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
+        _is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
         let function_data = self.0.get_core_ref();
         let generic_type_decls = &function_data.generics.generics_spec;
-        check_concrete_types_bounded_by(generic_type_decls, concrete_types)
+        check_concrete_types_bounded_by(generic_type_decls, concrete_types, true)
     }
 
     fn is_generics_allowed(&self) -> bool {
@@ -245,8 +249,28 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
+        is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        todo!()
+        match &*self.0.get_core_ref() {
+            UserDefinedTypeData::Struct(struct_data) => {
+                let generic_type_decls = &struct_data.generics.generics_spec;
+                return check_concrete_types_bounded_by(
+                    generic_type_decls,
+                    concrete_types,
+                    is_concrete_types_none_allowed,
+                );
+            }
+            UserDefinedTypeData::Lambda(lambda_data) => {
+                let generic_type_decls = &lambda_data.meta_data.generics.generics_spec;
+                return check_concrete_types_bounded_by(generic_type_decls, concrete_types, false);
+            }
+            UserDefinedTypeData::Generic(_) => {
+                if concrete_types.is_some() {
+                    return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
+                }
+                return Ok(());
+            }
+        }
     }
 
     fn is_generics_allowed(&self) -> bool {
@@ -276,8 +300,11 @@ impl AbstractSymbolData for InterfaceSymbolData {
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
+        _is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        todo!()
+        let interface_data = self.0.get_core_ref();
+        let generic_type_decls = &interface_data.generics.generics_spec;
+        check_concrete_types_bounded_by(generic_type_decls, concrete_types, false)
     }
 
     fn is_generics_allowed(&self) -> bool {
