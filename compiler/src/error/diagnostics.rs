@@ -853,7 +853,11 @@ impl GenericTypeArgsNotExpectedError {
 pub struct GenericTypeArgsCountMismatchedError {
     pub received_count: usize,
     pub expected_count: usize,
-    #[label("expected {} arguments, got {}", expected_count, received_count)]
+    #[label(
+        "expected {} generic type arguments, got {}",
+        expected_count,
+        received_count
+    )]
     pub span: SourceSpan,
 }
 
