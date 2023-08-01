@@ -291,6 +291,9 @@ impl Type {
     }
 
     pub fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+        if interface_bounds.len() == 0 {
+            return true
+        }
         match self.0.as_ref() {
             // TODO - we can have non-struct non-generic types also for some interface_bounds for example
             // array and hashmaps would implement `Iterator` interface
