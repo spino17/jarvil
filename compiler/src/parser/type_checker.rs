@@ -519,7 +519,6 @@ impl TypeChecker {
                 let class_method = &core_class_method.class_method_name;
                 let params = &core_class_method.params;
                 if let CoreIdentifierInUseNode::Ok(ok_identifier) = class.core_ref() {
-                    // TODO - check if <...> is correct
                     let class_name = ok_identifier.token_value(&self.code);
                     match self
                         .namespace_handler
@@ -836,7 +835,6 @@ impl TypeChecker {
                             }
                         }
                         StructPropertyCheckResult::NonStructType => {
-                            // TODO - check if the type has inbuilt method like array or hashmap
                             let result: Result<CallablePrototypeData, ()> = match &atom_type_obj
                                 .0
                                 .as_ref()
