@@ -64,6 +64,7 @@ pub enum Diagnostics {
     GenericTypeArgsNotExpected(GenericTypeArgsNotExpectedError),
     GenericTypeArgsExpected(GenericTypeArgsExpectedError),
     GenericTypeArgsCountMismatched(GenericTypeArgsCountMismatchedError),
+    GenericTypeArgsIncorrectlyBounded(GenericTypeArgsIncorrectlyBoundedError),
 }
 
 impl Diagnostics {
@@ -153,6 +154,9 @@ impl Diagnostics {
             Diagnostics::GenericTypeArgsNotExpected(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::GenericTypeArgsExpected(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::GenericTypeArgsCountMismatched(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::GenericTypeArgsIncorrectlyBounded(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -860,6 +864,40 @@ impl GenericTypeArgsCountMismatchedError {
             expected_count,
             span: range_to_span(range).into(),
         }
+    }
+}
+
+#[derive(Debug, Error, Clone)]
+#[error("incorrectly bounded generic type arguments found")]
+pub struct GenericTypeArgsIncorrectlyBoundedError {
+    incorrectly_bounded_types: Vec<(TextRange, String)>, // (ty_span, interface_bounds_str)
+}
+impl GenericTypeArgsIncorrectlyBoundedError {
+    pub fn new(incorrectly_bounded_types: &Vec<(TextRange, String)>) -> Self {
+        GenericTypeArgsIncorrectlyBoundedError {
+            incorrectly_bounded_types: incorrectly_bounded_types.clone(),
+        }
+    }
+}
+
+impl Diagnostic for GenericTypeArgsIncorrectlyBoundedError {
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
+        let mut span_vec: Vec<LabeledSpan> = vec![];
+        for factor in &self.incorrectly_bounded_types {
+            let err_message = format!("type is not bounded by interfaces `{}`", factor.1);
+            let start_index: usize = factor.0.start().into();
+            let len: usize = (factor.0.end() - factor.0.start()).into();
+            span_vec.push(miette::LabeledSpan::new(
+                Some(err_message),
+                start_index,
+                len,
+            ));
+        }
+        return Some(Box::new(span_vec.into_iter()));
+    }
+
+    fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
+        return Some(Box::new("TypeCheckError"));
     }
 }
 

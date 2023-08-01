@@ -2,7 +2,7 @@ use crate::ast::ast::SkippedTokenNode;
 use crate::constants::common::NEWLINE;
 use crate::error::diagnostics::{
     Diagnostics, GenericTypeArgsCountMismatchedError, GenericTypeArgsExpectedError,
-    GenericTypeArgsNotExpectedError,
+    GenericTypeArgsIncorrectlyBoundedError, GenericTypeArgsNotExpectedError,
 };
 use crate::error::helper::IdentifierKind;
 use crate::scope::errors::GenericTypeArgsCheckError;
@@ -53,7 +53,8 @@ pub fn err_for_generic_type_args(
             return Diagnostics::GenericTypeArgsCountMismatched(err);
         }
         GenericTypeArgsCheckError::GenericTypeArgsIncorrectlyBounded(incorrectly_bounded_types) => {
-            todo!()
+            let err = GenericTypeArgsIncorrectlyBoundedError::new(incorrectly_bounded_types);
+            return Diagnostics::GenericTypeArgsIncorrectlyBounded(err);
         }
     }
 }
