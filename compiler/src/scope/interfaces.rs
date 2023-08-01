@@ -197,3 +197,9 @@ impl InterfaceBounds {
         self.is_subset(other) && other.is_subset(self)
     }
 }
+
+impl ToString for InterfaceBounds {
+    fn to_string(&self) -> String {
+        todo!()
+    }
+}

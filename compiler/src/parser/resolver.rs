@@ -304,15 +304,18 @@ impl Resolver {
         is_concrete_types_none_allowed: bool,
     ) -> Result<(Option<ConcreteTypesRegistryKey>, bool), GenericTypeArgsCheckError> {
         // (index to the registry, has_generics)
-        let (mut concrete_types, mut has_generics) =
+        let (mut concrete_types, ty_ranges, mut has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
         //if concrete_types.is_some() && !symbol_data.is_generics_allowed() {
         // TODO - raise error `no generic type arguments expected`
         //    concrete_types = None;
         //    has_generics = false;
         //}
-        let result =
-            symbol_data.check_generic_type_args(&concrete_types, is_concrete_types_none_allowed);
+        let result = symbol_data.check_generic_type_args(
+            &concrete_types,
+            &ty_ranges,
+            is_concrete_types_none_allowed,
+        );
         match result {
             Ok(()) => {
                 let index = symbol_data.register_concrete_types(concrete_types, has_generics);
@@ -635,21 +638,23 @@ impl Resolver {
     fn extract_angle_bracket_content_from_identifier_in_use(
         &mut self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
-    ) -> (Option<Vec<Type>>, bool) {
+    ) -> (Option<Vec<Type>>, Option<Vec<TextRange>>, bool) {
         match &ok_identifier_in_use.core_ref().generic_type_args {
             Some((_, generic_type_args, _)) => {
                 let mut has_generics = false;
                 let mut concrete_types: Vec<Type> = vec![];
+                let mut ty_ranges: Vec<TextRange> = vec![];
                 for generic_type_expr in generic_type_args.iter() {
                     let ty = self.type_obj_from_expression(&generic_type_expr);
                     if ty.has_generics() {
                         has_generics = true;
                     }
                     concrete_types.push(ty);
+                    ty_ranges.push(generic_type_expr.range())
                 }
-                return (Some(concrete_types), has_generics);
+                return (Some(concrete_types), Some(ty_ranges), has_generics);
             }
-            None => return (None, false),
+            None => return (None, None, false),
         }
     }
 

@@ -68,6 +68,7 @@ pub trait AbstractSymbolData {
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
+        type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError>;
     fn is_generics_allowed(&self) -> bool;
@@ -89,6 +90,7 @@ impl GenericTypeParams {
     pub fn check_concrete_types_bounded_by(
         &self,
         concrete_types: &Vec<Type>,
+        type_ranges: &Vec<TextRange>,
     ) -> Result<(), GenericTypeArgsCheckError> {
         let expected_len = self.len();
         let received_len = concrete_types.len();
@@ -98,12 +100,11 @@ impl GenericTypeParams {
                 expected_len,
             ));
         }
-        let incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
+        let mut incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
             let ty = &concrete_types[index];
             if !ty.is_type_bounded_by_interfaces(interface_bounds) {
-                // TODO - raise error ``
-                todo!()
+                incorrectly_bounded_types.push((type_ranges[index], interface_bounds.to_string()))
             }
         }
         if incorrectly_bounded_types.len() > 0 {
@@ -195,6 +196,7 @@ impl AbstractSymbolData for VariableSymbolData {
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
+        type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(!is_concrete_types_none_allowed);
@@ -228,12 +230,13 @@ impl AbstractSymbolData for FunctionSymbolData {
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
+        type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(is_concrete_types_none_allowed);
         let function_data = self.0.get_core_ref();
         let generic_type_decls = &function_data.generics.generics_spec;
-        check_concrete_types_bounded_by(generic_type_decls, concrete_types, true)
+        check_concrete_types_bounded_by(generic_type_decls, concrete_types, type_ranges, true)
     }
 
     fn is_generics_allowed(&self) -> bool {
@@ -260,6 +263,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
+        type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
         match &*self.0.get_core_ref() {
@@ -268,12 +272,18 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
                 return check_concrete_types_bounded_by(
                     generic_type_decls,
                     concrete_types,
+                    type_ranges,
                     is_concrete_types_none_allowed,
                 );
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
                 let generic_type_decls = &lambda_data.meta_data.generics.generics_spec;
-                return check_concrete_types_bounded_by(generic_type_decls, concrete_types, false);
+                return check_concrete_types_bounded_by(
+                    generic_type_decls,
+                    concrete_types,
+                    type_ranges,
+                    false,
+                );
             }
             UserDefinedTypeData::Generic(_) => {
                 if concrete_types.is_some() {
@@ -311,12 +321,13 @@ impl AbstractSymbolData for InterfaceSymbolData {
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
+        type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(!is_concrete_types_none_allowed);
         let interface_data = self.0.get_core_ref();
         let generic_type_decls = &interface_data.generics.generics_spec;
-        check_concrete_types_bounded_by(generic_type_decls, concrete_types, false)
+        check_concrete_types_bounded_by(generic_type_decls, concrete_types, type_ranges, false)
     }
 
     fn is_generics_allowed(&self) -> bool {
