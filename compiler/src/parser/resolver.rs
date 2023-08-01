@@ -1447,7 +1447,7 @@ impl Resolver {
                         ))
                     },
                     generic_type_decls,
-                    ok_identifier.range(),
+                    ok_identifier.core_ref().name.range(),
                 );
             match result {
                 Ok(symbol_data) => {
