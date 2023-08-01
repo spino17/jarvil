@@ -343,10 +343,8 @@ impl Resolver {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
             LookupResult::Ok(lookup_data) => {
-                let (key, has_generics) = self.bind_decl_to_identifier_in_use(
-                    identifier,
-                    &lookup_data.symbol_data,
-                );
+                let (key, has_generics) =
+                    self.bind_decl_to_identifier_in_use(identifier, &lookup_data.symbol_data);
                 ResolveResult::Ok(lookup_data, key, has_generics, name)
             }
             LookupResult::NotInitialized(decl_range) => {
@@ -594,28 +592,6 @@ impl Resolver {
                 Some(InterfaceObject::new(name, lookup_data.symbol_data.0, index))
             }
             _ => None,
-        }
-    }
-
-    pub fn is_type_bounded_by_interfaces(ty: &Type, interface_bounds: &InterfaceBounds) -> bool {
-        match ty.0.as_ref() {
-            // TODO - we can have non-struct non-generic types also for some interface_bounds for example
-            // array and hashmaps would implement `Iterator` interface
-            CoreType::Struct(struct_data) => {
-                let symbol_data = struct_data.semantic_data.get_core_ref();
-                match &symbol_data.get_struct_data_ref().implementing_interfaces {
-                    Some(ty_interface_bounds) => {
-                        return interface_bounds.is_subset(ty_interface_bounds)
-                    }
-                    None => return false,
-                }
-            }
-            CoreType::Generic(generic_data) => {
-                let symbol_data = generic_data.semantic_data.get_core_ref();
-                let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
-                return interface_bounds.is_subset(ty_interface_bounds);
-            }
-            _ => return false,
         }
     }
 

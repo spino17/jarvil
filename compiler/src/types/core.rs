@@ -8,6 +8,7 @@ use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::concrete::core::{ConcreteTypesRegistryKey, ConcretizationContext};
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
+use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::{array::core::Array, atomic::Atomic};
 use std::collections::HashMap as StdHashMap;
@@ -286,6 +287,28 @@ impl Type {
         match self.0.as_ref() {
             CoreType::Unknown => true,
             _ => false,
+        }
+    }
+
+    pub fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+        match self.0.as_ref() {
+            // TODO - we can have non-struct non-generic types also for some interface_bounds for example
+            // array and hashmaps would implement `Iterator` interface
+            CoreType::Struct(struct_data) => {
+                let symbol_data = struct_data.semantic_data.get_core_ref();
+                match &symbol_data.get_struct_data_ref().implementing_interfaces {
+                    Some(ty_interface_bounds) => {
+                        return interface_bounds.is_subset(ty_interface_bounds)
+                    }
+                    None => return false,
+                }
+            }
+            CoreType::Generic(generic_data) => {
+                let symbol_data = generic_data.semantic_data.get_core_ref();
+                let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
+                return interface_bounds.is_subset(ty_interface_bounds);
+            }
+            _ => return false,
         }
     }
 

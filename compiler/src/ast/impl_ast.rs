@@ -40,7 +40,7 @@ use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
-use crate::scope::core::{LookupResult, AbstractSymbolData};
+use crate::scope::core::{AbstractSymbolData, LookupResult};
 use crate::scope::handler::NamespaceHandler;
 use crate::scope::types::core::{UserDefineTypeKind, UserDefinedTypeData};
 use crate::types::core::Type;
@@ -1221,10 +1221,8 @@ impl UserDefinedTypeNode {
                     let ty_kind = symbol_data.0.get_core_ref().get_kind();
                     let result = match ty_kind {
                         UserDefineTypeKind::Struct => {
-                            let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
-                                ok_identifier,
-                                &symbol_data,
-                            );
+                            let (index, has_generics) = resolver
+                                .bind_decl_to_identifier_in_use(ok_identifier, &symbol_data);
                             TypeResolveKind::Resolved(Type::new_with_struct(
                                 name,
                                 &symbol_data.0,
@@ -1233,10 +1231,8 @@ impl UserDefinedTypeNode {
                             ))
                         }
                         UserDefineTypeKind::Lambda => {
-                            let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
-                                ok_identifier,
-                                &symbol_data,
-                            );
+                            let (index, has_generics) = resolver
+                                .bind_decl_to_identifier_in_use(ok_identifier, &symbol_data);
                             TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                 name,
                                 &symbol_data.0,
@@ -1278,7 +1274,7 @@ impl UserDefinedTypeNode {
                                 Err(_) => TypeResolveKind::Unresolved(vec![
                                     UnresolvedIdentifier::GenericResolvedToOutsideScope(
                                         ok_identifier,
-                                        symbol_data.0.1,
+                                        symbol_data.0 .1,
                                     ),
                                 ]),
                             }
