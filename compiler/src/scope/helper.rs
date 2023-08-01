@@ -2,7 +2,7 @@ use super::{core::GenericTypeParams, errors::GenericTypeArgsCheckError};
 use crate::types::core::Type;
 use text_size::TextRange;
 
-pub fn check_concrete_types_bounded_by(
+pub fn check_concrete_types_bounded_by_interfaces(
     generic_type_decls: &Option<GenericTypeParams>,
     concrete_types: &Option<Vec<Type>>,
     type_ranges: &Option<Vec<TextRange>>,
