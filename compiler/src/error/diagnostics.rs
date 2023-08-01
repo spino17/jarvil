@@ -23,7 +23,8 @@ pub enum Diagnostics {
     NonStructConstructorReturnType(NonStructConstructorReturnTypeError),
     MismatchedConstructorReturnType(MismatchedConstructorReturnTypeError),
     SelfNotFound(SelfNotFoundError),
-    VariableReferencedBeforeAssignment(VariableReferencedBeforeAssignmentError),
+    GenericTypeResolvedToOutsideScope(GenericTypeResolvedToOutsideScopeError),
+    IdentifierUsedBeforeInitialized(IdentifierUsedBeforeInitializedError),
     RightSideWithVoidTypeNotAllowed(RightSideWithVoidTypeNotAllowedError),
     MoreParamsCount(MoreParamsCountError),
     LessParamsCount(LessParamsCountError),
@@ -55,6 +56,10 @@ pub enum Diagnostics {
     MainFunctionWrongType(MainFunctionWrongTypeError),
     ExplicitReturnStatementFoundInConstructorBody(
         ExplicitReturnStatementFoundInConstructorBodyError,
+    ),
+    InterfaceAlreadyExistInBoundsDeclaration(InterfaceAlreadyExistInBoundsDeclarationError),
+    GenericTypesDeclarationInsideConstructorFound(
+        GenericTypesDeclarationInsideConstructorFoundError,
     ),
 }
 
@@ -89,7 +94,7 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::SelfNotFound(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::VariableReferencedBeforeAssignment(diagnostic) => {
+            Diagnostics::IdentifierUsedBeforeInitialized(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::MoreParamsCount(diagnostic) => Report::new(diagnostic.clone()),
@@ -131,6 +136,15 @@ impl Diagnostics {
             Diagnostics::MainFunctionNotFound(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MainFunctionWrongType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::ExplicitReturnStatementFoundInConstructorBody(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::GenericTypeResolvedToOutsideScope(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::GenericTypesDeclarationInsideConstructorFound(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -409,31 +423,24 @@ impl IdentifierAlreadyDeclaredError {
                 )
             }
             IdentifierKind::UserDefinedType => {
-                format!(
-                    "{}s are not allowed to be redeclared inside the complete scope chain",
-                    identifier_kind
-                )
+                "types are not allowed to be redeclared inside the complete scope chain".to_string()
             }
             IdentifierKind::Interface => {
-                format!(
-                    "{}s are not allowed to be redeclared inside the complete scope chain",
-                    identifier_kind
-                )
+                "interfaces are not allowed to be redeclared inside the complete scope chain"
+                    .to_string()
             }
             IdentifierKind::Argument => {
+                "parameters are not allowed to be redeclared in the same function defintion"
+                    .to_string()
+            }
+            IdentifierKind::Field | IdentifierKind::Method => {
                 format!(
-                    "{}s are not allowed to be redeclared in the same function defintion",
+                    "all {}s of struct and interfaces should have distinct names",
                     identifier_kind
                 )
             }
-            IdentifierKind::Field => {
-                format!("all fields of struct should have distinct names")
-            }
-            IdentifierKind::Method => {
-                format!("all methods of struct should have distinct names")
-            }
             IdentifierKind::Constructor => {
-                format!("constructor is not allowed to be redeclared")
+                "constructor is not allowed to be redeclared".to_string()
             }
         };
         IdentifierAlreadyDeclaredError {
@@ -597,26 +604,119 @@ impl IdentifierFoundInNonLocalsError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("variable `{}` referenced before assignment", self.variable_name)]
+#[error("identifier `{}` referenced before initialization", self.identifier_name)]
 #[diagnostic(code("SemanticError"))]
-pub struct VariableReferencedBeforeAssignmentError {
-    pub variable_name: String,
-    #[label("variable declared here")]
+pub struct IdentifierUsedBeforeInitializedError {
+    pub identifier_name: String,
+    pub identifier_kind: IdentifierKind,
+    #[label("{} declared here", identifier_kind)]
     pub decl_span: SourceSpan,
-    #[label("same variable used within the declaration statement")]
+    #[label("same {} used within the declaration", identifier_kind)]
     pub usage_span: SourceSpan,
     #[help]
     help: Option<String>,
 }
 
-impl VariableReferencedBeforeAssignmentError {
-    pub fn new(variable_name: String, decl_range: TextRange, usage_range: TextRange) -> Self {
-        VariableReferencedBeforeAssignmentError {
-            variable_name,
+impl IdentifierUsedBeforeInitializedError {
+    pub fn new(
+        identifier_name: &str,
+        identifier_kind: IdentifierKind,
+        decl_range: TextRange,
+        usage_range: TextRange,
+    ) -> Self {
+        let help_str = match identifier_kind {
+            IdentifierKind::Variable => "variables are not allowed to be referenced inside their own declaration statement",
+            IdentifierKind::UserDefinedType => "struct types are not allowed to be referenced inside their own generic types declaration and implementing interfaces",
+            IdentifierKind::Interface => "interfaces are not allowed to be referenced inside their own generic types declaration",
+            _ => unreachable!()
+        };
+        IdentifierUsedBeforeInitializedError {
+            identifier_name: identifier_name.to_string(),
+            identifier_kind,
             decl_span: range_to_span(decl_range).into(),
             usage_span: range_to_span(usage_range).into(),
             help: Some(
-                "variables are not allowed to be referenced inside the their own declaration statement"
+                help_str
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("interface reincluded in the bounds")]
+#[diagnostic(code("SemanticError"))]
+pub struct InterfaceAlreadyExistInBoundsDeclarationError {
+    name: String,
+    #[label("interface `{}` is included here", self.name)]
+    pub previous_decl_span: SourceSpan,
+    #[label("interface `{}` reincluded here", self.name)]
+    pub decl_span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl InterfaceAlreadyExistInBoundsDeclarationError {
+    pub fn new(name: &str, previous_decl_span: TextRange, decl_span: TextRange) -> Self {
+        InterfaceAlreadyExistInBoundsDeclarationError {
+            name: name.to_string(),
+            previous_decl_span: range_to_span(previous_decl_span).into(),
+            decl_span: range_to_span(decl_span).into(),
+            help: Some(
+                "interface can only be included once inside the bounds declaration"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("generic types declaration inside constructor found")]
+#[diagnostic(code("SemanticError"))]
+pub struct GenericTypesDeclarationInsideConstructorFoundError {
+    #[label("generic types declaration found")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl GenericTypesDeclarationInsideConstructorFoundError {
+    pub fn new(span: TextRange) -> Self {
+        GenericTypesDeclarationInsideConstructorFoundError {
+            span: range_to_span(span).into(),
+            help: Some(
+                "generic types declaration is not allowed inside constructor"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("generic type resolved to outside scope")]
+#[diagnostic(code("SemanticError"))]
+pub struct GenericTypeResolvedToOutsideScopeError {
+    #[label("generic type resolved to the given outside declaration")]
+    pub usage_span: SourceSpan,
+    #[label("generic type is declared here")]
+    pub decl_span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl GenericTypeResolvedToOutsideScopeError {
+    pub fn new(usage_span: TextRange, decl_span: TextRange) -> Self {
+        GenericTypeResolvedToOutsideScopeError {
+            usage_span: range_to_span(usage_span).into(),
+            decl_span: range_to_span(decl_span).into(),
+            help: Some(
+                "generic types are not allowed to be resolved to declarations outside the enclosing generics declarative constructs like functions, methods, structs and interfaces."
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()

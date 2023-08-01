@@ -1278,6 +1278,7 @@ impl UserDefinedTypeNode {
                                 Err(_) => TypeResolveKind::Unresolved(vec![
                                     UnresolvedIdentifier::GenericResolvedToOutsideScope(
                                         ok_identifier,
+                                        symbol_data.1,
                                     ),
                                 ]),
                             }
@@ -1285,9 +1286,10 @@ impl UserDefinedTypeNode {
                     };
                     return result;
                 }
-                LookupResult::NotInitialized(_) => {
+                LookupResult::NotInitialized(decl_range) => {
                     return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::NotInitialized(
                         ok_identifier,
+                        decl_range,
                     )])
                 }
                 LookupResult::Unresolved => {
@@ -2282,4 +2284,16 @@ impl GenericTypeDeclNode {
     }
 
     impl_core_ref!(CoreGenericTypeDeclNode);
+}
+
+impl Node for GenericTypeDeclNode {
+    fn range(&self) -> TextRange {
+        match &self.core_ref().interface_bounds {
+            Some((_, interfaces)) => impl_range!(self.core_ref().generic_type_name, interfaces),
+            None => self.core_ref().generic_type_name.range(),
+        }
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().generic_type_name.start_line_number()
+    }
 }

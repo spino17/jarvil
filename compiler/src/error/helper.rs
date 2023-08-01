@@ -11,7 +11,7 @@ pub enum IdentifierKind {
     Argument,
     Field,
     Method,
-    Constructor
+    Constructor,
 }
 
 impl Display for IdentifierKind {

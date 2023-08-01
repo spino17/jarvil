@@ -153,11 +153,11 @@ impl ToString for InterfaceObject {
 // is the case).
 #[derive(Debug, Default, Clone)]
 pub struct InterfaceBounds {
-    pub interfaces: Vec<InterfaceObject>,
+    pub interfaces: Vec<(InterfaceObject, TextRange)>,
 }
 
 impl InterfaceBounds {
-    pub fn new(interfaces: Vec<InterfaceObject>) -> Self {
+    pub fn new(interfaces: Vec<(InterfaceObject, TextRange)>) -> Self {
         InterfaceBounds { interfaces }
     }
 
@@ -165,27 +165,28 @@ impl InterfaceBounds {
         self.interfaces.len()
     }
 
-    pub fn contains(&self, obj: &InterfaceObject) -> bool {
-        for entry in &self.interfaces {
+    pub fn contains(&self, obj: &InterfaceObject) -> Option<TextRange> {
+        for (entry, decl_range) in &self.interfaces {
             if entry.is_eq(obj) {
-                return true;
+                return Some(*decl_range);
             }
         }
-        return false;
+        return None;
     }
 
-    pub fn insert(&mut self, obj: InterfaceObject) -> bool {
-        if self.contains(&obj) {
-            return false;
-        } else {
-            self.interfaces.push(obj);
-            return true;
+    pub fn insert(&mut self, obj: InterfaceObject, decl_range: TextRange) -> Option<TextRange> {
+        match self.contains(&obj) {
+            Some(previous_decl_range) => Some(previous_decl_range),
+            None => {
+                self.interfaces.push((obj, decl_range));
+                return None;
+            }
         }
     }
 
     pub fn is_subset(&self, other: &InterfaceBounds) -> bool {
-        for self_entry in &self.interfaces {
-            if !other.contains(&self_entry) {
+        for (self_entry, _) in &self.interfaces {
+            if other.contains(&self_entry).is_none() {
                 return false;
             }
         }

@@ -378,7 +378,9 @@ impl Namespace {
                 data.2,
                 data.3,
             )),
-            IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
+            IntermediateLookupResult::NotInitialized(decl_range) => {
+                LookupResult::NotInitialized(decl_range)
+            }
             IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
         }
     }
@@ -395,7 +397,9 @@ impl Namespace {
                 data.2,
                 data.3,
             )),
-            IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
+            IntermediateLookupResult::NotInitialized(decl_range) => {
+                LookupResult::NotInitialized(decl_range)
+            }
             IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
         }
     }
@@ -412,7 +416,9 @@ impl Namespace {
                 data.2,
                 data.3,
             )),
-            IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
+            IntermediateLookupResult::NotInitialized(decl_range) => {
+                LookupResult::NotInitialized(decl_range)
+            }
             IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
         }
     }
@@ -429,7 +435,9 @@ impl Namespace {
                 data.2,
                 data.3,
             )),
-            IntermediateLookupResult::NotInitialized(range) => LookupResult::NotInitialized(range),
+            IntermediateLookupResult::NotInitialized(decl_range) => {
+                LookupResult::NotInitialized(decl_range)
+            }
             IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
         }
     }
