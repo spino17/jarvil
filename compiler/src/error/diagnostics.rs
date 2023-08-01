@@ -61,6 +61,9 @@ pub enum Diagnostics {
     GenericTypesDeclarationInsideConstructorFound(
         GenericTypesDeclarationInsideConstructorFoundError,
     ),
+    GenericTypeArgsNotExpected(GenericTypeArgsNotExpectedError),
+    GenericTypeArgsExpected(GenericTypeArgsExpectedError),
+    GenericTypeArgsCountMismatched(GenericTypeArgsCountMismatchedError),
 }
 
 impl Diagnostics {
@@ -145,6 +148,11 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::GenericTypesDeclarationInsideConstructorFound(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::GenericTypeArgsNotExpected(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::GenericTypeArgsExpected(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::GenericTypeArgsCountMismatched(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -795,6 +803,62 @@ impl ImmutableTypeNotAssignableError {
                     .style(Style::new().yellow())
                     .to_string(),
             ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("generic type arguments not provided")]
+#[diagnostic(code("SemanticError"))]
+pub struct GenericTypeArgsExpectedError {
+    pub identifier_kind: IdentifierKind,
+    #[label("generic type arguments expected by the {}", identifier_kind)]
+    pub span: SourceSpan,
+}
+
+impl GenericTypeArgsExpectedError {
+    pub fn new(identifier_kind: IdentifierKind, range: TextRange) -> Self {
+        GenericTypeArgsExpectedError {
+            identifier_kind,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("unexpected generic type arguments provided")]
+#[diagnostic(code("SemanticError"))]
+pub struct GenericTypeArgsNotExpectedError {
+    pub identifier_kind: IdentifierKind,
+    #[label("generic type arguments not expected by the {}", identifier_kind)]
+    pub span: SourceSpan,
+}
+
+impl GenericTypeArgsNotExpectedError {
+    pub fn new(identifier_kind: IdentifierKind, range: TextRange) -> Self {
+        GenericTypeArgsNotExpectedError {
+            identifier_kind,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("mismatched expected and passed generic type arguments")]
+#[diagnostic(code("SemanticError"))]
+pub struct GenericTypeArgsCountMismatchedError {
+    pub received_count: usize,
+    pub expected_count: usize,
+    #[label("expected {} arguments, got {}", expected_count, received_count)]
+    pub span: SourceSpan,
+}
+
+impl GenericTypeArgsCountMismatchedError {
+    pub fn new(received_count: usize, expected_count: usize, range: TextRange) -> Self {
+        GenericTypeArgsCountMismatchedError {
+            received_count,
+            expected_count,
+            span: range_to_span(range).into(),
         }
     }
 }

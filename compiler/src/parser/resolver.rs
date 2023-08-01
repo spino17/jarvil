@@ -361,8 +361,11 @@ impl Resolver {
                     }
                     Err(err) => {
                         if log_error {
-                            let err =
-                                err_for_generic_type_args(&err, identifier.core_ref().name.range());
+                            let err = err_for_generic_type_args(
+                                &err,
+                                identifier.core_ref().name.range(),
+                                ident_kind,
+                            );
                             self.errors.push(err);
                         }
                         return ResolveResult::InvalidGenericTypeArgsProvided(err);
@@ -611,8 +614,11 @@ impl Resolver {
                                 .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
                         }
                         UnresolvedIdentifier::InvalidGenericTypeArgsProvided(identifier, err) => {
-                            let err =
-                                err_for_generic_type_args(&err, identifier.core_ref().name.range());
+                            let err = err_for_generic_type_args(
+                                &err,
+                                identifier.core_ref().name.range(),
+                                IdentKind::UserDefinedType,
+                            );
                             self.errors.push(err);
                         }
                     }
@@ -1641,6 +1647,7 @@ impl Visitor for Resolver {
                                     let err = err_for_generic_type_args(
                                         &err,
                                         ok_identifier.core_ref().name.range(),
+                                        IdentKind::Function,
                                     );
                                     self.errors.push(err);
                                 }
@@ -1666,6 +1673,7 @@ impl Visitor for Resolver {
                                             let err = err_for_generic_type_args(
                                                 &err,
                                                 ok_identifier.core_ref().name.range(),
+                                                IdentKind::UserDefinedType,
                                             );
                                             self.errors.push(err);
                                         }
@@ -1707,6 +1715,7 @@ impl Visitor for Resolver {
                                                     let err = err_for_generic_type_args(
                                                         &err,
                                                         ok_identifier.core_ref().name.range(),
+                                                        IdentKind::Variable,
                                                     );
                                                     self.errors.push(err);
                                                 }
