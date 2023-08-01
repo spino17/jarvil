@@ -40,7 +40,7 @@ use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
-use crate::scope::core::LookupResult;
+use crate::scope::core::{LookupResult, AbstractSymbolData};
 use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
 use crate::scope::types::core::{UserDefineTypeKind, UserDefinedTypeData};
 use crate::types::core::Type;
@@ -1216,18 +1216,18 @@ impl UserDefinedTypeNode {
                 .lookup_in_types_namespace(scope_index, &name)
             {
                 LookupResult::Ok(lookup_data) => {
-                    let symbol_data = lookup_data.symbol_data.0;
+                    let symbol_data = lookup_data.symbol_data;
                     let resolved_scope_index = lookup_data.resolved_scope_index;
-                    let ty_kind = symbol_data.get_core_ref().get_kind();
+                    let ty_kind = symbol_data.0.get_core_ref().get_kind();
                     let result = match ty_kind {
                         UserDefineTypeKind::Struct => {
                             let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
                                 ok_identifier,
-                                SymbolDataEntry::Type(symbol_data.clone()),
+                                symbol_data.get_entry(),
                             );
                             TypeResolveKind::Resolved(Type::new_with_struct(
                                 name,
-                                &symbol_data,
+                                &symbol_data.0,
                                 index,
                                 has_generics,
                             ))
@@ -1235,11 +1235,11 @@ impl UserDefinedTypeNode {
                         UserDefineTypeKind::Lambda => {
                             let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
                                 ok_identifier,
-                                SymbolDataEntry::Type(symbol_data.clone()),
+                                symbol_data.get_entry(),
                             );
                             TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                 name,
-                                &symbol_data,
+                                &symbol_data.0,
                                 index,
                                 has_generics,
                             ))
@@ -1267,18 +1267,18 @@ impl UserDefinedTypeNode {
                                 Ok(_) => {
                                     let (index, _) = resolver.bind_decl_to_identifier_in_use(
                                         ok_identifier,
-                                        SymbolDataEntry::Type(symbol_data.clone()),
+                                        symbol_data.get_entry(),
                                     );
                                     assert!(index.is_none());
                                     TypeResolveKind::Resolved(Type::new_with_generic(
                                         name,
-                                        &symbol_data,
+                                        &symbol_data.0,
                                     ))
                                 }
                                 Err(_) => TypeResolveKind::Unresolved(vec![
                                     UnresolvedIdentifier::GenericResolvedToOutsideScope(
                                         ok_identifier,
-                                        symbol_data.1,
+                                        symbol_data.0.1,
                                     ),
                                 ]),
                             }
