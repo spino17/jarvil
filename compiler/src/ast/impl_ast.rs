@@ -1221,8 +1221,11 @@ impl UserDefinedTypeNode {
                     let ty_kind = symbol_data.0.get_core_ref().get_kind();
                     let result = match ty_kind {
                         UserDefineTypeKind::Struct => {
-                            let (index, has_generics) = resolver
-                                .bind_decl_to_identifier_in_use(ok_identifier, &symbol_data);
+                            let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
+                                ok_identifier,
+                                &symbol_data,
+                                false,
+                            );
                             TypeResolveKind::Resolved(Type::new_with_struct(
                                 name,
                                 &symbol_data.0,
@@ -1231,8 +1234,11 @@ impl UserDefinedTypeNode {
                             ))
                         }
                         UserDefineTypeKind::Lambda => {
-                            let (index, has_generics) = resolver
-                                .bind_decl_to_identifier_in_use(ok_identifier, &symbol_data);
+                            let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
+                                ok_identifier,
+                                &symbol_data,
+                                false,
+                            );
                             TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                 name,
                                 &symbol_data.0,
@@ -1264,6 +1270,7 @@ impl UserDefinedTypeNode {
                                     let (index, _) = resolver.bind_decl_to_identifier_in_use(
                                         ok_identifier,
                                         &symbol_data,
+                                        false,
                                     );
                                     assert!(index.is_none());
                                     TypeResolveKind::Resolved(Type::new_with_generic(

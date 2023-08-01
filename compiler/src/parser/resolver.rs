@@ -300,6 +300,7 @@ impl Resolver {
         &mut self,
         node: &OkIdentifierInUseNode,
         symbol_data: &T,
+        is_concrete_types_none_allowed: bool,
     ) -> (Option<ConcreteTypesRegistryKey>, bool) {
         // (index to the registry, has_generics)
 
@@ -307,11 +308,13 @@ impl Resolver {
         // if not raise error
         let (mut concrete_types, mut has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
-        if concrete_types.is_some() && !symbol_data.is_generics_allowed() {
-            // TODO - raise error `no generic type arguments expected`
-            concrete_types = None;
-            has_generics = false;
-        }
+        //if concrete_types.is_some() && !symbol_data.is_generics_allowed() {
+        // TODO - raise error `no generic type arguments expected`
+        //    concrete_types = None;
+        //    has_generics = false;
+        //}
+        let result =
+            symbol_data.check_generic_type_args(&concrete_types, is_concrete_types_none_allowed);
         let index = symbol_data.register_concrete_types(concrete_types, has_generics);
         let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
         self.namespace_handler
@@ -339,12 +342,16 @@ impl Resolver {
         lookup_fn: U,
         ident_kind: IdentKind,
         log_error: bool,
+        is_concrete_types_none_allowed: bool,
     ) -> ResolveResult<T> {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
             LookupResult::Ok(lookup_data) => {
-                let (key, has_generics) =
-                    self.bind_decl_to_identifier_in_use(identifier, &lookup_data.symbol_data);
+                let (key, has_generics) = self.bind_decl_to_identifier_in_use(
+                    identifier,
+                    &lookup_data.symbol_data,
+                    is_concrete_types_none_allowed,
+                );
                 ResolveResult::Ok(lookup_data, key, has_generics, name)
             }
             LookupResult::NotInitialized(decl_range) => {
@@ -378,7 +385,7 @@ impl Resolver {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_variables_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn, IdentKind::Variable, log_error)
+        self.try_resolving(identifier, lookup_fn, IdentKind::Variable, log_error, false)
     }
 
     pub fn try_resolving_function(
@@ -389,18 +396,25 @@ impl Resolver {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_functions_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn, IdentKind::Function, log_error)
+        self.try_resolving(identifier, lookup_fn, IdentKind::Function, log_error, true)
     }
 
     pub fn try_resolving_user_defined_type(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
+        is_concrete_types_none_allowed: bool,
     ) -> ResolveResult<UserDefinedTypeSymbolData> {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_types_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn, IdentKind::UserDefinedType, log_error)
+        self.try_resolving(
+            identifier,
+            lookup_fn,
+            IdentKind::UserDefinedType,
+            log_error,
+            is_concrete_types_none_allowed,
+        )
     }
 
     pub fn try_resolving_interface(
@@ -411,7 +425,13 @@ impl Resolver {
         let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &str| {
             namespace.lookup_in_interfaces_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn, IdentKind::Interface, log_error)
+        self.try_resolving(
+            identifier,
+            lookup_fn,
+            IdentKind::Interface,
+            log_error,
+            false,
+        )
     }
 
     pub fn try_resolving_self_keyword(
@@ -1599,8 +1619,11 @@ impl Visitor for Resolver {
                                     // TODO - raise error ``
                                 }
                                 ResolveResult::Unresolved => {
-                                    match self.try_resolving_user_defined_type(ok_identifier, false)
-                                    {
+                                    match self.try_resolving_user_defined_type(
+                                        ok_identifier,
+                                        false,
+                                        true,
+                                    ) {
                                         ResolveResult::Ok(_, _, _, _) => {}
                                         ResolveResult::NotInitialized(decl_range, name) => {
                                             let err = IdentifierUsedBeforeInitializedError::new(
@@ -1667,7 +1690,7 @@ impl Visitor for Resolver {
                         if let CoreIdentifierInUseNode::Ok(ok_identifier) =
                             core_class_method_call.class_name.core_ref()
                         {
-                            self.try_resolving_user_defined_type(ok_identifier, true);
+                            self.try_resolving_user_defined_type(ok_identifier, true, false);
                         }
                         if let Some(params) = &core_class_method_call.params {
                             self.walk_params(params);
