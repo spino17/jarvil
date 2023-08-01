@@ -302,6 +302,9 @@ impl Resolver {
         symbol_data: SymbolDataEntry,
     ) -> (Option<ConcreteTypesRegistryKey>, bool) {
         // (index to the registry, has_generics)
+
+        // TODO - check with symbol_data that whether the identifier even expects a generic type args.
+        // if not raise error
         let (mut concrete_types, mut has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
         if concrete_types.is_some() && !symbol_data.is_generics_allowed() {
@@ -309,8 +312,6 @@ impl Resolver {
             concrete_types = None;
             has_generics = false;
         }
-        // TODO - check with symbol_data that whether the identifier even expects a generic type args.
-        // if not raise error
         let index = symbol_data.register_concrete_types(concrete_types, has_generics);
         let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data, index);
         self.namespace_handler
@@ -594,6 +595,17 @@ impl Resolver {
             }
             _ => None,
         }
+    }
+
+    pub fn is_type_bounded_by_interfaces(ty: &Type, interface_bounds: &InterfaceBounds) -> bool {
+        let ty_implementing_interfaces: InterfaceBounds = match ty.0.as_ref() {
+            // TODO - we can have non-struct non-generic types also for some interface_bounds for example
+            // array and hashmaps would implement `Iterator` interface
+            CoreType::Struct(struct_data) => todo!(),
+            CoreType::Generic(generic_data) => todo!(),
+            _ => return false,
+        };
+        interface_bounds.is_subset(&ty_implementing_interfaces)
     }
 
     fn extract_angle_bracket_content_from_identifier_in_use(

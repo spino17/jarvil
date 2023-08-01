@@ -321,17 +321,6 @@ impl TypeChecker {
         result
     }
 
-    pub fn is_type_bounded_by_interfaces(ty: &Type, interface_bounds: &InterfaceBounds) -> bool {
-        let ty_implementing_interfaces: InterfaceBounds = match ty.0.as_ref() {
-            // TODO - we can have non-struct non-generic types also for some interface_bounds for example
-            // array and hashmaps would implement `Iterator` interface
-            CoreType::Struct(struct_data) => todo!(),
-            CoreType::Generic(generic_data) => todo!(),
-            _ => return false,
-        };
-        interface_bounds.is_subset(&ty_implementing_interfaces)
-    }
-
     pub fn check_params_type_and_count(
         &self,
         expected_param_data: &Vec<Type>,
