@@ -98,12 +98,20 @@ impl GenericTypeParams {
                 expected_len,
             ));
         }
+        let incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
             let ty = &concrete_types[index];
             if !ty.is_type_bounded_by_interfaces(interface_bounds) {
                 // TODO - raise error ``
                 todo!()
             }
+        }
+        if incorrectly_bounded_types.len() > 0 {
+            return Err(
+                GenericTypeArgsCheckError::GenericTypeArgsIncorrectlyBounded(
+                    incorrectly_bounded_types,
+                ),
+            );
         }
         return Ok(());
     }

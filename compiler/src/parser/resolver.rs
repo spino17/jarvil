@@ -359,7 +359,12 @@ impl Resolver {
                     Ok((key, has_generics)) => {
                         return ResolveResult::Ok(lookup_data, key, has_generics, name)
                     }
-                    Err(err) => return ResolveResult::InvalidGenericTypeArgsProvided(err),
+                    Err(err) => {
+                        if log_error {
+                            // TODO - raise error `invalid generic type args`
+                        }
+                        return ResolveResult::InvalidGenericTypeArgsProvided(err);
+                    }
                 }
             }
             LookupResult::NotInitialized(decl_range) => {
