@@ -598,14 +598,25 @@ impl Resolver {
     }
 
     pub fn is_type_bounded_by_interfaces(ty: &Type, interface_bounds: &InterfaceBounds) -> bool {
-        let ty_implementing_interfaces: InterfaceBounds = match ty.0.as_ref() {
+        match ty.0.as_ref() {
             // TODO - we can have non-struct non-generic types also for some interface_bounds for example
             // array and hashmaps would implement `Iterator` interface
-            CoreType::Struct(struct_data) => todo!(),
-            CoreType::Generic(generic_data) => todo!(),
+            CoreType::Struct(struct_data) => {
+                let symbol_data = struct_data.semantic_data.get_core_ref();
+                match &symbol_data.get_struct_data_ref().implementing_interfaces {
+                    Some(ty_interface_bounds) => {
+                        return interface_bounds.is_subset(ty_interface_bounds)
+                    }
+                    None => return false,
+                }
+            }
+            CoreType::Generic(generic_data) => {
+                let symbol_data = generic_data.semantic_data.get_core_ref();
+                let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
+                return interface_bounds.is_subset(ty_interface_bounds);
+            }
             _ => return false,
-        };
-        interface_bounds.is_subset(&ty_implementing_interfaces)
+        }
     }
 
     fn extract_angle_bracket_content_from_identifier_in_use(
