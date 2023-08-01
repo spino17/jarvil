@@ -49,6 +49,8 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use std::vec;
 use text_size::TextRange;
 
+use super::helper::err_for_generic_type_args;
+
 #[derive(Debug)]
 pub enum ResolveResult<T: AbstractSymbolData> {
     Ok(
@@ -304,13 +306,8 @@ impl Resolver {
         is_concrete_types_none_allowed: bool,
     ) -> Result<(Option<ConcreteTypesRegistryKey>, bool), GenericTypeArgsCheckError> {
         // (index to the registry, has_generics)
-        let (mut concrete_types, ty_ranges, mut has_generics) =
+        let (concrete_types, ty_ranges, has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
-        //if concrete_types.is_some() && !symbol_data.is_generics_allowed() {
-        // TODO - raise error `no generic type arguments expected`
-        //    concrete_types = None;
-        //    has_generics = false;
-        //}
         let result = symbol_data.check_generic_type_args(
             &concrete_types,
             &ty_ranges,
@@ -364,7 +361,9 @@ impl Resolver {
                     }
                     Err(err) => {
                         if log_error {
-                            // TODO - raise error `invalid generic type args`
+                            let err =
+                                err_for_generic_type_args(&err, identifier.core_ref().name.range());
+                            self.errors.push(err);
                         }
                         return ResolveResult::InvalidGenericTypeArgsProvided(err);
                     }
@@ -612,8 +611,9 @@ impl Resolver {
                                 .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
                         }
                         UnresolvedIdentifier::InvalidGenericTypeArgsProvided(identifier, err) => {
-                            // TODO - raise error `invalid generic type args`
-                            todo!()
+                            let err =
+                                err_for_generic_type_args(&err, identifier.core_ref().name.range());
+                            self.errors.push(err);
                         }
                     }
                 }
@@ -1638,7 +1638,11 @@ impl Visitor for Resolver {
                                 }
                                 ResolveResult::NotInitialized(_, _) => unreachable!(),
                                 ResolveResult::InvalidGenericTypeArgsProvided(err) => {
-                                    // TODO - raise error ``
+                                    let err = err_for_generic_type_args(
+                                        &err,
+                                        ok_identifier.core_ref().name.range(),
+                                    );
+                                    self.errors.push(err);
                                 }
                                 ResolveResult::Unresolved => {
                                     match self.try_resolving_user_defined_type(
@@ -1659,7 +1663,11 @@ impl Visitor for Resolver {
                                             );
                                         }
                                         ResolveResult::InvalidGenericTypeArgsProvided(err) => {
-                                            // TODO - raise error `invalid generic type args`
+                                            let err = err_for_generic_type_args(
+                                                &err,
+                                                ok_identifier.core_ref().name.range(),
+                                            );
+                                            self.errors.push(err);
                                         }
                                         ResolveResult::Unresolved => {
                                             match self.try_resolving_variable(ok_identifier, false)
@@ -1696,8 +1704,11 @@ impl Visitor for Resolver {
                                                 ResolveResult::InvalidGenericTypeArgsProvided(
                                                     err,
                                                 ) => {
-                                                    // TODO - raise error `Variable cannot have generic type arguments`
-                                                    todo!()
+                                                    let err = err_for_generic_type_args(
+                                                        &err,
+                                                        ok_identifier.core_ref().name.range(),
+                                                    );
+                                                    self.errors.push(err);
                                                 }
                                             }
                                         }
