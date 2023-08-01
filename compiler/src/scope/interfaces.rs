@@ -200,6 +200,16 @@ impl InterfaceBounds {
 
 impl ToString for InterfaceBounds {
     fn to_string(&self) -> String {
-        todo!()
+        let mut s = "{".to_string();
+        let len = self.interfaces.len();
+        if len > 0 {
+            s.push_str(&self.interfaces[0].0.to_string());
+        }
+        for i in 1..len {
+            s.push_str(" + ");
+            s.push_str(&self.interfaces[i].0.to_string());
+        }
+        s.push('}');
+        s
     }
 }
