@@ -21,6 +21,7 @@ use crate::scope::core::{
     AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData, LookupData,
     LookupResult, UserDefinedTypeSymbolData, VariableSymbolData,
 };
+use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
 use crate::scope::interfaces::{InterfaceBounds, InterfaceObject};
@@ -56,7 +57,7 @@ pub enum ResolveResult<T: AbstractSymbolData> {
         bool,
         String,
     ),
-    InvalidGenericTypeArgsProvided,
+    InvalidGenericTypeArgsProvided(GenericTypeArgsCheckError),
     NotInitialized(TextRange, String),
     Unresolved,
 }
@@ -301,11 +302,8 @@ impl Resolver {
         node: &OkIdentifierInUseNode,
         symbol_data: &T,
         is_concrete_types_none_allowed: bool,
-    ) -> (Option<ConcreteTypesRegistryKey>, bool) {
+    ) -> Result<(Option<ConcreteTypesRegistryKey>, bool), GenericTypeArgsCheckError> {
         // (index to the registry, has_generics)
-
-        // TODO - check with symbol_data that whether the identifier even expects a generic type args.
-        // if not raise error
         let (mut concrete_types, mut has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
         //if concrete_types.is_some() && !symbol_data.is_generics_allowed() {
@@ -315,12 +313,18 @@ impl Resolver {
         //}
         let result =
             symbol_data.check_generic_type_args(&concrete_types, is_concrete_types_none_allowed);
-        let index = symbol_data.register_concrete_types(concrete_types, has_generics);
-        let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
-        self.namespace_handler
-            .identifier_in_use_binding_table
-            .insert(node.clone(), concrete_symbol_data);
-        return (index, has_generics);
+        match result {
+            Ok(()) => {
+                let index = symbol_data.register_concrete_types(concrete_types, has_generics);
+                let concrete_symbol_data =
+                    ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
+                self.namespace_handler
+                    .identifier_in_use_binding_table
+                    .insert(node.clone(), concrete_symbol_data);
+                return Ok((index, has_generics));
+            }
+            Err(err) => return Err(err),
+        }
     }
 
     pub fn bind_decl_to_self_keyword(
@@ -347,12 +351,16 @@ impl Resolver {
         let name = identifier.token_value(&self.code);
         match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
             LookupResult::Ok(lookup_data) => {
-                let (key, has_generics) = self.bind_decl_to_identifier_in_use(
+                match self.bind_decl_to_identifier_in_use(
                     identifier,
                     &lookup_data.symbol_data,
                     is_concrete_types_none_allowed,
-                );
-                ResolveResult::Ok(lookup_data, key, has_generics, name)
+                ) {
+                    Ok((key, has_generics)) => {
+                        return ResolveResult::Ok(lookup_data, key, has_generics, name)
+                    }
+                    Err(err) => return ResolveResult::InvalidGenericTypeArgsProvided(err),
+                }
             }
             LookupResult::NotInitialized(decl_range) => {
                 if log_error {
@@ -594,6 +602,10 @@ impl Resolver {
                             );
                             self.errors
                                 .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
+                        }
+                        UnresolvedIdentifier::InvalidGenericTypeArgsProvided(identifier, err) => {
+                            // TODO - raise error `invalid generic type args`
+                            todo!()
                         }
                     }
                 }
@@ -1615,7 +1627,7 @@ impl Visitor for Resolver {
                                     }
                                 }
                                 ResolveResult::NotInitialized(_, _) => unreachable!(),
-                                ResolveResult::InvalidGenericTypeArgsProvided => {
+                                ResolveResult::InvalidGenericTypeArgsProvided(err) => {
                                     // TODO - raise error ``
                                 }
                                 ResolveResult::Unresolved => {
@@ -1636,7 +1648,7 @@ impl Visitor for Resolver {
                                                 Diagnostics::IdentifierUsedBeforeInitialized(err),
                                             );
                                         }
-                                        ResolveResult::InvalidGenericTypeArgsProvided => {
+                                        ResolveResult::InvalidGenericTypeArgsProvided(err) => {
                                             // TODO - raise error `invalid generic type args`
                                         }
                                         ResolveResult::Unresolved => {
@@ -1671,7 +1683,9 @@ impl Visitor for Resolver {
                                                         Diagnostics::IdentifierNotFoundInAnyNamespace(err),
                                                     );
                                                 }
-                                                ResolveResult::InvalidGenericTypeArgsProvided => {
+                                                ResolveResult::InvalidGenericTypeArgsProvided(
+                                                    err,
+                                                ) => {
                                                     // TODO - raise error `Variable cannot have generic type arguments`
                                                     todo!()
                                                 }

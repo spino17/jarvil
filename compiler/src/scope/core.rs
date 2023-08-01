@@ -101,6 +101,7 @@ impl GenericTypeParams {
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
             let ty = &concrete_types[index];
             if !ty.is_type_bounded_by_interfaces(interface_bounds) {
+                // TODO - raise error ``
                 todo!()
             }
         }

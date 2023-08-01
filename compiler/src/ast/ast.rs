@@ -13,6 +13,7 @@ use jarvil_macros::Node;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
 use crate::parser::resolver::BlockKind;
+use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::{lexer::token::Token, types::core::Type};
 use std::rc::Rc;
 use text_size::{TextRange, TextSize};
@@ -655,6 +656,7 @@ pub enum UnresolvedIdentifier<'a> {
     Unresolved(&'a OkIdentifierInUseNode),
     GenericResolvedToOutsideScope(&'a OkIdentifierInUseNode, TextRange),
     NotInitialized(&'a OkIdentifierInUseNode, TextRange),
+    InvalidGenericTypeArgsProvided(&'a OkIdentifierInUseNode, GenericTypeArgsCheckError),
 }
 
 // misc "kind" enums
