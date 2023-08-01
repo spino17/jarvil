@@ -296,10 +296,10 @@ impl Resolver {
             .insert(node.clone(), symbol_data);
     }
 
-    pub fn bind_decl_to_identifier_in_use(
+    pub fn bind_decl_to_identifier_in_use<T: AbstractSymbolData>(
         &mut self,
         node: &OkIdentifierInUseNode,
-        symbol_data: SymbolDataEntry,
+        symbol_data: &T,
     ) -> (Option<ConcreteTypesRegistryKey>, bool) {
         // (index to the registry, has_generics)
 
@@ -313,7 +313,7 @@ impl Resolver {
             has_generics = false;
         }
         let index = symbol_data.register_concrete_types(concrete_types, has_generics);
-        let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data, index);
+        let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
         self.namespace_handler
             .identifier_in_use_binding_table
             .insert(node.clone(), concrete_symbol_data);
@@ -345,7 +345,7 @@ impl Resolver {
             LookupResult::Ok(lookup_data) => {
                 let (key, has_generics) = self.bind_decl_to_identifier_in_use(
                     identifier,
-                    lookup_data.symbol_data.get_entry(),
+                    &lookup_data.symbol_data,
                 );
                 ResolveResult::Ok(lookup_data, key, has_generics, name)
             }

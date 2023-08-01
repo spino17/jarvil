@@ -1,8 +1,7 @@
 use super::concrete::core::ConcreteTypesRegistryKey;
 use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
-use super::interfaces::{InterfaceBounds, InterfaceData, InterfaceObject};
-use super::types::core::UserDefineTypeKind;
+use super::interfaces::{InterfaceBounds, InterfaceData};
 use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use super::types::lambda_type::LambdaTypeData;
 use crate::scope::types::core::UserDefinedTypeData;
@@ -58,6 +57,8 @@ pub trait AbstractConcreteTypesHandler {
 
 pub trait AbstractSymbolData {
     fn get_entry(&self) -> SymbolDataEntry;
+    fn register_concrete_types(&self, concrete_types: Option<Vec<Type>>, has_generics: bool) -> Option<ConcreteTypesRegistryKey>;
+    fn is_generics_allowed(&self) -> bool;
 }
 
 pub enum ConcreteTypesRegistrationKind {
@@ -134,6 +135,14 @@ impl AbstractSymbolData for VariableSymbolData {
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Variable(self.0.clone())
     }
+
+    fn register_concrete_types(&self, concrete_types: Option<Vec<Type>>, has_generics: bool) -> Option<ConcreteTypesRegistryKey> {
+        self.0.register_concrete_types(concrete_types, has_generics)
+    }
+
+    fn is_generics_allowed(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Debug)]
@@ -142,6 +151,14 @@ pub struct FunctionSymbolData(pub SymbolData<CallableData>);
 impl AbstractSymbolData for FunctionSymbolData {
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Function(self.0.clone())
+    }
+
+    fn register_concrete_types(&self, concrete_types: Option<Vec<Type>>, has_generics: bool) -> Option<ConcreteTypesRegistryKey> {
+        self.0.register_concrete_types(concrete_types, has_generics)
+    }
+
+    fn is_generics_allowed(&self) -> bool {
+        true
     }
 }
 
@@ -152,6 +169,17 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Type(self.0.clone())
     }
+
+    fn register_concrete_types(&self, concrete_types: Option<Vec<Type>>, has_generics: bool) -> Option<ConcreteTypesRegistryKey> {
+        self.0.register_concrete_types(concrete_types, has_generics)
+    }
+
+    fn is_generics_allowed(&self) -> bool {
+        match &*self.0.get_core_ref() {
+            UserDefinedTypeData::Struct(_) | UserDefinedTypeData::Lambda(_) => true,
+            UserDefinedTypeData::Generic(_) => false
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -160,6 +188,14 @@ pub struct InterfaceSymbolData(pub SymbolData<InterfaceData>);
 impl AbstractSymbolData for InterfaceSymbolData {
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Interface(self.0.clone())
+    }
+
+    fn register_concrete_types(&self, concrete_types: Option<Vec<Type>>, has_generics: bool) -> Option<ConcreteTypesRegistryKey> {
+        self.0.register_concrete_types(concrete_types, has_generics)
+    }
+
+    fn is_generics_allowed(&self) -> bool {
+        true
     }
 }
 

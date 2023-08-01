@@ -41,7 +41,7 @@ use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
 use crate::scope::core::{LookupResult, AbstractSymbolData};
-use crate::scope::handler::{NamespaceHandler, SymbolDataEntry};
+use crate::scope::handler::NamespaceHandler;
 use crate::scope::types::core::{UserDefineTypeKind, UserDefinedTypeData};
 use crate::types::core::Type;
 use std::hash::{Hash, Hasher};
@@ -1223,7 +1223,7 @@ impl UserDefinedTypeNode {
                         UserDefineTypeKind::Struct => {
                             let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
                                 ok_identifier,
-                                symbol_data.get_entry(),
+                                &symbol_data,
                             );
                             TypeResolveKind::Resolved(Type::new_with_struct(
                                 name,
@@ -1235,7 +1235,7 @@ impl UserDefinedTypeNode {
                         UserDefineTypeKind::Lambda => {
                             let (index, has_generics) = resolver.bind_decl_to_identifier_in_use(
                                 ok_identifier,
-                                symbol_data.get_entry(),
+                                &symbol_data,
                             );
                             TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                 name,
@@ -1267,7 +1267,7 @@ impl UserDefinedTypeNode {
                                 Ok(_) => {
                                     let (index, _) = resolver.bind_decl_to_identifier_in_use(
                                         ok_identifier,
-                                        symbol_data.get_entry(),
+                                        &symbol_data,
                                     );
                                     assert!(index.is_none());
                                     TypeResolveKind::Resolved(Type::new_with_generic(

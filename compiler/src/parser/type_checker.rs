@@ -7,7 +7,6 @@ use crate::ast::ast::{
     OkIdentifierInDeclNode, OkIdentifierInUseNode, StructDeclarationNode,
 };
 use crate::scope::handler::ConcreteSymbolDataEntry;
-use crate::scope::interfaces::InterfaceBounds;
 use crate::types::core::AbstractNonStructTypes;
 use crate::types::lambda::Lambda;
 use crate::{
