@@ -4,7 +4,6 @@ use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
 use super::helper::check_concrete_types_bounded_by_interfaces;
 use super::interfaces::{InterfaceBounds, InterfaceData};
-use super::types::core::UserDefineTypeKind;
 use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use super::types::lambda_type::LambdaTypeData;
 use crate::scope::types::core::UserDefinedTypeData;

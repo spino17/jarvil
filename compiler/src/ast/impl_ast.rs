@@ -40,7 +40,7 @@ use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
-use crate::scope::core::{AbstractSymbolData, LookupResult};
+use crate::scope::core::LookupResult;
 use crate::scope::handler::NamespaceHandler;
 use crate::scope::types::core::{UserDefineTypeKind, UserDefinedTypeData};
 use crate::types::core::Type;
