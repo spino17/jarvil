@@ -236,7 +236,12 @@ impl AbstractSymbolData for FunctionSymbolData {
         assert!(is_concrete_types_none_allowed);
         let function_data = self.0.get_core_ref();
         let generic_type_decls = &function_data.generics.generics_spec;
-        check_concrete_types_bounded_by_interfaces(generic_type_decls, concrete_types, type_ranges, true)
+        check_concrete_types_bounded_by_interfaces(
+            generic_type_decls,
+            concrete_types,
+            type_ranges,
+            true,
+        )
     }
 
     fn is_generics_allowed(&self) -> bool {
@@ -327,7 +332,12 @@ impl AbstractSymbolData for InterfaceSymbolData {
         assert!(!is_concrete_types_none_allowed);
         let interface_data = self.0.get_core_ref();
         let generic_type_decls = &interface_data.generics.generics_spec;
-        check_concrete_types_bounded_by_interfaces(generic_type_decls, concrete_types, type_ranges, false)
+        check_concrete_types_bounded_by_interfaces(
+            generic_type_decls,
+            concrete_types,
+            type_ranges,
+            false,
+        )
     }
 
     fn is_generics_allowed(&self) -> bool {

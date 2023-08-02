@@ -588,17 +588,14 @@ impl TypeChecker {
     ) -> StructPropertyCheckResult {
         let property_name_str = property_name.token_value(&self.code);
         match atom_type_obj.0.as_ref() {
-            CoreType::Struct(struct_type) => {
-                match &*struct_type.semantic_data.symbol_data.get_core_ref() {
-                    UserDefinedTypeData::Struct(struct_data) => {
-                        match struct_data.try_field(&property_name_str) {
-                            Some((type_obj, _)) => {
-                                return StructPropertyCheckResult::PropertyExist(type_obj)
-                            }
-                            None => return StructPropertyCheckResult::PropertyDoesNotExist,
-                        }
+            CoreType::Struct(struct_ty) => {
+                let symbol_data = struct_ty.semantic_data.symbol_data.get_core_ref();
+                let struct_data = symbol_data.get_struct_data_ref();
+                match struct_data.try_field(&property_name_str) {
+                    Some((type_obj, _)) => {
+                        return StructPropertyCheckResult::PropertyExist(type_obj)
                     }
-                    _ => unreachable!(),
+                    None => return StructPropertyCheckResult::PropertyDoesNotExist,
                 }
             }
             _ => return StructPropertyCheckResult::NonStructType,
