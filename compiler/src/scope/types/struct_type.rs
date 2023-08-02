@@ -49,6 +49,7 @@ impl StructTypeData {
         self.is_init = true;
     }
 
+    // TODO - add key: Option<ConcreteTypesRegistryKey> as argument
     pub fn try_field(&self, field_name: &str) -> Option<(Type, TextRange)> {
         match self.fields.get(field_name) {
             Some(type_obj) => return Some((type_obj.0.clone(), type_obj.1)),
@@ -56,6 +57,7 @@ impl StructTypeData {
         }
     }
 
+    // TODO - add key: Option<ConcreteTypesRegistryKey> as argument
     pub fn try_method(&self, method_name: &str) -> Option<(&CallableData, TextRange)> {
         match self.methods.get(method_name) {
             Some(func_data) => Some((&func_data.0, func_data.1)),

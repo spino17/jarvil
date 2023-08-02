@@ -113,11 +113,11 @@ impl InterfaceObject {
         return false;
     }
 
-    pub fn try_field(&self, field_name: &str) -> Option<(Type, TextRange)> {
+    pub fn try_field(&self, field_name: &str, key: Option<ConcreteTypesRegistryKey>) -> Option<(Type, TextRange)> {
         todo!()
     }
 
-    pub fn try_method(&self, method_name: &str) -> Option<(&CallableData, TextRange)> {
+    pub fn try_method(&self, method_name: &str, key: Option<ConcreteTypesRegistryKey>) -> Option<(&CallableData, TextRange)> {
         todo!()
     }
 }
