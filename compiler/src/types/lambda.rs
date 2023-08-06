@@ -4,6 +4,7 @@ use crate::scope::concrete::core::{
 };
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallablePrototypeData, PrototypeConcretizationResult};
+use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};
 
@@ -121,11 +122,15 @@ impl AbstractType for Lambda {
                 return Type::new_with_lambda_named(
                     named.0.to_string(),
                     &named.1.symbol_data,
-                    new_key
+                    new_key,
                 );
             }
             Lambda::Unnamed(_) => unreachable!(),
         }
+    }
+
+    fn is_type_bounded_by_interfaces(&self, _interface_bounds: &InterfaceBounds) -> bool {
+        unreachable!()
     }
 }
 

@@ -8,6 +8,7 @@ use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCat
 use super::types::lambda_type::LambdaTypeData;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
+use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::{Ref, RefCell, RefMut};

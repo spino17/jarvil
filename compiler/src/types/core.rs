@@ -19,6 +19,7 @@ pub trait AbstractType {
     fn is_eq(&self, other_ty: &Type) -> bool;
     // fn is_structurally_eq(&self, other_ty: &Type) -> bool;
     fn concretize(&self, context: &ConcretizationContext) -> Type;
+    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
 }
 
 pub trait AbstractNonStructTypes {
@@ -290,31 +291,6 @@ impl Type {
         }
     }
 
-    pub fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
-        if interface_bounds.len() == 0 {
-            return true;
-        }
-        match self.0.as_ref() {
-            // TODO - we can have non-struct non-generic types also for some interface_bounds for example
-            // array and hashmaps would implement `Iterator` interface
-            CoreType::Struct(struct_data) => {
-                let symbol_data = struct_data.semantic_data.get_core_ref();
-                match &symbol_data.get_struct_data_ref().implementing_interfaces {
-                    Some(ty_interface_bounds) => {
-                        return interface_bounds.is_subset(ty_interface_bounds)
-                    }
-                    None => return false,
-                }
-            }
-            CoreType::Generic(generic_data) => {
-                let symbol_data = generic_data.semantic_data.get_core_ref();
-                let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
-                return interface_bounds.is_subset(ty_interface_bounds);
-            }
-            _ => return false,
-        }
-    }
-
     // This function returns Some if operation is possible and None otherwise
     pub fn check_operator(&self, other: &Type, op_kind: &BinaryOperatorKind) -> Option<Type> {
         match op_kind {
@@ -392,6 +368,26 @@ impl AbstractType for Type {
             | CoreType::Void
             | CoreType::Unset
             | CoreType::Any => unreachable!(),
+        }
+    }
+
+    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+        match self.0.as_ref() {
+            CoreType::Struct(struct_ty) => {
+                struct_ty.is_type_bounded_by_interfaces(interface_bounds)
+            }
+            CoreType::Generic(generic_ty) => {
+                generic_ty.is_type_bounded_by_interfaces(interface_bounds)
+            }
+            CoreType::Array(array_ty) => array_ty.is_type_bounded_by_interfaces(interface_bounds),
+            CoreType::HashMap(hashmap_ty) => {
+                hashmap_ty.is_type_bounded_by_interfaces(interface_bounds)
+            }
+            CoreType::Tuple(tuple_ty) => tuple_ty.is_type_bounded_by_interfaces(interface_bounds),
+            CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Any => {
+                interface_bounds.len() == 0
+            }
+            CoreType::Unknown | CoreType::Unset | CoreType::Void => false,
         }
     }
 }

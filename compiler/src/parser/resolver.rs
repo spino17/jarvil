@@ -53,11 +53,7 @@ use super::helper::err_for_generic_type_args;
 
 #[derive(Debug)]
 pub enum ResolveResult<T: AbstractSymbolData> {
-    Ok(
-        LookupData<T>,
-        Option<ConcreteTypesRegistryKey>,
-        String,
-    ),
+    Ok(LookupData<T>, Option<ConcreteTypesRegistryKey>, String),
     InvalidGenericTypeArgsProvided(GenericTypeArgsCheckError),
     NotInitialized(TextRange, String),
     Unresolved,
@@ -355,9 +351,7 @@ impl Resolver {
                     &lookup_data.symbol_data,
                     is_concrete_types_none_allowed,
                 ) {
-                    Ok(key) => {
-                        return ResolveResult::Ok(lookup_data, key, name)
-                    }
+                    Ok(key) => return ResolveResult::Ok(lookup_data, key, name),
                     Err(err) => {
                         if log_error {
                             let err = err_for_generic_type_args(

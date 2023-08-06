@@ -2,6 +2,7 @@ use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::scope::{
     concrete::core::ConcretizationContext,
     core::SymbolData,
+    interfaces::InterfaceBounds,
     types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
 };
 
@@ -48,6 +49,12 @@ impl AbstractType for Generic {
                 return context.function_local_concrete_types[index].clone()
             }
         }
+    }
+
+    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+        let symbol_data = self.semantic_data.get_core_ref();
+        let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
+        return interface_bounds.is_subset(ty_interface_bounds);
     }
 }
 

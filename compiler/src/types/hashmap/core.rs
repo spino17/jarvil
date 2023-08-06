@@ -2,7 +2,9 @@ use super::builtin::HASHMAP_BUILTIN_METHODS;
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
-    scope::{concrete::core::ConcretizationContext, function::CallableData},
+    scope::{
+        concrete::core::ConcretizationContext, function::CallableData, interfaces::InterfaceBounds,
+    },
     types::core::{AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type},
 };
 use std::collections::HashMap as StdHashMap;
@@ -46,6 +48,11 @@ impl AbstractType for HashMap {
             self.value_type.clone()
         };
         return Type::new_with_hashmap(concrete_key_ty, concrete_value_ty);
+    }
+
+    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+        // TODO - add checks for interfaces which `HashMap` would implement like `Iterator`, `Index`
+        interface_bounds.len() == 0
     }
 }
 

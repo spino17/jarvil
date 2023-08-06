@@ -2,6 +2,7 @@ use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::scope::{
     concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext},
     core::SymbolData,
+    interfaces::InterfaceBounds,
     types::core::UserDefinedTypeData,
 };
 
@@ -92,8 +93,16 @@ impl AbstractType for Struct {
         return Type::new_with_struct(
             self.name.to_string(),
             &self.semantic_data.symbol_data,
-            new_key
+            new_key,
         );
+    }
+
+    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+        let symbol_data = self.semantic_data.get_core_ref();
+        match &symbol_data.get_struct_data_ref().implementing_interfaces {
+            Some(ty_interface_bounds) => return interface_bounds.is_subset(ty_interface_bounds),
+            None => return false,
+        }
     }
 }
 

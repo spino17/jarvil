@@ -464,9 +464,6 @@ impl TypeChecker {
                             ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
                                 let index = user_defined_type_symbol_data.index;
                                 let name = ok_identifier.token_value(&self.code);
-                                let has_generics = user_defined_type_symbol_data
-                                    .symbol_data
-                                    .is_generics_present_in_tuple_at_index(index);
                                 match &*user_defined_type_symbol_data.get_core_ref() {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
                                         let constructor_meta_data = &struct_symbol_data.constructor;
@@ -480,7 +477,7 @@ impl TypeChecker {
                                             Type::new_with_struct(
                                                 name,
                                                 &user_defined_type_symbol_data.symbol_data,
-                                                index
+                                                index,
                                             ),
                                         )
                                     }

@@ -1,5 +1,6 @@
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::scope::concrete::core::ConcretizationContext;
+use crate::scope::interfaces::InterfaceBounds;
 use crate::types::core::{AbstractType, CoreType, Type};
 
 use super::core::OperatorCompatiblity;
@@ -70,6 +71,10 @@ impl AbstractType for Atomic {
     }
 
     fn concretize(&self, _context: &ConcretizationContext) -> Type {
+        unreachable!()
+    }
+
+    fn is_type_bounded_by_interfaces(&self, _interface_bounds: &InterfaceBounds) -> bool {
         unreachable!()
     }
 }

@@ -2,7 +2,7 @@ use super::core::OperatorCompatiblity;
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
-    scope::concrete::core::ConcretizationContext,
+    scope::{concrete::core::ConcretizationContext, interfaces::InterfaceBounds},
     types::core::{AbstractType, CoreType, Type},
 };
 use std::cmp;
@@ -73,6 +73,11 @@ impl AbstractType for Tuple {
             }
         }
         return Type::new_with_tuple(concrete_types);
+    }
+
+    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+        // TODO - add checks for interfaces which `Tuple` would implement like `Iterator`, `Index`
+        interface_bounds.len() == 0
     }
 }
 

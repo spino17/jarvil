@@ -2,6 +2,7 @@ use super::builtin::ARRAY_BUILTIN_METHODS;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::function::CallableData;
+use crate::scope::interfaces::InterfaceBounds;
 use crate::types::core::{AbstractNonStructTypes, OperatorCompatiblity};
 use crate::{
     constants::common::BOOL,
@@ -51,6 +52,11 @@ impl AbstractType for Array {
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
         Type::new_with_array(self.element_type.concretize(context))
+    }
+
+    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+        // TODO - add checks for interfaces which `Array` would implement like `Iterator`, `Index`
+        interface_bounds.len() == 0
     }
 }
 

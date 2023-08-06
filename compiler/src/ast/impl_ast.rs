@@ -1226,13 +1226,11 @@ impl UserDefinedTypeNode {
                                 &symbol_data,
                                 false,
                             ) {
-                                Ok(index) => {
-                                    TypeResolveKind::Resolved(Type::new_with_struct(
-                                        name,
-                                        &symbol_data.0,
-                                        index
-                                    ))
-                                }
+                                Ok(index) => TypeResolveKind::Resolved(Type::new_with_struct(
+                                    name,
+                                    &symbol_data.0,
+                                    index,
+                                )),
                                 Err(err) => TypeResolveKind::Unresolved(vec![
                                     UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
                                         ok_identifier,
@@ -1247,13 +1245,9 @@ impl UserDefinedTypeNode {
                                 &symbol_data,
                                 false,
                             ) {
-                                Ok(index) => {
-                                    TypeResolveKind::Resolved(Type::new_with_lambda_named(
-                                        name,
-                                        &symbol_data.0,
-                                        index
-                                    ))
-                                }
+                                Ok(index) => TypeResolveKind::Resolved(
+                                    Type::new_with_lambda_named(name, &symbol_data.0, index),
+                                ),
                                 Err(err) => TypeResolveKind::Unresolved(vec![
                                     UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
                                         ok_identifier,
@@ -1346,14 +1340,14 @@ impl UserDefinedTypeNode {
                             return TypeResolveKind::Resolved(Type::new_with_struct(
                                 name,
                                 symbol_data,
-                                index
+                                index,
                             ));
                         }
                         UserDefinedTypeData::Lambda(_) => {
                             return TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                 name,
                                 symbol_data,
-                                index
+                                index,
                             ));
                         }
                         UserDefinedTypeData::Generic(_) => {
