@@ -473,7 +473,6 @@ impl TypeChecker {
                                         );
                                         (
                                             result,
-                                            // constructor_meta_data.prototype.return_type.clone(),
                                             Type::new_with_struct(
                                                 name,
                                                 &user_defined_type_symbol_data.symbol_data,
