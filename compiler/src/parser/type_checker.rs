@@ -480,8 +480,7 @@ impl TypeChecker {
                                             Type::new_with_struct(
                                                 name,
                                                 &user_defined_type_symbol_data.symbol_data,
-                                                index,
-                                                has_generics,
+                                                index
                                             ),
                                         )
                                     }

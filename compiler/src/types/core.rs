@@ -130,8 +130,8 @@ impl Type {
         name: String,
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
-        has_generics: bool,
     ) -> Type {
+        let has_generics = symbol_data.is_generics_present_in_tuple_at_index(index);
         Type(
             Rc::new(CoreType::Struct(Struct::new(name, symbol_data, index))),
             has_generics,
@@ -142,8 +142,8 @@ impl Type {
         name: String,
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
-        has_generics: bool,
     ) -> Type {
+        let has_generics = symbol_data.is_generics_present_in_tuple_at_index(index);
         Type(
             Rc::new(CoreType::Lambda(Lambda::new_with_named(
                 name,

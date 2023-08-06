@@ -121,8 +121,7 @@ impl AbstractType for Lambda {
                 return Type::new_with_lambda_named(
                     named.0.to_string(),
                     &named.1.symbol_data,
-                    new_key,
-                    false,
+                    new_key
                 );
             }
             Lambda::Unnamed(_) => unreachable!(),

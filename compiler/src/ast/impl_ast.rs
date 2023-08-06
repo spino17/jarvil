@@ -1226,12 +1226,11 @@ impl UserDefinedTypeNode {
                                 &symbol_data,
                                 false,
                             ) {
-                                Ok((index, has_generics)) => {
+                                Ok(index) => {
                                     TypeResolveKind::Resolved(Type::new_with_struct(
                                         name,
                                         &symbol_data.0,
-                                        index,
-                                        has_generics,
+                                        index
                                     ))
                                 }
                                 Err(err) => TypeResolveKind::Unresolved(vec![
@@ -1248,12 +1247,11 @@ impl UserDefinedTypeNode {
                                 &symbol_data,
                                 false,
                             ) {
-                                Ok((index, has_generics)) => {
+                                Ok(index) => {
                                     TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                         name,
                                         &symbol_data.0,
-                                        index,
-                                        has_generics,
+                                        index
                                     ))
                                 }
                                 Err(err) => TypeResolveKind::Unresolved(vec![
@@ -1290,7 +1288,7 @@ impl UserDefinedTypeNode {
                                         &symbol_data,
                                         false,
                                     ) {
-                                        Ok((index, _)) => {
+                                        Ok(index) => {
                                             assert!(index.is_none());
                                             TypeResolveKind::Resolved(Type::new_with_generic(
                                                 name,
@@ -1343,22 +1341,19 @@ impl UserDefinedTypeNode {
                 Some(concrete_symbol_data) => {
                     let index = concrete_symbol_data.index;
                     let symbol_data = &concrete_symbol_data.symbol_data;
-                    let has_generics = symbol_data.is_generics_present_in_tuple_at_index(index);
                     match &*concrete_symbol_data.get_core_ref() {
                         UserDefinedTypeData::Struct(_) => {
                             return TypeResolveKind::Resolved(Type::new_with_struct(
                                 name,
                                 symbol_data,
-                                index,
-                                has_generics,
+                                index
                             ));
                         }
                         UserDefinedTypeData::Lambda(_) => {
                             return TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                 name,
                                 symbol_data,
-                                index,
-                                has_generics,
+                                index
                             ));
                         }
                         UserDefinedTypeData::Generic(_) => {

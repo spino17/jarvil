@@ -92,8 +92,7 @@ impl AbstractType for Struct {
         return Type::new_with_struct(
             self.name.to_string(),
             &self.semantic_data.symbol_data,
-            new_key,
-            false,
+            new_key
         );
     }
 }

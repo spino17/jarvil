@@ -56,7 +56,6 @@ pub enum ResolveResult<T: AbstractSymbolData> {
     Ok(
         LookupData<T>,
         Option<ConcreteTypesRegistryKey>,
-        bool,
         String,
     ),
     InvalidGenericTypeArgsProvided(GenericTypeArgsCheckError),
@@ -304,7 +303,7 @@ impl Resolver {
         node: &OkIdentifierInUseNode,
         symbol_data: &T,
         is_concrete_types_none_allowed: bool,
-    ) -> Result<(Option<ConcreteTypesRegistryKey>, bool), GenericTypeArgsCheckError> {
+    ) -> Result<Option<ConcreteTypesRegistryKey>, GenericTypeArgsCheckError> {
         // (index to the registry, has_generics)
         let (concrete_types, ty_ranges, has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
@@ -314,14 +313,14 @@ impl Resolver {
             is_concrete_types_none_allowed,
         );
         match result {
-            Ok(()) => {
+            Ok(_) => {
                 let index = symbol_data.register_concrete_types(concrete_types, has_generics);
                 let concrete_symbol_data =
                     ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
                 self.namespace_handler
                     .identifier_in_use_binding_table
                     .insert(node.clone(), concrete_symbol_data);
-                return Ok((index, has_generics));
+                return Ok(index);
             }
             Err(err) => return Err(err),
         }
@@ -356,8 +355,8 @@ impl Resolver {
                     &lookup_data.symbol_data,
                     is_concrete_types_none_allowed,
                 ) {
-                    Ok((key, has_generics)) => {
-                        return ResolveResult::Ok(lookup_data, key, has_generics, name)
+                    Ok(key) => {
+                        return ResolveResult::Ok(lookup_data, key, name)
                     }
                     Err(err) => {
                         if log_error {
@@ -634,7 +633,7 @@ impl Resolver {
         interface_expr: &OkIdentifierInUseNode,
     ) -> Option<InterfaceObject> {
         match self.try_resolving_interface(interface_expr, true) {
-            ResolveResult::Ok(lookup_data, index, _, name) => {
+            ResolveResult::Ok(lookup_data, index, name) => {
                 Some(InterfaceObject::new(name, lookup_data.symbol_data.0, index))
             }
             _ => None,
@@ -1158,7 +1157,7 @@ impl Resolver {
                         let index = symbol_data
                             .0
                             .register_concrete_types(concrete_types, has_generics);
-                        Type::new_with_struct(name, &symbol_data.0, index, has_generics)
+                        Type::new_with_struct(name, &symbol_data.0, index)
                     }
                     None => Type::new_with_unknown(),
                 };
@@ -1605,7 +1604,7 @@ impl Visitor for Resolver {
                 match atom_start.core_ref() {
                     CoreAtomStartNode::Identifier(identifier) => {
                         if let CoreIdentifierInUseNode::Ok(ok_identifier) = identifier.core_ref() {
-                            if let ResolveResult::Ok(lookup_data, _, _, name) =
+                            if let ResolveResult::Ok(lookup_data, _, name) =
                                 self.try_resolving_variable(ok_identifier, true)
                             {
                                 if lookup_data.depth > 0 {
@@ -1634,7 +1633,7 @@ impl Visitor for Resolver {
                         {
                             // order of namespace search: function => type => variable
                             match self.try_resolving_function(ok_identifier, false) {
-                                ResolveResult::Ok(lookup_data, _, _, name) => {
+                                ResolveResult::Ok(lookup_data, _, name) => {
                                     let symbol_data = lookup_data.symbol_data;
                                     let depth = lookup_data.depth;
                                     let is_global = lookup_data.is_global;
@@ -1657,7 +1656,7 @@ impl Visitor for Resolver {
                                         false,
                                         true,
                                     ) {
-                                        ResolveResult::Ok(_, _, _, _) => {}
+                                        ResolveResult::Ok(_, _, _) => {}
                                         ResolveResult::NotInitialized(decl_range, name) => {
                                             let err = IdentifierUsedBeforeInitializedError::new(
                                                 &name,
@@ -1680,7 +1679,7 @@ impl Visitor for Resolver {
                                         ResolveResult::Unresolved => {
                                             match self.try_resolving_variable(ok_identifier, false)
                                             {
-                                                ResolveResult::Ok(lookup_data, _, _, name) => {
+                                                ResolveResult::Ok(lookup_data, _, name) => {
                                                     let depth = lookup_data.depth;
                                                     if depth > 0 {
                                                         self.set_to_variable_non_locals(name);
