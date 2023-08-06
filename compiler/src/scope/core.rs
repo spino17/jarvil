@@ -71,7 +71,6 @@ pub trait AbstractSymbolData {
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError>;
-    fn is_generics_allowed(&self) -> bool;
 }
 
 pub enum ConcreteTypesRegistrationKind {
@@ -205,10 +204,6 @@ impl AbstractSymbolData for VariableSymbolData {
         }
         return Ok(());
     }
-
-    fn is_generics_allowed(&self) -> bool {
-        false
-    }
 }
 
 #[derive(Debug)]
@@ -242,10 +237,6 @@ impl AbstractSymbolData for FunctionSymbolData {
             type_ranges,
             true,
         )
-    }
-
-    fn is_generics_allowed(&self) -> bool {
-        true
     }
 }
 
@@ -298,13 +289,6 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
             }
         }
     }
-
-    fn is_generics_allowed(&self) -> bool {
-        match &*self.0.get_core_ref() {
-            UserDefinedTypeData::Struct(_) | UserDefinedTypeData::Lambda(_) => true,
-            UserDefinedTypeData::Generic(_) => false,
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -338,10 +322,6 @@ impl AbstractSymbolData for InterfaceSymbolData {
             type_ranges,
             false,
         )
-    }
-
-    fn is_generics_allowed(&self) -> bool {
-        true
     }
 }
 
