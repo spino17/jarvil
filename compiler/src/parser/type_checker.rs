@@ -78,6 +78,13 @@ pub enum InferredConcreteTypesEntry {
     Inferred(Type),
 }
 
+#[derive(Debug)]
+pub enum InferredConcreteTypesError {
+    LessParams((usize, usize)), // (expected_params_num, received_params_num),
+    MoreParams(usize),
+    TypeInferenceFailed,
+}
+
 pub enum StructPropertyCheckResult {
     PropertyExist(Type),
     PropertyDoesNotExist,
@@ -336,7 +343,7 @@ impl TypeChecker {
         expected_prototype: &CallablePrototypeData,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
-    ) -> Result<(Vec<Type>, Vec<(Type, TextRange)>), ()> {
+    ) -> Result<(Vec<Type>, Vec<(Type, TextRange)>), InferredConcreteTypesError> {
         // (inferred_concrete_types, params_ty_vec)
         match received_params {
             Some(received_params) => {
@@ -350,9 +357,8 @@ impl TypeChecker {
                 let expected_params_len = expected_params.len();
                 for (index, received_param) in received_params_iter.enumerate() {
                     let param_ty = self.check_expr(&received_param);
-                    // do something with `param_ty`
                     if index >= expected_params_len {
-                        return Err(());
+                        return Err(InferredConcreteTypesError::MoreParams(expected_params_len));
                     }
                     let expected_ty = &expected_params[index];
                     if expected_ty.has_generics() {
@@ -360,8 +366,14 @@ impl TypeChecker {
                     }
                     params_ty_vec.push((param_ty, received_param.range()));
                 }
+                if expected_params_len > params_ty_vec.len() {
+                    return Err(InferredConcreteTypesError::LessParams((
+                        expected_params_len,
+                        params_ty_vec.len(),
+                    )));
+                }
                 if num_inferred_types != len_concrete_types {
-                    return Err(());
+                    return Err(InferredConcreteTypesError::TypeInferenceFailed);
                 }
                 return Ok((
                     inferred_concrete_types
@@ -375,7 +387,7 @@ impl TypeChecker {
                     params_ty_vec,
                 ));
             }
-            None => Err(()),
+            None => Err(InferredConcreteTypesError::TypeInferenceFailed),
         }
     }
 
