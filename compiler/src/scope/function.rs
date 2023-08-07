@@ -22,6 +22,15 @@ pub enum PrototypeConcretizationResult<'a> {
     Concretized(CallablePrototypeData),
 }
 
+impl<'a> PrototypeConcretizationResult<'a> {
+    pub fn get_prototype_ref(&'a self) -> &'a CallablePrototypeData {
+        match self {
+            PrototypeConcretizationResult::UnConcretized(prototype) => prototype,
+            PrototypeConcretizationResult::Concretized(prototype) => prototype,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct CallablePrototypeData {
     pub params: Vec<Type>,

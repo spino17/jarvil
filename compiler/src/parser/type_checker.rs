@@ -7,6 +7,7 @@ use crate::ast::ast::{
     OkIdentifierInDeclNode, OkIdentifierInUseNode, StructDeclarationNode,
 };
 use crate::scope::core::AbstractSymbolMetaData;
+use crate::scope::function::PrototypeConcretizationResult;
 use crate::scope::handler::ConcreteSymbolDataEntry;
 use crate::types::core::AbstractNonStructTypes;
 use crate::types::lambda::Lambda;
@@ -415,27 +416,32 @@ impl TypeChecker {
                         let (result, return_type) = match symbol_data {
                             ConcreteSymbolDataEntry::Function(func_symbol_data) => {
                                 let func_data = &*func_symbol_data.get_core_ref();
-                                match func_symbol_data.index {
+                                let index = func_symbol_data.index;
+                                let prototype_result = match index {
                                     Some(index) => {
                                         // get concrete_types and make concrete prototype out of it!
                                         let concrete_types = func_data.get_concrete_types(index);
-                                        let concrete_prototype = func_data
+                                        func_data
                                             .prototype
-                                            .concretize_prototype(&concrete_types.0, &vec![]);
+                                            .concretize_prototype(&vec![], &concrete_types.0)
                                     }
                                     None => {
                                         match &func_data.generics.generics_spec {
                                             Some(generic_type_decls) => {
                                                 // check if function has generic type decls, if yes then try infering types!
+                                                todo!()
                                             }
-                                            None => {
-                                                // happy case
-                                            }
+                                            None => PrototypeConcretizationResult::UnConcretized(
+                                                &func_data.prototype,
+                                            ),
                                         }
                                     }
-                                }
-                                let expected_params = &func_data.prototype.params;
-                                let return_type = &func_data.prototype.return_type;
+                                };
+                                let prototype_ref = prototype_result.get_prototype_ref();
+                                // let expected_params = &func_data.prototype.params;
+                                // let return_type = &func_data.prototype.return_type;
+                                let expected_params = &prototype_ref.params;
+                                let return_type = &prototype_ref.return_type;
                                 let result =
                                     self.check_params_type_and_count(expected_params, params);
                                 (result, return_type.clone())
@@ -479,10 +485,14 @@ impl TypeChecker {
                             }
                             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
                             ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
-                                let index = user_defined_type_symbol_data.index;
                                 let name = ok_identifier.token_value(&self.code);
                                 match &*user_defined_type_symbol_data.get_core_ref() {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
+                                        let index = user_defined_type_symbol_data.index;
+                                        match index {
+                                            Some(index) => {}
+                                            None => {}
+                                        }
                                         let constructor_meta_data = &struct_symbol_data.constructor;
                                         let result = self.check_params_type_and_count(
                                             &constructor_meta_data.prototype.params,
@@ -499,9 +509,8 @@ impl TypeChecker {
                                     }
                                     UserDefinedTypeData::Lambda(_)
                                     | UserDefinedTypeData::Generic(_) => {
-                                        let type_name = ok_identifier.token_value(&self.code);
                                         let err = ConstructorNotFoundForTypeError::new(
-                                            type_name,
+                                            name,
                                             ok_identifier.range(),
                                         );
                                         self.log_error(Diagnostics::ConstructorNotFoundForType(

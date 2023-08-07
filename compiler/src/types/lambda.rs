@@ -46,24 +46,15 @@ impl AbstractType for Lambda {
                         let self_data = self_symbol_data.get_lambda_data_ref();
                         let self_prototype_result =
                             self_data.get_concrete_prototype(self_named.index);
-                        let self_prototype_ref = match &self_prototype_result {
-                            PrototypeConcretizationResult::UnConcretized(prototype) => prototype,
-                            PrototypeConcretizationResult::Concretized(prototype) => prototype,
-                        };
+                        let self_prototype_ref = self_prototype_result.get_prototype_ref();
                         match other_data {
                             Lambda::Named((_, other_named)) => {
                                 let other_symbol_data = other_named.symbol_data.get_core_ref();
                                 let other_data = other_symbol_data.get_lambda_data_ref();
                                 let other_prototype_result =
                                     other_data.get_concrete_prototype(other_named.index);
-                                let other_prototype_ref = match &other_prototype_result {
-                                    PrototypeConcretizationResult::UnConcretized(prototype) => {
-                                        prototype
-                                    }
-                                    PrototypeConcretizationResult::Concretized(prototype) => {
-                                        prototype
-                                    }
-                                };
+                                let other_prototype_ref =
+                                    other_prototype_result.get_prototype_ref();
                                 return other_prototype_ref.is_eq(self_prototype_ref);
                             }
                             Lambda::Unnamed(other_prototype) => {
@@ -77,12 +68,7 @@ impl AbstractType for Lambda {
                             let other_data = other_symbol_data.get_lambda_data_ref();
                             let other_prototype_result =
                                 other_data.get_concrete_prototype(other_named.index);
-                            let other_prototype_ref = match &other_prototype_result {
-                                PrototypeConcretizationResult::UnConcretized(prototype) => {
-                                    prototype
-                                }
-                                PrototypeConcretizationResult::Concretized(prototype) => prototype,
-                            };
+                            let other_prototype_ref = other_prototype_result.get_prototype_ref();
                             return other_prototype_ref.is_eq(self_prototype);
                         }
                         Lambda::Unnamed(other_prototype) => {
