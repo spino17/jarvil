@@ -489,13 +489,29 @@ impl TypeChecker {
                                 match &*user_defined_type_symbol_data.get_core_ref() {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
                                         let index = user_defined_type_symbol_data.index;
-                                        match index {
-                                            Some(index) => {}
-                                            None => {}
-                                        }
                                         let constructor_meta_data = &struct_symbol_data.constructor;
+                                        let prototype_result = match index {
+                                            Some(index) => {
+                                                // get concrete_types and make concrete prototype out of it!
+                                                let concrete_types = struct_symbol_data.get_concrete_types(index);
+                                                constructor_meta_data.prototype.concretize_prototype(&concrete_types.0, &vec![])
+                                            }
+                                            None => {
+                                                match &struct_symbol_data.generics.generics_spec {
+                                                    Some(generic_type_decls) => {
+                                                        // check if function has generic type decls, if yes then try infering types!
+                                                        todo!()
+                                                    }
+                                                    None => PrototypeConcretizationResult::UnConcretized(
+                                                        &constructor_meta_data.prototype,
+                                                    ),
+                                                }
+                                            }
+                                        };
+                                        let prototype_ref = prototype_result.get_prototype_ref();
                                         let result = self.check_params_type_and_count(
-                                            &constructor_meta_data.prototype.params,
+                                            // &constructor_meta_data.prototype.params,
+                                            &prototype_ref.params,
                                             params,
                                         );
                                         (
