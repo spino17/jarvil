@@ -6,10 +6,12 @@ use crate::ast::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, InterfaceMethodTerminalNode,
     OkIdentifierInDeclNode, OkIdentifierInUseNode, StructDeclarationNode,
 };
-use crate::scope::core::AbstractSymbolMetaData;
+use crate::scope::core::{AbstractSymbolMetaData, GenericTypeParams};
 use crate::scope::function::PrototypeConcretizationResult;
 use crate::scope::handler::ConcreteSymbolDataEntry;
+use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::AbstractNonStructTypes;
+use crate::types::generic::Generic;
 use crate::types::lambda::Lambda;
 use crate::{
     ast::{
@@ -68,6 +70,12 @@ pub enum AtomicTokenExprKind {
     Integer,
     Float,
     Literal,
+}
+
+#[derive(Clone)]
+pub enum InferredConcreteTypesEntry {
+    Uninferred,
+    Inferred(Type),
 }
 
 pub enum StructPropertyCheckResult {
@@ -322,6 +330,55 @@ impl TypeChecker {
         result
     }
 
+    pub fn infer_concrete_types_from_arguments(
+        &self,
+        generic_type_decls: &GenericTypeParams,
+        expected_prototype: &CallablePrototypeData,
+        received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(Vec<Type>, Vec<(Type, TextRange)>), ()> {
+        // (inferred_concrete_types, params_ty_vec)
+        match received_params {
+            Some(received_params) => {
+                let len_concrete_types = generic_type_decls.len();
+                let mut inferred_concrete_types: Vec<InferredConcreteTypesEntry> =
+                    vec![InferredConcreteTypesEntry::Uninferred; len_concrete_types];
+                let mut num_inferred_types = 0; // this should be `len_concrete_types` at the end of loop!
+                let mut params_ty_vec: Vec<(Type, TextRange)> = vec![];
+                let received_params_iter = received_params.iter();
+                let expected_params = &expected_prototype.params;
+                let expected_params_len = expected_params.len();
+                for (index, received_param) in received_params_iter.enumerate() {
+                    let param_ty = self.check_expr(&received_param);
+                    // do something with `param_ty`
+                    if index >= expected_params_len {
+                        return Err(());
+                    }
+                    let expected_ty = &expected_params[index];
+                    if expected_ty.has_generics() {
+                        // TODO - infer type here recursively!
+                    }
+                    params_ty_vec.push((param_ty, received_param.range()));
+                }
+                if num_inferred_types != len_concrete_types {
+                    return Err(());
+                }
+                return Ok((
+                    inferred_concrete_types
+                        .into_iter()
+                        .map(|x| match x {
+                            InferredConcreteTypesEntry::Inferred(ty) => ty,
+                            InferredConcreteTypesEntry::Uninferred => unreachable!(),
+                        })
+                        .rev()
+                        .collect(),
+                    params_ty_vec,
+                ));
+            }
+            None => Err(()),
+        }
+    }
+
     pub fn check_params_type_and_count(
         &self,
         expected_param_data: &Vec<Type>,
@@ -429,6 +486,12 @@ impl TypeChecker {
                                         match &func_data.generics.generics_spec {
                                             Some(generic_type_decls) => {
                                                 // check if function has generic type decls, if yes then try infering types!
+                                                self.infer_concrete_types_from_arguments(
+                                                    generic_type_decls,
+                                                    &func_data.prototype,
+                                                    params,
+                                                    GenericTypeDeclarationPlaceCategory::InCallable,
+                                                );
                                                 todo!()
                                             }
                                             None => PrototypeConcretizationResult::UnConcretized(
@@ -493,18 +556,27 @@ impl TypeChecker {
                                         let prototype_result = match index {
                                             Some(index) => {
                                                 // get concrete_types and make concrete prototype out of it!
-                                                let concrete_types = struct_symbol_data.get_concrete_types(index);
-                                                constructor_meta_data.prototype.concretize_prototype(&concrete_types.0, &vec![])
+                                                let concrete_types =
+                                                    struct_symbol_data.get_concrete_types(index);
+                                                constructor_meta_data
+                                                    .prototype
+                                                    .concretize_prototype(
+                                                        &concrete_types.0,
+                                                        &vec![],
+                                                    )
                                             }
                                             None => {
                                                 match &struct_symbol_data.generics.generics_spec {
                                                     Some(generic_type_decls) => {
                                                         // check if function has generic type decls, if yes then try infering types!
+                                                        self.infer_concrete_types_from_arguments(generic_type_decls, &constructor_meta_data.prototype, params, GenericTypeDeclarationPlaceCategory::InStruct);
                                                         todo!()
                                                     }
-                                                    None => PrototypeConcretizationResult::UnConcretized(
-                                                        &constructor_meta_data.prototype,
-                                                    ),
+                                                    None => {
+                                                        PrototypeConcretizationResult::UnConcretized(
+                                                            &constructor_meta_data.prototype,
+                                                        )
+                                                    }
                                                 }
                                             }
                                         };
