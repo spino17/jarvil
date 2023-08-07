@@ -1,7 +1,7 @@
 use crate::{
     scope::{
         concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple},
-        core::{AbstractConcreteTypesHandler, GenericTypeParams},
+        core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams},
         function::{CallableData, CallableKind, PrototypeConcretizationResult},
     },
     types::core::Type,
@@ -28,10 +28,6 @@ impl LambdaTypeData {
                 generics_spec,
             ),
         }
-    }
-
-    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        return self.meta_data.get_concrete_types(key);
     }
 
     pub fn get_concrete_prototype(
@@ -76,5 +72,11 @@ impl AbstractConcreteTypesHandler for LambdaTypeData {
 
     fn is_initialized(&self) -> bool {
         unreachable!()
+    }
+}
+
+impl AbstractSymbolMetaData for LambdaTypeData {
+    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
+        return self.meta_data.get_concrete_types(key);
     }
 }

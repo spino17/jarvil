@@ -6,6 +6,7 @@ use crate::ast::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, InterfaceMethodTerminalNode,
     OkIdentifierInDeclNode, OkIdentifierInUseNode, StructDeclarationNode,
 };
+use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::handler::ConcreteSymbolDataEntry;
 use crate::types::core::AbstractNonStructTypes;
 use crate::types::lambda::Lambda;
@@ -405,12 +406,8 @@ impl TypeChecker {
                 let params = &core_call_expr.params;
                 if let CoreIdentifierInUseNode::Ok(ok_identifier) = func_name.core_ref() {
                     // TODO - check if <...> is correct
-                    // there are four cases to be considered
-                    // 1. <> in decl and in usage => check if the concrete types are bounded by the interfaces and then `params_type_and_count`
-                    // 2. <> in decl but not in usage => infer concrete types from the parameters and then check
-                    // the whether they are bounded by the interfaces
-                    // 3. <> not in decl but in usage => raise error `generics type not expected`
-                    // 4. <> not in decl and not in usage => do the basic check like below
+                    // if <> is present use them to form concrete arguments if not and is expected by the
+                    // identifier symbol_data then infer the types from params and then repeat the above step.
                     if let Some(symbol_data) = self
                         .namespace_handler
                         .get_symbol_data_for_identifier_in_use(ok_identifier)
@@ -418,6 +415,25 @@ impl TypeChecker {
                         let (result, return_type) = match symbol_data {
                             ConcreteSymbolDataEntry::Function(func_symbol_data) => {
                                 let func_data = &*func_symbol_data.get_core_ref();
+                                match func_symbol_data.index {
+                                    Some(index) => {
+                                        // get concrete_types and make concrete prototype out of it!
+                                        let concrete_types = func_data.get_concrete_types(index);
+                                        let concrete_prototype = func_data
+                                            .prototype
+                                            .concretize_prototype(&concrete_types.0, &vec![]);
+                                    }
+                                    None => {
+                                        match &func_data.generics.generics_spec {
+                                            Some(generic_type_decls) => {
+                                                // check if function has generic type decls, if yes then try infering types!
+                                            }
+                                            None => {
+                                                // happy case
+                                            }
+                                        }
+                                    }
+                                }
                                 let expected_params = &func_data.prototype.params;
                                 let return_type = &func_data.prototype.return_type;
                                 let result =
@@ -425,6 +441,7 @@ impl TypeChecker {
                                 (result, return_type.clone())
                             }
                             ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
+                                assert!(variable_symbol_data.index.is_none());
                                 let lambda_type = &variable_symbol_data.get_core_ref().data_type;
                                 match lambda_type.0.as_ref() {
                                     CoreType::Lambda(lambda_data) => match &*lambda_data {
@@ -524,6 +541,8 @@ impl TypeChecker {
                                 let class_method_name = match class_method.core_ref() {
                                     CoreIdentifierInUseNode::Ok(class_method) => {
                                         // TODO - check if <...> is correct
+                                        // if <> is present use them to form concrete arguments if not and is expected by the
+                                        // identifier symbol_data then infer the types from params and then repeat the above step.
                                         class_method.token_value(&self.code)
                                     }
                                     _ => return Type::new_with_unknown(),

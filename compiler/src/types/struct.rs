@@ -1,4 +1,5 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
+use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::{
     concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext},
     core::SymbolData,

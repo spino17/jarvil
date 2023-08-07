@@ -1,4 +1,4 @@
-use super::concrete::core::ConcreteTypesRegistryKey;
+use super::concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple};
 use super::errors::GenericTypeArgsCheckError;
 use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
@@ -56,6 +56,10 @@ pub trait AbstractConcreteTypesHandler {
     fn is_generics_present_in_tuple_at_index(&self, index: ConcreteTypesRegistryKey) -> bool;
     fn has_generics(&self) -> bool;
     fn is_initialized(&self) -> bool;
+}
+
+pub trait AbstractSymbolMetaData {
+    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple;
 }
 
 pub trait AbstractSymbolData {

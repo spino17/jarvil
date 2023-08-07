@@ -1,5 +1,6 @@
 use crate::scope::concrete::core::ConcreteTypesTuple;
 use crate::scope::concrete::registry::GenericsSpecAndConcreteTypesRegistry;
+use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::function::{CallableData, CallableKind};
 use crate::scope::interfaces::InterfaceBounds;
 use crate::{
@@ -64,13 +65,6 @@ impl StructTypeData {
             None => None,
         }
     }
-
-    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        return self
-            .generics
-            .concrete_types_registry
-            .get_concrete_types_at_key(key);
-    }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
@@ -98,6 +92,15 @@ impl AbstractConcreteTypesHandler for StructTypeData {
 
     fn is_initialized(&self) -> bool {
         self.is_init
+    }
+}
+
+impl AbstractSymbolMetaData for StructTypeData {
+    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
+        return self
+            .generics
+            .concrete_types_registry
+            .get_concrete_types_at_key(key);
     }
 }
 

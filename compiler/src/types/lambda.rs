@@ -2,6 +2,7 @@ use super::core::OperatorCompatiblity;
 use crate::scope::concrete::core::{
     ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext,
 };
+use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::interfaces::InterfaceBounds;

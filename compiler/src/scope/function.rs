@@ -3,7 +3,7 @@ use super::{
         core::{ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext},
         registry::GenericsSpecAndConcreteTypesRegistry,
     },
-    core::{AbstractConcreteTypesHandler, GenericTypeParams},
+    core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams},
 };
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
@@ -161,13 +161,6 @@ impl CallableData {
         self.generics.generics_spec = generics_spec;
     }
 
-    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        return self
-            .generics
-            .concrete_types_registry
-            .get_concrete_types_at_key(key);
-    }
-
     pub fn is_eq(&self, other: &CallableData) -> bool {
         todo!()
     }
@@ -198,5 +191,14 @@ impl AbstractConcreteTypesHandler for CallableData {
 
     fn is_initialized(&self) -> bool {
         true
+    }
+}
+
+impl AbstractSymbolMetaData for CallableData {
+    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
+        return self
+            .generics
+            .concrete_types_registry
+            .get_concrete_types_at_key(key);
     }
 }

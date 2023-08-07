@@ -3,7 +3,7 @@ use super::{
         core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
         registry::GenericsSpecAndConcreteTypesRegistry,
     },
-    core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
+    core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams, SymbolData},
     function::CallableData,
 };
 use crate::types::core::AbstractType;
@@ -35,11 +35,20 @@ impl InterfaceData {
         self.is_init = true;
     }
 
-    pub fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        return self
-            .generics
-            .concrete_types_registry
-            .get_concrete_types_at_key(key);
+    pub fn try_field(
+        &self,
+        field_name: &str,
+        key: Option<ConcreteTypesRegistryKey>,
+    ) -> Option<(Type, TextRange)> {
+        todo!()
+    }
+
+    pub fn try_method(
+        &self,
+        method_name: &str,
+        key: Option<ConcreteTypesRegistryKey>,
+    ) -> Option<(&CallableData, TextRange)> {
+        todo!()
     }
 }
 
@@ -68,6 +77,15 @@ impl AbstractConcreteTypesHandler for InterfaceData {
 
     fn is_initialized(&self) -> bool {
         self.is_init
+    }
+}
+
+impl AbstractSymbolMetaData for InterfaceData {
+    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
+        return self
+            .generics
+            .concrete_types_registry
+            .get_concrete_types_at_key(key);
     }
 }
 
@@ -111,22 +129,6 @@ impl InterfaceObject {
             }
         }
         return false;
-    }
-
-    pub fn try_field(
-        &self,
-        field_name: &str,
-        key: Option<ConcreteTypesRegistryKey>,
-    ) -> Option<(Type, TextRange)> {
-        todo!()
-    }
-
-    pub fn try_method(
-        &self,
-        method_name: &str,
-        key: Option<ConcreteTypesRegistryKey>,
-    ) -> Option<(&CallableData, TextRange)> {
-        todo!()
     }
 }
 
