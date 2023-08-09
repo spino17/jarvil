@@ -79,6 +79,18 @@ impl AbstractType for Tuple {
         // TODO - add checks for interfaces which `Tuple` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0
     }
+
+    fn has_generics(&self) -> bool {
+        let mut has_generics = false;
+        let len = self.sub_types.len();
+        for i in 0..len {
+            if self.sub_types[i].has_generics() {
+                has_generics = true;
+                break;
+            }
+        }
+        has_generics
+    }
 }
 
 impl ToString for Tuple {

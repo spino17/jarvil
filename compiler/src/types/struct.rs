@@ -105,6 +105,13 @@ impl AbstractType for Struct {
             None => return false,
         }
     }
+
+    fn has_generics(&self) -> bool {
+        let index = self.semantic_data.index;
+        self.semantic_data
+            .symbol_data
+            .is_generics_present_in_tuple_at_index(index)
+    }
 }
 
 impl ToString for Struct {

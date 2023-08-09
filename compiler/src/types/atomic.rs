@@ -81,6 +81,10 @@ impl AbstractType for Atomic {
     fn is_type_bounded_by_interfaces(&self, _interface_bounds: &InterfaceBounds) -> bool {
         unreachable!()
     }
+
+    fn has_generics(&self) -> bool {
+        unreachable!()
+    }
 }
 
 impl ToString for Atomic {

@@ -60,6 +60,10 @@ impl AbstractType for Array {
         // TODO - add checks for interfaces which `Array` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0
     }
+
+    fn has_generics(&self) -> bool {
+        self.element_type.has_generics()
+    }
 }
 
 impl ToString for Array {

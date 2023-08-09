@@ -119,6 +119,18 @@ impl AbstractType for Lambda {
     fn is_type_bounded_by_interfaces(&self, _interface_bounds: &InterfaceBounds) -> bool {
         unreachable!()
     }
+
+    fn has_generics(&self) -> bool {
+        match self {
+            Lambda::Named((_, concrete_symbol_data)) => {
+                let index = concrete_symbol_data.index;
+                concrete_symbol_data
+                    .symbol_data
+                    .is_generics_present_in_tuple_at_index(index)
+            }
+            Lambda::Unnamed(_) => false,
+        }
+    }
 }
 
 impl ToString for Lambda {

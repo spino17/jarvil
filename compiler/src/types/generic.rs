@@ -56,6 +56,10 @@ impl AbstractType for Generic {
         let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
         return interface_bounds.is_subset(ty_interface_bounds);
     }
+
+    fn has_generics(&self) -> bool {
+        unreachable!()
+    }
 }
 
 impl ToString for Generic {

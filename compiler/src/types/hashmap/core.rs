@@ -56,6 +56,10 @@ impl AbstractType for HashMap {
         // TODO - add checks for interfaces which `HashMap` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0
     }
+
+    fn has_generics(&self) -> bool {
+        self.key_type.has_generics() || self.value_type.has_generics()
+    }
 }
 
 impl ToString for HashMap {

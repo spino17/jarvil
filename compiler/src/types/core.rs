@@ -21,6 +21,7 @@ pub trait AbstractType {
     fn is_eq(&self, other_ty: &Type) -> bool;
     // fn is_structurally_eq(&self, other_ty: &Type) -> bool;
     fn concretize(&self, context: &ConcretizationContext) -> Type;
+    fn has_generics(&self) -> bool;
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
 }
 
@@ -93,39 +94,25 @@ pub enum CoreType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Type(pub Rc<CoreType>, pub bool); // (core_type, has_generic_type)
+pub struct Type(pub Rc<CoreType>);
 
 impl Type {
     pub fn new_with_atomic(name: &str) -> Type {
-        Type(Rc::new(CoreType::Atomic(Atomic::new(name))), false)
+        Type(Rc::new(CoreType::Atomic(Atomic::new(name))))
     }
 
     pub fn new_with_array(element_type: Type) -> Type {
-        let has_generics = element_type.has_generics();
-        Type(
-            Rc::new(CoreType::Array(Array::new(element_type))),
-            has_generics,
-        )
+        Type(Rc::new(CoreType::Array(Array::new(element_type))))
     }
 
     pub fn new_with_tuple(types: Vec<Type>) -> Type {
-        let mut has_generics = false;
-        let len = types.len();
-        for i in 0..len {
-            if types[i].has_generics() {
-                has_generics = true;
-                break;
-            }
-        }
-        Type(Rc::new(CoreType::Tuple(Tuple::new(types))), has_generics)
+        Type(Rc::new(CoreType::Tuple(Tuple::new(types))))
     }
 
     pub fn new_with_hashmap(key_type: Type, value_type: Type) -> Type {
-        let has_generics = key_type.has_generics() || value_type.has_generics();
-        Type(
-            Rc::new(CoreType::HashMap(HashMap::new(key_type, value_type))),
-            has_generics,
-        )
+        Type(Rc::new(CoreType::HashMap(HashMap::new(
+            key_type, value_type,
+        ))))
     }
 
     // user-defined-types
@@ -134,11 +121,11 @@ impl Type {
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
     ) -> Type {
-        let has_generics = symbol_data.is_generics_present_in_tuple_at_index(index);
-        Type(
-            Rc::new(CoreType::Struct(Struct::new(name, symbol_data, index))),
-            has_generics,
-        )
+        Type(Rc::new(CoreType::Struct(Struct::new(
+            name,
+            symbol_data,
+            index,
+        ))))
     }
 
     pub fn new_with_lambda_named(
@@ -146,47 +133,37 @@ impl Type {
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
     ) -> Type {
-        let has_generics = symbol_data.is_generics_present_in_tuple_at_index(index);
-        Type(
-            Rc::new(CoreType::Lambda(Lambda::new_with_named(
-                name,
-                symbol_data,
-                index,
-            ))),
-            has_generics,
-        )
+        Type(Rc::new(CoreType::Lambda(Lambda::new_with_named(
+            name,
+            symbol_data,
+            index,
+        ))))
     }
 
     pub fn new_with_lambda_unnamed(function_prototype: CallablePrototypeData) -> Type {
-        Type(
-            Rc::new(CoreType::Lambda(Lambda::new_with_unnamed(
-                function_prototype,
-            ))),
-            false,
-        )
+        Type(Rc::new(CoreType::Lambda(Lambda::new_with_unnamed(
+            function_prototype,
+        ))))
     }
 
     pub fn new_with_generic(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
-        Type(
-            Rc::new(CoreType::Generic(Generic::new(name, symbol_data))),
-            true,
-        )
+        Type(Rc::new(CoreType::Generic(Generic::new(name, symbol_data))))
     }
 
     pub fn new_with_unknown() -> Type {
-        Type(Rc::new(CoreType::Unknown), false)
+        Type(Rc::new(CoreType::Unknown))
     }
 
     pub fn new_with_unset() -> Type {
-        Type(Rc::new(CoreType::Unset), false)
+        Type(Rc::new(CoreType::Unset))
     }
 
     pub fn new_with_void() -> Type {
-        Type(Rc::new(CoreType::Void), false)
+        Type(Rc::new(CoreType::Void))
     }
 
     pub fn new_with_any() -> Type {
-        Type(Rc::new(CoreType::Any), false)
+        Type(Rc::new(CoreType::Any))
     }
 
     pub fn is_void(&self) -> bool {
@@ -194,10 +171,6 @@ impl Type {
             CoreType::Void => true,
             _ => false,
         }
-    }
-
-    pub fn has_generics(&self) -> bool {
-        self.1
     }
 
     pub fn is_string(&self) -> bool {
@@ -400,6 +373,22 @@ impl AbstractType for Type {
                 interface_bounds.len() == 0
             }
             CoreType::Unknown | CoreType::Unset | CoreType::Void => false,
+        }
+    }
+
+    fn has_generics(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::Atomic(_) => false,
+            CoreType::Struct(struct_type) => struct_type.has_generics(),
+            CoreType::Lambda(lambda_type) => lambda_type.has_generics(),
+            CoreType::Array(array_type) => array_type.has_generics(),
+            CoreType::Tuple(tuple_type) => tuple_type.has_generics(),
+            CoreType::HashMap(hashmap_type) => hashmap_type.has_generics(),
+            CoreType::Generic(_) => true,
+            CoreType::Unknown => false,
+            CoreType::Void => false,
+            CoreType::Unset => false,
+            CoreType::Any => false,
         }
     }
 }

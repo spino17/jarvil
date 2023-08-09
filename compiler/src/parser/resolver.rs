@@ -26,6 +26,7 @@ use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
 use crate::scope::interfaces::{InterfaceBounds, InterfaceObject};
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::types::core::AbstractType;
 use crate::types::core::CoreType;
 use crate::{
     ast::{
