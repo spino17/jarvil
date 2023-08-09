@@ -2,8 +2,10 @@ use super::builtin::HASHMAP_BUILTIN_METHODS;
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
+    parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::core::ConcretizationContext, function::CallableData, interfaces::InterfaceBounds,
+        types::generic_type::GenericTypeDeclarationPlaceCategory,
     },
     types::core::{AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type},
 };

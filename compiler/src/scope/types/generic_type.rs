@@ -25,7 +25,7 @@ impl GenericTypeData {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum GenericTypeDeclarationPlaceCategory {
     // This information is useful for methods
     InStruct,

@@ -1,8 +1,10 @@
 use super::builtin::ARRAY_BUILTIN_METHODS;
 use crate::lexer::token::BinaryOperatorKind;
+use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::function::CallableData;
 use crate::scope::interfaces::InterfaceBounds;
+use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractNonStructTypes, OperatorCompatiblity};
 use crate::{
     constants::common::BOOL,

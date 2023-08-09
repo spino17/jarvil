@@ -355,6 +355,7 @@ impl TypeChecker {
                 let received_params_iter = received_params.iter();
                 let expected_params = &expected_prototype.params;
                 let expected_params_len = expected_params.len();
+                let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![];
                 for (index, received_param) in received_params_iter.enumerate() {
                     let param_ty = self.check_expr(&received_param);
                     if index >= expected_params_len {
@@ -363,6 +364,15 @@ impl TypeChecker {
                     let expected_ty = &expected_params[index];
                     if expected_ty.has_generics() {
                         // TODO - infer type here recursively!
+                    } else {
+                        if !param_ty.is_eq(expected_ty) {
+                            mismatch_types_vec.push((
+                                expected_ty.to_string(),
+                                param_ty.to_string(),
+                                index + 1,
+                                received_param.range(),
+                            ));
+                        }
                     }
                     params_ty_vec.push((param_ty, received_param.range()));
                 }
@@ -498,6 +508,7 @@ impl TypeChecker {
                                         match &func_data.generics.generics_spec {
                                             Some(generic_type_decls) => {
                                                 // check if function has generic type decls, if yes then try infering types!
+                                                // TODO - check also that the concrete_types we got here are bounded by the interfaces provided inside `generic_type_decls`
                                                 self.infer_concrete_types_from_arguments(
                                                     generic_type_decls,
                                                     &func_data.prototype,
@@ -563,7 +574,7 @@ impl TypeChecker {
                                 let name = ok_identifier.token_value(&self.code);
                                 match &*user_defined_type_symbol_data.get_core_ref() {
                                     UserDefinedTypeData::Struct(struct_symbol_data) => {
-                                        let index = user_defined_type_symbol_data.index;
+                                        let mut index = user_defined_type_symbol_data.index;
                                         let constructor_meta_data = &struct_symbol_data.constructor;
                                         let prototype_result = match index {
                                             Some(index) => {
@@ -581,6 +592,8 @@ impl TypeChecker {
                                                 match &struct_symbol_data.generics.generics_spec {
                                                     Some(generic_type_decls) => {
                                                         // check if function has generic type decls, if yes then try infering types!
+                                                        // TODO - check also that the concrete_types we got here are bounded by the interfaces provided inside `generic_type_decls`
+                                                        // register it to the registry and get the new index
                                                         self.infer_concrete_types_from_arguments(generic_type_decls, &constructor_meta_data.prototype, params, GenericTypeDeclarationPlaceCategory::InStruct);
                                                         todo!()
                                                     }

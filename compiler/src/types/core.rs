@@ -5,11 +5,13 @@ use super::r#struct::Struct;
 use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
+use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::{ConcreteTypesRegistryKey, ConcretizationContext};
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::core::UserDefinedTypeData;
+use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::{array::core::Array, atomic::Atomic};
 use std::collections::HashMap as StdHashMap;
 use std::fmt::{Debug, Formatter};
@@ -91,7 +93,7 @@ pub enum CoreType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Type(pub Rc<CoreType>, bool); // (core_type, has_generic_type)
+pub struct Type(pub Rc<CoreType>, pub bool); // (core_type, has_generic_type)
 
 impl Type {
     pub fn new_with_atomic(name: &str) -> Type {
@@ -331,6 +333,16 @@ impl Type {
                 impl_op_compatiblity!(check_or, self, other)
             }
         }
+    }
+
+    fn try_infer_type(
+        &self,
+        generics_containing_ty: &Type,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        num_inferred_types: &mut usize,
+        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()> {
+        todo!()
     }
 }
 
