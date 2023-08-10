@@ -91,6 +91,24 @@ impl AbstractType for Tuple {
         }
         has_generics
     }
+
+    fn try_infer_type(
+        &self,
+        generics_containing_ty: &Type,
+        inferred_concrete_types: &mut Vec<crate::parser::type_checker::InferredConcreteTypesEntry>,
+        num_inferred_types: &mut usize,
+        generic_ty_decl_place: crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()> {
+        match generics_containing_ty.0.as_ref() {
+            CoreType::Tuple(tuple_ty) => {
+                todo!()
+            }
+            CoreType::Generic(generic_ty) => {
+                todo!()
+            }
+            _ => Err(()),
+        }
+    }
 }
 
 impl ToType for Tuple {

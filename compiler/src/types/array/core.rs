@@ -65,6 +65,27 @@ impl AbstractType for Array {
     fn has_generics(&self) -> bool {
         self.element_type.has_generics()
     }
+
+    fn try_infer_type(
+        &self,
+        generics_containing_ty: &Type,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        num_inferred_types: &mut usize,
+        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()> {
+        match generics_containing_ty.0.as_ref() {
+            CoreType::Array(array_ty) => self.element_type.try_infer_type(
+                &array_ty.element_type,
+                inferred_concrete_types,
+                num_inferred_types,
+                generic_ty_decl_place,
+            ),
+            CoreType::Generic(generic_ty) => {
+                todo!()
+            }
+            _ => Err(()),
+        }
+    }
 }
 
 impl ToType for Array {

@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use super::core::{OperatorCompatiblity, ToType};
 use crate::scope::concrete::core::{
     ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext,
@@ -10,6 +8,7 @@ use crate::scope::function::{CallablePrototypeData, PrototypeConcretizationResul
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::{AbstractType, CoreType, Type};
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub enum Lambda {
@@ -131,6 +130,27 @@ impl AbstractType for Lambda {
                     .is_generics_present_in_tuple_at_index(index)
             }
             Lambda::Unnamed(_) => false,
+        }
+    }
+
+    fn try_infer_type(
+        &self,
+        generics_containing_ty: &Type,
+        inferred_concrete_types: &mut Vec<crate::parser::type_checker::InferredConcreteTypesEntry>,
+        num_inferred_types: &mut usize,
+        generic_ty_decl_place: crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()> {
+        match generics_containing_ty.0.as_ref() {
+            CoreType::Lambda(lambda_ty) => match lambda_ty {
+                Lambda::Named((name, concrete_symbol_data)) => {
+                    todo!()
+                }
+                Lambda::Unnamed(_) => unreachable!(),
+            },
+            CoreType::Generic(generic_ty) => {
+                todo!()
+            }
+            _ => Err(()),
         }
     }
 }

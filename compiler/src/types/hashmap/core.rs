@@ -62,6 +62,42 @@ impl AbstractType for HashMap {
     fn has_generics(&self) -> bool {
         self.key_type.has_generics() || self.value_type.has_generics()
     }
+
+    fn try_infer_type(
+        &self,
+        generics_containing_ty: &Type,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        num_inferred_types: &mut usize,
+        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()> {
+        match generics_containing_ty.0.as_ref() {
+            CoreType::HashMap(hashmap_ty) => {
+                let other_key_ty = &hashmap_ty.key_type;
+                let other_value_ty = &hashmap_ty.value_type;
+                if other_key_ty.has_generics() {
+                    let _ = self.key_type.try_infer_type(
+                        other_key_ty,
+                        inferred_concrete_types,
+                        num_inferred_types,
+                        generic_ty_decl_place,
+                    )?;
+                }
+                if other_value_ty.has_generics() {
+                    let _ = self.value_type.try_infer_type(
+                        other_value_ty,
+                        inferred_concrete_types,
+                        num_inferred_types,
+                        generic_ty_decl_place,
+                    )?;
+                }
+                Ok(())
+            }
+            CoreType::Generic(generic_ty) => {
+                todo!()
+            }
+            _ => Err(()),
+        }
+    }
 }
 
 impl ToType for HashMap {

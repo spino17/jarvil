@@ -21,6 +21,13 @@ pub trait AbstractType {
     fn is_eq(&self, other_ty: &Type) -> bool;
     // fn is_structurally_eq(&self, other_ty: &Type) -> bool;
     fn concretize(&self, context: &ConcretizationContext) -> Type;
+    fn try_infer_type(
+        &self,
+        generics_containing_ty: &Type,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        num_inferred_types: &mut usize,
+        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()>;
     fn has_generics(&self) -> bool;
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
 }
@@ -311,16 +318,6 @@ impl Type {
             }
         }
     }
-
-    fn try_infer_type(
-        &self,
-        generics_containing_ty: &Type,
-        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        num_inferred_types: &mut usize,
-        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
-    ) -> Result<(), ()> {
-        todo!()
-    }
 }
 
 impl AbstractType for Type {
@@ -393,6 +390,63 @@ impl AbstractType for Type {
             CoreType::Void => false,
             CoreType::Unset => false,
             CoreType::Any => false,
+        }
+    }
+
+    fn try_infer_type(
+        &self,
+        generics_containing_ty: &Type,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        num_inferred_types: &mut usize,
+        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()> {
+        match self.0.as_ref() {
+            CoreType::Atomic(atomic_ty) => atomic_ty.try_infer_type(
+                generics_containing_ty,
+                inferred_concrete_types,
+                num_inferred_types,
+                generic_ty_decl_place,
+            ),
+            CoreType::Struct(struct_ty) => struct_ty.try_infer_type(
+                generics_containing_ty,
+                inferred_concrete_types,
+                num_inferred_types,
+                generic_ty_decl_place,
+            ),
+            CoreType::Lambda(lambda_ty) => lambda_ty.try_infer_type(
+                generics_containing_ty,
+                inferred_concrete_types,
+                num_inferred_types,
+                generic_ty_decl_place,
+            ),
+            CoreType::Array(array_ty) => array_ty.try_infer_type(
+                generics_containing_ty,
+                inferred_concrete_types,
+                num_inferred_types,
+                generic_ty_decl_place,
+            ),
+            CoreType::Tuple(tuple_ty) => tuple_ty.try_infer_type(
+                generics_containing_ty,
+                inferred_concrete_types,
+                num_inferred_types,
+                generic_ty_decl_place,
+            ),
+            CoreType::HashMap(hashmap_ty) => hashmap_ty.try_infer_type(
+                generics_containing_ty,
+                inferred_concrete_types,
+                num_inferred_types,
+                generic_ty_decl_place,
+            ),
+            CoreType::Generic(generic_ty) => generic_ty.try_infer_type(
+                generics_containing_ty,
+                inferred_concrete_types,
+                num_inferred_types,
+                generic_ty_decl_place,
+            ),
+            CoreType::Unknown => Err(()),
+            CoreType::Void => Err(()),
+            CoreType::Unset => Err(()),
+            CoreType::Any => Err(()),
         }
     }
 }

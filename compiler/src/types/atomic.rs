@@ -1,4 +1,5 @@
 use core::num;
+use std::f32::consts::E;
 
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
@@ -84,6 +85,21 @@ impl AbstractType for Atomic {
 
     fn has_generics(&self) -> bool {
         unreachable!()
+    }
+
+    fn try_infer_type(
+        &self,
+        generics_containing_ty: &Type,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        num_inferred_types: &mut usize,
+        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()> {
+        match generics_containing_ty.0.as_ref() {
+            CoreType::Generic(generic_ty) => {
+                todo!()
+            }
+            _ => Err(()),
+        }
     }
 }
 
