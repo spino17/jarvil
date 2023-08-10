@@ -82,6 +82,9 @@ pub enum InferredConcreteTypesError {
     LessParams((usize, usize)), // (expected_params_num, received_params_num),
     MoreParams(usize),
     TypeInferenceFailed,
+    NotAllConcreteTypesInferred,
+    ConcreteTypesCannotBeInferred,
+    MismatchedType(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
 }
 
 pub enum StructPropertyCheckResult {
@@ -349,7 +352,7 @@ impl TypeChecker {
                 let len_concrete_types = generic_type_decls.len();
                 let mut inferred_concrete_types: Vec<InferredConcreteTypesEntry> =
                     vec![InferredConcreteTypesEntry::Uninferred; len_concrete_types];
-                let mut num_inferred_types = 0; // this should be `len_concrete_types` at the end of loop!
+                let mut num_inferred_types = 0; // this should be `len_concrete_types` at the end of inference process
                 let mut params_ty_vec: Vec<(Type, TextRange)> = vec![];
                 let received_params_iter = received_params.iter();
                 let expected_params = &expected_prototype.params;
@@ -362,7 +365,15 @@ impl TypeChecker {
                     }
                     let expected_ty = &expected_params[index];
                     if expected_ty.has_generics() {
-                        // TODO - infer type here recursively!
+                        let inference_result = expected_ty.try_infer_type(
+                            &param_ty,
+                            &mut inferred_concrete_types,
+                            &mut num_inferred_types,
+                            generic_ty_decl_place,
+                        );
+                        if let Err(()) = inference_result {
+                            return Err(InferredConcreteTypesError::TypeInferenceFailed);
+                        }
                     } else {
                         if !param_ty.is_eq(expected_ty) {
                             mismatch_types_vec.push((
@@ -380,9 +391,12 @@ impl TypeChecker {
                         expected_params_len,
                         params_ty_vec.len(),
                     )));
-                }
-                if num_inferred_types != len_concrete_types {
-                    return Err(InferredConcreteTypesError::TypeInferenceFailed);
+                } else if mismatch_types_vec.len() > 0 {
+                    return Err(InferredConcreteTypesError::MismatchedType(
+                        mismatch_types_vec,
+                    ));
+                } else if num_inferred_types != len_concrete_types {
+                    return Err(InferredConcreteTypesError::NotAllConcreteTypesInferred);
                 }
                 return Ok((
                     inferred_concrete_types
@@ -396,7 +410,7 @@ impl TypeChecker {
                     params_ty_vec,
                 ));
             }
-            None => Err(InferredConcreteTypesError::TypeInferenceFailed),
+            None => Err(InferredConcreteTypesError::ConcreteTypesCannotBeInferred),
         }
     }
 
@@ -431,9 +445,8 @@ impl TypeChecker {
                     return ParamsTypeNCountResult::LessParams((expected_params_len, index));
                 } else if mismatch_types_vec.len() > 0 {
                     return ParamsTypeNCountResult::MismatchedType(mismatch_types_vec);
-                } else {
-                    return ParamsTypeNCountResult::Ok;
                 }
+                return ParamsTypeNCountResult::Ok;
             }
             None => {
                 if expected_params_len != 0 {
