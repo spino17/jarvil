@@ -8,10 +8,10 @@ use crate::{
         types::generic_type::GenericTypeDeclarationPlaceCategory,
     },
     types::core::{
-        AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, ToType, Type,
+        AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type,
     },
 };
-use std::{collections::HashMap as StdHashMap, rc::Rc};
+use std::collections::HashMap as StdHashMap;
 
 #[derive(Debug, Clone)]
 pub struct HashMap {
@@ -65,26 +65,24 @@ impl AbstractType for HashMap {
 
     fn try_infer_type(
         &self,
-        generics_containing_ty: &Type,
+        received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
-        match generics_containing_ty.0.as_ref() {
+        match received_ty.0.as_ref() {
             CoreType::HashMap(hashmap_ty) => {
-                let other_key_ty = &hashmap_ty.key_type;
-                let other_value_ty = &hashmap_ty.value_type;
-                if other_key_ty.has_generics() {
+                if self.key_type.has_generics() {
                     let _ = self.key_type.try_infer_type(
-                        other_key_ty,
+                        &hashmap_ty.key_type,
                         inferred_concrete_types,
                         num_inferred_types,
                         generic_ty_decl_place,
                     )?;
                 }
-                if other_value_ty.has_generics() {
+                if self.value_type.has_generics() {
                     let _ = self.value_type.try_infer_type(
-                        other_value_ty,
+                        &hashmap_ty.value_type,
                         inferred_concrete_types,
                         num_inferred_types,
                         generic_ty_decl_place,
@@ -92,20 +90,8 @@ impl AbstractType for HashMap {
                 }
                 Ok(())
             }
-            CoreType::Generic(generic_ty) => generic_ty.try_setting_inferred_type(
-                self,
-                inferred_concrete_types,
-                num_inferred_types,
-                generic_ty_decl_place,
-            ),
             _ => Err(()),
         }
-    }
-}
-
-impl ToType for HashMap {
-    fn get_type(&self) -> Type {
-        Type(Rc::new(CoreType::HashMap(self.clone())))
     }
 }
 

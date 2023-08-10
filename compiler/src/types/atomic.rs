@@ -1,4 +1,4 @@
-use super::core::{OperatorCompatiblity, ToType};
+use super::core::OperatorCompatiblity;
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::ConcretizationContext;
@@ -85,26 +85,12 @@ impl AbstractType for Atomic {
 
     fn try_infer_type(
         &self,
-        generics_containing_ty: &Type,
-        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        num_inferred_types: &mut usize,
-        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+        _received_ty: &Type,
+        _inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        _num_inferred_types: &mut usize,
+        _generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
-        match generics_containing_ty.0.as_ref() {
-            CoreType::Generic(generic_ty) => generic_ty.try_setting_inferred_type(
-                self,
-                inferred_concrete_types,
-                num_inferred_types,
-                generic_ty_decl_place,
-            ),
-            _ => Err(()),
-        }
-    }
-}
-
-impl ToType for Atomic {
-    fn get_type(&self) -> Type {
-        Type::new_with_atomic(&self.to_string())
+        unreachable!()
     }
 }
 

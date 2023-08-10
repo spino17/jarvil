@@ -5,13 +5,12 @@ use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::function::CallableData;
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
-use crate::types::core::{AbstractNonStructTypes, OperatorCompatiblity, ToType};
+use crate::types::core::{AbstractNonStructTypes, OperatorCompatiblity};
 use crate::{
     constants::common::BOOL,
     types::core::{AbstractType, CoreType, Type},
 };
 use std::collections::HashMap;
-use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Array {
@@ -68,32 +67,20 @@ impl AbstractType for Array {
 
     fn try_infer_type(
         &self,
-        generics_containing_ty: &Type,
+        received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
-        match generics_containing_ty.0.as_ref() {
+        match received_ty.0.as_ref() {
             CoreType::Array(array_ty) => self.element_type.try_infer_type(
                 &array_ty.element_type,
                 inferred_concrete_types,
                 num_inferred_types,
                 generic_ty_decl_place,
             ),
-            CoreType::Generic(generic_ty) => generic_ty.try_setting_inferred_type(
-                self,
-                inferred_concrete_types,
-                num_inferred_types,
-                generic_ty_decl_place,
-            ),
             _ => Err(()),
         }
-    }
-}
-
-impl ToType for Array {
-    fn get_type(&self) -> Type {
-        Type(Rc::new(CoreType::Array(self.clone())))
     }
 }
 

@@ -1,4 +1,4 @@
-use super::core::{OperatorCompatiblity, ToType};
+use super::core::OperatorCompatiblity;
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
@@ -9,7 +9,7 @@ use crate::{
     },
     types::core::{AbstractType, CoreType, Type},
 };
-use std::{cmp, rc::Rc};
+use std::cmp;
 
 #[derive(Debug, Clone)]
 pub struct Tuple {
@@ -98,31 +98,19 @@ impl AbstractType for Tuple {
 
     fn try_infer_type(
         &self,
-        generics_containing_ty: &Type,
+        received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
-        match generics_containing_ty.0.as_ref() {
+        match received_ty.0.as_ref() {
             CoreType::Tuple(tuple_ty) => {
                 let base_types_tuple = &self.sub_types;
                 let generics_containing_types_tuple = &tuple_ty.sub_types;
                 todo!()
             }
-            CoreType::Generic(generic_ty) => generic_ty.try_setting_inferred_type(
-                self,
-                inferred_concrete_types,
-                num_inferred_types,
-                generic_ty_decl_place,
-            ),
             _ => Err(()),
         }
-    }
-}
-
-impl ToType for Tuple {
-    fn get_type(&self) -> Type {
-        Type(Rc::new(CoreType::Tuple(self.clone())))
     }
 }
 

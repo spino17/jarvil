@@ -1,4 +1,4 @@
-use super::core::{OperatorCompatiblity, ToType};
+use super::core::{OperatorCompatiblity};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::{
     ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext,
@@ -10,7 +10,6 @@ use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
-use std::rc::Rc;
 
 #[derive(Debug)]
 pub enum Lambda {
@@ -137,12 +136,12 @@ impl AbstractType for Lambda {
 
     fn try_infer_type(
         &self,
-        generics_containing_ty: &Type,
+        received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
-        match generics_containing_ty.0.as_ref() {
+        match received_ty.0.as_ref() {
             CoreType::Lambda(lambda_ty) => match self {
                 Lambda::Named((self_name, self_concrete_symbol_data)) => match lambda_ty {
                     Lambda::Named((other_name, other_concrete_symbol_data)) => {
@@ -173,24 +172,7 @@ impl AbstractType for Lambda {
                 },
                 Lambda::Unnamed(_) => unreachable!(),
             },
-            CoreType::Generic(generic_ty) => generic_ty.try_setting_inferred_type(
-                self,
-                inferred_concrete_types,
-                num_inferred_types,
-                generic_ty_decl_place,
-            ),
             _ => Err(()),
-        }
-    }
-}
-
-impl ToType for Lambda {
-    fn get_type(&self) -> Type {
-        match self {
-            Lambda::Named(named) => Type(Rc::new(CoreType::Lambda(Lambda::Named(named.clone())))),
-            Lambda::Unnamed(unnamed) => {
-                Type(Rc::new(CoreType::Lambda(Lambda::Unnamed(unnamed.clone()))))
-            }
         }
     }
 }

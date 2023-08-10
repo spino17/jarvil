@@ -1,6 +1,4 @@
-use std::rc::Rc;
-
-use super::core::{AbstractType, CoreType, OperatorCompatiblity, ToType, Type};
+use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
@@ -119,12 +117,12 @@ impl AbstractType for Struct {
 
     fn try_infer_type(
         &self,
-        generics_containing_ty: &Type,
+        received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
-        match generics_containing_ty.0.as_ref() {
+        match received_ty.0.as_ref() {
             CoreType::Struct(struct_ty) => {
                 if self.name == struct_ty.name {
                     match self.semantic_data.index {
@@ -148,20 +146,8 @@ impl AbstractType for Struct {
                     return Err(());
                 }
             }
-            CoreType::Generic(generic_ty) => generic_ty.try_setting_inferred_type(
-                self,
-                inferred_concrete_types,
-                num_inferred_types,
-                generic_ty_decl_place,
-            ),
             _ => Err(()),
         }
-    }
-}
-
-impl ToType for Struct {
-    fn get_type(&self) -> Type {
-        Type(Rc::new(CoreType::Struct(self.clone())))
     }
 }
 

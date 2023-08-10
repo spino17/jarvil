@@ -1,6 +1,5 @@
 use std::rc::Rc;
-
-use super::core::{AbstractType, CoreType, OperatorCompatiblity, ToType, Type};
+use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
@@ -22,34 +21,6 @@ impl Generic {
         Generic {
             name,
             semantic_data: symbol_data.clone(),
-        }
-    }
-
-    pub fn try_setting_inferred_type<T: ToType>(
-        &self,
-        matched_ty: &T,
-        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        num_inferred_types: &mut usize,
-        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
-    ) -> Result<(), ()> {
-        let symbol_data = self.semantic_data.get_core_ref();
-        let generic_data_ref = symbol_data.get_generic_data_ref();
-        let index = generic_data_ref.index;
-        let decl_place = generic_data_ref.category;
-        assert!(decl_place == generic_ty_decl_place);
-        let entry_ty = &mut inferred_concrete_types[index];
-        match entry_ty {
-            InferredConcreteTypesEntry::Uninferred => {
-                *entry_ty = InferredConcreteTypesEntry::Inferred(matched_ty.get_type());
-                *num_inferred_types = *num_inferred_types + 1;
-                return Ok(());
-            }
-            InferredConcreteTypesEntry::Inferred(present_ty) => {
-                if !present_ty.is_eq(&matched_ty.get_type()) {
-                    return Err(());
-                }
-                return Ok(());
-            }
         }
     }
 }
@@ -96,26 +67,30 @@ impl AbstractType for Generic {
 
     fn try_infer_type(
         &self,
-        generics_containing_ty: &Type,
+        received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
-        match generics_containing_ty.0.as_ref() {
-            CoreType::Generic(generic_ty) => generic_ty.try_setting_inferred_type(
-                self,
-                inferred_concrete_types,
-                num_inferred_types,
-                generic_ty_decl_place,
-            ),
-            _ => Err(()),
+        let symbol_data = self.semantic_data.get_core_ref();
+        let generic_data_ref = symbol_data.get_generic_data_ref();
+        let index = generic_data_ref.index;
+        let decl_place = generic_data_ref.category;
+        assert!(decl_place == generic_ty_decl_place);
+        let entry_ty = &mut inferred_concrete_types[index];
+        match entry_ty {
+            InferredConcreteTypesEntry::Uninferred => {
+                *entry_ty = InferredConcreteTypesEntry::Inferred(received_ty.clone());
+                *num_inferred_types = *num_inferred_types + 1;
+                return Ok(());
+            }
+            InferredConcreteTypesEntry::Inferred(present_ty) => {
+                if !present_ty.is_eq(received_ty) {
+                    return Err(());
+                }
+                return Ok(());
+            }
         }
-    }
-}
-
-impl ToType for Generic {
-    fn get_type(&self) -> Type {
-        Type(Rc::new(CoreType::Generic(self.clone())))
     }
 }
 
