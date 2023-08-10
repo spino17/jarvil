@@ -1,4 +1,6 @@
-use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
+use std::rc::Rc;
+
+use super::core::{AbstractType, CoreType, OperatorCompatiblity, ToType, Type};
 use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::{
     concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext},
@@ -7,7 +9,7 @@ use crate::scope::{
     types::core::UserDefinedTypeData,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Struct {
     pub name: String,
     pub semantic_data: ConcreteSymbolData<UserDefinedTypeData>,
@@ -111,6 +113,12 @@ impl AbstractType for Struct {
         self.semantic_data
             .symbol_data
             .is_generics_present_in_tuple_at_index(index)
+    }
+}
+
+impl ToType for Struct {
+    fn get_type(&self) -> Type {
+        Type(Rc::new(CoreType::Struct(self.clone())))
     }
 }
 

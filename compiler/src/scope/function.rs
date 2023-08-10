@@ -31,7 +31,7 @@ impl<'a> PrototypeConcretizationResult<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CallablePrototypeData {
     pub params: Vec<Type>,
     pub return_type: Type,

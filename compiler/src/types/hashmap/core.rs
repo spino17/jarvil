@@ -7,11 +7,13 @@ use crate::{
         concrete::core::ConcretizationContext, function::CallableData, interfaces::InterfaceBounds,
         types::generic_type::GenericTypeDeclarationPlaceCategory,
     },
-    types::core::{AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type},
+    types::core::{
+        AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, ToType, Type,
+    },
 };
-use std::collections::HashMap as StdHashMap;
+use std::{collections::HashMap as StdHashMap, rc::Rc};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HashMap {
     pub key_type: Type,
     pub value_type: Type,
@@ -59,6 +61,12 @@ impl AbstractType for HashMap {
 
     fn has_generics(&self) -> bool {
         self.key_type.has_generics() || self.value_type.has_generics()
+    }
+}
+
+impl ToType for HashMap {
+    fn get_type(&self) -> Type {
+        Type(Rc::new(CoreType::HashMap(self.clone())))
     }
 }
 

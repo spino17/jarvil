@@ -1,4 +1,6 @@
-use super::core::OperatorCompatiblity;
+use std::rc::Rc;
+
+use super::core::{OperatorCompatiblity, ToType};
 use crate::scope::concrete::core::{
     ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext,
 };
@@ -129,6 +131,17 @@ impl AbstractType for Lambda {
                     .is_generics_present_in_tuple_at_index(index)
             }
             Lambda::Unnamed(_) => false,
+        }
+    }
+}
+
+impl ToType for Lambda {
+    fn get_type(&self) -> Type {
+        match self {
+            Lambda::Named(named) => Type(Rc::new(CoreType::Lambda(Lambda::Named(named.clone())))),
+            Lambda::Unnamed(unnamed) => {
+                Type(Rc::new(CoreType::Lambda(Lambda::Unnamed(unnamed.clone()))))
+            }
         }
     }
 }

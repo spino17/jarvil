@@ -7,9 +7,9 @@ use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
 
-use super::core::OperatorCompatiblity;
+use super::core::{OperatorCompatiblity, ToType};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Atomic {
     Int,
     Float,
@@ -84,6 +84,12 @@ impl AbstractType for Atomic {
 
     fn has_generics(&self) -> bool {
         unreachable!()
+    }
+}
+
+impl ToType for Atomic {
+    fn get_type(&self) -> Type {
+        Type::new_with_atomic(&self.to_string())
     }
 }
 

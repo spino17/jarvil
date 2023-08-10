@@ -1,13 +1,13 @@
-use super::core::OperatorCompatiblity;
+use super::core::{OperatorCompatiblity, ToType};
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
     scope::{concrete::core::ConcretizationContext, interfaces::InterfaceBounds},
     types::core::{AbstractType, CoreType, Type},
 };
-use std::cmp;
+use std::{cmp, rc::Rc};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Tuple {
     pub sub_types: Vec<Type>,
 }
@@ -90,6 +90,12 @@ impl AbstractType for Tuple {
             }
         }
         has_generics
+    }
+}
+
+impl ToType for Tuple {
+    fn get_type(&self) -> Type {
+        Type(Rc::new(CoreType::Tuple(self.clone())))
     }
 }
 

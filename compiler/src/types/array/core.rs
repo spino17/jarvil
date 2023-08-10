@@ -5,14 +5,15 @@ use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::function::CallableData;
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
-use crate::types::core::{AbstractNonStructTypes, OperatorCompatiblity};
+use crate::types::core::{AbstractNonStructTypes, OperatorCompatiblity, ToType};
 use crate::{
     constants::common::BOOL,
     types::core::{AbstractType, CoreType, Type},
 };
 use std::collections::HashMap;
+use std::rc::Rc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Array {
     pub element_type: Type,
 }
@@ -63,6 +64,12 @@ impl AbstractType for Array {
 
     fn has_generics(&self) -> bool {
         self.element_type.has_generics()
+    }
+}
+
+impl ToType for Array {
+    fn get_type(&self) -> Type {
+        Type(Rc::new(CoreType::Array(self.clone())))
     }
 }
 

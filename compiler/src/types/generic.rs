@@ -1,4 +1,6 @@
-use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
+use std::rc::Rc;
+
+use super::core::{AbstractType, CoreType, OperatorCompatiblity, ToType, Type};
 use crate::scope::{
     concrete::core::ConcretizationContext,
     core::SymbolData,
@@ -6,7 +8,7 @@ use crate::scope::{
     types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Generic {
     pub name: String,
     pub semantic_data: SymbolData<UserDefinedTypeData>,
@@ -59,6 +61,12 @@ impl AbstractType for Generic {
 
     fn has_generics(&self) -> bool {
         unreachable!()
+    }
+}
+
+impl ToType for Generic {
+    fn get_type(&self) -> Type {
+        Type(Rc::new(CoreType::Generic(self.clone())))
     }
 }
 

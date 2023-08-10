@@ -25,6 +25,10 @@ pub trait AbstractType {
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
 }
 
+pub trait ToType {
+    fn get_type(&self) -> Type;
+}
+
 pub trait AbstractNonStructTypes {
     fn get_concrete_types(&self) -> Vec<Type>;
     fn get_builtin_methods(&self) -> &'static StdHashMap<&'static str, CallableData>;
