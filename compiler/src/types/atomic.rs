@@ -1,11 +1,10 @@
+use super::core::{OperatorCompatiblity, ToType};
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
-
-use super::core::{OperatorCompatiblity, ToType};
 
 #[derive(Debug, Clone)]
 pub enum Atomic {

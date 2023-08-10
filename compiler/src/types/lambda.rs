@@ -143,10 +143,34 @@ impl AbstractType for Lambda {
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match generics_containing_ty.0.as_ref() {
-            CoreType::Lambda(lambda_ty) => match lambda_ty {
-                Lambda::Named((name, concrete_symbol_data)) => {
-                    todo!()
-                }
+            CoreType::Lambda(lambda_ty) => match self {
+                Lambda::Named((self_name, self_concrete_symbol_data)) => match lambda_ty {
+                    Lambda::Named((other_name, other_concrete_symbol_data)) => {
+                        if self_name == other_name {
+                            match self_concrete_symbol_data.index {
+                                Some(self_index) => {
+                                    let self_symbol_data =
+                                        self_concrete_symbol_data.symbol_data.get_core_ref();
+                                    let self_lambda_data = self_symbol_data.get_lambda_data_ref();
+                                    let base_types_tuple =
+                                        &self_lambda_data.get_concrete_types(self_index).0;
+
+                                    let other_index = other_concrete_symbol_data.index.unwrap();
+                                    let other_symbol_data =
+                                        other_concrete_symbol_data.symbol_data.get_core_ref();
+                                    let other_lambda_data = other_symbol_data.get_lambda_data_ref();
+                                    let generics_containing_types_tuple =
+                                        &other_lambda_data.get_concrete_types(other_index).0;
+                                    todo!()
+                                }
+                                None => return Ok(()),
+                            }
+                        } else {
+                            return Err(());
+                        }
+                    }
+                    Lambda::Unnamed(_) => unreachable!(),
+                },
                 Lambda::Unnamed(_) => unreachable!(),
             },
             CoreType::Generic(generic_ty) => generic_ty.try_setting_inferred_type(

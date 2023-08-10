@@ -102,9 +102,12 @@ impl AbstractType for Generic {
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match generics_containing_ty.0.as_ref() {
-            CoreType::Generic(generic_ty) => {
-                todo!()
-            }
+            CoreType::Generic(generic_ty) => generic_ty.try_setting_inferred_type(
+                self,
+                inferred_concrete_types,
+                num_inferred_types,
+                generic_ty_decl_place,
+            ),
             _ => Err(()),
         }
     }

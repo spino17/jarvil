@@ -126,7 +126,27 @@ impl AbstractType for Struct {
     ) -> Result<(), ()> {
         match generics_containing_ty.0.as_ref() {
             CoreType::Struct(struct_ty) => {
-                todo!()
+                if self.name == struct_ty.name {
+                    match self.semantic_data.index {
+                        Some(self_index) => {
+                            let self_symbol_data = self.semantic_data.symbol_data.get_core_ref();
+                            let self_struct_data = self_symbol_data.get_struct_data_ref();
+                            let base_types_tuple =
+                                &self_struct_data.get_concrete_types(self_index).0;
+
+                            let other_index = struct_ty.semantic_data.index.unwrap();
+                            let other_symbol_data =
+                                struct_ty.semantic_data.symbol_data.get_core_ref();
+                            let other_struct_data = other_symbol_data.get_struct_data_ref();
+                            let generics_containing_types_tuple =
+                                &other_struct_data.get_concrete_types(other_index).0;
+                            todo!()
+                        }
+                        None => return Ok(()),
+                    }
+                } else {
+                    return Err(());
+                }
             }
             CoreType::Generic(generic_ty) => generic_ty.try_setting_inferred_type(
                 self,
