@@ -2,8 +2,8 @@ use super::core::{OperatorCompatiblity, ToType};
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
-    scope::{concrete::core::ConcretizationContext, interfaces::InterfaceBounds},
-    types::core::{AbstractType, CoreType, Type},
+    scope::{concrete::core::ConcretizationContext, interfaces::InterfaceBounds, types::generic_type::GenericTypeDeclarationPlaceCategory},
+    types::core::{AbstractType, CoreType, Type}, parser::type_checker::InferredConcreteTypesEntry,
 };
 use std::{cmp, rc::Rc};
 
@@ -95,9 +95,9 @@ impl AbstractType for Tuple {
     fn try_infer_type(
         &self,
         generics_containing_ty: &Type,
-        inferred_concrete_types: &mut Vec<crate::parser::type_checker::InferredConcreteTypesEntry>,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
-        generic_ty_decl_place: crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory,
+        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match generics_containing_ty.0.as_ref() {
             CoreType::Tuple(tuple_ty) => {

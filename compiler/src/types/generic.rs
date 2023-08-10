@@ -97,7 +97,7 @@ impl AbstractType for Generic {
     fn try_infer_type(
         &self,
         generics_containing_ty: &Type,
-        inferred_concrete_types: &mut Vec<crate::parser::type_checker::InferredConcreteTypesEntry>,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {

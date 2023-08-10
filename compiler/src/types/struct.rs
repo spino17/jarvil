@@ -1,7 +1,9 @@
 use std::rc::Rc;
 
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, ToType, Type};
+use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::core::AbstractSymbolMetaData;
+use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::{
     concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext},
     core::SymbolData,
@@ -118,9 +120,9 @@ impl AbstractType for Struct {
     fn try_infer_type(
         &self,
         generics_containing_ty: &Type,
-        inferred_concrete_types: &mut Vec<crate::parser::type_checker::InferredConcreteTypesEntry>,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
-        generic_ty_decl_place: crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory,
+        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match generics_containing_ty.0.as_ref() {
             CoreType::Struct(struct_ty) => {

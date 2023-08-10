@@ -11,7 +11,6 @@ use crate::scope::function::PrototypeConcretizationResult;
 use crate::scope::handler::ConcreteSymbolDataEntry;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::AbstractNonStructTypes;
-use crate::types::generic::Generic;
 use crate::types::lambda::Lambda;
 use crate::{
     ast::{
