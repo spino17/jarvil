@@ -7,9 +7,7 @@ use crate::{
         concrete::core::ConcretizationContext, function::CallableData, interfaces::InterfaceBounds,
         types::generic_type::GenericTypeDeclarationPlaceCategory,
     },
-    types::core::{
-        AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type,
-    },
+    types::core::{AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type},
 };
 use std::collections::HashMap as StdHashMap;
 

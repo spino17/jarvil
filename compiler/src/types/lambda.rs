@@ -1,4 +1,5 @@
-use super::core::{OperatorCompatiblity};
+use super::core::OperatorCompatiblity;
+use super::helper::try_infer_types_from_tuple;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::{
     ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext,
@@ -151,16 +152,22 @@ impl AbstractType for Lambda {
                                     let self_symbol_data =
                                         self_concrete_symbol_data.symbol_data.get_core_ref();
                                     let self_lambda_data = self_symbol_data.get_lambda_data_ref();
-                                    let base_types_tuple =
+                                    let generics_containing_types_tuple =
                                         &self_lambda_data.get_concrete_types(self_index).0;
 
                                     let other_index = other_concrete_symbol_data.index.unwrap();
                                     let other_symbol_data =
                                         other_concrete_symbol_data.symbol_data.get_core_ref();
                                     let other_lambda_data = other_symbol_data.get_lambda_data_ref();
-                                    let generics_containing_types_tuple =
+                                    let base_types_tuple =
                                         &other_lambda_data.get_concrete_types(other_index).0;
-                                    todo!()
+                                    try_infer_types_from_tuple(
+                                        base_types_tuple,
+                                        generics_containing_types_tuple,
+                                        inferred_concrete_types,
+                                        num_inferred_types,
+                                        generic_ty_decl_place,
+                                    )
                                 }
                                 None => return Ok(()),
                             }

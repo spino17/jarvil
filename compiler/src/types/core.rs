@@ -397,7 +397,7 @@ impl AbstractType for Type {
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_ty) => unreachable!(),
+            CoreType::Atomic(_) => unreachable!(),
             CoreType::Struct(struct_ty) => struct_ty.try_infer_type(
                 received_ty,
                 inferred_concrete_types,

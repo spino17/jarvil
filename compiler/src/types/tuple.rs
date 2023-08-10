@@ -1,4 +1,4 @@
-use super::core::OperatorCompatiblity;
+use super::{core::OperatorCompatiblity, helper::try_infer_types_from_tuple};
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,
@@ -105,9 +105,15 @@ impl AbstractType for Tuple {
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::Tuple(tuple_ty) => {
-                let base_types_tuple = &self.sub_types;
-                let generics_containing_types_tuple = &tuple_ty.sub_types;
-                todo!()
+                let generics_containing_types_tuple = &self.sub_types;
+                let base_types_tuple = &tuple_ty.sub_types;
+                try_infer_types_from_tuple(
+                    base_types_tuple,
+                    generics_containing_types_tuple,
+                    inferred_concrete_types,
+                    num_inferred_types,
+                    generic_ty_decl_place,
+                )
             }
             _ => Err(()),
         }

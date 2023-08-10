@@ -1,4 +1,3 @@
-use std::rc::Rc;
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
@@ -9,6 +8,7 @@ use crate::{
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
     },
 };
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Generic {
