@@ -96,7 +96,21 @@ impl AbstractType for Atomic {
     ) -> Result<(), ()> {
         match generics_containing_ty.0.as_ref() {
             CoreType::Generic(generic_ty) => {
-                todo!()
+                let index = generic_ty.semantic_data.get_core_ref().get_generic_data_ref().index;
+                let entry_ty = &mut inferred_concrete_types[index];
+                match entry_ty {
+                    InferredConcreteTypesEntry::Uninferred => {
+                        *entry_ty = InferredConcreteTypesEntry::Inferred(self.get_type());
+                        *num_inferred_types = *num_inferred_types + 1;
+                        return Ok(())
+                    }
+                    InferredConcreteTypesEntry::Inferred(present_ty) => {
+                        if !present_ty.is_eq(&self.get_type()) {
+                            return Err(())
+                        }
+                        return Ok(())
+                    }
+                }
             }
             _ => Err(()),
         }
