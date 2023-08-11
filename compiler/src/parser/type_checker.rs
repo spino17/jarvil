@@ -78,16 +78,6 @@ pub enum InferredConcreteTypesEntry {
 }
 
 #[derive(Debug)]
-pub enum InferredConcreteTypesError {
-    LessParams((usize, usize)), // (expected_params_num, received_params_num),
-    MoreParams(usize),
-    TypeInferenceFailed,
-    NotAllConcreteTypesInferred,
-    ConcreteTypesCannotBeInferred,
-    MismatchedType(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
-}
-
-#[derive(Debug)]
 pub enum CallExpressionPrototypeEquivalenceCheckResult<'a> {
     HasConcretePrototype(PrototypeConcretizationResult<'a>),
     NeedsTypeInference(usize),
@@ -100,10 +90,13 @@ pub enum StructPropertyCheckResult {
     NonStructType,
 }
 
-pub enum ParamsTypeNCountResult {
-    Ok,
+#[derive(Debug)]
+pub enum ParamsTypeNCountError {
+    LessParams((usize, usize)), // (expected_params_num, received_params_num),
     MoreParams(usize),
-    LessParams((usize, usize)), // (expected_params_num, received_params_num)
+    TypeInferenceFailed,
+    NotAllConcreteTypesInferred,
+    ConcreteTypesCannotBeInferred,
     MismatchedType(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
 }
 
@@ -352,7 +345,7 @@ impl TypeChecker {
         expected_prototype: &CallablePrototypeData,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
-    ) -> Result<Vec<Type>, InferredConcreteTypesError> {
+    ) -> Result<Vec<Type>, ParamsTypeNCountError> {
         // (inferred_concrete_types, params_ty_vec)
         match received_params {
             Some(received_params) => {
@@ -367,7 +360,7 @@ impl TypeChecker {
                 for (index, received_param) in received_params_iter.enumerate() {
                     let param_ty = self.check_expr(&received_param);
                     if index >= expected_params_len {
-                        return Err(InferredConcreteTypesError::MoreParams(expected_params_len));
+                        return Err(ParamsTypeNCountError::MoreParams(expected_params_len));
                     }
                     let expected_ty = &expected_params[index];
                     if expected_ty.has_generics() {
@@ -378,7 +371,7 @@ impl TypeChecker {
                             generic_ty_decl_place,
                         );
                         if let Err(()) = inference_result {
-                            return Err(InferredConcreteTypesError::TypeInferenceFailed);
+                            return Err(ParamsTypeNCountError::TypeInferenceFailed);
                         }
                     } else {
                         if !param_ty.is_eq(expected_ty) {
@@ -393,16 +386,14 @@ impl TypeChecker {
                     params_len = params_len + 1;
                 }
                 if expected_params_len > params_len {
-                    return Err(InferredConcreteTypesError::LessParams((
+                    return Err(ParamsTypeNCountError::LessParams((
                         expected_params_len,
                         params_len,
                     )));
                 } else if mismatch_types_vec.len() > 0 {
-                    return Err(InferredConcreteTypesError::MismatchedType(
-                        mismatch_types_vec,
-                    ));
+                    return Err(ParamsTypeNCountError::MismatchedType(mismatch_types_vec));
                 } else if num_inferred_types != generic_type_decls_len {
-                    return Err(InferredConcreteTypesError::NotAllConcreteTypesInferred);
+                    return Err(ParamsTypeNCountError::NotAllConcreteTypesInferred);
                 }
                 return Ok(inferred_concrete_types
                     .into_iter()
@@ -413,7 +404,7 @@ impl TypeChecker {
                     .rev()
                     .collect());
             }
-            None => Err(InferredConcreteTypesError::ConcreteTypesCannotBeInferred),
+            None => Err(ParamsTypeNCountError::ConcreteTypesCannotBeInferred),
         }
     }
 
@@ -421,7 +412,7 @@ impl TypeChecker {
         &self,
         expected_param_data: &Vec<Type>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-    ) -> ParamsTypeNCountResult {
+    ) -> Result<(), ParamsTypeNCountError> {
         let expected_params_len = expected_param_data.len();
         match received_params {
             Some(received_params) => {
@@ -431,7 +422,7 @@ impl TypeChecker {
                 for received_param in received_params_iter {
                     let param_type_obj = self.check_expr(&received_param);
                     if index >= expected_params_len {
-                        return ParamsTypeNCountResult::MoreParams(expected_params_len);
+                        return Err(ParamsTypeNCountError::MoreParams(expected_params_len));
                     }
                     let expected_param_type = &expected_param_data[index];
                     if !param_type_obj.is_eq(expected_param_type) {
@@ -445,17 +436,20 @@ impl TypeChecker {
                     index = index + 1;
                 }
                 if index < expected_params_len {
-                    return ParamsTypeNCountResult::LessParams((expected_params_len, index));
+                    return Err(ParamsTypeNCountError::LessParams((
+                        expected_params_len,
+                        index,
+                    )));
                 } else if mismatch_types_vec.len() > 0 {
-                    return ParamsTypeNCountResult::MismatchedType(mismatch_types_vec);
+                    return Err(ParamsTypeNCountError::MismatchedType(mismatch_types_vec));
                 }
-                return ParamsTypeNCountResult::Ok;
+                return Ok(());
             }
             None => {
                 if expected_params_len != 0 {
-                    return ParamsTypeNCountResult::LessParams((expected_params_len, 0));
+                    return Err(ParamsTypeNCountError::LessParams((expected_params_len, 0)));
                 } else {
-                    return ParamsTypeNCountResult::Ok;
+                    return Ok(());
                 }
             }
         }
@@ -506,7 +500,7 @@ impl TypeChecker {
                     // There are 4 cases:
                     //     CASE 1. <...> in decl, <...> in usage => successful resolution and saves the key index.
                     //     CASE 2. <...> in decl, <...> not in usage => successful resolution
-                    //          (entry will be created in node to concrete_symbol_data mapping with None as key).
+                    //          (entry will be created in `node vs concrete_symbol_data` mapping with None as key).
                     //     CASE 3. <...> not in decl, <...> in usage => error while resolving
                     //     CASE 4. <...> not in decl, <...> not in usage => no error
                     if let Some(symbol_data) = self
@@ -692,12 +686,9 @@ impl TypeChecker {
                             }
                         };
                         match result {
-                            ParamsTypeNCountResult::Ok => return return_type,
-                            _ => {
-                                self.log_params_type_and_count_check_error(
-                                    func_name.range(),
-                                    result,
-                                );
+                            Ok(()) => return return_type,
+                            Err(err) => {
+                                self.log_params_type_and_count_check_error(func_name.range(), err);
                             }
                         }
                     }
@@ -735,13 +726,11 @@ impl TypeChecker {
                                         let result = self
                                             .check_params_type_and_count(expected_params, params);
                                         match result {
-                                            ParamsTypeNCountResult::Ok => {
-                                                return return_type.clone()
-                                            }
-                                            _ => {
+                                            Ok(()) => return return_type.clone(),
+                                            Err(err) => {
                                                 self.log_params_type_and_count_check_error(
                                                     class_method.range(),
-                                                    result,
+                                                    err,
                                                 );
                                                 return Type::new_with_unknown();
                                             }
@@ -816,13 +805,13 @@ impl TypeChecker {
                                 let result =
                                     self.check_params_type_and_count(expected_param_types, params);
                                 match result {
-                                    ParamsTypeNCountResult::Ok => {
+                                    Ok(()) => {
                                         return (return_type.clone(), Some(atom_type_obj.clone()))
                                     }
-                                    _ => {
+                                    Err(err) => {
                                         self.log_params_type_and_count_check_error(
                                             atom.range(),
-                                            result,
+                                            err,
                                         );
                                         return (
                                             Type::new_with_unknown(),
@@ -837,13 +826,13 @@ impl TypeChecker {
                                 let result =
                                     self.check_params_type_and_count(expected_param_types, params);
                                 match result {
-                                    ParamsTypeNCountResult::Ok => {
+                                    Ok(()) => {
                                         return (return_type.clone(), Some(atom_type_obj.clone()))
                                     }
-                                    _ => {
+                                    Err(err) => {
                                         self.log_params_type_and_count_check_error(
                                             atom.range(),
-                                            result,
+                                            err,
                                         );
                                         return (
                                             Type::new_with_unknown(),
@@ -925,13 +914,13 @@ impl TypeChecker {
                                             params,
                                         );
                                         match result {
-                                            ParamsTypeNCountResult::Ok => {
+                                            Ok(()) => {
                                                 return (return_type.clone(), Some(atom_type_obj))
                                             }
-                                            _ => {
+                                            Err(err) => {
                                                 self.log_params_type_and_count_check_error(
                                                     ok_identifier.range(),
-                                                    result,
+                                                    err,
                                                 );
                                                 return (
                                                     Type::new_with_unknown(),
@@ -948,13 +937,13 @@ impl TypeChecker {
                                             params,
                                         );
                                         match result {
-                                            ParamsTypeNCountResult::Ok => {
+                                            Ok(()) => {
                                                 return (return_type.clone(), Some(atom_type_obj))
                                             }
-                                            _ => {
+                                            Err(err) => {
                                                 self.log_params_type_and_count_check_error(
                                                     ok_identifier.range(),
-                                                    result,
+                                                    err,
                                                 );
                                                 return (
                                                     Type::new_with_unknown(),
@@ -988,16 +977,16 @@ impl TypeChecker {
                                                 params,
                                             );
                                             match result {
-                                                ParamsTypeNCountResult::Ok => {
+                                                Ok(()) => {
                                                     return (
                                                         return_type.clone(),
                                                         Some(atom_type_obj.clone()),
                                                     )
                                                 }
-                                                _ => {
+                                                Err(err) => {
                                                     self.log_params_type_and_count_check_error(
                                                         method.range(),
-                                                        result,
+                                                        err,
                                                     );
                                                     return (
                                                         Type::new_with_unknown(),
@@ -1048,16 +1037,16 @@ impl TypeChecker {
                                     let result =
                                         self.check_params_type_and_count(expected_params, params);
                                     match result {
-                                        ParamsTypeNCountResult::Ok => {
+                                        Ok(()) => {
                                             return (
                                                 return_type.clone(),
                                                 Some(atom_type_obj.clone()),
                                             )
                                         }
-                                        _ => {
+                                        Err(err) => {
                                             self.log_params_type_and_count_check_error(
                                                 method.range(),
-                                                result,
+                                                err,
                                             );
                                             return (
                                                 Type::new_with_unknown(),
@@ -1590,23 +1579,25 @@ impl TypeChecker {
     pub fn log_params_type_and_count_check_error(
         &self,
         range: TextRange,
-        result: ParamsTypeNCountResult,
+        result: ParamsTypeNCountError,
     ) {
         match result {
-            ParamsTypeNCountResult::Ok => return,
-            ParamsTypeNCountResult::LessParams((expected_params_count, received_params_count)) => {
+            ParamsTypeNCountError::LessParams((expected_params_count, received_params_count)) => {
                 let err =
                     LessParamsCountError::new(expected_params_count, received_params_count, range);
                 self.log_error(Diagnostics::LessParamsCount(err));
             }
-            ParamsTypeNCountResult::MoreParams(expected_params_count) => {
+            ParamsTypeNCountError::MoreParams(expected_params_count) => {
                 let err = MoreParamsCountError::new(expected_params_count, range);
                 self.log_error(Diagnostics::MoreParamsCount(err));
             }
-            ParamsTypeNCountResult::MismatchedType(params_vec) => {
+            ParamsTypeNCountError::MismatchedType(params_vec) => {
                 let err = MismatchedParamTypeError::new(params_vec);
                 self.log_error(Diagnostics::MismatchedParamType(err));
             }
+            ParamsTypeNCountError::NotAllConcreteTypesInferred => todo!(),
+            ParamsTypeNCountError::TypeInferenceFailed => todo!(),
+            ParamsTypeNCountError::ConcreteTypesCannotBeInferred => todo!(),
         }
     }
 }
