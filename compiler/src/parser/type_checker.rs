@@ -87,6 +87,13 @@ pub enum InferredConcreteTypesError {
     MismatchedType(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
 }
 
+#[derive(Debug)]
+pub enum CallExpressionPrototypeEquivalenceCheckResult<'a> {
+    HasConcretePrototype(PrototypeConcretizationResult<'a>),
+    NeedsTypeInference(usize),
+}
+
+#[derive(Debug)]
 pub enum StructPropertyCheckResult {
     PropertyExist(Type),
     PropertyDoesNotExist,
@@ -341,23 +348,22 @@ impl TypeChecker {
 
     pub fn infer_concrete_types_from_arguments(
         &self,
-        generic_type_decls: &GenericTypeParams,
+        generic_type_decls_len: usize,
         expected_prototype: &CallablePrototypeData,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
-    ) -> Result<(Vec<Type>, Vec<(Type, TextRange)>), InferredConcreteTypesError> {
+    ) -> Result<Vec<Type>, InferredConcreteTypesError> {
         // (inferred_concrete_types, params_ty_vec)
         match received_params {
             Some(received_params) => {
-                let len_concrete_types = generic_type_decls.len();
                 let mut inferred_concrete_types: Vec<InferredConcreteTypesEntry> =
-                    vec![InferredConcreteTypesEntry::Uninferred; len_concrete_types];
+                    vec![InferredConcreteTypesEntry::Uninferred; generic_type_decls_len];
                 let mut num_inferred_types = 0; // this should be `len_concrete_types` at the end of inference process
-                let mut params_ty_vec: Vec<(Type, TextRange)> = vec![];
                 let received_params_iter = received_params.iter();
                 let expected_params = &expected_prototype.params;
                 let expected_params_len = expected_params.len();
                 let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![];
+                let mut params_len = 0;
                 for (index, received_param) in received_params_iter.enumerate() {
                     let param_ty = self.check_expr(&received_param);
                     if index >= expected_params_len {
@@ -384,31 +390,28 @@ impl TypeChecker {
                             ));
                         }
                     }
-                    params_ty_vec.push((param_ty, received_param.range()));
+                    params_len = params_len + 1;
                 }
-                if expected_params_len > params_ty_vec.len() {
+                if expected_params_len > params_len {
                     return Err(InferredConcreteTypesError::LessParams((
                         expected_params_len,
-                        params_ty_vec.len(),
+                        params_len,
                     )));
                 } else if mismatch_types_vec.len() > 0 {
                     return Err(InferredConcreteTypesError::MismatchedType(
                         mismatch_types_vec,
                     ));
-                } else if num_inferred_types != len_concrete_types {
+                } else if num_inferred_types != generic_type_decls_len {
                     return Err(InferredConcreteTypesError::NotAllConcreteTypesInferred);
                 }
-                return Ok((
-                    inferred_concrete_types
-                        .into_iter()
-                        .map(|x| match x {
-                            InferredConcreteTypesEntry::Inferred(ty) => ty,
-                            InferredConcreteTypesEntry::Uninferred => unreachable!(),
-                        })
-                        .rev()
-                        .collect(),
-                    params_ty_vec,
-                ));
+                return Ok(inferred_concrete_types
+                    .into_iter()
+                    .map(|x| match x {
+                        InferredConcreteTypesEntry::Inferred(ty) => ty,
+                        InferredConcreteTypesEntry::Uninferred => unreachable!(),
+                    })
+                    .rev()
+                    .collect());
             }
             None => Err(InferredConcreteTypesError::ConcreteTypesCannotBeInferred),
         }
@@ -497,9 +500,15 @@ impl TypeChecker {
                 let func_name = &core_call_expr.function_name;
                 let params = &core_call_expr.params;
                 if let CoreIdentifierInUseNode::Ok(ok_identifier) = func_name.core_ref() {
-                    // TODO - check if <...> is correct
-                    // if <> is present use them to form concrete arguments if not and is expected by the
-                    // identifier symbol_data then infer the types from params and then repeat the above step.
+                    // NOTE: For call expression syntax like `f(...) or f<...>(...)` while resolving
+                    // we provide the freedom to have no <...> even if `f` expects to have it because it
+                    // can be inferred. This inference is done here.
+                    // There are 4 cases:
+                    //     CASE 1. <...> in decl, <...> in usage => successful resolution and saves the key index.
+                    //     CASE 2. <...> in decl, <...> not in usage => successful resolution 
+                    //          (entry will be created in node to concrete_symbol_data mapping with None as key).
+                    //     CASE 3. <...> not in decl, <...> in usage => error while resolving
+                    //     CASE 4. <...> not in decl, <...> not in usage => no error
                     if let Some(symbol_data) = self
                         .namespace_handler
                         .get_symbol_data_for_identifier_in_use(ok_identifier)
@@ -508,41 +517,56 @@ impl TypeChecker {
                             ConcreteSymbolDataEntry::Function(func_symbol_data) => {
                                 let func_data = &*func_symbol_data.get_core_ref();
                                 let index = func_symbol_data.index;
+                                
                                 let prototype_result = match index {
                                     Some(index) => {
-                                        // get concrete_types and make concrete prototype out of it!
+                                        // CASE 1
                                         let concrete_types = func_data.get_concrete_types(index);
-                                        func_data
+                                        let concrete_prototype = func_data
                                             .prototype
-                                            .concretize_prototype(&vec![], &concrete_types.0)
+                                            .concretize_prototype(&vec![], &concrete_types.0);
+                                        CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(concrete_prototype)
                                     }
                                     None => {
                                         match &func_data.generics.generics_spec {
                                             Some(generic_type_decls) => {
-                                                // check if function has generic type decls, if yes then try infering types!
-                                                // TODO - check also that the concrete_types we got here are bounded by the interfaces provided inside `generic_type_decls`
-                                                self.infer_concrete_types_from_arguments(
-                                                    generic_type_decls,
-                                                    &func_data.prototype,
-                                                    params,
-                                                    GenericTypeDeclarationPlaceCategory::InCallable,
-                                                );
-                                                todo!()
+                                                // CASE 2
+                                                CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls.len())
                                             }
-                                            None => PrototypeConcretizationResult::UnConcretized(
+                                            // CASE 4
+                                            None => CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(PrototypeConcretizationResult::UnConcretized(
                                                 &func_data.prototype,
-                                            ),
+                                            )),
                                         }
                                     }
                                 };
-                                let prototype_ref = prototype_result.get_prototype_ref();
-                                // let expected_params = &func_data.prototype.params;
-                                // let return_type = &func_data.prototype.return_type;
-                                let expected_params = &prototype_ref.params;
-                                let return_type = &prototype_ref.return_type;
-                                let result =
-                                    self.check_params_type_and_count(expected_params, params);
-                                (result, return_type.clone())
+                                match prototype_result {
+                                    CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
+                                        let prototype_ref = prototype.get_prototype_ref();
+                                        let expected_params = &prototype_ref.params;
+                                        let return_type = &prototype_ref.return_type;
+                                        let result =
+                                            self.check_params_type_and_count(expected_params, params);
+                                        (result, return_type.clone())
+                                    }
+                                    CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls_len) => {
+                                        let inference_result = self.infer_concrete_types_from_arguments(
+                                            generic_type_decls_len,
+                                            &func_data.prototype,
+                                            params,
+                                            GenericTypeDeclarationPlaceCategory::InCallable,
+                                        );
+                                        match inference_result {
+                                            Ok(concrete_types) => {
+                                                // TODO - check if these concrete_types are bounded by the interfaces
+                                            }
+                                            Err(err) => {
+                                                // TODO - raise error `error occured while type inference`
+                                            }
+                                        }
+                                        todo!()
+                                    }
+                                }
                             }
                             ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
                                 assert!(variable_symbol_data.index.is_none());
@@ -590,47 +614,68 @@ impl TypeChecker {
                                         let constructor_meta_data = &struct_symbol_data.constructor;
                                         let prototype_result = match index {
                                             Some(index) => {
-                                                // get concrete_types and make concrete prototype out of it!
+                                                // CASE 1
                                                 let concrete_types =
                                                     struct_symbol_data.get_concrete_types(index);
-                                                constructor_meta_data
+                                                let concrete_prototype = constructor_meta_data
                                                     .prototype
                                                     .concretize_prototype(
                                                         &concrete_types.0,
                                                         &vec![],
-                                                    )
+                                                    );
+                                                CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(concrete_prototype)
                                             }
                                             None => {
                                                 match &struct_symbol_data.generics.generics_spec {
                                                     Some(generic_type_decls) => {
-                                                        // check if function has generic type decls, if yes then try infering types!
-                                                        // TODO - check also that the concrete_types we got here are bounded by the interfaces provided inside `generic_type_decls`
-                                                        // register it to the registry and get the new index
-                                                        self.infer_concrete_types_from_arguments(generic_type_decls, &constructor_meta_data.prototype, params, GenericTypeDeclarationPlaceCategory::InStruct);
-                                                        todo!()
+                                                        // CASE 2
+                                                        CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls.len())
                                                     }
                                                     None => {
-                                                        PrototypeConcretizationResult::UnConcretized(
+                                                        // CASE 4
+                                                        CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(PrototypeConcretizationResult::UnConcretized(
                                                             &constructor_meta_data.prototype,
-                                                        )
+                                                        ))
                                                     }
                                                 }
                                             }
                                         };
-                                        let prototype_ref = prototype_result.get_prototype_ref();
-                                        let result = self.check_params_type_and_count(
-                                            // &constructor_meta_data.prototype.params,
-                                            &prototype_ref.params,
-                                            params,
-                                        );
-                                        (
-                                            result,
-                                            Type::new_with_struct(
-                                                name,
-                                                &user_defined_type_symbol_data.symbol_data,
-                                                index,
-                                            ),
-                                        )
+                                        match prototype_result {
+                                            CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
+                                                let prototype_ref = prototype.get_prototype_ref();
+                                                let result = self.check_params_type_and_count(
+                                                    &prototype_ref.params,
+                                                    params,
+                                                );
+                                                (
+                                                    result,
+                                                    Type::new_with_struct(
+                                                        name,
+                                                        &user_defined_type_symbol_data.symbol_data,
+                                                        index,
+                                                    ),
+                                                )
+                                            }
+                                            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls_len) => {
+                                                let inference_result = self.infer_concrete_types_from_arguments(
+                                                    generic_type_decls_len, 
+                                                    &constructor_meta_data.prototype, 
+                                                    params, 
+                                                    GenericTypeDeclarationPlaceCategory::InStruct
+                                                );
+                                                match inference_result {
+                                                    Ok(concrete_types) => {
+                                                        // TODO - check if these concrete_types are bounded by the interfaces
+                                                        // add these concrete_types to registry and get the index
+                                                        // form the return_type with this index
+                                                    }
+                                                    Err(err) => {
+                                                        // TODO - raise error `error occured while type inference`
+                                                    }
+                                                }
+                                                todo!()
+                                            }
+                                        }
                                     }
                                     UserDefinedTypeData::Lambda(_)
                                     | UserDefinedTypeData::Generic(_) => {
