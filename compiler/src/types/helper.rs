@@ -41,8 +41,8 @@ pub fn try_infer_types_from_tuple(
     for (index, generics_containing_ty) in generics_containing_types_tuple.iter().enumerate() {
         let base_ty = &base_types_tuple[index];
         if generics_containing_ty.has_generics() {
-            let _ = base_ty.try_infer_type(
-                generics_containing_ty,
+            let _ = generics_containing_ty.try_infer_type(
+                base_ty,
                 inferred_concrete_types,
                 num_inferred_types,
                 generic_ty_decl_place,
