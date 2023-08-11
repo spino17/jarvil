@@ -505,7 +505,7 @@ impl TypeChecker {
                     // can be inferred. This inference is done here.
                     // There are 4 cases:
                     //     CASE 1. <...> in decl, <...> in usage => successful resolution and saves the key index.
-                    //     CASE 2. <...> in decl, <...> not in usage => successful resolution 
+                    //     CASE 2. <...> in decl, <...> not in usage => successful resolution
                     //          (entry will be created in node to concrete_symbol_data mapping with None as key).
                     //     CASE 3. <...> not in decl, <...> in usage => error while resolving
                     //     CASE 4. <...> not in decl, <...> not in usage => no error
@@ -517,7 +517,7 @@ impl TypeChecker {
                             ConcreteSymbolDataEntry::Function(func_symbol_data) => {
                                 let func_data = &*func_symbol_data.get_core_ref();
                                 let index = func_symbol_data.index;
-                                
+
                                 let prototype_result = match index {
                                     Some(index) => {
                                         // CASE 1
@@ -658,9 +658,9 @@ impl TypeChecker {
                                             }
                                             CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls_len) => {
                                                 let inference_result = self.infer_concrete_types_from_arguments(
-                                                    generic_type_decls_len, 
-                                                    &constructor_meta_data.prototype, 
-                                                    params, 
+                                                    generic_type_decls_len,
+                                                    &constructor_meta_data.prototype,
+                                                    params,
                                                     GenericTypeDeclarationPlaceCategory::InStruct
                                                 );
                                                 match inference_result {
