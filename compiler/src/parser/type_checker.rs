@@ -6,6 +6,10 @@ use crate::ast::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, InterfaceMethodTerminalNode,
     OkIdentifierInDeclNode, OkIdentifierInUseNode, StructDeclarationNode,
 };
+use crate::error::diagnostics::{
+    InferredTypesNotBoundedByInterfacesError, NotAllConcreteTypesInferredError,
+    TypeInferenceFailedError,
+};
 use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams};
 use crate::scope::function::PrototypeConcretizationResult;
@@ -429,7 +433,7 @@ impl TypeChecker {
                     return Err(
                         PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(
                             error_strs,
-                            unpacked_inferred_concrete_types
+                            unpacked_inferred_concrete_types,
                         ),
                     );
                 }
@@ -1658,11 +1662,22 @@ impl TypeChecker {
                 let err = MismatchedParamTypeError::new(params_vec);
                 self.log_error(Diagnostics::MismatchedParamType(err));
             }
-            PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred => todo!(), // TODO - raise error
-            PrototypeEquivalenceCheckError::TypeInferenceFailed => todo!(),
-            PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred => todo!(),
-            PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(err_strs, concrete_types) => {
-                todo!()
+            PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred => {
+                let err = NotAllConcreteTypesInferredError::new(range);
+                self.log_error(Diagnostics::NotAllConcreteTypesInferred(err))
+            }
+            PrototypeEquivalenceCheckError::TypeInferenceFailed
+            | PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred => {
+                let err = TypeInferenceFailedError::new(range);
+                self.log_error(Diagnostics::TypeInferenceFailed(err));
+            }
+            PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(
+                err_strs,
+                concrete_types,
+            ) => {
+                let err =
+                    InferredTypesNotBoundedByInterfacesError::new(range, err_strs, concrete_types);
+                self.log_error(Diagnostics::InferredTypesNotBoundedByInterfaces(err));
             }
         }
     }

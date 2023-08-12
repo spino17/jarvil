@@ -31,6 +31,7 @@ pub enum Diagnostics {
     MismatchedParamType(MismatchedParamTypeError),
     NotAllConcreteTypesInferred(NotAllConcreteTypesInferredError),
     TypeInferenceFailed(TypeInferenceFailedError),
+    InferredTypesNotBoundedByInterfaces(InferredTypesNotBoundedByInterfacesError),
     IdentifierNotCallable(IdentifierNotCallableError),
     StructFieldNotCallable(StructFieldNotCallableError),
     ConstructorNotFoundForType(ConstructorNotFoundForTypeError),
@@ -161,10 +162,9 @@ impl Diagnostics {
             Diagnostics::GenericTypeArgsIncorrectlyBounded(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
-            Diagnostics::NotAllConcreteTypesInferred(diagnostic) => {
-                Report::new(diagnostic.clone())
-            }
-            Diagnostics::TypeInferenceFailed(diagnostic) => {
+            Diagnostics::NotAllConcreteTypesInferred(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::TypeInferenceFailed(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::InferredTypesNotBoundedByInterfaces(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -998,12 +998,10 @@ pub struct NotAllConcreteTypesInferredError {
 }
 
 impl NotAllConcreteTypesInferredError {
-    pub fn new(
-        range: TextRange,
-    ) -> Self {
+    pub fn new(range: TextRange) -> Self {
         NotAllConcreteTypesInferredError {
             span: range_to_span(range).into(),
-            help: Some("explicitly specify the generic type arguments using <...>".to_string())
+            help: Some("explicitly specify the generic type arguments using <...>".to_string()),
         }
     }
 }
@@ -1019,12 +1017,10 @@ pub struct TypeInferenceFailedError {
 }
 
 impl TypeInferenceFailedError {
-    pub fn new(
-        range: TextRange,
-    ) -> Self {
+    pub fn new(range: TextRange) -> Self {
         TypeInferenceFailedError {
             span: range_to_span(range).into(),
-            help: Some("explicitly specify the generic type arguments using <...>".to_string())
+            help: Some("explicitly specify the generic type arguments using <...>".to_string()),
         }
     }
 }
@@ -1046,7 +1042,6 @@ impl InferredTypesNotBoundedByInterfacesError {
         err_strs: Vec<(String, String)>,
         concrete_types: Vec<Type>,
     ) -> Self {
-        let msg = "".to_string();
         let mut concrete_types_str = "<".to_string();
         let concrete_types_len = concrete_types.len();
         concrete_types_str.push_str(&concrete_types[0].to_string());
@@ -1054,10 +1049,23 @@ impl InferredTypesNotBoundedByInterfacesError {
             concrete_types_str.push_str(&format!(", {}", concrete_types[i].to_string()));
         }
         concrete_types_str.push('>');
+        let mut err_msg = format!(
+            "type `{}` is not bounded by interfaces `{}`",
+            err_strs[0].0, err_strs[0].1
+        );
+        for (ty_str, interface_bounds_str) in &err_strs[1..] {
+            err_msg.push_str(&format!(
+                "\ntype `{}` is not bounded by interfaces `{}`",
+                ty_str, interface_bounds_str
+            ));
+        }
         InferredTypesNotBoundedByInterfacesError {
             span: range_to_span(range).into(),
-            msg,
-            help: Some("explicitly specify the generic type arguments using <...>".to_string())
+            msg: format!(
+                "inferred types `{}` are not bounded:\n{}",
+                concrete_types_str, err_msg
+            ),
+            help: Some("explicitly specify the generic type arguments using <...>".to_string()),
         }
     }
 }
