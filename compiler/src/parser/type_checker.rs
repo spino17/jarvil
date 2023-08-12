@@ -1,7 +1,6 @@
 // See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to
 // cover and the representation of type expressions in terms of type objects.
 
-use super::resolver::Resolver;
 use crate::ast::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, InterfaceMethodTerminalNode,
     OkIdentifierInDeclNode, OkIdentifierInUseNode, StructDeclarationNode,
@@ -173,10 +172,7 @@ impl TypeChecker {
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_after_resolved(&self.code, &self.namespace_handler) {
-            TypeResolveKind::Resolved(type_obj) => {
-                type DummyFnType = fn(&mut Resolver, TextRange);
-                return Resolver::pre_type_checking::<DummyFnType>(&type_obj, type_expr, None);
-            }
+            TypeResolveKind::Resolved(type_obj) => return type_obj,
             TypeResolveKind::Unresolved(_) => return Type::new_with_unknown(),
             TypeResolveKind::Invalid => Type::new_with_unknown(),
         }
@@ -328,6 +324,7 @@ impl TypeChecker {
                 _ => return None,
             },
             CoreType::HashMap(hashmap) => {
+                // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
                 if index_type.is_eq(&hashmap.key_type) && index_type.is_hashable() {
                     return Some(hashmap.value_type.clone());
                 } else {

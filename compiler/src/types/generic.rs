@@ -8,7 +8,6 @@ use crate::{
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
     },
 };
-use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Generic {

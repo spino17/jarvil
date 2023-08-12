@@ -722,7 +722,7 @@ impl GenericTypesDeclarationInsideConstructorFoundError {
 #[error("generic type resolved to outside scope")]
 #[diagnostic(code("SemanticError"))]
 pub struct GenericTypeResolvedToOutsideScopeError {
-    #[label("generic type resolved to the given outside declaration")]
+    #[label("generic type resolved to the outside declaration")]
     pub usage_span: SourceSpan,
     #[label("generic type is declared here")]
     pub decl_span: SourceSpan,

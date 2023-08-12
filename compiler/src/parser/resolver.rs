@@ -1,9 +1,8 @@
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
-    CoreSelfKeywordNode, CoreTypeExpressionNode, FunctionWrapperNode, InterfaceDeclarationNode,
-    LambdaTypeDeclarationNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
-    UnresolvedIdentifier,
+    CoreSelfKeywordNode, FunctionWrapperNode, InterfaceDeclarationNode, LambdaTypeDeclarationNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, UnresolvedIdentifier,
 };
 use crate::error::diagnostics::{
     BuiltinFunctionNameOverlapError, ConstructorNotFoundInsideStructDeclarationError,
@@ -11,8 +10,7 @@ use crate::error::diagnostics::{
     GenericTypesDeclarationInsideConstructorFoundError, IdentifierFoundInNonLocalsError,
     IdentifierNotFoundInAnyNamespaceError, IdentifierUsedBeforeInitializedError,
     InterfaceAlreadyExistInBoundsDeclarationError, MainFunctionNotFoundError,
-    MainFunctionWrongTypeError, NonHashableTypeInIndexError, NonVoidConstructorReturnTypeError,
-    SelfNotFoundError,
+    MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
@@ -27,7 +25,6 @@ use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDat
 use crate::scope::interfaces::{InterfaceBounds, InterfaceObject};
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::AbstractType;
-use crate::types::core::CoreType;
 use crate::{
     ast::{
         ast::{
@@ -536,45 +533,9 @@ impl Resolver {
         self.try_declare_and_bind(identifier, declare_fn)
     }
 
-    pub fn pre_type_checking<T: Fn(&mut Resolver, TextRange)>(
-        type_obj: &Type,
-        type_expr: &TypeExpressionNode,
-        is_log_error: Option<(T, &mut Resolver)>,
-    ) -> Type {
-        match type_obj.0.as_ref() {
-            CoreType::HashMap(hashmap) => {
-                let index_span = match type_expr.core_ref() {
-                    CoreTypeExpressionNode::HashMap(hashmap_type_expr) => {
-                        hashmap_type_expr.core_ref().key_type.range()
-                    }
-                    _ => unreachable!(),
-                };
-                if !hashmap.key_type.is_hashable() {
-                    if let Some((log_error_fn, resolver)) = is_log_error {
-                        log_error_fn(resolver, index_span)
-                    }
-                    return Type::new_with_unknown();
-                }
-                return type_obj.clone();
-            }
-            _ => return type_obj.clone(),
-        }
-    }
-
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
         match type_expr.type_obj_before_resolved(self, self.scope_index) {
-            TypeResolveKind::Resolved(type_obj) => {
-                let log_error_fn = |resolver: &mut Resolver, span: TextRange| {
-                    let err = NonHashableTypeInIndexError::new(span);
-                    resolver
-                        .errors
-                        .push(Diagnostics::NonHashableTypeInIndex(err));
-                };
-                // This is type-checking prior to type-checking phase to
-                // catch some early errors related to name resolution and
-                // structure of the type.
-                return Self::pre_type_checking(&type_obj, type_expr, Some((log_error_fn, self)));
-            }
+            TypeResolveKind::Resolved(type_obj) => return type_obj,
             TypeResolveKind::Unresolved(unresolved) => {
                 for unresolved_identifier in unresolved {
                     match unresolved_identifier {
