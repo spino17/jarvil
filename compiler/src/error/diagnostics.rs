@@ -1001,7 +1001,12 @@ impl NotAllConcreteTypesInferredError {
     pub fn new(range: TextRange) -> Self {
         NotAllConcreteTypesInferredError {
             span: range_to_span(range).into(),
-            help: Some("explicitly specify the generic type arguments using <...>".to_string()),
+            help: Some(
+                "explicitly specify the generic type arguments using <...>"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }
@@ -1020,7 +1025,12 @@ impl TypeInferenceFailedError {
     pub fn new(range: TextRange) -> Self {
         TypeInferenceFailedError {
             span: range_to_span(range).into(),
-            help: Some("explicitly specify the generic type arguments using <...>".to_string()),
+            help: Some(
+                "explicitly specify the generic type arguments using <...>"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }
@@ -1065,7 +1075,12 @@ impl InferredTypesNotBoundedByInterfacesError {
                 "inferred types `{}` are not bounded:\n{}",
                 concrete_types_str, err_msg
             ),
-            help: Some("explicitly specify the generic type arguments using <...>".to_string()),
+            help: Some(
+                "explicitly specify the generic type arguments using <...>"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
         }
     }
 }
