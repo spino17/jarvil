@@ -34,6 +34,7 @@ pub fn try_infer_types_from_tuple(
     inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
     num_inferred_types: &mut usize,
     generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+    has_generics: &mut bool,
 ) -> Result<(), ()> {
     if base_types_tuple.len() != generics_containing_types_tuple.len() {
         return Err(());
@@ -46,6 +47,7 @@ pub fn try_infer_types_from_tuple(
                 inferred_concrete_types,
                 num_inferred_types,
                 generic_ty_decl_place,
+                has_generics,
             )?;
         } else {
             if !base_ty.is_eq(generics_containing_ty) {

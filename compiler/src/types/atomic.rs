@@ -89,6 +89,7 @@ impl AbstractType for Atomic {
         _inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         _num_inferred_types: &mut usize,
         _generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+        _has_generics: &mut bool,
     ) -> Result<(), ()> {
         unreachable!()
     }

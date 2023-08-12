@@ -6,7 +6,8 @@ use crate::ast::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, InterfaceMethodTerminalNode,
     OkIdentifierInDeclNode, OkIdentifierInUseNode, StructDeclarationNode,
 };
-use crate::scope::core::{AbstractSymbolMetaData, GenericTypeParams};
+use crate::scope::concrete::core::ConcretizationContext;
+use crate::scope::core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams};
 use crate::scope::function::PrototypeConcretizationResult;
 use crate::scope::handler::ConcreteSymbolDataEntry;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
@@ -91,7 +92,7 @@ pub enum StructPropertyCheckResult {
 }
 
 #[derive(Debug)]
-pub enum ParamsTypeNCountError {
+pub enum PrototypeEquivalenceCheckError {
     LessParams((usize, usize)), // (expected_params_num, received_params_num),
     MoreParams(usize),
     TypeInferenceFailed,
@@ -99,6 +100,12 @@ pub enum ParamsTypeNCountError {
     ConcreteTypesCannotBeInferred,
     MismatchedType(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
     InferredTypesNotBoundedByInterfaces(Vec<(String, String)>), // (`inferred_ty` str, `interface_bounds` str)
+}
+
+#[derive(Debug)]
+pub enum StructConstructorPrototypeCheckResult {
+    Basic((Result<(), PrototypeEquivalenceCheckError>, Type)),
+    Inferred((Vec<Type>, bool)),
 }
 
 #[derive(Debug, Clone)]
@@ -346,7 +353,7 @@ impl TypeChecker {
         expected_prototype: &CallablePrototypeData,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
-    ) -> Result<Vec<Type>, ParamsTypeNCountError> {
+    ) -> Result<(Vec<Type>, bool), PrototypeEquivalenceCheckError> {
         // (inferred_concrete_types, params_ty_vec)
         match received_params {
             Some(received_params) => {
@@ -354,6 +361,7 @@ impl TypeChecker {
                 let mut inferred_concrete_types: Vec<InferredConcreteTypesEntry> =
                     vec![InferredConcreteTypesEntry::Uninferred; generic_type_decls_len];
                 let mut num_inferred_types = 0; // this should be `len_concrete_types` at the end of inference process
+                let mut has_generics = false;
                 let received_params_iter = received_params.iter();
                 let expected_params = &expected_prototype.params;
                 let expected_params_len = expected_params.len();
@@ -362,7 +370,9 @@ impl TypeChecker {
                 for (index, received_param) in received_params_iter.enumerate() {
                     let param_ty = self.check_expr(&received_param);
                     if index >= expected_params_len {
-                        return Err(ParamsTypeNCountError::MoreParams(expected_params_len));
+                        return Err(PrototypeEquivalenceCheckError::MoreParams(
+                            expected_params_len,
+                        ));
                     }
                     let expected_ty = &expected_params[index];
                     if expected_ty.has_generics() {
@@ -371,9 +381,10 @@ impl TypeChecker {
                             &mut inferred_concrete_types,
                             &mut num_inferred_types,
                             generic_ty_decl_place,
+                            &mut has_generics,
                         );
                         if let Err(()) = inference_result {
-                            return Err(ParamsTypeNCountError::TypeInferenceFailed);
+                            return Err(PrototypeEquivalenceCheckError::TypeInferenceFailed);
                         }
                     } else {
                         if !param_ty.is_eq(expected_ty) {
@@ -388,14 +399,16 @@ impl TypeChecker {
                     params_len = params_len + 1;
                 }
                 if expected_params_len > params_len {
-                    return Err(ParamsTypeNCountError::LessParams((
+                    return Err(PrototypeEquivalenceCheckError::LessParams((
                         expected_params_len,
                         params_len,
                     )));
                 } else if mismatch_types_vec.len() > 0 {
-                    return Err(ParamsTypeNCountError::MismatchedType(mismatch_types_vec));
+                    return Err(PrototypeEquivalenceCheckError::MismatchedType(
+                        mismatch_types_vec,
+                    ));
                 } else if num_inferred_types != generic_type_decls_len {
-                    return Err(ParamsTypeNCountError::NotAllConcreteTypesInferred);
+                    return Err(PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred);
                 }
                 let unpacked_inferred_concrete_types: Vec<Type> = inferred_concrete_types
                     .into_iter()
@@ -413,13 +426,15 @@ impl TypeChecker {
                     }
                 }
                 if error_strs.len() > 0 {
-                    return Err(ParamsTypeNCountError::InferredTypesNotBoundedByInterfaces(
-                        error_strs,
-                    ));
+                    return Err(
+                        PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(
+                            error_strs,
+                        ),
+                    );
                 }
-                return Ok(unpacked_inferred_concrete_types);
+                return Ok((unpacked_inferred_concrete_types, has_generics));
             }
-            None => Err(ParamsTypeNCountError::ConcreteTypesCannotBeInferred),
+            None => Err(PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred),
         }
     }
 
@@ -427,7 +442,7 @@ impl TypeChecker {
         &self,
         expected_param_data: &Vec<Type>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-    ) -> Result<(), ParamsTypeNCountError> {
+    ) -> Result<(), PrototypeEquivalenceCheckError> {
         let expected_params_len = expected_param_data.len();
         match received_params {
             Some(received_params) => {
@@ -437,7 +452,9 @@ impl TypeChecker {
                 for received_param in received_params_iter {
                     let param_type_obj = self.check_expr(&received_param);
                     if index >= expected_params_len {
-                        return Err(ParamsTypeNCountError::MoreParams(expected_params_len));
+                        return Err(PrototypeEquivalenceCheckError::MoreParams(
+                            expected_params_len,
+                        ));
                     }
                     let expected_param_type = &expected_param_data[index];
                     if !param_type_obj.is_eq(expected_param_type) {
@@ -451,18 +468,23 @@ impl TypeChecker {
                     index = index + 1;
                 }
                 if index < expected_params_len {
-                    return Err(ParamsTypeNCountError::LessParams((
+                    return Err(PrototypeEquivalenceCheckError::LessParams((
                         expected_params_len,
                         index,
                     )));
                 } else if mismatch_types_vec.len() > 0 {
-                    return Err(ParamsTypeNCountError::MismatchedType(mismatch_types_vec));
+                    return Err(PrototypeEquivalenceCheckError::MismatchedType(
+                        mismatch_types_vec,
+                    ));
                 }
                 return Ok(());
             }
             None => {
                 if expected_params_len != 0 {
-                    return Err(ParamsTypeNCountError::LessParams((expected_params_len, 0)));
+                    return Err(PrototypeEquivalenceCheckError::LessParams((
+                        expected_params_len,
+                        0,
+                    )));
                 } else {
                     return Ok(());
                 }
@@ -566,14 +588,14 @@ impl TypeChecker {
                                             GenericTypeDeclarationPlaceCategory::InCallable,
                                         );
                                         match inference_result {
-                                            Ok(concrete_types) => {
-                                                // TODO - check if these concrete_types are bounded by the interfaces
+                                            Ok((concrete_types, _)) => {
+                                                let return_type = &func_data.prototype.return_type;
+                                                (Ok(()), if return_type.has_generics() { return_type.concretize(&ConcretizationContext::new(&vec![], &concrete_types)) } else { return_type.clone() })
                                             }
                                             Err(err) => {
-                                                // TODO - raise error `error occured while type inference`
+                                                (Err(err), Type::new_with_unknown())
                                             }
                                         }
-                                        todo!()
                                     }
                                 }
                             }
@@ -617,85 +639,107 @@ impl TypeChecker {
                             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
                             ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
                                 let name = ok_identifier.token_value(&self.code);
-                                match &*user_defined_type_symbol_data.get_core_ref() {
-                                    UserDefinedTypeData::Struct(struct_symbol_data) => {
-                                        let mut index = user_defined_type_symbol_data.index;
-                                        let constructor_meta_data = &struct_symbol_data.constructor;
-                                        let prototype_result = match index {
-                                            Some(index) => {
-                                                // CASE 1
-                                                let concrete_types =
-                                                    struct_symbol_data.get_concrete_types(index);
-                                                let concrete_prototype = constructor_meta_data
-                                                    .prototype
-                                                    .concretize_prototype(
-                                                        &concrete_types.0,
-                                                        &vec![],
-                                                    );
-                                                CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(concrete_prototype)
-                                            }
-                                            None => {
-                                                match &struct_symbol_data.generics.generics_spec {
-                                                    Some(generic_type_decls) => {
-                                                        // CASE 2
-                                                        CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls)
-                                                    }
-                                                    None => {
-                                                        // CASE 4
-                                                        CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(PrototypeConcretizationResult::UnConcretized(
+                                let struct_constructor_prototype_check_result =
+                                    match &*user_defined_type_symbol_data.get_core_ref() {
+                                        UserDefinedTypeData::Struct(struct_symbol_data) => {
+                                            let index = user_defined_type_symbol_data.index;
+                                            let constructor_meta_data =
+                                                &struct_symbol_data.constructor;
+                                            let prototype_result = match index {
+                                                Some(index) => {
+                                                    // CASE 1
+                                                    let concrete_types = struct_symbol_data
+                                                        .get_concrete_types(index);
+                                                    let concrete_prototype = constructor_meta_data
+                                                        .prototype
+                                                        .concretize_prototype(
+                                                            &concrete_types.0,
+                                                            &vec![],
+                                                        );
+                                                    CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(concrete_prototype)
+                                                }
+                                                None => {
+                                                    match &struct_symbol_data.generics.generics_spec
+                                                    {
+                                                        Some(generic_type_decls) => {
+                                                            // CASE 2
+                                                            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls)
+                                                        }
+                                                        None => {
+                                                            // CASE 4
+                                                            CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(PrototypeConcretizationResult::UnConcretized(
                                                             &constructor_meta_data.prototype,
                                                         ))
+                                                        }
                                                     }
                                                 }
-                                            }
-                                        };
-                                        match prototype_result {
+                                            };
+                                            match prototype_result {
                                             CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
                                                 let prototype_ref = prototype.get_prototype_ref();
                                                 let result = self.check_params_type_and_count(
                                                     &prototype_ref.params,
                                                     params,
                                                 );
-                                                (
+                                                StructConstructorPrototypeCheckResult::Basic((
                                                     result,
                                                     Type::new_with_struct(
-                                                        name,
+                                                        name.to_string(),
                                                         &user_defined_type_symbol_data.symbol_data,
                                                         index,
                                                     ),
-                                                )
+                                                ))
                                             }
                                             CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls) => {
                                                 let inference_result = self.infer_concrete_types_from_arguments(
                                                     generic_type_decls,
                                                     &constructor_meta_data.prototype,
                                                     params,
-                                                    GenericTypeDeclarationPlaceCategory::InStruct
+                                                    GenericTypeDeclarationPlaceCategory::InStruct,
                                                 );
                                                 match inference_result {
-                                                    Ok(concrete_types) => {
-                                                        // TODO - check if these concrete_types are bounded by the interfaces
-                                                        // add these concrete_types to registry and get the index
-                                                        // form the return_type with this index
+                                                    Ok((concrete_types, has_generics)) => {
+                                                        StructConstructorPrototypeCheckResult::Inferred((concrete_types, has_generics))
                                                     }
                                                     Err(err) => {
-                                                        // TODO - raise error `error occured while type inference`
+                                                        StructConstructorPrototypeCheckResult::Basic((Err(err), Type::new_with_unknown()))
                                                     }
                                                 }
-                                                todo!()
                                             }
                                         }
-                                    }
-                                    UserDefinedTypeData::Lambda(_)
-                                    | UserDefinedTypeData::Generic(_) => {
-                                        let err = ConstructorNotFoundForTypeError::new(
-                                            name,
-                                            ok_identifier.range(),
-                                        );
-                                        self.log_error(Diagnostics::ConstructorNotFoundForType(
-                                            err,
-                                        ));
-                                        return Type::new_with_unknown();
+                                        }
+                                        UserDefinedTypeData::Lambda(_)
+                                        | UserDefinedTypeData::Generic(_) => {
+                                            let err = ConstructorNotFoundForTypeError::new(
+                                                name,
+                                                ok_identifier.range(),
+                                            );
+                                            self.log_error(
+                                                Diagnostics::ConstructorNotFoundForType(err),
+                                            );
+                                            return Type::new_with_unknown();
+                                        }
+                                    };
+                                match struct_constructor_prototype_check_result {
+                                    StructConstructorPrototypeCheckResult::Basic((
+                                        result,
+                                        return_type,
+                                    )) => (result, return_type),
+                                    StructConstructorPrototypeCheckResult::Inferred((
+                                        concrete_types,
+                                        has_generics,
+                                    )) => {
+                                        let index = user_defined_type_symbol_data
+                                            .get_core_mut_ref()
+                                            .register_concrete_types(concrete_types, has_generics);
+                                        (
+                                            Ok(()),
+                                            Type::new_with_struct(
+                                                name,
+                                                &user_defined_type_symbol_data.symbol_data,
+                                                Some(index),
+                                            ),
+                                        )
                                     }
                                 }
                             }
@@ -1594,26 +1638,31 @@ impl TypeChecker {
     pub fn log_params_type_and_count_check_error(
         &self,
         range: TextRange,
-        result: ParamsTypeNCountError,
+        result: PrototypeEquivalenceCheckError,
     ) {
         match result {
-            ParamsTypeNCountError::LessParams((expected_params_count, received_params_count)) => {
+            PrototypeEquivalenceCheckError::LessParams((
+                expected_params_count,
+                received_params_count,
+            )) => {
                 let err =
                     LessParamsCountError::new(expected_params_count, received_params_count, range);
                 self.log_error(Diagnostics::LessParamsCount(err));
             }
-            ParamsTypeNCountError::MoreParams(expected_params_count) => {
+            PrototypeEquivalenceCheckError::MoreParams(expected_params_count) => {
                 let err = MoreParamsCountError::new(expected_params_count, range);
                 self.log_error(Diagnostics::MoreParamsCount(err));
             }
-            ParamsTypeNCountError::MismatchedType(params_vec) => {
+            PrototypeEquivalenceCheckError::MismatchedType(params_vec) => {
                 let err = MismatchedParamTypeError::new(params_vec);
                 self.log_error(Diagnostics::MismatchedParamType(err));
             }
-            ParamsTypeNCountError::NotAllConcreteTypesInferred => todo!(),
-            ParamsTypeNCountError::TypeInferenceFailed => todo!(),
-            ParamsTypeNCountError::ConcreteTypesCannotBeInferred => todo!(),
-            ParamsTypeNCountError::InferredTypesNotBoundedByInterfaces(err_strs) => todo!(),
+            PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred => todo!(), // TODO - raise error
+            PrototypeEquivalenceCheckError::TypeInferenceFailed => todo!(),
+            PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred => todo!(),
+            PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(err_strs) => {
+                todo!()
+            }
         }
     }
 }

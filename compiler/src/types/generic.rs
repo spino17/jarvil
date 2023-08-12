@@ -71,6 +71,7 @@ impl AbstractType for Generic {
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+        has_generics: &mut bool,
     ) -> Result<(), ()> {
         let symbol_data = self.semantic_data.get_core_ref();
         let generic_data_ref = symbol_data.get_generic_data_ref();
@@ -80,6 +81,9 @@ impl AbstractType for Generic {
         let entry_ty = &mut inferred_concrete_types[index];
         match entry_ty {
             InferredConcreteTypesEntry::Uninferred => {
+                if received_ty.has_generics() {
+                    *has_generics = true;
+                }
                 *entry_ty = InferredConcreteTypesEntry::Inferred(received_ty.clone());
                 *num_inferred_types = *num_inferred_types + 1;
                 return Ok(());

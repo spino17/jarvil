@@ -27,6 +27,7 @@ pub trait AbstractType {
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+        has_generics: &mut bool,
     ) -> Result<(), ()>;
     fn has_generics(&self) -> bool;
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
@@ -395,6 +396,7 @@ impl AbstractType for Type {
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+        has_generics: &mut bool,
     ) -> Result<(), ()> {
         match self.0.as_ref() {
             CoreType::Atomic(_) => unreachable!(),
@@ -403,36 +405,42 @@ impl AbstractType for Type {
                 inferred_concrete_types,
                 num_inferred_types,
                 generic_ty_decl_place,
+                has_generics,
             ),
             CoreType::Lambda(lambda_ty) => lambda_ty.try_infer_type(
                 received_ty,
                 inferred_concrete_types,
                 num_inferred_types,
                 generic_ty_decl_place,
+                has_generics,
             ),
             CoreType::Array(array_ty) => array_ty.try_infer_type(
                 received_ty,
                 inferred_concrete_types,
                 num_inferred_types,
                 generic_ty_decl_place,
+                has_generics,
             ),
             CoreType::Tuple(tuple_ty) => tuple_ty.try_infer_type(
                 received_ty,
                 inferred_concrete_types,
                 num_inferred_types,
                 generic_ty_decl_place,
+                has_generics,
             ),
             CoreType::HashMap(hashmap_ty) => hashmap_ty.try_infer_type(
                 received_ty,
                 inferred_concrete_types,
                 num_inferred_types,
                 generic_ty_decl_place,
+                has_generics,
             ),
             CoreType::Generic(generic_ty) => generic_ty.try_infer_type(
                 received_ty,
                 inferred_concrete_types,
                 num_inferred_types,
                 generic_ty_decl_place,
+                has_generics,
             ),
             CoreType::Unknown => unreachable!(),
             CoreType::Void => unreachable!(),

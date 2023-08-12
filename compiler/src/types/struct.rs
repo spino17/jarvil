@@ -122,6 +122,7 @@ impl AbstractType for Struct {
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         num_inferred_types: &mut usize,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+        has_generics: &mut bool,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::Struct(struct_ty) => {
@@ -145,6 +146,7 @@ impl AbstractType for Struct {
                                 inferred_concrete_types,
                                 num_inferred_types,
                                 generic_ty_decl_place,
+                                has_generics,
                             )
                         }
                         None => return Ok(()),
