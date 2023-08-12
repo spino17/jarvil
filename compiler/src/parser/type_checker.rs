@@ -80,7 +80,7 @@ pub enum InferredConcreteTypesEntry {
 #[derive(Debug)]
 pub enum CallExpressionPrototypeEquivalenceCheckResult<'a> {
     HasConcretePrototype(PrototypeConcretizationResult<'a>),
-    NeedsTypeInference(usize),
+    NeedsTypeInference(&'a GenericTypeParams),
 }
 
 #[derive(Debug)]
@@ -98,6 +98,7 @@ pub enum ParamsTypeNCountError {
     NotAllConcreteTypesInferred,
     ConcreteTypesCannotBeInferred,
     MismatchedType(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
+    InferredTypesNotBoundedByInterfaces(Vec<(String, String)>), // (`inferred_ty` str, `interface_bounds` str)
 }
 
 #[derive(Debug, Clone)]
@@ -341,7 +342,7 @@ impl TypeChecker {
 
     pub fn infer_concrete_types_from_arguments(
         &self,
-        generic_type_decls_len: usize,
+        generic_type_decls: &GenericTypeParams,
         expected_prototype: &CallablePrototypeData,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
@@ -349,6 +350,7 @@ impl TypeChecker {
         // (inferred_concrete_types, params_ty_vec)
         match received_params {
             Some(received_params) => {
+                let generic_type_decls_len = generic_type_decls.len();
                 let mut inferred_concrete_types: Vec<InferredConcreteTypesEntry> =
                     vec![InferredConcreteTypesEntry::Uninferred; generic_type_decls_len];
                 let mut num_inferred_types = 0; // this should be `len_concrete_types` at the end of inference process
@@ -395,14 +397,27 @@ impl TypeChecker {
                 } else if num_inferred_types != generic_type_decls_len {
                     return Err(ParamsTypeNCountError::NotAllConcreteTypesInferred);
                 }
-                return Ok(inferred_concrete_types
+                let unpacked_inferred_concrete_types: Vec<Type> = inferred_concrete_types
                     .into_iter()
                     .map(|x| match x {
                         InferredConcreteTypesEntry::Inferred(ty) => ty,
                         InferredConcreteTypesEntry::Uninferred => unreachable!(),
                     })
                     .rev()
-                    .collect());
+                    .collect();
+                let mut error_strs: Vec<(String, String)> = vec![]; // Vec of (inferred_ty string, interface_bounds string)
+                for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
+                    let interface_bounds = &generic_type_decls.0[index].1;
+                    if !inferred_ty.is_type_bounded_by_interfaces(interface_bounds) {
+                        error_strs.push((inferred_ty.to_string(), interface_bounds.to_string()));
+                    }
+                }
+                if error_strs.len() > 0 {
+                    return Err(ParamsTypeNCountError::InferredTypesNotBoundedByInterfaces(
+                        error_strs,
+                    ));
+                }
+                return Ok(unpacked_inferred_concrete_types);
             }
             None => Err(ParamsTypeNCountError::ConcreteTypesCannotBeInferred),
         }
@@ -525,7 +540,7 @@ impl TypeChecker {
                                         match &func_data.generics.generics_spec {
                                             Some(generic_type_decls) => {
                                                 // CASE 2
-                                                CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls.len())
+                                                CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls)
                                             }
                                             // CASE 4
                                             None => CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(PrototypeConcretizationResult::UnConcretized(
@@ -543,9 +558,9 @@ impl TypeChecker {
                                             self.check_params_type_and_count(expected_params, params);
                                         (result, return_type.clone())
                                     }
-                                    CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls_len) => {
+                                    CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls) => {
                                         let inference_result = self.infer_concrete_types_from_arguments(
-                                            generic_type_decls_len,
+                                            generic_type_decls,
                                             &func_data.prototype,
                                             params,
                                             GenericTypeDeclarationPlaceCategory::InCallable,
@@ -623,7 +638,7 @@ impl TypeChecker {
                                                 match &struct_symbol_data.generics.generics_spec {
                                                     Some(generic_type_decls) => {
                                                         // CASE 2
-                                                        CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls.len())
+                                                        CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls)
                                                     }
                                                     None => {
                                                         // CASE 4
@@ -650,9 +665,9 @@ impl TypeChecker {
                                                     ),
                                                 )
                                             }
-                                            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls_len) => {
+                                            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls) => {
                                                 let inference_result = self.infer_concrete_types_from_arguments(
-                                                    generic_type_decls_len,
+                                                    generic_type_decls,
                                                     &constructor_meta_data.prototype,
                                                     params,
                                                     GenericTypeDeclarationPlaceCategory::InStruct
@@ -1598,6 +1613,7 @@ impl TypeChecker {
             ParamsTypeNCountError::NotAllConcreteTypesInferred => todo!(),
             ParamsTypeNCountError::TypeInferenceFailed => todo!(),
             ParamsTypeNCountError::ConcreteTypesCannotBeInferred => todo!(),
+            ParamsTypeNCountError::InferredTypesNotBoundedByInterfaces(err_strs) => todo!(),
         }
     }
 }
