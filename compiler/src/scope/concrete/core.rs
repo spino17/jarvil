@@ -27,8 +27,7 @@ impl ToString for ConcreteTypesTuple {
         let len = concrete_types.len();
         s.push_str(&concrete_types[0].to_string());
         for i in 1..len {
-            s.push_str(", ");
-            s.push_str(&concrete_types[i].to_string());
+            s.push_str(&format!(", {}", concrete_types[i].to_string()));
         }
         return s;
     }

@@ -355,6 +355,9 @@ impl AbstractType for Type {
     }
 
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+        if interface_bounds.len() == 0 {
+            return true
+        }
         match self.0.as_ref() {
             CoreType::Struct(struct_ty) => {
                 struct_ty.is_type_bounded_by_interfaces(interface_bounds)
@@ -368,7 +371,7 @@ impl AbstractType for Type {
             }
             CoreType::Tuple(tuple_ty) => tuple_ty.is_type_bounded_by_interfaces(interface_bounds),
             CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Any => {
-                interface_bounds.len() == 0
+                false
             }
             CoreType::Unknown | CoreType::Unset | CoreType::Void => false,
         }

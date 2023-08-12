@@ -29,6 +29,8 @@ pub enum Diagnostics {
     MoreParamsCount(MoreParamsCountError),
     LessParamsCount(LessParamsCountError),
     MismatchedParamType(MismatchedParamTypeError),
+    NotAllConcreteTypesInferred(NotAllConcreteTypesInferredError),
+    TypeInferenceFailed(TypeInferenceFailedError),
     IdentifierNotCallable(IdentifierNotCallableError),
     StructFieldNotCallable(StructFieldNotCallableError),
     ConstructorNotFoundForType(ConstructorNotFoundForTypeError),
@@ -157,6 +159,12 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::GenericTypeArgsIncorrectlyBounded(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::NotAllConcreteTypesInferred(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::TypeInferenceFailed(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -976,6 +984,81 @@ impl Diagnostic for MismatchedParamTypeError {
 
     fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
         return Some(Box::new("TypeCheckError"));
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("concrete types inference failed")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct NotAllConcreteTypesInferredError {
+    #[label("complete set of concrete types cannot be inferred")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl NotAllConcreteTypesInferredError {
+    pub fn new(
+        range: TextRange,
+    ) -> Self {
+        NotAllConcreteTypesInferredError {
+            span: range_to_span(range).into(),
+            help: Some("explicitly specify the generic type arguments using <...>".to_string())
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("concrete types inference failed")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct TypeInferenceFailedError {
+    #[label("cannot infer concrete types")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl TypeInferenceFailedError {
+    pub fn new(
+        range: TextRange,
+    ) -> Self {
+        TypeInferenceFailedError {
+            span: range_to_span(range).into(),
+            help: Some("explicitly specify the generic type arguments using <...>".to_string())
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("concrete types inference failed")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct InferredTypesNotBoundedByInterfacesError {
+    pub msg: String,
+    #[label("{}", msg)]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl InferredTypesNotBoundedByInterfacesError {
+    pub fn new(
+        range: TextRange,
+        err_strs: Vec<(String, String)>,
+        concrete_types: Vec<Type>,
+    ) -> Self {
+        let msg = "".to_string();
+        let mut concrete_types_str = "<".to_string();
+        let concrete_types_len = concrete_types.len();
+        concrete_types_str.push_str(&concrete_types[0].to_string());
+        for i in 1..concrete_types_len {
+            concrete_types_str.push_str(&format!(", {}", concrete_types[i].to_string()));
+        }
+        concrete_types_str.push('>');
+        InferredTypesNotBoundedByInterfacesError {
+            span: range_to_span(range).into(),
+            msg,
+            help: Some("explicitly specify the generic type arguments using <...>".to_string())
+        }
     }
 }
 

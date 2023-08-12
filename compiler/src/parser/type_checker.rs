@@ -99,7 +99,7 @@ pub enum PrototypeEquivalenceCheckError {
     NotAllConcreteTypesInferred,
     ConcreteTypesCannotBeInferred,
     MismatchedType(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
-    InferredTypesNotBoundedByInterfaces(Vec<(String, String)>), // (`inferred_ty` str, `interface_bounds` str)
+    InferredTypesNotBoundedByInterfaces(Vec<(String, String)>, Vec<Type>), // (`inferred_ty` str, `interface_bounds` str)
 }
 
 #[derive(Debug)]
@@ -429,6 +429,7 @@ impl TypeChecker {
                     return Err(
                         PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(
                             error_strs,
+                            unpacked_inferred_concrete_types
                         ),
                     );
                 }
@@ -1660,7 +1661,7 @@ impl TypeChecker {
             PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred => todo!(), // TODO - raise error
             PrototypeEquivalenceCheckError::TypeInferenceFailed => todo!(),
             PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred => todo!(),
-            PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(err_strs) => {
+            PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(err_strs, concrete_types) => {
                 todo!()
             }
         }
