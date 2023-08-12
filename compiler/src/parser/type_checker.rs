@@ -76,7 +76,7 @@ pub enum AtomicTokenExprKind {
     Literal,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum InferredConcreteTypesEntry {
     Uninferred,
     Inferred(Type),
@@ -420,7 +420,6 @@ impl TypeChecker {
                         InferredConcreteTypesEntry::Inferred(ty) => ty,
                         InferredConcreteTypesEntry::Uninferred => unreachable!(),
                     })
-                    .rev()
                     .collect();
                 let mut error_strs: Vec<(String, String)> = vec![]; // Vec of (inferred_ty string, interface_bounds string)
                 for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
