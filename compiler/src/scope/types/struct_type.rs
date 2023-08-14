@@ -1,8 +1,9 @@
-use crate::scope::concrete::core::ConcreteTypesTuple;
+use crate::scope::concrete::core::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::concrete::registry::GenericsSpecAndConcreteTypesRegistry;
 use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::function::{CallableData, CallableKind};
 use crate::scope::interfaces::InterfaceBounds;
+use crate::types::core::AbstractType;
 use crate::{
     scope::{
         concrete::core::ConcreteTypesRegistryKey,
@@ -49,11 +50,32 @@ impl StructTypeData {
         self.implementing_interfaces = implementing_interfaces;
         self.is_init = true;
     }
-
-    // TODO - add key: Option<ConcreteTypesRegistryKey> as argument
-    pub fn try_field(&self, field_name: &str) -> Option<(Type, TextRange)> {
+    
+    pub fn try_field(
+        &self,
+        field_name: &str,
+        key: Option<ConcreteTypesRegistryKey>,
+    ) -> Option<(Type, TextRange)> {
         match self.fields.get(field_name) {
-            Some(type_obj) => return Some((type_obj.0.clone(), type_obj.1)),
+            Some((ty, range)) => {
+                if ty.has_generics() {
+                    match key {
+                        Some(key) => {
+                            let concrete_types = self.get_concrete_types(key);
+                            return Some((
+                                ty.concretize(&ConcretizationContext::new(
+                                    &concrete_types.0,
+                                    &vec![],
+                                )),
+                                *range,
+                            ));
+                        }
+                        None => unreachable!(),
+                    }
+                } else {
+                    return Some((ty.clone(), *range));
+                }
+            }
             None => None,
         }
     }

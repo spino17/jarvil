@@ -832,8 +832,9 @@ impl TypeChecker {
         match atom_type_obj.0.as_ref() {
             CoreType::Struct(struct_ty) => {
                 let symbol_data = struct_ty.semantic_data.symbol_data.get_core_ref();
+                let index = struct_ty.semantic_data.index;
                 let struct_data = symbol_data.get_struct_data_ref();
-                match struct_data.try_field(&property_name_str) {
+                match struct_data.try_field(&property_name_str, index) {
                     Some((type_obj, _)) => {
                         return StructPropertyCheckResult::PropertyExist(type_obj)
                     }
