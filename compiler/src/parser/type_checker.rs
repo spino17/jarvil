@@ -772,18 +772,13 @@ impl TypeChecker {
                     UserDefinedTypeData::Struct(struct_data) => {
                         match class_method.core_ref() {
                             CoreIdentifierInUseNode::Ok(class_method) => {
-                                // TODO - check if <...> is correct
-                                // if <> is present use them to form concrete arguments if not and is expected by the
-                                // identifier symbol_data then infer the types from params and then repeat the above step.
-                                let (concrete_types, ty_ranges, has_generics) = self
-                                    .extract_angle_bracket_content_from_identifier_in_use(
-                                        class_method,
-                                    );
                                 let class_method_name = class_method.token_value(&self.code);
                                 match struct_data.try_class_method(&class_method_name) {
-                                    // use above two types of concrete types to form `ConcretizationContext`
-                                    // to do the `params_type_and_count` check and get the return type
+                                    // TODO - check if <...> is correct
+                                    // if <> is present use them to form concrete arguments if not and is expected by the
+                                    // identifier symbol_data then infer the types from params and then repeat the above step.
                                     Some((func_data, _)) => {
+                                        let (concrete_types, ty_ranges, has_generics) = self.extract_angle_bracket_content_from_identifier_in_use(class_method);
                                         let expected_params = &func_data.prototype.params;
                                         let return_type = &func_data.prototype.return_type;
                                         let result = self
@@ -985,12 +980,9 @@ impl TypeChecker {
             }
             None => {
                 // if field is not there then check in methods
-                let (concrete_types, ty_ranges, has_generics) = self
-                    .extract_angle_bracket_content_from_identifier_in_use(
-                        method_name_ok_identifier,
-                    );
                 match struct_data.try_method(&method_name) {
                     Some((func_data, _)) => {
+                        let (concrete_types, ty_ranges, has_generics) = self.extract_angle_bracket_content_from_identifier_in_use(method_name_ok_identifier);
                         let expected_params = &func_data.prototype.params;
                         let return_type = &func_data.prototype.return_type;
                         let _ = self.check_params_type_and_count(expected_params, params)?;
