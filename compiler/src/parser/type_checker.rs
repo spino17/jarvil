@@ -6,9 +6,10 @@ use crate::ast::ast::{
     OkIdentifierInDeclNode, OkIdentifierInUseNode, StructDeclarationNode,
 };
 use crate::error::diagnostics::{
-    InferredTypesNotBoundedByInterfacesError, NotAllConcreteTypesInferredError,
-    TypeInferenceFailedError,
+    GenericTypeArgsNotExpectedError, InferredTypesNotBoundedByInterfacesError,
+    NotAllConcreteTypesInferredError, TypeInferenceFailedError,
 };
+use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams};
 use crate::scope::function::PrototypeConcretizationResult;
@@ -945,33 +946,46 @@ impl TypeChecker {
                 let (atom_type_obj, _) = self.check_atom(atom);
                 let property = &core_property_access.propertry;
                 if let CoreIdentifierInUseNode::Ok(ok_identifier) = property.core_ref() {
-                    if ok_identifier.core_ref().generic_type_args.is_some() {
-                        // TODO - raise error `generic type decls not allowed`
-                    }
-                    let result = self.check_struct_property(&atom_type_obj, ok_identifier);
-                    match result {
-                        StructPropertyCheckResult::PropertyExist(type_obj) => {
-                            return (type_obj, Some(atom_type_obj))
-                        }
-                        StructPropertyCheckResult::PropertyDoesNotExist => {
-                            let err = PropertyDoesNotExistError::new(
-                                PropertyKind::Field,
-                                atom_type_obj.to_string(),
-                                ok_identifier.range(),
-                                atom.range(),
+                    match &ok_identifier.core_ref().generic_type_args {
+                        Some(_) => {
+                            let err = GenericTypeArgsNotExpectedError::new(
+                                IdentifierKind::Field,
+                                ok_identifier.core_ref().name.range(),
                             );
-                            self.log_error(Diagnostics::PropertyDoesNotExist(err));
-                            return (Type::new_with_unknown(), Some(atom_type_obj));
+                            self.log_error(Diagnostics::GenericTypeArgsNotExpected(err));
                         }
-                        StructPropertyCheckResult::NonStructType => {
-                            let err = PropertyDoesNotExistError::new(
-                                PropertyKind::Field,
-                                atom_type_obj.to_string(),
-                                property.range(),
-                                atom.range(),
-                            );
-                            self.log_error(Diagnostics::PropertyDoesNotExist(err));
-                            return (Type::new_with_unknown(), Some(atom_type_obj));
+                        None => {
+                            let property_name_str = ok_identifier.token_value(&self.code);
+                            let result: Result<Type, ()> = match atom_type_obj.0.as_ref() {
+                                CoreType::Struct(struct_ty) => {
+                                    let symbol_data =
+                                        struct_ty.semantic_data.symbol_data.get_core_ref();
+                                    let index = struct_ty.semantic_data.index;
+                                    let struct_data = symbol_data.get_struct_data_ref();
+                                    match struct_data.try_field(&property_name_str, index) {
+                                        Some((type_obj, _)) => Ok(type_obj),
+                                        None => Err(()),
+                                    }
+                                }
+                                CoreType::Generic(generic_ty) => {
+                                    // TODO - change this to allow property access for generic types also
+                                    Err(())
+                                }
+                                _ => Err(()),
+                            };
+                            match result {
+                                Ok(property_ty) => return (property_ty, Some(atom_type_obj)),
+                                Err(_) => {
+                                    let err = PropertyDoesNotExistError::new(
+                                        PropertyKind::Field,
+                                        atom_type_obj.to_string(),
+                                        property.range(),
+                                        atom.range(),
+                                    );
+                                    self.log_error(Diagnostics::PropertyDoesNotExist(err));
+                                    return (Type::new_with_unknown(), Some(atom_type_obj));
+                                }
+                            }
                         }
                     }
                 }
