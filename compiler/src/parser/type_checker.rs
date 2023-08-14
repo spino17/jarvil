@@ -120,7 +120,7 @@ pub enum PrototypeEquivalenceCheckError {
 #[derive(Debug)]
 pub enum MethodAccessTypeCheckError {
     MethodNotFound,
-    PropertyNotCallable(Type),
+    FieldNotCallable(Type),
     PrototypeEquivalenceCheckFailed(PrototypeEquivalenceCheckError),
     GenericTypeArgsCheckFailed(GenericTypeArgsCheckError, IdentifierKind),
 }
@@ -971,7 +971,7 @@ impl TypeChecker {
                             return Ok(return_ty);
                         }
                         _ => {
-                            return Err(MethodAccessTypeCheckError::PropertyNotCallable(
+                            return Err(MethodAccessTypeCheckError::FieldNotCallable(
                                 propetry_ty,
                             ))
                         }
@@ -1075,7 +1075,7 @@ impl TypeChecker {
                         self.log_error(Diagnostics::PropertyDoesNotExist(err));
                         return (Type::new_with_unknown(), Some(atom_type_obj));
                     }
-                    MethodAccessTypeCheckError::PropertyNotCallable(ty) => {
+                    MethodAccessTypeCheckError::FieldNotCallable(ty) => {
                         let err = FieldNotCallableError::new(ty.to_string(), ok_identifier.range());
                         self.log_error(Diagnostics::FieldNotCallable(err));
                         return (Type::new_with_unknown(), Some(atom_type_obj));
