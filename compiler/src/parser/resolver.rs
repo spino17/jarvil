@@ -1556,6 +1556,10 @@ impl Visitor for Resolver {
                 self.declare_lambda_type(lambda_type_decl);
                 return None;
             }
+            ASTNode::TypeExpression(type_expr) => {
+                self.type_obj_from_expression(type_expr);
+                return None
+            }
             ASTNode::AtomStart(atom_start) => {
                 match atom_start.core_ref() {
                     CoreAtomStartNode::Identifier(identifier) => {

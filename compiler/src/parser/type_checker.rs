@@ -768,42 +768,42 @@ impl TypeChecker {
                     {
                         Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
                             UserDefinedTypeData::Struct(struct_data) => {
-                                let class_method_name = match class_method.core_ref() {
+                                match class_method.core_ref() {
                                     CoreIdentifierInUseNode::Ok(class_method) => {
                                         // TODO - check if <...> is correct
                                         // if <> is present use them to form concrete arguments if not and is expected by the
                                         // identifier symbol_data then infer the types from params and then repeat the above step.
-                                        class_method.token_value(&self.code)
-                                    }
-                                    _ => return Type::new_with_unknown(),
-                                };
-                                match struct_data.class_methods.get(&class_method_name) {
-                                    // use above two types of concrete types to form `ConcretizationContext`
-                                    // to do the `params_type_and_count` check and get the return type
-                                    Some((func_data, _)) => {
-                                        let expected_params = &func_data.prototype.params;
-                                        let return_type = &func_data.prototype.return_type;
-                                        let result = self
-                                            .check_params_type_and_count(expected_params, params);
-                                        match result {
-                                            Ok(()) => return return_type.clone(),
-                                            Err(err) => {
-                                                self.log_params_type_and_count_check_error(
+                                        let class_method_name = class_method.token_value(&self.code);
+                                        match struct_data.class_methods.get(&class_method_name) {
+                                            // use above two types of concrete types to form `ConcretizationContext`
+                                            // to do the `params_type_and_count` check and get the return type
+                                            Some((func_data, _)) => {
+                                                let expected_params = &func_data.prototype.params;
+                                                let return_type = &func_data.prototype.return_type;
+                                                let result = self
+                                                    .check_params_type_and_count(expected_params, params);
+                                                match result {
+                                                    Ok(()) => return return_type.clone(),
+                                                    Err(err) => {
+                                                        self.log_params_type_and_count_check_error(
+                                                            class_method.range(),
+                                                            err,
+                                                        );
+                                                        return Type::new_with_unknown();
+                                                    }
+                                                }
+                                            }
+                                            None => {
+                                                let err = ClassmethodDoesNotExistError::new(
+                                                    class_name,
                                                     class_method.range(),
-                                                    err,
                                                 );
+                                                self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
                                                 return Type::new_with_unknown();
                                             }
                                         }
                                     }
-                                    None => {
-                                        let err = ClassmethodDoesNotExistError::new(
-                                            class_name,
-                                            class_method.range(),
-                                        );
-                                        self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
-                                        return Type::new_with_unknown();
-                                    }
+                                    _ => return Type::new_with_unknown(),
                                 }
                             }
                             _ => {
