@@ -82,7 +82,7 @@ impl StructTypeData {
 
     // TODO - add key: Option<ConcreteTypesRegistryKey> as argument
     pub fn try_method(&self, method_name: &str) -> Option<(&CallableData, TextRange)> {
-        match self.methods.get(method_name) {
+        match self.methods.get(method_name) {// TODO - return &CallableData + Option<&ConcreteTypesTuple> (corrosponding to the `key passed`)
             Some(func_data) => Some((&func_data.0, func_data.1)),
             None => None,
         }
@@ -90,7 +90,7 @@ impl StructTypeData {
 
     // TODO - add key: Option<ConcreteTypesRegistryKey> as argument
     pub fn try_class_method(&self, class_method_name: &str) -> Option<(&CallableData, TextRange)> {
-        match self.class_methods.get(class_method_name) {
+        match self.class_methods.get(class_method_name) {// TODO - return &CallableData + Option<&ConcreteTypesTuple> (corrosponding to the `key passed`)
             Some(func_data) => Some((&func_data.0, func_data.1)),
             None => None,
         }
