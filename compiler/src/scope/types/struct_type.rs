@@ -16,10 +16,10 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct StructTypeData {
-    pub fields: FxHashMap<String, (Type, TextRange)>,
+    fields: FxHashMap<String, (Type, TextRange)>,
     pub constructor: CallableData,
-    pub methods: FxHashMap<String, (CallableData, TextRange)>,
-    pub class_methods: FxHashMap<String, (CallableData, TextRange)>,
+    methods: FxHashMap<String, (CallableData, TextRange)>,
+    class_methods: FxHashMap<String, (CallableData, TextRange)>,
     pub generics: GenericsSpecAndConcreteTypesRegistry,
     pub implementing_interfaces: Option<InterfaceBounds>,
     pub is_init: bool,

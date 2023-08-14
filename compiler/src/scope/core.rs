@@ -277,7 +277,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
                 );
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
-                let generic_type_decls = &lambda_data.meta_data.generics.generics_spec;
+                let generic_type_decls = &lambda_data.get_generic_type_decls();
                 return check_concrete_types_bounded_by_interfaces(
                     generic_type_decls,
                     concrete_types,

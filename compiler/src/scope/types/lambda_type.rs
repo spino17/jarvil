@@ -9,7 +9,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct LambdaTypeData {
-    pub meta_data: CallableData,
+    meta_data: CallableData,
 }
 
 impl LambdaTypeData {
@@ -44,6 +44,10 @@ impl LambdaTypeData {
             }
             None => return PrototypeConcretizationResult::UnConcretized(&self.meta_data.prototype),
         }
+    }
+
+    pub fn get_generic_type_decls(&self) -> &Option<GenericTypeParams> {
+        &self.meta_data.generics.generics_spec
     }
 }
 

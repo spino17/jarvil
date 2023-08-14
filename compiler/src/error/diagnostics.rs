@@ -33,7 +33,7 @@ pub enum Diagnostics {
     TypeInferenceFailed(TypeInferenceFailedError),
     InferredTypesNotBoundedByInterfaces(InferredTypesNotBoundedByInterfacesError),
     IdentifierNotCallable(IdentifierNotCallableError),
-    StructFieldNotCallable(StructFieldNotCallableError),
+    FieldNotCallable(FieldNotCallableError),
     ConstructorNotFoundForType(ConstructorNotFoundForTypeError),
     ClassmethodDoesNotExist(ClassmethodDoesNotExistError),
     PropertyDoesNotExist(PropertyDoesNotExistError),
@@ -108,7 +108,7 @@ impl Diagnostics {
             Diagnostics::LessParamsCount(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MismatchedParamType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierNotCallable(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::StructFieldNotCallable(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::FieldNotCallable(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::ConstructorNotFoundForType(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::ClassmethodDoesNotExist(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::PropertyDoesNotExist(diagnostic) => Report::new(diagnostic.clone()),
@@ -1184,17 +1184,17 @@ impl PropertyDoesNotExistError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("struct field not callable")]
+#[error("field not callable")]
 #[diagnostic(code("TypeCheckError"))]
-pub struct StructFieldNotCallableError {
+pub struct FieldNotCallableError {
     pub ty: String,
     #[label("field with type `{}` is not callable", self.ty)]
     pub field_span: SourceSpan,
 }
 
-impl StructFieldNotCallableError {
+impl FieldNotCallableError {
     pub fn new(ty: String, field_span: TextRange) -> Self {
-        StructFieldNotCallableError {
+        FieldNotCallableError {
             ty,
             field_span: range_to_span(field_span).into(),
         }

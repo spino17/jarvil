@@ -1,6 +1,9 @@
 use super::core::OperatorCompatiblity;
 use super::helper::try_infer_types_from_tuple;
-use crate::parser::type_checker::InferredConcreteTypesEntry;
+use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
+use crate::parser::type_checker::{
+    InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
+};
 use crate::scope::concrete::core::{
     ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext,
 };
@@ -35,6 +38,34 @@ impl Lambda {
 
     pub fn new_with_unnamed(func_prototype: CallablePrototypeData) -> Self {
         Lambda::Unnamed(func_prototype)
+    }
+
+    pub fn is_received_params_valid(
+        &self,
+        type_checker: &TypeChecker,
+        received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Result<Type, PrototypeEquivalenceCheckError> {
+        match self {
+            Lambda::Named((_, semantic_data)) => {
+                let index = semantic_data.index;
+                let symbol_data = semantic_data.get_core_ref();
+                let lambda_data = symbol_data.get_lambda_data_ref();
+                let prototype_result = lambda_data.get_concrete_prototype(index);
+                let prototype_ref = prototype_result.get_prototype_ref();
+                let expected_param_types = &prototype_ref.params;
+                let return_type = &prototype_ref.return_type;
+                let _ = type_checker
+                    .check_params_type_and_count(expected_param_types, received_params)?;
+                return Ok(return_type.clone());
+            }
+            Lambda::Unnamed(unnamed_lambda) => {
+                let expected_param_types = &unnamed_lambda.params;
+                let return_type = &unnamed_lambda.return_type;
+                let _ = type_checker
+                    .check_params_type_and_count(expected_param_types, received_params)?;
+                return Ok(return_type.clone());
+            }
+        }
     }
 }
 

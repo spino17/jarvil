@@ -2,21 +2,31 @@
 // cover and the representation of type expressions in terms of type objects.
 
 use crate::ast::ast::{
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, InterfaceMethodTerminalNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, StructDeclarationNode,
+    CallExpressionNode, CallNode, ClassMethodCallNode, CoreIdentifierInDeclNode,
+    CoreIdentifierInUseNode, IndexAccessNode, InterfaceMethodTerminalNode, MethodAccessNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode,
 };
 use crate::error::diagnostics::{
     GenericTypeArgsNotExpectedError, InferredTypesNotBoundedByInterfacesError,
     NotAllConcreteTypesInferredError, TypeInferenceFailedError,
 };
 use crate::error::helper::IdentifierKind;
-use crate::scope::concrete::core::ConcretizationContext;
-use crate::scope::core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams};
-use crate::scope::function::PrototypeConcretizationResult;
+use crate::scope::concrete::core::{ConcreteSymbolData, ConcretizationContext};
+use crate::scope::core::{
+    AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams,
+    UserDefinedTypeSymbolData,
+};
+use crate::scope::errors::GenericTypeArgsCheckError;
+use crate::scope::function::{CallableData, PrototypeConcretizationResult};
 use crate::scope::handler::ConcreteSymbolDataEntry;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::variables::VariableData;
+use crate::types::array::core::Array;
 use crate::types::core::AbstractNonStructTypes;
+use crate::types::generic::Generic;
+use crate::types::hashmap::core::HashMap;
 use crate::types::lambda::Lambda;
+use crate::types::r#struct::Struct;
 use crate::{
     ast::{
         ast::{
@@ -40,14 +50,13 @@ use crate::{
             BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError,
             ConstructorNotFoundForTypeError, Diagnostics,
             ExplicitReturnStatementFoundInConstructorBodyError, ExpressionIndexingNotValidError,
-            ExpressionNotCallableError, IdentifierNotCallableError,
+            ExpressionNotCallableError, FieldNotCallableError, IdentifierNotCallableError,
             ImmutableTypeNotAssignableError, InvalidIndexExpressionForTupleError,
             InvalidReturnStatementError, LessParamsCountError, MismatchedParamTypeError,
             MismatchedReturnTypeError, MismatchedTypesOnLeftRightError, MoreParamsCountError,
             NoReturnStatementInFunctionError, PropertyDoesNotExistError, PropertyNotSupportedError,
-            RightSideWithVoidTypeNotAllowedError, StructFieldNotCallableError,
-            TupleIndexOutOfBoundError, UnaryOperatorInvalidUseError,
-            UnresolvedIndexExpressionInTupleError,
+            RightSideWithVoidTypeNotAllowedError, TupleIndexOutOfBoundError,
+            UnaryOperatorInvalidUseError, UnresolvedIndexExpressionInTupleError,
         },
         helper::PropertyKind,
     },
@@ -63,6 +72,8 @@ use crate::{
 };
 use std::cell::UnsafeCell;
 use text_size::TextRange;
+
+use super::helper::err_for_generic_type_args;
 
 #[derive(Debug)]
 struct Context {
@@ -104,6 +115,20 @@ pub enum PrototypeEquivalenceCheckError {
     ConcreteTypesCannotBeInferred,
     MismatchedType(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
     InferredTypesNotBoundedByInterfaces(Vec<(String, String)>, Vec<Type>), // (`inferred_ty` str, `interface_bounds` str)
+}
+
+#[derive(Debug)]
+pub enum MethodAccessTypeCheckError {
+    MethodNotFound,
+    PropertyNotCallable(Type),
+    PrototypeEquivalenceCheckFailed(PrototypeEquivalenceCheckError),
+    GenericTypeArgsCheckFailed(GenericTypeArgsCheckError, IdentifierKind),
+}
+
+impl From<PrototypeEquivalenceCheckError> for MethodAccessTypeCheckError {
+    fn from(value: PrototypeEquivalenceCheckError) -> Self {
+        MethodAccessTypeCheckError::PrototypeEquivalenceCheckFailed(value)
+    }
 }
 
 #[derive(Debug)]
@@ -513,6 +538,295 @@ impl TypeChecker {
         }
     }
 
+    fn check_atom_start_call_expr(&self, call_expr: &CallExpressionNode) -> Type {
+        let core_call_expr = call_expr.core_ref();
+        let func_name = &core_call_expr.function_name;
+        let params = &core_call_expr.params;
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) = func_name.core_ref() {
+            // NOTE: For call expression syntax like `f(...) or f<...>(...)` while resolving
+            // we provide the freedom to have no <...> even if `f` expects to have it because it
+            // can be inferred. This inference is done here.
+            // There are 4 cases:
+            //     CASE 1. <...> in decl, <...> in usage => successful resolution and saves the key index.
+            //     CASE 2. <...> in decl, <...> not in usage => successful resolution
+            //          (entry will be created in `node vs concrete_symbol_data` mapping with None as key).
+            //     CASE 3. <...> not in decl, <...> in usage => error while resolving
+            //     CASE 4. <...> not in decl, <...> not in usage => no error
+            if let Some(symbol_data) = self
+                .namespace_handler
+                .get_symbol_data_for_identifier_in_use(ok_identifier)
+            {
+                let (result, return_type) = match symbol_data {
+                    ConcreteSymbolDataEntry::Function(func_symbol_data) => {
+                        let func_data = &*func_symbol_data.get_core_ref();
+                        let index = func_symbol_data.index;
+
+                        let prototype_result = match index {
+                            Some(index) => {
+                                // CASE 1
+                                let concrete_types = func_data.get_concrete_types(index);
+                                let concrete_prototype = func_data
+                                    .prototype
+                                    .concretize_prototype(&vec![], &concrete_types.0);
+                                CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
+                                    concrete_prototype,
+                                )
+                            }
+                            None => {
+                                match &func_data.generics.generics_spec {
+                                    Some(generic_type_decls) => {
+                                        // CASE 2
+                                        CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls)
+                                    }
+                                    // CASE 4
+                                    None => CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(PrototypeConcretizationResult::UnConcretized(
+                                        &func_data.prototype,
+                                    )),
+                                }
+                            }
+                        };
+                        match prototype_result {
+                            CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
+                                prototype,
+                            ) => {
+                                let prototype_ref = prototype.get_prototype_ref();
+                                let expected_params = &prototype_ref.params;
+                                let return_type = &prototype_ref.return_type;
+                                let result =
+                                    self.check_params_type_and_count(expected_params, params);
+                                (result, return_type.clone())
+                            }
+                            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
+                                generic_type_decls,
+                            ) => {
+                                let inference_result = self.infer_concrete_types_from_arguments(
+                                    generic_type_decls,
+                                    &func_data.prototype,
+                                    params,
+                                    GenericTypeDeclarationPlaceCategory::InCallable,
+                                );
+                                match inference_result {
+                                    Ok((concrete_types, _)) => {
+                                        let return_type = &func_data.prototype.return_type;
+                                        (
+                                            Ok(()),
+                                            if return_type.has_generics() {
+                                                return_type.concretize(&ConcretizationContext::new(
+                                                    &vec![],
+                                                    &concrete_types,
+                                                ))
+                                            } else {
+                                                return_type.clone()
+                                            },
+                                        )
+                                    }
+                                    Err(err) => (Err(err), Type::new_with_unknown()),
+                                }
+                            }
+                        }
+                    }
+                    ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
+                        assert!(variable_symbol_data.index.is_none());
+                        let lambda_type = &variable_symbol_data.get_core_ref().data_type;
+                        match lambda_type.0.as_ref() {
+                            CoreType::Lambda(lambda_data) => {
+                                let result = lambda_data.is_received_params_valid(self, params);
+                                match result {
+                                    Ok(return_ty) => (Ok(()), return_ty),
+                                    Err(err) => (Err(err), Type::new_with_unknown()),
+                                }
+                            }
+                            _ => {
+                                let err = IdentifierNotCallableError::new(
+                                    lambda_type.to_string(),
+                                    ok_identifier.range(),
+                                );
+                                self.log_error(Diagnostics::IdentifierNotCallable(err));
+                                return Type::new_with_unknown();
+                            }
+                        }
+                    }
+                    ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
+                    ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
+                        let name = ok_identifier.token_value(&self.code);
+                        let struct_constructor_prototype_check_result =
+                            match &*user_defined_type_symbol_data.get_core_ref() {
+                                UserDefinedTypeData::Struct(struct_symbol_data) => {
+                                    let index = user_defined_type_symbol_data.index;
+                                    let constructor_meta_data = &struct_symbol_data.constructor;
+                                    let prototype_result = match index {
+                                        Some(index) => {
+                                            // CASE 1
+                                            let concrete_types =
+                                                struct_symbol_data.get_concrete_types(index);
+                                            let concrete_prototype = constructor_meta_data
+                                                .prototype
+                                                .concretize_prototype(&concrete_types.0, &vec![]);
+                                            CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(concrete_prototype)
+                                        }
+                                        None => {
+                                            match &struct_symbol_data.generics.generics_spec {
+                                                Some(generic_type_decls) => {
+                                                    // CASE 2
+                                                    CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls)
+                                                }
+                                                None => {
+                                                    // CASE 4
+                                                    CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(PrototypeConcretizationResult::UnConcretized(
+                                                    &constructor_meta_data.prototype,
+                                                ))
+                                                }
+                                            }
+                                        }
+                                    };
+                                    match prototype_result {
+                                    CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
+                                        let prototype_ref = prototype.get_prototype_ref();
+                                        let result = self.check_params_type_and_count(
+                                            &prototype_ref.params,
+                                            params,
+                                        );
+                                        StructConstructorPrototypeCheckResult::Basic((
+                                            result,
+                                            Type::new_with_struct(
+                                                name.to_string(),
+                                                &user_defined_type_symbol_data.symbol_data,
+                                                index,
+                                            ),
+                                        ))
+                                    }
+                                    CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls) => {
+                                        let inference_result = self.infer_concrete_types_from_arguments(
+                                            generic_type_decls,
+                                            &constructor_meta_data.prototype,
+                                            params,
+                                            GenericTypeDeclarationPlaceCategory::InStruct,
+                                        );
+                                        match inference_result {
+                                            Ok((concrete_types, has_generics)) => {
+                                                StructConstructorPrototypeCheckResult::Inferred((concrete_types, has_generics))
+                                            }
+                                            Err(err) => {
+                                                StructConstructorPrototypeCheckResult::Basic((Err(err), Type::new_with_unknown()))
+                                            }
+                                        }
+                                    }
+                                }
+                                }
+                                UserDefinedTypeData::Lambda(_)
+                                | UserDefinedTypeData::Generic(_) => {
+                                    let err = ConstructorNotFoundForTypeError::new(
+                                        name,
+                                        ok_identifier.range(),
+                                    );
+                                    self.log_error(Diagnostics::ConstructorNotFoundForType(err));
+                                    return Type::new_with_unknown();
+                                }
+                            };
+                        match struct_constructor_prototype_check_result {
+                            StructConstructorPrototypeCheckResult::Basic((result, return_type)) => {
+                                (result, return_type)
+                            }
+                            StructConstructorPrototypeCheckResult::Inferred((
+                                concrete_types,
+                                has_generics,
+                            )) => {
+                                let index = user_defined_type_symbol_data
+                                    .get_core_mut_ref()
+                                    .register_concrete_types(concrete_types, has_generics);
+                                (
+                                    Ok(()),
+                                    Type::new_with_struct(
+                                        name,
+                                        &user_defined_type_symbol_data.symbol_data,
+                                        Some(index),
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                };
+                match result {
+                    Ok(()) => return return_type,
+                    Err(err) => {
+                        self.log_params_type_and_count_check_error(func_name.range(), err);
+                    }
+                }
+            }
+        }
+        Type::new_with_unknown()
+    }
+
+    fn check_atom_start_class_method_call(&self, class_method_call: &ClassMethodCallNode) -> Type {
+        let core_class_method = class_method_call.core_ref();
+        let class = &core_class_method.class_name;
+        let class_method = &core_class_method.class_method_name;
+        let params = &core_class_method.params;
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) = class.core_ref() {
+            let class_name = ok_identifier.token_value(&self.code);
+            match self
+                .namespace_handler
+                .get_type_symbol_data_for_identifier_in_use(ok_identifier)
+            {
+                Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
+                    UserDefinedTypeData::Struct(struct_data) => {
+                        match class_method.core_ref() {
+                            CoreIdentifierInUseNode::Ok(class_method) => {
+                                // TODO - check if <...> is correct
+                                // if <> is present use them to form concrete arguments if not and is expected by the
+                                // identifier symbol_data then infer the types from params and then repeat the above step.
+                                let (concrete_types, ty_ranges, has_generics) = self
+                                    .extract_angle_bracket_content_from_identifier_in_use(
+                                        class_method,
+                                    );
+                                let class_method_name = class_method.token_value(&self.code);
+                                match struct_data.try_class_method(&class_method_name) {
+                                    // use above two types of concrete types to form `ConcretizationContext`
+                                    // to do the `params_type_and_count` check and get the return type
+                                    Some((func_data, _)) => {
+                                        let expected_params = &func_data.prototype.params;
+                                        let return_type = &func_data.prototype.return_type;
+                                        let result = self
+                                            .check_params_type_and_count(expected_params, params);
+                                        match result {
+                                            Ok(()) => return return_type.clone(),
+                                            Err(err) => {
+                                                self.log_params_type_and_count_check_error(
+                                                    class_method.range(),
+                                                    err,
+                                                );
+                                                return Type::new_with_unknown();
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        let err = ClassmethodDoesNotExistError::new(
+                                            class_name,
+                                            class_method.range(),
+                                        );
+                                        self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
+                                        return Type::new_with_unknown();
+                                    }
+                                }
+                            }
+                            _ => return Type::new_with_unknown(),
+                        }
+                    }
+                    _ => {
+                        let err = PropertyNotSupportedError::new(
+                            "classmethod".to_string(),
+                            class.range(),
+                        );
+                        self.log_error(Diagnostics::PropertyNotSupported(err));
+                        return Type::new_with_unknown();
+                    }
+                },
+                None => return Type::new_with_unknown(),
+            }
+        }
+        Type::new_with_unknown()
+    }
+
     pub fn check_atom_start(&self, atom_start: &AtomStartNode) -> Type {
         let core_atom_start = atom_start.core_ref();
         match core_atom_start {
@@ -547,330 +861,329 @@ impl TypeChecker {
                     _ => Type::new_with_unknown(),
                 }
             }
-            CoreAtomStartNode::Call(call_expr) => {
-                let core_call_expr = call_expr.core_ref();
-                let func_name = &core_call_expr.function_name;
-                let params = &core_call_expr.params;
-                if let CoreIdentifierInUseNode::Ok(ok_identifier) = func_name.core_ref() {
-                    // NOTE: For call expression syntax like `f(...) or f<...>(...)` while resolving
-                    // we provide the freedom to have no <...> even if `f` expects to have it because it
-                    // can be inferred. This inference is done here.
-                    // There are 4 cases:
-                    //     CASE 1. <...> in decl, <...> in usage => successful resolution and saves the key index.
-                    //     CASE 2. <...> in decl, <...> not in usage => successful resolution
-                    //          (entry will be created in `node vs concrete_symbol_data` mapping with None as key).
-                    //     CASE 3. <...> not in decl, <...> in usage => error while resolving
-                    //     CASE 4. <...> not in decl, <...> not in usage => no error
-                    if let Some(symbol_data) = self
-                        .namespace_handler
-                        .get_symbol_data_for_identifier_in_use(ok_identifier)
-                    {
-                        let (result, return_type) = match symbol_data {
-                            ConcreteSymbolDataEntry::Function(func_symbol_data) => {
-                                let func_data = &*func_symbol_data.get_core_ref();
-                                let index = func_symbol_data.index;
-
-                                let prototype_result = match index {
-                                    Some(index) => {
-                                        // CASE 1
-                                        let concrete_types = func_data.get_concrete_types(index);
-                                        let concrete_prototype = func_data
-                                            .prototype
-                                            .concretize_prototype(&vec![], &concrete_types.0);
-                                        CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(concrete_prototype)
-                                    }
-                                    None => {
-                                        match &func_data.generics.generics_spec {
-                                            Some(generic_type_decls) => {
-                                                // CASE 2
-                                                CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls)
-                                            }
-                                            // CASE 4
-                                            None => CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(PrototypeConcretizationResult::UnConcretized(
-                                                &func_data.prototype,
-                                            )),
-                                        }
-                                    }
-                                };
-                                match prototype_result {
-                                    CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
-                                        let prototype_ref = prototype.get_prototype_ref();
-                                        let expected_params = &prototype_ref.params;
-                                        let return_type = &prototype_ref.return_type;
-                                        let result =
-                                            self.check_params_type_and_count(expected_params, params);
-                                        (result, return_type.clone())
-                                    }
-                                    CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls) => {
-                                        let inference_result = self.infer_concrete_types_from_arguments(
-                                            generic_type_decls,
-                                            &func_data.prototype,
-                                            params,
-                                            GenericTypeDeclarationPlaceCategory::InCallable,
-                                        );
-                                        match inference_result {
-                                            Ok((concrete_types, _)) => {
-                                                let return_type = &func_data.prototype.return_type;
-                                                (Ok(()), if return_type.has_generics() { return_type.concretize(&ConcretizationContext::new(&vec![], &concrete_types)) } else { return_type.clone() })
-                                            }
-                                            Err(err) => {
-                                                (Err(err), Type::new_with_unknown())
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
-                                assert!(variable_symbol_data.index.is_none());
-                                let lambda_type = &variable_symbol_data.get_core_ref().data_type;
-                                match lambda_type.0.as_ref() {
-                                    CoreType::Lambda(lambda_data) => match &*lambda_data {
-                                        Lambda::Named((_, semantic_data)) => {
-                                            let symbol_data = semantic_data.get_core_ref();
-                                            let data = symbol_data.get_lambda_data_ref();
-                                            let expected_params = &data.meta_data.prototype.params;
-                                            let return_type =
-                                                data.meta_data.prototype.return_type.clone();
-                                            let result = self.check_params_type_and_count(
-                                                expected_params,
-                                                params,
-                                            );
-                                            (result, return_type)
-                                        }
-                                        Lambda::Unnamed(unnamed_lambda) => {
-                                            let expected_params = &unnamed_lambda.params;
-                                            let return_type = unnamed_lambda.return_type.clone();
-                                            let result = self.check_params_type_and_count(
-                                                expected_params,
-                                                params,
-                                            );
-                                            (result, return_type)
-                                        }
-                                    },
-                                    _ => {
-                                        let err = IdentifierNotCallableError::new(
-                                            lambda_type.to_string(),
-                                            ok_identifier.range(),
-                                        );
-                                        self.log_error(Diagnostics::IdentifierNotCallable(err));
-                                        return Type::new_with_unknown();
-                                    }
-                                }
-                            }
-                            ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
-                            ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
-                                let name = ok_identifier.token_value(&self.code);
-                                let struct_constructor_prototype_check_result =
-                                    match &*user_defined_type_symbol_data.get_core_ref() {
-                                        UserDefinedTypeData::Struct(struct_symbol_data) => {
-                                            let index = user_defined_type_symbol_data.index;
-                                            let constructor_meta_data =
-                                                &struct_symbol_data.constructor;
-                                            let prototype_result = match index {
-                                                Some(index) => {
-                                                    // CASE 1
-                                                    let concrete_types = struct_symbol_data
-                                                        .get_concrete_types(index);
-                                                    let concrete_prototype = constructor_meta_data
-                                                        .prototype
-                                                        .concretize_prototype(
-                                                            &concrete_types.0,
-                                                            &vec![],
-                                                        );
-                                                    CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(concrete_prototype)
-                                                }
-                                                None => {
-                                                    match &struct_symbol_data.generics.generics_spec
-                                                    {
-                                                        Some(generic_type_decls) => {
-                                                            // CASE 2
-                                                            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls)
-                                                        }
-                                                        None => {
-                                                            // CASE 4
-                                                            CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(PrototypeConcretizationResult::UnConcretized(
-                                                            &constructor_meta_data.prototype,
-                                                        ))
-                                                        }
-                                                    }
-                                                }
-                                            };
-                                            match prototype_result {
-                                            CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
-                                                let prototype_ref = prototype.get_prototype_ref();
-                                                let result = self.check_params_type_and_count(
-                                                    &prototype_ref.params,
-                                                    params,
-                                                );
-                                                StructConstructorPrototypeCheckResult::Basic((
-                                                    result,
-                                                    Type::new_with_struct(
-                                                        name.to_string(),
-                                                        &user_defined_type_symbol_data.symbol_data,
-                                                        index,
-                                                    ),
-                                                ))
-                                            }
-                                            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_type_decls) => {
-                                                let inference_result = self.infer_concrete_types_from_arguments(
-                                                    generic_type_decls,
-                                                    &constructor_meta_data.prototype,
-                                                    params,
-                                                    GenericTypeDeclarationPlaceCategory::InStruct,
-                                                );
-                                                match inference_result {
-                                                    Ok((concrete_types, has_generics)) => {
-                                                        StructConstructorPrototypeCheckResult::Inferred((concrete_types, has_generics))
-                                                    }
-                                                    Err(err) => {
-                                                        StructConstructorPrototypeCheckResult::Basic((Err(err), Type::new_with_unknown()))
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        }
-                                        UserDefinedTypeData::Lambda(_)
-                                        | UserDefinedTypeData::Generic(_) => {
-                                            let err = ConstructorNotFoundForTypeError::new(
-                                                name,
-                                                ok_identifier.range(),
-                                            );
-                                            self.log_error(
-                                                Diagnostics::ConstructorNotFoundForType(err),
-                                            );
-                                            return Type::new_with_unknown();
-                                        }
-                                    };
-                                match struct_constructor_prototype_check_result {
-                                    StructConstructorPrototypeCheckResult::Basic((
-                                        result,
-                                        return_type,
-                                    )) => (result, return_type),
-                                    StructConstructorPrototypeCheckResult::Inferred((
-                                        concrete_types,
-                                        has_generics,
-                                    )) => {
-                                        let index = user_defined_type_symbol_data
-                                            .get_core_mut_ref()
-                                            .register_concrete_types(concrete_types, has_generics);
-                                        (
-                                            Ok(()),
-                                            Type::new_with_struct(
-                                                name,
-                                                &user_defined_type_symbol_data.symbol_data,
-                                                Some(index),
-                                            ),
-                                        )
-                                    }
-                                }
-                            }
-                        };
-                        match result {
-                            Ok(()) => return return_type,
-                            Err(err) => {
-                                self.log_params_type_and_count_check_error(func_name.range(), err);
-                            }
-                        }
-                    }
-                }
-                Type::new_with_unknown()
-            }
-            CoreAtomStartNode::ClassMethodCall(class_method) => {
-                let core_class_method = class_method.core_ref();
-                let class = &core_class_method.class_name;
-                let class_method = &core_class_method.class_method_name;
-                let params = &core_class_method.params;
-                if let CoreIdentifierInUseNode::Ok(ok_identifier) = class.core_ref() {
-                    let class_name = ok_identifier.token_value(&self.code);
-                    match self
-                        .namespace_handler
-                        .get_type_symbol_data_for_identifier_in_use(ok_identifier)
-                    {
-                        Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
-                            UserDefinedTypeData::Struct(struct_data) => {
-                                match class_method.core_ref() {
-                                    CoreIdentifierInUseNode::Ok(class_method) => {
-                                        // TODO - check if <...> is correct
-                                        // if <> is present use them to form concrete arguments if not and is expected by the
-                                        // identifier symbol_data then infer the types from params and then repeat the above step.
-                                        let (concrete_types, ty_ranges, has_generics) = self
-                                            .extract_angle_bracket_content_from_identifier_in_use(
-                                                class_method,
-                                            );
-                                        let class_method_name =
-                                            class_method.token_value(&self.code);
-                                        match struct_data.try_class_method(&class_method_name) {
-                                            // use above two types of concrete types to form `ConcretizationContext`
-                                            // to do the `params_type_and_count` check and get the return type
-                                            Some((func_data, _)) => {
-                                                let expected_params = &func_data.prototype.params;
-                                                let return_type = &func_data.prototype.return_type;
-                                                let result = self.check_params_type_and_count(
-                                                    expected_params,
-                                                    params,
-                                                );
-                                                match result {
-                                                    Ok(()) => return return_type.clone(),
-                                                    Err(err) => {
-                                                        self.log_params_type_and_count_check_error(
-                                                            class_method.range(),
-                                                            err,
-                                                        );
-                                                        return Type::new_with_unknown();
-                                                    }
-                                                }
-                                            }
-                                            None => {
-                                                let err = ClassmethodDoesNotExistError::new(
-                                                    class_name,
-                                                    class_method.range(),
-                                                );
-                                                self.log_error(
-                                                    Diagnostics::ClassmethodDoesNotExist(err),
-                                                );
-                                                return Type::new_with_unknown();
-                                            }
-                                        }
-                                    }
-                                    _ => return Type::new_with_unknown(),
-                                }
-                            }
-                            _ => {
-                                let err = PropertyNotSupportedError::new(
-                                    "classmethod".to_string(),
-                                    class.range(),
-                                );
-                                self.log_error(Diagnostics::PropertyNotSupported(err));
-                                return Type::new_with_unknown();
-                            }
-                        },
-                        None => return Type::new_with_unknown(),
-                    }
-                }
-                Type::new_with_unknown()
+            CoreAtomStartNode::Call(call_expr) => self.check_atom_start_call_expr(call_expr),
+            CoreAtomStartNode::ClassMethodCall(class_method_call) => {
+                self.check_atom_start_class_method_call(class_method_call)
             }
         }
     }
 
-    pub fn check_struct_property(
-        &self,
-        atom_type_obj: &Type,
-        property_name: &OkIdentifierInUseNode,
-    ) -> StructPropertyCheckResult {
-        let property_name_str = property_name.token_value(&self.code);
-        match atom_type_obj.0.as_ref() {
-            CoreType::Struct(struct_ty) => {
-                let symbol_data = struct_ty.semantic_data.symbol_data.get_core_ref();
-                let index = struct_ty.semantic_data.index;
-                let struct_data = symbol_data.get_struct_data_ref();
-                match struct_data.try_field(&property_name_str, index) {
-                    Some((type_obj, _)) => {
-                        return StructPropertyCheckResult::PropertyExist(type_obj)
+    fn check_call(&self, call: &CallNode) -> (Type, Option<Type>) {
+        let core_call = call.core_ref();
+        let atom = &core_call.atom;
+        let params = &core_call.params;
+        let (atom_type_obj, _) = self.check_atom(atom);
+        match &atom_type_obj.0.as_ref() {
+            CoreType::Lambda(lambda_data) => {
+                let result = lambda_data.is_received_params_valid(self, params);
+                match result {
+                    Ok(return_ty) => return (return_ty, Some(atom_type_obj)),
+                    Err(err) => {
+                        self.log_params_type_and_count_check_error(atom.range(), err);
+                        return (Type::new_with_unknown(), Some(atom_type_obj));
                     }
-                    None => return StructPropertyCheckResult::PropertyDoesNotExist,
                 }
             }
-            _ => return StructPropertyCheckResult::NonStructType,
+            _ => {
+                let err = ExpressionNotCallableError::new(atom.range());
+                self.log_error(Diagnostics::ExpressionNotCallable(err));
+                return (Type::new_with_unknown(), Some(atom_type_obj));
+            }
+        }
+    }
+
+    fn check_property_access(&self, property_access: &PropertyAccessNode) -> (Type, Option<Type>) {
+        let core_property_access = property_access.core_ref();
+        let atom = &core_property_access.atom;
+        let (atom_type_obj, _) = self.check_atom(atom);
+        let property = &core_property_access.propertry;
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) = property.core_ref() {
+            match &ok_identifier.core_ref().generic_type_args {
+                Some(_) => {
+                    let err = GenericTypeArgsNotExpectedError::new(
+                        IdentifierKind::Field,
+                        ok_identifier.core_ref().name.range(),
+                    );
+                    self.log_error(Diagnostics::GenericTypeArgsNotExpected(err));
+                }
+                None => {
+                    let property_name_str = ok_identifier.token_value(&self.code);
+                    let result = match atom_type_obj.0.as_ref() {
+                        CoreType::Struct(struct_ty) => {
+                            let index = struct_ty.semantic_data.index;
+                            let symbol_data = struct_ty.semantic_data.symbol_data.get_core_ref();
+                            let struct_data = symbol_data.get_struct_data_ref();
+                            match struct_data.try_field(&property_name_str, index) {
+                                Some((type_obj, _)) => Ok(type_obj),
+                                None => Err(()),
+                            }
+                        }
+                        CoreType::Generic(generic_ty) => {
+                            // TODO - change this to allow property access for generic types also
+                            Err(())
+                        }
+                        _ => Err(()),
+                    };
+                    match result {
+                        Ok(property_ty) => return (property_ty, Some(atom_type_obj)),
+                        Err(_) => {
+                            let err = PropertyDoesNotExistError::new(
+                                PropertyKind::Field,
+                                atom_type_obj.to_string(),
+                                property.range(),
+                                atom.range(),
+                            );
+                            self.log_error(Diagnostics::PropertyDoesNotExist(err));
+                            return (Type::new_with_unknown(), Some(atom_type_obj));
+                        }
+                    }
+                }
+            }
+        }
+        (Type::new_with_unknown(), Some(atom_type_obj))
+    }
+
+    fn check_method_access_for_struct_ty(
+        &self,
+        struct_ty: &Struct,
+        method_name_ok_identifier: &OkIdentifierInUseNode,
+        params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Result<Type, MethodAccessTypeCheckError> {
+        // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
+        // (for example: a field with lambda type) and then it goes on to find it in methods.
+        // This is in sync with what Python does.
+        let method_name = method_name_ok_identifier.token_value(&self.code);
+        let index = struct_ty.semantic_data.index;
+        let symbol_data = struct_ty.semantic_data.symbol_data.get_core_ref();
+        let struct_data = symbol_data.get_struct_data_ref();
+        // first check if it's a property
+        match struct_data.try_field(&method_name, index) {
+            Some((propetry_ty, _)) => {
+                if method_name_ok_identifier
+                    .core_ref()
+                    .generic_type_args
+                    .is_some()
+                {
+                    return Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
+                        GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
+                        IdentifierKind::Field,
+                    ));
+                } else {
+                    // check if the `property_ty` is callable
+                    match propetry_ty.0.as_ref() {
+                        CoreType::Lambda(lambda_ty) => {
+                            let return_ty = lambda_ty.is_received_params_valid(self, params)?;
+                            return Ok(return_ty);
+                        }
+                        _ => {
+                            return Err(MethodAccessTypeCheckError::PropertyNotCallable(
+                                propetry_ty,
+                            ))
+                        }
+                    }
+                }
+            }
+            None => {
+                // if field is not there then check in methods
+                let (concrete_types, ty_ranges, has_generics) = self
+                    .extract_angle_bracket_content_from_identifier_in_use(
+                        method_name_ok_identifier,
+                    );
+                match struct_data.try_method(&method_name) {
+                    Some((func_data, _)) => {
+                        let expected_params = &func_data.prototype.params;
+                        let return_type = &func_data.prototype.return_type;
+                        let _ = self.check_params_type_and_count(expected_params, params)?;
+                        return Ok(return_type.clone());
+                    }
+                    None => return Err(MethodAccessTypeCheckError::MethodNotFound),
+                }
+            }
+        }
+    }
+
+    fn check_method_access_for_generic_ty(
+        &self,
+        generic_ty: &Generic,
+        method_name_ok_identifier: &OkIdentifierInUseNode,
+        params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Result<Type, MethodAccessTypeCheckError> {
+        // TODO - change this to allow method access for generic types also
+        Err(MethodAccessTypeCheckError::MethodNotFound)
+    }
+
+    fn check_method_access_for_array_ty(
+        &self,
+        array_ty: &Array,
+        method_name_ok_identifier: &OkIdentifierInUseNode,
+        params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Result<Type, MethodAccessTypeCheckError> {
+        let method_name = method_name_ok_identifier.token_value(&self.code);
+        match array_ty.try_method(&method_name) {
+            Some(prototype) => {
+                let expected_params = &prototype.params;
+                let return_type = &prototype.return_type;
+                let _ = self.check_params_type_and_count(expected_params, params)?;
+                return Ok(return_type.clone());
+            }
+            None => return Err(MethodAccessTypeCheckError::MethodNotFound),
+        }
+    }
+
+    fn check_method_access_for_hashmap_ty(
+        &self,
+        hashmap_ty: &HashMap,
+        method_name_ok_identifier: &OkIdentifierInUseNode,
+        params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Result<Type, MethodAccessTypeCheckError> {
+        let method_name = method_name_ok_identifier.token_value(&self.code);
+        match hashmap_ty.try_method(&method_name) {
+            Some(prototype) => {
+                let expected_params = &prototype.params;
+                let return_type = &prototype.return_type;
+                let _ = self.check_params_type_and_count(expected_params, params)?;
+                return Ok(return_type.clone());
+            }
+            None => return Err(MethodAccessTypeCheckError::MethodNotFound),
+        }
+    }
+
+    fn check_method_access(&self, method_access: &MethodAccessNode) -> (Type, Option<Type>) {
+        let core_method_access = method_access.core_ref();
+        let atom = &core_method_access.atom;
+        let (atom_type_obj, _) = self.check_atom(atom);
+        let method = &core_method_access.method_name;
+        let params = &core_method_access.params;
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) = method.core_ref() {
+            let result: Result<Type, MethodAccessTypeCheckError> = match &atom_type_obj.0.as_ref() {
+                CoreType::Struct(struct_ty) => {
+                    self.check_method_access_for_struct_ty(struct_ty, ok_identifier, params)
+                }
+                CoreType::Generic(generic_ty) => {
+                    self.check_method_access_for_generic_ty(generic_ty, ok_identifier, params)
+                }
+                CoreType::Array(array_ty) => {
+                    self.check_method_access_for_array_ty(array_ty, ok_identifier, params)
+                }
+                CoreType::HashMap(hashmap_ty) => {
+                    self.check_method_access_for_hashmap_ty(hashmap_ty, ok_identifier, params)
+                }
+                _ => Err(MethodAccessTypeCheckError::MethodNotFound),
+            };
+            match result {
+                Ok(return_ty) => return (return_ty, Some(atom_type_obj)),
+                Err(err) => match err {
+                    MethodAccessTypeCheckError::MethodNotFound => {
+                        let err = PropertyDoesNotExistError::new(
+                            PropertyKind::Method,
+                            atom_type_obj.to_string(),
+                            method.range(),
+                            atom.range(),
+                        );
+                        self.log_error(Diagnostics::PropertyDoesNotExist(err));
+                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                    }
+                    MethodAccessTypeCheckError::PropertyNotCallable(ty) => {
+                        let err = FieldNotCallableError::new(ty.to_string(), ok_identifier.range());
+                        self.log_error(Diagnostics::FieldNotCallable(err));
+                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                    }
+                    MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
+                        generic_type_args_check_err,
+                        kind,
+                    ) => {
+                        let err = err_for_generic_type_args(
+                            &generic_type_args_check_err,
+                            ok_identifier.core_ref().name.range(),
+                            kind,
+                        );
+                        self.log_error(err);
+                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                    }
+                    MethodAccessTypeCheckError::PrototypeEquivalenceCheckFailed(
+                        prototype_check_err,
+                    ) => {
+                        self.log_params_type_and_count_check_error(
+                            ok_identifier.range(),
+                            prototype_check_err,
+                        );
+                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                    }
+                },
+            }
+        }
+        (Type::new_with_unknown(), Some(atom_type_obj))
+    }
+
+    fn check_index_access(&self, index_access: &IndexAccessNode) -> (Type, Option<Type>) {
+        let core_index_access = index_access.core_ref();
+        let atom = &core_index_access.atom;
+        let (atom_type_obj, _) = self.check_atom(atom);
+        let index_expr = &core_index_access.index;
+        let index_type_obj = self.check_expr(index_expr);
+        match atom_type_obj.0.as_ref() {
+            CoreType::Tuple(tuple) => {
+                let sub_types = &tuple.sub_types;
+                match index_expr.core_ref() {
+                    CoreExpressionNode::Unary(index_unary_expr) => {
+                        match self.is_unary_expr_int_valued(index_unary_expr) {
+                            Some(index_value) => {
+                                match self.is_valid_index_for_tuple(index_value, sub_types.len()) {
+                                    TupleIndexCheckResult::Ok(index_value) => {
+                                        return (
+                                            sub_types[index_value].clone(),
+                                            Some(atom_type_obj),
+                                        )
+                                    }
+                                    TupleIndexCheckResult::PositiveIndexOutOfBound => {
+                                        let err = TupleIndexOutOfBoundError::new(
+                                            sub_types.len(),
+                                            index_expr.range(),
+                                        );
+                                        self.log_error(Diagnostics::TupleIndexOutOfBound(err));
+                                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                                    }
+                                    TupleIndexCheckResult::NegativeIndexOutOfBound => {
+                                        let err = TupleIndexOutOfBoundError::new(
+                                            sub_types.len(),
+                                            index_expr.range(),
+                                        );
+                                        self.log_error(Diagnostics::TupleIndexOutOfBound(err));
+                                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                                    }
+                                }
+                            }
+                            None => {
+                                let err =
+                                    UnresolvedIndexExpressionInTupleError::new(index_expr.range());
+                                self.log_error(Diagnostics::UnresolvedIndexExpressionInTuple(err));
+                                return (Type::new_with_unknown(), Some(atom_type_obj));
+                            }
+                        }
+                    }
+                    CoreExpressionNode::Binary(_) | CoreExpressionNode::Comparison(_) => {
+                        let err = InvalidIndexExpressionForTupleError::new(index_expr.range());
+                        self.log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
+                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                    }
+                }
+            }
+            _ => {
+                // check for types other than tuple
+                match self.is_indexable_with_type(&atom_type_obj, &index_type_obj) {
+                    Some(element_type) => return (element_type.clone(), Some(atom_type_obj)),
+                    _ => {
+                        let err = ExpressionIndexingNotValidError::new(
+                            atom_type_obj.to_string(),
+                            index_type_obj.to_string(),
+                            atom.range(),
+                            index_expr.range(),
+                        );
+                        self.log_error(Diagnostics::ExpressionIndexingNotValid(err));
+                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                    }
+                }
+            }
         }
     }
 
@@ -878,398 +1191,12 @@ impl TypeChecker {
         let core_atom = atom.core_ref();
         match core_atom {
             CoreAtomNode::AtomStart(atom_start) => (self.check_atom_start(atom_start), None),
-            CoreAtomNode::Call(call) => {
-                let core_call = call.core_ref();
-                let atom = &core_call.atom;
-                let params = &core_call.params;
-                let (atom_type_obj, _) = self.check_atom(atom);
-                match &atom_type_obj.0.as_ref() {
-                    CoreType::Lambda(lambda_data) => {
-                        // check if the type is lambda
-                        match &*lambda_data {
-                            Lambda::Named((_, semantic_data)) => {
-                                let symbol_data = semantic_data.get_core_ref();
-                                let data = symbol_data.get_lambda_data_ref();
-                                let expected_param_types = &data.meta_data.prototype.params;
-                                let return_type = &data.meta_data.prototype.return_type;
-                                let result =
-                                    self.check_params_type_and_count(expected_param_types, params);
-                                match result {
-                                    Ok(()) => {
-                                        return (return_type.clone(), Some(atom_type_obj.clone()))
-                                    }
-                                    Err(err) => {
-                                        self.log_params_type_and_count_check_error(
-                                            atom.range(),
-                                            err,
-                                        );
-                                        return (
-                                            Type::new_with_unknown(),
-                                            Some(atom_type_obj.clone()),
-                                        );
-                                    }
-                                }
-                            }
-                            Lambda::Unnamed(unnamed_lambda) => {
-                                let expected_param_types = &unnamed_lambda.params;
-                                let return_type = &unnamed_lambda.return_type;
-                                let result =
-                                    self.check_params_type_and_count(expected_param_types, params);
-                                match result {
-                                    Ok(()) => {
-                                        return (return_type.clone(), Some(atom_type_obj.clone()))
-                                    }
-                                    Err(err) => {
-                                        self.log_params_type_and_count_check_error(
-                                            atom.range(),
-                                            err,
-                                        );
-                                        return (
-                                            Type::new_with_unknown(),
-                                            Some(atom_type_obj.clone()),
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    _ => {
-                        let err = ExpressionNotCallableError::new(atom.range());
-                        self.log_error(Diagnostics::ExpressionNotCallable(err));
-                        return (Type::new_with_unknown(), Some(atom_type_obj));
-                    }
-                }
-            }
+            CoreAtomNode::Call(call) => self.check_call(call),
             CoreAtomNode::PropertyAccess(property_access) => {
-                let core_property_access = property_access.core_ref();
-                let atom = &core_property_access.atom;
-                let (atom_type_obj, _) = self.check_atom(atom);
-                let property = &core_property_access.propertry;
-                if let CoreIdentifierInUseNode::Ok(ok_identifier) = property.core_ref() {
-                    match &ok_identifier.core_ref().generic_type_args {
-                        Some(_) => {
-                            let err = GenericTypeArgsNotExpectedError::new(
-                                IdentifierKind::Field,
-                                ok_identifier.core_ref().name.range(),
-                            );
-                            self.log_error(Diagnostics::GenericTypeArgsNotExpected(err));
-                        }
-                        None => {
-                            let property_name_str = ok_identifier.token_value(&self.code);
-                            let result: Result<Type, ()> = match atom_type_obj.0.as_ref() {
-                                CoreType::Struct(struct_ty) => {
-                                    let symbol_data =
-                                        struct_ty.semantic_data.symbol_data.get_core_ref();
-                                    let index = struct_ty.semantic_data.index;
-                                    let struct_data = symbol_data.get_struct_data_ref();
-                                    match struct_data.try_field(&property_name_str, index) {
-                                        Some((type_obj, _)) => Ok(type_obj),
-                                        None => Err(()),
-                                    }
-                                }
-                                CoreType::Generic(generic_ty) => {
-                                    // TODO - change this to allow property access for generic types also
-                                    Err(())
-                                }
-                                _ => Err(()),
-                            };
-                            match result {
-                                Ok(property_ty) => return (property_ty, Some(atom_type_obj)),
-                                Err(_) => {
-                                    let err = PropertyDoesNotExistError::new(
-                                        PropertyKind::Field,
-                                        atom_type_obj.to_string(),
-                                        property.range(),
-                                        atom.range(),
-                                    );
-                                    self.log_error(Diagnostics::PropertyDoesNotExist(err));
-                                    return (Type::new_with_unknown(), Some(atom_type_obj));
-                                }
-                            }
-                        }
-                    }
-                }
-                (Type::new_with_unknown(), Some(atom_type_obj))
+                self.check_property_access(property_access)
             }
-            CoreAtomNode::MethodAccess(method_access) => {
-                let core_method_access = method_access.core_ref();
-                let atom = &core_method_access.atom;
-                let (atom_type_obj, _) = self.check_atom(atom);
-                let method = &core_method_access.method_name;
-                let params = &core_method_access.params;
-                if let CoreIdentifierInUseNode::Ok(ok_identifier) = method.core_ref() {
-                    // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
-                    // (for example: a field with lambda type) and then it goes on to find it in methods.
-                    // This is in sync with what Python does.
-
-                    // TODO - check if <...> is correct
-                    let (concrete_types, ty_ranges, has_generics) =
-                        self.extract_angle_bracket_content_from_identifier_in_use(ok_identifier);
-                    let result = self.check_struct_property(&atom_type_obj, ok_identifier);
-                    let method_name = ok_identifier.token_value(&self.code);
-                    match result {
-                        StructPropertyCheckResult::PropertyExist(type_obj) => {
-                            if concrete_types.is_some() {
-                                // TODO - raise error `generic types not allowed`
-                            }
-                            match &type_obj.0.as_ref() {
-                                CoreType::Lambda(lambda_data) => match &*lambda_data {
-                                    Lambda::Named((_, semantic_data)) => {
-                                        let symbol_data = semantic_data.get_core_ref();
-                                        let data = symbol_data.get_lambda_data_ref();
-                                        let expected_param_types = &data.meta_data.prototype.params;
-                                        let return_type = &data.meta_data.prototype.return_type;
-                                        let result = self.check_params_type_and_count(
-                                            expected_param_types,
-                                            params,
-                                        );
-                                        match result {
-                                            Ok(()) => {
-                                                return (return_type.clone(), Some(atom_type_obj))
-                                            }
-                                            Err(err) => {
-                                                self.log_params_type_and_count_check_error(
-                                                    ok_identifier.range(),
-                                                    err,
-                                                );
-                                                return (
-                                                    Type::new_with_unknown(),
-                                                    Some(atom_type_obj),
-                                                );
-                                            }
-                                        }
-                                    }
-                                    Lambda::Unnamed(unnamed_lambda) => {
-                                        let expected_param_types = &unnamed_lambda.params;
-                                        let return_type = &unnamed_lambda.return_type;
-                                        let result = self.check_params_type_and_count(
-                                            expected_param_types,
-                                            params,
-                                        );
-                                        match result {
-                                            Ok(()) => {
-                                                return (return_type.clone(), Some(atom_type_obj))
-                                            }
-                                            Err(err) => {
-                                                self.log_params_type_and_count_check_error(
-                                                    ok_identifier.range(),
-                                                    err,
-                                                );
-                                                return (
-                                                    Type::new_with_unknown(),
-                                                    Some(atom_type_obj),
-                                                );
-                                            }
-                                        }
-                                    }
-                                },
-                                _ => {
-                                    let err = StructFieldNotCallableError::new(
-                                        type_obj.to_string(),
-                                        ok_identifier.range(),
-                                    );
-                                    self.log_error(Diagnostics::StructFieldNotCallable(err));
-                                    return (Type::new_with_unknown(), Some(atom_type_obj));
-                                }
-                            }
-                        }
-                        StructPropertyCheckResult::PropertyDoesNotExist => {
-                            match atom_type_obj.0.as_ref() {
-                                CoreType::Struct(struct_type) => {
-                                    let symbol_data = struct_type.semantic_data.get_core_ref();
-                                    let struct_data = symbol_data.get_struct_data_ref();
-                                    match struct_data.try_method(&method_name) {
-                                        Some((func_data, _)) => {
-                                            let expected_params = &func_data.prototype.params;
-                                            let return_type = &func_data.prototype.return_type;
-                                            let result = self.check_params_type_and_count(
-                                                expected_params,
-                                                params,
-                                            );
-                                            match result {
-                                                Ok(()) => {
-                                                    return (
-                                                        return_type.clone(),
-                                                        Some(atom_type_obj.clone()),
-                                                    )
-                                                }
-                                                Err(err) => {
-                                                    self.log_params_type_and_count_check_error(
-                                                        method.range(),
-                                                        err,
-                                                    );
-                                                    return (
-                                                        Type::new_with_unknown(),
-                                                        Some(atom_type_obj.clone()),
-                                                    );
-                                                }
-                                            }
-                                        }
-                                        None => {
-                                            let err = PropertyDoesNotExistError::new(
-                                                PropertyKind::Method,
-                                                atom_type_obj.to_string(),
-                                                method.range(),
-                                                atom.range(),
-                                            );
-                                            self.log_error(Diagnostics::PropertyDoesNotExist(err));
-                                            return (
-                                                Type::new_with_unknown(),
-                                                Some(atom_type_obj.clone()),
-                                            );
-                                        }
-                                    }
-                                }
-                                _ => unreachable!(),
-                            }
-                        }
-                        StructPropertyCheckResult::NonStructType => {
-                            let result: Result<CallablePrototypeData, ()> = match &atom_type_obj
-                                .0
-                                .as_ref()
-                            {
-                                CoreType::Array(array) => match array.try_method(&method_name) {
-                                    Some(prototype) => Ok(prototype),
-                                    None => Err(()),
-                                },
-                                CoreType::HashMap(hashmap) => {
-                                    match hashmap.try_method(&method_name) {
-                                        Some(prototype) => Ok(prototype),
-                                        None => Err(()),
-                                    }
-                                }
-                                _ => Err(()),
-                            };
-                            match result {
-                                Ok(prototype) => {
-                                    let expected_params = &prototype.params;
-                                    let return_type = &prototype.return_type;
-                                    let result =
-                                        self.check_params_type_and_count(expected_params, params);
-                                    match result {
-                                        Ok(()) => {
-                                            return (
-                                                return_type.clone(),
-                                                Some(atom_type_obj.clone()),
-                                            )
-                                        }
-                                        Err(err) => {
-                                            self.log_params_type_and_count_check_error(
-                                                method.range(),
-                                                err,
-                                            );
-                                            return (
-                                                Type::new_with_unknown(),
-                                                Some(atom_type_obj.clone()),
-                                            );
-                                        }
-                                    }
-                                }
-                                Err(_) => {
-                                    let err = PropertyDoesNotExistError::new(
-                                        PropertyKind::Method,
-                                        atom_type_obj.to_string(),
-                                        method.range(),
-                                        atom.range(),
-                                    );
-                                    self.log_error(Diagnostics::PropertyDoesNotExist(err));
-                                    return (Type::new_with_unknown(), Some(atom_type_obj));
-                                }
-                            }
-                        }
-                    }
-                }
-                (Type::new_with_unknown(), Some(atom_type_obj))
-            }
-            CoreAtomNode::IndexAccess(index_access) => {
-                let core_index_access = index_access.core_ref();
-                let atom = &core_index_access.atom;
-                let (atom_type_obj, _) = self.check_atom(atom);
-                let index_expr = &core_index_access.index;
-                let index_type_obj = self.check_expr(index_expr);
-                match atom_type_obj.0.as_ref() {
-                    CoreType::Tuple(tuple) => {
-                        let sub_types = &tuple.sub_types;
-                        match index_expr.core_ref() {
-                            CoreExpressionNode::Unary(index_unary_expr) => {
-                                match self.is_unary_expr_int_valued(index_unary_expr) {
-                                    Some(index_value) => {
-                                        match self
-                                            .is_valid_index_for_tuple(index_value, sub_types.len())
-                                        {
-                                            TupleIndexCheckResult::Ok(index_value) => {
-                                                return (
-                                                    sub_types[index_value].clone(),
-                                                    Some(atom_type_obj),
-                                                )
-                                            }
-                                            TupleIndexCheckResult::PositiveIndexOutOfBound => {
-                                                let err = TupleIndexOutOfBoundError::new(
-                                                    sub_types.len(),
-                                                    index_expr.range(),
-                                                );
-                                                self.log_error(Diagnostics::TupleIndexOutOfBound(
-                                                    err,
-                                                ));
-                                                return (
-                                                    Type::new_with_unknown(),
-                                                    Some(atom_type_obj),
-                                                );
-                                            }
-                                            TupleIndexCheckResult::NegativeIndexOutOfBound => {
-                                                let err = TupleIndexOutOfBoundError::new(
-                                                    sub_types.len(),
-                                                    index_expr.range(),
-                                                );
-                                                self.log_error(Diagnostics::TupleIndexOutOfBound(
-                                                    err,
-                                                ));
-                                                return (
-                                                    Type::new_with_unknown(),
-                                                    Some(atom_type_obj),
-                                                );
-                                            }
-                                        }
-                                    }
-                                    None => {
-                                        let err = UnresolvedIndexExpressionInTupleError::new(
-                                            index_expr.range(),
-                                        );
-                                        self.log_error(
-                                            Diagnostics::UnresolvedIndexExpressionInTuple(err),
-                                        );
-                                        return (Type::new_with_unknown(), Some(atom_type_obj));
-                                    }
-                                }
-                            }
-                            CoreExpressionNode::Binary(_) | CoreExpressionNode::Comparison(_) => {
-                                let err =
-                                    InvalidIndexExpressionForTupleError::new(index_expr.range());
-                                self.log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
-                                return (Type::new_with_unknown(), Some(atom_type_obj));
-                            }
-                        }
-                    }
-                    _ => {
-                        // check for types other than tuple
-                        match self.is_indexable_with_type(&atom_type_obj, &index_type_obj) {
-                            Some(element_type) => {
-                                return (element_type.clone(), Some(atom_type_obj))
-                            }
-                            _ => {
-                                let err = ExpressionIndexingNotValidError::new(
-                                    atom_type_obj.to_string(),
-                                    index_type_obj.to_string(),
-                                    atom.range(),
-                                    index_expr.range(),
-                                );
-                                self.log_error(Diagnostics::ExpressionIndexingNotValid(err));
-                                return (Type::new_with_unknown(), Some(atom_type_obj));
-                            }
-                        }
-                    }
-                }
-            }
+            CoreAtomNode::MethodAccess(method_access) => self.check_method_access(method_access),
+            CoreAtomNode::IndexAccess(index_access) => self.check_index_access(index_access),
         }
     }
 
