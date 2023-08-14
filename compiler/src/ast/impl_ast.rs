@@ -41,7 +41,7 @@ use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
 use crate::scope::core::LookupResult;
-use crate::scope::handler::NamespaceHandler;
+use crate::scope::handler::SemanticStateHandler;
 use crate::scope::types::core::{UserDefineTypeKind, UserDefinedTypeData};
 use crate::types::core::Type;
 use std::hash::{Hash, Hasher};
@@ -1258,7 +1258,7 @@ impl UserDefinedTypeNode {
     pub fn type_obj_after_resolved(
         &self,
         code: &JarvilCode,
-        namespace_handler: &NamespaceHandler,
+        namespace_handler: &SemanticStateHandler,
     ) -> TypeResolveKind {
         if let CoreIdentifierInUseNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(code);

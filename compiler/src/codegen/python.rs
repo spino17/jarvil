@@ -13,7 +13,7 @@ use crate::{
     code::JarvilCode,
     context,
     lexer::token::{CoreToken, Token},
-    scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry},
+    scope::handler::{ConcreteSymbolDataEntry, SemanticStateHandler, SymbolDataEntry},
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::convert::TryInto;
@@ -40,11 +40,11 @@ pub struct PythonCodeGenerator {
     indent_level: usize,
     generate_code: String,
     code: JarvilCode,
-    namespace_handler: NamespaceHandler,
+    namespace_handler: SemanticStateHandler,
 }
 
 impl PythonCodeGenerator {
-    pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler) -> PythonCodeGenerator {
+    pub fn new(code: JarvilCode, namespace_handler: SemanticStateHandler) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
             generate_code: "".to_string(),

@@ -21,7 +21,7 @@ use crate::scope::core::{
 };
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{CallableKind, CallablePrototypeData};
-use crate::scope::handler::{ConcreteSymbolDataEntry, NamespaceHandler, SymbolDataEntry};
+use crate::scope::handler::{ConcreteSymbolDataEntry, SemanticStateHandler, SymbolDataEntry};
 use crate::scope::interfaces::{InterfaceBounds, InterfaceObject};
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::AbstractType;
@@ -112,7 +112,7 @@ pub struct Resolver {
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
-    pub namespace_handler: NamespaceHandler,
+    pub namespace_handler: SemanticStateHandler,
 }
 
 impl Resolver {
@@ -131,14 +131,14 @@ impl Resolver {
                 }],
             },
             indent_level: 0,
-            namespace_handler: NamespaceHandler::new(),
+            namespace_handler: SemanticStateHandler::new(),
         }
     }
 
     pub fn resolve_ast(
         mut self,
         ast: &BlockNode,
-    ) -> (NamespaceHandler, Vec<Diagnostics>, JarvilCode) {
+    ) -> (SemanticStateHandler, Vec<Diagnostics>, JarvilCode) {
         let code_block = &*ast.0.as_ref();
         // setting builtin functions to global scope
         self.namespace_handler.namespace.functions.force_insert(

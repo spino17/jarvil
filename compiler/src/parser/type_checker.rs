@@ -52,7 +52,7 @@ use crate::{
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
-        function::CallablePrototypeData, handler::NamespaceHandler,
+        function::CallablePrototypeData, handler::SemanticStateHandler,
         types::core::UserDefinedTypeData,
     },
     types::{
@@ -122,11 +122,11 @@ pub struct TypeChecker {
     code: JarvilCode,
     errors: UnsafeCell<Vec<Diagnostics>>,
     context: Context,
-    namespace_handler: NamespaceHandler,
+    namespace_handler: SemanticStateHandler,
 }
 
 impl TypeChecker {
-    pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler) -> Self {
+    pub fn new(code: JarvilCode, namespace_handler: SemanticStateHandler) -> Self {
         TypeChecker {
             code,
             errors: UnsafeCell::new(vec![]),
@@ -151,7 +151,7 @@ impl TypeChecker {
         mut self,
         ast: &BlockNode,
         global_errors: &mut Vec<Diagnostics>,
-    ) -> (NamespaceHandler, JarvilCode) {
+    ) -> (SemanticStateHandler, JarvilCode) {
         let core_block = ast.0.as_ref();
         for stmt in &*core_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
