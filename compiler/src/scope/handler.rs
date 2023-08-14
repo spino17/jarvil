@@ -9,7 +9,7 @@ use super::{
 use crate::{
     ast::ast::{
         BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierInDeclNode,
-        OkIdentifierInUseNode, OkSelfKeywordNode,
+        OkIdentifierInUseNode, OkSelfKeywordNode, TypeExpressionNode,
     },
     types::core::Type,
 };
@@ -84,6 +84,7 @@ pub struct NamespaceHandler {
     pub namespace: Namespace,
     pub identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
     pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
+    pub type_expr_obj_table: FxHashMap<TypeExpressionNode, Type>,
     pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
     pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashMap<String, bool>)>, // block_node -> (non_locally resolved variables, (non_locally resolved functions -> is_in_global_scope))
     pub bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
@@ -95,9 +96,22 @@ impl NamespaceHandler {
             namespace: Namespace::new(),
             identifier_in_decl_binding_table: FxHashMap::default(),
             identifier_in_use_binding_table: FxHashMap::default(),
+            type_expr_obj_table: FxHashMap::default(),
             self_keyword_binding_table: FxHashMap::default(),
             block_non_locals: FxHashMap::default(),
             bounded_method_kind: FxHashMap::default(),
+        }
+    }
+
+    pub fn set_type_expr_obj_mapping(&mut self, ty_expr: &TypeExpressionNode, ty_obj: &Type) {
+        self.type_expr_obj_table
+            .insert(ty_expr.clone(), ty_obj.clone());
+    }
+
+    pub fn get_type_obj_from_expr(&self, ty_expr: &TypeExpressionNode) -> Type {
+        match self.type_expr_obj_table.get(ty_expr) {
+            Some(ty) => return ty.clone(),
+            None => unreachable!(),
         }
     }
 

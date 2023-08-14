@@ -534,8 +534,8 @@ impl Resolver {
     }
 
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
-        match type_expr.type_obj_before_resolved(self, self.scope_index) {
-            TypeResolveKind::Resolved(type_obj) => return type_obj,
+        let ty_obj = match type_expr.type_obj_before_resolved(self, self.scope_index) {
+            TypeResolveKind::Resolved(type_obj) => type_obj,
             TypeResolveKind::Unresolved(unresolved) => {
                 for unresolved_identifier in unresolved {
                     match unresolved_identifier {
@@ -578,10 +578,13 @@ impl Resolver {
                         }
                     }
                 }
-                return Type::new_with_unknown();
+                Type::new_with_unknown()
             }
             TypeResolveKind::Invalid => Type::new_with_unknown(),
-        }
+        };
+        self.namespace_handler
+            .set_type_expr_obj_mapping(type_expr, &ty_obj);
+        ty_obj
     }
 
     fn interface_obj_from_expression(
@@ -1558,7 +1561,7 @@ impl Visitor for Resolver {
             }
             ASTNode::TypeExpression(type_expr) => {
                 self.type_obj_from_expression(type_expr);
-                return None
+                return None;
             }
             ASTNode::AtomStart(atom_start) => {
                 match atom_start.core_ref() {

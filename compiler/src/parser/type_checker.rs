@@ -171,11 +171,7 @@ impl TypeChecker {
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
-        match type_expr.type_obj_after_resolved(&self.code, &self.namespace_handler) {
-            TypeResolveKind::Resolved(type_obj) => return type_obj,
-            TypeResolveKind::Unresolved(_) => return Type::new_with_unknown(),
-            TypeResolveKind::Invalid => Type::new_with_unknown(),
-        }
+        return self.namespace_handler.get_type_obj_from_expr(type_expr);
     }
 
     pub fn params_and_return_type_obj_from_expr(
@@ -773,15 +769,18 @@ impl TypeChecker {
                                         // TODO - check if <...> is correct
                                         // if <> is present use them to form concrete arguments if not and is expected by the
                                         // identifier symbol_data then infer the types from params and then repeat the above step.
-                                        let class_method_name = class_method.token_value(&self.code);
+                                        let class_method_name =
+                                            class_method.token_value(&self.code);
                                         match struct_data.class_methods.get(&class_method_name) {
                                             // use above two types of concrete types to form `ConcretizationContext`
                                             // to do the `params_type_and_count` check and get the return type
                                             Some((func_data, _)) => {
                                                 let expected_params = &func_data.prototype.params;
                                                 let return_type = &func_data.prototype.return_type;
-                                                let result = self
-                                                    .check_params_type_and_count(expected_params, params);
+                                                let result = self.check_params_type_and_count(
+                                                    expected_params,
+                                                    params,
+                                                );
                                                 match result {
                                                     Ok(()) => return return_type.clone(),
                                                     Err(err) => {
@@ -798,7 +797,9 @@ impl TypeChecker {
                                                     class_name,
                                                     class_method.range(),
                                                 );
-                                                self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
+                                                self.log_error(
+                                                    Diagnostics::ClassmethodDoesNotExist(err),
+                                                );
                                                 return Type::new_with_unknown();
                                             }
                                         }

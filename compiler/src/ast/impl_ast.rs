@@ -888,32 +888,24 @@ impl TypeExpressionNode {
         }
     }
 
-    pub fn type_obj_after_resolved(
-        &self,
-        code: &JarvilCode,
-        namespace_handler: &NamespaceHandler,
-    ) -> TypeResolveKind {
-        match self.core_ref() {
-            CoreTypeExpressionNode::Atomic(atomic) => atomic.type_obj_after_resolved(code),
-            CoreTypeExpressionNode::Array(array) => {
-                array.type_obj_after_resolved(code, namespace_handler)
-            }
-            CoreTypeExpressionNode::Tuple(tuple) => {
-                tuple.type_obj_after_resolved(code, namespace_handler)
-            }
-            CoreTypeExpressionNode::HashMap(hashmap) => {
-                hashmap.type_obj_after_resolved(code, namespace_handler)
-            }
-            CoreTypeExpressionNode::UserDefined(user_defined) => {
-                user_defined.type_obj_after_resolved(code, namespace_handler)
-            }
-            CoreTypeExpressionNode::MissingTokens(_) => TypeResolveKind::Invalid,
-        }
-    }
-
     impl_core_ref!(CoreTypeExpressionNode);
 }
 default_errornous_node_impl!(TypeExpressionNode, CoreTypeExpressionNode);
+
+impl PartialEq for TypeExpressionNode {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for TypeExpressionNode {}
+
+impl Hash for TypeExpressionNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
 
 impl AtomicTypeNode {
     pub fn new(token: &TokenNode) -> Self {
@@ -980,26 +972,6 @@ impl ArrayTypeNode {
         }
     }
 
-    pub fn type_obj_after_resolved(
-        &self,
-        code: &JarvilCode,
-        namespace_handler: &NamespaceHandler,
-    ) -> TypeResolveKind {
-        match self
-            .core_ref()
-            .sub_type
-            .type_obj_after_resolved(code, namespace_handler)
-        {
-            TypeResolveKind::Resolved(element_type) => {
-                return TypeResolveKind::Resolved(Type::new_with_array(element_type))
-            }
-            TypeResolveKind::Unresolved(identifier_node) => {
-                return TypeResolveKind::Unresolved(identifier_node)
-            }
-            TypeResolveKind::Invalid => return TypeResolveKind::Invalid,
-        }
-    }
-
     impl_core_ref!(CoreArrayTypeNode);
 }
 
@@ -1035,31 +1007,6 @@ impl TupleTypeNode {
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
             match ty.type_obj_before_resolved(resolver, scope_index) {
-                TypeResolveKind::Resolved(type_obj) => resolved_types.push(type_obj),
-                TypeResolveKind::Unresolved(mut unresolved) => {
-                    unresolved_identifiers.append(&mut unresolved);
-                }
-                TypeResolveKind::Invalid => resolved_types.push(Type::new_with_unknown()),
-            }
-        }
-        if unresolved_identifiers.len() > 0 {
-            return TypeResolveKind::Unresolved(unresolved_identifiers);
-        } else if resolved_types.len() > 0 {
-            return TypeResolveKind::Resolved(Type::new_with_tuple(resolved_types));
-        } else {
-            return TypeResolveKind::Invalid;
-        }
-    }
-
-    pub fn type_obj_after_resolved(
-        &self,
-        code: &JarvilCode,
-        namespace_handler: &NamespaceHandler,
-    ) -> TypeResolveKind {
-        let mut unresolved_identifiers: Vec<UnresolvedIdentifier> = vec![];
-        let mut resolved_types: Vec<Type> = vec![];
-        for ty in self.core_ref().types.iter() {
-            match ty.type_obj_after_resolved(code, namespace_handler) {
                 TypeResolveKind::Resolved(type_obj) => resolved_types.push(type_obj),
                 TypeResolveKind::Unresolved(mut unresolved) => {
                     unresolved_identifiers.append(&mut unresolved);
@@ -1164,22 +1111,6 @@ impl HashMapTypeNode {
             .core_ref()
             .value_type
             .type_obj_before_resolved(resolver, scope_index);
-        return self.aggregate_key_value_result(key_result, value_result);
-    }
-
-    pub fn type_obj_after_resolved(
-        &self,
-        code: &JarvilCode,
-        namespace_handler: &NamespaceHandler,
-    ) -> TypeResolveKind {
-        let key_result = self
-            .core_ref()
-            .key_type
-            .type_obj_after_resolved(code, namespace_handler);
-        let value_result = self
-            .core_ref()
-            .value_type
-            .type_obj_after_resolved(code, namespace_handler);
         return self.aggregate_key_value_result(key_result, value_result);
     }
 

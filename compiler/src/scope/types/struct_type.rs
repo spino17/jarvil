@@ -50,7 +50,7 @@ impl StructTypeData {
         self.implementing_interfaces = implementing_interfaces;
         self.is_init = true;
     }
-    
+
     pub fn try_field(
         &self,
         field_name: &str,
