@@ -174,6 +174,29 @@ impl TypeChecker {
         return self.namespace_handler.get_type_obj_from_expr(type_expr);
     }
 
+    fn extract_angle_bracket_content_from_identifier_in_use(
+        &self,
+        ok_identifier_in_use: &OkIdentifierInUseNode,
+    ) -> (Option<Vec<Type>>, Option<Vec<TextRange>>, bool) {
+        match &ok_identifier_in_use.core_ref().generic_type_args {
+            Some((_, generic_type_args, _)) => {
+                let mut has_generics = false;
+                let mut concrete_types: Vec<Type> = vec![];
+                let mut ty_ranges: Vec<TextRange> = vec![];
+                for generic_type_expr in generic_type_args.iter() {
+                    let ty = self.type_obj_from_expression(&generic_type_expr);
+                    if ty.has_generics() {
+                        has_generics = true;
+                    }
+                    concrete_types.push(ty);
+                    ty_ranges.push(generic_type_expr.range())
+                }
+                return (Some(concrete_types), Some(ty_ranges), has_generics);
+            }
+            None => return (None, None, false),
+        }
+    }
+
     pub fn params_and_return_type_obj_from_expr(
         &self,
         return_type: &Option<(TokenNode, TypeExpressionNode)>,
@@ -769,9 +792,13 @@ impl TypeChecker {
                                         // TODO - check if <...> is correct
                                         // if <> is present use them to form concrete arguments if not and is expected by the
                                         // identifier symbol_data then infer the types from params and then repeat the above step.
+                                        let (concrete_types, ty_ranges, has_generics) = self
+                                            .extract_angle_bracket_content_from_identifier_in_use(
+                                                class_method,
+                                            );
                                         let class_method_name =
                                             class_method.token_value(&self.code);
-                                        match struct_data.class_methods.get(&class_method_name) {
+                                        match struct_data.try_class_method(&class_method_name) {
                                             // use above two types of concrete types to form `ConcretizationContext`
                                             // to do the `params_type_and_count` check and get the return type
                                             Some((func_data, _)) => {
@@ -918,7 +945,9 @@ impl TypeChecker {
                 let (atom_type_obj, _) = self.check_atom(atom);
                 let property = &core_property_access.propertry;
                 if let CoreIdentifierInUseNode::Ok(ok_identifier) = property.core_ref() {
-                    // TODO - check that <...> should not exist as it's a variable!
+                    if ok_identifier.core_ref().generic_type_args.is_some() {
+                        // TODO - raise error `generic type decls not allowed`
+                    }
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     match result {
                         StructPropertyCheckResult::PropertyExist(type_obj) => {
@@ -960,10 +989,15 @@ impl TypeChecker {
                     // This is in sync with what Python does.
 
                     // TODO - check if <...> is correct
+                    let (concrete_types, ty_ranges, has_generics) =
+                        self.extract_angle_bracket_content_from_identifier_in_use(ok_identifier);
                     let result = self.check_struct_property(&atom_type_obj, ok_identifier);
                     let method_name = ok_identifier.token_value(&self.code);
                     match result {
                         StructPropertyCheckResult::PropertyExist(type_obj) => {
+                            if concrete_types.is_some() {
+                                // TODO - raise error `generic types not allowed`
+                            }
                             match &type_obj.0.as_ref() {
                                 CoreType::Lambda(lambda_data) => match &*lambda_data {
                                     Lambda::Named((_, semantic_data)) => {

@@ -87,6 +87,14 @@ impl StructTypeData {
             None => None,
         }
     }
+
+    // TODO - add key: Option<ConcreteTypesRegistryKey> as argument
+    pub fn try_class_method(&self, class_method_name: &str) -> Option<(&CallableData, TextRange)> {
+        match self.class_methods.get(class_method_name) {
+            Some(func_data) => Some((&func_data.0, func_data.1)),
+            None => None,
+        }
+    }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
