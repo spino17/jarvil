@@ -100,9 +100,10 @@ impl AbstractType for Tuple {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
         has_generics: &mut bool,
+        inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::Tuple(tuple_ty) => {
@@ -112,9 +113,10 @@ impl AbstractType for Tuple {
                     base_types_tuple,
                     generics_containing_types_tuple,
                     inferred_concrete_types,
+                    global_concrete_types,
                     num_inferred_types,
-                    generic_ty_decl_place,
                     has_generics,
+                    inference_category,
                 )
             }
             _ => Err(()),

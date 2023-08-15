@@ -65,9 +65,10 @@ impl AbstractType for HashMap {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
         has_generics: &mut bool,
+        inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::HashMap(hashmap_ty) => {
@@ -75,18 +76,20 @@ impl AbstractType for HashMap {
                     let _ = self.key_type.try_infer_type(
                         &hashmap_ty.key_type,
                         inferred_concrete_types,
+                        global_concrete_types,
                         num_inferred_types,
-                        generic_ty_decl_place,
                         has_generics,
+                        inference_category,
                     )?;
                 }
                 if self.value_type.has_generics() {
                     let _ = self.value_type.try_infer_type(
                         &hashmap_ty.value_type,
                         inferred_concrete_types,
+                        global_concrete_types,
                         num_inferred_types,
-                        generic_ty_decl_place,
                         has_generics,
+                        inference_category,
                     )?;
                 }
                 Ok(())

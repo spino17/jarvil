@@ -68,31 +68,44 @@ impl AbstractType for Generic {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
         has_generics: &mut bool,
+        inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         let symbol_data = self.semantic_data.get_core_ref();
         let generic_data_ref = symbol_data.get_generic_data_ref();
         let index = generic_data_ref.index;
         let decl_place = generic_data_ref.category;
-        assert!(decl_place == generic_ty_decl_place);
-        let entry_ty = &mut inferred_concrete_types[index];
-        match entry_ty {
-            InferredConcreteTypesEntry::Uninferred => {
-                if received_ty.has_generics() {
-                    *has_generics = true;
+        if inference_category == decl_place {
+            let entry_ty = &mut inferred_concrete_types[index];
+            match entry_ty {
+                InferredConcreteTypesEntry::Uninferred => {
+                    if received_ty.has_generics() {
+                        *has_generics = true;
+                    }
+                    *entry_ty = InferredConcreteTypesEntry::Inferred(received_ty.clone());
+                    *num_inferred_types = *num_inferred_types + 1;
+                    return Ok(());
                 }
-                *entry_ty = InferredConcreteTypesEntry::Inferred(received_ty.clone());
-                *num_inferred_types = *num_inferred_types + 1;
-                return Ok(());
-            }
-            InferredConcreteTypesEntry::Inferred(present_ty) => {
-                if !present_ty.is_eq(received_ty) {
-                    return Err(());
+                InferredConcreteTypesEntry::Inferred(present_ty) => {
+                    if !present_ty.is_eq(received_ty) {
+                        return Err(());
+                    }
+                    return Ok(());
                 }
-                return Ok(());
             }
+        } else {
+            assert!(decl_place == GenericTypeDeclarationPlaceCategory::InStruct);
+            let global_concrete_types = match global_concrete_types {
+                Some(concrete_types) => concrete_types,
+                None => unreachable!(),
+            };
+            let expected_ty = &global_concrete_types[index];
+            if !expected_ty.is_eq(received_ty) {
+                return Err(());
+            }
+            return Ok(());
         }
     }
 }

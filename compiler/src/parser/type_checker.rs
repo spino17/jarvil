@@ -12,10 +12,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcretizationContext};
-use crate::scope::core::{
-    AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams,
-    UserDefinedTypeSymbolData,
-};
+use crate::scope::core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{CallableData, PrototypeConcretizationResult};
 use crate::scope::handler::ConcreteSymbolDataEntry;
@@ -25,7 +22,6 @@ use crate::types::array::core::Array;
 use crate::types::core::AbstractNonStructTypes;
 use crate::types::generic::Generic;
 use crate::types::hashmap::core::HashMap;
-use crate::types::lambda::Lambda;
 use crate::types::r#struct::Struct;
 use crate::types::tuple::Tuple;
 use crate::{
@@ -39,8 +35,8 @@ use crate::{
             CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreUnaryExpressionNode,
             ExpressionNode, LambdaDeclarationNode, NameTypeSpecNode, Node, OnlyUnaryExpressionNode,
             RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, StatementNode,
-            SymbolSeparatedSequenceNode, TokenNode, TypeExpressionNode, TypeResolveKind,
-            UnaryExpressionNode, VariableDeclarationNode,
+            SymbolSeparatedSequenceNode, TokenNode, TypeExpressionNode, UnaryExpressionNode,
+            VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -411,8 +407,9 @@ impl TypeChecker {
         &self,
         generic_type_decls: &GenericTypeParams,
         expected_prototype: &CallablePrototypeData,
+        global_concrete_types: Option<&Vec<Type>>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-        generic_ty_decl_place: GenericTypeDeclarationPlaceCategory,
+        inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(Vec<Type>, bool), PrototypeEquivalenceCheckError> {
         // (inferred_concrete_types, params_ty_vec)
         match received_params {
@@ -439,9 +436,10 @@ impl TypeChecker {
                         let inference_result = expected_ty.try_infer_type(
                             &param_ty,
                             &mut inferred_concrete_types,
+                            global_concrete_types,
                             &mut num_inferred_types,
-                            generic_ty_decl_place,
                             &mut has_generics,
+                            inference_category,
                         );
                         if let Err(()) = inference_result {
                             return Err(PrototypeEquivalenceCheckError::TypeInferenceFailed);
@@ -597,6 +595,7 @@ impl TypeChecker {
                 let (concrete_types, _) = self.infer_concrete_types_from_arguments(
                     generic_type_decls,
                     &func_data.prototype,
+                    None,
                     params,
                     GenericTypeDeclarationPlaceCategory::InCallable,
                 )?;
@@ -696,6 +695,7 @@ impl TypeChecker {
                         let inference_result = self.infer_concrete_types_from_arguments(
                             generic_type_decls,
                             &constructor_meta_data.prototype,
+                            None,
                             params,
                             GenericTypeDeclarationPlaceCategory::InStruct,
                         );

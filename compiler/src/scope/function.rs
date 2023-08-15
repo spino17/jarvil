@@ -1,18 +1,18 @@
 use text_size::TextRange;
-
 use super::{
     concrete::{
         core::{ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext},
         registry::GenericsSpecAndConcreteTypesRegistry,
     },
-    core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams}, errors::GenericTypeArgsCheckError,
+    core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams},
+    errors::GenericTypeArgsCheckError,
 };
-use crate::types::core::Type;
 use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
     parser::type_checker::{PrototypeEquivalenceCheckError, TypeChecker},
     types::core::AbstractType,
 };
+use crate::{scope::types::generic_type::GenericTypeDeclarationPlaceCategory, types::core::Type};
 use std::vec;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -232,7 +232,7 @@ impl AbstractSymbolMetaData for CallableData {
 #[derive(Debug)]
 pub enum PartialCallableDataPrototypeCheckError {
     PrototypeEquivalenceCheckFailed(PrototypeEquivalenceCheckError),
-    GenericTypeArgsCheckFailed(GenericTypeArgsCheckError)
+    GenericTypeArgsCheckFailed(GenericTypeArgsCheckError),
 }
 
 impl From<PrototypeEquivalenceCheckError> for PartialCallableDataPrototypeCheckError {
@@ -274,43 +274,62 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
     ) -> Result<Type, PartialCallableDataPrototypeCheckError> {
         let generic_type_decls = &self.callable_data.generics.generics_spec;
         match local_concrete_types {
-            Some(local_concrete_types) => {
-                match generic_type_decls {
-                    Some(generic_type_decls) => {
-                        let _ = generic_type_decls.check_concrete_types_bounded_by(&local_concrete_types, match &local_concrete_ty_ranges {
-                                Some(type_ranges) => type_ranges,
-                                None => unreachable!(),
+            Some(local_concrete_types) => match generic_type_decls {
+                Some(generic_type_decls) => {
+                    let _ = generic_type_decls.check_concrete_types_bounded_by(
+                        &local_concrete_types,
+                        match &local_concrete_ty_ranges {
+                            Some(type_ranges) => type_ranges,
+                            None => unreachable!(),
+                        },
+                    )?;
+                    let concrete_prototype = match self.concrete_types {
+                        Some(global_concrete_types) => self
+                            .callable_data
+                            .prototype
+                            .concretize_prototype(&global_concrete_types.0, &local_concrete_types),
+                        None => self
+                            .callable_data
+                            .prototype
+                            .concretize_prototype(&vec![], &local_concrete_types),
+                    };
+                    let prototype_ref = concrete_prototype.get_prototype_ref();
+                    let return_ty =
+                        prototype_ref.is_received_params_valid(type_checker, received_params)?;
+                    return Ok(return_ty);
+                }
+                None => {
+                    return Err(
+                        PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(
+                            GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
+                        ),
+                    )
+                }
+            },
+            None => match generic_type_decls {
+                Some(generic_type_decls) => {
+                    let (local_concrete_types, _) = type_checker
+                        .infer_concrete_types_from_arguments(
+                            generic_type_decls,
+                            &self.callable_data.prototype,
+                            match self.concrete_types {
+                                Some(concrete_types) => Some(&concrete_types.0),
+                                None => None,
                             },
+                            received_params,
+                            GenericTypeDeclarationPlaceCategory::InCallable,
                         )?;
-                        let concrete_prototype = match self.concrete_types {
-                            Some(global_concrete_types) => {
-                                self.callable_data.prototype.concretize_prototype(&global_concrete_types.0, &local_concrete_types)
-                            }
-                            None => {
-                                self.callable_data.prototype.concretize_prototype(&vec![], &local_concrete_types)
-                            }
-                        };
-                        let prototype_ref = concrete_prototype.get_prototype_ref();
-                        let return_ty = prototype_ref.is_received_params_valid(type_checker, received_params)?;
-                        return Ok(return_ty)
-                    }
-                    None => {
-                        return Err(PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(GenericTypeArgsCheckError::GenericTypeArgsNotExpected))
-                    }
+                    let unconcrete_return_ty = &self.callable_data.prototype.return_type;
+                    todo!()
                 }
-            }
-            None => {
-                match generic_type_decls {
-                    Some(generic_type_decls) => {
-                        // TODO - try inferring the local concrete types from params
-                        todo!()
-                    }
-                    None => {
-                        let return_ty = self.callable_data.prototype.is_received_params_valid(type_checker, received_params)?;
-                        return Ok(return_ty)
-                    }
+                None => {
+                    let return_ty = self
+                        .callable_data
+                        .prototype
+                        .is_received_params_valid(type_checker, received_params)?;
+                    return Ok(return_ty);
                 }
-            }
+            },
         }
     }
 }
