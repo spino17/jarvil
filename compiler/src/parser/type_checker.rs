@@ -115,8 +115,19 @@ pub enum PrototypeEquivalenceCheckError {
     ConcreteTypesCannotBeInferred,
     MismatchedType(Vec<(String, String, usize, TextRange)>), // (expected_type, received_type, index_of_param, span)
     InferredTypesNotBoundedByInterfaces(Vec<(String, String)>, Vec<Type>), // (`inferred_ty` str, `interface_bounds` str)
+}
+
+#[derive(Debug)]
+pub enum AtomStartTypeCheckError {
+    PrototypeEquivalenceFailed(PrototypeEquivalenceCheckError),
     IdentifierNotCallable(String),
     ConstructorNotFoundForTypeError(String),
+}
+
+impl From<PrototypeEquivalenceCheckError> for AtomStartTypeCheckError {
+    fn from(value: PrototypeEquivalenceCheckError) -> Self {
+        AtomStartTypeCheckError::PrototypeEquivalenceFailed(value)
+    }
 }
 
 #[derive(Debug)]
@@ -544,7 +555,7 @@ impl TypeChecker {
         &self,
         concrete_symbol: &ConcreteSymbolData<CallableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-    ) -> Result<Type, PrototypeEquivalenceCheckError> {
+    ) -> Result<Type, AtomStartTypeCheckError> {
         let func_data = &*concrete_symbol.get_core_ref();
         let index = concrete_symbol.index;
         let prototype_result = match index {
@@ -576,7 +587,8 @@ impl TypeChecker {
         match prototype_result {
             CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
                 let prototype_ref = prototype.get_prototype_ref();
-                return prototype_ref.is_received_params_valid(self, params);
+                let return_ty = prototype_ref.is_received_params_valid(self, params)?;
+                return Ok(return_ty);
             }
             CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
                 generic_type_decls,
@@ -603,13 +615,16 @@ impl TypeChecker {
         &self,
         concrete_symbol_data: &ConcreteSymbolData<VariableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-    ) -> Result<Type, PrototypeEquivalenceCheckError> {
+    ) -> Result<Type, AtomStartTypeCheckError> {
         assert!(concrete_symbol_data.index.is_none());
         let lambda_type = &concrete_symbol_data.get_core_ref().data_type;
         match lambda_type.0.as_ref() {
-            CoreType::Lambda(lambda_data) => lambda_data.is_received_params_valid(self, params),
+            CoreType::Lambda(lambda_data) => {
+                let return_ty = lambda_data.is_received_params_valid(self, params)?;
+                return Ok(return_ty);
+            }
             _ => {
-                return Err(PrototypeEquivalenceCheckError::IdentifierNotCallable(
+                return Err(AtomStartTypeCheckError::IdentifierNotCallable(
                     lambda_type.to_string(),
                 ))
             }
@@ -621,7 +636,7 @@ impl TypeChecker {
         name: String,
         concrete_symbol_data: &ConcreteSymbolData<UserDefinedTypeData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-    ) -> Result<Type, PrototypeEquivalenceCheckError> {
+    ) -> Result<Type, AtomStartTypeCheckError> {
         let struct_constructor_prototype_check_result = match &*concrete_symbol_data.get_core_ref()
         {
             UserDefinedTypeData::Struct(struct_symbol_data) => {
@@ -696,11 +711,16 @@ impl TypeChecker {
                 }
             }
             UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
-                return Err(PrototypeEquivalenceCheckError::ConstructorNotFoundForTypeError(name))
+                return Err(AtomStartTypeCheckError::ConstructorNotFoundForTypeError(
+                    name,
+                ))
             }
         };
         match struct_constructor_prototype_check_result {
-            StructConstructorPrototypeCheckResult::Basic(result) => return result,
+            StructConstructorPrototypeCheckResult::Basic(result) => match result {
+                Ok(return_ty) => return Ok(return_ty),
+                Err(err) => Err(AtomStartTypeCheckError::PrototypeEquivalenceFailed(err)),
+            },
             StructConstructorPrototypeCheckResult::Inferred((concrete_types, has_generics)) => {
                 let index = concrete_symbol_data
                     .get_core_mut_ref()
@@ -752,7 +772,30 @@ impl TypeChecker {
                 match result {
                     Ok(return_ty) => return return_ty,
                     Err(err) => {
-                        self.log_params_type_and_count_check_error(func_name.range(), err);
+                        match err {
+                            AtomStartTypeCheckError::ConstructorNotFoundForTypeError(
+                                struct_name,
+                            ) => {
+                                let err = ConstructorNotFoundForTypeError::new(
+                                    struct_name,
+                                    func_name.range(),
+                                );
+                                self.log_error(Diagnostics::ConstructorNotFoundForType(err));
+                            }
+                            AtomStartTypeCheckError::IdentifierNotCallable(ty_str) => {
+                                let err =
+                                    IdentifierNotCallableError::new(ty_str, func_name.range());
+                                self.log_error(Diagnostics::IdentifierNotCallable(err));
+                            }
+                            AtomStartTypeCheckError::PrototypeEquivalenceFailed(
+                                prototype_equivalence_err,
+                            ) => {
+                                self.log_params_type_and_count_check_error(
+                                    func_name.range(),
+                                    prototype_equivalence_err,
+                                );
+                            }
+                        }
                         return Type::new_with_unknown();
                     }
                 }
@@ -1643,14 +1686,6 @@ impl TypeChecker {
                 let err =
                     InferredTypesNotBoundedByInterfacesError::new(range, err_strs, concrete_types);
                 self.log_error(Diagnostics::InferredTypesNotBoundedByInterfaces(err));
-            }
-            PrototypeEquivalenceCheckError::IdentifierNotCallable(ty) => {
-                let err = IdentifierNotCallableError::new(ty, range);
-                self.log_error(Diagnostics::IdentifierNotCallable(err));
-            }
-            PrototypeEquivalenceCheckError::ConstructorNotFoundForTypeError(struct_name) => {
-                let err = ConstructorNotFoundForTypeError::new(struct_name, range);
-                self.log_error(Diagnostics::ConstructorNotFoundForType(err));
             }
         }
     }
