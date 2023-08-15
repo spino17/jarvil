@@ -236,8 +236,7 @@ pub struct CoreLambdaTypeDeclarationNode {
     pub lparen: TokenNode,
     pub rparen: TokenNode,
     pub type_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
-    pub right_arrow: Option<TokenNode>,
-    pub return_type: Option<TypeExpressionNode>,
+    pub return_type: Option<(TokenNode, TypeExpressionNode)>, // (`->`, <type_expr>)
     pub newline: TokenNode,
 }
 

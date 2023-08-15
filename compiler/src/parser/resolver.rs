@@ -1410,7 +1410,7 @@ impl Resolver {
                 .0;
         }
         let return_type: Type = match return_type {
-            Some(return_type_expr) => {
+            Some((_, return_type_expr)) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
                 type_obj
             }

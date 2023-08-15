@@ -51,7 +51,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             let mut type_tuple_node: Option<&SymbolSeparatedSequenceNode<TypeExpressionNode>> =
                 None;
             let mut r_arrow_node: Option<&TokenNode> = None;
-            let mut return_type_node: Option<&TypeExpressionNode> = None;
+            let mut return_type_node: Option<(&TokenNode, &TypeExpressionNode)> = None;
             let temp_type_tuple_node: SymbolSeparatedSequenceNode<TypeExpressionNode>;
             let temp_r_arrow_node: TokenNode;
             let temp_return_type_node: TypeExpressionNode;
@@ -67,8 +67,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             if parser.check_curr_token("->") {
                 temp_r_arrow_node = parser.expect("->");
                 temp_return_type_node = parser.type_expr();
-                r_arrow_node = Some(&temp_r_arrow_node);
-                return_type_node = Some(&temp_return_type_node);
+                return_type_node = Some((&temp_r_arrow_node, &temp_return_type_node));
             }
             let newline_node = parser.expect_terminators();
             let lambda_node = LambdaTypeDeclarationNode::new(
@@ -79,7 +78,6 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 &lparen_node,
                 &rparen_node,
                 type_tuple_node,
-                r_arrow_node,
                 return_type_node,
                 &newline_node,
             );

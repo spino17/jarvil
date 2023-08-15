@@ -445,10 +445,8 @@ pub trait Visitor {
                     self.walk_type_tuple(type_tuple);
                 }
                 self.walk_token(&core_lambda_decl.rparen);
-                if let Some(right_arrow) = &core_lambda_decl.right_arrow {
+                if let Some((right_arrow, return_type)) = &core_lambda_decl.return_type {
                     self.walk_token(right_arrow);
-                }
-                if let Some(return_type) = &core_lambda_decl.return_type {
                     self.walk_type_expression(return_type);
                 }
                 self.walk_token(&core_lambda_decl.newline);

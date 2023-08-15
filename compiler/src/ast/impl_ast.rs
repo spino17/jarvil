@@ -475,8 +475,7 @@ impl LambdaTypeDeclarationNode {
         lparen: &TokenNode,
         rparen: &TokenNode,
         type_tuple: Option<&SymbolSeparatedSequenceNode<TypeExpressionNode>>,
-        right_arrow: Option<&TokenNode>,
-        return_type: Option<&TypeExpressionNode>,
+        return_type: Option<(&TokenNode, &TypeExpressionNode)>,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreLambdaTypeDeclarationNode {
@@ -487,8 +486,12 @@ impl LambdaTypeDeclarationNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
             type_tuple: extract_from_option!(type_tuple),
-            right_arrow: extract_from_option!(right_arrow),
-            return_type: extract_from_option!(return_type),
+            return_type: match return_type {
+                Some((right_arrow, return_type)) => {
+                    Some((right_arrow.clone(), return_type.clone()))
+                }
+                None => None,
+            },
             newline: newline.clone(),
         });
         LambdaTypeDeclarationNode(node)
