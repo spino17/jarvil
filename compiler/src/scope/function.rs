@@ -1,4 +1,3 @@
-use text_size::TextRange;
 use super::{
     concrete::{
         core::{ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext},
@@ -14,6 +13,7 @@ use crate::{
 };
 use crate::{scope::types::generic_type::GenericTypeDeclarationPlaceCategory, types::core::Type};
 use std::vec;
+use text_size::TextRange;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CallableKind {
@@ -105,8 +105,8 @@ impl CallablePrototypeData {
 
     pub fn concretize_prototype(
         &self,
-        global_concrete_types: &Vec<Type>,
-        local_concrete_types: &Vec<Type>,
+        global_concrete_types: Option<&Vec<Type>>,
+        local_concrete_types: Option<&Vec<Type>>,
     ) -> PrototypeConcretizationResult {
         return self.concretize_prototype_core(&ConcretizationContext::new(
             global_concrete_types,
@@ -250,14 +250,11 @@ impl From<GenericTypeArgsCheckError> for PartialCallableDataPrototypeCheckError 
 #[derive(Debug)]
 pub struct PartialConcreteCallableDataRef<'a> {
     callable_data: &'a CallableData,
-    concrete_types: Option<&'a ConcreteTypesTuple>,
+    concrete_types: Option<&'a Vec<Type>>,
 }
 
 impl<'a> PartialConcreteCallableDataRef<'a> {
-    pub fn new(
-        callable_data: &'a CallableData,
-        concrete_types: Option<&'a ConcreteTypesTuple>,
-    ) -> Self {
+    pub fn new(callable_data: &'a CallableData, concrete_types: Option<&'a Vec<Type>>) -> Self {
         PartialConcreteCallableDataRef {
             callable_data,
             concrete_types,
@@ -269,7 +266,6 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
         type_checker: &TypeChecker,
         local_concrete_types: Option<Vec<Type>>,
         local_concrete_ty_ranges: Option<Vec<TextRange>>,
-        has_generics: bool,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PartialCallableDataPrototypeCheckError> {
         let generic_type_decls = &self.callable_data.generics.generics_spec;
@@ -283,16 +279,10 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                             None => unreachable!(),
                         },
                     )?;
-                    let concrete_prototype = match self.concrete_types {
-                        Some(global_concrete_types) => self
-                            .callable_data
-                            .prototype
-                            .concretize_prototype(&global_concrete_types.0, &local_concrete_types),
-                        None => self
-                            .callable_data
-                            .prototype
-                            .concretize_prototype(&vec![], &local_concrete_types),
-                    };
+                    let concrete_prototype = self
+                        .callable_data
+                        .prototype
+                        .concretize_prototype(self.concrete_types, Some(&local_concrete_types));
                     let prototype_ref = concrete_prototype.get_prototype_ref();
                     let return_ty =
                         prototype_ref.is_received_params_valid(type_checker, received_params)?;
@@ -312,15 +302,20 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         .infer_concrete_types_from_arguments(
                             generic_type_decls,
                             &self.callable_data.prototype,
-                            match self.concrete_types {
-                                Some(concrete_types) => Some(&concrete_types.0),
-                                None => None,
-                            },
+                            self.concrete_types,
                             received_params,
                             GenericTypeDeclarationPlaceCategory::InCallable,
                         )?;
                     let unconcrete_return_ty = &self.callable_data.prototype.return_type;
-                    todo!()
+                    let concrete_return_ty = if unconcrete_return_ty.has_generics() {
+                        unconcrete_return_ty.concretize(&ConcretizationContext::new(
+                            self.concrete_types,
+                            Some(&local_concrete_types),
+                        ))
+                    } else {
+                        unconcrete_return_ty.clone()
+                    };
+                    return Ok(concrete_return_ty);
                 }
                 None => {
                     let return_ty = self

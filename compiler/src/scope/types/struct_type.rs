@@ -64,8 +64,8 @@ impl StructTypeData {
                             let concrete_types = self.get_concrete_types(key);
                             return Some((
                                 ty.concretize(&ConcretizationContext::new(
-                                    &concrete_types.0,
-                                    &vec![],
+                                    Some(&concrete_types.0),
+                                    None,
                                 )),
                                 *range,
                             ));
@@ -98,9 +98,11 @@ impl StructTypeData {
             Some((callable_data, range)) => {
                 let concrete_types = match key {
                     Some(key) => Some(
-                        self.generics
+                        &self
+                            .generics
                             .concrete_types_registry
-                            .get_concrete_types_at_key(key),
+                            .get_concrete_types_at_key(key)
+                            .0,
                     ),
                     None => None,
                 };

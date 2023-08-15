@@ -45,11 +45,15 @@ impl AbstractType for Generic {
         let index = generic_data.index;
         let category = &generic_data.category;
         match category {
-            GenericTypeDeclarationPlaceCategory::InStruct => {
-                return context.struct_concrete_types[index].clone()
-            }
+            GenericTypeDeclarationPlaceCategory::InStruct => match context.struct_concrete_types {
+                Some(concrete_types) => return concrete_types[index].clone(),
+                None => unreachable!(),
+            },
             GenericTypeDeclarationPlaceCategory::InCallable => {
-                return context.function_local_concrete_types[index].clone()
+                match context.function_local_concrete_types {
+                    Some(concrete_types) => return concrete_types[index].clone(),
+                    None => unreachable!(),
+                }
             }
         }
     }

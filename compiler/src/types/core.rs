@@ -44,7 +44,7 @@ pub trait AbstractNonStructTypes {
                 let concrete_types = self.get_concrete_types();
                 match callable_data
                     .prototype
-                    .concretize_prototype(&concrete_types, &vec![])
+                    .concretize_prototype(Some(&concrete_types), None)
                 {
                     PrototypeConcretizationResult::UnConcretized(_) => unreachable!(),
                     PrototypeConcretizationResult::Concretized(prototype) => {

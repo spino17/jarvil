@@ -14,7 +14,9 @@ use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcretizationContext};
 use crate::scope::core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams};
 use crate::scope::errors::GenericTypeArgsCheckError;
-use crate::scope::function::{CallableData, PrototypeConcretizationResult};
+use crate::scope::function::{
+    CallableData, PartialCallableDataPrototypeCheckError, PrototypeConcretizationResult,
+};
 use crate::scope::handler::ConcreteSymbolDataEntry;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::variables::VariableData;
@@ -563,7 +565,7 @@ impl TypeChecker {
                 let concrete_types = func_data.get_concrete_types(index);
                 let concrete_prototype = func_data
                     .prototype
-                    .concretize_prototype(&vec![], &concrete_types.0);
+                    .concretize_prototype(None, Some(&concrete_types.0));
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
                 )
@@ -602,7 +604,7 @@ impl TypeChecker {
                 let unconcrete_return_ty = &func_data.prototype.return_type;
                 let concrete_return_ty = if unconcrete_return_ty.has_generics() {
                     unconcrete_return_ty
-                        .concretize(&ConcretizationContext::new(&vec![], &concrete_types))
+                        .concretize(&ConcretizationContext::new(None, Some(&concrete_types)))
                 } else {
                     unconcrete_return_ty.clone()
                 };
@@ -648,7 +650,7 @@ impl TypeChecker {
                         let concrete_types = struct_symbol_data.get_concrete_types(index);
                         let concrete_prototype = constructor_meta_data
                             .prototype
-                            .concretize_prototype(&concrete_types.0, &vec![]);
+                            .concretize_prototype(Some(&concrete_types.0), None);
                         CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                             concrete_prototype,
                         )
@@ -817,49 +819,55 @@ impl TypeChecker {
                 .get_type_symbol_data_for_identifier_in_use(ok_identifier)
             {
                 Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
-                    UserDefinedTypeData::Struct(struct_data) => {
-                        match class_method.core_ref() {
-                            CoreIdentifierInUseNode::Ok(class_method) => {
-                                let class_method_name = class_method.token_value(&self.code);
-                                let index = type_symbol_data.index;
-                                match struct_data.try_class_method(&class_method_name, index) {
-                                    // TODO - check if <...> is correct
-                                    // if <> is present use them to form concrete arguments if not and is expected by the
-                                    // identifier symbol_data then infer the types from params and then repeat the above step.
-                                    Some((func_data, _)) => {
-                                        let (concrete_types, ty_ranges, has_generics) = self
-                                            .extract_angle_bracket_content_from_identifier_in_use(
-                                                class_method,
-                                            );
-                                        /*
-                                        let result = func_data
-                                            .prototype
-                                            .is_received_params_valid(self, params);
-                                        match result {
+                    UserDefinedTypeData::Struct(struct_data) => match class_method.core_ref() {
+                        CoreIdentifierInUseNode::Ok(class_method) => {
+                            let class_method_name = class_method.token_value(&self.code);
+                            let index = type_symbol_data.index;
+                            match struct_data.try_class_method(&class_method_name, index) {
+                                Some((partial_concrete_callable_data, _)) => {
+                                    let (concrete_types, ty_ranges, _) = self
+                                        .extract_angle_bracket_content_from_identifier_in_use(
+                                            class_method,
+                                        );
+                                    let result = partial_concrete_callable_data
+                                        .is_received_params_valid(
+                                            self,
+                                            concrete_types,
+                                            ty_ranges,
+                                            params,
+                                        );
+                                    match result {
                                             Ok(return_ty) => return return_ty,
                                             Err(err) => {
-                                                self.log_params_type_and_count_check_error(
-                                                    class_method.range(),
-                                                    err,
-                                                );
-                                                return Type::new_with_unknown();
+                                                match err {
+                                                    PartialCallableDataPrototypeCheckError::PrototypeEquivalenceCheckFailed(prototype_check_err) => {
+                                                        self.log_params_type_and_count_check_error(
+                                                            class_method.range(),
+                                                            prototype_check_err,
+                                                        );
+                                                        return Type::new_with_unknown()
+                                                    }
+                                                    PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(generic_typ_args_check_err) => {
+                                                        let err = err_for_generic_type_args(&generic_typ_args_check_err, ok_identifier.core_ref().name.range(), IdentifierKind::Method);
+                                                        self.log_error(err);
+                                                        return Type::new_with_unknown()
+                                                    }
+                                                }
                                             }
-                                        }*/
-                                        todo!()
-                                    }
-                                    None => {
-                                        let err = ClassmethodDoesNotExistError::new(
-                                            class_name,
-                                            class_method.range(),
-                                        );
-                                        self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
-                                        return Type::new_with_unknown();
-                                    }
+                                        }
+                                }
+                                None => {
+                                    let err = ClassmethodDoesNotExistError::new(
+                                        class_name,
+                                        class_method.range(),
+                                    );
+                                    self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
+                                    return Type::new_with_unknown();
                                 }
                             }
-                            _ => return Type::new_with_unknown(),
                         }
-                    }
+                        _ => return Type::new_with_unknown(),
+                    },
                     _ => {
                         let err = PropertyNotSupportedError::new(
                             "classmethod".to_string(),
