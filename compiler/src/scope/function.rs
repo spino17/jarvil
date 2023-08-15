@@ -5,8 +5,12 @@ use super::{
     },
     core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams},
 };
-use crate::{types::core::AbstractType, parser::type_checker::{TypeChecker, PrototypeEquivalenceCheckError}, ast::ast::{SymbolSeparatedSequenceNode, ExpressionNode}};
 use crate::types::core::Type;
+use crate::{
+    ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
+    parser::type_checker::{PrototypeEquivalenceCheckError, TypeChecker},
+    types::core::AbstractType,
+};
 use std::vec;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -108,11 +112,15 @@ impl CallablePrototypeData {
         ));
     }
 
-    pub fn is_received_params_valid(&self, type_checker: &TypeChecker, received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>) -> Result<&Type, PrototypeEquivalenceCheckError> {
+    pub fn is_received_params_valid(
+        &self,
+        type_checker: &TypeChecker,
+        received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Result<Type, PrototypeEquivalenceCheckError> {
         let expected_params = &self.params;
         let return_type = &self.return_type;
         let _ = type_checker.check_params_type_and_count(expected_params, received_params)?;
-        return Ok(return_type)
+        return Ok(return_type.clone());
     }
 }
 
