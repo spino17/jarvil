@@ -1409,7 +1409,6 @@ impl Resolver {
                 )
                 .0;
         }
-
         let return_type: Type = match return_type {
             Some(return_type_expr) => {
                 let type_obj = self.type_obj_from_expression(return_type_expr);
@@ -1698,6 +1697,7 @@ impl Visitor for Resolver {
                         {
                             self.try_resolving_user_defined_type(ok_identifier, true, false);
                         }
+                        self.walk_identifier_in_use(&core_class_method_call.class_method_name);
                         if let Some(params) = &core_class_method_call.params {
                             self.walk_params(params);
                         }
