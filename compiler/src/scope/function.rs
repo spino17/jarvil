@@ -1,9 +1,11 @@
+use text_size::TextRange;
+
 use super::{
     concrete::{
         core::{ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext},
         registry::GenericsSpecAndConcreteTypesRegistry,
     },
-    core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams},
+    core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams}, errors::GenericTypeArgsCheckError,
 };
 use crate::types::core::Type;
 use crate::{
@@ -224,5 +226,91 @@ impl AbstractSymbolMetaData for CallableData {
             .generics
             .concrete_types_registry
             .get_concrete_types_at_key(key);
+    }
+}
+
+#[derive(Debug)]
+pub enum PartialCallableDataPrototypeCheckError {
+    PrototypeEquivalenceCheckFailed(PrototypeEquivalenceCheckError),
+    GenericTypeArgsCheckFailed(GenericTypeArgsCheckError)
+}
+
+impl From<PrototypeEquivalenceCheckError> for PartialCallableDataPrototypeCheckError {
+    fn from(value: PrototypeEquivalenceCheckError) -> Self {
+        PartialCallableDataPrototypeCheckError::PrototypeEquivalenceCheckFailed(value)
+    }
+}
+
+impl From<GenericTypeArgsCheckError> for PartialCallableDataPrototypeCheckError {
+    fn from(value: GenericTypeArgsCheckError) -> Self {
+        PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(value)
+    }
+}
+
+#[derive(Debug)]
+pub struct PartialConcreteCallableDataRef<'a> {
+    callable_data: &'a CallableData,
+    concrete_types: Option<&'a ConcreteTypesTuple>,
+}
+
+impl<'a> PartialConcreteCallableDataRef<'a> {
+    pub fn new(
+        callable_data: &'a CallableData,
+        concrete_types: Option<&'a ConcreteTypesTuple>,
+    ) -> Self {
+        PartialConcreteCallableDataRef {
+            callable_data,
+            concrete_types,
+        }
+    }
+
+    pub fn is_received_params_valid(
+        &self,
+        type_checker: &TypeChecker,
+        local_concrete_types: Option<Vec<Type>>,
+        local_concrete_ty_ranges: Option<Vec<TextRange>>,
+        has_generics: bool,
+        received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Result<Type, PartialCallableDataPrototypeCheckError> {
+        let generic_type_decls = &self.callable_data.generics.generics_spec;
+        match local_concrete_types {
+            Some(local_concrete_types) => {
+                match generic_type_decls {
+                    Some(generic_type_decls) => {
+                        let _ = generic_type_decls.check_concrete_types_bounded_by(&local_concrete_types, match &local_concrete_ty_ranges {
+                                Some(type_ranges) => type_ranges,
+                                None => unreachable!(),
+                            },
+                        )?;
+                        let concrete_prototype = match self.concrete_types {
+                            Some(global_concrete_types) => {
+                                self.callable_data.prototype.concretize_prototype(&global_concrete_types.0, &local_concrete_types)
+                            }
+                            None => {
+                                self.callable_data.prototype.concretize_prototype(&vec![], &local_concrete_types)
+                            }
+                        };
+                        let prototype_ref = concrete_prototype.get_prototype_ref();
+                        let return_ty = prototype_ref.is_received_params_valid(type_checker, received_params)?;
+                        return Ok(return_ty)
+                    }
+                    None => {
+                        return Err(PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(GenericTypeArgsCheckError::GenericTypeArgsNotExpected))
+                    }
+                }
+            }
+            None => {
+                match generic_type_decls {
+                    Some(generic_type_decls) => {
+                        // TODO - try inferring the local concrete types from params
+                        todo!()
+                    }
+                    None => {
+                        let return_ty = self.callable_data.prototype.is_received_params_valid(type_checker, received_params)?;
+                        return Ok(return_ty)
+                    }
+                }
+            }
+        }
     }
 }

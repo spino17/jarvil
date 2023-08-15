@@ -821,7 +821,8 @@ impl TypeChecker {
                         match class_method.core_ref() {
                             CoreIdentifierInUseNode::Ok(class_method) => {
                                 let class_method_name = class_method.token_value(&self.code);
-                                match struct_data.try_class_method(&class_method_name) {
+                                let index = type_symbol_data.index;
+                                match struct_data.try_class_method(&class_method_name, index) {
                                     // TODO - check if <...> is correct
                                     // if <> is present use them to form concrete arguments if not and is expected by the
                                     // identifier symbol_data then infer the types from params and then repeat the above step.
@@ -830,6 +831,7 @@ impl TypeChecker {
                                             .extract_angle_bracket_content_from_identifier_in_use(
                                                 class_method,
                                             );
+                                        /*
                                         let result = func_data
                                             .prototype
                                             .is_received_params_valid(self, params);
@@ -842,7 +844,8 @@ impl TypeChecker {
                                                 );
                                                 return Type::new_with_unknown();
                                             }
-                                        }
+                                        }*/
+                                        todo!()
                                     }
                                     None => {
                                         let err = ClassmethodDoesNotExistError::new(
