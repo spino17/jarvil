@@ -80,36 +80,41 @@ impl StructTypeData {
         }
     }
 
-    // TODO - add key: Option<ConcreteTypesRegistryKey> as argument
-    pub fn try_method(&self, method_name: &str) -> Option<(&CallableData, TextRange)> {
+    pub fn try_method(
+        &self,
+        method_name: &str,
+        key: Option<ConcreteTypesRegistryKey>,
+    ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         match self.methods.get(method_name) {
-            // TODO - return &CallableData + Option<&ConcreteTypesTuple> (corrosponding to the `key passed`)
-            Some(func_data) => Some((&func_data.0, func_data.1)),
+            Some((callable_data, range)) => {
+                return Some((
+                    PartialConcreteCallableDataRef::get_from_registry_key(
+                        callable_data,
+                        &self.generics.concrete_types_registry,
+                        key,
+                    ),
+                    *range,
+                ))
+            }
             None => None,
         }
     }
 
-    pub fn try_class_method<'a>(
-        &'a self,
+    pub fn try_class_method(
+        &self,
         class_method_name: &str,
         key: Option<ConcreteTypesRegistryKey>,
-    ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
+    ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         match self.class_methods.get(class_method_name) {
             Some((callable_data, range)) => {
-                let concrete_types = match key {
-                    Some(key) => Some(
-                        &self
-                            .generics
-                            .concrete_types_registry
-                            .get_concrete_types_at_key(key)
-                            .0,
-                    ),
-                    None => None,
-                };
                 return Some((
-                    PartialConcreteCallableDataRef::new(callable_data, concrete_types),
+                    PartialConcreteCallableDataRef::get_from_registry_key(
+                        callable_data,
+                        &self.generics.concrete_types_registry,
+                        key,
+                    ),
                     *range,
-                ));
+                ))
             }
             None => None,
         }

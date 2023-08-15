@@ -1,7 +1,7 @@
 use super::{
     concrete::{
         core::{ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext},
-        registry::GenericsSpecAndConcreteTypesRegistry,
+        registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
     },
     core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams},
     errors::GenericTypeArgsCheckError,
@@ -259,6 +259,18 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
             callable_data,
             concrete_types,
         }
+    }
+
+    pub fn get_from_registry_key(
+        callable_data: &'a CallableData,
+        registry: &'a ConcreteTypesRegistryCore,
+        key: Option<ConcreteTypesRegistryKey>,
+    ) -> PartialConcreteCallableDataRef<'a> {
+        let concrete_types = match key {
+            Some(key) => Some(&registry.get_concrete_types_at_key(key).0),
+            None => None,
+        };
+        return PartialConcreteCallableDataRef::new(callable_data, concrete_types);
     }
 
     pub fn is_received_params_valid(

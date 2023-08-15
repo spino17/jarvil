@@ -143,6 +143,19 @@ impl From<PrototypeEquivalenceCheckError> for MethodAccessTypeCheckError {
     }
 }
 
+impl From<PartialCallableDataPrototypeCheckError> for MethodAccessTypeCheckError {
+    fn from(value: PartialCallableDataPrototypeCheckError) -> Self {
+        match value {
+            PartialCallableDataPrototypeCheckError::PrototypeEquivalenceCheckFailed(err) => {
+                MethodAccessTypeCheckError::PrototypeEquivalenceCheckFailed(err)
+            }
+            PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(err) => {
+                MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(err, IdentifierKind::Method)
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum StructConstructorPrototypeCheckResult {
     Basic(Result<Type, PrototypeEquivalenceCheckError>),
@@ -1037,14 +1050,18 @@ impl TypeChecker {
             }
             None => {
                 // if field is not there then check in methods
-                match struct_data.try_method(&method_name) {
-                    Some((func_data, _)) => {
-                        let (concrete_types, ty_ranges, has_generics) = self
+                match struct_data.try_method(&method_name, index) {
+                    Some((callable_data, _)) => {
+                        let (concrete_types, ty_ranges, _) = self
                             .extract_angle_bracket_content_from_identifier_in_use(
                                 method_name_ok_identifier,
                             );
-                        let return_ty =
-                            func_data.prototype.is_received_params_valid(self, params)?;
+                        let return_ty = callable_data.is_received_params_valid(
+                            self,
+                            concrete_types,
+                            ty_ranges,
+                            params,
+                        )?;
                         return Ok(return_ty);
                     }
                     None => return Err(MethodAccessTypeCheckError::MethodNotFound),
