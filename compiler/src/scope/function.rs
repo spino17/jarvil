@@ -114,6 +114,7 @@ impl CallablePrototypeData {
         ));
     }
 
+    // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
         type_checker: &TypeChecker,
@@ -273,6 +274,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
         return PartialConcreteCallableDataRef::new(callable_data, concrete_types);
     }
 
+    // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
         type_checker: &TypeChecker,

@@ -40,6 +40,7 @@ impl Lambda {
         Lambda::Unnamed(func_prototype)
     }
 
+    // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
         type_checker: &TypeChecker,
