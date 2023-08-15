@@ -27,6 +27,7 @@ use crate::types::generic::Generic;
 use crate::types::hashmap::core::HashMap;
 use crate::types::lambda::Lambda;
 use crate::types::r#struct::Struct;
+use crate::types::tuple::Tuple;
 use crate::{
     ast::{
         ast::{
@@ -1150,74 +1151,104 @@ impl TypeChecker {
         (Type::new_with_unknown(), Some(atom_type_obj))
     }
 
+    fn check_index_access_for_tuple_ty(
+        &self,
+        tuple_ty: &Tuple,
+        index_expr: &ExpressionNode,
+    ) -> Type {
+        let sub_types = &tuple_ty.sub_types;
+        match index_expr.core_ref() {
+            CoreExpressionNode::Unary(index_unary_expr) => {
+                match self.is_unary_expr_int_valued(index_unary_expr) {
+                    Some(index_value) => {
+                        match self.is_valid_index_for_tuple(index_value, sub_types.len()) {
+                            TupleIndexCheckResult::Ok(index_value) => {
+                                return sub_types[index_value].clone()
+                            }
+                            TupleIndexCheckResult::PositiveIndexOutOfBound => {
+                                let err = TupleIndexOutOfBoundError::new(
+                                    sub_types.len(),
+                                    index_expr.range(),
+                                );
+                                self.log_error(Diagnostics::TupleIndexOutOfBound(err));
+                                return Type::new_with_unknown();
+                            }
+                            TupleIndexCheckResult::NegativeIndexOutOfBound => {
+                                let err = TupleIndexOutOfBoundError::new(
+                                    sub_types.len(),
+                                    index_expr.range(),
+                                );
+                                self.log_error(Diagnostics::TupleIndexOutOfBound(err));
+                                return Type::new_with_unknown();
+                            }
+                        }
+                    }
+                    None => {
+                        let err = UnresolvedIndexExpressionInTupleError::new(index_expr.range());
+                        self.log_error(Diagnostics::UnresolvedIndexExpressionInTuple(err));
+                        return Type::new_with_unknown();
+                    }
+                }
+            }
+            CoreExpressionNode::Binary(_) | CoreExpressionNode::Comparison(_) => {
+                let err = InvalidIndexExpressionForTupleError::new(index_expr.range());
+                self.log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
+                return Type::new_with_unknown();
+            }
+        }
+    }
+
     fn check_index_access(&self, index_access: &IndexAccessNode) -> (Type, Option<Type>) {
         let core_index_access = index_access.core_ref();
         let atom = &core_index_access.atom;
         let (atom_type_obj, _) = self.check_atom(atom);
         let index_expr = &core_index_access.index;
         let index_type_obj = self.check_expr(index_expr);
-        match atom_type_obj.0.as_ref() {
+        let result = match atom_type_obj.0.as_ref() {
             CoreType::Tuple(tuple) => {
-                let sub_types = &tuple.sub_types;
-                match index_expr.core_ref() {
-                    CoreExpressionNode::Unary(index_unary_expr) => {
-                        match self.is_unary_expr_int_valued(index_unary_expr) {
-                            Some(index_value) => {
-                                match self.is_valid_index_for_tuple(index_value, sub_types.len()) {
-                                    TupleIndexCheckResult::Ok(index_value) => {
-                                        return (
-                                            sub_types[index_value].clone(),
-                                            Some(atom_type_obj),
-                                        )
-                                    }
-                                    TupleIndexCheckResult::PositiveIndexOutOfBound => {
-                                        let err = TupleIndexOutOfBoundError::new(
-                                            sub_types.len(),
-                                            index_expr.range(),
-                                        );
-                                        self.log_error(Diagnostics::TupleIndexOutOfBound(err));
-                                        return (Type::new_with_unknown(), Some(atom_type_obj));
-                                    }
-                                    TupleIndexCheckResult::NegativeIndexOutOfBound => {
-                                        let err = TupleIndexOutOfBoundError::new(
-                                            sub_types.len(),
-                                            index_expr.range(),
-                                        );
-                                        self.log_error(Diagnostics::TupleIndexOutOfBound(err));
-                                        return (Type::new_with_unknown(), Some(atom_type_obj));
-                                    }
-                                }
-                            }
-                            None => {
-                                let err =
-                                    UnresolvedIndexExpressionInTupleError::new(index_expr.range());
-                                self.log_error(Diagnostics::UnresolvedIndexExpressionInTuple(err));
-                                return (Type::new_with_unknown(), Some(atom_type_obj));
-                            }
-                        }
-                    }
-                    CoreExpressionNode::Binary(_) | CoreExpressionNode::Comparison(_) => {
-                        let err = InvalidIndexExpressionForTupleError::new(index_expr.range());
-                        self.log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
-                        return (Type::new_with_unknown(), Some(atom_type_obj));
-                    }
+                return (
+                    self.check_index_access_for_tuple_ty(tuple, index_expr),
+                    Some(atom_type_obj),
+                )
+            }
+            CoreType::Array(array) => {
+                if index_type_obj.is_int() {
+                    Some(array.element_type.clone())
+                } else {
+                    None
                 }
             }
-            _ => {
-                // check for types other than tuple
-                match self.is_indexable_with_type(&atom_type_obj, &index_type_obj) {
-                    Some(element_type) => return (element_type.clone(), Some(atom_type_obj)),
-                    _ => {
-                        let err = ExpressionIndexingNotValidError::new(
-                            atom_type_obj.to_string(),
-                            index_type_obj.to_string(),
-                            atom.range(),
-                            index_expr.range(),
-                        );
-                        self.log_error(Diagnostics::ExpressionIndexingNotValid(err));
-                        return (Type::new_with_unknown(), Some(atom_type_obj));
+            CoreType::Atomic(atomic) => match atomic {
+                Atomic::String => {
+                    if index_type_obj.is_int() {
+                        Some(Type::new_with_atomic("str"))
+                    } else {
+                        None
                     }
                 }
+                _ => None,
+            },
+            CoreType::HashMap(hashmap) => {
+                // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
+                if index_type_obj.is_eq(&hashmap.key_type) && index_type_obj.is_hashable() {
+                    Some(hashmap.value_type.clone())
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        };
+        match result {
+            Some(ty) => return (ty, Some(atom_type_obj)),
+            None => {
+                let err = ExpressionIndexingNotValidError::new(
+                    atom_type_obj.to_string(),
+                    index_type_obj.to_string(),
+                    atom.range(),
+                    index_expr.range(),
+                );
+                self.log_error(Diagnostics::ExpressionIndexingNotValid(err));
+                return (Type::new_with_unknown(), Some(atom_type_obj));
             }
         }
     }
