@@ -158,7 +158,7 @@ impl From<PartialCallableDataPrototypeCheckError> for MethodAccessTypeCheckError
 
 #[derive(Debug)]
 pub enum StructConstructorPrototypeCheckResult {
-    Basic(Result<Type, PrototypeEquivalenceCheckError>),
+    Basic(Type),
     Inferred((Vec<Type>, bool)),
 }
 
@@ -692,37 +692,29 @@ impl TypeChecker {
                         prototype,
                     ) => {
                         let prototype_ref = prototype.get_prototype_ref();
-                        let result =
-                            self.check_params_type_and_count(&prototype_ref.params, params);
-                        let modified_result = match result {
-                            Ok(_) => Ok(Type::new_with_struct(
-                                name.to_string(),
-                                &concrete_symbol_data.symbol_data,
-                                index,
-                            )),
-                            Err(err) => Err(err),
-                        };
-                        StructConstructorPrototypeCheckResult::Basic(modified_result)
+                        let _ = self.check_params_type_and_count(&prototype_ref.params, params)?;
+                        let return_ty = Type::new_with_struct(
+                            name.to_string(),
+                            &concrete_symbol_data.symbol_data,
+                            index,
+                        );
+                        StructConstructorPrototypeCheckResult::Basic(return_ty)
                     }
                     CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
                         generic_type_decls,
                     ) => {
-                        let inference_result = self.infer_concrete_types_from_arguments(
-                            generic_type_decls,
-                            &constructor_meta_data.prototype,
-                            None,
-                            params,
-                            GenericTypeDeclarationPlaceCategory::InStruct,
-                        );
-                        match inference_result {
-                            Ok((concrete_types, has_generics)) => {
-                                StructConstructorPrototypeCheckResult::Inferred((
-                                    concrete_types,
-                                    has_generics,
-                                ))
-                            }
-                            Err(err) => StructConstructorPrototypeCheckResult::Basic(Err(err)),
-                        }
+                        let (concrete_types, has_generics) = self
+                            .infer_concrete_types_from_arguments(
+                                generic_type_decls,
+                                &constructor_meta_data.prototype,
+                                None,
+                                params,
+                                GenericTypeDeclarationPlaceCategory::InStruct,
+                            )?;
+                        StructConstructorPrototypeCheckResult::Inferred((
+                            concrete_types,
+                            has_generics,
+                        ))
                     }
                 }
             }
@@ -733,12 +725,7 @@ impl TypeChecker {
             }
         };
         match struct_constructor_prototype_check_result {
-            StructConstructorPrototypeCheckResult::Basic(result) => match result {
-                Ok(return_ty) => return Ok(return_ty),
-                Err(err) => Err(AtomStartTypeCheckError::PrototypeEquivalenceCheckFailed(
-                    err,
-                )),
-            },
+            StructConstructorPrototypeCheckResult::Basic(return_ty) => return Ok(return_ty),
             StructConstructorPrototypeCheckResult::Inferred((concrete_types, has_generics)) => {
                 let index = concrete_symbol_data
                     .get_core_mut_ref()
@@ -852,9 +839,9 @@ impl TypeChecker {
                                             params,
                                         );
                                     match result {
-                                            Ok(return_ty) => return return_ty,
-                                            Err(err) => {
-                                                match err {
+                                        Ok(return_ty) => return return_ty,
+                                        Err(err) => {
+                                            match err {
                                                     PartialCallableDataPrototypeCheckError::PrototypeEquivalenceCheckFailed(prototype_check_err) => {
                                                         self.log_params_type_and_count_check_error(
                                                             class_method.range(),
@@ -867,9 +854,9 @@ impl TypeChecker {
                                                         self.log_error(err);
                                                     }
                                                 }
-                                                return Type::new_with_unknown()
-                                            }
+                                            return Type::new_with_unknown();
                                         }
+                                    }
                                 }
                                 None => {
                                     let err = ClassmethodDoesNotExistError::new(
@@ -1053,12 +1040,12 @@ impl TypeChecker {
             None => {
                 // if field is not there then check in methods
                 match struct_data.try_method(&method_name, index) {
-                    Some((callable_data, _)) => {
+                    Some((partial_concrete_callable_data, _)) => {
                         let (concrete_types, ty_ranges, _) = self
                             .extract_angle_bracket_content_from_identifier_in_use(
                                 method_name_ok_identifier,
                             );
-                        let return_ty = callable_data.is_received_params_valid(
+                        let return_ty = partial_concrete_callable_data.is_received_params_valid(
                             self,
                             concrete_types,
                             ty_ranges,
