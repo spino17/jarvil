@@ -118,14 +118,14 @@ pub enum PrototypeEquivalenceCheckError {
 
 #[derive(Debug)]
 pub enum AtomStartTypeCheckError {
-    PrototypeEquivalenceFailed(PrototypeEquivalenceCheckError),
+    PrototypeEquivalenceCheckFailed(PrototypeEquivalenceCheckError),
     IdentifierNotCallable(String),
     ConstructorNotFoundForTypeError(String),
 }
 
 impl From<PrototypeEquivalenceCheckError> for AtomStartTypeCheckError {
     fn from(value: PrototypeEquivalenceCheckError) -> Self {
-        AtomStartTypeCheckError::PrototypeEquivalenceFailed(value)
+        AtomStartTypeCheckError::PrototypeEquivalenceCheckFailed(value)
     }
 }
 
@@ -735,7 +735,9 @@ impl TypeChecker {
         match struct_constructor_prototype_check_result {
             StructConstructorPrototypeCheckResult::Basic(result) => match result {
                 Ok(return_ty) => return Ok(return_ty),
-                Err(err) => Err(AtomStartTypeCheckError::PrototypeEquivalenceFailed(err)),
+                Err(err) => Err(AtomStartTypeCheckError::PrototypeEquivalenceCheckFailed(
+                    err,
+                )),
             },
             StructConstructorPrototypeCheckResult::Inferred((concrete_types, has_generics)) => {
                 let index = concrete_symbol_data
@@ -803,7 +805,7 @@ impl TypeChecker {
                                     IdentifierNotCallableError::new(ty_str, func_name.range());
                                 self.log_error(Diagnostics::IdentifierNotCallable(err));
                             }
-                            AtomStartTypeCheckError::PrototypeEquivalenceFailed(
+                            AtomStartTypeCheckError::PrototypeEquivalenceCheckFailed(
                                 prototype_equivalence_err,
                             ) => {
                                 self.log_params_type_and_count_check_error(
@@ -1136,44 +1138,44 @@ impl TypeChecker {
             };
             match result {
                 Ok(return_ty) => return (return_ty, Some(atom_type_obj)),
-                Err(err) => match err {
-                    MethodAccessTypeCheckError::MethodNotFound => {
-                        let err = PropertyDoesNotExistError::new(
-                            PropertyKind::Method,
-                            atom_type_obj.to_string(),
-                            method.range(),
-                            atom.range(),
-                        );
-                        self.log_error(Diagnostics::PropertyDoesNotExist(err));
-                        return (Type::new_with_unknown(), Some(atom_type_obj));
-                    }
-                    MethodAccessTypeCheckError::FieldNotCallable(ty) => {
-                        let err = FieldNotCallableError::new(ty.to_string(), ok_identifier.range());
-                        self.log_error(Diagnostics::FieldNotCallable(err));
-                        return (Type::new_with_unknown(), Some(atom_type_obj));
-                    }
-                    MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
-                        generic_type_args_check_err,
-                        kind,
-                    ) => {
-                        let err = err_for_generic_type_args(
-                            &generic_type_args_check_err,
-                            ok_identifier.core_ref().name.range(),
+                Err(err) => {
+                    match err {
+                        MethodAccessTypeCheckError::MethodNotFound => {
+                            let err = PropertyDoesNotExistError::new(
+                                PropertyKind::Method,
+                                atom_type_obj.to_string(),
+                                method.range(),
+                                atom.range(),
+                            );
+                            self.log_error(Diagnostics::PropertyDoesNotExist(err));
+                        }
+                        MethodAccessTypeCheckError::FieldNotCallable(ty) => {
+                            let err =
+                                FieldNotCallableError::new(ty.to_string(), ok_identifier.range());
+                            self.log_error(Diagnostics::FieldNotCallable(err));
+                        }
+                        MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
+                            generic_type_args_check_err,
                             kind,
-                        );
-                        self.log_error(err);
-                        return (Type::new_with_unknown(), Some(atom_type_obj));
-                    }
-                    MethodAccessTypeCheckError::PrototypeEquivalenceCheckFailed(
-                        prototype_check_err,
-                    ) => {
-                        self.log_params_type_and_count_check_error(
-                            ok_identifier.range(),
+                        ) => {
+                            let err = err_for_generic_type_args(
+                                &generic_type_args_check_err,
+                                ok_identifier.core_ref().name.range(),
+                                kind,
+                            );
+                            self.log_error(err);
+                        }
+                        MethodAccessTypeCheckError::PrototypeEquivalenceCheckFailed(
                             prototype_check_err,
-                        );
-                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                        ) => {
+                            self.log_params_type_and_count_check_error(
+                                ok_identifier.range(),
+                                prototype_check_err,
+                            );
+                        }
                     }
-                },
+                    return (Type::new_with_unknown(), Some(atom_type_obj));
+                }
             }
         }
         (Type::new_with_unknown(), Some(atom_type_obj))
