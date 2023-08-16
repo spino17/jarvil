@@ -860,14 +860,14 @@ impl TypeChecker {
                                                             class_method.range(),
                                                             prototype_check_err,
                                                         );
-                                                        return Type::new_with_unknown()
+                                                        
                                                     }
                                                     PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(generic_typ_args_check_err) => {
                                                         let err = err_for_generic_type_args(&generic_typ_args_check_err, ok_identifier.core_ref().name.range(), IdentifierKind::Method);
                                                         self.log_error(err);
-                                                        return Type::new_with_unknown()
                                                     }
                                                 }
+                                                return Type::new_with_unknown()
                                             }
                                         }
                                 }
