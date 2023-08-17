@@ -40,7 +40,42 @@ impl AbstractType for Generic {
     }
 
     fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
-        todo!()
+        let is_other_ty_generic = match other_ty.0.as_ref() {
+            CoreType::Generic(generic_data) => Some(generic_data),
+            _ => None,
+        };
+        let self_symbol_data = self.semantic_data.get_core_ref();
+        let self_generic_data = self_symbol_data.get_generic_data_ref();
+        let self_index = self_generic_data.index;
+        let self_category = &self_generic_data.category;
+        match self_category {
+            GenericTypeDeclarationPlaceCategory::InCallable => match is_other_ty_generic {
+                Some(generic_data) => {
+                    let other_symbol_data = generic_data.semantic_data.get_core_ref();
+                    let other_generic_data = other_symbol_data.get_generic_data_ref();
+                    let other_index = other_generic_data.index;
+                    let other_category = &other_generic_data.category;
+                    match other_category {
+                        GenericTypeDeclarationPlaceCategory::InCallable => {
+                            return self_index == other_index
+                        }
+                        GenericTypeDeclarationPlaceCategory::InStruct => return false,
+                    }
+                }
+                None => return false,
+            },
+            GenericTypeDeclarationPlaceCategory::InStruct => match is_other_ty_generic {
+                Some(_) => return false,
+                None => {
+                    let concrete_types = match context.struct_concrete_types {
+                        Some(concrete_types) => concrete_types,
+                        None => unreachable!(),
+                    };
+                    let concrete_self_ty = &concrete_types[self_index];
+                    return concrete_self_ty.is_eq(other_ty);
+                }
+            },
+        }
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {

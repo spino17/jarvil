@@ -309,6 +309,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                                         }
                                     }
                                     // check if prototypes match
+                                    // keep interface methods as self
                                     todo!()
                                 }
                                 None => {
