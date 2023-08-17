@@ -4,7 +4,7 @@ use super::{
         registry::GenericsSpecAndConcreteTypesRegistry,
     },
     core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams, SymbolData},
-    function::CallableData,
+    function::{CallableData, PartialConcreteCallableDataRef},
 };
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
@@ -14,8 +14,8 @@ use text_size::TextRange;
 
 #[derive(Debug, Default)]
 pub struct InterfaceData {
-    pub fields: FxHashMap<String, (Type, TextRange)>,
-    pub methods: FxHashMap<String, (CallableData, TextRange)>,
+    fields: FxHashMap<String, (Type, TextRange)>,
+    methods: FxHashMap<String, (CallableData, TextRange)>,
     pub generics: GenericsSpecAndConcreteTypesRegistry,
     pub is_init: bool,
 }
@@ -47,7 +47,7 @@ impl InterfaceData {
         &self,
         method_name: &str,
         key: Option<ConcreteTypesRegistryKey>,
-    ) -> Option<(&CallableData, TextRange)> {
+    ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         todo!()
     }
 }
