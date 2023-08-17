@@ -7,8 +7,8 @@ use super::{
     core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams, SymbolData},
     function::{CallableData, PartialConcreteCallableDataRef},
 };
-use crate::types::core::AbstractType;
 use crate::types::core::Type;
+use crate::{error, scope::concrete::core::ConcretizationContext, types::core::AbstractType};
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
 use text_size::TextRange;
@@ -309,8 +309,13 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                                         }
                                     }
                                     // check if prototypes match
-                                    // keep interface methods as self
-                                    todo!()
+                                    if interface_method_callable_data.prototype.is_structurally_eq(
+                                        &struct_method_callable_data.prototype,
+                                        &ConcretizationContext::new(self.concrete_types, None),
+                                    ) {
+                                        errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(*range)));
+                                        continue;
+                                    }
                                 }
                                 None => {
                                     errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationExpected(*range)));

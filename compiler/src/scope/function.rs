@@ -57,7 +57,32 @@ impl CallablePrototypeData {
         }
     }
 
+    fn compare<F: Fn(&Type, &Type, &ConcretizationContext) -> bool>(
+        &self,
+        other: &CallablePrototypeData,
+        cmp_func: F,
+        context: &ConcretizationContext,
+    ) -> bool {
+        let (self_param_types, self_return_type) = (&self.params, &self.return_type);
+        let (other_param_types, other_return_type) = (&other.params, &other.return_type);
+        let self_params_len = self_param_types.len();
+        let other_params_len = other_param_types.len();
+        if self_params_len != other_params_len {
+            return false;
+        }
+        if !cmp_func(&self_return_type, &other_return_type, context) {
+            return false;
+        }
+        for index in 0..self_params_len {
+            if !cmp_func(&self_param_types[index], &other_param_types[index], context) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     pub fn is_eq(&self, other: &CallablePrototypeData) -> bool {
+        /*
         let (self_param_types, self_return_type) = (&self.params, &self.return_type);
         let (other_param_types, other_return_type) = (&other.params, &other.return_type);
         let self_params_len = self_param_types.len();
@@ -74,6 +99,20 @@ impl CallablePrototypeData {
             }
         }
         return true;
+         */
+        let cmp_func = |ty1: &Type, ty2: &Type, _context: &ConcretizationContext| ty1.is_eq(ty2);
+        self.compare(other, cmp_func, &ConcretizationContext::default())
+    }
+
+    pub fn is_structurally_eq(
+        &self,
+        other: &CallablePrototypeData,
+        context: &ConcretizationContext,
+    ) -> bool {
+        let cmp_func = |ty1: &Type, ty2: &Type, context: &ConcretizationContext| {
+            ty1.is_structurally_eq(ty2, context)
+        };
+        self.compare(other, cmp_func, context)
     }
 
     fn concretize_prototype_core(
