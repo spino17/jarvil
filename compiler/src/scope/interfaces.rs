@@ -1,4 +1,5 @@
 use super::{
+    common::{FieldsMap, MethodsMap},
     concrete::{
         core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
         registry::GenericsSpecAndConcreteTypesRegistry,
@@ -14,8 +15,8 @@ use text_size::TextRange;
 
 #[derive(Debug, Default)]
 pub struct InterfaceData {
-    fields: FxHashMap<String, (Type, TextRange)>,
-    methods: FxHashMap<String, (CallableData, TextRange)>,
+    fields: FieldsMap,
+    methods: MethodsMap,
     pub generics: GenericsSpecAndConcreteTypesRegistry,
     pub is_init: bool,
 }
@@ -26,8 +27,8 @@ impl InterfaceData {
         fields: FxHashMap<String, (Type, TextRange)>,
         methods: FxHashMap<String, (CallableData, TextRange)>,
     ) {
-        self.fields = fields;
-        self.methods = methods;
+        self.fields = FieldsMap::new(fields);
+        self.methods = MethodsMap::new(methods);
     }
 
     pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
@@ -40,7 +41,7 @@ impl InterfaceData {
         field_name: &str,
         key: Option<ConcreteTypesRegistryKey>,
     ) -> Option<(Type, TextRange)> {
-        todo!()
+        self.fields.try_field(field_name, key, self)
     }
 
     pub fn try_method(
@@ -48,7 +49,8 @@ impl InterfaceData {
         method_name: &str,
         key: Option<ConcreteTypesRegistryKey>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
-        todo!()
+        self.methods
+            .try_method(method_name, key, &self.generics.concrete_types_registry)
     }
 }
 

@@ -1,3 +1,4 @@
+use crate::scope::common::{FieldsMap, MethodsMap};
 use crate::scope::concrete::core::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::concrete::registry::GenericsSpecAndConcreteTypesRegistry;
 use crate::scope::core::AbstractSymbolMetaData;
@@ -16,10 +17,10 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct StructTypeData {
-    fields: FxHashMap<String, (Type, TextRange)>,
+    fields: FieldsMap,
     pub constructor: CallableData,
-    methods: FxHashMap<String, (CallableData, TextRange)>,
-    class_methods: FxHashMap<String, (CallableData, TextRange)>,
+    methods: MethodsMap,
+    class_methods: MethodsMap,
     pub generics: GenericsSpecAndConcreteTypesRegistry,
     pub implementing_interfaces: Option<InterfaceBounds>,
     pub is_init: bool,
@@ -33,9 +34,9 @@ impl StructTypeData {
         methods: FxHashMap<String, (CallableData, TextRange)>,
         class_methods: FxHashMap<String, (CallableData, TextRange)>,
     ) {
-        self.fields = fields;
-        self.methods = methods;
-        self.class_methods = class_methods;
+        self.fields = FieldsMap::new(fields);
+        self.methods = MethodsMap::new(methods);
+        self.class_methods = MethodsMap::new(class_methods);
         if let Some((constructor_meta_data, _)) = constructor {
             self.constructor = constructor_meta_data;
         }
@@ -56,28 +57,7 @@ impl StructTypeData {
         field_name: &str,
         key: Option<ConcreteTypesRegistryKey>,
     ) -> Option<(Type, TextRange)> {
-        match self.fields.get(field_name) {
-            Some((ty, range)) => {
-                if ty.has_generics() {
-                    match key {
-                        Some(key) => {
-                            let concrete_types = self.get_concrete_types(key);
-                            return Some((
-                                ty.concretize(&ConcretizationContext::new(
-                                    Some(&concrete_types.0),
-                                    None,
-                                )),
-                                *range,
-                            ));
-                        }
-                        None => unreachable!(),
-                    }
-                } else {
-                    return Some((ty.clone(), *range));
-                }
-            }
-            None => None,
-        }
+        self.fields.try_field(field_name, key, self)
     }
 
     pub fn try_method(
@@ -85,19 +65,8 @@ impl StructTypeData {
         method_name: &str,
         key: Option<ConcreteTypesRegistryKey>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
-        match self.methods.get(method_name) {
-            Some((callable_data, range)) => {
-                return Some((
-                    PartialConcreteCallableDataRef::get_from_registry_key(
-                        callable_data,
-                        &self.generics.concrete_types_registry,
-                        key,
-                    ),
-                    *range,
-                ))
-            }
-            None => None,
-        }
+        self.methods
+            .try_method(method_name, key, &self.generics.concrete_types_registry)
     }
 
     pub fn try_class_method(
@@ -105,19 +74,11 @@ impl StructTypeData {
         class_method_name: &str,
         key: Option<ConcreteTypesRegistryKey>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
-        match self.class_methods.get(class_method_name) {
-            Some((callable_data, range)) => {
-                return Some((
-                    PartialConcreteCallableDataRef::get_from_registry_key(
-                        callable_data,
-                        &self.generics.concrete_types_registry,
-                        key,
-                    ),
-                    *range,
-                ))
-            }
-            None => None,
-        }
+        self.class_methods.try_method(
+            class_method_name,
+            key,
+            &self.generics.concrete_types_registry,
+        )
     }
 }
 
@@ -161,10 +122,10 @@ impl AbstractSymbolMetaData for StructTypeData {
 impl Default for StructTypeData {
     fn default() -> Self {
         StructTypeData {
-            fields: FxHashMap::default(),
+            fields: FieldsMap::default(),
             constructor: CallableData::default_for_kind(CallableKind::Method),
-            methods: FxHashMap::default(),
-            class_methods: FxHashMap::default(),
+            methods: MethodsMap::default(),
+            class_methods: MethodsMap::default(),
             generics: GenericsSpecAndConcreteTypesRegistry::default(),
             implementing_interfaces: Option::default(),
             is_init: false,

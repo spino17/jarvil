@@ -12,11 +12,15 @@ use rustc_hash::FxHashMap;
 use text_size::TextRange;
 
 #[derive(Debug, Default)]
-pub struct FieldMap {
+pub struct FieldsMap {
     fields: FxHashMap<String, (Type, TextRange)>,
 }
 
-impl FieldMap {
+impl FieldsMap {
+    pub fn new(fields: FxHashMap<String, (Type, TextRange)>) -> Self {
+        FieldsMap { fields }
+    }
+
     pub fn try_field<T: AbstractSymbolMetaData>(
         &self,
         field_name: &str,
@@ -54,6 +58,10 @@ pub struct MethodsMap {
 }
 
 impl MethodsMap {
+    pub fn new(methods: FxHashMap<String, (CallableData, TextRange)>) -> Self {
+        MethodsMap { methods }
+    }
+
     pub fn try_method<'a>(
         &'a self,
         method_name: &str,
