@@ -5,7 +5,7 @@ use super::{
         registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
     },
     core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams, SymbolData},
-    function::{CallableData, PartialConcreteCallableDataRef}
+    function::{CallableData, PartialConcreteCallableDataRef},
 };
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
@@ -238,7 +238,12 @@ impl ToString for InterfaceBounds {
 }
 
 #[derive(Debug)]
-pub struct PartialConcreteInterfaceMethodsCheckError {}
+pub enum PartialConcreteInterfaceMethodsCheckError {
+    GenericTypesDeclarationExpected(TextRange),
+    GenericTypesDeclarationNotExpected(TextRange),
+    PrototypeEquivalenceCheckFailed(TextRange),
+    GenericTypesDeclarationCheckFailed(TextRange),
+}
 
 #[derive(Debug)]
 pub struct PartialConcreteInterfaceMethods<'a> {
@@ -269,23 +274,59 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
     pub fn is_struct_implements_interface_methods(&self, struct_methods: &MethodsMap) {
         let struct_methods_map_ref = struct_methods.get_methods_ref();
         let mut missing_interface_method_names: Vec<&str> = vec![];
+        let mut errors: Vec<(&str, PartialConcreteInterfaceMethodsCheckError)> = vec![];
         for (interface_method_name, (interface_method_callable_data, _)) in
             self.methods.get_methods_ref()
         {
             match struct_methods_map_ref.get(interface_method_name) {
                 Some((struct_method_callable_data, range)) => {
-                    // TODO - compare `interface_method_callable_data` and `struct_method_callable_data`
-                    // first compare generic_type_decls => check all interface bounds are correct
-                    // check that generic types in prototype are having same index
-                    // generic type in `interface_method_callable_data`
-                    //  CASE 1. in struct => use `concrete_types` for that index to get the real type
-                    //  CASE 2. in method => use normal comparsion
-
-                    // generic type in `struct_method_callable_data`
-                    //  CASE 1. in struct => raise error `interface methods in struct cannot have generic resolved to 
-                    //      generic type declared in struct definition`
-                    //  CASE 2. in method => use normal comparsion
-                    todo!()
+                    let interface_method_generic_type_decls =
+                        &interface_method_callable_data.generics.generics_spec;
+                    let struct_method_generic_type_decls =
+                        &struct_method_callable_data.generics.generics_spec;
+                    match interface_method_generic_type_decls {
+                        Some(interface_method_generic_type_decls) => {
+                            match struct_method_generic_type_decls {
+                                Some(struct_method_generic_type_decls) => {
+                                    // check if number of generic type declarations match
+                                    if interface_method_generic_type_decls.len()
+                                        != struct_method_generic_type_decls.len()
+                                    {
+                                        errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(*range)));
+                                        continue;
+                                    }
+                                    // check if the interface bounds each generic type in the declaration match
+                                    let generic_type_decls_len =
+                                        interface_method_generic_type_decls.len();
+                                    for index in 0..generic_type_decls_len {
+                                        let interface_generic_bound =
+                                            &interface_method_generic_type_decls.0[index].1;
+                                        let struct_generic_bound =
+                                            &struct_method_generic_type_decls.0[index].1;
+                                        if !interface_generic_bound.is_eq(struct_generic_bound) {
+                                            errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(*range)));
+                                            continue;
+                                        }
+                                    }
+                                    // check if prototypes match
+                                    todo!()
+                                }
+                                None => {
+                                    errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationExpected(*range)));
+                                    continue;
+                                }
+                            }
+                        }
+                        None => match struct_method_generic_type_decls {
+                            Some(_) => {
+                                errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationNotExpected(*range)));
+                                continue;
+                            }
+                            None => {
+                                todo!()
+                            }
+                        },
+                    }
                 }
                 None => missing_interface_method_names.push(interface_method_name),
             }
