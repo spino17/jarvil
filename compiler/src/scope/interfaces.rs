@@ -309,7 +309,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                                         }
                                     }
                                     // check if prototypes match
-                                    if interface_method_callable_data.prototype.is_structurally_eq(
+                                    if !interface_method_callable_data.prototype.is_structurally_eq(
                                         &struct_method_callable_data.prototype,
                                         &ConcretizationContext::new(self.concrete_types, None),
                                     ) {
@@ -329,7 +329,13 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                                 continue;
                             }
                             None => {
-                                todo!()
+                                if !interface_method_callable_data.prototype.is_structurally_eq(
+                                    &struct_method_callable_data.prototype,
+                                    &ConcretizationContext::new(self.concrete_types, None),
+                                ) {
+                                    errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(*range)));
+                                    continue;
+                                }
                             }
                         },
                     }
