@@ -2,16 +2,63 @@ use super::{
     common::{FieldsMap, MethodsMap},
     concrete::{
         core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
-        registry::GenericsSpecAndConcreteTypesRegistry,
+        registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
     },
     core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams, SymbolData},
     function::{CallableData, PartialConcreteCallableDataRef},
+    types::struct_type::StructTypeData,
 };
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
 use text_size::TextRange;
+
+#[derive(Debug)]
+pub struct PartialConcreteInterfaceMethodsCheckError {}
+
+#[derive(Debug)]
+pub struct PartialConcreteInterfaceMethods<'a> {
+    methods: &'a MethodsMap,
+    concrete_types: Option<&'a Vec<Type>>,
+}
+
+impl<'a> PartialConcreteInterfaceMethods<'a> {
+    pub fn new(methods: &'a MethodsMap, concrete_types: Option<&'a Vec<Type>>) -> Self {
+        PartialConcreteInterfaceMethods {
+            methods,
+            concrete_types,
+        }
+    }
+
+    pub fn get_from_registry_key(
+        methods: &'a MethodsMap,
+        registry: &'a ConcreteTypesRegistryCore,
+        key: Option<ConcreteTypesRegistryKey>,
+    ) -> PartialConcreteInterfaceMethods<'a> {
+        let concrete_types = match key {
+            Some(key) => Some(&registry.get_concrete_types_at_key(key).0),
+            None => None,
+        };
+        return PartialConcreteInterfaceMethods::new(methods, concrete_types);
+    }
+
+    pub fn is_struct_implements_interface_methods(&self, struct_methods: &MethodsMap) {
+        let struct_methods_map_ref = struct_methods.get_methods_ref();
+        let mut missing_interface_method_names: Vec<&str> = vec![];
+        for (interface_method_name, (interface_method_callable_data, _)) in
+            self.methods.get_methods_ref()
+        {
+            match struct_methods_map_ref.get(interface_method_name) {
+                Some((struct_method_callable_data, _)) => {
+                    // TODO - compare `interface_method_callable_data` and `struct_method_callable_data`
+                    todo!()
+                }
+                None => missing_interface_method_names.push(interface_method_name),
+            }
+        }
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct InterfaceData {
@@ -51,6 +98,17 @@ impl InterfaceData {
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.methods
             .try_method(method_name, key, &self.generics.concrete_types_registry)
+    }
+
+    pub fn get_partially_concrete_interface_methods(
+        &self,
+        key: Option<ConcreteTypesRegistryKey>,
+    ) -> PartialConcreteInterfaceMethods {
+        PartialConcreteInterfaceMethods::get_from_registry_key(
+            &self.methods,
+            &self.generics.concrete_types_registry,
+            key,
+        )
     }
 }
 

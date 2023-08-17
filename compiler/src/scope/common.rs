@@ -62,6 +62,10 @@ impl MethodsMap {
         MethodsMap { methods }
     }
 
+    pub fn get_methods_ref(&self) -> &FxHashMap<String, (CallableData, TextRange)> {
+        &self.methods
+    }
+
     pub fn try_method<'a>(
         &'a self,
         method_name: &str,
