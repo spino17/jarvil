@@ -30,44 +30,70 @@ impl Struct {
             },
         }
     }
+
+    fn compare<F: Fn(&Type, &Type, &ConcretizationContext) -> bool>(
+        &self,
+        other: &Struct,
+        ty_cmp_func: F,
+        context: &ConcretizationContext,
+    ) -> bool {
+        if other.name.eq(&self.name) {
+            match self.semantic_data.index {
+                Some(self_key) => match other.semantic_data.index {
+                    Some(other_key) => {
+                        let self_symbol_data = self.semantic_data.get_core_ref();
+                        let self_struct_data = self_symbol_data.get_struct_data_ref();
+                        let self_concrete_types = &self_struct_data.get_concrete_types(self_key).0;
+                        let self_len = self_concrete_types.len();
+
+                        let other_symbol_data = other.semantic_data.get_core_ref();
+                        let other_struct_data = other_symbol_data.get_struct_data_ref();
+                        let other_concrete_types =
+                            &other_struct_data.get_concrete_types(other_key).0;
+                        let other_len = other_concrete_types.len();
+
+                        assert!(self_len == other_len);
+                        for i in 0..self_len {
+                            if !ty_cmp_func(
+                                &self_concrete_types[i],
+                                &other_concrete_types[i],
+                                context,
+                            ) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                    None => unreachable!(),
+                },
+                None => return true,
+            }
+        }
+        return false;
+    }
 }
 
 impl AbstractType for Struct {
     fn is_eq(&self, other_ty: &Type) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Struct(struct_data) => {
-                if struct_data.name.eq(&self.name) {
-                    match self.semantic_data.index {
-                        Some(self_key) => match struct_data.semantic_data.index {
-                            Some(other_key) => {
-                                let self_symbol_data = self.semantic_data.get_core_ref();
-                                let self_struct_data = self_symbol_data.get_struct_data_ref();
-                                let self_concrete_types =
-                                    &self_struct_data.get_concrete_types(self_key).0;
-                                let self_len = self_concrete_types.len();
-
-                                let other_symbol_data = struct_data.semantic_data.get_core_ref();
-                                let other_struct_data = other_symbol_data.get_struct_data_ref();
-                                let other_concrete_types =
-                                    &other_struct_data.get_concrete_types(other_key).0;
-                                let other_len = other_concrete_types.len();
-
-                                assert!(self_len == other_len);
-                                for i in 0..self_len {
-                                    if !self_concrete_types[i].is_eq(&other_concrete_types[i]) {
-                                        return false;
-                                    }
-                                }
-                                return true;
-                            }
-                            None => unreachable!(),
-                        },
-                        None => return true,
-                    }
-                }
-                return false;
+                let ty_cmp_func =
+                    |ty1: &Type, ty2: &Type, _context: &ConcretizationContext| ty1.is_eq(ty2);
+                self.compare(struct_data, ty_cmp_func, &ConcretizationContext::default())
             }
             CoreType::Any => true,
+            _ => false,
+        }
+    }
+
+    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+        match other_ty.0.as_ref() {
+            CoreType::Struct(struct_data) => {
+                let ty_cmp_func = |ty1: &Type, ty2: &Type, context: &ConcretizationContext| {
+                    ty1.is_structurally_eq(ty2, context)
+                };
+                self.compare(struct_data, ty_cmp_func, context)
+            }
             _ => false,
         }
     }

@@ -19,7 +19,7 @@ use std::rc::Rc;
 
 pub trait AbstractType {
     fn is_eq(&self, other_ty: &Type) -> bool;
-    // fn is_structurally_eq(&self, other_ty: &Type) -> bool;
+    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool;
     fn concretize(&self, context: &ConcretizationContext) -> Type;
     fn try_infer_type(
         &self,
@@ -328,13 +328,30 @@ impl AbstractType for Type {
             CoreType::Tuple(tuple_type) => tuple_type.is_eq(other_ty),
             CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(other_ty),
             CoreType::Generic(generic_type) => generic_type.is_eq(other_ty),
-            CoreType::Unknown => return false,
             CoreType::Void => match other_ty.0.as_ref() {
                 CoreType::Void => true,
                 _ => false,
             },
+            CoreType::Unknown => return false,
             CoreType::Unset => return false,
             CoreType::Any => return true,
+        }
+    }
+
+    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+        match self.0.as_ref() {
+            CoreType::Atomic(atomic_type) => atomic_type.is_structurally_eq(other_ty, context),
+            CoreType::Struct(struct_type) => struct_type.is_structurally_eq(other_ty, context),
+            CoreType::Lambda(lambda_type) => lambda_type.is_structurally_eq(other_ty, context),
+            CoreType::Array(array_type) => array_type.is_structurally_eq(other_ty, context),
+            CoreType::Tuple(tuple_type) => tuple_type.is_structurally_eq(other_ty, context),
+            CoreType::HashMap(hashmap_type) => hashmap_type.is_structurally_eq(other_ty, context),
+            CoreType::Generic(generic_type) => generic_type.is_structurally_eq(other_ty, context),
+            CoreType::Void => match other_ty.0.as_ref() {
+                CoreType::Void => true,
+                _ => false,
+            },
+            CoreType::Unknown | CoreType::Unset | CoreType::Any => unreachable!(),
         }
     }
 

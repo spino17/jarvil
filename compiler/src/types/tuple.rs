@@ -54,17 +54,34 @@ impl AbstractType for Tuple {
             CoreType::Tuple(tuple_data) => {
                 if tuple_data.sub_types.len() != self.sub_types.len() {
                     return false;
-                } else {
-                    let len = self.sub_types.len();
-                    for i in 0..len {
-                        if !self.sub_types[i].is_eq(&tuple_data.sub_types[i]) {
-                            return false;
-                        }
-                    }
-                    return true;
                 }
+                let len = self.sub_types.len();
+                for i in 0..len {
+                    if !self.sub_types[i].is_eq(&tuple_data.sub_types[i]) {
+                        return false;
+                    }
+                }
+                return true;
             }
             CoreType::Any => true,
+            _ => false,
+        }
+    }
+
+    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+        match other_ty.0.as_ref() {
+            CoreType::Tuple(tuple_data) => {
+                if tuple_data.sub_types.len() != self.sub_types.len() {
+                    return false;
+                }
+                let len = self.sub_types.len();
+                for i in 0..len {
+                    if !self.sub_types[i].is_structurally_eq(&tuple_data.sub_types[i], context) {
+                        return false;
+                    }
+                }
+                return true;
+            }
             _ => false,
         }
     }

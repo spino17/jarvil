@@ -71,6 +71,18 @@ impl AbstractType for Atomic {
         }
     }
 
+    fn is_structurally_eq(&self, other_ty: &Type, _context: &ConcretizationContext) -> bool {
+        match other_ty.0.as_ref() {
+            CoreType::Atomic(atomic_data) => match atomic_data {
+                Atomic::Int => self.is_int(),
+                Atomic::Float => self.is_float(),
+                Atomic::String => self.is_string(),
+                Atomic::Bool => self.is_bool(),
+            },
+            _ => false,
+        }
+    }
+
     fn concretize(&self, _context: &ConcretizationContext) -> Type {
         unreachable!()
     }

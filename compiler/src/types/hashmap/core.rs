@@ -38,6 +38,19 @@ impl AbstractType for HashMap {
         }
     }
 
+    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+        match other_ty.0.as_ref() {
+            CoreType::HashMap(hashmap_data) => {
+                self.key_type
+                    .is_structurally_eq(&hashmap_data.key_type, context)
+                    && self
+                        .value_type
+                        .is_structurally_eq(&hashmap_data.value_type, context)
+            }
+            _ => false,
+        }
+    }
+
     fn concretize(&self, context: &ConcretizationContext) -> Type {
         let concrete_key_ty = if self.key_type.has_generics() {
             self.key_type.concretize(context)

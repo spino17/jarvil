@@ -39,6 +39,10 @@ impl AbstractType for Generic {
         }
     }
 
+    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+        todo!()
+    }
+
     fn concretize(&self, context: &ConcretizationContext) -> Type {
         let symbol_data = self.semantic_data.get_core_ref();
         let generic_data = symbol_data.get_generic_data_ref();

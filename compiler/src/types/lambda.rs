@@ -117,6 +117,53 @@ impl AbstractType for Lambda {
         }
     }
 
+    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+        match other_ty.0.as_ref() {
+            CoreType::Lambda(other_data) => match self {
+                Lambda::Named((self_name, self_concrete_symbol_data)) => match other_data {
+                    Lambda::Named((other_name, other_concrete_symbol_data)) => {
+                        if self_name == other_name {
+                            match self_concrete_symbol_data.index {
+                                Some(self_index) => {
+                                    let self_symbol_data =
+                                        self_concrete_symbol_data.symbol_data.get_core_ref();
+                                    let self_lambda_data = self_symbol_data.get_lambda_data_ref();
+                                    let self_concrete_types =
+                                        &self_lambda_data.get_concrete_types(self_index).0;
+                                    let self_len = self_concrete_types.len();
+
+                                    let other_index = other_concrete_symbol_data.index.unwrap();
+                                    let other_symbol_data =
+                                        other_concrete_symbol_data.symbol_data.get_core_ref();
+                                    let other_lambda_data = other_symbol_data.get_lambda_data_ref();
+                                    let other_concrete_types =
+                                        &other_lambda_data.get_concrete_types(other_index).0;
+                                    let other_len = other_concrete_types.len();
+
+                                    assert!(self_len == other_len);
+                                    for i in 0..self_len {
+                                        if !&self_concrete_types[i]
+                                            .is_structurally_eq(&other_concrete_types[i], context)
+                                        {
+                                            return false;
+                                        }
+                                    }
+                                    return true;
+                                }
+                                None => return true,
+                            }
+                        } else {
+                            return false;
+                        }
+                    }
+                    Lambda::Unnamed(_) => unreachable!(),
+                },
+                Lambda::Unnamed(_) => unreachable!(),
+            },
+            _ => false,
+        }
+    }
+
     fn concretize(&self, context: &ConcretizationContext) -> Type {
         match self {
             Lambda::Named(named) => {

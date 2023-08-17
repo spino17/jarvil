@@ -62,7 +62,7 @@ impl<T: AbstractConcreteTypesHandler> Clone for ConcreteSymbolData<T> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ConcretizationContext<'a> {
     pub struct_concrete_types: Option<&'a Vec<Type>>,
     pub function_local_concrete_types: Option<&'a Vec<Type>>,

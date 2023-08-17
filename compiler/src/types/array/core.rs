@@ -52,6 +52,15 @@ impl AbstractType for Array {
         }
     }
 
+    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+        match other_ty.0.as_ref() {
+            CoreType::Array(array_data) => self
+                .element_type
+                .is_structurally_eq(&array_data.element_type, context),
+            _ => false,
+        }
+    }
+
     fn concretize(&self, context: &ConcretizationContext) -> Type {
         Type::new_with_array(self.element_type.concretize(context))
     }
