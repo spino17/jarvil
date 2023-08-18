@@ -339,7 +339,16 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         }
     }
 
-    pub fn is_struct_implements_interface_methods(&self, struct_methods: &MethodsMap) {
+    pub fn is_struct_implements_interface_methods(
+        &self,
+        struct_methods: &MethodsMap,
+    ) -> Result<
+        (),
+        (
+            Option<Vec<&str>>,
+            Option<Vec<(&str, PartialConcreteInterfaceMethodsCheckError)>>,
+        ),
+    > {
         let struct_methods_map_ref = struct_methods.get_methods_ref();
         let mut missing_interface_method_names: Vec<&str> = vec![];
         let mut errors: Vec<(&str, PartialConcreteInterfaceMethodsCheckError)> = vec![];
@@ -359,5 +368,16 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                 None => missing_interface_method_names.push(interface_method_name),
             }
         }
+        let mut final_err = (None, None);
+        if missing_interface_method_names.len() > 0 {
+            final_err.0 = Some(missing_interface_method_names);
+        }
+        if errors.len() > 0 {
+            final_err.1 = Some(errors);
+        }
+        if final_err.0.is_some() || final_err.1.is_some() {
+            return Err(final_err);
+        }
+        return Ok(());
     }
 }

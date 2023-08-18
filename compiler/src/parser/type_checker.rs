@@ -8,7 +8,7 @@ use crate::ast::ast::{
 };
 use crate::error::diagnostics::{
     GenericTypeArgsNotExpectedError, InferredTypesNotBoundedByInterfacesError,
-    NotAllConcreteTypesInferredError, TypeInferenceFailedError,
+    InterfaceMethodsInStructCheckError, NotAllConcreteTypesInferredError, TypeInferenceFailedError,
 };
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcretizationContext};
@@ -1637,8 +1637,6 @@ impl TypeChecker {
 
     pub fn check_struct_declaration(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
-        // TODO - check the implementing_interfaces => first whether <...> is correct
-        // then whether the methods expected by the interfaces are there or not
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             if let Some(symbol_data) = self
                 .namespace_handler
@@ -1656,9 +1654,17 @@ impl TypeChecker {
                             &*interface_concrete_symbol_data.symbol_data.get_core_ref();
                         let partial_concrete_interface_methods =
                             interface_data.get_partially_concrete_interface_methods(index);
-                        partial_concrete_interface_methods
-                            .is_struct_implements_interface_methods(struct_methods);
-                        todo!()
+                        if let Err((missing_interface_method_names, errors)) =
+                            partial_concrete_interface_methods
+                                .is_struct_implements_interface_methods(struct_methods)
+                        {
+                            let err = InterfaceMethodsInStructCheckError::new(
+                                missing_interface_method_names,
+                                errors,
+                                *range,
+                            );
+                            self.log_error(Diagnostics::InterfaceMethodsInStructCheck(err));
+                        }
                     }
                 }
             }

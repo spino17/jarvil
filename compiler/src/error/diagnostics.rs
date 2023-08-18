@@ -1,8 +1,14 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
-use crate::{lexer::token::Token, parser::helper::format_symbol, types::core::Type};
+use crate::{
+    lexer::token::Token, parser::helper::format_symbol,
+    scope::interfaces::PartialConcreteInterfaceMethodsCheckError, types::core::Type,
+};
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use owo_colors::{OwoColorize, Style};
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    vec,
+};
 use text_size::TextRange;
 use thiserror::Error;
 
@@ -68,6 +74,7 @@ pub enum Diagnostics {
     GenericTypeArgsExpected(GenericTypeArgsExpectedError),
     GenericTypeArgsCountMismatched(GenericTypeArgsCountMismatchedError),
     GenericTypeArgsIncorrectlyBounded(GenericTypeArgsIncorrectlyBoundedError),
+    InterfaceMethodsInStructCheck(InterfaceMethodsInStructCheckError),
 }
 
 impl Diagnostics {
@@ -165,6 +172,9 @@ impl Diagnostics {
             Diagnostics::NotAllConcreteTypesInferred(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::TypeInferenceFailed(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::InferredTypesNotBoundedByInterfaces(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InterfaceMethodsInStructCheck(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -978,6 +988,95 @@ impl Diagnostic for MismatchedParamTypeError {
                 start_index,
                 len,
             ));
+        }
+        return Some(Box::new(span_vec.into_iter()));
+    }
+
+    fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
+        return Some(Box::new("TypeCheckError"));
+    }
+}
+
+#[derive(Debug, Error, Clone)]
+#[error("struct type not implementing interface methods correctly")]
+pub struct InterfaceMethodsInStructCheckError {
+    missing_interface_method_names: Option<String>,
+    errors: Option<Vec<(String, TextRange)>>,
+    interface_range: TextRange,
+}
+
+impl InterfaceMethodsInStructCheckError {
+    pub fn new(
+        missing_interface_method_names: Option<Vec<&str>>,
+        errors: Option<Vec<(&str, PartialConcreteInterfaceMethodsCheckError)>>,
+        interface_range: TextRange,
+    ) -> Self {
+        let missing_interface_method_names: Option<String> =
+            if let Some(missing_interface_method_names) = missing_interface_method_names {
+                let mut s = "".to_string();
+                if missing_interface_method_names.len() > 0 {
+                    s.push_str(missing_interface_method_names[0]);
+                }
+                for i in 1..missing_interface_method_names.len() {
+                    s.push_str(&format!(", {}", missing_interface_method_names[i]));
+                }
+                Some(s)
+            } else {
+                None
+            };
+        let errors: Option<Vec<(String, TextRange)>> = if let Some(errors) = errors {
+            let mut v = vec![];
+            for (_, err) in errors {
+                let s: (String, TextRange) = match err {
+                    PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range) => {
+                        ("generic types declaration does not match with interface specification for this method".to_string(), range)
+                    },
+                    PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationNotExpected(range) => {
+                        ("generic types declaration is not expected by interface specification for this method".to_string(), range)
+                    },
+                    PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationExpected(range) => {
+                        ("generic types declaration expected by interface specification for this method".to_string(), range)
+                    },
+                    PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range) => {
+                        ("prototype does not match with the interface specification for this method".to_string(), range)
+                    },
+                };
+                v.push(s);
+            }
+            Some(v)
+        } else {
+            None
+        };
+        InterfaceMethodsInStructCheckError {
+            missing_interface_method_names,
+            errors,
+            interface_range,
+        }
+    }
+}
+
+impl Diagnostic for InterfaceMethodsInStructCheckError {
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
+        let mut span_vec: Vec<LabeledSpan> = vec![];
+        let s = match &self.missing_interface_method_names {
+            Some(s) => {
+                format!("missing interface methods: {}", s)
+            }
+            None => "interface not correctly implemented by the struct type".to_string(),
+        };
+        let start_index: usize = self.interface_range.start().into();
+        let len: usize = (self.interface_range.end() - self.interface_range.start()).into();
+        span_vec.push(miette::LabeledSpan::new(Some(s), start_index, len));
+        if let Some(errors) = &self.errors {
+            for (err_message, method_range) in errors {
+                let start_index: usize = method_range.start().into();
+                let len: usize = (method_range.end() - method_range.start()).into();
+                span_vec.push(miette::LabeledSpan::new(
+                    Some(err_message.to_string()),
+                    start_index,
+                    len,
+                ));
+            }
         }
         return Some(Box::new(span_vec.into_iter()));
     }

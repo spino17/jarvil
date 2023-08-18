@@ -1343,6 +1343,7 @@ impl Resolver {
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             match constructor {
                 Some((_, construct_span)) => {
+                    // TODO - put this logic inside error constructor
                     let mut missing_fields_from_constructor: Vec<&str> = vec![];
                     for (field_name, _) in fields_map.iter() {
                         if initialized_fields.get(field_name).is_none() {
