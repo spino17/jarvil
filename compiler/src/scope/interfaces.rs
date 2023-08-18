@@ -271,6 +271,70 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         return PartialConcreteInterfaceMethods::new(methods, concrete_types);
     }
 
+    fn compare_interface_method_with_struct_method(
+        &self,
+        interface_method_callable_data: &CallableData,
+        struct_method_callable_data: &CallableData,
+        range: TextRange,
+    ) -> Result<(), PartialConcreteInterfaceMethodsCheckError> {
+        let interface_method_generic_type_decls =
+            &interface_method_callable_data.generics.generics_spec;
+        let struct_method_generic_type_decls = &struct_method_callable_data.generics.generics_spec;
+        match interface_method_generic_type_decls {
+            Some(interface_method_generic_type_decls) => {
+                match struct_method_generic_type_decls {
+                    Some(struct_method_generic_type_decls) => {
+                        // check if number of generic type declarations match
+                        if interface_method_generic_type_decls.len()
+                            != struct_method_generic_type_decls.len()
+                        {
+                            return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
+                        }
+                        // check if the interface bounds each generic type in the declaration match
+                        let generic_type_decls_len = interface_method_generic_type_decls.len();
+                        for index in 0..generic_type_decls_len {
+                            let interface_generic_bound =
+                                &interface_method_generic_type_decls.0[index].1;
+                            let struct_generic_bound = &struct_method_generic_type_decls.0[index].1;
+                            if !interface_generic_bound.is_eq(struct_generic_bound) {
+                                return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
+                            }
+                        }
+                        // check if prototypes match
+                        if !interface_method_callable_data.prototype.is_structurally_eq(
+                            &struct_method_callable_data.prototype,
+                            &ConcretizationContext::new(self.concrete_types, None),
+                        ) {
+                            return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
+                        }
+                        return Ok(());
+                    }
+                    None => return Err(
+                        PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationExpected(
+                            range,
+                        ),
+                    ),
+                }
+            }
+            None => match struct_method_generic_type_decls {
+                Some(_) => return Err(
+                    PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationNotExpected(
+                        range,
+                    ),
+                ),
+                None => {
+                    if !interface_method_callable_data.prototype.is_structurally_eq(
+                        &struct_method_callable_data.prototype,
+                        &ConcretizationContext::new(self.concrete_types, None),
+                    ) {
+                        return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
+                    }
+                    return Ok(());
+                }
+            },
+        }
+    }
+
     pub fn is_struct_implements_interface_methods(&self, struct_methods: &MethodsMap) {
         let struct_methods_map_ref = struct_methods.get_methods_ref();
         let mut missing_interface_method_names: Vec<&str> = vec![];
@@ -280,64 +344,12 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         {
             match struct_methods_map_ref.get(interface_method_name) {
                 Some((struct_method_callable_data, range)) => {
-                    let interface_method_generic_type_decls =
-                        &interface_method_callable_data.generics.generics_spec;
-                    let struct_method_generic_type_decls =
-                        &struct_method_callable_data.generics.generics_spec;
-                    match interface_method_generic_type_decls {
-                        Some(interface_method_generic_type_decls) => {
-                            match struct_method_generic_type_decls {
-                                Some(struct_method_generic_type_decls) => {
-                                    // check if number of generic type declarations match
-                                    if interface_method_generic_type_decls.len()
-                                        != struct_method_generic_type_decls.len()
-                                    {
-                                        errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(*range)));
-                                        continue;
-                                    }
-                                    // check if the interface bounds each generic type in the declaration match
-                                    let generic_type_decls_len =
-                                        interface_method_generic_type_decls.len();
-                                    for index in 0..generic_type_decls_len {
-                                        let interface_generic_bound =
-                                            &interface_method_generic_type_decls.0[index].1;
-                                        let struct_generic_bound =
-                                            &struct_method_generic_type_decls.0[index].1;
-                                        if !interface_generic_bound.is_eq(struct_generic_bound) {
-                                            errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(*range)));
-                                            continue;
-                                        }
-                                    }
-                                    // check if prototypes match
-                                    if !interface_method_callable_data.prototype.is_structurally_eq(
-                                        &struct_method_callable_data.prototype,
-                                        &ConcretizationContext::new(self.concrete_types, None),
-                                    ) {
-                                        errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(*range)));
-                                        continue;
-                                    }
-                                }
-                                None => {
-                                    errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationExpected(*range)));
-                                    continue;
-                                }
-                            }
-                        }
-                        None => match struct_method_generic_type_decls {
-                            Some(_) => {
-                                errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationNotExpected(*range)));
-                                continue;
-                            }
-                            None => {
-                                if !interface_method_callable_data.prototype.is_structurally_eq(
-                                    &struct_method_callable_data.prototype,
-                                    &ConcretizationContext::new(self.concrete_types, None),
-                                ) {
-                                    errors.push((interface_method_name, PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(*range)));
-                                    continue;
-                                }
-                            }
-                        },
+                    if let Err(err) = self.compare_interface_method_with_struct_method(
+                        interface_method_callable_data,
+                        struct_method_callable_data,
+                        *range,
+                    ) {
+                        errors.push((interface_method_name, err));
                     }
                 }
                 None => missing_interface_method_names.push(interface_method_name),
