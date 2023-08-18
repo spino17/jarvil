@@ -8,7 +8,7 @@ use super::{
     function::{CallableData, PartialConcreteCallableDataRef},
 };
 use crate::types::core::Type;
-use crate::{error, scope::concrete::core::ConcretizationContext, types::core::AbstractType};
+use crate::{scope::concrete::core::ConcretizationContext, types::core::AbstractType};
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
 use text_size::TextRange;

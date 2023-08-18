@@ -1,8 +1,5 @@
-use super::{
-    core::GenericTypeParams, errors::GenericTypeArgsCheckError,
-    interfaces::PartialConcreteInterfaceMethodsCheckError,
-};
-use crate::{error::diagnostics::Diagnostics, types::core::Type};
+use super::{core::GenericTypeParams, errors::GenericTypeArgsCheckError};
+use crate::types::core::Type;
 use text_size::TextRange;
 
 pub fn check_concrete_types_bounded_by_interfaces(
