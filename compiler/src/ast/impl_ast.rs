@@ -41,7 +41,7 @@ use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
 use crate::scope::core::LookupResult;
-use crate::scope::handler::SemanticStateHandler;
+use crate::scope::handler::SemanticStateDatabase;
 use crate::scope::types::core::{UserDefineTypeKind, UserDefinedTypeData};
 use crate::types::core::Type;
 use std::hash::{Hash, Hasher};
@@ -1145,7 +1145,7 @@ impl UserDefinedTypeNode {
         if let CoreIdentifierInUseNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(&resolver.code);
             match resolver
-                .namespace_handler
+                .semantic_state_db
                 .namespace
                 .lookup_in_types_namespace(scope_index, &name)
             {
@@ -1261,11 +1261,11 @@ impl UserDefinedTypeNode {
     pub fn type_obj_after_resolved(
         &self,
         code: &JarvilCode,
-        namespace_handler: &SemanticStateHandler,
+        semantic_state_db: &SemanticStateDatabase,
     ) -> TypeResolveKind {
         if let CoreIdentifierInUseNode::Ok(ok_identifier) = self.core_ref().name.core_ref() {
             let name = ok_identifier.token_value(code);
-            match namespace_handler.get_type_symbol_data_for_identifier_in_use(ok_identifier) {
+            match semantic_state_db.get_type_symbol_data_for_identifier_in_use(ok_identifier) {
                 Some(concrete_symbol_data) => {
                     let index = concrete_symbol_data.index;
                     let symbol_data = &concrete_symbol_data.symbol_data;

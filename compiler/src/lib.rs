@@ -53,12 +53,12 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
 
     // name-resolver
     let resolver = Resolver::new(code);
-    let (namespace_handler, mut semantic_errors, code) = resolver.resolve_ast(&ast);
+    let (semantic_state_db, mut semantic_errors, code) = resolver.resolve_ast(&ast);
     errors.append(&mut semantic_errors);
 
     // type-checker
-    let type_checker = TypeChecker::new(code, namespace_handler);
-    let (namespace_handler, code) = type_checker.check_ast(&ast, &mut errors);
+    let type_checker = TypeChecker::new(code, semantic_state_db);
+    let (semantic_state_db, code) = type_checker.check_ast(&ast, &mut errors);
 
     if errors.len() > 0 {
         let err = &errors[0];
@@ -66,7 +66,7 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
     }
 
     // Python code-generation
-    let py_generator = PythonCodeGenerator::new(code, namespace_handler);
+    let py_generator = PythonCodeGenerator::new(code, semantic_state_db);
     let py_code = py_generator.generate_python_code(&ast);
     Ok(py_code)
 }

@@ -13,7 +13,7 @@ use crate::{
     code::JarvilCode,
     context,
     lexer::token::{CoreToken, Token},
-    scope::handler::{ConcreteSymbolDataEntry, SemanticStateHandler, SymbolDataEntry},
+    scope::handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::convert::TryInto;
@@ -40,16 +40,16 @@ pub struct PythonCodeGenerator {
     indent_level: usize,
     generate_code: String,
     code: JarvilCode,
-    namespace_handler: SemanticStateHandler,
+    semantic_state_db: SemanticStateDatabase,
 }
 
 impl PythonCodeGenerator {
-    pub fn new(code: JarvilCode, namespace_handler: SemanticStateHandler) -> PythonCodeGenerator {
+    pub fn new(code: JarvilCode, semantic_state_db: SemanticStateDatabase) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
             generate_code: "".to_string(),
             code,
-            namespace_handler,
+            semantic_state_db,
         }
     }
 
@@ -83,7 +83,7 @@ impl PythonCodeGenerator {
         &self,
         block: &BlockNode,
     ) -> (&FxHashSet<String>, &FxHashMap<String, bool>) {
-        self.namespace_handler.get_non_locals_ref(block)
+        self.semantic_state_db.get_non_locals_ref(block)
     }
 
     pub fn get_suffix_str_for_identifier_in_decl(
@@ -91,7 +91,7 @@ impl PythonCodeGenerator {
         identifier: &OkIdentifierInDeclNode,
     ) -> &'static str {
         match self
-            .namespace_handler
+            .semantic_state_db
             .get_symbol_data_for_identifier_in_decl(identifier)
         {
             Some(symbol_data) => match symbol_data {
@@ -124,7 +124,7 @@ impl PythonCodeGenerator {
         identifier: &OkIdentifierInUseNode,
     ) -> &'static str {
         match self
-            .namespace_handler
+            .semantic_state_db
             .get_symbol_data_for_identifier_in_use(identifier)
         {
             Some(symbol_data) => match symbol_data {
@@ -347,7 +347,7 @@ impl PythonCodeGenerator {
         bounded_method_wrapper: &BoundedMethodWrapperNode,
     ) {
         let bounded_kind = match self
-            .namespace_handler
+            .semantic_state_db
             .get_bounded_kind_ref(bounded_method_wrapper)
         {
             Some(bounded_kind) => bounded_kind,

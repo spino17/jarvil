@@ -21,7 +21,7 @@ use crate::scope::core::{
 };
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{CallableKind, CallablePrototypeData};
-use crate::scope::handler::{ConcreteSymbolDataEntry, SemanticStateHandler, SymbolDataEntry};
+use crate::scope::handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry};
 use crate::scope::interfaces::{InterfaceBounds, InterfaceObject};
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::AbstractType;
@@ -112,7 +112,7 @@ pub struct Resolver {
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
-    pub namespace_handler: SemanticStateHandler,
+    pub semantic_state_db: SemanticStateDatabase,
 }
 
 impl Resolver {
@@ -131,24 +131,24 @@ impl Resolver {
                 }],
             },
             indent_level: 0,
-            namespace_handler: SemanticStateHandler::new(),
+            semantic_state_db: SemanticStateDatabase::new(),
         }
     }
 
     pub fn resolve_ast(
         mut self,
         ast: &BlockNode,
-    ) -> (SemanticStateHandler, Vec<Diagnostics>, JarvilCode) {
+    ) -> (SemanticStateDatabase, Vec<Diagnostics>, JarvilCode) {
         let code_block = &*ast.0.as_ref();
         // setting builtin functions to global scope
-        self.namespace_handler.namespace.functions.force_insert(
+        self.semantic_state_db.namespace.functions.force_insert(
             self.scope_index,
             "print".to_string(),
             print_meta_data(),
             TextRange::default(),
             false,
         );
-        self.namespace_handler.namespace.functions.force_insert(
+        self.semantic_state_db.namespace.functions.force_insert(
             self.scope_index,
             "range".to_string(),
             range_meta_data(),
@@ -159,7 +159,7 @@ impl Resolver {
             self.walk_stmt_indent_wrapper(stmt);
         }
         match self
-            .namespace_handler
+            .semantic_state_db
             .namespace
             .functions
             .get(self.scope_index, "main")
@@ -179,12 +179,12 @@ impl Resolver {
                 self.errors.push(Diagnostics::MainFunctionNotFound(err));
             }
         }
-        (self.namespace_handler, self.errors, self.code)
+        (self.semantic_state_db, self.errors, self.code)
     }
 
     pub fn open_block(&mut self, block_kind: BlockKind) {
         let new_scope_index = self
-            .namespace_handler
+            .semantic_state_db
             .namespace
             .open_scope(self.scope_index);
         self.scope_index = new_scope_index;
@@ -199,7 +199,7 @@ impl Resolver {
 
     pub fn close_block(&mut self, block: Option<&BlockNode>) {
         let parent_scope_index = match self
-            .namespace_handler
+            .semantic_state_db
             .namespace
             .parent_scope_index(self.scope_index)
         {
@@ -213,7 +213,7 @@ impl Resolver {
             None => unreachable!(),
         };
         if let Some(block) = block {
-            self.namespace_handler.set_non_locals(
+            self.semantic_state_db.set_non_locals(
                 block,
                 non_locals.variable_non_locals,
                 non_locals.function_non_locals,
@@ -287,7 +287,7 @@ impl Resolver {
         node: &OkIdentifierInDeclNode,
         symbol_data: SymbolDataEntry,
     ) {
-        self.namespace_handler
+        self.semantic_state_db
             .identifier_in_decl_binding_table
             .insert(node.clone(), symbol_data);
     }
@@ -311,7 +311,7 @@ impl Resolver {
                 let index = symbol_data.register_concrete_types(concrete_types, has_generics);
                 let concrete_symbol_data =
                     ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
-                self.namespace_handler
+                self.semantic_state_db
                     .identifier_in_use_binding_table
                     .insert(node.clone(), concrete_symbol_data);
                 return Ok(index);
@@ -325,7 +325,7 @@ impl Resolver {
         node: &OkSelfKeywordNode,
         symbol_data: SymbolData<VariableData>,
     ) {
-        self.namespace_handler
+        self.semantic_state_db
             .self_keyword_binding_table
             .insert(node.clone(), symbol_data);
     }
@@ -342,7 +342,7 @@ impl Resolver {
         is_concrete_types_none_allowed: bool,
     ) -> ResolveResult<T> {
         let name = identifier.token_value(&self.code);
-        match lookup_fn(&self.namespace_handler.namespace, self.scope_index, &name) {
+        match lookup_fn(&self.semantic_state_db.namespace, self.scope_index, &name) {
             LookupResult::Ok(lookup_data) => {
                 match self.bind_decl_to_identifier_in_use(
                     identifier,
@@ -450,7 +450,7 @@ impl Resolver {
         let name = self_keyword.token_value(&self.code);
         assert!(name == "self".to_string());
         match self
-            .namespace_handler
+            .semantic_state_db
             .namespace
             .lookup_in_variables_namespace(self.scope_index, &name)
         {
@@ -475,7 +475,7 @@ impl Resolver {
     ) -> Result<T, (String, TextRange)> {
         let name = identifier.token_value(&self.code);
         let result = declare_fn(
-            &mut self.namespace_handler.namespace,
+            &mut self.semantic_state_db.namespace,
             self.scope_index,
             name,
             identifier.core_ref().name.range(),
@@ -582,7 +582,7 @@ impl Resolver {
             }
             TypeResolveKind::Invalid => Type::new_with_unknown(),
         };
-        self.namespace_handler
+        self.semantic_state_db
             .set_type_expr_obj_mapping(type_expr, &ty_obj);
         ty_obj
     }
@@ -669,7 +669,7 @@ impl Resolver {
                             }
                         }
                         match self
-                            .namespace_handler
+                            .semantic_state_db
                             .namespace
                             .declare_generic_type_with_meta_data(
                                 self.scope_index,
@@ -776,7 +776,7 @@ impl Resolver {
                 if let CoreIdentifierInDeclNode::Ok(ok_identifier) = param_name.core_ref() {
                     let param_name = ok_identifier.token_value(&self.code);
                     let param_type = self.type_obj_from_expression(&core_param.data_type);
-                    let result = self.namespace_handler.namespace.declare_variable_with_type(
+                    let result = self.semantic_state_db.namespace.declare_variable_with_type(
                         self.scope_index,
                         param_name,
                         &param_type,
@@ -1125,7 +1125,7 @@ impl Resolver {
             None => (None, Type::new_with_unknown()),
         };
 
-        let result = self.namespace_handler.namespace.declare_variable_with_type(
+        let result = self.semantic_state_db.namespace.declare_variable_with_type(
             self.scope_index,
             "self".to_string(),
             &struct_ty,
@@ -1287,7 +1287,7 @@ impl Resolver {
                                     }
                                     constructor =
                                         Some((func_meta_data, ok_bounded_method_name.range()));
-                                    self.namespace_handler.set_bounded_kind(
+                                    self.semantic_state_db.set_bounded_kind(
                                         bounded_method_wrapper,
                                         BoundedMethodKind::Constructor,
                                     );
@@ -1317,7 +1317,7 @@ impl Resolver {
                                             method_name_str,
                                             (func_meta_data, ok_bounded_method_name.range()),
                                         );
-                                        self.namespace_handler.set_bounded_kind(
+                                        self.semantic_state_db.set_bounded_kind(
                                             bounded_method_wrapper,
                                             BoundedMethodKind::Method,
                                         );
@@ -1326,7 +1326,7 @@ impl Resolver {
                                             method_name_str,
                                             (func_meta_data, ok_bounded_method_name.range()),
                                         );
-                                        self.namespace_handler.set_bounded_kind(
+                                        self.semantic_state_db.set_bounded_kind(
                                             bounded_method_wrapper,
                                             BoundedMethodKind::ClassMethod,
                                         );
@@ -1434,7 +1434,7 @@ impl Resolver {
         if let Some(ok_identifier) = optional_ok_identifier_node {
             let name = ok_identifier.token_value(&self.code);
             let result = self
-                .namespace_handler
+                .semantic_state_db
                 .namespace
                 .declare_lambda_type_with_meta_data(
                     self.scope_index,

@@ -80,7 +80,7 @@ pub enum IdentifierNodeWrapper<'a> {
 }
 
 // This contains all the relevant semantic information collected over various AST passes
-pub struct SemanticStateHandler {
+pub struct SemanticStateDatabase {
     pub namespace: Namespace,
     pub identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
     pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
@@ -90,9 +90,9 @@ pub struct SemanticStateHandler {
     pub bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
 }
 
-impl SemanticStateHandler {
+impl SemanticStateDatabase {
     pub fn new() -> Self {
-        SemanticStateHandler {
+        SemanticStateDatabase {
             namespace: Namespace::new(),
             identifier_in_decl_binding_table: FxHashMap::default(),
             identifier_in_use_binding_table: FxHashMap::default(),

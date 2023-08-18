@@ -61,7 +61,7 @@ use crate::{
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
-        function::CallablePrototypeData, handler::SemanticStateHandler,
+        function::CallablePrototypeData, handler::SemanticStateDatabase,
         types::core::UserDefinedTypeData,
     },
     types::{
@@ -173,16 +173,16 @@ pub struct TypeChecker {
     code: JarvilCode,
     errors: UnsafeCell<Vec<Diagnostics>>,
     context: Context,
-    namespace_handler: SemanticStateHandler,
+    semantic_state_db: SemanticStateDatabase,
 }
 
 impl TypeChecker {
-    pub fn new(code: JarvilCode, namespace_handler: SemanticStateHandler) -> Self {
+    pub fn new(code: JarvilCode, semantic_state_db: SemanticStateDatabase) -> Self {
         TypeChecker {
             code,
             errors: UnsafeCell::new(vec![]),
             context: Context { func_stack: vec![] },
-            namespace_handler,
+            semantic_state_db,
         }
     }
 
@@ -202,7 +202,7 @@ impl TypeChecker {
         mut self,
         ast: &BlockNode,
         global_errors: &mut Vec<Diagnostics>,
-    ) -> (SemanticStateHandler, JarvilCode) {
+    ) -> (SemanticStateDatabase, JarvilCode) {
         let core_block = ast.0.as_ref();
         for stmt in &*core_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
@@ -211,18 +211,18 @@ impl TypeChecker {
             let errors_ref = &mut *self.errors.get();
             global_errors.append(errors_ref);
         };
-        (self.namespace_handler, self.code)
+        (self.semantic_state_db, self.code)
     }
 
     pub fn is_resolved(&self, node: &OkIdentifierInDeclNode) -> bool {
-        self.namespace_handler
+        self.semantic_state_db
             .identifier_in_decl_binding_table
             .get(node)
             .is_some()
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
-        return self.namespace_handler.get_type_obj_from_expr(type_expr);
+        return self.semantic_state_db.get_type_obj_from_expr(type_expr);
     }
 
     fn extract_angle_bracket_content_from_identifier_in_use(
@@ -304,7 +304,7 @@ impl TypeChecker {
         let return_type = &prototype.return_type;
         let (params_vec, return_type, is_concretization_required) = match lambda_name.core_ref() {
             CoreIdentifierInDeclNode::Ok(ok_identifier) => match self
-                .namespace_handler
+                .semantic_state_db
                 .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
             {
                 Some(symbol_data) => return symbol_data.get_core_ref().data_type.clone(),
@@ -754,7 +754,7 @@ impl TypeChecker {
             //     CASE 3. <...> not in decl, <...> in usage => error while resolving
             //     CASE 4. <...> not in decl, <...> not in usage => no error
             if let Some(symbol_data) = self
-                .namespace_handler
+                .semantic_state_db
                 .get_symbol_data_for_identifier_in_use(ok_identifier)
             {
                 let result = match symbol_data {
@@ -817,7 +817,7 @@ impl TypeChecker {
         if let CoreIdentifierInUseNode::Ok(ok_identifier) = class.core_ref() {
             let class_name = ok_identifier.token_value(&self.code);
             match self
-                .namespace_handler
+                .semantic_state_db
                 .get_type_symbol_data_for_identifier_in_use(ok_identifier)
             {
                 Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
@@ -890,7 +890,7 @@ impl TypeChecker {
             CoreAtomStartNode::Identifier(token) => match token.core_ref() {
                 CoreIdentifierInUseNode::Ok(ok_identifier) => {
                     match self
-                        .namespace_handler
+                        .semantic_state_db
                         .get_variable_symbol_data_for_identifier_in_use(ok_identifier)
                     {
                         Some(variable_symbol_data) => {
@@ -906,7 +906,7 @@ impl TypeChecker {
                 match core_self_keyword {
                     CoreSelfKeywordNode::Ok(ok_self_keyword) => {
                         match self
-                            .namespace_handler
+                            .semantic_state_db
                             .get_self_keyword_symbol_data_ref(ok_self_keyword)
                         {
                             Some(symbol_data) => {
@@ -1520,7 +1520,7 @@ impl TypeChecker {
         }
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             if let Some(symbol_data) = self
-                .namespace_handler
+                .semantic_state_db
                 .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
             {
                 symbol_data.get_core_mut_ref().set_data_type(&r_type);
@@ -1588,7 +1588,7 @@ impl TypeChecker {
     pub fn check_bounded_method(&mut self, bounded_method_wrapper: &BoundedMethodWrapperNode) {
         let core_bounded_method_wrapper = &*bounded_method_wrapper.0.as_ref();
         let is_constructor = match self
-            .namespace_handler
+            .semantic_state_db
             .get_bounded_kind_ref(bounded_method_wrapper)
         {
             Some(bounded_kind) => match bounded_kind {
@@ -1639,7 +1639,7 @@ impl TypeChecker {
         let core_struct_decl = struct_decl.core_ref();
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             if let Some(symbol_data) = self
-                .namespace_handler
+                .semantic_state_db
                 .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
             {
                 let symbol_data_ref = symbol_data.get_core_ref();
