@@ -80,6 +80,10 @@ impl StructTypeData {
             &self.generics.concrete_types_registry,
         )
     }
+
+    pub fn get_methods_ref(&self) -> &MethodsMap {
+        &self.methods
+    }
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {

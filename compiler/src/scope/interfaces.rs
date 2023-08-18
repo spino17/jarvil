@@ -114,6 +114,10 @@ impl InterfaceObject {
         InterfaceObject(Rc::new((name, ConcreteSymbolData::new(symbol_data, index))))
     }
 
+    pub fn get_core_ref(&self) -> &(String, ConcreteSymbolData<InterfaceData>) {
+        self.0.as_ref()
+    }
+
     pub fn is_eq(&self, other: &InterfaceObject) -> bool {
         if self.0.as_ref().0.eq(&other.0.as_ref().0) {
             // names of interfaces should be same

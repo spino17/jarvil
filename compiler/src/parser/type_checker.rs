@@ -1639,6 +1639,30 @@ impl TypeChecker {
         let core_struct_decl = struct_decl.core_ref();
         // TODO - check the implementing_interfaces => first whether <...> is correct
         // then whether the methods expected by the interfaces are there or not
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
+            if let Some(symbol_data) = self
+                .namespace_handler
+                .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
+            {
+                let symbol_data_ref = symbol_data.get_core_ref();
+                let struct_data = symbol_data_ref.get_struct_data_ref();
+                let implementing_interfaces = &struct_data.implementing_interfaces;
+                if let Some(implementing_interfaces) = implementing_interfaces {
+                    let struct_methods = struct_data.get_methods_ref();
+                    for (interface_obj, range) in &implementing_interfaces.interfaces {
+                        let (_, interface_concrete_symbol_data) = interface_obj.get_core_ref();
+                        let index = interface_concrete_symbol_data.index;
+                        let interface_data =
+                            &*interface_concrete_symbol_data.symbol_data.get_core_ref();
+                        let partial_concrete_interface_methods =
+                            interface_data.get_partially_concrete_interface_methods(index);
+                        partial_concrete_interface_methods
+                            .is_struct_implements_interface_methods(struct_methods);
+                        todo!()
+                    }
+                }
+            }
+        };
         self.walk_block(&core_struct_decl.block);
     }
 
