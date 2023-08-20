@@ -75,6 +75,7 @@ pub enum Diagnostics {
     GenericTypeArgsCountMismatched(GenericTypeArgsCountMismatchedError),
     GenericTypeArgsIncorrectlyBounded(GenericTypeArgsIncorrectlyBoundedError),
     InterfaceMethodsInStructCheck(InterfaceMethodsInStructCheckError),
+    InitMethodNotAllowedInsideConstructor(InitMethodNotAllowedInsideConstructorError),
 }
 
 impl Diagnostics {
@@ -175,6 +176,9 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::InterfaceMethodsInStructCheck(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InitMethodNotAllowedInsideConstructor(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -708,6 +712,22 @@ impl InterfaceAlreadyExistInBoundsDeclarationError {
                     .style(Style::new().yellow())
                     .to_string(),
             ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("init method not allowed inside interface")]
+#[diagnostic(code("SemanticError"))]
+pub struct InitMethodNotAllowedInsideConstructorError {
+    #[label("prototype with name `__init__` is not allowed")]
+    pub span: SourceSpan,
+}
+
+impl InitMethodNotAllowedInsideConstructorError {
+    pub fn new(span: TextRange) -> Self {
+        InitMethodNotAllowedInsideConstructorError {
+            span: range_to_span(span).into(),
         }
     }
 }

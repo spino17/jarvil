@@ -9,8 +9,9 @@ use crate::error::diagnostics::{
     FieldsNotInitializedInConstructorError, GenericTypeResolvedToOutsideScopeError,
     GenericTypesDeclarationInsideConstructorFoundError, IdentifierFoundInNonLocalsError,
     IdentifierNotFoundInAnyNamespaceError, IdentifierUsedBeforeInitializedError,
-    InterfaceAlreadyExistInBoundsDeclarationError, MainFunctionNotFoundError,
-    MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
+    InitMethodNotAllowedInsideConstructorError, InterfaceAlreadyExistInBoundsDeclarationError,
+    MainFunctionNotFoundError, MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError,
+    SelfNotFoundError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
@@ -1531,11 +1532,15 @@ impl Resolver {
                 CoreStatementNode::InterfaceMethodPrototypeWrapper(interface_method_wrapper) => {
                     let core_interface_method_wrapper = interface_method_wrapper.core_ref();
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) =
-                        &core_interface_decl.name.core_ref()
+                        core_interface_method_wrapper.name.core_ref()
                     {
                         let method_name = ok_identifier.token_value(&self.code);
                         if method_name == "__init__" {
-                            // TODO - raise error `interface method name cannot be __init__`
+                            let err = InitMethodNotAllowedInsideConstructorError::new(
+                                ok_identifier.core_ref().name.range(),
+                            );
+                            self.errors
+                                .push(Diagnostics::InitMethodNotAllowedInsideConstructor(err));
                         } else {
                             let prototype = &core_interface_method_wrapper.prototype;
                             self.open_block(BlockKind::Method);
