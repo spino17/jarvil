@@ -618,6 +618,8 @@ impl BoundedMethodWrapperNode {
         });
         BoundedMethodWrapperNode(node)
     }
+
+    impl_core_ref!(CoreBoundedMethodWrapperNode);
 }
 
 impl Node for BoundedMethodWrapperNode {

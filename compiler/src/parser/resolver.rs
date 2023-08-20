@@ -1181,13 +1181,12 @@ impl Resolver {
             };
             match stmt.core_ref() {
                 CoreStatementNode::StructPropertyDeclaration(struct_property_decl) => {
-                    let core_struct_stmt = struct_property_decl.core_ref();
-                    let name = &core_struct_stmt.name_type_spec.core_ref().name;
+                    let core_struct_property_decl = struct_property_decl.core_ref();
+                    let name_type_spec = core_struct_property_decl.name_type_spec.core_ref();
+                    let name = &name_type_spec.name;
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier.token_value(&self.code);
-                        let type_obj = self.type_obj_from_expression(
-                            &core_struct_stmt.name_type_spec.core_ref().data_type,
-                        );
+                        let type_obj = self.type_obj_from_expression(&name_type_spec.data_type);
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1207,7 +1206,7 @@ impl Resolver {
                 }
                 CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                     self.set_curr_class_context_is_containing_self(false);
-                    let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
+                    let core_func_decl = bounded_method_wrapper.core_ref().func_decl.core_ref();
                     let mut is_constructor = false;
                     let mut optional_ok_identifier_node = None;
                     if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
@@ -1257,9 +1256,9 @@ impl Resolver {
                     if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
-                        let func_meta_data = CallableData::new(
+                        let method_meta_data = CallableData::new(
                             param_types_vec,
-                            return_type.clone(),
+                            return_type,
                             CallableKind::Method,
                             is_concretization_required,
                             method_generic_type_decls,
@@ -1286,7 +1285,7 @@ impl Resolver {
                                             .push(Diagnostics::NonVoidConstructorReturnType(err));
                                     }
                                     constructor =
-                                        Some((func_meta_data, ok_bounded_method_name.range()));
+                                        Some((method_meta_data, ok_bounded_method_name.range()));
                                     self.semantic_state_db.set_bounded_kind(
                                         bounded_method_wrapper,
                                         BoundedMethodKind::Constructor,
@@ -1315,7 +1314,7 @@ impl Resolver {
                                     if is_containing_self {
                                         methods.insert(
                                             method_name_str,
-                                            (func_meta_data, ok_bounded_method_name.range()),
+                                            (method_meta_data, ok_bounded_method_name.range()),
                                         );
                                         self.semantic_state_db.set_bounded_kind(
                                             bounded_method_wrapper,
@@ -1324,7 +1323,7 @@ impl Resolver {
                                     } else {
                                         class_methods.insert(
                                             method_name_str,
-                                            (func_meta_data, ok_bounded_method_name.range()),
+                                            (method_meta_data, ok_bounded_method_name.range()),
                                         );
                                         self.semantic_state_db.set_bounded_kind(
                                             bounded_method_wrapper,
@@ -1505,12 +1504,61 @@ impl Resolver {
                 _ => continue,
             };
             match stmt.core_ref() {
-                CoreStatementNode::StructPropertyDeclaration(interface_property_declaration) => todo!(),
+                CoreStatementNode::StructPropertyDeclaration(interface_property_declaration) => {
+                    let core_interface_property_decl = interface_property_declaration.core_ref();
+                    let name_type_spec = core_interface_property_decl.name_type_spec.core_ref();
+                    let name = &name_type_spec.name;
+                    if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
+                        let field_name = ok_identifier.token_value(&self.code);
+                        let type_obj = self.type_obj_from_expression(&name_type_spec.data_type);
+                        match fields_map.get(&field_name) {
+                            Some((_, previous_decl_range)) => {
+                                let err = IdentifierAlreadyDeclaredError::new(
+                                    IdentKind::Field,
+                                    field_name,
+                                    *previous_decl_range,
+                                    ok_identifier.range(),
+                                );
+                                self.errors
+                                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                            }
+                            None => {
+                                fields_map.insert(field_name, (type_obj, ok_identifier.range()));
+                            }
+                        }
+                    }
+                }
                 CoreStatementNode::InterfaceMethodPrototypeWrapper(interface_method_wrapper) => {
-                    // TODO - don't allow `__init__` as method name
-                    todo!()
-                },
-                _ => unreachable!()
+                    let core_interface_method_wrapper = interface_method_wrapper.core_ref();
+                    if let CoreIdentifierInDeclNode::Ok(ok_identifier) =
+                        &core_interface_decl.name.core_ref()
+                    {
+                        let method_name = ok_identifier.token_value(&self.code);
+                        if method_name == "__init__" {
+                            // TODO - raise error `interface method name cannot be __init__`
+                        } else {
+                            let prototype = &core_interface_method_wrapper.prototype;
+                            self.open_block(BlockKind::Method);
+                            let (
+                                param_types_vec,
+                                return_type,
+                                _,
+                                is_concretization_required,
+                                method_generic_type_decls,
+                            ) = self.declare_callable_prototype(prototype, Some(ok_identifier));
+                            self.close_block(None);
+                            let method_meta_data = CallableData::new(
+                                param_types_vec,
+                                return_type,
+                                CallableKind::Method,
+                                is_concretization_required,
+                                method_generic_type_decls,
+                            );
+                            methods.insert(method_name, (method_meta_data, ok_identifier.range()));
+                        }
+                    }
+                }
+                _ => unreachable!(),
             }
         }
         self.close_block(Some(interface_body));

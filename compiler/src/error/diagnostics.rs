@@ -574,15 +574,9 @@ impl FieldsNotInitializedInConstructorError {
         let mut message = format!("`{}`", missing_fields_vec[0]);
         if len > 1 {
             for i in 1..(len - 1) {
-                message.push_str(&format!(
-                    ", `{}`",
-                    missing_fields_vec[i]
-                ));
+                message.push_str(&format!(", `{}`", missing_fields_vec[i]));
             }
-            message.push_str(&format!(
-                " and `{}`",
-                missing_fields_vec[len - 1]
-            ));
+            message.push_str(&format!(" and `{}`", missing_fields_vec[len - 1]));
         }
         FieldsNotInitializedInConstructorError {
             err_msg: message,
