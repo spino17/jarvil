@@ -1343,7 +1343,6 @@ impl Resolver {
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             match constructor {
                 Some((_, construct_span)) => {
-                    // TODO - put this logic inside error constructor
                     let mut missing_fields_from_constructor: Vec<&str> = vec![];
                     for (field_name, _) in fields_map.iter() {
                         if initialized_fields.get(field_name).is_none() {
@@ -1351,22 +1350,8 @@ impl Resolver {
                         }
                     }
                     if missing_fields_from_constructor.len() > 0 {
-                        let len = missing_fields_from_constructor.len();
-                        let mut err_msg_str = format!("`{}`", missing_fields_from_constructor[0]);
-                        if len > 1 {
-                            for i in 1..(len - 1) {
-                                err_msg_str.push_str(&format!(
-                                    ", `{}`",
-                                    missing_fields_from_constructor[i]
-                                ));
-                            }
-                            err_msg_str.push_str(&format!(
-                                " and `{}`",
-                                missing_fields_from_constructor[len - 1]
-                            ));
-                        }
                         let err = FieldsNotInitializedInConstructorError::new(
-                            err_msg_str,
+                            missing_fields_from_constructor,
                             construct_span,
                         );
                         self.errors
@@ -1479,8 +1464,6 @@ impl Resolver {
         let mut symbol_data: Option<InterfaceSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
-            // setting the interface first in scope enables the generic type declaration to use this interface
-            // having recursive referencing
             match self.try_declare_and_bind_interface(ok_identifier_in_decl) {
                 Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
                 Err((name, previous_decl_range)) => {
@@ -1515,8 +1498,21 @@ impl Resolver {
         }
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
-        // traverse the body
-        // ensure that the method name is not `__init__` etc.
+        for stmt in &*interface_body.0.as_ref().stmts.as_ref() {
+            let stmt = match stmt.core_ref() {
+                CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
+                _ => continue,
+            };
+            match stmt.core_ref() {
+                CoreStatementNode::StructPropertyDeclaration(interface_property_declaration) => todo!(),
+                CoreStatementNode::InterfaceMethodPrototypeWrapper(interface_method_wrapper) => {
+                    // TODO - don't allow `__init__` as method name
+                    todo!()
+                },
+                _ => unreachable!()
+            }
+        }
         self.close_block(Some(interface_body));
         if let Some(symbol_data) = &symbol_data {
             symbol_data

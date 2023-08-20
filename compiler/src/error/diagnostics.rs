@@ -561,17 +561,31 @@ impl ConstructorNotFoundInsideStructDeclarationError {
 #[error("fields not initialized in constructor")]
 #[diagnostic(code("SemanticError"))]
 pub struct FieldsNotInitializedInConstructorError {
-    pub message: String,
-    #[label("fields {} not initialized inside the constructor", self.message)]
+    pub err_msg: String,
+    #[label("fields {} not initialized inside the constructor", err_msg)]
     pub span: SourceSpan,
     #[help]
     help: Option<String>,
 }
 
 impl FieldsNotInitializedInConstructorError {
-    pub fn new(message: String, range: TextRange) -> Self {
+    pub fn new(missing_fields_vec: Vec<&str>, range: TextRange) -> Self {
+        let len = missing_fields_vec.len();
+        let mut message = format!("`{}`", missing_fields_vec[0]);
+        if len > 1 {
+            for i in 1..(len - 1) {
+                message.push_str(&format!(
+                    ", `{}`",
+                    missing_fields_vec[i]
+                ));
+            }
+            message.push_str(&format!(
+                " and `{}`",
+                missing_fields_vec[len - 1]
+            ));
+        }
         FieldsNotInitializedInConstructorError {
-            message,
+            err_msg: message,
             span: range_to_span(range).into(),
             help: Some(
                 "all fields of struct should be initialized through assignment inside the constructor"
