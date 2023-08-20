@@ -1037,6 +1037,7 @@ impl InterfaceMethodsInStructCheckError {
     pub fn new(
         missing_interface_method_names: Option<Vec<&str>>,
         errors: Option<Vec<(&str, PartialConcreteInterfaceMethodsCheckError)>>,
+        interface_name: String,
         interface_range: TextRange,
     ) -> Self {
         let missing_interface_method_names: Option<String> =
@@ -1057,16 +1058,16 @@ impl InterfaceMethodsInStructCheckError {
             for (_, err) in errors {
                 let s: (String, TextRange) = match err {
                     PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range) => {
-                        ("generic types declaration does not match with interface specification for this method".to_string(), range)
+                        (format!("generic types declaration does not match with interface `{}` specification for this method", interface_name), range)
                     },
                     PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationNotExpected(range) => {
-                        ("generic types declaration is not expected by interface specification for this method".to_string(), range)
+                        (format!("generic types declaration is not expected by interface `{}` specification for this method", interface_name), range)
                     },
                     PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationExpected(range) => {
-                        ("generic types declaration expected by interface specification for this method".to_string(), range)
+                        (format!("generic types declaration expected by interface `{}` specification for this method", interface_name), range)
                     },
                     PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range) => {
-                        ("prototype does not match with the interface specification for this method".to_string(), range)
+                        (format!("prototype does not match with the interface `{}` specification for this method", interface_name), range)
                     },
                 };
                 v.push(s);

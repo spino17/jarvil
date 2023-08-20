@@ -1661,6 +1661,7 @@ impl TypeChecker {
                             let err = InterfaceMethodsInStructCheckError::new(
                                 missing_interface_method_names,
                                 errors,
+                                interface_obj.to_string(),
                                 *range,
                             );
                             self.log_error(Diagnostics::InterfaceMethodsInStructCheck(err));
