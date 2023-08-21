@@ -3,6 +3,7 @@ use crate::ast::ast::{
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
     CoreSelfKeywordNode, FunctionWrapperNode, InterfaceDeclarationNode, LambdaTypeDeclarationNode,
     OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, UnresolvedIdentifier,
+    UserDefinedTypeNode,
 };
 use crate::error::diagnostics::{
     BuiltinFunctionNameOverlapError, ConstructorNotFoundInsideStructDeclarationError,
@@ -24,6 +25,7 @@ use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{CallableKind, CallablePrototypeData};
 use crate::scope::handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry};
 use crate::scope::interfaces::{InterfaceBounds, InterfaceObject};
+use crate::scope::types::core::UserDefineTypeKind;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::AbstractType;
 use crate::{
@@ -532,6 +534,129 @@ impl Resolver {
                 namespace.declare_interface(scope_index, name, decl_range)
             };
         self.try_declare_and_bind(identifier, declare_fn)
+    }
+
+    pub fn type_obj_from_user_defined_type_expr<'a>(
+        &mut self,
+        user_defined_ty_expr: &'a UserDefinedTypeNode,
+        scope_index: usize,
+    ) -> TypeResolveKind<'a> {
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) =
+            user_defined_ty_expr.core_ref().name.core_ref()
+        {
+            let name = ok_identifier.token_value(&self.code);
+            match self
+                .semantic_state_db
+                .namespace
+                .lookup_in_types_namespace(scope_index, &name)
+            {
+                LookupResult::Ok(lookup_data) => {
+                    let symbol_data = lookup_data.symbol_data;
+                    let resolved_scope_index = lookup_data.resolved_scope_index;
+                    let ty_kind = symbol_data.0.get_core_ref().get_kind();
+                    let result = match ty_kind {
+                        UserDefineTypeKind::Struct => {
+                            match self.bind_decl_to_identifier_in_use(
+                                ok_identifier,
+                                &symbol_data,
+                                false,
+                            ) {
+                                Ok(index) => TypeResolveKind::Resolved(Type::new_with_struct(
+                                    name,
+                                    &symbol_data.0,
+                                    index,
+                                )),
+                                Err(err) => TypeResolveKind::Unresolved(vec![
+                                    UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
+                                        ok_identifier,
+                                        err,
+                                    ),
+                                ]),
+                            }
+                        }
+                        UserDefineTypeKind::Lambda => {
+                            match self.bind_decl_to_identifier_in_use(
+                                ok_identifier,
+                                &symbol_data,
+                                false,
+                            ) {
+                                Ok(index) => TypeResolveKind::Resolved(
+                                    Type::new_with_lambda_named(name, &symbol_data.0, index),
+                                ),
+                                Err(err) => TypeResolveKind::Unresolved(vec![
+                                    UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
+                                        ok_identifier,
+                                        err,
+                                    ),
+                                ]),
+                            }
+                        }
+                        UserDefineTypeKind::Generic => {
+                            // NOTE: generic types are only allowed to be resolved inside local scope (of function, method, struct etc.)
+                            // This kind of check is similiar to how `Rust` programming language expects generic type resolution.
+                            let (expected_scope_index, possible_expected_class_scope_index) =
+                                self.get_enclosing_generics_declarative_scope_index();
+                            let result = if resolved_scope_index != expected_scope_index {
+                                match possible_expected_class_scope_index {
+                                    Some(class_scope_index) => {
+                                        if resolved_scope_index != class_scope_index {
+                                            Err(())
+                                        } else {
+                                            Ok(())
+                                        }
+                                    }
+                                    None => Err(()),
+                                }
+                            } else {
+                                Ok(())
+                            };
+                            match result {
+                                Ok(_) => {
+                                    match self.bind_decl_to_identifier_in_use(
+                                        ok_identifier,
+                                        &symbol_data,
+                                        false,
+                                    ) {
+                                        Ok(index) => {
+                                            assert!(index.is_none());
+                                            TypeResolveKind::Resolved(Type::new_with_generic(
+                                                name,
+                                                &symbol_data.0,
+                                            ))
+                                        }
+                                        Err(err) => TypeResolveKind::Unresolved(vec![
+                                            UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
+                                                ok_identifier,
+                                                err,
+                                            ),
+                                        ]),
+                                    }
+                                }
+                                Err(_) => TypeResolveKind::Unresolved(vec![
+                                    UnresolvedIdentifier::GenericResolvedToOutsideScope(
+                                        ok_identifier,
+                                        symbol_data.0 .1,
+                                    ),
+                                ]),
+                            }
+                        }
+                    };
+                    return result;
+                }
+                LookupResult::NotInitialized(decl_range) => {
+                    return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::NotInitialized(
+                        ok_identifier,
+                        decl_range,
+                    )])
+                }
+                LookupResult::Unresolved => {
+                    return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::Unresolved(
+                        ok_identifier,
+                    )])
+                }
+            }
+        }
+        return TypeResolveKind::Invalid;
     }
 
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
