@@ -11,6 +11,7 @@ use crate::{
     types::core::{AbstractType, CoreType, Type},
 };
 use std::collections::HashMap;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Array {
@@ -156,7 +157,7 @@ impl AbstractNonStructTypes for Array {
         vec![self.element_type.clone()]
     }
 
-    fn get_builtin_methods(&self) -> &'static HashMap<&'static str, CallableData> {
-        ARRAY_BUILTIN_METHODS.with(|use_default| *use_default)
+    fn get_builtin_methods(&self) -> Rc<HashMap<&'static str, CallableData>> {
+        ARRAY_BUILTIN_METHODS.with(|use_default| use_default.clone())
     }
 }

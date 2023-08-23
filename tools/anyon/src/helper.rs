@@ -1,3 +1,4 @@
+use super::error::AnyonError;
 use crate::{
     build::{BuildCommand, BuildMode},
     core::AnyonCommand,
@@ -5,8 +6,6 @@ use crate::{
     new::NewCommand,
     version::VersionCommand,
 };
-
-use super::error::AnyonError;
 use compiler::curr_dir_path;
 use std::path::Path;
 

@@ -9,7 +9,7 @@ use crate::{
     },
     types::core::{AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type},
 };
-use std::collections::HashMap as StdHashMap;
+use std::{collections::HashMap as StdHashMap, rc::Rc};
 
 #[derive(Debug, Clone)]
 pub struct HashMap {
@@ -181,7 +181,7 @@ impl AbstractNonStructTypes for HashMap {
         return vec![self.key_type.clone(), self.value_type.clone()];
     }
 
-    fn get_builtin_methods(&self) -> &'static StdHashMap<&'static str, CallableData> {
-        HASHMAP_BUILTIN_METHODS.with(|use_default| *use_default)
+    fn get_builtin_methods(&self) -> Rc<StdHashMap<&'static str, CallableData>> {
+        HASHMAP_BUILTIN_METHODS.with(|use_default| use_default.clone())
     }
 }
