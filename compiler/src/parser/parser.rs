@@ -1,4 +1,3 @@
-use super::errors::{log_missing_token_error, log_trailing_skipped_tokens_error};
 use super::resolver::BlockKind;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
@@ -122,12 +121,12 @@ impl JarvilParser {
         loop {
             let token = self.curr_token();
             if token.is_eq("\n") {
-                log_trailing_skipped_tokens_error(self, skipped_tokens.clone());
+                self.log_trailing_skipped_tokens_error(skipped_tokens.clone());
                 skipped_tokens.push(SkippedTokenNode::new(&token));
                 self.scan_next_token();
                 return skipped_tokens;
             } else if token.is_eq(ENDMARKER) {
-                log_trailing_skipped_tokens_error(self, skipped_tokens.clone());
+                self.log_trailing_skipped_tokens_error(skipped_tokens.clone());
                 skipped_tokens.push(SkippedTokenNode::new(&token));
                 // self.scan_next_token();
                 return skipped_tokens;
@@ -146,7 +145,7 @@ impl JarvilParser {
             self.scan_next_token();
             token_node
         } else {
-            log_missing_token_error(self, &[symbol], &token);
+            self.log_missing_token_error(&[symbol], &token);
             TokenNode::new_with_missing_tokens(vec![symbol], &token)
         }
     }
@@ -241,7 +240,7 @@ impl JarvilParser {
                 }
             }
         } else {
-            log_missing_token_error(self, &[symbol], &token);
+            self.log_missing_token_error(&[symbol], &token);
             return node_creation_method_with_err(vec![symbol], &token);
         }
     }
@@ -254,7 +253,7 @@ impl JarvilParser {
             self.scan_next_token();
             return IdentifierInDeclNode::new_with_ok(&ok_token_node, None);
         } else {
-            log_missing_token_error(self, &[symbol], &token);
+            self.log_missing_token_error(&[symbol], &token);
             return IdentifierInDeclNode::new_with_missing_tokens(vec![symbol], &token);
         }
     }
@@ -321,7 +320,7 @@ impl JarvilParser {
             self.scan_next_token();
             SelfKeywordNode::new_with_ok(&ok_token_node)
         } else {
-            log_missing_token_error(self, &[symbol], &token);
+            self.log_missing_token_error(&[symbol], &token);
             SelfKeywordNode::new_with_missing_tokens(vec![symbol], &token)
         }
     }
@@ -336,7 +335,7 @@ impl JarvilParser {
         } else if token.is_eq(ENDMARKER) {
             return TokenNode::new_with_ok(&token);
         } else {
-            log_missing_token_error(self, symbols, &token);
+            self.log_missing_token_error(symbols, &token);
             return TokenNode::new_with_missing_tokens(symbols.to_vec(), &token);
         }
     }

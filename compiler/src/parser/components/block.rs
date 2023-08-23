@@ -14,10 +14,6 @@ use crate::ast::ast::{
 };
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
-use crate::parser::errors::{
-    log_incorrectly_indented_block_error, log_missing_token_error,
-    log_no_valid_statement_inside_block_error,
-};
 use crate::parser::helper::IndentResultKind;
 use crate::parser::parser::JarvilParser;
 use crate::parser::resolver::BlockKind;
@@ -55,7 +51,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
             IndentResultKind::BlockOver => {
                 parser.set_indent_level(parser.curr_indent_level() - 1);
                 if !has_atleast_one_stmt {
-                    log_no_valid_statement_inside_block_error(parser, newline_node.range());
+                    parser.log_no_valid_statement_inside_block_error(newline_node.range());
                 }
                 return BlockNode::new(stmts_vec, &newline_node, kind);
             }
@@ -63,7 +59,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
         while !is_starting_with_fn(parser.curr_token()) {
             let token = parser.curr_token();
             leading_skipped_tokens.push(SkippedTokenNode::new(token));
-            log_missing_token_error(parser, expected_symbols, token);
+            parser.log_missing_token_error(expected_symbols, token);
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
                 break;
             }
@@ -80,7 +76,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
         if token.is_eq(ENDMARKER) {
             parser.set_indent_level(parser.curr_indent_level() - 1);
             if !has_atleast_one_stmt {
-                log_no_valid_statement_inside_block_error(parser, newline_node.range());
+                parser.log_no_valid_statement_inside_block_error(newline_node.range());
             }
             return BlockNode::new(stmts_vec, &newline_node, kind);
         }
@@ -103,8 +99,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
                     let stmt_node = statement_parsing_fn(parser);
                     parser.set_ignore_all_errors(false);
                     parser.set_correction_indent(0);
-                    log_incorrectly_indented_block_error(
-                        parser,
+                    parser.log_incorrectly_indented_block_error(
                         stmt_node.range(),
                         indent_data.0,
                         indent_data.1,
