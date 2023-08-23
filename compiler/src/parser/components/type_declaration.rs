@@ -47,26 +47,18 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             )
         }
         CoreToken::LAMBDA_KEYWORD => {
-            let mut type_tuple_node: Option<&SymbolSeparatedSequenceNode<TypeExpressionNode>> =
-                None;
-            let mut r_arrow_node: Option<&TokenNode> = None;
-            let mut return_type_node: Option<(&TokenNode, &TypeExpressionNode)> = None;
-            let temp_type_tuple_node: SymbolSeparatedSequenceNode<TypeExpressionNode>;
-            let temp_r_arrow_node: TokenNode;
-            let temp_return_type_node: TypeExpressionNode;
-
+            let mut type_tuple_node: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>> = None;
+            let mut return_type_node: Option<(TokenNode, TypeExpressionNode)> = None;
             let lambda_keyword_node = parser.expect("lambda");
             let equal_node = parser.expect("=");
             let lparen_node = parser.expect("(");
             if !parser.check_curr_token(")") {
-                (temp_type_tuple_node, _) = parser.type_tuple();
-                type_tuple_node = Some(&temp_type_tuple_node);
+                type_tuple_node = Some(parser.type_tuple().0);
             }
             let rparen_node = parser.expect(")");
             if parser.check_curr_token("->") {
-                temp_r_arrow_node = parser.expect("->");
-                temp_return_type_node = parser.type_expr();
-                return_type_node = Some((&temp_r_arrow_node, &temp_return_type_node));
+                let r_arrow_node = parser.expect("->");
+                return_type_node = Some((r_arrow_node, parser.type_expr()));
             }
             let newline_node = parser.expect_terminators();
             let lambda_node = LambdaTypeDeclarationNode::new(

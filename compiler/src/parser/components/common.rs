@@ -61,12 +61,10 @@ pub fn type_tuple(
 }
 
 pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
-    let mut args_node: Option<&SymbolSeparatedSequenceNode<NameTypeSpecNode>> = None;
-    let name_type_specs_node: SymbolSeparatedSequenceNode<NameTypeSpecNode>;
+    let mut args_node: Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>> = None;
     let lparen_node = parser.expect("(");
     if !parser.check_curr_token(")") {
-        name_type_specs_node = parser.name_type_specs();
-        args_node = Some(&name_type_specs_node);
+        args_node = Some(parser.name_type_specs());
     }
     let rparen_node = parser.expect(")");
     if parser.check_curr_token("->") {
@@ -74,7 +72,7 @@ pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
         let return_type_node = parser.type_expr();
         return CallablePrototypeNode::new(
             args_node,
-            Some((&r_arrow_node, &return_type_node)),
+            Some((r_arrow_node, return_type_node)),
             &lparen_node,
             &rparen_node,
         );

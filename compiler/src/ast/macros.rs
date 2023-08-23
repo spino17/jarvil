@@ -24,15 +24,6 @@ macro_rules! impl_ast_node {
     };
 }
 
-macro_rules! extract_from_option {
-    ($t: ident) => {
-        match $t {
-            Some(val) => Some(val.clone()),
-            None => None,
-        }
-    };
-}
-
 macro_rules! impl_range {
     ($t: expr, $u: expr) => {
         TextRange::new(

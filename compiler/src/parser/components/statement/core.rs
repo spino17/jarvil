@@ -77,7 +77,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
                     let newline_node = parser.expect_terminators();
                     StatementNode::new_with_return_statement(
                         &return_node,
-                        Some(&expr_node),
+                        Some(expr_node),
                         &newline_node,
                     )
                 }

@@ -196,7 +196,7 @@ impl JarvilParser {
                     );
                     return GenericTypeDeclNode::new(
                         &identifier_in_decl_node,
-                        Some((&colon_node, &interface_bounds_node)),
+                        Some((colon_node, interface_bounds_node)),
                     );
                 }
                 _ => {
@@ -211,7 +211,7 @@ impl JarvilParser {
         T,
         U: Clone,
         F: Fn(&mut JarvilParser) -> SymbolSeparatedSequenceNode<U>,
-        V: Fn(&OkTokenNode, Option<(&TokenNode, &SymbolSeparatedSequenceNode<U>, &TokenNode)>) -> T,
+        V: Fn(&OkTokenNode, Option<(TokenNode, SymbolSeparatedSequenceNode<U>, TokenNode)>) -> T,
         W: Fn(Vec<&'static str>, &Token) -> T,
     >(
         &mut self,
@@ -232,7 +232,7 @@ impl JarvilParser {
                     let rangle_node = self.expect(">");
                     return node_creation_method_with_some(
                         &ok_token_node,
-                        Some((&langle_node, &angle_bracketed_content_node, &rangle_node)),
+                        Some((langle_node, angle_bracketed_content_node, rangle_node)),
                     );
                 }
                 _ => {
@@ -265,9 +265,9 @@ impl JarvilParser {
             };
         let node_creation_method_with_some = |ident_name: &OkTokenNode,
                                               symbol_separated_sequence: Option<(
-            &TokenNode,
-            &SymbolSeparatedSequenceNode<TypeExpressionNode>,
-            &TokenNode,
+            TokenNode,
+            SymbolSeparatedSequenceNode<TypeExpressionNode>,
+            TokenNode,
         )>| {
             return IdentifierInUseNode::new_with_ok(ident_name, symbol_separated_sequence);
         };
@@ -292,9 +292,9 @@ impl JarvilParser {
             };
         let node_creation_method_with_some = |ident_name: &OkTokenNode,
                                               symbol_separated_sequence: Option<(
-            &TokenNode,
-            &SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
-            &TokenNode,
+            TokenNode,
+            SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
+            TokenNode,
         )>| {
             return IdentifierInDeclNode::new_with_ok(ident_name, symbol_separated_sequence);
         };

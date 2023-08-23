@@ -255,7 +255,7 @@ impl StatementNode {
 
     pub fn new_with_return_statement(
         return_keyword: &TokenNode,
-        expr: Option<&ExpressionNode>,
+        expr: Option<ExpressionNode>,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreStatementNode::Return(ReturnStatementNode::new(
@@ -477,8 +477,8 @@ impl LambdaTypeDeclarationNode {
         equal: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
-        type_tuple: Option<&SymbolSeparatedSequenceNode<TypeExpressionNode>>,
-        return_type: Option<(&TokenNode, &TypeExpressionNode)>,
+        type_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
+        return_type: Option<(TokenNode, TypeExpressionNode)>,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreLambdaTypeDeclarationNode {
@@ -488,13 +488,8 @@ impl LambdaTypeDeclarationNode {
             equal: equal.clone(),
             lparen: lparen.clone(),
             rparen: rparen.clone(),
-            type_tuple: extract_from_option!(type_tuple),
-            return_type: match return_type {
-                Some((right_arrow, return_type)) => {
-                    Some((right_arrow.clone(), return_type.clone()))
-                }
-                None => None,
-            },
+            type_tuple,
+            return_type,
             newline: newline.clone(),
         });
         LambdaTypeDeclarationNode(node)
@@ -514,19 +509,16 @@ impl Node for LambdaTypeDeclarationNode {
 
 impl CallablePrototypeNode {
     pub fn new(
-        params: Option<&SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
-        return_type: Option<(&TokenNode, &TypeExpressionNode)>,
+        params: Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
+        return_type: Option<(TokenNode, TypeExpressionNode)>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreCallablePrototypeNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
-            params: extract_from_option!(params),
-            return_type: match return_type {
-                Some((colon, return_type)) => Some((colon.clone(), return_type.clone())),
-                None => None,
-            },
+            params,
+            return_type,
         });
         CallablePrototypeNode(node)
     }
@@ -769,7 +761,7 @@ impl Node for InterfaceMethodPrototypeWrapperNode {
 impl ReturnStatementNode {
     pub fn new(
         return_keyword: &TokenNode,
-        expr: Option<&ExpressionNode>,
+        expr: Option<ExpressionNode>,
         newline: &TokenNode,
     ) -> Self {
         let node = Rc::new(CoreReturnStatementNode {
@@ -1342,7 +1334,7 @@ impl AtomicExpressionNode {
     pub fn new_with_array_expr(
         lsquare: &TokenNode,
         rsquare: &TokenNode,
-        initials: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> AtomicExpressionNode {
         let node = Rc::new(CoreAtomicExpressionNode::ArrayExpression(
             ArrayExpressionNode::new(lsquare, rsquare, initials),
@@ -1353,7 +1345,7 @@ impl AtomicExpressionNode {
     pub fn new_with_hashmap_expr(
         lcurly: &TokenNode,
         rcurly: &TokenNode,
-        initials: Option<&SymbolSeparatedSequenceNode<KeyValuePairNode>>,
+        initials: Option<SymbolSeparatedSequenceNode<KeyValuePairNode>>,
     ) -> AtomicExpressionNode {
         let node = Rc::new(CoreAtomicExpressionNode::HashMapExpression(
             HashMapExpressionNode::new(lcurly, rcurly, initials),
@@ -1364,7 +1356,7 @@ impl AtomicExpressionNode {
     pub fn new_with_tuple_expr(
         lround: &TokenNode,
         rround: &TokenNode,
-        initials: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> AtomicExpressionNode {
         let node = Rc::new(CoreAtomicExpressionNode::TupleExpression(
             TupleExpressionNode::new(lround, rround, initials),
@@ -1544,7 +1536,7 @@ impl<T: Clone + Node> Node for SymbolSeparatedSequenceNode<T> {
 impl CallExpressionNode {
     pub fn new(
         function_name: &IdentifierInUseNode,
-        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1552,7 +1544,7 @@ impl CallExpressionNode {
             lparen: lparen.clone(),
             rparen: rparen.clone(),
             function_name: function_name.clone(),
-            params: extract_from_option!(params),
+            params,
         });
         CallExpressionNode(node)
     }
@@ -1573,7 +1565,7 @@ impl ClassMethodCallNode {
     pub fn new(
         class_name: &IdentifierInUseNode,
         class_method_name: &IdentifierInUseNode,
-        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1584,7 +1576,7 @@ impl ClassMethodCallNode {
             double_colon: double_colon.clone(),
             class_name: class_name.clone(),
             class_method_name: class_method_name.clone(),
-            params: extract_from_option!(params),
+            params,
         });
         ClassMethodCallNode(node)
     }
@@ -1605,12 +1597,12 @@ impl ArrayExpressionNode {
     pub fn new(
         lsquare: &TokenNode,
         rsquare: &TokenNode,
-        initials: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Self {
         let node = Rc::new(CoreArrayExpressionNode {
             lsquare: lsquare.clone(),
             rsquare: rsquare.clone(),
-            initials: extract_from_option!(initials),
+            initials,
         });
         ArrayExpressionNode(node)
     }
@@ -1653,12 +1645,12 @@ impl HashMapExpressionNode {
     pub fn new(
         lcurly: &TokenNode,
         rcurly: &TokenNode,
-        initials: Option<&SymbolSeparatedSequenceNode<KeyValuePairNode>>,
+        initials: Option<SymbolSeparatedSequenceNode<KeyValuePairNode>>,
     ) -> Self {
         let node = Rc::new(CoreHashMapExpressionNode {
             lcurly: lcurly.clone(),
             rcurly: rcurly.clone(),
-            initials: extract_from_option!(initials),
+            initials,
         });
         HashMapExpressionNode(node)
     }
@@ -1679,12 +1671,12 @@ impl TupleExpressionNode {
     pub fn new(
         lround: &TokenNode,
         rround: &TokenNode,
-        initials: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Self {
         let node = Rc::new(CoreTupleExpressionNode {
             lround: lround.clone(),
             rround: rround.clone(),
-            initials: extract_from_option!(initials),
+            initials,
         });
         TupleExpressionNode(node)
     }
@@ -1709,7 +1701,7 @@ impl AtomNode {
 
     pub fn new_with_call(
         atom: &AtomNode,
-        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1733,7 +1725,7 @@ impl AtomNode {
     pub fn new_with_method_access(
         atom: &AtomNode,
         method_name: &IdentifierInUseNode,
-        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
         dot: &TokenNode,
@@ -1799,7 +1791,7 @@ impl AtomStartNode {
     pub fn new_with_class_method_call(
         class_name: &IdentifierInUseNode,
         class_method_name: &IdentifierInUseNode,
-        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         double_colon: &TokenNode,
         lparen: &TokenNode,
         rparen: &TokenNode,
@@ -1831,7 +1823,7 @@ impl AtomStartNode {
 impl CallNode {
     pub fn new(
         atom: &AtomNode,
-        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
     ) -> Self {
@@ -1839,7 +1831,7 @@ impl CallNode {
             atom: atom.clone(),
             lparen: lparen.clone(),
             rparen: rparen.clone(),
-            params: extract_from_option!(params),
+            params,
         });
         CallNode(node)
     }
@@ -1882,7 +1874,7 @@ impl MethodAccessNode {
     pub fn new(
         atom: &AtomNode,
         method_name: &IdentifierInUseNode,
-        params: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: &TokenNode,
         rparen: &TokenNode,
         dot: &TokenNode,
@@ -1893,7 +1885,7 @@ impl MethodAccessNode {
             dot: dot.clone(),
             atom: atom.clone(),
             method_name: method_name.clone(),
-            params: extract_from_option!(params),
+            params,
         });
         MethodAccessNode(node)
     }
@@ -2096,9 +2088,9 @@ impl IdentifierInUseNode {
     pub fn new_with_ok(
         token: &OkTokenNode,
         generic_type_args: Option<(
-            &TokenNode,
-            &SymbolSeparatedSequenceNode<TypeExpressionNode>,
-            &TokenNode,
+            TokenNode,
+            SymbolSeparatedSequenceNode<TypeExpressionNode>,
+            TokenNode,
         )>,
     ) -> Self {
         let node = Rc::new(CoreIdentifierInUseNode::Ok(OkIdentifierInUseNode::new(
@@ -2116,9 +2108,9 @@ impl IdentifierInDeclNode {
     pub fn new_with_ok(
         token: &OkTokenNode,
         generic_type_decls: Option<(
-            &TokenNode,
-            &SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
-            &TokenNode,
+            TokenNode,
+            SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
+            TokenNode,
         )>,
     ) -> Self {
         let node = Rc::new(CoreIdentifierInDeclNode::Ok(OkIdentifierInDeclNode::new(
@@ -2136,9 +2128,9 @@ impl OkIdentifierInUseNode {
     fn new(
         token: &OkTokenNode,
         generic_type_args: Option<(
-            &TokenNode,
-            &SymbolSeparatedSequenceNode<TypeExpressionNode>,
-            &TokenNode,
+            TokenNode,
+            SymbolSeparatedSequenceNode<TypeExpressionNode>,
+            TokenNode,
         )>,
     ) -> Self {
         let node = Rc::new(CoreOkIdentifierInUseNode {
@@ -2191,9 +2183,9 @@ impl OkIdentifierInDeclNode {
     fn new(
         token: &OkTokenNode,
         generic_type_decls: Option<(
-            &TokenNode,
-            &SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
-            &TokenNode,
+            TokenNode,
+            SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
+            TokenNode,
         )>,
     ) -> Self {
         let node = Rc::new(CoreOkIdentifierInDeclNode {
@@ -2245,10 +2237,7 @@ impl Hash for OkIdentifierInDeclNode {
 impl GenericTypeDeclNode {
     pub fn new(
         generic_type_name: &IdentifierInDeclNode,
-        interface_bounds: Option<(
-            &TokenNode,
-            &SymbolSeparatedSequenceNode<IdentifierInUseNode>,
-        )>,
+        interface_bounds: Option<(TokenNode, SymbolSeparatedSequenceNode<IdentifierInUseNode>)>,
     ) -> Self {
         let node = Rc::new(CoreGenericTypeDeclNode {
             generic_type_name: generic_type_name.clone(),
