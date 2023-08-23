@@ -1,4 +1,4 @@
-use crate::ast::ast::ErrornousNode;
+use crate::ast::ast::{ErrornousNode, KeyValuePairNode};
 use crate::{
     ast::ast::{AtomicExpressionNode, ExpressionNode, UnaryExpressionNode},
     constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, TRUE},
@@ -79,11 +79,13 @@ pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
         CoreToken::IDENTIFIER => true,
         CoreToken::SELF => true,
         CoreToken::LPAREN => true,
+        CoreToken::LSQUARE => true,
+        CoreToken::LBRACE => true,
         _ => false,
     }
 }
 
-pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 8] = [
+pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10] = [
     TRUE,
     FALSE,
     INTEGER,
@@ -92,6 +94,8 @@ pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 8] = [
     IDENTIFIER,
     "self",
     "(",
+    "[",
+    "{",
 ];
 
 pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
@@ -133,16 +137,27 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
             let lsquare_node = parser.expect("[");
             let curr_token = parser.curr_token();
             if !curr_token.is_eq("]") {
-                let initial_values_node = parser.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
+                initials_node = Some(parser.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
                     parser.expr()
-                }, ",");
-                initials_node = Some(initial_values_node);
+                }, ","));
             }
             let rsquare_node = parser.expect("]");
-            todo!()
+            AtomicExpressionNode::new_with_array_expr(&lsquare_node, &rsquare_node, initials_node)
         }
         CoreToken::LBRACE => {
-            todo!()  // TODO - parser hashmap initialization expression
+            let mut initials_node = None;
+            let lcurly_node = parser.expect("{");
+            let curr_token = parser.curr_token();
+            if !curr_token.is_eq("}") {
+                initials_node = Some(parser.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
+                    let key_expr_node = parser.expr();
+                    let colon_node = parser.expect(":");
+                    let value_expr_node = parser.expr();
+                    KeyValuePairNode::new(&key_expr_node, &value_expr_node, &colon_node)
+                }, ","))
+            }
+            let rcurly_node = parser.expect("}");
+            AtomicExpressionNode::new_with_hashmap_expr(&lcurly_node, &rcurly_node, initials_node)
         }
         CoreToken::LPAREN                       => {
             let lparen_node = parser.expect("(");
