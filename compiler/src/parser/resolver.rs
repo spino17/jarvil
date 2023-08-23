@@ -1621,6 +1621,7 @@ impl Resolver {
                 .get_core_mut_ref()
                 .set_generics(generic_type_decls);
         }
+
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         for stmt in &*interface_body.0.as_ref().stmts.as_ref() {
