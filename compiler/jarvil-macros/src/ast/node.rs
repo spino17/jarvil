@@ -43,12 +43,6 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
     let mut variants_info: Vec<ExprTuple> = vec![];
     while let Some(variant) = variant_iter.next() {
         let variant_name = variant.ident.to_string(); // eg. `BLOCK`
-        if variant_name == "TypeTuple"
-            || variant_name == "NameTypeSpecs"
-            || variant_name == "Params"
-        {
-            continue;
-        }
         let field_name = match &variant.fields {
             syn::Fields::Unnamed(field) => field,
             _ => panic!("data of `ASTNode` enum should be named"),
@@ -79,15 +73,6 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         impl ASTNode {
             #impl_ast_node;
-            pub fn new_with_TypeTuple(x: &SymbolSeparatedSequenceNode<TypeExpressionNode>) -> Self {
-                ASTNode::TypeTuple(x.clone())
-            }
-            pub fn new_with_NameTypeSpecs(x: &SymbolSeparatedSequenceNode<NameTypeSpecNode>) -> Self {
-                ASTNode::NameTypeSpecs(x.clone())
-            }
-            pub fn new_with_Params(x: &SymbolSeparatedSequenceNode<ExpressionNode>) -> Self {
-                ASTNode::Params(x.clone())
-            }
         }
     };
     gen.into()

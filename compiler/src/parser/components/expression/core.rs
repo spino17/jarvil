@@ -128,6 +128,12 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
             let atom = parser.atom();
             AtomicExpressionNode::new_with_atom(&atom)
         }
+        CoreToken::LSQUARE => {
+            todo!() // TODO - parser vector initialization expression
+        }
+        CoreToken::LBRACE => {
+            todo!()  // TODO - parser hashmap initialization expression
+        }
         CoreToken::LPAREN                       => {
             let lparen_node = parser.expect("(");
             let expr_node = parser.expr();

@@ -1,36 +1,39 @@
 use super::ast::{
-    ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, AtomicTypeNode,
-    BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode, CallNode,
-    CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
+    ArrayExpressionNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode,
+    AtomicExpressionNode, AtomicTypeNode, BinaryExpressionNode, BlockNode,
+    BoundedMethodWrapperNode, CallExpressionNode, CallNode, CallableBodyNode,
+    CallablePrototypeNode, ClassMethodCallNode, ComparisonNode, CoreArrayExpressionNode,
     CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
     CoreAtomicExpressionNode, CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode,
     CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
     CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode, CoreExpressionNode,
     CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
-    CoreGenericTypeDeclNode, CoreHashMapTypeNode, CoreIdentifierInDeclNode,
-    CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode,
-    CoreInterfaceDeclarationNode, CoreInterfaceMethodPrototypeWrapperNode, CoreInvalidLValueNode,
-    CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMethodAccessNode,
-    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
+    CoreGenericTypeDeclNode, CoreHashMapExpressionNode, CoreHashMapTypeNode,
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode,
+    CoreIndexAccessNode, CoreInterfaceDeclarationNode, CoreInterfaceMethodPrototypeWrapperNode,
+    CoreInvalidLValueNode, CoreKeyValuePairNode, CoreLambdaDeclarationNode,
+    CoreLambdaTypeDeclarationNode, CoreMethodAccessNode, CoreMissingTokenNode,
+    CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
     CoreOkIdentifierInUseNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
     CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
     CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
     CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreSymbolSeparatedSequenceNode,
-    CoreTokenNode, CoreTupleTypeNode, CoreTypeDeclarationNode, CoreTypeExpressionNode,
-    CoreUnaryExpressionNode, CoreUserDefinedTypeNode, CoreVariableDeclarationNode, ExpressionNode,
-    ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode,
-    HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode, IncorrectlyIndentedStatementNode,
-    IndexAccessNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
-    InterfaceMethodTerminalNode, InvalidLValueNode, LambdaDeclarationNode,
-    LambdaTypeDeclarationNode, MethodAccessNode, NameTypeSpecNode, OkAssignmentNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode,
-    OnlyUnaryExpressionNode, ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode,
-    RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
-    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
-    SymbolSeparatedSequenceNode, TokenNode, TupleTypeNode, TypeDeclarationNode, TypeExpressionNode,
-    TypeResolveKind, UnaryExpressionNode, UnresolvedIdentifier, UserDefinedTypeNode,
-    VariableDeclarationNode,
+    CoreTokenNode, CoreTupleExpressionNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
+    CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
+    CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
+    FunctionWrapperNode, GenericTypeDeclNode, HashMapExpressionNode, HashMapTypeNode,
+    IdentifierInDeclNode, IdentifierInUseNode, IncorrectlyIndentedStatementNode, IndexAccessNode,
+    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode,
+    InvalidLValueNode, KeyValuePairNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
+    MethodAccessNode, NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode,
+    OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode,
+    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    SymbolSeparatedSequenceNode, TokenNode, TupleExpressionNode, TupleTypeNode,
+    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
+    UnresolvedIdentifier, UserDefinedTypeNode, VariableDeclarationNode,
 };
 use super::iterators::SymbolSeparatedSequenceIterator;
 use crate::ast::ast::ErrornousNode;
@@ -1562,6 +1565,106 @@ impl Node for ClassMethodCallNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().class_name.start_line_number()
+    }
+}
+
+impl ArrayExpressionNode {
+    pub fn new(
+        lsquare: TokenNode,
+        rsquare: TokenNode,
+        initials: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Self {
+        let node = Rc::new(CoreArrayExpressionNode {
+            lsquare: lsquare.clone(),
+            rsquare: rsquare.clone(),
+            initials: extract_from_option!(initials),
+        });
+        ArrayExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreArrayExpressionNode);
+}
+
+impl Node for ArrayExpressionNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().lsquare, self.core_ref().rsquare)
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().lsquare.start_line_number()
+    }
+}
+
+impl KeyValuePairNode {
+    pub fn new(key_expr: &ExpressionNode, value_expr: &ExpressionNode, colon: &TokenNode) -> Self {
+        let node = Rc::new(CoreKeyValuePairNode {
+            key_expr: key_expr.clone(),
+            value_expr: value_expr.clone(),
+            colon: colon.clone(),
+        });
+        KeyValuePairNode(node)
+    }
+
+    impl_core_ref!(CoreKeyValuePairNode);
+}
+
+impl Node for KeyValuePairNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().key_expr, self.core_ref().value_expr)
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().key_expr.start_line_number()
+    }
+}
+
+impl HashMapExpressionNode {
+    pub fn new(
+        lcurly: &TokenNode,
+        rcurly: &TokenNode,
+        initials: Option<&SymbolSeparatedSequenceNode<KeyValuePairNode>>,
+    ) -> Self {
+        let node = Rc::new(CoreHashMapExpressionNode {
+            lcurly: lcurly.clone(),
+            rcurly: rcurly.clone(),
+            initials: extract_from_option!(initials),
+        });
+        HashMapExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreHashMapExpressionNode);
+}
+
+impl Node for HashMapExpressionNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().lcurly, self.core_ref().rcurly)
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().lcurly.start_line_number()
+    }
+}
+
+impl TupleExpressionNode {
+    pub fn new(
+        lround: &TokenNode,
+        rround: &TokenNode,
+        initials: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Self {
+        let node = Rc::new(CoreTupleExpressionNode {
+            lround: lround.clone(),
+            rround: rround.clone(),
+            initials: extract_from_option!(initials),
+        });
+        TupleExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreTupleExpressionNode);
+}
+
+impl Node for TupleExpressionNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().lround, self.core_ref().rround)
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().lround.start_line_number()
     }
 }
 

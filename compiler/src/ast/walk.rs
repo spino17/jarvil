@@ -1,26 +1,30 @@
 use super::ast::{
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, GenericTypeDeclNode, IdentifierInDeclNode,
-    IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
-    InterfaceMethodTerminalNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
-    SymbolSeparatedSequenceNode, TupleTypeNode,
+    ArrayExpressionNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode, GenericTypeDeclNode,
+    HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
+    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, KeyValuePairNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, SymbolSeparatedSequenceNode,
+    TupleExpressionNode, TupleTypeNode,
 };
-use crate::ast::ast::{
-    ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-    AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
-    CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
-    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreExpressionNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-    CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
-    CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode, ExpressionStatementNode,
-    FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
-    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
-    LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
-    OkAssignmentNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
-    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
-    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, SkippedTokensNode,
-    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
-    TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
-    VariableDeclarationNode,
+use crate::{
+    ast::ast::{
+        ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
+        AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode,
+        CallExpressionNode, CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode,
+        ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
+        CoreAtomicExpressionNode, CoreExpressionNode, CoreRVariableDeclarationNode,
+        CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+        CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode,
+        ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
+        IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
+        LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode,
+        NameTypeSpecNode, OkAssignmentNode, OkSelfKeywordNode, OkTokenNode,
+        OnlyUnaryExpressionNode, ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode,
+        RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
+        SkippedTokensNode, StatemenIndentWrapperNode, StatementNode, StructDeclarationNode,
+        StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+        UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
+    },
+    types::tuple,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -218,6 +222,26 @@ pub trait Visitor {
         new_with_ClassMethodCallNode
     );
     impl_node_walk!(
+        walk_array_expression,
+        ArrayExpressionNode,
+        new_with_ArrayExpressionNode
+    );
+    impl_node_walk!(
+        walk_key_value_pair,
+        KeyValuePairNode,
+        new_with_KeyValuePairNode
+    );
+    impl_node_walk!(
+        walk_hashmap_expression,
+        HashMapExpressionNode,
+        new_with_HashMapExpressionNode
+    );
+    impl_node_walk!(
+        walk_tuple_expression,
+        TupleExpressionNode,
+        new_with_TupleExpressionNode
+    );
+    impl_node_walk!(
         walk_return_stmt,
         ReturnStatementNode,
         new_with_ReturnStatementNode
@@ -254,29 +278,82 @@ pub trait Visitor {
         OkSelfKeywordNode,
         new_with_OkSelfKeywordNode
     );
-    fn walk_type_tuple(&mut self, x: &SymbolSeparatedSequenceNode<TypeExpressionNode>) {
-        self.walk(&ASTNode::new_with_TypeTuple(x));
+
+    fn walk_comma_separated_type_expressions(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<TypeExpressionNode>,
+    ) {
+        let core_comma_separated_type_exprs = x.core_ref();
+        self.walk_type_expression(&core_comma_separated_type_exprs.entity);
+        if let Some((comma, remaining_type_exprs)) =
+            &core_comma_separated_type_exprs.remaining_entities
+        {
+            self.walk_token(comma);
+            self.walk_comma_separated_type_expressions(remaining_type_exprs);
+        }
     }
-    fn walk_name_type_specs(&mut self, x: &SymbolSeparatedSequenceNode<NameTypeSpecNode>) {
-        self.walk(&ASTNode::new_with_NameTypeSpecs(x));
+
+    fn walk_comma_separated_expressions(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<ExpressionNode>,
+    ) {
+        let core_comma_separated_exprs = x.core_ref();
+        self.walk_expression(&core_comma_separated_exprs.entity);
+        if let Some((comma, remaining_exprs)) = &core_comma_separated_exprs.remaining_entities {
+            self.walk_token(comma);
+            self.walk_comma_separated_expressions(remaining_exprs);
+        }
     }
-    fn walk_params(&mut self, x: &SymbolSeparatedSequenceNode<ExpressionNode>) {
-        self.walk(&ASTNode::new_with_Params(x));
+
+    fn walk_comma_separated_key_value_pairs(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<KeyValuePairNode>,
+    ) {
+        let core_comma_separated_key_value_pairs = x.core_ref();
+        self.walk_key_value_pair(&core_comma_separated_key_value_pairs.entity);
+        if let Some((comma, remaining_key_value_pairs)) =
+            &core_comma_separated_key_value_pairs.remaining_entities
+        {
+            self.walk_token(comma);
+            self.walk_comma_separated_key_value_pairs(remaining_key_value_pairs);
+        }
     }
-    fn walk_generic_type_decls(&mut self, x: &SymbolSeparatedSequenceNode<GenericTypeDeclNode>) {
+
+    fn walk_comma_separated_name_type_specs(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<NameTypeSpecNode>,
+    ) {
+        let core_comma_separated_name_type_specs = x.core_ref();
+        self.walk_name_type_spec(&core_comma_separated_name_type_specs.entity);
+        if let Some((comma, remaining_name_type_specs)) =
+            &core_comma_separated_name_type_specs.remaining_entities
+        {
+            self.walk_token(comma);
+            self.walk_comma_separated_name_type_specs(remaining_name_type_specs);
+        }
+    }
+
+    fn walk_comma_separated_generic_type_decls(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
+    ) {
         let core_generic_type_decls = x.core_ref();
         self.walk_generic_type_decl(&core_generic_type_decls.entity);
         if let Some((comma, remaining_entities)) = &core_generic_type_decls.remaining_entities {
             self.walk_token(comma);
-            self.walk_generic_type_decls(remaining_entities);
+            self.walk_comma_separated_generic_type_decls(remaining_entities);
         }
     }
-    fn walk_interface_bounds(&mut self, x: &SymbolSeparatedSequenceNode<IdentifierInUseNode>) {
+
+    fn walk_plus_separated_interfaces(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<IdentifierInUseNode>,
+    ) {
         let core_interface_bounds = x.core_ref();
         self.walk_identifier_in_use(&core_interface_bounds.entity);
         if let Some((comma, remaining_entities)) = &core_interface_bounds.remaining_entities {
             self.walk_token(comma);
-            self.walk_interface_bounds(remaining_entities);
+            self.walk_plus_separated_interfaces(remaining_entities);
         }
     }
 
@@ -429,7 +506,7 @@ pub trait Visitor {
                     &core_struct_decl.implementing_interfaces
                 {
                     self.walk_token(implements_keyword);
-                    self.walk_interface_bounds(interfaces);
+                    self.walk_plus_separated_interfaces(interfaces);
                 }
                 self.walk_token(&core_struct_decl.colon);
                 self.walk_block(&core_struct_decl.block);
@@ -442,7 +519,7 @@ pub trait Visitor {
                 self.walk_token(&core_lambda_decl.equal);
                 self.walk_token(&core_lambda_decl.lparen);
                 if let Some(type_tuple) = &core_lambda_decl.type_tuple {
-                    self.walk_type_tuple(type_tuple);
+                    self.walk_comma_separated_type_expressions(type_tuple);
                 }
                 self.walk_token(&core_lambda_decl.rparen);
                 if let Some((right_arrow, return_type)) = &core_lambda_decl.return_type {
@@ -455,7 +532,7 @@ pub trait Visitor {
                 let core_callable_prototype = callable_prototype.core_ref();
                 self.walk_token(&core_callable_prototype.lparen);
                 if let Some(name_type_specs) = &core_callable_prototype.params {
-                    self.walk_name_type_specs(name_type_specs);
+                    self.walk_comma_separated_name_type_specs(name_type_specs);
                 }
                 self.walk_token(&core_callable_prototype.rparen);
                 if let Some((right_arrow, return_type)) = &core_callable_prototype.return_type {
@@ -516,27 +593,11 @@ pub trait Visitor {
                     }
                 }
             }
-            ASTNode::NameTypeSpecs(name_type_specs_node) => {
-                let core_name_type_specs = name_type_specs_node.core_ref();
-                self.walk_name_type_spec(&core_name_type_specs.entity);
-                if let Some((comma, remaining_args)) = &core_name_type_specs.remaining_entities {
-                    self.walk_token(comma);
-                    self.walk_name_type_specs(remaining_args);
-                }
-            }
             ASTNode::NameTypeSpec(name_type_spec_node) => {
                 let core_name_type_spec = name_type_spec_node.core_ref();
                 self.walk_identifier_in_decl(&core_name_type_spec.name);
                 self.walk_token(&core_name_type_spec.colon);
                 self.walk_type_expression(&core_name_type_spec.data_type);
-            }
-            ASTNode::TypeTuple(type_tuple_node) => {
-                let core_type_tuple = type_tuple_node.core_ref();
-                self.walk_type_expression(&core_type_tuple.entity);
-                if let Some((comma, remaining_types)) = &core_type_tuple.remaining_entities {
-                    self.walk_token(comma);
-                    self.walk_type_tuple(remaining_types);
-                }
             }
             ASTNode::TypeExpression(type_expression_node) => {
                 let core_type_expr = type_expression_node.core_ref();
@@ -574,7 +635,7 @@ pub trait Visitor {
             ASTNode::TupleType(tuple_type_node) => {
                 let core_tuple_type = tuple_type_node.core_ref();
                 self.walk_token(&core_tuple_type.lparen);
-                self.walk_type_tuple(&core_tuple_type.types);
+                self.walk_comma_separated_type_expressions(&core_tuple_type.types);
                 self.walk_token(&core_tuple_type.rparen);
             }
             ASTNode::HashmapType(hashmap_type_node) => {
@@ -666,20 +727,12 @@ pub trait Visitor {
                     self.walk_expression(&core_comp_expr.operands[i + 1]);
                 }
             }
-            ASTNode::Params(params_node) => {
-                let core_params = params_node.core_ref();
-                self.walk_expression(&core_params.entity);
-                if let Some((comma, remaining_params)) = &core_params.remaining_entities {
-                    self.walk_token(comma);
-                    self.walk_params(remaining_params);
-                }
-            }
             ASTNode::CallExpression(call_expression_node) => {
                 let core_call_expr = call_expression_node.core_ref();
                 self.walk_identifier_in_use(&core_call_expr.function_name);
                 self.walk_token(&core_call_expr.lparen);
                 if let Some(params) = &core_call_expr.params {
-                    self.walk_params(params)
+                    self.walk_comma_separated_expressions(params);
                 }
                 self.walk_token(&core_call_expr.rparen);
             }
@@ -690,9 +743,39 @@ pub trait Visitor {
                 self.walk_identifier_in_use(&core_class_method_call.class_method_name);
                 self.walk_token(&core_class_method_call.lparen);
                 if let Some(params) = &core_class_method_call.params {
-                    self.walk_params(params);
+                    self.walk_comma_separated_expressions(params);
                 }
                 self.walk_token(&core_class_method_call.rparen);
+            }
+            ASTNode::ArrayExpression(array_expression_node) => {
+                let core_array_exprs = array_expression_node.core_ref();
+                self.walk_token(&core_array_exprs.lsquare);
+                if let Some(initials) = &core_array_exprs.initials {
+                    self.walk_comma_separated_expressions(initials);
+                }
+                self.walk_token(&core_array_exprs.rsquare);
+            }
+            ASTNode::KeyValuePair(key_value_pair_node) => {
+                let core_key_value_pair = key_value_pair_node.core_ref();
+                self.walk_expression(&core_key_value_pair.key_expr);
+                self.walk_token(&core_key_value_pair.colon);
+                self.walk_expression(&core_key_value_pair.value_expr);
+            }
+            ASTNode::HashMapExpression(hashmap_expression_node) => {
+                let core_hashmap_expr = hashmap_expression_node.core_ref();
+                self.walk_token(&core_hashmap_expr.lcurly);
+                if let Some(initials) = &core_hashmap_expr.initials {
+                    self.walk_comma_separated_key_value_pairs(initials);
+                }
+                self.walk_token(&core_hashmap_expr.rcurly);
+            }
+            ASTNode::TupleExpression(tuple_expression) => {
+                let core_tuple_expr = tuple_expression.core_ref();
+                self.walk_token(&core_tuple_expr.lround);
+                if let Some(initials) = &core_tuple_expr.initials {
+                    self.walk_comma_separated_expressions(initials);
+                }
+                self.walk_token(&core_tuple_expr.rround);
             }
             ASTNode::Atom(atom_node) => {
                 let core_atom = atom_node.core_ref();
@@ -736,7 +819,7 @@ pub trait Visitor {
                 self.walk_atom(&core_call.atom);
                 self.walk_token(&core_call.lparen);
                 if let Some(params) = &core_call.params {
-                    self.walk_params(params);
+                    self.walk_comma_separated_expressions(params);
                 }
                 self.walk_token(&core_call.rparen);
             }
@@ -753,7 +836,7 @@ pub trait Visitor {
                 self.walk_identifier_in_use(&core_method_access.method_name);
                 self.walk_token(&core_method_access.lparen);
                 if let Some(params) = &core_method_access.params {
-                    self.walk_params(params);
+                    self.walk_comma_separated_expressions(params);
                 }
                 self.walk_token(&core_method_access.rparen);
             }
@@ -813,7 +896,7 @@ pub trait Visitor {
                     &core_ok_identifier_in_use.generic_type_args
                 {
                     self.walk_token(langle);
-                    self.walk_type_tuple(generic_type_args);
+                    self.walk_comma_separated_type_expressions(generic_type_args);
                     self.walk_token(rangle);
                 }
             }
@@ -824,7 +907,7 @@ pub trait Visitor {
                     &core_ok_identifier_in_decl.generic_type_decls
                 {
                     self.walk_token(langle);
-                    self.walk_generic_type_decls(generic_type_decls);
+                    self.walk_comma_separated_generic_type_decls(generic_type_decls);
                     self.walk_token(rangle);
                 }
             }
@@ -833,7 +916,7 @@ pub trait Visitor {
                 self.walk_identifier_in_decl(&core_generic_type_decl.generic_type_name);
                 if let Some((colon, interface_bounds)) = &core_generic_type_decl.interface_bounds {
                     self.walk_token(colon);
-                    self.walk_interface_bounds(interface_bounds);
+                    self.walk_plus_separated_interfaces(interface_bounds);
                 }
             }
             ASTNode::OkSelfKeyword(ok_self_keyword) => {

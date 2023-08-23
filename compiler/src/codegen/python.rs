@@ -297,7 +297,7 @@ impl PythonCodeGenerator {
         let rparen = &core_callable_prototype.rparen;
         self.print_token_node(lparen);
         if let Some(params) = params {
-            self.walk_name_type_specs(params);
+            self.walk_comma_separated_name_type_specs(params);
         }
         self.print_token_node(rparen);
     }
@@ -337,7 +337,7 @@ impl PythonCodeGenerator {
         self.print_identifier_in_use(class_method_name);
         self.print_token_node(lparen);
         if let Some(params) = params {
-            self.walk_params(params);
+            self.walk_comma_separated_expressions(params);
         }
         self.print_token_node(rparen);
     }
@@ -376,7 +376,7 @@ impl PythonCodeGenerator {
                 self.add_str_to_python_code("self");
                 if let Some(params) = params {
                     self.add_str_to_python_code(", ");
-                    self.walk_name_type_specs(params);
+                    self.walk_comma_separated_name_type_specs(params);
                 }
                 self.print_token_node(rparen);
                 self.print_token_node(colon);

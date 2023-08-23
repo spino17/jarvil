@@ -1863,7 +1863,7 @@ impl Visitor for Resolver {
                             }
                         }
                         if let Some(params) = &core_func_call.params {
-                            self.walk_params(params)
+                            self.walk_comma_separated_expressions(params)
                         }
                     }
                     CoreAtomStartNode::ClassMethodCall(class_method_call) => {
@@ -1875,7 +1875,7 @@ impl Visitor for Resolver {
                         }
                         self.walk_identifier_in_use(&core_class_method_call.class_method_name);
                         if let Some(params) = &core_class_method_call.params {
-                            self.walk_params(params);
+                            self.walk_comma_separated_expressions(params);
                         }
                     }
                 }

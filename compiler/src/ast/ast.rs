@@ -61,7 +61,6 @@ pub enum ASTNode {
     BoundedMethodWrapper(BoundedMethodWrapperNode),
     LambdaDeclaration(LambdaDeclarationNode),
     ExpressionStatement(ExpressionStatementNode),
-    TypeTuple(SymbolSeparatedSequenceNode<TypeExpressionNode>),
     Expression(ExpressionNode),
     AtomicExpression(AtomicExpressionNode),
     ParenthesisedExpression(ParenthesisedExpressionNode),
@@ -70,6 +69,10 @@ pub enum ASTNode {
     BinaryExpression(BinaryExpressionNode),
     Comparison(ComparisonNode),
     CallExpression(CallExpressionNode),
+    ArrayExpression(ArrayExpressionNode),
+    KeyValuePair(KeyValuePairNode),
+    HashMapExpression(HashMapExpressionNode),
+    TupleExpression(TupleExpressionNode),
     Atom(AtomNode),
     AtomStart(AtomStartNode),
     PropertyAccess(PropertyAccessNode),
@@ -77,9 +80,7 @@ pub enum ASTNode {
     IndexAccess(IndexAccessNode),
     Call(CallNode),
     ClassMethodCall(ClassMethodCallNode),
-    NameTypeSpecs(SymbolSeparatedSequenceNode<NameTypeSpecNode>),
     NameTypeSpec(NameTypeSpecNode),
-    Params(SymbolSeparatedSequenceNode<ExpressionNode>),
     IdentifierInUse(IdentifierInUseNode),
     IdentifierInDecl(IdentifierInDeclNode),
     OkIdentifierInUse(OkIdentifierInUseNode),
@@ -388,6 +389,34 @@ pub struct CoreCallExpressionNode {
     pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
 }
 
+#[derive(Debug)]
+pub struct CoreArrayExpressionNode {
+    pub lsquare: TokenNode,
+    pub rsquare: TokenNode,
+    pub initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+}
+
+#[derive(Debug)]
+pub struct CoreKeyValuePairNode {
+    pub key_expr: ExpressionNode,
+    pub value_expr: ExpressionNode,
+    pub colon: TokenNode,
+}
+
+#[derive(Debug)]
+pub struct CoreHashMapExpressionNode {
+    pub lcurly: TokenNode,
+    pub rcurly: TokenNode,
+    pub initials: Option<SymbolSeparatedSequenceNode<KeyValuePairNode>>,
+}
+
+#[derive(Debug)]
+pub struct CoreTupleExpressionNode {
+    pub lround: TokenNode,
+    pub rround: TokenNode,
+    pub initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+}
+
 #[derive(Debug, Node)]
 pub enum CoreAtomNode {
     AtomStart(AtomStartNode),           // id, id(...), id::id(...), `self`
@@ -650,6 +679,14 @@ pub struct IdentifierInDeclNode(pub Rc<CoreIdentifierInDeclNode>);
 pub struct OkIdentifierInUseNode(pub Rc<CoreOkIdentifierInUseNode>);
 #[derive(Debug, Clone)]
 pub struct OkIdentifierInDeclNode(pub Rc<CoreOkIdentifierInDeclNode>);
+#[derive(Debug, Clone)]
+pub struct ArrayExpressionNode(pub Rc<CoreArrayExpressionNode>);
+#[derive(Debug, Clone)]
+pub struct KeyValuePairNode(pub Rc<CoreKeyValuePairNode>);
+#[derive(Debug, Clone)]
+pub struct HashMapExpressionNode(pub Rc<CoreHashMapExpressionNode>);
+#[derive(Debug, Clone)]
+pub struct TupleExpressionNode(pub Rc<CoreTupleExpressionNode>);
 
 pub enum UnresolvedIdentifier<'a> {
     Unresolved(&'a OkIdentifierInUseNode),
