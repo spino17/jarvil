@@ -1356,7 +1356,7 @@ impl AtomicExpressionNode {
     pub fn new_with_tuple_expr(
         lround: &TokenNode,
         rround: &TokenNode,
-        initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        initials: &SymbolSeparatedSequenceNode<ExpressionNode>,
     ) -> AtomicExpressionNode {
         let node = Rc::new(CoreAtomicExpressionNode::TupleExpression(
             TupleExpressionNode::new(lround, rround, initials),
@@ -1671,12 +1671,12 @@ impl TupleExpressionNode {
     pub fn new(
         lround: &TokenNode,
         rround: &TokenNode,
-        initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        initials: &SymbolSeparatedSequenceNode<ExpressionNode>,
     ) -> Self {
         let node = Rc::new(CoreTupleExpressionNode {
             lround: lround.clone(),
             rround: rround.clone(),
-            initials,
+            initials: initials.clone(),
         });
         TupleExpressionNode(node)
     }

@@ -1,4 +1,4 @@
-use crate::ast::ast::{ErrornousNode, KeyValuePairNode};
+use crate::ast::ast::{ErrornousNode, KeyValuePairNode, SymbolSeparatedSequenceNode};
 use crate::{
     ast::ast::{AtomicExpressionNode, ExpressionNode, UnaryExpressionNode},
     constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, TRUE},
@@ -162,8 +162,19 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
         CoreToken::LPAREN                       => {
             let lparen_node = parser.expect("(");
             let expr_node = parser.expr();
-            let rparen_node = parser.expect(")");
-            AtomicExpressionNode::new_with_parenthesised_expr(&expr_node, &lparen_node, &rparen_node)
+            let curr_token = parser.curr_token();
+            if curr_token.is_eq(",") {
+                let comma_node = parser.expect(",");
+                let remaining_tuple_exprs_node = parser.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
+                    parser.expr()
+                }, ",");
+                let exprs_node = SymbolSeparatedSequenceNode::new_with_entities(&expr_node, &remaining_tuple_exprs_node, &comma_node);
+                let rparen_node = parser.expect(")");
+                AtomicExpressionNode::new_with_tuple_expr(&lparen_node, &rparen_node, &exprs_node)
+            } else {
+                let rparen_node = parser.expect(")");
+                AtomicExpressionNode::new_with_parenthesised_expr(&expr_node, &lparen_node, &rparen_node)
+            }
         }
         _ => unreachable!("tokens not matching `starting_with_symbols` for atomic expression would already be eliminated")
     };

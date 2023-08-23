@@ -417,7 +417,7 @@ pub struct CoreHashMapExpressionNode {
 pub struct CoreTupleExpressionNode {
     pub lround: TokenNode,
     pub rround: TokenNode,
-    pub initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    pub initials: SymbolSeparatedSequenceNode<ExpressionNode>,
 }
 
 #[derive(Debug, Node)]

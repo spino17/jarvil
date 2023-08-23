@@ -782,9 +782,7 @@ pub trait Visitor {
             ASTNode::TupleExpression(tuple_expression) => {
                 let core_tuple_expr = tuple_expression.core_ref();
                 self.walk_token(&core_tuple_expr.lround);
-                if let Some(initials) = &core_tuple_expr.initials {
-                    self.walk_comma_separated_expressions(initials);
-                }
+                self.walk_comma_separated_expressions(&core_tuple_expr.initials);
                 self.walk_token(&core_tuple_expr.rround);
             }
             ASTNode::Atom(atom_node) => {
