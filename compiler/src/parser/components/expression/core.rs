@@ -129,7 +129,17 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
             AtomicExpressionNode::new_with_atom(&atom)
         }
         CoreToken::LSQUARE => {
-            todo!() // TODO - parser vector initialization expression
+            let mut initials_node = None;
+            let lsquare_node = parser.expect("[");
+            let curr_token = parser.curr_token();
+            if !curr_token.is_eq("]") {
+                let initial_values_node = parser.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
+                    parser.expr()
+                }, ",");
+                initials_node = Some(initial_values_node);
+            }
+            let rsquare_node = parser.expect("]");
+            todo!()
         }
         CoreToken::LBRACE => {
             todo!()  // TODO - parser hashmap initialization expression

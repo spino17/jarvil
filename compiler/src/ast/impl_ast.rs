@@ -1339,6 +1339,39 @@ impl AtomicExpressionNode {
         AtomicExpressionNode(node)
     }
 
+    pub fn new_with_array_expr(
+        lsquare: &TokenNode,
+        rsquare: &TokenNode,
+        initials: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> AtomicExpressionNode {
+        let node = Rc::new(CoreAtomicExpressionNode::ArrayExpression(
+            ArrayExpressionNode::new(lsquare, rsquare, initials),
+        ));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_hashmap_expr(
+        lcurly: &TokenNode,
+        rcurly: &TokenNode,
+        initials: Option<&SymbolSeparatedSequenceNode<KeyValuePairNode>>,
+    ) -> AtomicExpressionNode {
+        let node = Rc::new(CoreAtomicExpressionNode::HashMapExpression(
+            HashMapExpressionNode::new(lcurly, rcurly, initials),
+        ));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_tuple_expr(
+        lround: &TokenNode,
+        rround: &TokenNode,
+        initials: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> AtomicExpressionNode {
+        let node = Rc::new(CoreAtomicExpressionNode::TupleExpression(
+            TupleExpressionNode::new(lround, rround, initials),
+        ));
+        AtomicExpressionNode(node)
+    }
+
     impl_core_ref!(CoreAtomicExpressionNode);
 }
 default_errornous_node_impl!(AtomicExpressionNode, CoreAtomicExpressionNode);
@@ -1570,8 +1603,8 @@ impl Node for ClassMethodCallNode {
 
 impl ArrayExpressionNode {
     pub fn new(
-        lsquare: TokenNode,
-        rsquare: TokenNode,
+        lsquare: &TokenNode,
+        rsquare: &TokenNode,
         initials: Option<&SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Self {
         let node = Rc::new(CoreArrayExpressionNode {

@@ -343,6 +343,9 @@ pub enum CoreAtomicExpressionNode {
     FloatingPointNumber(TokenNode),
     Literal(TokenNode),
     ParenthesisedExpression(ParenthesisedExpressionNode),
+    ArrayExpression(ArrayExpressionNode),
+    HashMapExpression(HashMapExpressionNode),
+    TupleExpression(TupleExpressionNode),
     Atom(AtomNode),
     MissingTokens(MissingTokenNode),
 }

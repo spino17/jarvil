@@ -2,9 +2,10 @@
 // cover and the representation of type expressions in terms of type objects.
 
 use crate::ast::ast::{
-    CallExpressionNode, CallNode, ClassMethodCallNode, CoreIdentifierInDeclNode,
-    CoreIdentifierInUseNode, IndexAccessNode, InterfaceMethodTerminalNode, MethodAccessNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode,
+    ArrayExpressionNode, CallExpressionNode, CallNode, ClassMethodCallNode,
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, HashMapExpressionNode, IndexAccessNode,
+    InterfaceMethodTerminalNode, MethodAccessNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    PropertyAccessNode, StructDeclarationNode, TupleExpressionNode,
 };
 use crate::error::diagnostics::{
     GenericTypeArgsNotExpectedError, InferredTypesNotBoundedByInterfacesError,
@@ -1316,6 +1317,18 @@ impl TypeChecker {
         }
     }
 
+    pub fn check_array_expr(&self, expr: &ArrayExpressionNode) -> Type {
+        todo!()
+    }
+
+    pub fn check_hashmap_expr(&self, expr: &HashMapExpressionNode) -> Type {
+        todo!()
+    }
+
+    pub fn check_tuple_expr(&self, expr: &TupleExpressionNode) -> Type {
+        todo!()
+    }
+
     pub fn check_atomic_expr(&self, atomic_expr: &AtomicExpressionNode) -> Type {
         let core_atomic_expr = atomic_expr.core_ref();
         match core_atomic_expr {
@@ -1333,6 +1346,15 @@ impl TypeChecker {
             }
             CoreAtomicExpressionNode::ParenthesisedExpression(parenthesised_expr) => {
                 self.check_expr(&parenthesised_expr.core_ref().expr)
+            }
+            CoreAtomicExpressionNode::ArrayExpression(array_expr) => {
+                self.check_array_expr(array_expr)
+            }
+            CoreAtomicExpressionNode::HashMapExpression(hashmap_expr) => {
+                self.check_hashmap_expr(hashmap_expr)
+            }
+            CoreAtomicExpressionNode::TupleExpression(tuple_expr) => {
+                self.check_tuple_expr(tuple_expr)
             }
             CoreAtomicExpressionNode::Atom(atom) => self.check_atom(atom).0,
             CoreAtomicExpressionNode::MissingTokens(_) => Type::new_with_unknown(),

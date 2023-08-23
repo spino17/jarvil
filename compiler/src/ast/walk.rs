@@ -279,6 +279,7 @@ pub trait Visitor {
         new_with_OkSelfKeywordNode
     );
 
+    // below are concrete `SymbolSeparatedSequenceNode<T>` walk methods
     fn walk_comma_separated_type_expressions(
         &mut self,
         x: &SymbolSeparatedSequenceNode<TypeExpressionNode>,
@@ -684,6 +685,15 @@ pub trait Visitor {
                     }
                     CoreAtomicExpressionNode::Atom(atom) => {
                         self.walk_atom(atom);
+                    }
+                    CoreAtomicExpressionNode::ArrayExpression(array_expr) => {
+                        self.walk_array_expression(array_expr);
+                    }
+                    CoreAtomicExpressionNode::HashMapExpression(hashmap_expr) => {
+                        self.walk_hashmap_expression(hashmap_expr);
+                    }
+                    CoreAtomicExpressionNode::TupleExpression(tuple_expr) => {
+                        self.walk_tuple_expression(tuple_expr);
                     }
                     CoreAtomicExpressionNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
