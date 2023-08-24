@@ -568,6 +568,10 @@ pub trait Visitor {
                 let core_variable_decl = variable_decl_node.core_ref();
                 self.walk_token(&core_variable_decl.let_keyword);
                 self.walk_identifier_in_decl(&core_variable_decl.name);
+                if let Some((colon, ty_expr)) = &core_variable_decl.ty_annotation {
+                    self.walk_token(colon);
+                    self.walk_type_expression(ty_expr);
+                }
                 self.walk_token(&core_variable_decl.equal);
                 self.walk_r_variable_declaration(&core_variable_decl.r_node);
             }

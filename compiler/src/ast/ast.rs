@@ -170,6 +170,7 @@ pub struct CoreVariableDeclarationNode {
     pub let_keyword: TokenNode,
     pub equal: TokenNode,
     pub name: IdentifierInDeclNode,
+    pub ty_annotation: Option<(TokenNode, TypeExpressionNode)>,
     pub r_node: RVariableDeclarationNode,
 }
 

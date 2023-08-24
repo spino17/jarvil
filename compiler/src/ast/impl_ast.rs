@@ -673,12 +673,14 @@ impl VariableDeclarationNode {
         r_node: &RVariableDeclarationNode,
         let_keyword: &TokenNode,
         equal: &TokenNode,
+        optional_ty_annotation: Option<(TokenNode, TypeExpressionNode)>,
     ) -> Self {
         let node = Rc::new(CoreVariableDeclarationNode {
             let_keyword: let_keyword.clone(),
             equal: equal.clone(),
             name: name.clone(),
             r_node: r_node.clone(),
+            ty_annotation: optional_ty_annotation,
         });
         VariableDeclarationNode(node)
     }

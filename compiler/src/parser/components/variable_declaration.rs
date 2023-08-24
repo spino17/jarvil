@@ -5,9 +5,15 @@ use crate::{ast::ast::RVariableDeclarationNode, lexer::token::CoreToken};
 use crate::{ast::ast::VariableDeclarationNode, parser::parser::JarvilParser};
 
 pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
+    let mut optional_ty_annotation_node = None;
     let let_keyword_node = parser.expect("let");
     let identifier_node = parser.expect_identifier();
-    // TODO - add optional type-casting expression here
+    let curr_token = parser.curr_token();
+    if curr_token.is_eq(":") {
+        let colon_node = parser.expect(":");
+        let variable_ty_expr_node = parser.type_expr();
+        optional_ty_annotation_node = Some((colon_node, variable_ty_expr_node));
+    }
     let equal_node = parser.expect("=");
     let token = parser.curr_token();
     let r_node = match token.core_token {
@@ -25,5 +31,11 @@ pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
             RVariableDeclarationNode::new_with_expr(&expr_node, &newline_node)
         }
     };
-    return VariableDeclarationNode::new(&identifier_node, &r_node, &let_keyword_node, &equal_node);
+    return VariableDeclarationNode::new(
+        &identifier_node,
+        &r_node,
+        &let_keyword_node,
+        &equal_node,
+        optional_ty_annotation_node,
+    );
 }
