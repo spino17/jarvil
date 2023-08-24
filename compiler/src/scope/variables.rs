@@ -22,6 +22,11 @@ impl VariableData {
     pub fn set_is_init(&mut self, is_init: bool) {
         self.is_init = is_init
     }
+
+    pub fn set_data_type_from_optional_annotation(&mut self, ty: Type) {
+        self.is_init = true;
+        self.data_type = ty;
+    }
 }
 
 impl AbstractConcreteTypesHandler for VariableData {

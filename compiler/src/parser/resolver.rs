@@ -1115,6 +1115,11 @@ impl Resolver {
                 }
             }
         }
+
+        let ty_from_optional_annotation = match &core_variable_decl.ty_annotation {
+            Some((_, ty_expr)) => Some(self.type_obj_from_expression(ty_expr)),
+            None => None,
+        };
         // Except `CoreRAssignmentNode::LAMBDA`, type of the variable is set in the `type_checker.rs`. For `CoreRAssignmentNode::LAMBDA`,
         // it's type is set to the variable symbol_data here itself.
         match core_variable_decl.r_node.core_ref() {
@@ -1132,19 +1137,34 @@ impl Resolver {
                     return_type,
                     is_concretization_required,
                 ));
+                let final_variable_ty = match ty_from_optional_annotation {
+                    Some(ty_from_optional_annotation) => {
+                        if !ty_from_optional_annotation.is_eq(&lambda_type_obj) {
+                            // TODO - raise error `lambda type does not match with type annotation of the variable`
+                        }
+                        ty_from_optional_annotation
+                    }
+                    None => lambda_type_obj,
+                };
                 if let Some(symbol_data) = &symbol_data {
                     symbol_data
                         .0
                         .get_core_mut_ref()
-                        .set_data_type(&lambda_type_obj);
+                        .set_data_type(&final_variable_ty);
                 }
             }
             CoreRVariableDeclarationNode::Expression(expr_r_assign) => {
                 self.walk_expr_stmt(expr_r_assign);
+                if let Some(symbol_data) = &symbol_data {
+                    match ty_from_optional_annotation {
+                        Some(ty) => symbol_data
+                            .0
+                            .get_core_mut_ref()
+                            .set_data_type_from_optional_annotation(ty),
+                        None => symbol_data.0.get_core_mut_ref().set_is_init(true),
+                    }
+                }
             }
-        }
-        if let Some(symbol_data) = &symbol_data {
-            symbol_data.0.get_core_mut_ref().set_is_init(true);
         }
     }
 
