@@ -1545,7 +1545,16 @@ impl TypeChecker {
                 .semantic_state_db
                 .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
             {
-                symbol_data.get_core_mut_ref().set_data_type(&r_type);
+                // symbol_data.get_core_mut_ref().set_data_type(&r_type);
+                let mut symbol_data_mut_ref = symbol_data.get_core_mut_ref();
+                let variable_ty = &symbol_data_mut_ref.data_type;
+                if variable_ty.is_unset() {
+                    symbol_data_mut_ref.set_data_type(&r_type);
+                } else {
+                    if !variable_ty.is_eq(&r_type) {
+                        // TODO - raise error `type pf right expr does not match with the type annotation`
+                    }
+                }
             }
         };
     }

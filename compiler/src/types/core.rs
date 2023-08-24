@@ -275,6 +275,13 @@ impl Type {
         }
     }
 
+    pub fn is_unset(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::Unset => true,
+            _ => false,
+        }
+    }
+
     // This function returns Some if operation is possible and None otherwise
     pub fn check_operator(&self, other: &Type, op_kind: &BinaryOperatorKind) -> Option<Type> {
         match op_kind {
