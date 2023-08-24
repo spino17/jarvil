@@ -10,6 +10,7 @@ use crate::error::diagnostics::{
     FieldsNotInitializedInConstructorError, GenericTypeResolvedToOutsideScopeError,
     GenericTypesDeclarationInsideConstructorFoundError, IdentifierFoundInNonLocalsError,
     IdentifierNotFoundInAnyNamespaceError, IdentifierUsedBeforeInitializedError,
+    InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError,
     InitMethodNotAllowedInsideConstructorError, InterfaceAlreadyExistInBoundsDeclarationError,
     MainFunctionNotFoundError, MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError,
     SelfNotFoundError,
@@ -1117,7 +1118,7 @@ impl Resolver {
         }
 
         let ty_from_optional_annotation = match &core_variable_decl.ty_annotation {
-            Some((_, ty_expr)) => Some(self.type_obj_from_expression(ty_expr)),
+            Some((_, ty_expr)) => Some((self.type_obj_from_expression(ty_expr), ty_expr.range())),
             None => None,
         };
         // Except `CoreRAssignmentNode::LAMBDA`, type of the variable is set in the `type_checker.rs`. For `CoreRAssignmentNode::LAMBDA`,
@@ -1132,19 +1133,24 @@ impl Resolver {
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
                 let (params_vec, return_type, _, is_concretization_required) =
                     self.visit_callable_body(&core_lambda_r_assign.body, None, &None);
-                let lambda_type_obj = Type::new_with_lambda_unnamed(CallablePrototypeData::new(
+                let lambda_ty = Type::new_with_lambda_unnamed(CallablePrototypeData::new(
                     params_vec,
                     return_type,
                     is_concretization_required,
                 ));
                 let final_variable_ty = match ty_from_optional_annotation {
-                    Some(ty_from_optional_annotation) => {
-                        if !ty_from_optional_annotation.is_eq(&lambda_type_obj) {
-                            // TODO - raise error `lambda type does not match with type annotation of the variable`
+                    Some((ty_from_optional_annotation, range)) => {
+                        if !ty_from_optional_annotation.is_eq(&lambda_ty) {
+                            let err = InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError::new(
+                                ty_from_optional_annotation.to_string(),
+                                lambda_ty.to_string(),
+                                range
+                            );
+                            self.errors.push(Diagnostics::InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(err));
                         }
                         ty_from_optional_annotation
                     }
-                    None => lambda_type_obj,
+                    None => lambda_ty,
                 };
                 if let Some(symbol_data) = &symbol_data {
                     symbol_data
@@ -1157,7 +1163,7 @@ impl Resolver {
                 self.walk_expr_stmt(expr_r_assign);
                 if let Some(symbol_data) = &symbol_data {
                     match ty_from_optional_annotation {
-                        Some(ty) => symbol_data
+                        Some((ty, _)) => symbol_data
                             .0
                             .get_core_mut_ref()
                             .set_data_type_from_optional_annotation(ty),

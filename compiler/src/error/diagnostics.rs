@@ -76,6 +76,12 @@ pub enum Diagnostics {
     GenericTypeArgsIncorrectlyBounded(GenericTypeArgsIncorrectlyBoundedError),
     InterfaceMethodsInStructCheck(InterfaceMethodsInStructCheckError),
     InitMethodNotAllowedInsideConstructor(InitMethodNotAllowedInsideConstructorError),
+    InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(
+        InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError,
+    ),
+    RightSideExpressionTypeMismatchedWithTypeFromAnnotation(
+        RightSideExpressionTypeMismatchedWithTypeFromAnnotationError,
+    ),
 }
 
 impl Diagnostics {
@@ -179,6 +185,12 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::InitMethodNotAllowedInsideConstructor(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::RightSideExpressionTypeMismatchedWithTypeFromAnnotation(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -637,6 +649,33 @@ impl IdentifierFoundInNonLocalsError {
             span: range_to_span(range).into(),
             help: Some(
                 "variables and functions are not allowed to be declared in the scope where there exist a reference with the same name to a non-local declaration"
+                .to_string()
+                .style(Style::new().yellow())
+                .to_string()
+            )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("inferred type of lambda variable does not match with provided type annotation")]
+#[diagnostic(code("SemanticError"))]
+pub struct InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError {
+    pub ty_from_annotation: String,
+    pub inferred_lambda_ty: String,
+    #[label("inferred lambda type of right side expression does not match this")]
+    pub span: SourceSpan,
+    help: Option<String>,
+}
+
+impl InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError {
+    pub fn new(ty_from_annotation: String, inferred_lambda_ty: String, range: TextRange) -> Self {
+        InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError {
+            ty_from_annotation,
+            inferred_lambda_ty,
+            span: range_to_span(range).into(),
+            help: Some(
+                "use lambda type in annotation matching the prototype with the lambda on the right side"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()
@@ -1555,6 +1594,34 @@ impl MismatchedTypesOnLeftRightError {
                     .style(Style::new().yellow())
                     .to_string(),
             ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("right side expression type does not match the type annotated on the variable")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct RightSideExpressionTypeMismatchedWithTypeFromAnnotationError {
+    pub ty_from_annotation: String,
+    pub right_expr_ty: String,
+    #[label("variable has type `{}`", ty_from_annotation)]
+    pub variable_span: SourceSpan,
+    #[label("expression has type `{}`", right_expr_ty)]
+    pub right_expr_span: SourceSpan,
+}
+
+impl RightSideExpressionTypeMismatchedWithTypeFromAnnotationError {
+    pub fn new(
+        ty_from_annotation: String,
+        right_expr_ty: String,
+        variable_range: TextRange,
+        right_expr_range: TextRange,
+    ) -> Self {
+        RightSideExpressionTypeMismatchedWithTypeFromAnnotationError {
+            ty_from_annotation,
+            right_expr_ty,
+            variable_span: range_to_span(variable_range).into(),
+            right_expr_span: range_to_span(right_expr_range).into(),
         }
     }
 }
