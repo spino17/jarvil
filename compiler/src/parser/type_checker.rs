@@ -8,7 +8,8 @@ use crate::ast::ast::{
     PropertyAccessNode, StructDeclarationNode, TupleExpressionNode,
 };
 use crate::error::diagnostics::{
-    GenericTypeArgsNotExpectedError, InferredTypesNotBoundedByInterfacesError,
+    ExpressionTypeCannotBeInferredError, GenericTypeArgsNotExpectedError,
+    IncorrectExpressionTypeError, InferredTypesNotBoundedByInterfacesError,
     InterfaceMethodsInStructCheckError, NotAllConcreteTypesInferredError,
     RightSideExpressionTypeMismatchedWithTypeFromAnnotationError, TypeInferenceFailedError,
 };
@@ -1318,16 +1319,86 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_array_expr(&self, expr: &ArrayExpressionNode) -> Type {
-        todo!()
+    pub fn check_array_expr(&self, array_expr: &ArrayExpressionNode) -> Type {
+        let core_array_expr = array_expr.core_ref();
+        match &core_array_expr.initials {
+            Some(initials) => {
+                let mut initials_iter = initials.iter();
+                let first_expr_ty = match initials_iter.next() {
+                    Some(expr) => self.check_expr(expr),
+                    None => unreachable!(),
+                };
+                for expr in initials_iter {
+                    let ty = self.check_expr(expr);
+                    if !ty.is_eq(&first_expr_ty) {
+                        let err = IncorrectExpressionTypeError::new(
+                            first_expr_ty.to_string(),
+                            ty.to_string(),
+                            expr.range(),
+                        );
+                        self.log_error(Diagnostics::IncorrectExpressionType(err));
+                    }
+                }
+                Type::new_with_array(first_expr_ty)
+            }
+            None => {
+                let err = ExpressionTypeCannotBeInferredError::new(array_expr.range());
+                self.log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
+                Type::new_with_array(Type::new_with_unknown())
+            }
+        }
     }
 
-    pub fn check_hashmap_expr(&self, expr: &HashMapExpressionNode) -> Type {
-        todo!()
+    pub fn check_hashmap_expr(&self, hashmap_expr: &HashMapExpressionNode) -> Type {
+        let core_hashmap_expr = hashmap_expr.core_ref();
+        match &core_hashmap_expr.initials {
+            Some(initials) => {
+                let mut initials_iter = initials.iter();
+                let (first_key_ty, first_value_ty) = match initials_iter.next() {
+                    Some(key_value_pair) => {
+                        let key_ty = self.check_expr(&key_value_pair.core_ref().key_expr);
+                        let value_ty = self.check_expr(&key_value_pair.core_ref().value_expr);
+                        (key_ty, value_ty)
+                    }
+                    None => unreachable!(),
+                };
+                for key_value_pair in initials_iter {
+                    let core_key_value_pair = key_value_pair.core_ref();
+                    let key_ty = self.check_expr(&core_key_value_pair.key_expr);
+                    let value_ty = self.check_expr(&core_key_value_pair.value_expr);
+                    if !key_ty.is_eq(&first_key_ty) {
+                        let err = IncorrectExpressionTypeError::new(
+                            first_key_ty.to_string(),
+                            key_ty.to_string(),
+                            core_key_value_pair.key_expr.range(),
+                        );
+                        self.log_error(Diagnostics::IncorrectExpressionType(err));
+                    }
+                    if !value_ty.is_eq(&first_value_ty) {
+                        let err = IncorrectExpressionTypeError::new(
+                            first_value_ty.to_string(),
+                            value_ty.to_string(),
+                            core_key_value_pair.value_expr.range(),
+                        );
+                        self.log_error(Diagnostics::IncorrectExpressionType(err));
+                    }
+                }
+                Type::new_with_hashmap(first_key_ty, first_value_ty)
+            }
+            None => {
+                let err = ExpressionTypeCannotBeInferredError::new(hashmap_expr.range());
+                self.log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
+                Type::new_with_array(Type::new_with_unknown())
+            }
+        }
     }
 
-    pub fn check_tuple_expr(&self, expr: &TupleExpressionNode) -> Type {
-        todo!()
+    pub fn check_tuple_expr(&self, tuple_expr: &TupleExpressionNode) -> Type {
+        let mut sub_types = vec![];
+        for expr in tuple_expr.core_ref().initials.iter() {
+            sub_types.push(self.check_expr(expr));
+        }
+        Type::new_with_tuple(sub_types)
     }
 
     pub fn check_atomic_expr(&self, atomic_expr: &AtomicExpressionNode) -> Type {

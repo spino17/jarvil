@@ -5,25 +5,23 @@ use super::ast::{
     OkIdentifierInDeclNode, OkIdentifierInUseNode, SymbolSeparatedSequenceNode,
     TupleExpressionNode, TupleTypeNode,
 };
-use crate::{
-    ast::ast::{
-        ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-        AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode,
-        CallExpressionNode, CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode,
-        ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
-        CoreAtomicExpressionNode, CoreExpressionNode, CoreRVariableDeclarationNode,
-        CoreSelfKeywordNode, CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-        CoreTypeDeclarationNode, CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode,
-        ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
-        IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode,
-        LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode,
-        NameTypeSpecNode, OkAssignmentNode, OkSelfKeywordNode, OkTokenNode,
-        OnlyUnaryExpressionNode, ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode,
-        RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
-        SkippedTokensNode, StatemenIndentWrapperNode, StatementNode, StructDeclarationNode,
-        StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-        UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
-    }
+use crate::ast::ast::{
+    ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
+    AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
+    CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
+    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
+    CoreExpressionNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
+    CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
+    CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode, ExpressionStatementNode,
+    FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
+    IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
+    LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
+    OkAssignmentNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, SkippedTokensNode,
+    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
+    VariableDeclarationNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language

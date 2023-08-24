@@ -3,11 +3,7 @@
 // testing, and managing dependencies.
 
 use super::{
-    build::BuildCommand,
-    error::AnyonError,
-    fmt::FmtCommand,
-    help::HelpCommand,
-    new::NewCommand,
+    build::BuildCommand, error::AnyonError, fmt::FmtCommand, help::HelpCommand, new::NewCommand,
     version::VersionCommand,
 };
 

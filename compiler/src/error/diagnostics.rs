@@ -82,6 +82,8 @@ pub enum Diagnostics {
     RightSideExpressionTypeMismatchedWithTypeFromAnnotation(
         RightSideExpressionTypeMismatchedWithTypeFromAnnotationError,
     ),
+    IncorrectExpressionType(IncorrectExpressionTypeError),
+    ExpressionTypeCannotBeInferred(ExpressionTypeCannotBeInferredError),
 }
 
 impl Diagnostics {
@@ -191,6 +193,10 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::RightSideExpressionTypeMismatchedWithTypeFromAnnotation(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::IncorrectExpressionType(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::ExpressionTypeCannotBeInferred(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -1480,6 +1486,54 @@ impl UnresolvedIndexExpressionInTupleError {
             index_span: range_to_span(index_span).into(),
             help: Some(
                 "tuple index should be a fixed integer value"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("incorrect expression type")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct IncorrectExpressionTypeError {
+    pub expected_ty: String,
+    pub received_ty: String,
+    #[label(
+        "expected type `{}`, got expression with type `{}`",
+        expected_ty,
+        received_ty
+    )]
+    pub span: SourceSpan,
+}
+
+impl IncorrectExpressionTypeError {
+    pub fn new(expected_ty: String, received_ty: String, range: TextRange) -> Self {
+        IncorrectExpressionTypeError {
+            expected_ty,
+            received_ty,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("expression type cannot be inferred")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct ExpressionTypeCannotBeInferredError {
+    #[label("expression type is not clear")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl ExpressionTypeCannotBeInferredError {
+    pub fn new(range: TextRange) -> Self {
+        ExpressionTypeCannotBeInferredError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "while declaring the variable, use explicit type annotation to remove ambiguity associated with empty collections like lists and dicts"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),
