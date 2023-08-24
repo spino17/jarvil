@@ -23,8 +23,7 @@ use crate::{
         SkippedTokensNode, StatemenIndentWrapperNode, StatementNode, StructDeclarationNode,
         StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
         UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
-    },
-    types::tuple,
+    }
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
