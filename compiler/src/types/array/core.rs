@@ -124,6 +124,7 @@ impl OperatorCompatiblity for Array {
     }
 
     fn check_multiply(&self, _other: &Type) -> Option<Type> {
+        // TODO - add case for integer to enable syntax like `[1, 2] * 2`
         None
     }
 

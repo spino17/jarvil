@@ -414,9 +414,9 @@ impl TypeChecker {
         r_type: &Type,
         operator_kind: &BinaryOperatorKind,
     ) -> Option<Type> {
-        if l_type.is_unknown() || r_type.is_unknown() {
-            return Some(Type::new_with_unknown());
-        }
+        //if l_type.is_unknown() || r_type.is_unknown() {
+        //    return Some(Type::new_with_unknown());
+        //}
         let result = l_type.check_operator(r_type, operator_kind);
         result
     }

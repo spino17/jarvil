@@ -363,7 +363,7 @@ impl InvalidLValueError {
         InvalidLValueError {
             span: range_to_span(range).into(),
             help: Some(
-                "any value derived from the output of a function call is not assignable"
+                "constants and output of function call is not assignable"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),

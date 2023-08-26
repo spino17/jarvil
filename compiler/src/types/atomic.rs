@@ -176,7 +176,7 @@ impl OperatorCompatiblity for Atomic {
                     _ => return None,
                 },
                 _ => return None,
-            },
+            },// TODO - add array to enable syntax like `2 * [1, 2]`
             _ => None,
         }
     }
