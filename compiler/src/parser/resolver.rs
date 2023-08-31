@@ -50,7 +50,6 @@ use crate::{
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::vec;
 use text_size::TextRange;
-
 use super::helper::err_for_generic_type_args;
 
 #[derive(Debug)]
