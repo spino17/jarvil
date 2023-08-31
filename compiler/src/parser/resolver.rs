@@ -1,3 +1,4 @@
+use super::helper::err_for_generic_type_args;
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
@@ -50,7 +51,6 @@ use crate::{
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::vec;
 use text_size::TextRange;
-use super::helper::err_for_generic_type_args;
 
 #[derive(Debug)]
 pub enum ResolveResult<T: AbstractSymbolData> {
