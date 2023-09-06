@@ -1342,9 +1342,10 @@ impl TypeChecker {
                 Type::new_with_array(first_expr_ty)
             }
             None => {
-                let err = ExpressionTypeCannotBeInferredError::new(array_expr.range());
-                self.log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
-                Type::new_with_array(Type::new_with_unknown())
+                //let err = ExpressionTypeCannotBeInferredError::new(array_expr.range());
+                //self.log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
+                //Type::new_with_array(Type::new_with_unknown())
+                todo!()
             }
         }
     }
@@ -1386,9 +1387,10 @@ impl TypeChecker {
                 Type::new_with_hashmap(first_key_ty, first_value_ty)
             }
             None => {
-                let err = ExpressionTypeCannotBeInferredError::new(hashmap_expr.range());
-                self.log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
-                Type::new_with_array(Type::new_with_unknown())
+                //let err = ExpressionTypeCannotBeInferredError::new(hashmap_expr.range());
+                //self.log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
+                //Type::new_with_array(Type::new_with_unknown())
+                todo!()
             }
         }
     }
