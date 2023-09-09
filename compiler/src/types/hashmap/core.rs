@@ -94,6 +94,10 @@ impl AbstractType for HashMap {
                         has_generics,
                         inference_category,
                     )?;
+                } else {
+                    if !self.key_type.is_eq(&hashmap_ty.key_type) {
+                        return Err(());
+                    }
                 }
                 if self.value_type.has_generics() {
                     let _ = self.value_type.try_infer_type(
@@ -104,6 +108,10 @@ impl AbstractType for HashMap {
                         has_generics,
                         inference_category,
                     )?;
+                } else {
+                    if !self.value_type.is_eq(&hashmap_ty.value_type) {
+                        return Err(());
+                    }
                 }
                 Ok(())
             }
