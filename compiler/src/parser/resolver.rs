@@ -728,6 +728,15 @@ impl Resolver {
         (ty_obj, has_generics)
     }
 
+    pub fn type_obj_for_expression_contained_inside_declarations(
+        &mut self,
+        type_expr: &TypeExpressionNode,
+    ) -> (Type, bool) {
+        let (ty, ty_has_generics) = self.type_obj_from_expression(type_expr);
+        // TODO - transform here based on `has_generics`, make the `generics_wrapper` variant of type
+        todo!()
+    }
+
     fn interface_obj_from_expression(
         &mut self,
         interface_expr: &OkIdentifierInUseNode,
@@ -901,7 +910,8 @@ impl Resolver {
         let return_type: Type = match return_type {
             Some((_, return_type_expr)) => {
                 return_type_range = Some(return_type_expr.range());
-                let (type_obj, ty_has_generics) = self.type_obj_from_expression(return_type_expr);
+                let (type_obj, ty_has_generics) =
+                    self.type_obj_for_expression_contained_inside_declarations(return_type_expr);
                 if ty_has_generics {
                     is_concretization_required_for_return_type = true;
                 }
@@ -916,8 +926,10 @@ impl Resolver {
                 let param_name = &core_param.name;
                 if let CoreIdentifierInDeclNode::Ok(ok_identifier) = param_name.core_ref() {
                     let param_name = ok_identifier.token_value(&self.code);
-                    let (param_type, param_ty_has_generics) =
-                        self.type_obj_from_expression(&core_param.data_type);
+                    let (param_type, param_ty_has_generics) = self
+                        .type_obj_for_expression_contained_inside_declarations(
+                            &core_param.data_type,
+                        );
                     let result = self.semantic_state_db.namespace.declare_variable_with_type(
                         self.scope_index,
                         param_name,
@@ -1353,8 +1365,10 @@ impl Resolver {
                     let name = &name_type_spec.name;
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier.token_value(&self.code);
-                        let (type_obj, _) =
-                            self.type_obj_from_expression(&name_type_spec.data_type);
+                        let (type_obj, _) = self
+                            .type_obj_for_expression_contained_inside_declarations(
+                                &name_type_spec.data_type,
+                            );
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1564,7 +1578,8 @@ impl Resolver {
         }
         let return_type: Type = match return_type {
             Some((_, return_type_expr)) => {
-                let (type_obj, ty_has_generics) = self.type_obj_from_expression(return_type_expr);
+                let (type_obj, ty_has_generics) =
+                    self.type_obj_for_expression_contained_inside_declarations(return_type_expr);
                 if ty_has_generics {
                     is_concretization_required_for_return_type = true;
                 }
@@ -1575,7 +1590,8 @@ impl Resolver {
         if let Some(type_tuple) = type_tuple {
             let type_tuple_iter = type_tuple.iter();
             for data_type in type_tuple_iter {
-                let (ty, ty_has_generics) = self.type_obj_from_expression(&data_type);
+                let (ty, ty_has_generics) =
+                    self.type_obj_for_expression_contained_inside_declarations(&data_type);
                 if ty_has_generics {
                     generics_containing_params_indexes.push(types_vec.len());
                 }
@@ -1679,8 +1695,10 @@ impl Resolver {
                     let name = &name_type_spec.name;
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier.token_value(&self.code);
-                        let (type_obj, _) =
-                            self.type_obj_from_expression(&name_type_spec.data_type);
+                        let (type_obj, _) = self
+                            .type_obj_for_expression_contained_inside_declarations(
+                                &name_type_spec.data_type,
+                            );
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
