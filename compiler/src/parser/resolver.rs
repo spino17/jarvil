@@ -300,7 +300,7 @@ impl Resolver {
         node: &OkIdentifierInUseNode,
         symbol_data: &T,
         is_concrete_types_none_allowed: bool,
-    ) -> Result<Option<ConcreteTypesRegistryKey>, GenericTypeArgsCheckError> {
+    ) -> Result<(Option<ConcreteTypesRegistryKey>, bool), GenericTypeArgsCheckError> {
         // (index to the registry, has_generics)
         let (concrete_types, ty_ranges, has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
@@ -317,7 +317,7 @@ impl Resolver {
                 self.semantic_state_db
                     .identifier_in_use_binding_table
                     .insert(node.clone(), concrete_symbol_data);
-                return Ok(index);
+                return Ok((index, has_generics));
             }
             Err(err) => return Err(err),
         }
@@ -352,7 +352,7 @@ impl Resolver {
                     &lookup_data.symbol_data,
                     is_concrete_types_none_allowed,
                 ) {
-                    Ok(key) => return ResolveResult::Ok(lookup_data, key, name),
+                    Ok((key, _)) => return ResolveResult::Ok(lookup_data, key, name),
                     Err(err) => {
                         if log_error {
                             let err = err_for_generic_type_args(
@@ -540,6 +540,7 @@ impl Resolver {
         &mut self,
         user_defined_ty_expr: &'a UserDefinedTypeNode,
         scope_index: usize,
+        has_generics: &mut bool,
     ) -> TypeResolveKind<'a> {
         if let CoreIdentifierInUseNode::Ok(ok_identifier) =
             user_defined_ty_expr.core_ref().name.core_ref()
@@ -561,11 +562,14 @@ impl Resolver {
                                 &symbol_data,
                                 false,
                             ) {
-                                Ok(index) => TypeResolveKind::Resolved(Type::new_with_struct(
-                                    name,
-                                    &symbol_data.0,
-                                    index,
-                                )),
+                                Ok((index, has_generics_inside_angle_bracket_types)) => {
+                                    *has_generics = has_generics_inside_angle_bracket_types;
+                                    TypeResolveKind::Resolved(Type::new_with_struct(
+                                        name,
+                                        &symbol_data.0,
+                                        index,
+                                    ))
+                                }
                                 Err(err) => TypeResolveKind::Unresolved(vec![
                                     UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
                                         ok_identifier,
@@ -580,9 +584,14 @@ impl Resolver {
                                 &symbol_data,
                                 false,
                             ) {
-                                Ok(index) => TypeResolveKind::Resolved(
-                                    Type::new_with_lambda_named(name, &symbol_data.0, index),
-                                ),
+                                Ok((index, has_generics_inside_angle_bracket_types)) => {
+                                    *has_generics = has_generics_inside_angle_bracket_types;
+                                    TypeResolveKind::Resolved(Type::new_with_lambda_named(
+                                        name,
+                                        &symbol_data.0,
+                                        index,
+                                    ))
+                                }
                                 Err(err) => TypeResolveKind::Unresolved(vec![
                                     UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
                                         ok_identifier,
@@ -617,8 +626,9 @@ impl Resolver {
                                         &symbol_data,
                                         false,
                                     ) {
-                                        Ok(index) => {
+                                        Ok((index, _)) => {
                                             assert!(index.is_none());
+                                            *has_generics = true;
                                             TypeResolveKind::Resolved(Type::new_with_generic(
                                                 name,
                                                 &symbol_data.0,
@@ -659,58 +669,63 @@ impl Resolver {
         return TypeResolveKind::Invalid;
     }
 
-    pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
-        let ty_obj = match type_expr.type_obj_before_resolved(self, self.scope_index) {
-            TypeResolveKind::Resolved(type_obj) => type_obj,
-            TypeResolveKind::Unresolved(unresolved) => {
-                for unresolved_identifier in unresolved {
-                    match unresolved_identifier {
-                        UnresolvedIdentifier::Unresolved(identifier) => {
-                            let err = IdentifierNotDeclaredError::new(
-                                IdentKind::UserDefinedType,
-                                identifier.range(),
-                            );
-                            self.errors.push(Diagnostics::IdentifierNotDeclared(err));
-                        }
-                        UnresolvedIdentifier::GenericResolvedToOutsideScope(
-                            identifier,
-                            decl_range,
-                        ) => {
-                            let err = GenericTypeResolvedToOutsideScopeError::new(
-                                identifier.range(),
+    pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> (Type, bool) {
+        let mut has_generics = false;
+        let ty_obj =
+            match type_expr.type_obj_before_resolved(self, self.scope_index, &mut has_generics) {
+                TypeResolveKind::Resolved(type_obj) => type_obj,
+                TypeResolveKind::Unresolved(unresolved) => {
+                    for unresolved_identifier in unresolved {
+                        match unresolved_identifier {
+                            UnresolvedIdentifier::Unresolved(identifier) => {
+                                let err = IdentifierNotDeclaredError::new(
+                                    IdentKind::UserDefinedType,
+                                    identifier.range(),
+                                );
+                                self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                            }
+                            UnresolvedIdentifier::GenericResolvedToOutsideScope(
+                                identifier,
                                 decl_range,
-                            );
-                            self.errors
-                                .push(Diagnostics::GenericTypeResolvedToOutsideScope(err));
-                        }
-                        UnresolvedIdentifier::NotInitialized(identifier, decl_range) => {
-                            let name = identifier.token_value(&self.code);
-                            let err = IdentifierUsedBeforeInitializedError::new(
-                                &name,
-                                IdentKind::UserDefinedType,
-                                decl_range,
-                                identifier.range(),
-                            );
-                            self.errors
-                                .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
-                        }
-                        UnresolvedIdentifier::InvalidGenericTypeArgsProvided(identifier, err) => {
-                            let err = err_for_generic_type_args(
-                                &err,
-                                identifier.core_ref().name.range(),
-                                IdentKind::UserDefinedType,
-                            );
-                            self.errors.push(err);
+                            ) => {
+                                let err = GenericTypeResolvedToOutsideScopeError::new(
+                                    identifier.range(),
+                                    decl_range,
+                                );
+                                self.errors
+                                    .push(Diagnostics::GenericTypeResolvedToOutsideScope(err));
+                            }
+                            UnresolvedIdentifier::NotInitialized(identifier, decl_range) => {
+                                let name = identifier.token_value(&self.code);
+                                let err = IdentifierUsedBeforeInitializedError::new(
+                                    &name,
+                                    IdentKind::UserDefinedType,
+                                    decl_range,
+                                    identifier.range(),
+                                );
+                                self.errors
+                                    .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
+                            }
+                            UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
+                                identifier,
+                                err,
+                            ) => {
+                                let err = err_for_generic_type_args(
+                                    &err,
+                                    identifier.core_ref().name.range(),
+                                    IdentKind::UserDefinedType,
+                                );
+                                self.errors.push(err);
+                            }
                         }
                     }
+                    Type::new_with_unknown()
                 }
-                Type::new_with_unknown()
-            }
-            TypeResolveKind::Invalid => Type::new_with_unknown(),
-        };
+                TypeResolveKind::Invalid => Type::new_with_unknown(),
+            };
         self.semantic_state_db
             .set_type_expr_obj_mapping(type_expr, &ty_obj);
-        ty_obj
+        (ty_obj, has_generics)
     }
 
     fn interface_obj_from_expression(
@@ -735,8 +750,8 @@ impl Resolver {
                 let mut concrete_types: Vec<Type> = vec![];
                 let mut ty_ranges: Vec<TextRange> = vec![];
                 for generic_type_expr in generic_type_args.iter() {
-                    let ty = self.type_obj_from_expression(&generic_type_expr);
-                    if ty.has_generics() {
+                    let (ty, ty_has_generics) = self.type_obj_from_expression(&generic_type_expr);
+                    if ty_has_generics {
                         has_generics = true;
                     }
                     concrete_types.push(ty);
@@ -886,14 +901,14 @@ impl Resolver {
         let return_type: Type = match return_type {
             Some((_, return_type_expr)) => {
                 return_type_range = Some(return_type_expr.range());
-                let type_obj = self.type_obj_from_expression(return_type_expr);
+                let (type_obj, ty_has_generics) = self.type_obj_from_expression(return_type_expr);
+                if ty_has_generics {
+                    is_concretization_required_for_return_type = true;
+                }
                 type_obj
             }
             None => Type::new_with_void(),
         };
-        if return_type.has_generics() {
-            is_concretization_required_for_return_type = true;
-        }
         if let Some(params) = params {
             let params_iter = params.iter();
             for param in params_iter {
@@ -901,7 +916,8 @@ impl Resolver {
                 let param_name = &core_param.name;
                 if let CoreIdentifierInDeclNode::Ok(ok_identifier) = param_name.core_ref() {
                     let param_name = ok_identifier.token_value(&self.code);
-                    let param_type = self.type_obj_from_expression(&core_param.data_type);
+                    let (param_type, param_ty_has_generics) =
+                        self.type_obj_from_expression(&core_param.data_type);
                     let result = self.semantic_state_db.namespace.declare_variable_with_type(
                         self.scope_index,
                         param_name,
@@ -915,7 +931,7 @@ impl Resolver {
                                 ok_identifier,
                                 symbol_data.get_entry(),
                             );
-                            if param_type.has_generics() {
+                            if param_ty_has_generics {
                                 generics_containing_params_indexes.push(param_types_vec.len());
                             }
                             param_types_vec.push(param_type);
@@ -1117,7 +1133,7 @@ impl Resolver {
         }
 
         let ty_from_optional_annotation = match &core_variable_decl.ty_annotation {
-            Some((_, ty_expr)) => Some((self.type_obj_from_expression(ty_expr), ty_expr.range())),
+            Some((_, ty_expr)) => Some((self.type_obj_from_expression(ty_expr).0, ty_expr.range())),
             None => None,
         };
         // Except `CoreRAssignmentNode::LAMBDA`, type of the variable is set in the `type_checker.rs`. For `CoreRAssignmentNode::LAMBDA`,
@@ -1337,7 +1353,8 @@ impl Resolver {
                     let name = &name_type_spec.name;
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier.token_value(&self.code);
-                        let type_obj = self.type_obj_from_expression(&name_type_spec.data_type);
+                        let (type_obj, _) =
+                            self.type_obj_from_expression(&name_type_spec.data_type);
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1547,19 +1564,19 @@ impl Resolver {
         }
         let return_type: Type = match return_type {
             Some((_, return_type_expr)) => {
-                let type_obj = self.type_obj_from_expression(return_type_expr);
+                let (type_obj, ty_has_generics) = self.type_obj_from_expression(return_type_expr);
+                if ty_has_generics {
+                    is_concretization_required_for_return_type = true;
+                }
                 type_obj
             }
             None => Type::new_with_void(),
         };
-        if return_type.has_generics() {
-            is_concretization_required_for_return_type = true;
-        }
         if let Some(type_tuple) = type_tuple {
             let type_tuple_iter = type_tuple.iter();
             for data_type in type_tuple_iter {
-                let ty = self.type_obj_from_expression(&data_type);
-                if ty.has_generics() {
+                let (ty, ty_has_generics) = self.type_obj_from_expression(&data_type);
+                if ty_has_generics {
                     generics_containing_params_indexes.push(types_vec.len());
                 }
                 types_vec.push(ty);
@@ -1662,7 +1679,8 @@ impl Resolver {
                     let name = &name_type_spec.name;
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier.token_value(&self.code);
-                        let type_obj = self.type_obj_from_expression(&name_type_spec.data_type);
+                        let (type_obj, _) =
+                            self.type_obj_from_expression(&name_type_spec.data_type);
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
