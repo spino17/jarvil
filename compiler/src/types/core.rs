@@ -363,7 +363,6 @@ impl AbstractType for Type {
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
-        assert!(self.has_generics());
         match self.0.as_ref() {
             CoreType::Struct(struct_type) => struct_type.concretize(context),
             CoreType::Lambda(lambda_type) => lambda_type.concretize(context),
@@ -375,7 +374,7 @@ impl AbstractType for Type {
             | CoreType::Unknown
             | CoreType::Void
             | CoreType::Unset
-            | CoreType::Any => unreachable!(),
+            | CoreType::Any => self.clone(),
         }
     }
 

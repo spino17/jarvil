@@ -87,11 +87,9 @@ impl AbstractType for Tuple {
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
-        let mut concrete_types = self.sub_types.clone();
-        for (index, ty) in self.sub_types.iter().enumerate() {
-            if ty.has_generics() {
-                concrete_types[index] = ty.concretize(context);
-            }
+        let mut concrete_types = vec![];
+        for ty in &self.sub_types {
+            concrete_types.push(ty.concretize(context));
         }
         return Type::new_with_tuple(concrete_types);
     }

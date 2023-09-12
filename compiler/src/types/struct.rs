@@ -99,32 +99,33 @@ impl AbstractType for Struct {
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
-        let index = match self.semantic_data.index {
-            Some(key) => key,
-            None => unreachable!(),
-        };
-        assert!(self
-            .semantic_data
-            .symbol_data
-            .is_generics_present_in_tuple_at_index(Some(index)));
-        let symbol_data = self.semantic_data.get_core_ref();
-        let struct_data = symbol_data.get_struct_data_ref();
-        let concrete_types = &struct_data.get_concrete_types(index).0;
-        let mut concretized_concrete_types = concrete_types.clone();
-        for (index, ty) in concrete_types.iter().enumerate() {
-            if ty.has_generics() {
-                concretized_concrete_types[index] = ty.concretize(context);
+        match self.semantic_data.index {
+            Some(index) => {
+                let symbol_data = self.semantic_data.get_core_ref();
+                let struct_data = symbol_data.get_struct_data_ref();
+                let concrete_types = &struct_data.get_concrete_types(index).0;
+                let mut concretized_concrete_types = vec![];
+                for ty in concrete_types {
+                    concretized_concrete_types.push(ty.concretize(context));
+                }
+                let new_key = self
+                    .semantic_data
+                    .symbol_data
+                    .register_concrete_types(Some(concretized_concrete_types), false);
+                return Type::new_with_struct(
+                    self.name.to_string(),
+                    &self.semantic_data.symbol_data,
+                    new_key,
+                );
+            }
+            None => {
+                return Type::new_with_struct(
+                    self.name.to_string(),
+                    &self.semantic_data.symbol_data,
+                    None,
+                )
             }
         }
-        let new_key = self
-            .semantic_data
-            .symbol_data
-            .register_concrete_types(Some(concretized_concrete_types), false);
-        return Type::new_with_struct(
-            self.name.to_string(),
-            &self.semantic_data.symbol_data,
-            new_key,
-        );
     }
 
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {

@@ -52,16 +52,8 @@ impl AbstractType for HashMap {
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
-        let concrete_key_ty = if self.key_type.has_generics() {
-            self.key_type.concretize(context)
-        } else {
-            self.key_type.clone()
-        };
-        let concrete_value_ty = if self.value_type.has_generics() {
-            self.value_type.concretize(context)
-        } else {
-            self.value_type.clone()
-        };
+        let concrete_key_ty = self.key_type.concretize(context);
+        let concrete_value_ty = self.value_type.concretize(context);
         return Type::new_with_hashmap(concrete_key_ty, concrete_value_ty);
     }
 

@@ -166,35 +166,33 @@ impl AbstractType for Lambda {
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
         match self {
-            Lambda::Named(named) => {
-                let index = match named.1.index {
-                    Some(key) => key,
-                    None => unreachable!(),
-                };
-                assert!(named
-                    .1
-                    .symbol_data
-                    .is_generics_present_in_tuple_at_index(Some(index)));
-                let symbol_data = named.1.get_core_ref();
-                let lambda_data = symbol_data.get_lambda_data_ref();
-                let concrete_types = &lambda_data.get_concrete_types(index).0;
-                let mut concretized_concrete_types = concrete_types.clone();
-                for (index, ty) in concrete_types.iter().enumerate() {
-                    if ty.has_generics() {
-                        concretized_concrete_types[index] = ty.concretize(context);
+            Lambda::Named((name, concrete_symbol_data)) => match concrete_symbol_data.index {
+                Some(index) => {
+                    let symbol_data = concrete_symbol_data.get_core_ref();
+                    let lambda_data = symbol_data.get_lambda_data_ref();
+                    let concrete_types = &lambda_data.get_concrete_types(index).0;
+                    let mut concretized_concrete_types = vec![];
+                    for ty in concrete_types {
+                        concretized_concrete_types.push(ty.concretize(context));
                     }
+                    let new_key = concrete_symbol_data
+                        .symbol_data
+                        .register_concrete_types(Some(concretized_concrete_types), false);
+                    return Type::new_with_lambda_named(
+                        name.to_string(),
+                        &concrete_symbol_data.symbol_data,
+                        new_key,
+                    );
                 }
-                let new_key = named
-                    .1
-                    .symbol_data
-                    .register_concrete_types(Some(concretized_concrete_types), false);
-                return Type::new_with_lambda_named(
-                    named.0.to_string(),
-                    &named.1.symbol_data,
-                    new_key,
-                );
-            }
-            Lambda::Unnamed(_) => unreachable!(),
+                None => {
+                    return Type::new_with_lambda_named(
+                        name.to_string(),
+                        &concrete_symbol_data.symbol_data,
+                        None,
+                    )
+                }
+            },
+            Lambda::Unnamed(prototype) => Type::new_with_lambda_unnamed(prototype.clone()),
         }
     }
 
