@@ -224,7 +224,7 @@ impl TypeChecker {
             .is_some()
     }
 
-    pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
+    pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> (Type, bool) {
         return self.semantic_state_db.get_type_obj_from_expr(type_expr);
     }
 
@@ -238,8 +238,8 @@ impl TypeChecker {
                 let mut concrete_types: Vec<Type> = vec![];
                 let mut ty_ranges: Vec<TextRange> = vec![];
                 for generic_type_expr in generic_type_args.iter() {
-                    let ty = self.type_obj_from_expression(&generic_type_expr);
-                    if ty.has_generics() {
+                    let (ty, ty_has_generics) = self.type_obj_from_expression(&generic_type_expr);
+                    if ty_has_generics {
                         has_generics = true;
                     }
                     concrete_types.push(ty);
@@ -261,14 +261,15 @@ impl TypeChecker {
         let mut is_concretization_required_for_return_type = false;
         let return_type: Type = match return_type {
             Some((_, return_type_expr)) => {
-                let type_obj = self.type_obj_from_expression(return_type_expr);
+                let (type_obj, ty_has_generics) = self.type_obj_from_expression(return_type_expr);
+                if ty_has_generics {
+                    is_concretization_required_for_return_type = true;
+                }
                 type_obj
             }
             None => Type::new_with_void(),
         };
-        if return_type.has_generics() {
-            is_concretization_required_for_return_type = true;
-        }
+
         if let Some(params) = params {
             let params_iter = params.iter();
             for param in params_iter {
@@ -276,11 +277,12 @@ impl TypeChecker {
                 let name = &core_param.name;
                 if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                     if self.is_resolved(ok_identifier) {
-                        let type_obj = self.type_obj_from_expression(&core_param.data_type);
-                        if type_obj.has_generics() {
+                        let (param_ty, param_ty_has_generics) =
+                            self.type_obj_from_expression(&core_param.data_type);
+                        if param_ty_has_generics {
                             generics_containing_params_indexes.push(params_vec.len());
                         }
-                        params_vec.push(type_obj);
+                        params_vec.push(param_ty);
                     }
                 }
             }
@@ -1646,7 +1648,7 @@ impl TypeChecker {
         let core_callable_prototype = callable_prototype.0.as_ref();
         let return_type_node = &core_callable_prototype.return_type;
         let return_type_obj = match return_type_node {
-            Some((_, return_type_expr)) => self.type_obj_from_expression(return_type_expr),
+            Some((_, return_type_expr)) => self.type_obj_from_expression(return_type_expr).0,
             None => Type::new_with_void(),
         };
         return_type_obj

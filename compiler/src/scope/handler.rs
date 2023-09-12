@@ -84,7 +84,7 @@ pub struct SemanticStateDatabase {
     pub namespace: Namespace,
     pub identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
     pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
-    pub type_expr_obj_table: FxHashMap<TypeExpressionNode, Type>,
+    pub type_expr_obj_table: FxHashMap<TypeExpressionNode, (Type, bool)>,
     pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
     pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashMap<String, bool>)>, // block_node -> (non_locally resolved variables, (non_locally resolved functions -> is_in_global_scope))
     pub bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
@@ -103,14 +103,19 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn set_type_expr_obj_mapping(&mut self, ty_expr: &TypeExpressionNode, ty_obj: &Type) {
+    pub fn set_type_expr_obj_mapping(
+        &mut self,
+        ty_expr: &TypeExpressionNode,
+        ty_obj: &Type,
+        has_generics: bool,
+    ) {
         self.type_expr_obj_table
-            .insert(ty_expr.clone(), ty_obj.clone());
+            .insert(ty_expr.clone(), (ty_obj.clone(), has_generics));
     }
 
-    pub fn get_type_obj_from_expr(&self, ty_expr: &TypeExpressionNode) -> Type {
+    pub fn get_type_obj_from_expr(&self, ty_expr: &TypeExpressionNode) -> (Type, bool) {
         match self.type_expr_obj_table.get(ty_expr) {
-            Some(ty) => return ty.clone(),
+            Some((ty, has_generics)) => return (ty.clone(), *has_generics),
             None => unreachable!(),
         }
     }

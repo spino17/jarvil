@@ -724,7 +724,7 @@ impl Resolver {
                 TypeResolveKind::Invalid => Type::new_with_unknown(),
             };
         self.semantic_state_db
-            .set_type_expr_obj_mapping(type_expr, &ty_obj);
+            .set_type_expr_obj_mapping(type_expr, &ty_obj, has_generics);
         (ty_obj, has_generics)
     }
 
