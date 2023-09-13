@@ -21,16 +21,14 @@ pub trait AbstractType {
     fn is_eq(&self, other_ty: &Type) -> bool;
     fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool;
     fn concretize(&self, context: &ConcretizationContext) -> Type;
-    fn try_infer_type(
+    fn try_infer_type_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        has_generics: &mut bool,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()>;
-    fn has_generics(&self) -> bool;
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
 }
 
@@ -103,25 +101,26 @@ pub enum CoreType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Type(pub Rc<CoreType>);
+pub struct Type(pub Rc<CoreType>, bool);
 
 impl Type {
     pub fn new_with_atomic(name: &str) -> Type {
-        Type(Rc::new(CoreType::Atomic(Atomic::new(name))))
+        Type(Rc::new(CoreType::Atomic(Atomic::new(name))), false)
     }
 
     pub fn new_with_array(element_type: Type) -> Type {
-        Type(Rc::new(CoreType::Array(Array::new(element_type))))
+        Type(Rc::new(CoreType::Array(Array::new(element_type))), false)
     }
 
     pub fn new_with_tuple(types: Vec<Type>) -> Type {
-        Type(Rc::new(CoreType::Tuple(Tuple::new(types))))
+        Type(Rc::new(CoreType::Tuple(Tuple::new(types))), false)
     }
 
     pub fn new_with_hashmap(key_type: Type, value_type: Type) -> Type {
-        Type(Rc::new(CoreType::HashMap(HashMap::new(
-            key_type, value_type,
-        ))))
+        Type(
+            Rc::new(CoreType::HashMap(HashMap::new(key_type, value_type))),
+            false,
+        )
     }
 
     // user-defined-types
@@ -130,11 +129,10 @@ impl Type {
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
     ) -> Type {
-        Type(Rc::new(CoreType::Struct(Struct::new(
-            name,
-            symbol_data,
-            index,
-        ))))
+        Type(
+            Rc::new(CoreType::Struct(Struct::new(name, symbol_data, index))),
+            false,
+        )
     }
 
     pub fn new_with_lambda_named(
@@ -142,37 +140,46 @@ impl Type {
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
     ) -> Type {
-        Type(Rc::new(CoreType::Lambda(Lambda::new_with_named(
-            name,
-            symbol_data,
-            index,
-        ))))
+        Type(
+            Rc::new(CoreType::Lambda(Lambda::new_with_named(
+                name,
+                symbol_data,
+                index,
+            ))),
+            false,
+        )
     }
 
     pub fn new_with_lambda_unnamed(function_prototype: CallablePrototypeData) -> Type {
-        Type(Rc::new(CoreType::Lambda(Lambda::new_with_unnamed(
-            function_prototype,
-        ))))
+        Type(
+            Rc::new(CoreType::Lambda(Lambda::new_with_unnamed(
+                function_prototype,
+            ))),
+            false,
+        )
     }
 
     pub fn new_with_generic(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
-        Type(Rc::new(CoreType::Generic(Generic::new(name, symbol_data))))
+        Type(
+            Rc::new(CoreType::Generic(Generic::new(name, symbol_data))),
+            false,
+        )
     }
 
     pub fn new_with_unknown() -> Type {
-        Type(Rc::new(CoreType::Unknown))
+        Type(Rc::new(CoreType::Unknown), false)
     }
 
     pub fn new_with_unset() -> Type {
-        Type(Rc::new(CoreType::Unset))
+        Type(Rc::new(CoreType::Unset), false)
     }
 
     pub fn new_with_void() -> Type {
-        Type(Rc::new(CoreType::Void))
+        Type(Rc::new(CoreType::Void), false)
     }
 
     pub fn new_with_any() -> Type {
-        Type(Rc::new(CoreType::Any))
+        Type(Rc::new(CoreType::Any), false)
     }
 
     pub fn is_void(&self) -> bool {
@@ -280,6 +287,14 @@ impl Type {
             CoreType::Unset => true,
             _ => false,
         }
+    }
+
+    pub fn set_concretization_required_flag(&mut self) {
+        self.1 = true;
+    }
+
+    pub fn is_concretization_required(&self) -> bool {
+        self.1
     }
 
     // This function returns Some if operation is possible and None otherwise
@@ -399,85 +414,67 @@ impl AbstractType for Type {
         }
     }
 
-    fn has_generics(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Atomic(_) => false,
-            CoreType::Struct(struct_type) => struct_type.has_generics(),
-            CoreType::Lambda(lambda_type) => lambda_type.has_generics(),
-            CoreType::Array(array_type) => array_type.has_generics(),
-            CoreType::Tuple(tuple_type) => tuple_type.has_generics(),
-            CoreType::HashMap(hashmap_type) => hashmap_type.has_generics(),
-            CoreType::Generic(_) => true,
-            CoreType::Unknown => false,
-            CoreType::Void => false,
-            CoreType::Unset => false,
-            CoreType::Any => false,
-        }
-    }
-
-    fn try_infer_type(
+    fn try_infer_type_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        has_generics: &mut bool,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match self.0.as_ref() {
-            CoreType::Atomic(_) => unreachable!(),
-            CoreType::Struct(struct_ty) => struct_ty.try_infer_type(
+            CoreType::Struct(struct_ty) => struct_ty.try_infer_type_or_check_equivalence(
                 received_ty,
                 inferred_concrete_types,
                 global_concrete_types,
                 num_inferred_types,
-                has_generics,
                 inference_category,
             ),
-            CoreType::Lambda(lambda_ty) => lambda_ty.try_infer_type(
+            CoreType::Lambda(lambda_ty) => lambda_ty.try_infer_type_or_check_equivalence(
                 received_ty,
                 inferred_concrete_types,
                 global_concrete_types,
                 num_inferred_types,
-                has_generics,
                 inference_category,
             ),
-            CoreType::Array(array_ty) => array_ty.try_infer_type(
+            CoreType::Array(array_ty) => array_ty.try_infer_type_or_check_equivalence(
                 received_ty,
                 inferred_concrete_types,
                 global_concrete_types,
                 num_inferred_types,
-                has_generics,
                 inference_category,
             ),
-            CoreType::Tuple(tuple_ty) => tuple_ty.try_infer_type(
+            CoreType::Tuple(tuple_ty) => tuple_ty.try_infer_type_or_check_equivalence(
                 received_ty,
                 inferred_concrete_types,
                 global_concrete_types,
                 num_inferred_types,
-                has_generics,
                 inference_category,
             ),
-            CoreType::HashMap(hashmap_ty) => hashmap_ty.try_infer_type(
+            CoreType::HashMap(hashmap_ty) => hashmap_ty.try_infer_type_or_check_equivalence(
                 received_ty,
                 inferred_concrete_types,
                 global_concrete_types,
                 num_inferred_types,
-                has_generics,
                 inference_category,
             ),
-            CoreType::Generic(generic_ty) => generic_ty.try_infer_type(
+            CoreType::Generic(generic_ty) => generic_ty.try_infer_type_or_check_equivalence(
                 received_ty,
                 inferred_concrete_types,
                 global_concrete_types,
                 num_inferred_types,
-                has_generics,
                 inference_category,
             ),
-            CoreType::Unknown => unreachable!(),
-            CoreType::Void => unreachable!(),
-            CoreType::Unset => unreachable!(),
-            CoreType::Any => unreachable!(),
+            CoreType::Atomic(_)
+            | CoreType::Unknown
+            | CoreType::Void
+            | CoreType::Unset
+            | CoreType::Any => {
+                if !self.is_eq(received_ty) {
+                    return Err(());
+                }
+                Ok(())
+            }
         }
     }
 }

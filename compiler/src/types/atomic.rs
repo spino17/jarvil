@@ -91,17 +91,12 @@ impl AbstractType for Atomic {
         unreachable!()
     }
 
-    fn has_generics(&self) -> bool {
-        unreachable!()
-    }
-
-    fn try_infer_type(
+    fn try_infer_type_or_check_equivalence(
         &self,
         _received_ty: &Type,
         _inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         _global_concrete_types: Option<&Vec<Type>>,
         _num_inferred_types: &mut usize,
-        _has_generics: &mut bool,
         _inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         unreachable!()

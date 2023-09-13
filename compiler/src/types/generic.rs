@@ -103,17 +103,12 @@ impl AbstractType for Generic {
         return interface_bounds.is_subset(ty_interface_bounds);
     }
 
-    fn has_generics(&self) -> bool {
-        unreachable!()
-    }
-
-    fn try_infer_type(
+    fn try_infer_type_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        has_generics: &mut bool,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         let symbol_data = self.semantic_data.get_core_ref();
@@ -124,9 +119,6 @@ impl AbstractType for Generic {
             let entry_ty = &mut inferred_concrete_types[index];
             match entry_ty {
                 InferredConcreteTypesEntry::Uninferred => {
-                    if received_ty.has_generics() {
-                        *has_generics = true;
-                    }
                     *entry_ty = InferredConcreteTypesEntry::Inferred(received_ty.clone());
                     *num_inferred_types = *num_inferred_types + 1;
                     return Ok(());

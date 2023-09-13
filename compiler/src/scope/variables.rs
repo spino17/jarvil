@@ -30,20 +30,8 @@ impl VariableData {
 }
 
 impl AbstractConcreteTypesHandler for VariableData {
-    fn register_concrete_types(
-        &mut self,
-        _concrete_types: Vec<Type>,
-        _has_generics: bool,
-    ) -> ConcreteTypesRegistryKey {
+    fn register_concrete_types(&mut self, _concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
         unreachable!()
-    }
-
-    fn is_generics_present_in_tuple_at_index(&self, _index: ConcreteTypesRegistryKey) -> bool {
-        unreachable!()
-    }
-
-    fn has_generics(&self) -> bool {
-        false
     }
 
     fn is_initialized(&self) -> bool {

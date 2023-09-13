@@ -48,13 +48,7 @@ pub enum IntermediateLookupResult<T: AbstractConcreteTypesHandler> {
 }
 
 pub trait AbstractConcreteTypesHandler {
-    fn register_concrete_types(
-        &mut self,
-        concrete_types: Vec<Type>,
-        has_generics: bool,
-    ) -> ConcreteTypesRegistryKey;
-    fn is_generics_present_in_tuple_at_index(&self, index: ConcreteTypesRegistryKey) -> bool;
-    fn has_generics(&self) -> bool;
+    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey;
     fn is_initialized(&self) -> bool;
 }
 
@@ -67,7 +61,6 @@ pub trait AbstractSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
-        has_generics: bool,
     ) -> Option<ConcreteTypesRegistryKey>;
     fn check_generic_type_args(
         &self,
@@ -144,33 +137,16 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
-        has_generics: bool,
     ) -> Option<ConcreteTypesRegistryKey> {
         match concrete_types {
             Some(concrete_types) => {
                 return Some(
                     self.get_core_mut_ref()
-                        .register_concrete_types(concrete_types, has_generics),
+                        .register_concrete_types(concrete_types),
                 )
             }
             None => return None,
         }
-    }
-
-    pub fn is_generics_present_in_tuple_at_index(
-        &self,
-        index: Option<ConcreteTypesRegistryKey>,
-    ) -> bool {
-        match index {
-            Some(index) => self
-                .get_core_ref()
-                .is_generics_present_in_tuple_at_index(index),
-            None => false,
-        }
-    }
-
-    pub fn has_generics(&self) -> bool {
-        self.0.as_ref().borrow().has_generics()
     }
 }
 
@@ -191,9 +167,8 @@ impl AbstractSymbolData for VariableSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
-        has_generics: bool,
     ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types, has_generics)
+        self.0.register_concrete_types(concrete_types)
     }
 
     fn check_generic_type_args(
@@ -221,9 +196,8 @@ impl AbstractSymbolData for FunctionSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
-        has_generics: bool,
     ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types, has_generics)
+        self.0.register_concrete_types(concrete_types)
     }
 
     fn check_generic_type_args(
@@ -255,9 +229,8 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
-        has_generics: bool,
     ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types, has_generics)
+        self.0.register_concrete_types(concrete_types)
     }
 
     fn check_generic_type_args(
@@ -306,9 +279,8 @@ impl AbstractSymbolData for InterfaceSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
-        has_generics: bool,
     ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types, has_generics)
+        self.0.register_concrete_types(concrete_types)
     }
 
     fn check_generic_type_args(

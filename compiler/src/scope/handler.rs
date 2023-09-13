@@ -30,16 +30,16 @@ impl SymbolDataEntry {
     ) -> Option<ConcreteTypesRegistryKey> {
         match self {
             SymbolDataEntry::Variable(variable_symbol_data) => {
-                variable_symbol_data.register_concrete_types(concrete_types, has_generics)
+                variable_symbol_data.register_concrete_types(concrete_types)
             }
             SymbolDataEntry::Function(func_symbol_data) => {
-                func_symbol_data.register_concrete_types(concrete_types, has_generics)
+                func_symbol_data.register_concrete_types(concrete_types)
             }
             SymbolDataEntry::Type(type_symbol_data) => {
-                type_symbol_data.register_concrete_types(concrete_types, has_generics)
+                type_symbol_data.register_concrete_types(concrete_types)
             }
             SymbolDataEntry::Interface(interface_symbol_data) => {
-                interface_symbol_data.register_concrete_types(concrete_types, has_generics)
+                interface_symbol_data.register_concrete_types(concrete_types)
             }
         }
     }

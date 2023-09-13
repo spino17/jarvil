@@ -87,39 +87,15 @@ impl UserDefinedTypeData {
 }
 
 impl AbstractConcreteTypesHandler for UserDefinedTypeData {
-    fn register_concrete_types(
-        &mut self,
-        concrete_types: Vec<Type>,
-        has_generics: bool,
-    ) -> ConcreteTypesRegistryKey {
+    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
         match self {
             UserDefinedTypeData::Struct(struct_type_data) => {
-                struct_type_data.register_concrete_types(concrete_types, has_generics)
+                struct_type_data.register_concrete_types(concrete_types)
             }
             UserDefinedTypeData::Lambda(lambda_type_data) => {
-                lambda_type_data.register_concrete_types(concrete_types, has_generics)
+                lambda_type_data.register_concrete_types(concrete_types)
             }
             UserDefinedTypeData::Generic(_) => unreachable!(),
-        }
-    }
-
-    fn is_generics_present_in_tuple_at_index(&self, index: ConcreteTypesRegistryKey) -> bool {
-        match self {
-            UserDefinedTypeData::Struct(struct_type_data) => {
-                struct_type_data.is_generics_present_in_tuple_at_index(index)
-            }
-            UserDefinedTypeData::Lambda(lambda_type_data) => {
-                lambda_type_data.is_generics_present_in_tuple_at_index(index)
-            }
-            UserDefinedTypeData::Generic(_) => unreachable!(),
-        }
-    }
-
-    fn has_generics(&self) -> bool {
-        match self {
-            UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.has_generics(),
-            UserDefinedTypeData::Lambda(lambda_type_data) => lambda_type_data.has_generics(),
-            UserDefinedTypeData::Generic(_) => false,
         }
     }
 

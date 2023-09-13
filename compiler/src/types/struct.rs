@@ -111,7 +111,7 @@ impl AbstractType for Struct {
                 let new_key = self
                     .semantic_data
                     .symbol_data
-                    .register_concrete_types(Some(concretized_concrete_types), false);
+                    .register_concrete_types(Some(concretized_concrete_types));
                 return Type::new_with_struct(
                     self.name.to_string(),
                     &self.semantic_data.symbol_data,
@@ -136,20 +136,12 @@ impl AbstractType for Struct {
         }
     }
 
-    fn has_generics(&self) -> bool {
-        let index = self.semantic_data.index;
-        self.semantic_data
-            .symbol_data
-            .is_generics_present_in_tuple_at_index(index)
-    }
-
-    fn try_infer_type(
+    fn try_infer_type_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        has_generics: &mut bool,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
@@ -174,7 +166,6 @@ impl AbstractType for Struct {
                                 inferred_concrete_types,
                                 global_concrete_types,
                                 num_inferred_types,
-                                has_generics,
                                 inference_category,
                             )
                         }

@@ -29,7 +29,7 @@ impl FieldsMap {
     ) -> Option<(Type, TextRange)> {
         match self.fields.get(field_name) {
             Some((ty, range)) => {
-                if ty.has_generics() {
+                if ty.is_concretization_required() {
                     match key {
                         Some(key) => {
                             let concrete_types = registry_manager.get_concrete_types(key);

@@ -177,7 +177,7 @@ impl AbstractType for Lambda {
                     }
                     let new_key = concrete_symbol_data
                         .symbol_data
-                        .register_concrete_types(Some(concretized_concrete_types), false);
+                        .register_concrete_types(Some(concretized_concrete_types));
                     return Type::new_with_lambda_named(
                         name.to_string(),
                         &concrete_symbol_data.symbol_data,
@@ -200,64 +200,45 @@ impl AbstractType for Lambda {
         unreachable!()
     }
 
-    fn has_generics(&self) -> bool {
-        match self {
-            Lambda::Named((_, concrete_symbol_data)) => {
-                let index = concrete_symbol_data.index;
-                concrete_symbol_data
-                    .symbol_data
-                    .is_generics_present_in_tuple_at_index(index)
-            }
-            Lambda::Unnamed(_) => false,
-        }
-    }
-
-    fn try_infer_type(
+    fn try_infer_type_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        has_generics: &mut bool,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::Lambda(lambda_ty) => match self {
-                Lambda::Named((self_name, self_concrete_symbol_data)) => match lambda_ty {
-                    Lambda::Named((other_name, other_concrete_symbol_data)) => {
-                        if self_name == other_name {
-                            match self_concrete_symbol_data.index {
-                                Some(self_index) => {
-                                    let self_symbol_data =
-                                        self_concrete_symbol_data.symbol_data.get_core_ref();
-                                    let self_lambda_data = self_symbol_data.get_lambda_data_ref();
-                                    let generics_containing_types_tuple =
-                                        &self_lambda_data.get_concrete_types(self_index).0;
-
-                                    let other_index = other_concrete_symbol_data.index.unwrap();
-                                    let other_symbol_data =
-                                        other_concrete_symbol_data.symbol_data.get_core_ref();
-                                    let other_lambda_data = other_symbol_data.get_lambda_data_ref();
-                                    let base_types_tuple =
-                                        &other_lambda_data.get_concrete_types(other_index).0;
-                                    try_infer_types_from_tuple(
-                                        base_types_tuple,
-                                        generics_containing_types_tuple,
-                                        inferred_concrete_types,
-                                        global_concrete_types,
-                                        num_inferred_types,
-                                        has_generics,
-                                        inference_category,
-                                    )
-                                }
-                                None => return Ok(()),
-                            }
-                        } else {
-                            return Err(());
+                Lambda::Named((_, self_named)) => {
+                    let self_symbol_data = self_named.get_core_ref();
+                    let self_data = self_symbol_data.get_lambda_data_ref();
+                    let self_prototype_result = self_data.get_concrete_prototype(self_named.index);
+                    let self_prototype_ref = self_prototype_result.get_prototype_ref();
+                    match lambda_ty {
+                        Lambda::Named((_, other_named)) => {
+                            let other_symbol_data = other_named.symbol_data.get_core_ref();
+                            let other_data = other_symbol_data.get_lambda_data_ref();
+                            let other_prototype_result =
+                                other_data.get_concrete_prototype(other_named.index);
+                            let other_prototype_ref = other_prototype_result.get_prototype_ref();
+                            self_prototype_ref.try_infer_type(
+                                other_prototype_ref,
+                                inferred_concrete_types,
+                                global_concrete_types,
+                                num_inferred_types,
+                                inference_category,
+                            )
                         }
+                        Lambda::Unnamed(other_prototype) => self_prototype_ref.try_infer_type(
+                            other_prototype,
+                            inferred_concrete_types,
+                            global_concrete_types,
+                            num_inferred_types,
+                            inference_category,
+                        ),
                     }
-                    Lambda::Unnamed(_) => unreachable!(),
-                },
+                }
                 Lambda::Unnamed(_) => unreachable!(),
             },
             _ => Err(()),

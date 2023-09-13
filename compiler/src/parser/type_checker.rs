@@ -162,7 +162,7 @@ impl From<PartialCallableDataPrototypeCheckError> for MethodAccessTypeCheckError
 #[derive(Debug)]
 pub enum StructConstructorPrototypeCheckResult {
     Basic(Type),
-    Inferred((Vec<Type>, bool)),
+    Inferred(Vec<Type>),
 }
 
 #[derive(Debug, Clone)]
@@ -430,7 +430,7 @@ impl TypeChecker {
         global_concrete_types: Option<&Vec<Type>>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         inference_category: GenericTypeDeclarationPlaceCategory,
-    ) -> Result<(Vec<Type>, bool), PrototypeEquivalenceCheckError> {
+    ) -> Result<Vec<Type>, PrototypeEquivalenceCheckError> {
         // (inferred_concrete_types, params_ty_vec)
         match received_params {
             Some(received_params) => {
@@ -452,13 +452,12 @@ impl TypeChecker {
                         ));
                     }
                     let expected_ty = &expected_params[index];
-                    if expected_ty.has_generics() {
-                        let inference_result = expected_ty.try_infer_type(
+                    if expected_ty.is_concretization_required() {
+                        let inference_result = expected_ty.try_infer_type_or_check_equivalence(
                             &param_ty,
                             &mut inferred_concrete_types,
                             global_concrete_types,
                             &mut num_inferred_types,
-                            &mut has_generics,
                             inference_category,
                         );
                         if let Err(()) = inference_result {
@@ -510,7 +509,7 @@ impl TypeChecker {
                         ),
                     );
                 }
-                return Ok((unpacked_inferred_concrete_types, has_generics));
+                return Ok(unpacked_inferred_concrete_types);
             }
             None => Err(PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred),
         }
@@ -612,7 +611,7 @@ impl TypeChecker {
             CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
                 generic_type_decls,
             ) => {
-                let (concrete_types, _) = self.infer_concrete_types_from_arguments(
+                let concrete_types = self.infer_concrete_types_from_arguments(
                     generic_type_decls,
                     &func_data.prototype,
                     None,
@@ -620,7 +619,7 @@ impl TypeChecker {
                     GenericTypeDeclarationPlaceCategory::InCallable,
                 )?;
                 let unconcrete_return_ty = &func_data.prototype.return_type;
-                let concrete_return_ty = if unconcrete_return_ty.has_generics() {
+                let concrete_return_ty = if unconcrete_return_ty.is_concretization_required() {
                     unconcrete_return_ty
                         .concretize(&ConcretizationContext::new(None, Some(&concrete_types)))
                 } else {
@@ -708,18 +707,14 @@ impl TypeChecker {
                     CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
                         generic_type_decls,
                     ) => {
-                        let (concrete_types, has_generics) = self
-                            .infer_concrete_types_from_arguments(
-                                generic_type_decls,
-                                &constructor_meta_data.prototype,
-                                None,
-                                params,
-                                GenericTypeDeclarationPlaceCategory::InStruct,
-                            )?;
-                        StructConstructorPrototypeCheckResult::Inferred((
-                            concrete_types,
-                            has_generics,
-                        ))
+                        let concrete_types = self.infer_concrete_types_from_arguments(
+                            generic_type_decls,
+                            &constructor_meta_data.prototype,
+                            None,
+                            params,
+                            GenericTypeDeclarationPlaceCategory::InStruct,
+                        )?;
+                        StructConstructorPrototypeCheckResult::Inferred(concrete_types)
                     }
                 }
             }
@@ -731,10 +726,10 @@ impl TypeChecker {
         };
         match struct_constructor_prototype_check_result {
             StructConstructorPrototypeCheckResult::Basic(return_ty) => return Ok(return_ty),
-            StructConstructorPrototypeCheckResult::Inferred((concrete_types, has_generics)) => {
+            StructConstructorPrototypeCheckResult::Inferred(concrete_types) => {
                 let index = concrete_symbol_data
                     .get_core_mut_ref()
-                    .register_concrete_types(concrete_types, has_generics);
+                    .register_concrete_types(concrete_types);
                 return Ok(Type::new_with_struct(
                     name,
                     &concrete_symbol_data.symbol_data,

@@ -71,26 +71,20 @@ impl AbstractType for Array {
         interface_bounds.len() == 0
     }
 
-    fn has_generics(&self) -> bool {
-        self.element_type.has_generics()
-    }
-
-    fn try_infer_type(
+    fn try_infer_type_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        has_generics: &mut bool,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
-            CoreType::Array(array_ty) => self.element_type.try_infer_type(
+            CoreType::Array(array_ty) => self.element_type.try_infer_type_or_check_equivalence(
                 &array_ty.element_type,
                 inferred_concrete_types,
                 global_concrete_types,
                 num_inferred_types,
-                has_generics,
                 inference_category,
             ),
             _ => Err(()),

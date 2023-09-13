@@ -311,7 +311,7 @@ impl Resolver {
         );
         match result {
             Ok(_) => {
-                let index = symbol_data.register_concrete_types(concrete_types, has_generics);
+                let index = symbol_data.register_concrete_types(concrete_types);
                 let concrete_symbol_data =
                     ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
                 self.semantic_state_db
@@ -732,9 +732,11 @@ impl Resolver {
         &mut self,
         type_expr: &TypeExpressionNode,
     ) -> (Type, bool) {
-        let (ty, ty_has_generics) = self.type_obj_from_expression(type_expr);
-        // TODO - transform here based on `has_generics`, make the `generics_wrapper` variant of type
-        todo!()
+        let (mut ty, ty_has_generics) = self.type_obj_from_expression(type_expr);
+        if ty_has_generics {
+            ty.set_concretization_required_flag();
+        }
+        (ty, ty_has_generics)
     }
 
     fn interface_obj_from_expression(
@@ -1292,9 +1294,7 @@ impl Resolver {
                             false
                         };
                         let name = ok_identifier.token_value(&self.code);
-                        let index = symbol_data
-                            .0
-                            .register_concrete_types(concrete_types, has_generics);
+                        let index = symbol_data.0.register_concrete_types(concrete_types);
                         Type::new_with_struct(name, &symbol_data.0, index)
                     }
                     None => Type::new_with_unknown(),

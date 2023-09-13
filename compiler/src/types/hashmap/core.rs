@@ -62,49 +62,30 @@ impl AbstractType for HashMap {
         interface_bounds.len() == 0
     }
 
-    fn has_generics(&self) -> bool {
-        self.key_type.has_generics() || self.value_type.has_generics()
-    }
-
-    fn try_infer_type(
+    fn try_infer_type_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        has_generics: &mut bool,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::HashMap(hashmap_ty) => {
-                if self.key_type.has_generics() {
-                    let _ = self.key_type.try_infer_type(
-                        &hashmap_ty.key_type,
-                        inferred_concrete_types,
-                        global_concrete_types,
-                        num_inferred_types,
-                        has_generics,
-                        inference_category,
-                    )?;
-                } else {
-                    if !self.key_type.is_eq(&hashmap_ty.key_type) {
-                        return Err(());
-                    }
-                }
-                if self.value_type.has_generics() {
-                    let _ = self.value_type.try_infer_type(
-                        &hashmap_ty.value_type,
-                        inferred_concrete_types,
-                        global_concrete_types,
-                        num_inferred_types,
-                        has_generics,
-                        inference_category,
-                    )?;
-                } else {
-                    if !self.value_type.is_eq(&hashmap_ty.value_type) {
-                        return Err(());
-                    }
-                }
+                let _ = self.key_type.try_infer_type_or_check_equivalence(
+                    &hashmap_ty.key_type,
+                    inferred_concrete_types,
+                    global_concrete_types,
+                    num_inferred_types,
+                    inference_category,
+                )?;
+                let _ = self.value_type.try_infer_type_or_check_equivalence(
+                    &hashmap_ty.value_type,
+                    inferred_concrete_types,
+                    global_concrete_types,
+                    num_inferred_types,
+                    inference_category,
+                )?;
                 Ok(())
             }
             _ => Err(()),

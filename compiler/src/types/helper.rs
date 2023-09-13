@@ -34,7 +34,6 @@ pub fn try_infer_types_from_tuple(
     inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
     global_concrete_types: Option<&Vec<Type>>,
     num_inferred_types: &mut usize,
-    has_generics: &mut bool,
     inference_category: GenericTypeDeclarationPlaceCategory,
 ) -> Result<(), ()> {
     if base_types_tuple.len() != generics_containing_types_tuple.len() {
@@ -42,20 +41,13 @@ pub fn try_infer_types_from_tuple(
     }
     for (index, generics_containing_ty) in generics_containing_types_tuple.iter().enumerate() {
         let base_ty = &base_types_tuple[index];
-        if generics_containing_ty.has_generics() {
-            let _ = generics_containing_ty.try_infer_type(
-                base_ty,
-                inferred_concrete_types,
-                global_concrete_types,
-                num_inferred_types,
-                has_generics,
-                inference_category,
-            )?;
-        } else {
-            if !base_ty.is_eq(generics_containing_ty) {
-                return Err(());
-            }
-        }
+        let _ = generics_containing_ty.try_infer_type_or_check_equivalence(
+            base_ty,
+            inferred_concrete_types,
+            global_concrete_types,
+            num_inferred_types,
+            inference_category,
+        )?;
     }
     Ok(())
 }

@@ -35,11 +35,9 @@ impl ConcreteTypesRegistryCore {
     pub fn register_concrete_types(
         &mut self,
         concrete_types: Vec<Type>,
-        has_generics: bool,
     ) -> ConcreteTypesRegistryKey {
         let index = self.0.len();
-        self.0
-            .push(ConcreteTypesTuple::new(concrete_types, has_generics));
+        self.0.push(ConcreteTypesTuple::new(concrete_types));
         ConcreteTypesRegistryKey(index)
     }
 

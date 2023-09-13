@@ -99,25 +99,12 @@ impl AbstractType for Tuple {
         interface_bounds.len() == 0
     }
 
-    fn has_generics(&self) -> bool {
-        let mut has_generics = false;
-        let len = self.sub_types.len();
-        for i in 0..len {
-            if self.sub_types[i].has_generics() {
-                has_generics = true;
-                break;
-            }
-        }
-        has_generics
-    }
-
-    fn try_infer_type(
+    fn try_infer_type_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
-        has_generics: &mut bool,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
@@ -130,7 +117,6 @@ impl AbstractType for Tuple {
                     inferred_concrete_types,
                     global_concrete_types,
                     num_inferred_types,
-                    has_generics,
                     inference_category,
                 )
             }

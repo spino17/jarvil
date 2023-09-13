@@ -8,7 +8,9 @@ use super::{
 };
 use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
-    parser::type_checker::{PrototypeEquivalenceCheckError, TypeChecker},
+    parser::type_checker::{
+        InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
+    },
     types::core::AbstractType,
 };
 use crate::{scope::types::generic_type::GenericTypeDeclarationPlaceCategory, types::core::Type};
@@ -95,6 +97,40 @@ impl CallablePrototypeData {
             ty1.is_structurally_eq(ty2, context)
         };
         self.compare(other, cmp_func, context)
+    }
+
+    pub fn try_infer_type(
+        &self,
+        other: &CallablePrototypeData,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        global_concrete_types: Option<&Vec<Type>>,
+        num_inferred_types: &mut usize,
+        inference_category: GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()> {
+        let (self_param_types, self_return_type) = (&self.params, &self.return_type);
+        let (other_param_types, other_return_type) = (&other.params, &other.return_type);
+        let self_params_len = self_param_types.len();
+        let other_params_len = other_param_types.len();
+        if self_params_len != other_params_len {
+            return Err(());
+        }
+        let _ = self_return_type.try_infer_type_or_check_equivalence(
+            other_return_type,
+            inferred_concrete_types,
+            global_concrete_types,
+            num_inferred_types,
+            inference_category,
+        )?;
+        for index in 0..self_params_len {
+            let _ = &self_param_types[index].try_infer_type_or_check_equivalence(
+                &other_param_types[index],
+                inferred_concrete_types,
+                global_concrete_types,
+                num_inferred_types,
+                inference_category,
+            )?;
+        }
+        Ok(())
     }
 
     fn concretize_prototype_core(
@@ -208,33 +244,14 @@ impl CallableData {
     pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
         self.generics.generics_spec = generics_spec;
     }
-
-    pub fn is_eq(&self, other: &CallableData) -> bool {
-        todo!()
-    }
 }
 
 impl AbstractConcreteTypesHandler for CallableData {
-    fn register_concrete_types(
-        &mut self,
-        concrete_types: Vec<Type>,
-        has_generics: bool,
-    ) -> ConcreteTypesRegistryKey {
+    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
         return self
             .generics
             .concrete_types_registry
-            .register_concrete_types(concrete_types, has_generics);
-    }
-
-    fn is_generics_present_in_tuple_at_index(&self, index: ConcreteTypesRegistryKey) -> bool {
-        self.generics
-            .concrete_types_registry
-            .get_concrete_types_at_key(index)
-            .1
-    }
-
-    fn has_generics(&self) -> bool {
-        self.generics.generics_spec.is_some()
+            .register_concrete_types(concrete_types);
     }
 
     fn is_initialized(&self) -> bool {
@@ -333,16 +350,15 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
             },
             None => match generic_type_decls {
                 Some(generic_type_decls) => {
-                    let (local_concrete_types, _) = type_checker
-                        .infer_concrete_types_from_arguments(
-                            generic_type_decls,
-                            &self.callable_data.prototype,
-                            self.concrete_types,
-                            received_params,
-                            GenericTypeDeclarationPlaceCategory::InCallable,
-                        )?;
+                    let local_concrete_types = type_checker.infer_concrete_types_from_arguments(
+                        generic_type_decls,
+                        &self.callable_data.prototype,
+                        self.concrete_types,
+                        received_params,
+                        GenericTypeDeclarationPlaceCategory::InCallable,
+                    )?;
                     let unconcrete_return_ty = &self.callable_data.prototype.return_type;
-                    let concrete_return_ty = if unconcrete_return_ty.has_generics() {
+                    let concrete_return_ty = if unconcrete_return_ty.is_concretization_required() {
                         unconcrete_return_ty.concretize(&ConcretizationContext::new(
                             self.concrete_types,
                             Some(&local_concrete_types),
