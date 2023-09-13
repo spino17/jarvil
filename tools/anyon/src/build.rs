@@ -79,8 +79,6 @@ impl AbstractCommand for BuildCommand {
                     .arg(transpiled_py_code_file_path)
                     .output()?;
                 let std_out_len = output.stdout.len();
-                // let std_output_err = str::from_utf8(&output.stderr)?;
-                // println!("{}", std_output_err);
                 let std_err_len = output.stderr.len();
                 let output_str = if std_err_len > 0 {
                     let msg = str::from_utf8(&output.stderr)?;
