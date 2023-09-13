@@ -8,10 +8,10 @@ use crate::ast::ast::{
     PropertyAccessNode, StructDeclarationNode, TupleExpressionNode,
 };
 use crate::error::diagnostics::{
-    ExpressionTypeCannotBeInferredError, GenericTypeArgsNotExpectedError,
-    IncorrectExpressionTypeError, InferredTypesNotBoundedByInterfacesError,
-    InterfaceMethodsInStructCheckError, NotAllConcreteTypesInferredError,
-    RightSideExpressionTypeMismatchedWithTypeFromAnnotationError, TypeInferenceFailedError,
+    GenericTypeArgsNotExpectedError, IncorrectExpressionTypeError,
+    InferredTypesNotBoundedByInterfacesError, InterfaceMethodsInStructCheckError,
+    NotAllConcreteTypesInferredError, RightSideExpressionTypeMismatchedWithTypeFromAnnotationError,
+    TypeInferenceFailedError,
 };
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcretizationContext};

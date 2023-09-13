@@ -1,5 +1,4 @@
 use super::core::OperatorCompatiblity;
-use super::helper::try_infer_types_from_tuple;
 use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
 use crate::parser::type_checker::{
     InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
