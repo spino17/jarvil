@@ -78,11 +78,20 @@ impl AbstractCommand for BuildCommand {
                 let output = Command::new("python3")
                     .arg(transpiled_py_code_file_path)
                     .output()?;
-                let len = output.stdout.len();
-                if len > 0 {
-                    let std_output_str = str::from_utf8(&output.stdout[..len - 1])?;
-                    println!("{}", std_output_str)
-                }
+                let std_out_len = output.stdout.len();
+                // let std_output_err = str::from_utf8(&output.stderr)?;
+                // println!("{}", std_output_err);
+                let std_err_len = output.stderr.len();
+                let output_str = if std_err_len > 0 {
+                    let msg = str::from_utf8(&output.stderr)?;
+                    format!("\nPython Runtime Error Occured\n\n{}", msg)
+                } else if std_out_len > 0 {
+                    let msg = str::from_utf8(&output.stdout[..std_out_len - 1])?;
+                    msg.to_string()
+                } else {
+                    "".to_string()
+                };
+                println!("{}", output_str);
             }
             BuildMode::Build => {}
         }
