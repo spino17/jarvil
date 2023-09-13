@@ -563,7 +563,9 @@ impl Resolver {
                                 false,
                             ) {
                                 Ok((index, has_generics_inside_angle_bracket_types)) => {
-                                    *has_generics = has_generics_inside_angle_bracket_types;
+                                    if has_generics_inside_angle_bracket_types {
+                                        *has_generics = true;
+                                    }
                                     TypeResolveKind::Resolved(Type::new_with_struct(
                                         name,
                                         &symbol_data.0,
@@ -585,7 +587,9 @@ impl Resolver {
                                 false,
                             ) {
                                 Ok((index, has_generics_inside_angle_bracket_types)) => {
-                                    *has_generics = has_generics_inside_angle_bracket_types;
+                                    if has_generics_inside_angle_bracket_types {
+                                        *has_generics = true;
+                                    }
                                     TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                         name,
                                         &symbol_data.0,
