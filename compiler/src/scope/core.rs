@@ -12,6 +12,7 @@ use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::{Ref, RefCell, RefMut};
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use text_size::TextRange;
 
@@ -178,6 +179,21 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
 impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone())
+    }
+}
+
+impl<T: AbstractConcreteTypesHandler> PartialEq for SymbolData<T> {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl<T: AbstractConcreteTypesHandler> Eq for SymbolData<T> {}
+
+impl<T: AbstractConcreteTypesHandler> Hash for SymbolData<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
     }
 }
 
