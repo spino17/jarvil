@@ -11,16 +11,18 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Generic {
-    pub name: String,
     pub semantic_data: SymbolData<UserDefinedTypeData>,
 }
 
 impl Generic {
-    pub fn new(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Generic {
+    pub fn new(symbol_data: &SymbolData<UserDefinedTypeData>) -> Generic {
         Generic {
-            name,
             semantic_data: symbol_data.clone(),
         }
+    }
+
+    pub fn name(&self) -> &str {
+        self.semantic_data.identifier_name()
     }
 }
 
@@ -28,7 +30,7 @@ impl AbstractType for Generic {
     fn is_eq(&self, other_ty: &Type) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Generic(generic_data) => {
-                if self.name == generic_data.name {
+                if self.name() == generic_data.name() {
                     true
                 } else {
                     false
@@ -150,7 +152,7 @@ impl ToString for Generic {
         let symbol_data = self.semantic_data.get_core_ref();
         let generic_data = symbol_data.get_generic_data_ref();
         let interface_bounds = &generic_data.interface_bounds;
-        format!("{}{}", self.name, interface_bounds.to_string())
+        format!("{}{}", self.name(), interface_bounds.to_string())
     }
 }
 

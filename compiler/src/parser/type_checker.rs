@@ -697,11 +697,8 @@ impl TypeChecker {
                     ) => {
                         let prototype_ref = prototype.get_prototype_ref();
                         let _ = self.check_params_type_and_count(&prototype_ref.params, params)?;
-                        let return_ty = Type::new_with_struct(
-                            name.to_string(),
-                            &concrete_symbol_data.symbol_data,
-                            index,
-                        );
+                        let return_ty =
+                            Type::new_with_struct(&concrete_symbol_data.symbol_data, index);
                         StructConstructorPrototypeCheckResult::Basic(return_ty)
                     }
                     CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
@@ -731,7 +728,6 @@ impl TypeChecker {
                     .get_core_mut_ref()
                     .register_concrete_types(concrete_types);
                 return Ok(Type::new_with_struct(
-                    name,
                     &concrete_symbol_data.symbol_data,
                     Some(index),
                 ));

@@ -567,7 +567,6 @@ impl Resolver {
                                         *has_generics = true;
                                     }
                                     TypeResolveKind::Resolved(Type::new_with_struct(
-                                        name,
                                         &symbol_data.0,
                                         index,
                                     ))
@@ -591,7 +590,6 @@ impl Resolver {
                                         *has_generics = true;
                                     }
                                     TypeResolveKind::Resolved(Type::new_with_lambda_named(
-                                        name,
                                         &symbol_data.0,
                                         index,
                                     ))
@@ -634,7 +632,6 @@ impl Resolver {
                                             assert!(index.is_none());
                                             *has_generics = true;
                                             TypeResolveKind::Resolved(Type::new_with_generic(
-                                                name,
                                                 &symbol_data.0,
                                             ))
                                         }
@@ -841,12 +838,11 @@ impl Resolver {
                                     symbol_data.get_entry(),
                                 );
                                 generic_type_params_vec.push((
-                                    generic_ty_name.to_string(),
+                                    generic_ty_name,
                                     interface_bounds,
                                     ok_identifier_in_decl.range(),
                                 ));
-                                concrete_types
-                                    .push(Type::new_with_generic(generic_ty_name, &symbol_data.0))
+                                concrete_types.push(Type::new_with_generic(&symbol_data.0))
                             }
                             Err((param_name, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1233,7 +1229,7 @@ impl Resolver {
                     Err((name, previous_decl_range)) => {
                         let err = IdentifierAlreadyDeclaredError::new(
                             IdentKind::Function,
-                            name.to_string(),
+                            name,
                             previous_decl_range,
                             ok_identifier.range(),
                         );
@@ -1273,7 +1269,7 @@ impl Resolver {
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::UserDefinedType,
-                        name.to_string(),
+                        name,
                         previous_decl_range,
                         ok_identifier.range(),
                     );
@@ -1292,14 +1288,8 @@ impl Resolver {
                     );
                 let struct_ty = match &symbol_data {
                     Some(symbol_data) => {
-                        let has_generics = if struct_generic_type_decls.is_some() {
-                            true
-                        } else {
-                            false
-                        };
-                        let name = ok_identifier.token_value(&self.code);
                         let index = symbol_data.0.register_concrete_types(concrete_types);
-                        Type::new_with_struct(name, &symbol_data.0, index)
+                        Type::new_with_struct(&symbol_data.0, index)
                     }
                     None => Type::new_with_unknown(),
                 };

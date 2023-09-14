@@ -125,27 +125,21 @@ impl Type {
 
     // user-defined-types
     pub fn new_with_struct(
-        name: String,
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
     ) -> Type {
         Type(
-            Rc::new(CoreType::Struct(Struct::new(name, symbol_data, index))),
+            Rc::new(CoreType::Struct(Struct::new(symbol_data, index))),
             false,
         )
     }
 
     pub fn new_with_lambda_named(
-        name: String,
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
     ) -> Type {
         Type(
-            Rc::new(CoreType::Lambda(Lambda::new_with_named(
-                name,
-                symbol_data,
-                index,
-            ))),
+            Rc::new(CoreType::Lambda(Lambda::new_with_named(symbol_data, index))),
             false,
         )
     }
@@ -159,11 +153,8 @@ impl Type {
         )
     }
 
-    pub fn new_with_generic(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
-        Type(
-            Rc::new(CoreType::Generic(Generic::new(name, symbol_data))),
-            false,
-        )
+    pub fn new_with_generic(symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
+        Type(Rc::new(CoreType::Generic(Generic::new(symbol_data))), false)
     }
 
     pub fn new_with_unknown() -> Type {

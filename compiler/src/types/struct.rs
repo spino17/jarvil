@@ -12,23 +12,24 @@ use crate::scope::{
 
 #[derive(Debug, Clone)]
 pub struct Struct {
-    pub name: String,
     pub semantic_data: ConcreteSymbolData<UserDefinedTypeData>,
 }
 
 impl Struct {
     pub fn new(
-        name: String,
         symbol_data: &SymbolData<UserDefinedTypeData>,
         index: Option<ConcreteTypesRegistryKey>,
     ) -> Struct {
         Struct {
-            name,
             semantic_data: ConcreteSymbolData {
                 symbol_data: symbol_data.clone(),
                 index,
             },
         }
+    }
+
+    fn name(&self) -> &str {
+        self.semantic_data.symbol_data.identifier_name()
     }
 
     fn compare<F: Fn(&Type, &Type, &ConcretizationContext) -> bool>(
@@ -37,7 +38,7 @@ impl Struct {
         ty_cmp_func: F,
         context: &ConcretizationContext,
     ) -> bool {
-        if other.name.eq(&self.name) {
+        if other.name() == self.name() {
             match self.semantic_data.index {
                 Some(self_key) => match other.semantic_data.index {
                     Some(other_key) => {
@@ -112,19 +113,9 @@ impl AbstractType for Struct {
                     .semantic_data
                     .symbol_data
                     .register_concrete_types(Some(concretized_concrete_types));
-                return Type::new_with_struct(
-                    self.name.to_string(),
-                    &self.semantic_data.symbol_data,
-                    new_key,
-                );
+                return Type::new_with_struct(&self.semantic_data.symbol_data, new_key);
             }
-            None => {
-                return Type::new_with_struct(
-                    self.name.to_string(),
-                    &self.semantic_data.symbol_data,
-                    None,
-                )
-            }
+            None => return Type::new_with_struct(&self.semantic_data.symbol_data, None),
         }
     }
 
@@ -146,7 +137,7 @@ impl AbstractType for Struct {
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::Struct(struct_ty) => {
-                if self.name == struct_ty.name {
+                if self.name() == struct_ty.name() {
                     match self.semantic_data.index {
                         Some(self_index) => {
                             let self_symbol_data = self.semantic_data.symbol_data.get_core_ref();
@@ -182,7 +173,7 @@ impl AbstractType for Struct {
 
 impl ToString for Struct {
     fn to_string(&self) -> String {
-        let mut s = self.name.to_string();
+        let mut s = self.name().to_string();
         match self.semantic_data.index {
             Some(index) => {
                 s.push('<');
@@ -204,7 +195,7 @@ impl OperatorCompatiblity for Struct {
     fn check_add(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
-                if self.name == other_struct.name {
+                if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Add` interface
                     return None;
                 } else {
@@ -218,7 +209,7 @@ impl OperatorCompatiblity for Struct {
     fn check_subtract(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
-                if self.name == other_struct.name {
+                if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Subtract` interface
                     return None;
                 } else {
@@ -232,7 +223,7 @@ impl OperatorCompatiblity for Struct {
     fn check_multiply(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
-                if self.name == other_struct.name {
+                if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Multiply` interface
                     return None;
                 } else {
@@ -246,7 +237,7 @@ impl OperatorCompatiblity for Struct {
     fn check_divide(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
-                if self.name == other_struct.name {
+                if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Divide` interface
                     return None;
                 } else {
@@ -260,7 +251,7 @@ impl OperatorCompatiblity for Struct {
     fn check_double_equal(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
-                if self.name == other_struct.name {
+                if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Equal` interface
                     return None;
                 } else {
@@ -274,7 +265,7 @@ impl OperatorCompatiblity for Struct {
     fn check_greater(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
-                if self.name == other_struct.name {
+                if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Greater` interface
                     return None;
                 } else {
@@ -288,7 +279,7 @@ impl OperatorCompatiblity for Struct {
     fn check_less(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
-                if self.name == other_struct.name {
+                if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Less` interface
                     return None;
                 } else {
@@ -302,7 +293,7 @@ impl OperatorCompatiblity for Struct {
     fn check_and(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
-                if self.name == other_struct.name {
+                if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `And` interface
                     return None;
                 } else {
@@ -316,7 +307,7 @@ impl OperatorCompatiblity for Struct {
     fn check_or(&self, other: &Type) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
-                if self.name == other_struct.name {
+                if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Or` interface
                     return None;
                 } else {

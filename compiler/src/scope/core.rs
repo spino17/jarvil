@@ -117,14 +117,21 @@ impl GenericTypeParams {
 
 #[derive(Debug)]
 pub struct SymbolDataCore<T: AbstractConcreteTypesHandler> {
+    pub identifier_name: String,
     pub identifier_data: RefCell<T>,
     pub declaration_line_number: TextRange,
     pub is_suffix_required: bool,
 }
 
 impl<T: AbstractConcreteTypesHandler> SymbolDataCore<T> {
-    fn new(identifier_data: T, decl_range: TextRange, is_suffix_required: bool) -> Self {
+    fn new(
+        identifier_name: String,
+        identifier_data: T,
+        decl_range: TextRange,
+        is_suffix_required: bool,
+    ) -> Self {
         SymbolDataCore {
+            identifier_name,
             identifier_data: RefCell::new(identifier_data),
             declaration_line_number: decl_range,
             is_suffix_required,
@@ -136,8 +143,14 @@ impl<T: AbstractConcreteTypesHandler> SymbolDataCore<T> {
 pub struct SymbolData<T: AbstractConcreteTypesHandler>(Rc<SymbolDataCore<T>>); // (identifier_meta_data, decl_line_number, should_add_prefix)
 
 impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
-    pub fn new(core_data: T, decl_range: TextRange, is_suffix_required: bool) -> Self {
+    pub fn new(
+        name: String,
+        core_data: T,
+        decl_range: TextRange,
+        is_suffix_required: bool,
+    ) -> Self {
         SymbolData(Rc::new(SymbolDataCore::new(
+            name,
             core_data,
             decl_range,
             is_suffix_required,
@@ -150,6 +163,10 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
 
     pub fn get_core_mut_ref<'a>(&'a self) -> RefMut<'a, T> {
         self.0.as_ref().identifier_data.borrow_mut()
+    }
+
+    pub fn identifier_name(&self) -> &str {
+        &self.0.identifier_name
     }
 
     pub fn declaration_line_number(&self) -> TextRange {
@@ -357,7 +374,8 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
         decl_range: TextRange,
         is_suffix_required: bool,
     ) -> SymbolData<T> {
-        let symbol_data = SymbolData::new(meta_data, decl_range, is_suffix_required);
+        let symbol_data =
+            SymbolData::new(name.to_string(), meta_data, decl_range, is_suffix_required);
         self.symbol_table.insert(name, symbol_data.clone());
         symbol_data
     }
