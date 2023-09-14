@@ -96,19 +96,19 @@ impl PythonCodeGenerator {
         {
             Some(symbol_data) => match symbol_data {
                 SymbolDataEntry::Variable(variable_symbol_data) => {
-                    if variable_symbol_data.2 {
+                    if variable_symbol_data.is_suffix_required() {
                         return "_var";
                     }
                     return "";
                 }
                 SymbolDataEntry::Function(func_symbol_data) => {
-                    if func_symbol_data.2 {
+                    if func_symbol_data.is_suffix_required() {
                         return "_func";
                     }
                     return "";
                 }
                 SymbolDataEntry::Type(type_symbol_data) => {
-                    if type_symbol_data.2 {
+                    if type_symbol_data.is_suffix_required() {
                         return "_ty";
                     }
                     return "";
@@ -129,19 +129,19 @@ impl PythonCodeGenerator {
         {
             Some(symbol_data) => match symbol_data {
                 ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
-                    if variable_symbol_data.symbol_data.2 {
+                    if variable_symbol_data.symbol_data.is_suffix_required() {
                         return "_var";
                     }
                     return "";
                 }
                 ConcreteSymbolDataEntry::Function(func_symbol_data) => {
-                    if func_symbol_data.symbol_data.2 {
+                    if func_symbol_data.symbol_data.is_suffix_required() {
                         return "_func";
                     }
                     return "";
                 }
                 ConcreteSymbolDataEntry::Type(type_symbol_data) => {
-                    if type_symbol_data.symbol_data.2 {
+                    if type_symbol_data.symbol_data.is_suffix_required() {
                         return "_ty";
                     }
                     return "";

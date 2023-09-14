@@ -172,7 +172,7 @@ impl Resolver {
                 let params = &func_meta_data.prototype.params;
                 let return_type = &func_meta_data.prototype.return_type;
                 if params.len() > 0 || !return_type.is_void() {
-                    let span = symbol_data.1;
+                    let span = symbol_data.declaration_line_number();
                     let err = MainFunctionWrongTypeError::new(span);
                     self.errors.push(Diagnostics::MainFunctionWrongType(err));
                 }
@@ -649,7 +649,7 @@ impl Resolver {
                                 Err(_) => TypeResolveKind::Unresolved(vec![
                                     UnresolvedIdentifier::GenericResolvedToOutsideScope(
                                         ok_identifier,
-                                        symbol_data.0 .1,
+                                        symbol_data.0.declaration_line_number(),
                                     ),
                                 ]),
                             }
@@ -1840,7 +1840,7 @@ impl Visitor for Resolver {
                                     let symbol_data = lookup_data.symbol_data;
                                     let depth = lookup_data.depth;
                                     let is_global = lookup_data.is_global;
-                                    if depth > 0 && symbol_data.0 .2 {
+                                    if depth > 0 && symbol_data.0.is_suffix_required() {
                                         self.set_to_function_non_locals(name, is_global);
                                     }
                                 }

@@ -115,23 +115,48 @@ impl GenericTypeParams {
 }
 
 #[derive(Debug)]
-pub struct SymbolData<T: AbstractConcreteTypesHandler>(pub Rc<RefCell<T>>, pub TextRange, pub bool); // (identifier_meta_data, decl_line_number, should_add_prefix)
+pub struct SymbolDataCore<T: AbstractConcreteTypesHandler> {
+    pub identifier_data: RefCell<T>,
+    pub declaration_line_number: TextRange,
+    pub is_suffix_required: bool,
+}
+
+impl<T: AbstractConcreteTypesHandler> SymbolDataCore<T> {
+    fn new(identifier_data: T, decl_range: TextRange, is_suffix_required: bool) -> Self {
+        SymbolDataCore {
+            identifier_data: RefCell::new(identifier_data),
+            declaration_line_number: decl_range,
+            is_suffix_required,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct SymbolData<T: AbstractConcreteTypesHandler>(Rc<SymbolDataCore<T>>); // (identifier_meta_data, decl_line_number, should_add_prefix)
 
 impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn new(core_data: T, decl_range: TextRange, is_suffix_required: bool) -> Self {
-        SymbolData(
-            Rc::new(RefCell::new(core_data)),
+        SymbolData(Rc::new(SymbolDataCore::new(
+            core_data,
             decl_range,
             is_suffix_required,
-        )
+        )))
     }
 
     pub fn get_core_ref<'a>(&'a self) -> Ref<'a, T> {
-        self.0.as_ref().borrow()
+        self.0.as_ref().identifier_data.borrow()
     }
 
     pub fn get_core_mut_ref<'a>(&'a self) -> RefMut<'a, T> {
-        self.0.as_ref().borrow_mut()
+        self.0.as_ref().identifier_data.borrow_mut()
+    }
+
+    pub fn declaration_line_number(&self) -> TextRange {
+        self.0.declaration_line_number
+    }
+
+    pub fn is_suffix_required(&self) -> bool {
+        self.0.is_suffix_required
     }
 
     pub fn register_concrete_types(
@@ -152,7 +177,7 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
 
 impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
-        SymbolData(self.0.clone(), self.1, self.2)
+        SymbolData(self.0.clone())
     }
 }
 
@@ -428,7 +453,9 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
                         is_global,
                     ));
                 } else {
-                    return IntermediateLookupResult::NotInitialized(symbol_data.1);
+                    return IntermediateLookupResult::NotInitialized(
+                        symbol_data.declaration_line_number(),
+                    );
                 }
             }
             None => return IntermediateLookupResult::Unresolved,
@@ -590,7 +617,7 @@ impl Namespace {
             .flattened_vec[scope_index]
             .get(key)
         {
-            Some(symbol_data) => Some(symbol_data.1),
+            Some(symbol_data) => Some(symbol_data.declaration_line_number()),
             None => None,
         };
         match self.variables.insert(
@@ -618,7 +645,7 @@ impl Namespace {
             .flattened_vec[scope_index]
             .get(key)
         {
-            Some(symbol_data) => Some(symbol_data.1),
+            Some(symbol_data) => Some(symbol_data.declaration_line_number()),
             None => None,
         };
         match self.variables.insert(
@@ -644,7 +671,7 @@ impl Namespace {
             .flattened_vec[scope_index]
             .get(key)
         {
-            Some(symbol_data) => Some(symbol_data.1),
+            Some(symbol_data) => Some(symbol_data.declaration_line_number()),
             None => None,
         };
         match self.functions.insert(
@@ -671,7 +698,7 @@ impl Namespace {
             |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
                 .lookup(scope_index, key)
             {
-                Some((symbol_data, _, _, _)) => Some(symbol_data.1),
+                Some((symbol_data, _, _, _)) => Some(symbol_data.declaration_line_number()),
                 None => None,
             };
         match self
@@ -738,7 +765,7 @@ impl Namespace {
         let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| match scope
             .lookup(scope_index, key)
         {
-            Some((symbol_data, _, _, _)) => Some(symbol_data.1),
+            Some((symbol_data, _, _, _)) => Some(symbol_data.declaration_line_number()),
             None => None,
         };
         match self.interfaces.insert(
