@@ -438,7 +438,6 @@ impl TypeChecker {
                 let mut inferred_concrete_types: Vec<InferredConcreteTypesEntry> =
                     vec![InferredConcreteTypesEntry::Uninferred; generic_type_decls_len];
                 let mut num_inferred_types = 0; // this should be `len_concrete_types` at the end of inference process
-                let mut has_generics = false;
                 let received_params_iter = received_params.iter();
                 let expected_params = &expected_prototype.params;
                 let expected_params_len = expected_params.len();
