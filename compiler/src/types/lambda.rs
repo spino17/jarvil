@@ -45,7 +45,7 @@ impl Lambda {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &TypeChecker,
+        type_checker: &mut TypeChecker,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         match self {

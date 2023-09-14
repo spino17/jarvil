@@ -22,29 +22,7 @@ pub enum SymbolDataEntry {
     Interface(SymbolData<InterfaceData>),
 }
 
-impl SymbolDataEntry {
-    pub fn register_concrete_types(
-        &self,
-        concrete_types: Option<Vec<Type>>,
-        has_generics: bool,
-    ) -> Option<ConcreteTypesRegistryKey> {
-        match self {
-            SymbolDataEntry::Variable(variable_symbol_data) => {
-                variable_symbol_data.register_concrete_types(concrete_types)
-            }
-            SymbolDataEntry::Function(func_symbol_data) => {
-                func_symbol_data.register_concrete_types(concrete_types)
-            }
-            SymbolDataEntry::Type(type_symbol_data) => {
-                type_symbol_data.register_concrete_types(concrete_types)
-            }
-            SymbolDataEntry::Interface(interface_symbol_data) => {
-                interface_symbol_data.register_concrete_types(concrete_types)
-            }
-        }
-    }
-}
-
+#[derive(Debug, Clone)]
 pub enum ConcreteSymbolDataEntry {
     Variable(ConcreteSymbolData<VariableData>),
     Function(ConcreteSymbolData<CallableData>),
@@ -130,8 +108,11 @@ impl SemanticStateDatabase {
     pub fn get_symbol_data_for_identifier_in_use(
         &self,
         identifier: &OkIdentifierInUseNode,
-    ) -> Option<&ConcreteSymbolDataEntry> {
-        self.identifier_in_use_binding_table.get(identifier)
+    ) -> Option<ConcreteSymbolDataEntry> {
+        match self.identifier_in_use_binding_table.get(identifier) {
+            Some(symbol_data) => Some(symbol_data.clone()),
+            None => None,
+        }
     }
 
     pub fn get_variable_symbol_data_for_identifier_in_decl(
@@ -204,10 +185,10 @@ impl SemanticStateDatabase {
     pub fn get_type_symbol_data_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
-    ) -> Option<&ConcreteSymbolData<UserDefinedTypeData>> {
+    ) -> Option<ConcreteSymbolData<UserDefinedTypeData>> {
         match self.identifier_in_use_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data),
+                ConcreteSymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data.clone()),
                 _ => unreachable!(),
             },
             None => None,

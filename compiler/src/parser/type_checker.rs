@@ -229,7 +229,7 @@ impl TypeChecker {
     }
 
     fn extract_angle_bracket_content_from_identifier_in_use(
-        &self,
+        &mut self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
     ) -> (Option<Vec<Type>>, Option<Vec<TextRange>>, bool) {
         match &ok_identifier_in_use.core_ref().generic_type_args {
@@ -252,7 +252,7 @@ impl TypeChecker {
     }
 
     pub fn params_and_return_type_obj_from_expr(
-        &self,
+        &mut self,
         return_type: &Option<(TokenNode, TypeExpressionNode)>,
         params: &Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
     ) -> (Vec<Type>, Type, Option<(Vec<usize>, bool)>) {
@@ -300,7 +300,7 @@ impl TypeChecker {
         (params_vec, return_type, is_concretization_required)
     }
 
-    pub fn type_of_lambda(&self, lambda_decl: &LambdaDeclarationNode) -> Type {
+    pub fn type_of_lambda(&mut self, lambda_decl: &LambdaDeclarationNode) -> Type {
         let core_lambda_decl = lambda_decl.0.as_ref();
         let lambda_name = &core_lambda_decl.name;
         let core_callable_body = core_lambda_decl.body.core_ref();
@@ -325,7 +325,7 @@ impl TypeChecker {
         return lambda_type_obj;
     }
 
-    pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
+    pub fn is_unary_expr_int_valued(&mut self, unary: &UnaryExpressionNode) -> Option<i32> {
         match unary.core_ref() {
             CoreUnaryExpressionNode::Unary(unary) => {
                 let core_unary = unary.core_ref();
@@ -359,7 +359,7 @@ impl TypeChecker {
     }
 
     pub fn is_valid_index_for_tuple(
-        &self,
+        &mut self,
         index_value: i32,
         tuple_len: usize,
     ) -> TupleIndexCheckResult {
@@ -378,7 +378,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn is_indexable_with_type(&self, other_ty: &Type, index_type: &Type) -> Option<Type> {
+    pub fn is_indexable_with_type(&mut self, other_ty: &Type, index_type: &Type) -> Option<Type> {
         // NOTE - case for `tuple` is already handled in the calling function
         match other_ty.0.as_ref() {
             CoreType::Array(array) => {
@@ -411,7 +411,7 @@ impl TypeChecker {
     }
 
     pub fn is_binary_operation_valid(
-        &self,
+        &mut self,
         l_type: &Type,
         r_type: &Type,
         operator_kind: &BinaryOperatorKind,
@@ -424,7 +424,7 @@ impl TypeChecker {
     }
 
     pub fn infer_concrete_types_from_arguments(
-        &self,
+        &mut self,
         generic_type_decls: &GenericTypeParams,
         expected_prototype: &CallablePrototypeData,
         global_concrete_types: Option<&Vec<Type>>,
@@ -515,7 +515,7 @@ impl TypeChecker {
     }
 
     pub fn check_params_type_and_count(
-        &self,
+        &mut self,
         expected_param_data: &Vec<Type>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<(), PrototypeEquivalenceCheckError> {
@@ -569,7 +569,7 @@ impl TypeChecker {
     }
 
     fn check_func_call_expr(
-        &self,
+        &mut self,
         concrete_symbol: &ConcreteSymbolData<CallableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
@@ -630,7 +630,7 @@ impl TypeChecker {
     }
 
     fn check_variable_call_expr(
-        &self,
+        &mut self,
         concrete_symbol_data: &ConcreteSymbolData<VariableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
@@ -650,7 +650,7 @@ impl TypeChecker {
     }
 
     fn check_user_defined_ty_call_expr(
-        &self,
+        &mut self,
         name: String,
         concrete_symbol_data: &ConcreteSymbolData<UserDefinedTypeData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -734,7 +734,7 @@ impl TypeChecker {
         }
     }
 
-    fn check_atom_start_call_expr(&self, call_expr: &CallExpressionNode) -> Type {
+    fn check_atom_start_call_expr(&mut self, call_expr: &CallExpressionNode) -> Type {
         let core_call_expr = call_expr.core_ref();
         let func_name = &core_call_expr.function_name;
         let params = &core_call_expr.params;
@@ -754,17 +754,17 @@ impl TypeChecker {
             {
                 let result = match symbol_data {
                     ConcreteSymbolDataEntry::Function(func_symbol_data) => {
-                        self.check_func_call_expr(func_symbol_data, params)
+                        self.check_func_call_expr(&func_symbol_data, params)
                     }
                     ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
-                        self.check_variable_call_expr(variable_symbol_data, params)
+                        self.check_variable_call_expr(&variable_symbol_data, params)
                     }
                     ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
                     ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
                         let name = ok_identifier.token_value(&self.code);
                         self.check_user_defined_ty_call_expr(
                             name,
-                            user_defined_type_symbol_data,
+                            &user_defined_type_symbol_data,
                             params,
                         )
                     }
@@ -804,7 +804,10 @@ impl TypeChecker {
         Type::new_with_unknown()
     }
 
-    fn check_atom_start_class_method_call(&self, class_method_call: &ClassMethodCallNode) -> Type {
+    fn check_atom_start_class_method_call(
+        &mut self,
+        class_method_call: &ClassMethodCallNode,
+    ) -> Type {
         let core_class_method = class_method_call.core_ref();
         let class = &core_class_method.class_name;
         let class_method = &core_class_method.class_method_name;
@@ -879,7 +882,7 @@ impl TypeChecker {
         Type::new_with_unknown()
     }
 
-    pub fn check_atom_start(&self, atom_start: &AtomStartNode) -> Type {
+    pub fn check_atom_start(&mut self, atom_start: &AtomStartNode) -> Type {
         let core_atom_start = atom_start.core_ref();
         match core_atom_start {
             CoreAtomStartNode::Identifier(token) => match token.core_ref() {
@@ -920,7 +923,7 @@ impl TypeChecker {
         }
     }
 
-    fn check_call(&self, call: &CallNode) -> (Type, Option<Type>) {
+    fn check_call(&mut self, call: &CallNode) -> (Type, Option<Type>) {
         let core_call = call.core_ref();
         let atom = &core_call.atom;
         let params = &core_call.params;
@@ -944,7 +947,10 @@ impl TypeChecker {
         }
     }
 
-    fn check_property_access(&self, property_access: &PropertyAccessNode) -> (Type, Option<Type>) {
+    fn check_property_access(
+        &mut self,
+        property_access: &PropertyAccessNode,
+    ) -> (Type, Option<Type>) {
         let core_property_access = property_access.core_ref();
         let atom = &core_property_access.atom;
         let (atom_type_obj, _) = self.check_atom(atom);
@@ -996,7 +1002,7 @@ impl TypeChecker {
     }
 
     fn check_method_access_for_struct_ty(
-        &self,
+        &mut self,
         struct_ty: &Struct,
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -1054,7 +1060,7 @@ impl TypeChecker {
     }
 
     fn check_method_access_for_generic_ty(
-        &self,
+        &mut self,
         generic_ty: &Generic,
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -1064,7 +1070,7 @@ impl TypeChecker {
     }
 
     fn check_method_access_for_array_ty(
-        &self,
+        &mut self,
         array_ty: &Array,
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -1080,7 +1086,7 @@ impl TypeChecker {
     }
 
     fn check_method_access_for_hashmap_ty(
-        &self,
+        &mut self,
         hashmap_ty: &HashMap,
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -1095,7 +1101,7 @@ impl TypeChecker {
         }
     }
 
-    fn check_method_access(&self, method_access: &MethodAccessNode) -> (Type, Option<Type>) {
+    fn check_method_access(&mut self, method_access: &MethodAccessNode) -> (Type, Option<Type>) {
         let core_method_access = method_access.core_ref();
         let atom = &core_method_access.atom;
         let (atom_type_obj, _) = self.check_atom(atom);
@@ -1163,7 +1169,7 @@ impl TypeChecker {
     }
 
     fn check_index_access_for_tuple_ty(
-        &self,
+        &mut self,
         tuple_ty: &Tuple,
         index_expr: &ExpressionNode,
     ) -> Type {
@@ -1209,7 +1215,7 @@ impl TypeChecker {
         }
     }
 
-    fn check_index_access(&self, index_access: &IndexAccessNode) -> (Type, Option<Type>) {
+    fn check_index_access(&mut self, index_access: &IndexAccessNode) -> (Type, Option<Type>) {
         let core_index_access = index_access.core_ref();
         let atom = &core_index_access.atom;
         let (atom_type_obj, _) = self.check_atom(atom);
@@ -1264,7 +1270,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_atom(&self, atom: &AtomNode) -> (Type, Option<Type>) {
+    pub fn check_atom(&mut self, atom: &AtomNode) -> (Type, Option<Type>) {
         let core_atom = atom.core_ref();
         match core_atom {
             CoreAtomNode::AtomStart(atom_start) => (self.check_atom_start(atom_start), None),
@@ -1277,7 +1283,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_r_assign(&self, r_assign: &RAssignmentNode) -> Type {
+    pub fn check_r_assign(&mut self, r_assign: &RAssignmentNode) -> Type {
         let core_r_assign = r_assign.core_ref();
         self.check_expr(&core_r_assign.expr.core_ref().expr)
     }
@@ -1311,7 +1317,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_array_expr(&self, array_expr: &ArrayExpressionNode) -> Type {
+    pub fn check_array_expr(&mut self, array_expr: &ArrayExpressionNode) -> Type {
         let core_array_expr = array_expr.core_ref();
         match &core_array_expr.initials {
             Some(initials) => {
@@ -1342,7 +1348,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_hashmap_expr(&self, hashmap_expr: &HashMapExpressionNode) -> Type {
+    pub fn check_hashmap_expr(&mut self, hashmap_expr: &HashMapExpressionNode) -> Type {
         let core_hashmap_expr = hashmap_expr.core_ref();
         match &core_hashmap_expr.initials {
             Some(initials) => {
@@ -1387,7 +1393,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_tuple_expr(&self, tuple_expr: &TupleExpressionNode) -> Type {
+    pub fn check_tuple_expr(&mut self, tuple_expr: &TupleExpressionNode) -> Type {
         let mut sub_types = vec![];
         for expr in tuple_expr.core_ref().initials.iter() {
             sub_types.push(self.check_expr(expr));
@@ -1395,7 +1401,7 @@ impl TypeChecker {
         Type::new_with_tuple(sub_types)
     }
 
-    pub fn check_atomic_expr(&self, atomic_expr: &AtomicExpressionNode) -> Type {
+    pub fn check_atomic_expr(&mut self, atomic_expr: &AtomicExpressionNode) -> Type {
         let core_atomic_expr = atomic_expr.core_ref();
         match core_atomic_expr {
             CoreAtomicExpressionNode::Bool(token) => {
@@ -1427,7 +1433,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_only_unary_expr(&self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
+    pub fn check_only_unary_expr(&mut self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
         let core_only_unary_expr = only_unary_expr.core_ref();
         let unary_expr = &core_only_unary_expr.unary_expr;
         let operand_type = self.check_unary_expr(&unary_expr);
@@ -1467,7 +1473,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_unary_expr(&self, unary_expr: &UnaryExpressionNode) -> Type {
+    pub fn check_unary_expr(&mut self, unary_expr: &UnaryExpressionNode) -> Type {
         let core_unary_expr = unary_expr.core_ref();
         match core_unary_expr {
             CoreUnaryExpressionNode::Atomic(atomic) => self.check_atomic_expr(atomic),
@@ -1475,7 +1481,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_binary_expr(&self, binary_expr: &BinaryExpressionNode) -> Type {
+    pub fn check_binary_expr(&mut self, binary_expr: &BinaryExpressionNode) -> Type {
         let core_binary_expr = binary_expr.core_ref();
         let left_expr = &core_binary_expr.left_expr;
         let right_expr = &core_binary_expr.right_expr;
@@ -1500,7 +1506,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_comp_expr(&self, comp_expr: &ComparisonNode) -> Type {
+    pub fn check_comp_expr(&mut self, comp_expr: &ComparisonNode) -> Type {
         let core_comp_expr = comp_expr.core_ref();
         let operands = &core_comp_expr.operands;
         let operators = &core_comp_expr.operators;
@@ -1541,7 +1547,7 @@ impl TypeChecker {
         Type::new_with_atomic(BOOL)
     }
 
-    pub fn check_expr(&self, expr: &ExpressionNode) -> Type {
+    pub fn check_expr(&mut self, expr: &ExpressionNode) -> Type {
         let core_expr = expr.core_ref();
         match core_expr {
             CoreExpressionNode::Unary(unary_expr) => self.check_unary_expr(unary_expr),
@@ -1552,7 +1558,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_assignment(&self, assignment: &AssignmentNode) {
+    pub fn check_assignment(&mut self, assignment: &AssignmentNode) {
         let core_assignment = assignment.core_ref();
         let (l_type, r_assign, range) = match core_assignment {
             CoreAssignmentNode::Ok(ok_assignment) => {
@@ -1711,7 +1717,7 @@ impl TypeChecker {
         self.check_callable_body(&body.prototype, &body.block, is_constructor);
     }
 
-    pub fn check_return_stmt(&self, return_stmt: &ReturnStatementNode) {
+    pub fn check_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {
         let core_return_stmt = return_stmt.core_ref();
         let func_stack_len = self.context.func_stack.len();
         if func_stack_len == 0 {
