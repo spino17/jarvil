@@ -72,7 +72,6 @@ use crate::{
         core::{AbstractType, CoreType, Type},
     },
 };
-use std::cell::UnsafeCell;
 use text_size::TextRange;
 
 use super::helper::err_for_generic_type_args;
@@ -174,7 +173,7 @@ pub enum TupleIndexCheckResult {
 
 pub struct TypeChecker {
     code: JarvilCode,
-    errors: UnsafeCell<Vec<Diagnostics>>,
+    errors: Vec<Diagnostics>,
     context: Context,
     semantic_state_db: SemanticStateDatabase,
 }
@@ -183,22 +182,14 @@ impl TypeChecker {
     pub fn new(code: JarvilCode, semantic_state_db: SemanticStateDatabase) -> Self {
         TypeChecker {
             code,
-            errors: UnsafeCell::new(vec![]),
+            errors: vec![],
             context: Context { func_stack: vec![] },
             semantic_state_db,
         }
     }
 
-    pub fn log_error(&self, err: Diagnostics) {
-        // This method is unsafe! in favour of performance. This code is safe
-        // if we guarentee that there will only be one mutable reference to the
-        // `errors`. This condition currently holds true as throughout the AST
-        // pass we are only pushing `err` to it with no other mutable or immutable
-        // references.
-        unsafe {
-            let errors_ref = &mut *self.errors.get();
-            errors_ref.push(err);
-        };
+    pub fn log_error(&mut self, err: Diagnostics) {
+        self.errors.push(err);
     }
 
     pub fn check_ast(
@@ -210,10 +201,7 @@ impl TypeChecker {
         for stmt in &*core_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        unsafe {
-            let errors_ref = &mut *self.errors.get();
-            global_errors.append(errors_ref);
-        };
+        global_errors.append(&mut self.errors);
         (self.semantic_state_db, self.code)
     }
 
@@ -229,7 +217,7 @@ impl TypeChecker {
     }
 
     fn extract_angle_bracket_content_from_identifier_in_use(
-        &mut self,
+        &self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
     ) -> (Option<Vec<Type>>, Option<Vec<TextRange>>, bool) {
         match &ok_identifier_in_use.core_ref().generic_type_args {
@@ -252,7 +240,7 @@ impl TypeChecker {
     }
 
     pub fn params_and_return_type_obj_from_expr(
-        &mut self,
+        &self,
         return_type: &Option<(TokenNode, TypeExpressionNode)>,
         params: &Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
     ) -> (Vec<Type>, Type, Option<(Vec<usize>, bool)>) {
@@ -300,7 +288,7 @@ impl TypeChecker {
         (params_vec, return_type, is_concretization_required)
     }
 
-    pub fn type_of_lambda(&mut self, lambda_decl: &LambdaDeclarationNode) -> Type {
+    pub fn type_of_lambda(&self, lambda_decl: &LambdaDeclarationNode) -> Type {
         let core_lambda_decl = lambda_decl.0.as_ref();
         let lambda_name = &core_lambda_decl.name;
         let core_callable_body = core_lambda_decl.body.core_ref();
@@ -325,7 +313,7 @@ impl TypeChecker {
         return lambda_type_obj;
     }
 
-    pub fn is_unary_expr_int_valued(&mut self, unary: &UnaryExpressionNode) -> Option<i32> {
+    pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
         match unary.core_ref() {
             CoreUnaryExpressionNode::Unary(unary) => {
                 let core_unary = unary.core_ref();
@@ -359,7 +347,7 @@ impl TypeChecker {
     }
 
     pub fn is_valid_index_for_tuple(
-        &mut self,
+        &self,
         index_value: i32,
         tuple_len: usize,
     ) -> TupleIndexCheckResult {
@@ -378,7 +366,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn is_indexable_with_type(&mut self, other_ty: &Type, index_type: &Type) -> Option<Type> {
+    pub fn is_indexable_with_type(&self, other_ty: &Type, index_type: &Type) -> Option<Type> {
         // NOTE - case for `tuple` is already handled in the calling function
         match other_ty.0.as_ref() {
             CoreType::Array(array) => {
@@ -411,7 +399,7 @@ impl TypeChecker {
     }
 
     pub fn is_binary_operation_valid(
-        &mut self,
+        &self,
         l_type: &Type,
         r_type: &Type,
         operator_kind: &BinaryOperatorKind,
@@ -1656,7 +1644,6 @@ impl TypeChecker {
         body: &BlockNode,
         is_constructor: bool,
     ) {
-        // let core_callable_body = callable_body.0.as_ref();
         let return_type_obj = self.check_callable_prototype(prototype);
         self.context
             .func_stack
@@ -1809,7 +1796,6 @@ impl TypeChecker {
             }
             CoreStatementNode::TypeDeclaration(type_decl) => match type_decl.core_ref() {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {
-                    // self.walk_block(&struct_decl.core_ref().block);
                     self.check_struct_declaration(struct_decl);
                 }
                 CoreTypeDeclarationNode::Lambda(_) | CoreTypeDeclarationNode::MissingTokens(_) => {
@@ -1839,7 +1825,7 @@ impl TypeChecker {
     }
 
     pub fn log_params_type_and_count_check_error(
-        &self,
+        &mut self,
         range: TextRange,
         result: PrototypeEquivalenceCheckError,
     ) {

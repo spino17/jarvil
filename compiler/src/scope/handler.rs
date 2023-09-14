@@ -118,10 +118,12 @@ impl SemanticStateDatabase {
     pub fn get_variable_symbol_data_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
-    ) -> Option<&SymbolData<VariableData>> {
+    ) -> Option<SymbolData<VariableData>> {
         match self.identifier_in_decl_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Variable(variable_symbol_data) => Some(variable_symbol_data),
+                SymbolDataEntry::Variable(variable_symbol_data) => {
+                    Some(variable_symbol_data.clone())
+                }
                 _ => unreachable!(),
             },
             None => None,
@@ -172,10 +174,10 @@ impl SemanticStateDatabase {
     pub fn get_type_symbol_data_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
-    ) -> Option<&SymbolData<UserDefinedTypeData>> {
+    ) -> Option<SymbolData<UserDefinedTypeData>> {
         match self.identifier_in_decl_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data),
+                SymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data.clone()),
                 _ => unreachable!(),
             },
             None => None,
