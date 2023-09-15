@@ -1,6 +1,11 @@
+use std::collections::hash_map::Entry;
+
 use super::{
-    concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
-    core::{Namespace, SymbolData},
+    concrete::{
+        core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
+        registry::ConcreteTypesRegistryCore,
+    },
+    core::{AbstractConcreteTypesHandler, Namespace, SymbolData},
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
@@ -57,11 +62,62 @@ pub enum IdentifierNodeWrapper<'a> {
     InUse(&'a OkIdentifierInUseNode),
 }
 
+#[derive(Debug)]
+pub struct SymbolDataRegistryTable<T: AbstractConcreteTypesHandler> {
+    core: FxHashMap<SymbolData<T>, ConcreteTypesRegistryCore>,
+}
+
+impl<T: AbstractConcreteTypesHandler> SymbolDataRegistryTable<T> {
+    pub fn register_concrete_types(
+        &mut self,
+        key: &SymbolData<T>,
+        concrete_types: Option<Vec<Type>>,
+    ) -> Option<ConcreteTypesRegistryKey> {
+        match concrete_types {
+            Some(concrete_types) => match self.core.entry(key.clone()) {
+                Entry::Occupied(o) => {
+                    let registry_mut_ref = o.into_mut();
+                    Some(registry_mut_ref.register_concrete_types(concrete_types))
+                }
+                Entry::Vacant(v) => {
+                    let mut registry = ConcreteTypesRegistryCore(vec![]);
+                    let key = registry.register_concrete_types(concrete_types);
+                    v.insert(registry);
+                    return Some(key);
+                }
+            },
+            None => return None,
+        }
+    }
+
+    pub fn get_concrete_types(
+        &self,
+        key: &SymbolData<T>,
+        index: ConcreteTypesRegistryKey,
+    ) -> Option<&ConcreteTypesTuple> {
+        match self.core.get(key) {
+            Some(registry) => Some(registry.get_concrete_types_at_key(index)),
+            None => None,
+        }
+    }
+}
+
+impl<T: AbstractConcreteTypesHandler> Default for SymbolDataRegistryTable<T> {
+    fn default() -> Self {
+        SymbolDataRegistryTable {
+            core: FxHashMap::default(),
+        }
+    }
+}
+
 // This contains all the relevant semantic information collected over various AST passes
 pub struct SemanticStateDatabase {
     pub namespace: Namespace,
     pub identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
     pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
+    pub function_registry_table: SymbolDataRegistryTable<CallableData>,
+    pub type_registry_table: SymbolDataRegistryTable<UserDefinedTypeData>,
+    pub interface_registry_table: SymbolDataRegistryTable<InterfaceData>,
     pub type_expr_obj_table: FxHashMap<TypeExpressionNode, (Type, bool)>,
     pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
     pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashMap<String, bool>)>, // block_node -> (non_locally resolved variables, (non_locally resolved functions -> is_in_global_scope))
@@ -74,6 +130,9 @@ impl SemanticStateDatabase {
             namespace: Namespace::new(),
             identifier_in_decl_binding_table: FxHashMap::default(),
             identifier_in_use_binding_table: FxHashMap::default(),
+            function_registry_table: SymbolDataRegistryTable::default(),
+            type_registry_table: SymbolDataRegistryTable::default(),
+            interface_registry_table: SymbolDataRegistryTable::default(),
             type_expr_obj_table: FxHashMap::default(),
             self_keyword_binding_table: FxHashMap::default(),
             block_non_locals: FxHashMap::default(),
