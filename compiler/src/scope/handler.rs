@@ -71,22 +71,19 @@ impl<T: AbstractConcreteTypesHandler> SymbolDataRegistryTable<T> {
     pub fn register_concrete_types(
         &mut self,
         key: &SymbolData<T>,
-        concrete_types: Option<Vec<Type>>,
-    ) -> Option<ConcreteTypesRegistryKey> {
-        match concrete_types {
-            Some(concrete_types) => match self.core.entry(key.clone()) {
-                Entry::Occupied(o) => {
-                    let registry_mut_ref = o.into_mut();
-                    Some(registry_mut_ref.register_concrete_types(concrete_types))
-                }
-                Entry::Vacant(v) => {
-                    let mut registry = ConcreteTypesRegistryCore(vec![]);
-                    let key = registry.register_concrete_types(concrete_types);
-                    v.insert(registry);
-                    return Some(key);
-                }
-            },
-            None => return None,
+        concrete_types: Vec<Type>,
+    ) -> ConcreteTypesRegistryKey {
+        match self.core.entry(key.clone()) {
+            Entry::Occupied(o) => {
+                let registry_mut_ref = o.into_mut();
+                registry_mut_ref.register_concrete_types(concrete_types)
+            }
+            Entry::Vacant(v) => {
+                let mut registry = ConcreteTypesRegistryCore(vec![]);
+                let key = registry.register_concrete_types(concrete_types);
+                v.insert(registry);
+                key
+            }
         }
     }
 
