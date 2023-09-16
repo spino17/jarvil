@@ -4,8 +4,10 @@ use crate::{
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::core::ConcretizationContext, interfaces::InterfaceBounds,
-        types::generic_type::GenericTypeDeclarationPlaceCategory,
+        concrete::{core::ConcretizationContext, registry},
+        handler::SymbolDataRegistryTable,
+        interfaces::InterfaceBounds,
+        types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
     },
     types::core::{AbstractType, CoreType, Type},
 };
@@ -27,6 +29,7 @@ impl Tuple {
         &self,
         other: &Type,
         operator_kind: &BinaryOperatorKind,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Tuple(other_tuple) => {
@@ -35,7 +38,7 @@ impl Tuple {
                 let min_len = cmp::min(self_len, other_len);
                 for i in 0..min_len {
                     if self.sub_types[i]
-                        .check_operator(&other_tuple.sub_types[i], operator_kind)
+                        .check_operator(&other_tuple.sub_types[i], operator_kind, registry)
                         .is_none()
                     {
                         return None;
@@ -49,7 +52,11 @@ impl Tuple {
 }
 
 impl AbstractType for Tuple {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+    fn is_eq(
+        &self,
+        other_ty: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Tuple(tuple_data) => {
                 if tuple_data.sub_types.len() != self.sub_types.len() {
@@ -57,7 +64,7 @@ impl AbstractType for Tuple {
                 }
                 let len = self.sub_types.len();
                 for i in 0..len {
-                    if !self.sub_types[i].is_eq(&tuple_data.sub_types[i]) {
+                    if !self.sub_types[i].is_eq(&tuple_data.sub_types[i], registry) {
                         return false;
                     }
                 }
@@ -68,7 +75,12 @@ impl AbstractType for Tuple {
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        context: &ConcretizationContext,
+    ) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Tuple(tuple_data) => {
                 if tuple_data.sub_types.len() != self.sub_types.len() {
@@ -76,7 +88,11 @@ impl AbstractType for Tuple {
                 }
                 let len = self.sub_types.len();
                 for i in 0..len {
-                    if !self.sub_types[i].is_structurally_eq(&tuple_data.sub_types[i], context) {
+                    if !self.sub_types[i].is_structurally_eq(
+                        &tuple_data.sub_types[i],
+                        registry,
+                        context,
+                    ) {
                         return false;
                     }
                 }
@@ -86,15 +102,23 @@ impl AbstractType for Tuple {
         }
     }
 
-    fn concretize(&self, context: &ConcretizationContext) -> Type {
+    fn concretize(
+        &self,
+        context: &ConcretizationContext,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Type {
         let mut concrete_types = vec![];
         for ty in &self.sub_types {
-            concrete_types.push(ty.concretize(context));
+            concrete_types.push(ty.concretize(context, registry));
         }
         return Type::new_with_tuple(concrete_types);
     }
 
-    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+    fn is_type_bounded_by_interfaces(
+        &self,
+        interface_bounds: &InterfaceBounds,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         // TODO - add checks for interfaces which `Tuple` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0
     }
@@ -106,6 +130,7 @@ impl AbstractType for Tuple {
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::Tuple(tuple_ty) => {
@@ -118,6 +143,7 @@ impl AbstractType for Tuple {
                     global_concrete_types,
                     num_inferred_types,
                     inference_category,
+                    registry,
                 )
             }
             _ => Err(()),
@@ -136,7 +162,11 @@ impl ToString for Tuple {
 }
 
 impl OperatorCompatiblity for Tuple {
-    fn check_add(&self, other: &Type) -> Option<Type> {
+    fn check_add(
+        &self,
+        other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Tuple(other_tuple) => {
                 let self_sub_types = &self.sub_types;
@@ -154,35 +184,67 @@ impl OperatorCompatiblity for Tuple {
         }
     }
 
-    fn check_subtract(&self, _other: &Type) -> Option<Type> {
+    fn check_subtract(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_multiply(&self, _other: &Type) -> Option<Type> {
+    fn check_multiply(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_divide(&self, _other: &Type) -> Option<Type> {
+    fn check_divide(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_double_equal(&self, other: &Type) -> Option<Type> {
-        self.check_operator_for_tuple(other, &BinaryOperatorKind::DoubleEqual)
+    fn check_double_equal(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
+        self.check_operator_for_tuple(other, &BinaryOperatorKind::DoubleEqual, registry)
     }
 
-    fn check_greater(&self, other: &Type) -> Option<Type> {
-        self.check_operator_for_tuple(other, &BinaryOperatorKind::Greater)
+    fn check_greater(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
+        self.check_operator_for_tuple(other, &BinaryOperatorKind::Greater, registry)
     }
 
-    fn check_less(&self, other: &Type) -> Option<Type> {
-        self.check_operator_for_tuple(other, &BinaryOperatorKind::Less)
+    fn check_less(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
+        self.check_operator_for_tuple(other, &BinaryOperatorKind::Less, registry)
     }
 
-    fn check_and(&self, _other: &Type) -> Option<Type> {
+    fn check_and(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_or(&self, _other: &Type) -> Option<Type> {
+    fn check_or(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 }

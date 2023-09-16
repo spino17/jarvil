@@ -3,6 +3,7 @@ use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         core::SymbolData,
+        handler::SymbolDataRegistryTable,
         interfaces::InterfaceBounds,
         types::{
             core::UserDefinedTypeData,
@@ -33,6 +34,7 @@ pub fn try_infer_types_from_tuple(
     global_concrete_types: Option<&Vec<Type>>,
     num_inferred_types: &mut usize,
     inference_category: GenericTypeDeclarationPlaceCategory,
+    registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
 ) -> Result<(), ()> {
     if base_types_tuple.len() != generics_containing_types_tuple.len() {
         return Err(());
@@ -45,6 +47,7 @@ pub fn try_infer_types_from_tuple(
             global_concrete_types,
             num_inferred_types,
             inference_category,
+            registry,
         )?;
     }
     Ok(())

@@ -308,10 +308,12 @@ impl Resolver {
             &concrete_types,
             &ty_ranges,
             is_concrete_types_none_allowed,
+            &mut self.semantic_state_db.type_registry_table,
         );
         match result {
             Ok(_) => {
-                let index = symbol_data.register_concrete_types(concrete_types);
+                let index = symbol_data
+                    .register_concrete_types(concrete_types, &mut self.semantic_state_db);
                 let concrete_symbol_data =
                     ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
                 self.semantic_state_db
@@ -805,9 +807,11 @@ impl Resolver {
                                     if let Some(interface_obj) =
                                         self.interface_obj_from_expression(&interface_expr)
                                     {
-                                        if let Some(previous_decl_range) = interface_bounds
-                                            .insert(interface_obj, interface_expr.range())
-                                        {
+                                        if let Some(previous_decl_range) = interface_bounds.insert(
+                                            interface_obj,
+                                            interface_expr.range(),
+                                            &mut self.semantic_state_db.type_registry_table,
+                                        ) {
                                             let name = &interface_expr.token_value(&self.code);
                                             let err =
                                                 InterfaceAlreadyExistInBoundsDeclarationError::new(
@@ -1169,7 +1173,9 @@ impl Resolver {
                 ));
                 let final_variable_ty = match ty_from_optional_annotation {
                     Some((ty_from_optional_annotation, range)) => {
-                        if !ty_from_optional_annotation.is_eq(&lambda_ty) {
+                        if !ty_from_optional_annotation
+                            .is_eq(&lambda_ty, &mut self.semantic_state_db.type_registry_table)
+                        {
                             let err = InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError::new(
                                 ty_from_optional_annotation.to_string(),
                                 lambda_ty.to_string(),
@@ -1288,7 +1294,10 @@ impl Resolver {
                     );
                 let struct_ty = match &symbol_data {
                     Some(symbol_data) => {
-                        let index = symbol_data.0.register_concrete_types(concrete_types);
+                        let index = symbol_data.0.register_concrete_types(
+                            concrete_types,
+                            &mut self.semantic_state_db.type_registry_table,
+                        );
                         Type::new_with_struct(&symbol_data.0, index)
                     }
                     None => Type::new_with_unknown(),
@@ -1314,9 +1323,11 @@ impl Resolver {
                 if let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref() {
                     if let Some(interface_obj) = self.interface_obj_from_expression(&interface_expr)
                     {
-                        if let Some(previous_decl_range) =
-                            interfaces.insert(interface_obj, interface_expr.range())
-                        {
+                        if let Some(previous_decl_range) = interfaces.insert(
+                            interface_obj,
+                            interface_expr.range(),
+                            &mut self.semantic_state_db.type_registry_table,
+                        ) {
                             let name = &interface_expr.token_value(&self.code);
                             let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
                                 name,

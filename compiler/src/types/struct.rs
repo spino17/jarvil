@@ -2,6 +2,7 @@ use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use super::helper::try_infer_types_from_tuple;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::core::AbstractSymbolMetaData;
+use crate::scope::handler::SymbolDataRegistryTable;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::{
     concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext},
@@ -32,10 +33,18 @@ impl Struct {
         self.semantic_data.symbol_data.identifier_name()
     }
 
-    fn compare<F: Fn(&Type, &Type, &ConcretizationContext) -> bool>(
+    fn compare<
+        F: Fn(
+            &Type,
+            &Type,
+            &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+            &ConcretizationContext,
+        ) -> bool,
+    >(
         &self,
         other: &Struct,
         ty_cmp_func: F,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
         context: &ConcretizationContext,
     ) -> bool {
         if other.name() == self.name() {
@@ -58,6 +67,7 @@ impl Struct {
                             if !ty_cmp_func(
                                 &self_concrete_types[i],
                                 &other_concrete_types[i],
+                                registry,
                                 context,
                             ) {
                                 return false;
@@ -75,31 +85,58 @@ impl Struct {
 }
 
 impl AbstractType for Struct {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+    fn is_eq(
+        &self,
+        other_ty: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Struct(struct_data) => {
                 let ty_cmp_func =
-                    |ty1: &Type, ty2: &Type, _context: &ConcretizationContext| ty1.is_eq(ty2);
-                self.compare(struct_data, ty_cmp_func, &ConcretizationContext::default())
+                    |ty1: &Type,
+                     ty2: &Type,
+                     registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+                     _context: &ConcretizationContext| {
+                        ty1.is_eq(ty2, registry)
+                    };
+                self.compare(
+                    struct_data,
+                    ty_cmp_func,
+                    registry,
+                    &ConcretizationContext::default(),
+                )
             }
             CoreType::Any => true,
             _ => false,
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        context: &ConcretizationContext,
+    ) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Struct(struct_data) => {
-                let ty_cmp_func = |ty1: &Type, ty2: &Type, context: &ConcretizationContext| {
-                    ty1.is_structurally_eq(ty2, context)
-                };
-                self.compare(struct_data, ty_cmp_func, context)
+                let ty_cmp_func =
+                    |ty1: &Type,
+                     ty2: &Type,
+                     registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+                     context: &ConcretizationContext| {
+                        ty1.is_structurally_eq(ty2, registry, context)
+                    };
+                self.compare(struct_data, ty_cmp_func, registry, context)
             }
             _ => false,
         }
     }
 
-    fn concretize(&self, context: &ConcretizationContext) -> Type {
+    fn concretize(
+        &self,
+        context: &ConcretizationContext,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Type {
         match self.semantic_data.index {
             Some(index) => {
                 let symbol_data = self.semantic_data.get_core_ref();
@@ -107,22 +144,28 @@ impl AbstractType for Struct {
                 let concrete_types = &struct_data.get_concrete_types(index).0;
                 let mut concretized_concrete_types = vec![];
                 for ty in concrete_types {
-                    concretized_concrete_types.push(ty.concretize(context));
+                    concretized_concrete_types.push(ty.concretize(context, registry));
                 }
                 let new_key = self
                     .semantic_data
                     .symbol_data
-                    .register_concrete_types(Some(concretized_concrete_types));
+                    .register_concrete_types(Some(concretized_concrete_types), registry);
                 return Type::new_with_struct(&self.semantic_data.symbol_data, new_key);
             }
             None => return Type::new_with_struct(&self.semantic_data.symbol_data, None),
         }
     }
 
-    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+    fn is_type_bounded_by_interfaces(
+        &self,
+        interface_bounds: &InterfaceBounds,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         let symbol_data = self.semantic_data.get_core_ref();
         match &symbol_data.get_struct_data_ref().implementing_interfaces {
-            Some(ty_interface_bounds) => return interface_bounds.is_subset(ty_interface_bounds),
+            Some(ty_interface_bounds) => {
+                return interface_bounds.is_subset(ty_interface_bounds, registry)
+            }
             None => return false,
         }
     }
@@ -134,6 +177,7 @@ impl AbstractType for Struct {
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::Struct(struct_ty) => {
@@ -158,6 +202,7 @@ impl AbstractType for Struct {
                                 global_concrete_types,
                                 num_inferred_types,
                                 inference_category,
+                                registry,
                             )
                         }
                         None => return Ok(()),
@@ -192,7 +237,11 @@ impl ToString for Struct {
 // TODO: operator compatiblity for struct types can be defined using interfaces
 // This is called `operator-overloading`
 impl OperatorCompatiblity for Struct {
-    fn check_add(&self, other: &Type) -> Option<Type> {
+    fn check_add(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
@@ -206,7 +255,11 @@ impl OperatorCompatiblity for Struct {
         }
     }
 
-    fn check_subtract(&self, other: &Type) -> Option<Type> {
+    fn check_subtract(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
@@ -220,7 +273,11 @@ impl OperatorCompatiblity for Struct {
         }
     }
 
-    fn check_multiply(&self, other: &Type) -> Option<Type> {
+    fn check_multiply(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
@@ -234,7 +291,11 @@ impl OperatorCompatiblity for Struct {
         }
     }
 
-    fn check_divide(&self, other: &Type) -> Option<Type> {
+    fn check_divide(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
@@ -248,7 +309,11 @@ impl OperatorCompatiblity for Struct {
         }
     }
 
-    fn check_double_equal(&self, other: &Type) -> Option<Type> {
+    fn check_double_equal(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
@@ -262,7 +327,11 @@ impl OperatorCompatiblity for Struct {
         }
     }
 
-    fn check_greater(&self, other: &Type) -> Option<Type> {
+    fn check_greater(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
@@ -276,7 +345,11 @@ impl OperatorCompatiblity for Struct {
         }
     }
 
-    fn check_less(&self, other: &Type) -> Option<Type> {
+    fn check_less(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
@@ -290,7 +363,11 @@ impl OperatorCompatiblity for Struct {
         }
     }
 
-    fn check_and(&self, other: &Type) -> Option<Type> {
+    fn check_and(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
@@ -304,7 +381,11 @@ impl OperatorCompatiblity for Struct {
         }
     }
 
-    fn check_or(&self, other: &Type) -> Option<Type> {
+    fn check_or(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {

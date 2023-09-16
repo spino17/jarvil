@@ -9,6 +9,7 @@ use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::{ConcreteTypesRegistryKey, ConcretizationContext};
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
+use crate::scope::handler::SymbolDataRegistryTable;
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
@@ -18,9 +19,22 @@ use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
 pub trait AbstractType {
-    fn is_eq(&self, other_ty: &Type) -> bool;
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool;
-    fn concretize(&self, context: &ConcretizationContext) -> Type;
+    fn is_eq(
+        &self,
+        other_ty: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool;
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        context: &ConcretizationContext,
+    ) -> bool;
+    fn concretize(
+        &self,
+        context: &ConcretizationContext,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Type;
     fn try_infer_type_or_check_equivalence(
         &self,
         received_ty: &Type,
@@ -28,22 +42,32 @@ pub trait AbstractType {
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), ()>;
-    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
+    fn is_type_bounded_by_interfaces(
+        &self,
+        interface_bounds: &InterfaceBounds,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool;
 }
 
 pub trait AbstractNonStructTypes {
     fn get_concrete_types(&self) -> Vec<Type>;
     fn get_builtin_methods(&self) -> Rc<StdHashMap<&'static str, CallableData>>;
-    fn try_method(&self, method_name: &str) -> Option<CallablePrototypeData> {
+    fn try_method(
+        &self,
+        method_name: &str,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<CallablePrototypeData> {
         let builtin_methods = self.get_builtin_methods();
         match builtin_methods.get(method_name) {
             Some(callable_data) => {
                 let concrete_types = self.get_concrete_types();
-                match callable_data
-                    .prototype
-                    .concretize_prototype(Some(&concrete_types), None)
-                {
+                match callable_data.prototype.concretize_prototype(
+                    Some(&concrete_types),
+                    None,
+                    registry,
+                ) {
                     PrototypeConcretizationResult::UnConcretized(_) => unreachable!(),
                     PrototypeConcretizationResult::Concretized(prototype) => {
                         return Some(prototype)
@@ -56,29 +80,81 @@ pub trait AbstractNonStructTypes {
 }
 
 pub trait OperatorCompatiblity {
-    fn check_add(&self, other: &Type) -> Option<Type>;
-    fn check_subtract(&self, other: &Type) -> Option<Type>;
-    fn check_multiply(&self, other: &Type) -> Option<Type>;
-    fn check_divide(&self, other: &Type) -> Option<Type>;
-    fn check_double_equal(&self, other: &Type) -> Option<Type>;
-    fn check_greater(&self, other: &Type) -> Option<Type>;
-    fn check_less(&self, other: &Type) -> Option<Type>;
-    fn check_and(&self, other: &Type) -> Option<Type>;
-    fn check_or(&self, other: &Type) -> Option<Type>;
-    fn check_not_equal(&self, other: &Type) -> Option<Type> {
-        if self.check_double_equal(other).is_some() {
+    fn check_add(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type>;
+    fn check_subtract(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type>;
+    fn check_multiply(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type>;
+    fn check_divide(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type>;
+    fn check_double_equal(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type>;
+    fn check_greater(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type>;
+    fn check_less(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type>;
+    fn check_and(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type>;
+    fn check_or(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type>;
+    fn check_not_equal(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
+        if self.check_double_equal(other, registry).is_some() {
             return Some(Type::new_with_atomic(BOOL));
         }
         return None;
     }
-    fn check_greater_equal(&self, other: &Type) -> Option<Type> {
-        if self.check_greater(other).is_some() && self.check_double_equal(other).is_some() {
+    fn check_greater_equal(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
+        if self.check_greater(other, registry).is_some()
+            && self.check_double_equal(other, registry).is_some()
+        {
             return Some(Type::new_with_atomic(BOOL));
         }
         return None;
     }
-    fn check_less_equal(&self, other: &Type) -> Option<Type> {
-        if self.check_less(other).is_some() && self.check_double_equal(other).is_some() {
+    fn check_less_equal(
+        &self,
+        other: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
+        if self.check_less(other, registry).is_some()
+            && self.check_double_equal(other, registry).is_some()
+        {
             return Some(Type::new_with_atomic(BOOL));
         }
         return None;
@@ -289,58 +365,67 @@ impl Type {
     }
 
     // This function returns Some if operation is possible and None otherwise
-    pub fn check_operator(&self, other: &Type, op_kind: &BinaryOperatorKind) -> Option<Type> {
+    pub fn check_operator(
+        &self,
+        other: &Type,
+        op_kind: &BinaryOperatorKind,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match op_kind {
             BinaryOperatorKind::Add => {
-                impl_op_compatiblity!(check_add, self, other)
+                impl_op_compatiblity!(check_add, self, other, registry)
             }
             BinaryOperatorKind::Subtract => {
-                impl_op_compatiblity!(check_subtract, self, other)
+                impl_op_compatiblity!(check_subtract, self, other, registry)
             }
             BinaryOperatorKind::Multiply => {
-                impl_op_compatiblity!(check_multiply, self, other)
+                impl_op_compatiblity!(check_multiply, self, other, registry)
             }
             BinaryOperatorKind::Divide => {
-                impl_op_compatiblity!(check_divide, self, other)
+                impl_op_compatiblity!(check_divide, self, other, registry)
             }
             BinaryOperatorKind::Less => {
-                impl_op_compatiblity!(check_less, self, other)
+                impl_op_compatiblity!(check_less, self, other, registry)
             }
             BinaryOperatorKind::LessEqual => {
-                impl_op_compatiblity!(check_less_equal, self, other)
+                impl_op_compatiblity!(check_less_equal, self, other, registry)
             }
             BinaryOperatorKind::Greater => {
-                impl_op_compatiblity!(check_greater, self, other)
+                impl_op_compatiblity!(check_greater, self, other, registry)
             }
             BinaryOperatorKind::GreaterEqual => {
-                impl_op_compatiblity!(check_greater_equal, self, other)
+                impl_op_compatiblity!(check_greater_equal, self, other, registry)
             }
             BinaryOperatorKind::DoubleEqual => {
-                impl_op_compatiblity!(check_double_equal, self, other)
+                impl_op_compatiblity!(check_double_equal, self, other, registry)
             }
             BinaryOperatorKind::NotEqual => {
-                impl_op_compatiblity!(check_not_equal, self, other)
+                impl_op_compatiblity!(check_not_equal, self, other, registry)
             }
             BinaryOperatorKind::And => {
-                impl_op_compatiblity!(check_and, self, other)
+                impl_op_compatiblity!(check_and, self, other, registry)
             }
             BinaryOperatorKind::Or => {
-                impl_op_compatiblity!(check_or, self, other)
+                impl_op_compatiblity!(check_or, self, other, registry)
             }
         }
     }
 }
 
 impl AbstractType for Type {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+    fn is_eq(
+        &self,
+        other_ty: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => atomic_type.is_eq(other_ty),
-            CoreType::Struct(struct_type) => struct_type.is_eq(other_ty),
-            CoreType::Lambda(lambda_type) => lambda_type.is_eq(other_ty),
-            CoreType::Array(array_type) => array_type.is_eq(other_ty),
-            CoreType::Tuple(tuple_type) => tuple_type.is_eq(other_ty),
-            CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(other_ty),
-            CoreType::Generic(generic_type) => generic_type.is_eq(other_ty),
+            CoreType::Atomic(atomic_type) => atomic_type.is_eq(other_ty, registry),
+            CoreType::Struct(struct_type) => struct_type.is_eq(other_ty, registry),
+            CoreType::Lambda(lambda_type) => lambda_type.is_eq(other_ty, registry),
+            CoreType::Array(array_type) => array_type.is_eq(other_ty, registry),
+            CoreType::Tuple(tuple_type) => tuple_type.is_eq(other_ty, registry),
+            CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(other_ty, registry),
+            CoreType::Generic(generic_type) => generic_type.is_eq(other_ty, registry),
             CoreType::Void => match other_ty.0.as_ref() {
                 CoreType::Void => true,
                 _ => false,
@@ -351,15 +436,34 @@ impl AbstractType for Type {
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        context: &ConcretizationContext,
+    ) -> bool {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => atomic_type.is_structurally_eq(other_ty, context),
-            CoreType::Struct(struct_type) => struct_type.is_structurally_eq(other_ty, context),
-            CoreType::Lambda(lambda_type) => lambda_type.is_structurally_eq(other_ty, context),
-            CoreType::Array(array_type) => array_type.is_structurally_eq(other_ty, context),
-            CoreType::Tuple(tuple_type) => tuple_type.is_structurally_eq(other_ty, context),
-            CoreType::HashMap(hashmap_type) => hashmap_type.is_structurally_eq(other_ty, context),
-            CoreType::Generic(generic_type) => generic_type.is_structurally_eq(other_ty, context),
+            CoreType::Atomic(atomic_type) => {
+                atomic_type.is_structurally_eq(other_ty, registry, context)
+            }
+            CoreType::Struct(struct_type) => {
+                struct_type.is_structurally_eq(other_ty, registry, context)
+            }
+            CoreType::Lambda(lambda_type) => {
+                lambda_type.is_structurally_eq(other_ty, registry, context)
+            }
+            CoreType::Array(array_type) => {
+                array_type.is_structurally_eq(other_ty, registry, context)
+            }
+            CoreType::Tuple(tuple_type) => {
+                tuple_type.is_structurally_eq(other_ty, registry, context)
+            }
+            CoreType::HashMap(hashmap_type) => {
+                hashmap_type.is_structurally_eq(other_ty, registry, context)
+            }
+            CoreType::Generic(generic_type) => {
+                generic_type.is_structurally_eq(other_ty, registry, context)
+            }
             CoreType::Void => match other_ty.0.as_ref() {
                 CoreType::Void => true,
                 _ => false,
@@ -368,14 +472,18 @@ impl AbstractType for Type {
         }
     }
 
-    fn concretize(&self, context: &ConcretizationContext) -> Type {
+    fn concretize(
+        &self,
+        context: &ConcretizationContext,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Type {
         match self.0.as_ref() {
-            CoreType::Struct(struct_type) => struct_type.concretize(context),
-            CoreType::Lambda(lambda_type) => lambda_type.concretize(context),
-            CoreType::Array(array_type) => array_type.concretize(context),
-            CoreType::Tuple(tuple_type) => tuple_type.concretize(context),
-            CoreType::HashMap(hashmap_type) => hashmap_type.concretize(context),
-            CoreType::Generic(generic_type) => generic_type.concretize(context),
+            CoreType::Struct(struct_type) => struct_type.concretize(context, registry),
+            CoreType::Lambda(lambda_type) => lambda_type.concretize(context, registry),
+            CoreType::Array(array_type) => array_type.concretize(context, registry),
+            CoreType::Tuple(tuple_type) => tuple_type.concretize(context, registry),
+            CoreType::HashMap(hashmap_type) => hashmap_type.concretize(context, registry),
+            CoreType::Generic(generic_type) => generic_type.concretize(context, registry),
             CoreType::Atomic(_)
             | CoreType::Unknown
             | CoreType::Void
@@ -384,22 +492,30 @@ impl AbstractType for Type {
         }
     }
 
-    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+    fn is_type_bounded_by_interfaces(
+        &self,
+        interface_bounds: &InterfaceBounds,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         if interface_bounds.len() == 0 {
             return true;
         }
         match self.0.as_ref() {
             CoreType::Struct(struct_ty) => {
-                struct_ty.is_type_bounded_by_interfaces(interface_bounds)
+                struct_ty.is_type_bounded_by_interfaces(interface_bounds, registry)
             }
             CoreType::Generic(generic_ty) => {
-                generic_ty.is_type_bounded_by_interfaces(interface_bounds)
+                generic_ty.is_type_bounded_by_interfaces(interface_bounds, registry)
             }
-            CoreType::Array(array_ty) => array_ty.is_type_bounded_by_interfaces(interface_bounds),
+            CoreType::Array(array_ty) => {
+                array_ty.is_type_bounded_by_interfaces(interface_bounds, registry)
+            }
             CoreType::HashMap(hashmap_ty) => {
-                hashmap_ty.is_type_bounded_by_interfaces(interface_bounds)
+                hashmap_ty.is_type_bounded_by_interfaces(interface_bounds, registry)
             }
-            CoreType::Tuple(tuple_ty) => tuple_ty.is_type_bounded_by_interfaces(interface_bounds),
+            CoreType::Tuple(tuple_ty) => {
+                tuple_ty.is_type_bounded_by_interfaces(interface_bounds, registry)
+            }
             CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Any => false,
             CoreType::Unknown | CoreType::Unset | CoreType::Void => false,
         }
@@ -412,6 +528,7 @@ impl AbstractType for Type {
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), ()> {
         match self.0.as_ref() {
             CoreType::Struct(struct_ty) => struct_ty.try_infer_type_or_check_equivalence(
@@ -420,6 +537,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                registry,
             ),
             CoreType::Lambda(lambda_ty) => lambda_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -427,6 +545,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                registry,
             ),
             CoreType::Array(array_ty) => array_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -434,6 +553,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                registry,
             ),
             CoreType::Tuple(tuple_ty) => tuple_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -441,6 +561,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                registry,
             ),
             CoreType::HashMap(hashmap_ty) => hashmap_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -448,6 +569,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                registry,
             ),
             CoreType::Generic(generic_ty) => generic_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -455,13 +577,14 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                registry,
             ),
             CoreType::Atomic(_)
             | CoreType::Unknown
             | CoreType::Void
             | CoreType::Unset
             | CoreType::Any => {
-                if !self.is_eq(received_ty) {
+                if !self.is_eq(received_ty, registry) {
                     return Err(());
                 }
                 Ok(())

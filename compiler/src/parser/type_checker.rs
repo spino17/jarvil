@@ -175,7 +175,7 @@ pub struct TypeChecker {
     code: JarvilCode,
     errors: Vec<Diagnostics>,
     context: Context,
-    semantic_state_db: SemanticStateDatabase,
+    pub semantic_state_db: SemanticStateDatabase,
 }
 
 impl TypeChecker {
@@ -366,7 +366,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn is_indexable_with_type(&self, other_ty: &Type, index_type: &Type) -> Option<Type> {
+    pub fn is_indexable_with_type(&mut self, other_ty: &Type, index_type: &Type) -> Option<Type> {
         // NOTE - case for `tuple` is already handled in the calling function
         match other_ty.0.as_ref() {
             CoreType::Array(array) => {
@@ -388,7 +388,11 @@ impl TypeChecker {
             },
             CoreType::HashMap(hashmap) => {
                 // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
-                if index_type.is_eq(&hashmap.key_type) && index_type.is_hashable() {
+                if index_type.is_eq(
+                    &hashmap.key_type,
+                    &mut self.semantic_state_db.type_registry_table,
+                ) && index_type.is_hashable()
+                {
                     return Some(hashmap.value_type.clone());
                 } else {
                     return None;
@@ -399,7 +403,7 @@ impl TypeChecker {
     }
 
     pub fn is_binary_operation_valid(
-        &self,
+        &mut self,
         l_type: &Type,
         r_type: &Type,
         operator_kind: &BinaryOperatorKind,
@@ -407,7 +411,11 @@ impl TypeChecker {
         //if l_type.is_unknown() || r_type.is_unknown() {
         //    return Some(Type::new_with_unknown());
         //}
-        let result = l_type.check_operator(r_type, operator_kind);
+        let result = l_type.check_operator(
+            r_type,
+            operator_kind,
+            &mut self.semantic_state_db.type_registry_table,
+        );
         result
     }
 
@@ -446,12 +454,15 @@ impl TypeChecker {
                             global_concrete_types,
                             &mut num_inferred_types,
                             inference_category,
+                            &mut self.semantic_state_db.type_registry_table,
                         );
                         if let Err(()) = inference_result {
                             return Err(PrototypeEquivalenceCheckError::TypeInferenceFailed);
                         }
                     } else {
-                        if !param_ty.is_eq(expected_ty) {
+                        if !param_ty
+                            .is_eq(expected_ty, &mut self.semantic_state_db.type_registry_table)
+                        {
                             mismatch_types_vec.push((
                                 expected_ty.to_string(),
                                 param_ty.to_string(),
@@ -484,7 +495,10 @@ impl TypeChecker {
                 let mut error_strs: Vec<(String, String)> = vec![]; // Vec of (inferred_ty string, interface_bounds string)
                 for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
                     let interface_bounds = &generic_type_decls.0[index].1;
-                    if !inferred_ty.is_type_bounded_by_interfaces(interface_bounds) {
+                    if !inferred_ty.is_type_bounded_by_interfaces(
+                        interface_bounds,
+                        &mut self.semantic_state_db.type_registry_table,
+                    ) {
                         error_strs.push((inferred_ty.to_string(), interface_bounds.to_string()));
                     }
                 }
@@ -521,7 +535,10 @@ impl TypeChecker {
                         ));
                     }
                     let expected_param_type = &expected_param_data[index];
-                    if !param_type_obj.is_eq(expected_param_type) {
+                    if !param_type_obj.is_eq(
+                        expected_param_type,
+                        &mut self.semantic_state_db.type_registry_table,
+                    ) {
                         mismatch_types_vec.push((
                             expected_param_type.to_string(),
                             param_type_obj.to_string(),
@@ -567,9 +584,11 @@ impl TypeChecker {
             Some(index) => {
                 // CASE 1
                 let concrete_types = func_data.get_concrete_types(index);
-                let concrete_prototype = func_data
-                    .prototype
-                    .concretize_prototype(None, Some(&concrete_types.0));
+                let concrete_prototype = func_data.prototype.concretize_prototype(
+                    None,
+                    Some(&concrete_types.0),
+                    &mut self.semantic_state_db.type_registry_table,
+                );
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
                 )
@@ -607,8 +626,10 @@ impl TypeChecker {
                 )?;
                 let unconcrete_return_ty = &func_data.prototype.return_type;
                 let concrete_return_ty = if unconcrete_return_ty.is_concretization_required() {
-                    unconcrete_return_ty
-                        .concretize(&ConcretizationContext::new(None, Some(&concrete_types)))
+                    unconcrete_return_ty.concretize(
+                        &ConcretizationContext::new(None, Some(&concrete_types)),
+                        &mut self.semantic_state_db.type_registry_table,
+                    )
                 } else {
                     unconcrete_return_ty.clone()
                 };
@@ -652,9 +673,12 @@ impl TypeChecker {
                     Some(index) => {
                         // CASE 1
                         let concrete_types = struct_symbol_data.get_concrete_types(index);
-                        let concrete_prototype = constructor_meta_data
-                            .prototype
-                            .concretize_prototype(Some(&concrete_types.0), None);
+                        let concrete_prototype =
+                            constructor_meta_data.prototype.concretize_prototype(
+                                Some(&concrete_types.0),
+                                None,
+                                &mut self.semantic_state_db.type_registry_table,
+                            );
                         CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                             concrete_prototype,
                         )
@@ -1064,7 +1088,10 @@ impl TypeChecker {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name = method_name_ok_identifier.token_value(&self.code);
-        match array_ty.try_method(&method_name) {
+        match array_ty.try_method(
+            &method_name,
+            &mut self.semantic_state_db.type_registry_table,
+        ) {
             Some(prototype) => {
                 let return_ty = prototype.is_received_params_valid(self, params)?;
                 return Ok(return_ty);
@@ -1080,7 +1107,10 @@ impl TypeChecker {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name = method_name_ok_identifier.token_value(&self.code);
-        match hashmap_ty.try_method(&method_name) {
+        match hashmap_ty.try_method(
+            &method_name,
+            &mut self.semantic_state_db.type_registry_table,
+        ) {
             Some(prototype) => {
                 let return_ty = prototype.is_received_params_valid(self, params)?;
                 return Ok(return_ty);
@@ -1235,7 +1265,11 @@ impl TypeChecker {
             },
             CoreType::HashMap(hashmap) => {
                 // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
-                if index_type_obj.is_eq(&hashmap.key_type) && index_type_obj.is_hashable() {
+                if index_type_obj.is_eq(
+                    &hashmap.key_type,
+                    &mut self.semantic_state_db.type_registry_table,
+                ) && index_type_obj.is_hashable()
+                {
                     Some(hashmap.value_type.clone())
                 } else {
                     None
@@ -1316,7 +1350,10 @@ impl TypeChecker {
                 };
                 for expr in initials_iter {
                     let ty = self.check_expr(expr);
-                    if !ty.is_eq(&first_expr_ty) {
+                    if !ty.is_eq(
+                        &first_expr_ty,
+                        &mut self.semantic_state_db.type_registry_table,
+                    ) {
                         let err = IncorrectExpressionTypeError::new(
                             first_expr_ty.to_string(),
                             ty.to_string(),
@@ -1353,7 +1390,10 @@ impl TypeChecker {
                     let core_key_value_pair = key_value_pair.core_ref();
                     let key_ty = self.check_expr(&core_key_value_pair.key_expr);
                     let value_ty = self.check_expr(&core_key_value_pair.value_expr);
-                    if !key_ty.is_eq(&first_key_ty) {
+                    if !key_ty.is_eq(
+                        &first_key_ty,
+                        &mut self.semantic_state_db.type_registry_table,
+                    ) {
                         let err = IncorrectExpressionTypeError::new(
                             first_key_ty.to_string(),
                             key_ty.to_string(),
@@ -1361,7 +1401,10 @@ impl TypeChecker {
                         );
                         self.log_error(Diagnostics::IncorrectExpressionType(err));
                     }
-                    if !value_ty.is_eq(&first_value_ty) {
+                    if !value_ty.is_eq(
+                        &first_value_ty,
+                        &mut self.semantic_state_db.type_registry_table,
+                    ) {
                         let err = IncorrectExpressionTypeError::new(
                             first_value_ty.to_string(),
                             value_ty.to_string(),
@@ -1581,7 +1624,7 @@ impl TypeChecker {
             self.log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
             return;
         }
-        if !l_type.is_eq(&r_type) {
+        if !l_type.is_eq(&r_type, &mut self.semantic_state_db.type_registry_table) {
             let err = MismatchedTypesOnLeftRightError::new(
                 l_type.to_string(),
                 r_type.to_string(),
@@ -1610,7 +1653,8 @@ impl TypeChecker {
                 if variable_ty.is_unset() {
                     symbol_data_mut_ref.set_data_type(&r_type);
                 } else {
-                    if !variable_ty.is_eq(&r_type) {
+                    if !variable_ty.is_eq(&r_type, &mut self.semantic_state_db.type_registry_table)
+                    {
                         let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
                             variable_ty.to_string(),
                             r_type.to_string(),
@@ -1723,7 +1767,10 @@ impl TypeChecker {
                 err,
             ));
         } else {
-            if !expr_type_obj.is_eq(&expected_type_obj) {
+            if !expr_type_obj.is_eq(
+                &expected_type_obj,
+                &mut self.semantic_state_db.type_registry_table,
+            ) {
                 let err = MismatchedReturnTypeError::new(
                     expected_type_obj.to_string(),
                     expr_type_obj.to_string(),
@@ -1755,7 +1802,10 @@ impl TypeChecker {
                             interface_data.get_partially_concrete_interface_methods(index);
                         if let Err((missing_interface_method_names, errors)) =
                             partial_concrete_interface_methods
-                                .is_struct_implements_interface_methods(struct_methods)
+                                .is_struct_implements_interface_methods(
+                                    struct_methods,
+                                    &mut self.semantic_state_db.type_registry_table,
+                                )
                         {
                             let err = InterfaceMethodsInStructCheckError::new(
                                 missing_interface_method_names,

@@ -1,7 +1,7 @@
 use super::concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple};
 use super::errors::GenericTypeArgsCheckError;
 use super::function::{CallableData, CallableKind};
-use super::handler::SymbolDataEntry;
+use super::handler::{SemanticStateDatabase, SymbolDataEntry, SymbolDataRegistryTable};
 use super::helper::check_concrete_types_bounded_by_interfaces;
 use super::interfaces::{InterfaceBounds, InterfaceData};
 use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
@@ -62,12 +62,14 @@ pub trait AbstractSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Option<ConcreteTypesRegistryKey>;
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), GenericTypeArgsCheckError>;
 }
 
@@ -88,6 +90,7 @@ impl GenericTypeParams {
         &self,
         concrete_types: &Vec<Type>,
         type_ranges: &Vec<TextRange>,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), GenericTypeArgsCheckError> {
         let expected_len = self.len();
         let received_len = concrete_types.len();
@@ -100,7 +103,7 @@ impl GenericTypeParams {
         let mut incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
             let ty = &concrete_types[index];
-            if !ty.is_type_bounded_by_interfaces(interface_bounds) {
+            if !ty.is_type_bounded_by_interfaces(interface_bounds, registry) {
                 incorrectly_bounded_types.push((type_ranges[index], interface_bounds.to_string()))
             }
         }
@@ -180,14 +183,10 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
+        registry: &mut SymbolDataRegistryTable<T>,
     ) -> Option<ConcreteTypesRegistryKey> {
         match concrete_types {
-            Some(concrete_types) => {
-                return Some(
-                    self.get_core_mut_ref()
-                        .register_concrete_types(concrete_types),
-                )
-            }
+            Some(concrete_types) => Some(registry.register_concrete_types(self, concrete_types)),
             None => return None,
         }
     }
@@ -225,8 +224,10 @@ impl AbstractSymbolData for VariableSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types)
+        assert!(concrete_types.is_none());
+        return None;
     }
 
     fn check_generic_type_args(
@@ -234,6 +235,7 @@ impl AbstractSymbolData for VariableSymbolData {
         concrete_types: &Option<Vec<Type>>,
         _type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(!is_concrete_types_none_allowed);
         if concrete_types.is_some() {
@@ -254,8 +256,12 @@ impl AbstractSymbolData for FunctionSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types)
+        self.0.register_concrete_types(
+            concrete_types,
+            &mut semantic_state_db.function_registry_table,
+        )
     }
 
     fn check_generic_type_args(
@@ -263,6 +269,7 @@ impl AbstractSymbolData for FunctionSymbolData {
         concrete_types: &Option<Vec<Type>>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(is_concrete_types_none_allowed);
         let function_data = self.0.get_core_ref();
@@ -272,6 +279,7 @@ impl AbstractSymbolData for FunctionSymbolData {
             concrete_types,
             type_ranges,
             true,
+            registry,
         )
     }
 }
@@ -287,8 +295,10 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types)
+        self.0
+            .register_concrete_types(concrete_types, &mut semantic_state_db.type_registry_table)
     }
 
     fn check_generic_type_args(
@@ -296,6 +306,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
         concrete_types: &Option<Vec<Type>>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), GenericTypeArgsCheckError> {
         match &*self.0.get_core_ref() {
             UserDefinedTypeData::Struct(struct_data) => {
@@ -305,6 +316,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
                     concrete_types,
                     type_ranges,
                     is_concrete_types_none_allowed,
+                    registry,
                 );
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
@@ -314,6 +326,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
                     concrete_types,
                     type_ranges,
                     false,
+                    registry,
                 );
             }
             UserDefinedTypeData::Generic(_) => {
@@ -337,8 +350,12 @@ impl AbstractSymbolData for InterfaceSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types)
+        self.0.register_concrete_types(
+            concrete_types,
+            &mut semantic_state_db.interface_registry_table,
+        )
     }
 
     fn check_generic_type_args(
@@ -346,6 +363,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
         concrete_types: &Option<Vec<Type>>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(!is_concrete_types_none_allowed);
         let interface_data = self.0.get_core_ref();
@@ -355,6 +373,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
             concrete_types,
             type_ranges,
             false,
+            registry,
         )
     }
 }

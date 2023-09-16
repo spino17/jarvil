@@ -56,7 +56,8 @@ impl StructTypeData {
         field_name: &str,
         key: Option<ConcreteTypesRegistryKey>,
     ) -> Option<(Type, TextRange)> {
-        self.fields.try_field(field_name, key, self)
+        // self.fields.try_field(field_name, key, self)
+        todo!()
     }
 
     pub fn try_method(

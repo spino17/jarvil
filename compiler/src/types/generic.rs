@@ -4,6 +4,7 @@ use crate::{
     scope::{
         concrete::core::ConcretizationContext,
         core::SymbolData,
+        handler::SymbolDataRegistryTable,
         interfaces::InterfaceBounds,
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
     },
@@ -27,7 +28,11 @@ impl Generic {
 }
 
 impl AbstractType for Generic {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+    fn is_eq(
+        &self,
+        other_ty: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Generic(generic_data) => {
                 if self.name() == generic_data.name() {
@@ -41,7 +46,12 @@ impl AbstractType for Generic {
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        context: &ConcretizationContext,
+    ) -> bool {
         let is_other_ty_generic = match other_ty.0.as_ref() {
             CoreType::Generic(generic_data) => Some(generic_data),
             _ => None,
@@ -74,13 +84,17 @@ impl AbstractType for Generic {
                         None => unreachable!(),
                     };
                     let concrete_self_ty = &concrete_types[self_index];
-                    return concrete_self_ty.is_eq(other_ty);
+                    return concrete_self_ty.is_eq(other_ty, registry);
                 }
             },
         }
     }
 
-    fn concretize(&self, context: &ConcretizationContext) -> Type {
+    fn concretize(
+        &self,
+        context: &ConcretizationContext,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Type {
         let symbol_data = self.semantic_data.get_core_ref();
         let generic_data = symbol_data.get_generic_data_ref();
         let index = generic_data.index;
@@ -99,10 +113,14 @@ impl AbstractType for Generic {
         }
     }
 
-    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+    fn is_type_bounded_by_interfaces(
+        &self,
+        interface_bounds: &InterfaceBounds,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         let symbol_data = self.semantic_data.get_core_ref();
         let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
-        return interface_bounds.is_subset(ty_interface_bounds);
+        return interface_bounds.is_subset(ty_interface_bounds, registry);
     }
 
     fn try_infer_type_or_check_equivalence(
@@ -112,6 +130,7 @@ impl AbstractType for Generic {
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), ()> {
         let symbol_data = self.semantic_data.get_core_ref();
         let generic_data_ref = symbol_data.get_generic_data_ref();
@@ -126,7 +145,7 @@ impl AbstractType for Generic {
                     return Ok(());
                 }
                 InferredConcreteTypesEntry::Inferred(present_ty) => {
-                    if !present_ty.is_eq(received_ty) {
+                    if !present_ty.is_eq(received_ty, registry) {
                         return Err(());
                     }
                     return Ok(());
@@ -139,7 +158,7 @@ impl AbstractType for Generic {
                 None => unreachable!(),
             };
             let expected_ty = &global_concrete_types[index];
-            if !expected_ty.is_eq(received_ty) {
+            if !expected_ty.is_eq(received_ty, registry) {
                 return Err(());
             }
             return Ok(());
@@ -158,39 +177,75 @@ impl ToString for Generic {
 
 impl OperatorCompatiblity for Generic {
     // TODO - add implementations of below methods based on the interfaces bounding the generic type
-    fn check_add(&self, _other: &Type) -> Option<Type> {
+    fn check_add(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_subtract(&self, _other: &Type) -> Option<Type> {
+    fn check_subtract(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_multiply(&self, _other: &Type) -> Option<Type> {
+    fn check_multiply(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_divide(&self, _other: &Type) -> Option<Type> {
+    fn check_divide(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_double_equal(&self, _other: &Type) -> Option<Type> {
+    fn check_double_equal(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_greater(&self, _other: &Type) -> Option<Type> {
+    fn check_greater(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_less(&self, _other: &Type) -> Option<Type> {
+    fn check_less(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_and(&self, _other: &Type) -> Option<Type> {
+    fn check_and(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 
-    fn check_or(&self, _other: &Type) -> Option<Type> {
+    fn check_or(
+        &self,
+        _other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         None
     }
 }

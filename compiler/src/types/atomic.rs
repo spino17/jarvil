@@ -2,7 +2,9 @@ use super::core::OperatorCompatiblity;
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::ConcretizationContext;
+use crate::scope::handler::SymbolDataRegistryTable;
 use crate::scope::interfaces::InterfaceBounds;
+use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
 
@@ -58,7 +60,11 @@ impl Atomic {
 }
 
 impl AbstractType for Atomic {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+    fn is_eq(
+        &self,
+        other_ty: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Atomic(atomic_data) => match atomic_data {
                 Atomic::Int => self.is_int(),
@@ -71,7 +77,12 @@ impl AbstractType for Atomic {
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, _context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        _context: &ConcretizationContext,
+    ) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Atomic(atomic_data) => match atomic_data {
                 Atomic::Int => self.is_int(),
@@ -83,11 +94,19 @@ impl AbstractType for Atomic {
         }
     }
 
-    fn concretize(&self, _context: &ConcretizationContext) -> Type {
+    fn concretize(
+        &self,
+        _context: &ConcretizationContext,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Type {
         unreachable!()
     }
 
-    fn is_type_bounded_by_interfaces(&self, _interface_bounds: &InterfaceBounds) -> bool {
+    fn is_type_bounded_by_interfaces(
+        &self,
+        _interface_bounds: &InterfaceBounds,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         unreachable!()
     }
 
@@ -98,6 +117,7 @@ impl AbstractType for Atomic {
         _global_concrete_types: Option<&Vec<Type>>,
         _num_inferred_types: &mut usize,
         _inference_category: GenericTypeDeclarationPlaceCategory,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), ()> {
         unreachable!()
     }
@@ -115,7 +135,11 @@ impl ToString for Atomic {
 }
 
 impl OperatorCompatiblity for Atomic {
-    fn check_add(&self, other: &Type) -> Option<Type> {
+    fn check_add(
+        &self,
+        other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Atomic(other_atomic) => match self {
                 Atomic::Int => match other_atomic {
@@ -138,7 +162,11 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_subtract(&self, other: &Type) -> Option<Type> {
+    fn check_subtract(
+        &self,
+        other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Atomic(other_atomic) => match self {
                 Atomic::Int => match other_atomic {
@@ -157,7 +185,11 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_multiply(&self, other: &Type) -> Option<Type> {
+    fn check_multiply(
+        &self,
+        other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Atomic(other_atomic) => match self {
                 Atomic::Int => match other_atomic {
@@ -176,7 +208,11 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_divide(&self, other: &Type) -> Option<Type> {
+    fn check_divide(
+        &self,
+        other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Atomic(other_atomic) => match self {
                 Atomic::Int => match other_atomic {
@@ -195,7 +231,11 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_double_equal(&self, other: &Type) -> Option<Type> {
+    fn check_double_equal(
+        &self,
+        other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Atomic(other_atomic) => match self {
                 Atomic::Int => match other_atomic {
@@ -221,7 +261,11 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_greater(&self, other: &Type) -> Option<Type> {
+    fn check_greater(
+        &self,
+        other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Atomic(other_atomic) => match self {
                 Atomic::Int => match other_atomic {
@@ -247,7 +291,11 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_less(&self, other: &Type) -> Option<Type> {
+    fn check_less(
+        &self,
+        other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Atomic(other_atomic) => match self {
                 Atomic::Int => match other_atomic {
@@ -273,7 +321,11 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_and(&self, other: &Type) -> Option<Type> {
+    fn check_and(
+        &self,
+        other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Atomic(other_atomic) => match self {
                 Atomic::Bool => match other_atomic {
@@ -286,7 +338,11 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_or(&self, other: &Type) -> Option<Type> {
+    fn check_or(
+        &self,
+        other: &Type,
+        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Type> {
         match other.0.as_ref() {
             CoreType::Atomic(other_atomic) => match self {
                 Atomic::Bool => match other_atomic {

@@ -5,6 +5,8 @@ use super::{
     },
     core::AbstractSymbolMetaData,
     function::{CallableData, PartialConcreteCallableDataRef},
+    handler::SymbolDataRegistryTable,
+    types::core::UserDefinedTypeData,
 };
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
@@ -25,19 +27,20 @@ impl FieldsMap {
         &self,
         field_name: &str,
         key: Option<ConcreteTypesRegistryKey>,
-        registry_manager: &T,
+        registry: &mut ConcreteTypesRegistryCore,
     ) -> Option<(Type, TextRange)> {
+        /*
         match self.fields.get(field_name) {
             Some((ty, range)) => {
                 if ty.is_concretization_required() {
                     match key {
                         Some(key) => {
-                            let concrete_types = registry_manager.get_concrete_types(key);
+                            let concrete_types = registry.get_concrete_types_at_key(key);
                             return Some((
                                 ty.concretize(&ConcretizationContext::new(
                                     Some(&concrete_types.0),
                                     None,
-                                )),
+                                ), ),
                                 *range,
                             ));
                         }
@@ -48,7 +51,8 @@ impl FieldsMap {
                 }
             }
             None => None,
-        }
+        }*/
+        todo!()
     }
 }
 

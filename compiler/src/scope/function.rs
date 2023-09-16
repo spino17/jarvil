@@ -1,10 +1,12 @@
 use super::{
     concrete::{
         core::{ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext},
-        registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
+        registry::{self, ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
     },
     core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams},
     errors::GenericTypeArgsCheckError,
+    handler::SymbolDataRegistryTable,
+    types::core::UserDefinedTypeData,
 };
 use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
@@ -59,10 +61,18 @@ impl CallablePrototypeData {
         }
     }
 
-    fn compare<F: Fn(&Type, &Type, &ConcretizationContext) -> bool>(
+    fn compare<
+        F: Fn(
+            &Type,
+            &Type,
+            &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+            &ConcretizationContext,
+        ) -> bool,
+    >(
         &self,
         other: &CallablePrototypeData,
         cmp_func: F,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
         context: &ConcretizationContext,
     ) -> bool {
         let (self_param_types, self_return_type) = (&self.params, &self.return_type);
@@ -72,31 +82,48 @@ impl CallablePrototypeData {
         if self_params_len != other_params_len {
             return false;
         }
-        if !cmp_func(&self_return_type, &other_return_type, context) {
+        if !cmp_func(&self_return_type, &other_return_type, registry, context) {
             return false;
         }
         for index in 0..self_params_len {
-            if !cmp_func(&self_param_types[index], &other_param_types[index], context) {
+            if !cmp_func(
+                &self_param_types[index],
+                &other_param_types[index],
+                registry,
+                context,
+            ) {
                 return false;
             }
         }
         return true;
     }
 
-    pub fn is_eq(&self, other: &CallablePrototypeData) -> bool {
-        let cmp_func = |ty1: &Type, ty2: &Type, _context: &ConcretizationContext| ty1.is_eq(ty2);
-        self.compare(other, cmp_func, &ConcretizationContext::default())
+    pub fn is_eq(
+        &self,
+        other: &CallablePrototypeData,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
+        let cmp_func =
+            |ty1: &Type,
+             ty2: &Type,
+             registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+             _context: &ConcretizationContext| ty1.is_eq(ty2, registry);
+        self.compare(other, cmp_func, registry, &ConcretizationContext::default())
     }
 
     pub fn is_structurally_eq(
         &self,
         other: &CallablePrototypeData,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
         context: &ConcretizationContext,
     ) -> bool {
-        let cmp_func = |ty1: &Type, ty2: &Type, context: &ConcretizationContext| {
-            ty1.is_structurally_eq(ty2, context)
+        let cmp_func = |ty1: &Type,
+                        ty2: &Type,
+                        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+                        context: &ConcretizationContext| {
+            ty1.is_structurally_eq(ty2, registry, context)
         };
-        self.compare(other, cmp_func, context)
+        self.compare(other, cmp_func, registry, context)
     }
 
     pub fn try_infer_type(
@@ -106,6 +133,7 @@ impl CallablePrototypeData {
         global_concrete_types: Option<&Vec<Type>>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), ()> {
         let (self_param_types, self_return_type) = (&self.params, &self.return_type);
         let (other_param_types, other_return_type) = (&other.params, &other.return_type);
@@ -120,6 +148,7 @@ impl CallablePrototypeData {
             global_concrete_types,
             num_inferred_types,
             inference_category,
+            registry,
         )?;
         for index in 0..self_params_len {
             let _ = &self_param_types[index].try_infer_type_or_check_equivalence(
@@ -128,6 +157,7 @@ impl CallablePrototypeData {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                registry,
             )?;
         }
         Ok(())
@@ -136,6 +166,7 @@ impl CallablePrototypeData {
     fn concretize_prototype_core(
         &self,
         context: &ConcretizationContext,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> PrototypeConcretizationResult {
         match &self.is_concretization_required {
             Some((
@@ -145,10 +176,10 @@ impl CallablePrototypeData {
                 let mut concrete_params = self.params.clone();
                 let mut concrete_return_type = self.return_type.clone();
                 for index in generics_containing_params_indexes {
-                    concrete_params[*index] = self.params[*index].concretize(context);
+                    concrete_params[*index] = self.params[*index].concretize(context, registry);
                 }
                 if *is_concretization_required_for_return_type {
-                    concrete_return_type = self.return_type.concretize(context);
+                    concrete_return_type = self.return_type.concretize(context, registry);
                 }
                 return PrototypeConcretizationResult::Concretized(CallablePrototypeData::new(
                     concrete_params,
@@ -164,11 +195,12 @@ impl CallablePrototypeData {
         &self,
         global_concrete_types: Option<&Vec<Type>>,
         local_concrete_types: Option<&Vec<Type>>,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> PrototypeConcretizationResult {
-        return self.concretize_prototype_core(&ConcretizationContext::new(
-            global_concrete_types,
-            local_concrete_types,
-        ));
+        return self.concretize_prototype_core(
+            &ConcretizationContext::new(global_concrete_types, local_concrete_types),
+            registry,
+        );
     }
 
     // Type-Checking exclusive method
@@ -330,11 +362,13 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                             Some(type_ranges) => type_ranges,
                             None => unreachable!(),
                         },
+                        &mut type_checker.semantic_state_db.type_registry_table,
                     )?;
-                    let concrete_prototype = self
-                        .callable_data
-                        .prototype
-                        .concretize_prototype(self.concrete_types, Some(&local_concrete_types));
+                    let concrete_prototype = self.callable_data.prototype.concretize_prototype(
+                        self.concrete_types,
+                        Some(&local_concrete_types),
+                        &mut type_checker.semantic_state_db.type_registry_table,
+                    );
                     let prototype_ref = concrete_prototype.get_prototype_ref();
                     let return_ty =
                         prototype_ref.is_received_params_valid(type_checker, received_params)?;
@@ -359,10 +393,13 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     )?;
                     let unconcrete_return_ty = &self.callable_data.prototype.return_type;
                     let concrete_return_ty = if unconcrete_return_ty.is_concretization_required() {
-                        unconcrete_return_ty.concretize(&ConcretizationContext::new(
-                            self.concrete_types,
-                            Some(&local_concrete_types),
-                        ))
+                        unconcrete_return_ty.concretize(
+                            &ConcretizationContext::new(
+                                self.concrete_types,
+                                Some(&local_concrete_types),
+                            ),
+                            &mut type_checker.semantic_state_db.type_registry_table,
+                        )
                     } else {
                         unconcrete_return_ty.clone()
                     };

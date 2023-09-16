@@ -2,10 +2,12 @@ use super::{
     common::{FieldsMap, MethodsMap},
     concrete::{
         core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
-        registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
+        registry::{self, ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
     },
     core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams, SymbolData},
     function::{CallableData, PartialConcreteCallableDataRef},
+    handler::SymbolDataRegistryTable,
+    types::core::UserDefinedTypeData,
 };
 use crate::types::core::Type;
 use crate::{scope::concrete::core::ConcretizationContext, types::core::AbstractType};
@@ -41,7 +43,8 @@ impl InterfaceData {
         field_name: &str,
         key: Option<ConcreteTypesRegistryKey>,
     ) -> Option<(Type, TextRange)> {
-        self.fields.try_field(field_name, key, self)
+        // self.fields.try_field(field_name, key, self)
+        todo!()
     }
 
     pub fn try_method(
@@ -103,7 +106,11 @@ impl InterfaceObject {
         self.0.as_ref()
     }
 
-    pub fn is_eq(&self, other: &InterfaceObject) -> bool {
+    pub fn is_eq(
+        &self,
+        other: &InterfaceObject,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         if self.0.as_ref().0.eq(&other.0.as_ref().0) {
             // names of interfaces should be same
             match self.0.as_ref().1.index {
@@ -119,7 +126,7 @@ impl InterfaceObject {
 
                         assert!(self_len == other_len);
                         for i in 0..self_len {
-                            if !self_concrete_types[i].is_eq(&other_concrete_types[i]) {
+                            if !self_concrete_types[i].is_eq(&other_concrete_types[i], registry) {
                                 return false;
                             }
                         }
@@ -177,17 +184,26 @@ impl InterfaceBounds {
         self.interfaces.len()
     }
 
-    pub fn contains(&self, obj: &InterfaceObject) -> Option<TextRange> {
+    pub fn contains(
+        &self,
+        obj: &InterfaceObject,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<TextRange> {
         for (entry, decl_range) in &self.interfaces {
-            if entry.is_eq(obj) {
+            if entry.is_eq(obj, registry) {
                 return Some(*decl_range);
             }
         }
         return None;
     }
 
-    pub fn insert(&mut self, obj: InterfaceObject, decl_range: TextRange) -> Option<TextRange> {
-        match self.contains(&obj) {
+    pub fn insert(
+        &mut self,
+        obj: InterfaceObject,
+        decl_range: TextRange,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<TextRange> {
+        match self.contains(&obj, registry) {
             Some(previous_decl_range) => Some(previous_decl_range),
             None => {
                 self.interfaces.push((obj, decl_range));
@@ -196,17 +212,25 @@ impl InterfaceBounds {
         }
     }
 
-    pub fn is_subset(&self, other: &InterfaceBounds) -> bool {
+    pub fn is_subset(
+        &self,
+        other: &InterfaceBounds,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
         for (self_entry, _) in &self.interfaces {
-            if other.contains(&self_entry).is_none() {
+            if other.contains(&self_entry, registry).is_none() {
                 return false;
             }
         }
         return true;
     }
 
-    pub fn is_eq(&self, other: &InterfaceBounds) -> bool {
-        self.is_subset(other) && other.is_subset(self)
+    pub fn is_eq(
+        &self,
+        other: &InterfaceBounds,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> bool {
+        self.is_subset(other, registry) && other.is_subset(self, registry)
     }
 }
 
@@ -265,6 +289,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         interface_method_callable_data: &CallableData,
         struct_method_callable_data: &CallableData,
         range: TextRange,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), PartialConcreteInterfaceMethodsCheckError> {
         let interface_method_generic_type_decls =
             &interface_method_callable_data.generics.generics_spec;
@@ -285,13 +310,14 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                             let interface_generic_bound =
                                 &interface_method_generic_type_decls.0[index].1;
                             let struct_generic_bound = &struct_method_generic_type_decls.0[index].1;
-                            if !interface_generic_bound.is_eq(struct_generic_bound) {
+                            if !interface_generic_bound.is_eq(struct_generic_bound, registry) {
                                 return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
                             }
                         }
                         // check if prototypes match
                         if !interface_method_callable_data.prototype.is_structurally_eq(
                             &struct_method_callable_data.prototype,
+                            registry,
                             &ConcretizationContext::new(self.concrete_types, None),
                         ) {
                             return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
@@ -314,6 +340,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                 None => {
                     if !interface_method_callable_data.prototype.is_structurally_eq(
                         &struct_method_callable_data.prototype,
+                        registry,
                         &ConcretizationContext::new(self.concrete_types, None),
                     ) {
                         return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
@@ -327,6 +354,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
     pub fn is_struct_implements_interface_methods(
         &self,
         struct_methods: &MethodsMap,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<
         (),
         (
@@ -346,6 +374,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         interface_method_callable_data,
                         struct_method_callable_data,
                         *range,
+                        registry,
                     ) {
                         errors.push((interface_method_name, err));
                     }
