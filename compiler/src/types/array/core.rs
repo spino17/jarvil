@@ -4,7 +4,7 @@ use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::function::CallableData;
 use crate::scope::handler::SymbolDataRegistryTable;
-use crate::scope::interfaces::InterfaceBounds;
+use crate::scope::interfaces::{InterfaceBounds, InterfaceData};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractNonStructTypes, OperatorCompatiblity};
@@ -88,7 +88,8 @@ impl AbstractType for Array {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
         // TODO - add checks for interfaces which `Array` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0

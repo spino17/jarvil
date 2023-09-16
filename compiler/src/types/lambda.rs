@@ -6,11 +6,10 @@ use crate::parser::type_checker::{
 use crate::scope::concrete::core::{
     ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext,
 };
-use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::core::SymbolData;
 use crate::scope::function::CallablePrototypeData;
 use crate::scope::handler::SymbolDataRegistryTable;
-use crate::scope::interfaces::InterfaceBounds;
+use crate::scope::interfaces::{InterfaceBounds, InterfaceData};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
@@ -71,6 +70,40 @@ impl Lambda {
                 let _ = type_checker
                     .check_params_type_and_count(expected_param_types, received_params)?;
                 return Ok(return_type.clone());
+            }
+        }
+    }
+
+    pub fn to_string(&self, registry: &SymbolDataRegistryTable<UserDefinedTypeData>) -> String {
+        match self {
+            Lambda::Named(semantic_data) => {
+                let mut s = semantic_data.symbol_data.identifier_name().to_string();
+                match semantic_data.index {
+                    Some(index) => {
+                        s.push('<');
+                        let symbol_data = semantic_data.get_core_ref();
+                        let lambda_data = symbol_data.get_lambda_data_ref();
+                        let concrete_types = semantic_data.get_concrete_types(registry, index);
+                        s.push_str(&concrete_types.to_string());
+                        s.push('>');
+                        return s;
+                    }
+                    None => return s,
+                }
+            }
+            Lambda::Unnamed(unnamed) => {
+                let self_param_types = &unnamed.params;
+                let self_return_type = &unnamed.return_type;
+                let mut params_str = "".to_string();
+                let mut flag = false;
+                for param in self_param_types {
+                    if flag {
+                        params_str.push_str(", ")
+                    }
+                    params_str.push_str(&format!("{}", param.to_string()));
+                    flag = true;
+                }
+                format!("lambda({}) -> {}", params_str, self_return_type)
             }
         }
     }
@@ -145,16 +178,18 @@ impl AbstractType for Lambda {
                                     let self_symbol_data =
                                         self_concrete_symbol_data.symbol_data.get_core_ref();
                                     let self_lambda_data = self_symbol_data.get_lambda_data_ref();
-                                    let self_concrete_types =
-                                        &self_lambda_data.get_concrete_types(self_index).0;
+                                    let self_concrete_types = self_concrete_symbol_data
+                                        .get_concrete_types(registry, self_index)
+                                        .0;
                                     let self_len = self_concrete_types.len();
 
                                     let other_index = other_concrete_symbol_data.index.unwrap();
                                     let other_symbol_data =
                                         other_concrete_symbol_data.symbol_data.get_core_ref();
                                     let other_lambda_data = other_symbol_data.get_lambda_data_ref();
-                                    let other_concrete_types =
-                                        &other_lambda_data.get_concrete_types(other_index).0;
+                                    let other_concrete_types = other_concrete_symbol_data
+                                        .get_concrete_types(registry, other_index)
+                                        .0;
                                     let other_len = other_concrete_types.len();
 
                                     assert!(self_len == other_len);
@@ -193,7 +228,7 @@ impl AbstractType for Lambda {
                 Some(index) => {
                     let symbol_data = concrete_symbol_data.get_core_ref();
                     let lambda_data = symbol_data.get_lambda_data_ref();
-                    let concrete_types = &lambda_data.get_concrete_types(index).0;
+                    let concrete_types = concrete_symbol_data.get_concrete_types(registry, index).0;
                     let mut concretized_concrete_types = vec![];
                     for ty in concrete_types {
                         concretized_concrete_types.push(ty.concretize(context, registry));
@@ -214,7 +249,8 @@ impl AbstractType for Lambda {
     fn is_type_bounded_by_interfaces(
         &self,
         _interface_bounds: &InterfaceBounds,
-        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        _interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        _ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
         unreachable!()
     }
@@ -265,42 +301,6 @@ impl AbstractType for Lambda {
                 Lambda::Unnamed(_) => unreachable!(),
             },
             _ => Err(()),
-        }
-    }
-}
-
-impl ToString for Lambda {
-    fn to_string(&self) -> String {
-        match self {
-            Lambda::Named(semantic_data) => {
-                let mut s = semantic_data.symbol_data.identifier_name().to_string();
-                match semantic_data.index {
-                    Some(index) => {
-                        s.push('<');
-                        let symbol_data = semantic_data.get_core_ref();
-                        let lambda_data = symbol_data.get_lambda_data_ref();
-                        let concrete_types = lambda_data.get_concrete_types(index);
-                        s.push_str(&concrete_types.to_string());
-                        s.push('>');
-                        return s;
-                    }
-                    None => return s,
-                }
-            }
-            Lambda::Unnamed(unnamed) => {
-                let self_param_types = &unnamed.params;
-                let self_return_type = &unnamed.return_type;
-                let mut params_str = "".to_string();
-                let mut flag = false;
-                for param in self_param_types {
-                    if flag {
-                        params_str.push_str(", ")
-                    }
-                    params_str.push_str(&format!("{}", param.to_string()));
-                    flag = true;
-                }
-                format!("lambda({}) -> {}", params_str, self_return_type)
-            }
         }
     }
 }

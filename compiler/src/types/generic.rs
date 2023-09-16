@@ -5,7 +5,7 @@ use crate::{
         concrete::core::ConcretizationContext,
         core::SymbolData,
         handler::SymbolDataRegistryTable,
-        interfaces::InterfaceBounds,
+        interfaces::{InterfaceBounds, InterfaceData},
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
     },
 };
@@ -24,6 +24,17 @@ impl Generic {
 
     pub fn name(&self) -> &str {
         self.semantic_data.identifier_name()
+    }
+
+    pub fn to_string(&self, interface_registry: &SymbolDataRegistryTable<InterfaceData>) -> String {
+        let symbol_data = self.semantic_data.get_core_ref();
+        let generic_data = symbol_data.get_generic_data_ref();
+        let interface_bounds = &generic_data.interface_bounds;
+        format!(
+            "{}{}",
+            self.name(),
+            interface_bounds.to_string(interface_registry)
+        )
     }
 }
 
@@ -116,11 +127,12 @@ impl AbstractType for Generic {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
         let symbol_data = self.semantic_data.get_core_ref();
         let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
-        return interface_bounds.is_subset(ty_interface_bounds, registry);
+        return interface_bounds.is_subset(ty_interface_bounds, interface_registry, ty_registry);
     }
 
     fn try_infer_type_or_check_equivalence(
@@ -163,15 +175,6 @@ impl AbstractType for Generic {
             }
             return Ok(());
         }
-    }
-}
-
-impl ToString for Generic {
-    fn to_string(&self) -> String {
-        let symbol_data = self.semantic_data.get_core_ref();
-        let generic_data = symbol_data.get_generic_data_ref();
-        let interface_bounds = &generic_data.interface_bounds;
-        format!("{}{}", self.name(), interface_bounds.to_string())
     }
 }
 

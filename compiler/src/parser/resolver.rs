@@ -308,6 +308,7 @@ impl Resolver {
             &concrete_types,
             &ty_ranges,
             is_concrete_types_none_allowed,
+            &self.semantic_state_db.interface_registry_table,
             &mut self.semantic_state_db.type_registry_table,
         );
         match result {
@@ -810,6 +811,7 @@ impl Resolver {
                                         if let Some(previous_decl_range) = interface_bounds.insert(
                                             interface_obj,
                                             interface_expr.range(),
+                                            &self.semantic_state_db.interface_registry_table,
                                             &mut self.semantic_state_db.type_registry_table,
                                         ) {
                                             let name = &interface_expr.token_value(&self.code);
@@ -1326,6 +1328,7 @@ impl Resolver {
                         if let Some(previous_decl_range) = interfaces.insert(
                             interface_obj,
                             interface_expr.range(),
+                            &self.semantic_state_db.interface_registry_table,
                             &mut self.semantic_state_db.type_registry_table,
                         ) {
                             let name = &interface_expr.token_value(&self.code);

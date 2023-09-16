@@ -6,7 +6,7 @@ use crate::{
     scope::{
         concrete::{core::ConcretizationContext, registry},
         handler::SymbolDataRegistryTable,
-        interfaces::InterfaceBounds,
+        interfaces::{InterfaceBounds, InterfaceData},
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
     },
     types::core::{AbstractType, CoreType, Type},
@@ -117,7 +117,8 @@ impl AbstractType for Tuple {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
         // TODO - add checks for interfaces which `Tuple` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0

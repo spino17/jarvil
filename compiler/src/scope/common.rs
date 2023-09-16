@@ -3,7 +3,6 @@ use super::{
         core::{ConcreteTypesRegistryKey, ConcretizationContext},
         registry::ConcreteTypesRegistryCore,
     },
-    core::AbstractSymbolMetaData,
     function::{CallableData, PartialConcreteCallableDataRef},
     handler::SymbolDataRegistryTable,
     types::core::UserDefinedTypeData,
@@ -23,7 +22,7 @@ impl FieldsMap {
         FieldsMap { fields }
     }
 
-    pub fn try_field<T: AbstractSymbolMetaData>(
+    pub fn try_field(
         &self,
         field_name: &str,
         key: Option<ConcreteTypesRegistryKey>,

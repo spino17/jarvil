@@ -7,7 +7,7 @@ use crate::{
         concrete::core::ConcretizationContext,
         function::CallableData,
         handler::SymbolDataRegistryTable,
-        interfaces::InterfaceBounds,
+        interfaces::{InterfaceBounds, InterfaceData},
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
     },
     types::core::{AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type},
@@ -78,7 +78,8 @@ impl AbstractType for HashMap {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
         // TODO - add checks for interfaces which `HashMap` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0

@@ -15,7 +15,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcretizationContext};
-use crate::scope::core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams};
+use crate::scope::core::{AbstractConcreteTypesHandler, GenericTypeParams};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{
     CallableData, PartialCallableDataPrototypeCheckError, PrototypeConcretizationResult,
@@ -497,9 +497,14 @@ impl TypeChecker {
                     let interface_bounds = &generic_type_decls.0[index].1;
                     if !inferred_ty.is_type_bounded_by_interfaces(
                         interface_bounds,
+                        &self.semantic_state_db.interface_registry_table,
                         &mut self.semantic_state_db.type_registry_table,
                     ) {
-                        error_strs.push((inferred_ty.to_string(), interface_bounds.to_string()));
+                        error_strs.push((
+                            inferred_ty.to_string(),
+                            interface_bounds
+                                .to_string(&self.semantic_state_db.interface_registry_table),
+                        ));
                     }
                 }
                 if error_strs.len() > 0 {
@@ -583,7 +588,8 @@ impl TypeChecker {
         let prototype_result = match index {
             Some(index) => {
                 // CASE 1
-                let concrete_types = func_data.get_concrete_types(index);
+                let concrete_types = concrete_symbol
+                    .get_concrete_types(&self.semantic_state_db.function_registry_table, index);
                 let concrete_prototype = func_data.prototype.concretize_prototype(
                     None,
                     Some(&concrete_types.0),
@@ -672,7 +678,8 @@ impl TypeChecker {
                 let prototype_result = match index {
                     Some(index) => {
                         // CASE 1
-                        let concrete_types = struct_symbol_data.get_concrete_types(index);
+                        let concrete_types = concrete_symbol_data
+                            .get_concrete_types(&self.semantic_state_db.type_registry_table, index);
                         let concrete_prototype =
                             constructor_meta_data.prototype.concretize_prototype(
                                 Some(&concrete_types.0),
@@ -735,9 +742,10 @@ impl TypeChecker {
         match struct_constructor_prototype_check_result {
             StructConstructorPrototypeCheckResult::Basic(return_ty) => return Ok(return_ty),
             StructConstructorPrototypeCheckResult::Inferred(concrete_types) => {
-                let index = concrete_symbol_data
-                    .get_core_mut_ref()
-                    .register_concrete_types(concrete_types);
+                let index = concrete_symbol_data.register_concrete_types(
+                    concrete_types,
+                    &mut self.semantic_state_db.type_registry_table,
+                );
                 return Ok(Type::new_with_struct(
                     &concrete_symbol_data.symbol_data,
                     Some(index),
@@ -1804,13 +1812,15 @@ impl TypeChecker {
                             partial_concrete_interface_methods
                                 .is_struct_implements_interface_methods(
                                     struct_methods,
+                                    &self.semantic_state_db.interface_registry_table,
                                     &mut self.semantic_state_db.type_registry_table,
                                 )
                         {
                             let err = InterfaceMethodsInStructCheckError::new(
                                 missing_interface_method_names,
                                 errors,
-                                interface_obj.to_string(),
+                                interface_obj
+                                    .to_string(&self.semantic_state_db.interface_registry_table),
                                 *range,
                             );
                             self.log_error(Diagnostics::InterfaceMethodsInStructCheck(err));

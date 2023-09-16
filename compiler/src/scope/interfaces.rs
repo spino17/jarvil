@@ -4,7 +4,7 @@ use super::{
         core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
         registry::{self, ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
     },
-    core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams, SymbolData},
+    core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
     function::{CallableData, PartialConcreteCallableDataRef},
     handler::SymbolDataRegistryTable,
     types::core::UserDefinedTypeData,
@@ -69,24 +69,8 @@ impl InterfaceData {
 }
 
 impl AbstractConcreteTypesHandler for InterfaceData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        return self
-            .generics
-            .concrete_types_registry
-            .register_concrete_types(concrete_types);
-    }
-
     fn is_initialized(&self) -> bool {
         self.is_init
-    }
-}
-
-impl AbstractSymbolMetaData for InterfaceData {
-    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        return self
-            .generics
-            .concrete_types_registry
-            .get_concrete_types_at_key(key);
     }
 }
 
@@ -109,7 +93,8 @@ impl InterfaceObject {
     pub fn is_eq(
         &self,
         other: &InterfaceObject,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
         if self.0.as_ref().0.eq(&other.0.as_ref().0) {
             // names of interfaces should be same
@@ -117,16 +102,27 @@ impl InterfaceObject {
                 Some(self_key) => match other.0.as_ref().1.index {
                     Some(other_key) => {
                         let self_ref = &*self.0.as_ref().1.get_core_ref();
-                        let self_concrete_types = &self_ref.get_concrete_types(self_key).0;
+                        let self_concrete_types = self
+                            .0
+                            .as_ref()
+                            .1
+                            .get_concrete_types(interface_registry, self_key)
+                            .0;
                         let self_len = self_concrete_types.len();
 
                         let other_ref = &*other.0.as_ref().1.get_core_ref();
-                        let other_concrete_types = &other_ref.get_concrete_types(other_key).0;
+                        let other_concrete_types = other
+                            .0
+                            .as_ref()
+                            .1
+                            .get_concrete_types(interface_registry, other_key)
+                            .0;
                         let other_len = other_concrete_types.len();
 
                         assert!(self_len == other_len);
                         for i in 0..self_len {
-                            if !self_concrete_types[i].is_eq(&other_concrete_types[i], registry) {
+                            if !self_concrete_types[i].is_eq(&other_concrete_types[i], ty_registry)
+                            {
                                 return false;
                             }
                         }
@@ -139,16 +135,21 @@ impl InterfaceObject {
         }
         return false;
     }
-}
 
-impl ToString for InterfaceObject {
-    fn to_string(&self) -> String {
+    pub fn to_string(&self, registry: &SymbolDataRegistryTable<InterfaceData>) -> String {
         let mut s = self.0.as_ref().0.to_string();
         match self.0.as_ref().1.index {
             Some(index) => {
                 let interface_data_ref = &*self.0.as_ref().1.get_core_ref();
                 s.push('<');
-                s.push_str(&interface_data_ref.get_concrete_types(index).to_string());
+                s.push_str(
+                    &self
+                        .0
+                        .as_ref()
+                        .1
+                        .get_concrete_types(registry, index)
+                        .to_string(),
+                );
                 s.push('>');
                 return s;
             }
@@ -187,10 +188,11 @@ impl InterfaceBounds {
     pub fn contains(
         &self,
         obj: &InterfaceObject,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Option<TextRange> {
         for (entry, decl_range) in &self.interfaces {
-            if entry.is_eq(obj, registry) {
+            if entry.is_eq(obj, interface_registry, ty_registry) {
                 return Some(*decl_range);
             }
         }
@@ -201,9 +203,10 @@ impl InterfaceBounds {
         &mut self,
         obj: InterfaceObject,
         decl_range: TextRange,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Option<TextRange> {
-        match self.contains(&obj, registry) {
+        match self.contains(&obj, interface_registry, ty_registry) {
             Some(previous_decl_range) => Some(previous_decl_range),
             None => {
                 self.interfaces.push((obj, decl_range));
@@ -215,10 +218,14 @@ impl InterfaceBounds {
     pub fn is_subset(
         &self,
         other: &InterfaceBounds,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
         for (self_entry, _) in &self.interfaces {
-            if other.contains(&self_entry, registry).is_none() {
+            if other
+                .contains(&self_entry, interface_registry, ty_registry)
+                .is_none()
+            {
                 return false;
             }
         }
@@ -228,22 +235,22 @@ impl InterfaceBounds {
     pub fn is_eq(
         &self,
         other: &InterfaceBounds,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
-        self.is_subset(other, registry) && other.is_subset(self, registry)
+        self.is_subset(other, interface_registry, ty_registry)
+            && other.is_subset(self, interface_registry, ty_registry)
     }
-}
 
-impl ToString for InterfaceBounds {
-    fn to_string(&self) -> String {
+    pub fn to_string(&self, interface_registry: &SymbolDataRegistryTable<InterfaceData>) -> String {
         let mut s = "{".to_string();
         let len = self.interfaces.len();
         if len > 0 {
-            s.push_str(&self.interfaces[0].0.to_string());
+            s.push_str(&self.interfaces[0].0.to_string(interface_registry));
         }
         for i in 1..len {
             s.push_str(" + ");
-            s.push_str(&self.interfaces[i].0.to_string());
+            s.push_str(&self.interfaces[i].0.to_string(interface_registry));
         }
         s.push('}');
         s
@@ -289,7 +296,8 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         interface_method_callable_data: &CallableData,
         struct_method_callable_data: &CallableData,
         range: TextRange,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<(), PartialConcreteInterfaceMethodsCheckError> {
         let interface_method_generic_type_decls =
             &interface_method_callable_data.generics.generics_spec;
@@ -310,14 +318,18 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                             let interface_generic_bound =
                                 &interface_method_generic_type_decls.0[index].1;
                             let struct_generic_bound = &struct_method_generic_type_decls.0[index].1;
-                            if !interface_generic_bound.is_eq(struct_generic_bound, registry) {
+                            if !interface_generic_bound.is_eq(
+                                struct_generic_bound,
+                                interface_registry,
+                                ty_registry,
+                            ) {
                                 return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
                             }
                         }
                         // check if prototypes match
                         if !interface_method_callable_data.prototype.is_structurally_eq(
                             &struct_method_callable_data.prototype,
-                            registry,
+                            ty_registry,
                             &ConcretizationContext::new(self.concrete_types, None),
                         ) {
                             return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
@@ -340,7 +352,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                 None => {
                     if !interface_method_callable_data.prototype.is_structurally_eq(
                         &struct_method_callable_data.prototype,
-                        registry,
+                        ty_registry,
                         &ConcretizationContext::new(self.concrete_types, None),
                     ) {
                         return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
@@ -354,7 +366,8 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
     pub fn is_struct_implements_interface_methods(
         &self,
         struct_methods: &MethodsMap,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Result<
         (),
         (
@@ -374,7 +387,8 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         interface_method_callable_data,
                         struct_method_callable_data,
                         *range,
-                        registry,
+                        interface_registry,
+                        ty_registry,
                     ) {
                         errors.push((interface_method_name, err));
                     }

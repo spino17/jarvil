@@ -87,18 +87,6 @@ impl UserDefinedTypeData {
 }
 
 impl AbstractConcreteTypesHandler for UserDefinedTypeData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        match self {
-            UserDefinedTypeData::Struct(struct_type_data) => {
-                struct_type_data.register_concrete_types(concrete_types)
-            }
-            UserDefinedTypeData::Lambda(lambda_type_data) => {
-                lambda_type_data.register_concrete_types(concrete_types)
-            }
-            UserDefinedTypeData::Generic(_) => unreachable!(),
-        }
-    }
-
     fn is_initialized(&self) -> bool {
         match self {
             UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.is_initialized(),

@@ -1,8 +1,8 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use super::helper::try_infer_types_from_tuple;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::handler::SymbolDataRegistryTable;
+use crate::scope::interfaces::InterfaceData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::{
     concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext},
@@ -53,13 +53,16 @@ impl Struct {
                     Some(other_key) => {
                         let self_symbol_data = self.semantic_data.get_core_ref();
                         let self_struct_data = self_symbol_data.get_struct_data_ref();
-                        let self_concrete_types = &self_struct_data.get_concrete_types(self_key).0;
+                        let self_concrete_types =
+                            self.semantic_data.get_concrete_types(registry, self_key).0;
                         let self_len = self_concrete_types.len();
 
                         let other_symbol_data = other.semantic_data.get_core_ref();
                         let other_struct_data = other_symbol_data.get_struct_data_ref();
-                        let other_concrete_types =
-                            &other_struct_data.get_concrete_types(other_key).0;
+                        let other_concrete_types = other
+                            .semantic_data
+                            .get_concrete_types(registry, other_key)
+                            .0;
                         let other_len = other_concrete_types.len();
 
                         assert!(self_len == other_len);
@@ -81,6 +84,22 @@ impl Struct {
             }
         }
         return false;
+    }
+
+    pub fn to_string(&self, registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>) -> String {
+        let mut s = self.name().to_string();
+        match self.semantic_data.index {
+            Some(index) => {
+                s.push('<');
+                let symbol_data = self.semantic_data.get_core_ref();
+                let struct_data = symbol_data.get_struct_data_ref();
+                let concrete_types = self.semantic_data.get_concrete_types(registry, index);
+                s.push_str(&concrete_types.to_string());
+                s.push('>');
+                return s;
+            }
+            None => return s,
+        }
     }
 }
 
@@ -141,7 +160,7 @@ impl AbstractType for Struct {
             Some(index) => {
                 let symbol_data = self.semantic_data.get_core_ref();
                 let struct_data = symbol_data.get_struct_data_ref();
-                let concrete_types = &struct_data.get_concrete_types(index).0;
+                let concrete_types = self.semantic_data.get_concrete_types(registry, index).0;
                 let mut concretized_concrete_types = vec![];
                 for ty in concrete_types {
                     concretized_concrete_types.push(ty.concretize(context, registry));
@@ -159,12 +178,17 @@ impl AbstractType for Struct {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
         let symbol_data = self.semantic_data.get_core_ref();
         match &symbol_data.get_struct_data_ref().implementing_interfaces {
             Some(ty_interface_bounds) => {
-                return interface_bounds.is_subset(ty_interface_bounds, registry)
+                return interface_bounds.is_subset(
+                    ty_interface_bounds,
+                    interface_registry,
+                    ty_registry,
+                )
             }
             None => return false,
         }
@@ -186,18 +210,22 @@ impl AbstractType for Struct {
                         Some(self_index) => {
                             let self_symbol_data = self.semantic_data.symbol_data.get_core_ref();
                             let self_struct_data = self_symbol_data.get_struct_data_ref();
-                            let generics_containing_types_tuple =
-                                &self_struct_data.get_concrete_types(self_index).0;
+                            let generics_containing_types_tuple = self
+                                .semantic_data
+                                .get_concrete_types(registry, self_index)
+                                .0;
 
                             let other_index = struct_ty.semantic_data.index.unwrap();
                             let other_symbol_data =
                                 struct_ty.semantic_data.symbol_data.get_core_ref();
                             let other_struct_data = other_symbol_data.get_struct_data_ref();
-                            let base_types_tuple =
-                                &other_struct_data.get_concrete_types(other_index).0;
+                            let base_types_tuple = struct_ty
+                                .semantic_data
+                                .get_concrete_types(registry, other_index)
+                                .0;
                             try_infer_types_from_tuple(
-                                base_types_tuple,
-                                generics_containing_types_tuple,
+                                &base_types_tuple,
+                                &generics_containing_types_tuple,
                                 inferred_concrete_types,
                                 global_concrete_types,
                                 num_inferred_types,
@@ -212,24 +240,6 @@ impl AbstractType for Struct {
                 }
             }
             _ => Err(()),
-        }
-    }
-}
-
-impl ToString for Struct {
-    fn to_string(&self) -> String {
-        let mut s = self.name().to_string();
-        match self.semantic_data.index {
-            Some(index) => {
-                s.push('<');
-                let symbol_data = self.semantic_data.get_core_ref();
-                let struct_data = symbol_data.get_struct_data_ref();
-                let concrete_types = struct_data.get_concrete_types(index);
-                s.push_str(&concrete_types.to_string());
-                s.push('>');
-                return s;
-            }
-            None => return s,
         }
     }
 }

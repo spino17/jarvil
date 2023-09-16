@@ -3,7 +3,7 @@ use super::{
         core::{ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext},
         registry::{self, ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
     },
-    core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams},
+    core::{AbstractConcreteTypesHandler, GenericTypeParams},
     errors::GenericTypeArgsCheckError,
     handler::SymbolDataRegistryTable,
     types::core::UserDefinedTypeData,
@@ -279,24 +279,8 @@ impl CallableData {
 }
 
 impl AbstractConcreteTypesHandler for CallableData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        return self
-            .generics
-            .concrete_types_registry
-            .register_concrete_types(concrete_types);
-    }
-
     fn is_initialized(&self) -> bool {
         true
-    }
-}
-
-impl AbstractSymbolMetaData for CallableData {
-    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        return self
-            .generics
-            .concrete_types_registry
-            .get_concrete_types_at_key(key);
     }
 }
 
@@ -362,6 +346,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                             Some(type_ranges) => type_ranges,
                             None => unreachable!(),
                         },
+                        &type_checker.semantic_state_db.interface_registry_table,
                         &mut type_checker.semantic_state_db.type_registry_table,
                     )?;
                     let concrete_prototype = self.callable_data.prototype.concretize_prototype(

@@ -3,7 +3,7 @@ use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::handler::SymbolDataRegistryTable;
-use crate::scope::interfaces::InterfaceBounds;
+use crate::scope::interfaces::{InterfaceBounds, InterfaceData};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
@@ -105,7 +105,8 @@ impl AbstractType for Atomic {
     fn is_type_bounded_by_interfaces(
         &self,
         _interface_bounds: &InterfaceBounds,
-        _registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        _interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        _ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
         unreachable!()
     }

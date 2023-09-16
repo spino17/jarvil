@@ -10,7 +10,7 @@ use crate::scope::concrete::core::{ConcreteTypesRegistryKey, ConcretizationConte
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::handler::SymbolDataRegistryTable;
-use crate::scope::interfaces::InterfaceBounds;
+use crate::scope::interfaces::{InterfaceBounds, InterfaceData};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::{array::core::Array, atomic::Atomic};
@@ -47,7 +47,8 @@ pub trait AbstractType {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool;
 }
 
@@ -495,27 +496,38 @@ impl AbstractType for Type {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
+        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> bool {
         if interface_bounds.len() == 0 {
             return true;
         }
         match self.0.as_ref() {
-            CoreType::Struct(struct_ty) => {
-                struct_ty.is_type_bounded_by_interfaces(interface_bounds, registry)
-            }
-            CoreType::Generic(generic_ty) => {
-                generic_ty.is_type_bounded_by_interfaces(interface_bounds, registry)
-            }
-            CoreType::Array(array_ty) => {
-                array_ty.is_type_bounded_by_interfaces(interface_bounds, registry)
-            }
-            CoreType::HashMap(hashmap_ty) => {
-                hashmap_ty.is_type_bounded_by_interfaces(interface_bounds, registry)
-            }
-            CoreType::Tuple(tuple_ty) => {
-                tuple_ty.is_type_bounded_by_interfaces(interface_bounds, registry)
-            }
+            CoreType::Struct(struct_ty) => struct_ty.is_type_bounded_by_interfaces(
+                interface_bounds,
+                interface_registry,
+                ty_registry,
+            ),
+            CoreType::Generic(generic_ty) => generic_ty.is_type_bounded_by_interfaces(
+                interface_bounds,
+                interface_registry,
+                ty_registry,
+            ),
+            CoreType::Array(array_ty) => array_ty.is_type_bounded_by_interfaces(
+                interface_bounds,
+                interface_registry,
+                ty_registry,
+            ),
+            CoreType::HashMap(hashmap_ty) => hashmap_ty.is_type_bounded_by_interfaces(
+                interface_bounds,
+                interface_registry,
+                ty_registry,
+            ),
+            CoreType::Tuple(tuple_ty) => tuple_ty.is_type_bounded_by_interfaces(
+                interface_bounds,
+                interface_registry,
+                ty_registry,
+            ),
             CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Any => false,
             CoreType::Unknown | CoreType::Unset | CoreType::Void => false,
         }
@@ -607,6 +619,7 @@ impl std::fmt::Display for Type {
             CoreType::Void => write!(f, "()"),
             CoreType::Unset => write!(f, "{}", UNSET),
             CoreType::Any => write!(f, "{}", ANY),
+            _ => Ok(()),
         }
     }
 }

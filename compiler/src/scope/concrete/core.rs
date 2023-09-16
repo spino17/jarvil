@@ -1,5 +1,7 @@
 use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::SymbolData;
+use crate::scope::handler::SymbolDataRegistryTable;
+use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
 use std::cell::Ref;
 use std::cell::RefMut;
@@ -50,6 +52,30 @@ impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
 
     pub fn get_core_mut_ref<'a>(&'a self) -> RefMut<'a, T> {
         self.symbol_data.get_core_mut_ref::<'a>()
+    }
+
+    pub fn register_concrete_types(
+        &self,
+        concrete_types: Vec<Type>,
+        registry: &mut SymbolDataRegistryTable<T>,
+    ) -> ConcreteTypesRegistryKey {
+        match self
+            .symbol_data
+            .register_concrete_types(Some(concrete_types), registry)
+        {
+            Some(key) => key,
+            None => unreachable!(),
+        }
+    }
+
+    pub fn get_concrete_types(
+        &self,
+        registry: &SymbolDataRegistryTable<T>,
+        index: ConcreteTypesRegistryKey,
+    ) -> ConcreteTypesTuple {
+        registry
+            .get_concrete_types(&self.symbol_data, index)
+            .clone()
     }
 }
 
