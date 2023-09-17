@@ -1,10 +1,6 @@
-use crate::{
-    scope::{
-        concrete::core::ConcreteTypesRegistryKey, core::AbstractConcreteTypesHandler,
-        types::generic_type::GenericTypeData, types::lambda_type::LambdaTypeData,
-        types::struct_type::StructTypeData,
-    },
-    types::core::Type,
+use crate::scope::{
+    core::AbstractConcreteTypesHandler, types::generic_type::GenericTypeData,
+    types::lambda_type::LambdaTypeData, types::struct_type::StructTypeData,
 };
 
 #[derive(Debug)]

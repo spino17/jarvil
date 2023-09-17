@@ -1,9 +1,5 @@
 use super::{
-    core::GenericTypeParams,
-    errors::GenericTypeArgsCheckError,
-    handler::{SemanticStateDatabase, SymbolDataRegistryTable},
-    interfaces::InterfaceData,
-    types::core::UserDefinedTypeData,
+    core::GenericTypeParams, errors::GenericTypeArgsCheckError, handler::SemanticStateDatabase,
 };
 use crate::types::core::Type;
 use text_size::TextRange;

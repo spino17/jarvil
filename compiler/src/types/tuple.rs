@@ -4,7 +4,7 @@ use crate::{
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::{core::ConcretizationContext, registry},
+        concrete::core::ConcretizationContext,
         handler::{SemanticStateDatabase, SymbolDataRegistryTable},
         interfaces::{InterfaceBounds, InterfaceData},
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
@@ -48,17 +48,6 @@ impl Tuple {
             }
             _ => None,
         }
-    }
-
-    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
-        let mut str = self.sub_types[0].to_string(semantic_state_db);
-        for i in 1..self.sub_types.len() {
-            str.push_str(&format!(
-                ", {}",
-                self.sub_types[i].to_string(semantic_state_db)
-            ));
-        }
-        format!("({})", str)
     }
 }
 
@@ -128,8 +117,7 @@ impl AbstractType for Tuple {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
         // TODO - add checks for interfaces which `Tuple` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0
@@ -160,6 +148,17 @@ impl AbstractType for Tuple {
             }
             _ => Err(()),
         }
+    }
+
+    fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        let mut str = self.sub_types[0].to_string(semantic_state_db);
+        for i in 1..self.sub_types.len() {
+            str.push_str(&format!(
+                ", {}",
+                self.sub_types[i].to_string(semantic_state_db)
+            ));
+        }
+        format!("({})", str)
     }
 }
 

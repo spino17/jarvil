@@ -1,9 +1,9 @@
 use crate::{
     scope::{
-        concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple},
+        concrete::core::ConcreteTypesRegistryKey,
         core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
         function::{CallableData, CallableKind, PrototypeConcretizationResult},
-        handler::{SemanticStateDatabase, SymbolDataRegistryTable},
+        handler::SymbolDataRegistryTable,
     },
     types::core::Type,
 };

@@ -1,4 +1,4 @@
-use super::concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple};
+use super::concrete::core::ConcreteTypesRegistryKey;
 use super::errors::GenericTypeArgsCheckError;
 use super::function::{CallableData, CallableKind};
 use super::handler::{SemanticStateDatabase, SymbolDataEntry, SymbolDataRegistryTable};
@@ -98,11 +98,7 @@ impl GenericTypeParams {
         let mut incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
             let ty = &concrete_types[index];
-            if !ty.is_type_bounded_by_interfaces(
-                interface_bounds,
-                &semantic_state_db.interface_registry_table,
-                &mut semantic_state_db.type_registry_table,
-            ) {
+            if !ty.is_type_bounded_by_interfaces(interface_bounds, semantic_state_db) {
                 incorrectly_bounded_types.push((
                     type_ranges[index],
                     interface_bounds.to_string(semantic_state_db),
@@ -226,7 +222,7 @@ impl AbstractSymbolData for VariableSymbolData {
     fn register_concrete_types(
         &self,
         concrete_types: Option<Vec<Type>>,
-        semantic_state_db: &mut SemanticStateDatabase,
+        _semantic_state_db: &mut SemanticStateDatabase,
     ) -> Option<ConcreteTypesRegistryKey> {
         assert!(concrete_types.is_none());
         return None;

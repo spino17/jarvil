@@ -85,24 +85,6 @@ impl Struct {
         }
         return false;
     }
-
-    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
-        let mut s = self.name().to_string();
-        match self.semantic_data.index {
-            Some(index) => {
-                s.push('<');
-                let symbol_data = self.semantic_data.get_core_ref();
-                let struct_data = symbol_data.get_struct_data_ref();
-                let concrete_types = self
-                    .semantic_data
-                    .get_concrete_types(&semantic_state_db.type_registry_table, index);
-                s.push_str(&concrete_types.to_string(semantic_state_db));
-                s.push('>');
-                return s;
-            }
-            None => return s,
-        }
-    }
 }
 
 impl AbstractType for Struct {
@@ -180,17 +162,12 @@ impl AbstractType for Struct {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
         let symbol_data = self.semantic_data.get_core_ref();
         match &symbol_data.get_struct_data_ref().implementing_interfaces {
             Some(ty_interface_bounds) => {
-                return interface_bounds.is_subset(
-                    ty_interface_bounds,
-                    interface_registry,
-                    ty_registry,
-                )
+                return interface_bounds.is_subset(ty_interface_bounds, semantic_state_db)
             }
             None => return false,
         }
@@ -242,6 +219,24 @@ impl AbstractType for Struct {
                 }
             }
             _ => Err(()),
+        }
+    }
+
+    fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        let mut s = self.name().to_string();
+        match self.semantic_data.index {
+            Some(index) => {
+                s.push('<');
+                let symbol_data = self.semantic_data.get_core_ref();
+                let struct_data = symbol_data.get_struct_data_ref();
+                let concrete_types = self
+                    .semantic_data
+                    .get_concrete_types(&semantic_state_db.type_registry_table, index);
+                s.push_str(&concrete_types.to_string(semantic_state_db));
+                s.push('>');
+                return s;
+            }
+            None => return s,
         }
     }
 }

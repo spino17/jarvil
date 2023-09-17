@@ -25,17 +25,6 @@ impl Generic {
     pub fn name(&self) -> &str {
         self.semantic_data.identifier_name()
     }
-
-    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
-        let symbol_data = self.semantic_data.get_core_ref();
-        let generic_data = symbol_data.get_generic_data_ref();
-        let interface_bounds = &generic_data.interface_bounds;
-        format!(
-            "{}{}",
-            self.name(),
-            interface_bounds.to_string(semantic_state_db)
-        )
-    }
 }
 
 impl AbstractType for Generic {
@@ -127,12 +116,11 @@ impl AbstractType for Generic {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
         let symbol_data = self.semantic_data.get_core_ref();
         let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
-        return interface_bounds.is_subset(ty_interface_bounds, interface_registry, ty_registry);
+        return interface_bounds.is_subset(ty_interface_bounds, semantic_state_db);
     }
 
     fn try_infer_type_or_check_equivalence(
@@ -175,6 +163,17 @@ impl AbstractType for Generic {
             }
             return Ok(());
         }
+    }
+
+    fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        let symbol_data = self.semantic_data.get_core_ref();
+        let generic_data = symbol_data.get_generic_data_ref();
+        let interface_bounds = &generic_data.interface_bounds;
+        format!(
+            "{}{}",
+            self.name(),
+            interface_bounds.to_string(semantic_state_db)
+        )
     }
 }
 

@@ -74,45 +74,6 @@ impl Lambda {
             }
         }
     }
-
-    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
-        match self {
-            Lambda::Named(semantic_data) => {
-                let mut s = semantic_data.symbol_data.identifier_name().to_string();
-                match semantic_data.index {
-                    Some(index) => {
-                        s.push('<');
-                        let symbol_data = semantic_data.get_core_ref();
-                        let lambda_data = symbol_data.get_lambda_data_ref();
-                        let concrete_types = semantic_data
-                            .get_concrete_types(&semantic_state_db.type_registry_table, index);
-                        s.push_str(&concrete_types.to_string(semantic_state_db));
-                        s.push('>');
-                        return s;
-                    }
-                    None => return s,
-                }
-            }
-            Lambda::Unnamed(unnamed) => {
-                let self_param_types = &unnamed.params;
-                let self_return_type = &unnamed.return_type;
-                let mut params_str = "".to_string();
-                let mut flag = false;
-                for param in self_param_types {
-                    if flag {
-                        params_str.push_str(", ")
-                    }
-                    params_str.push_str(&format!("{}", param.to_string(semantic_state_db)));
-                    flag = true;
-                }
-                format!(
-                    "lambda({}) -> {}",
-                    params_str,
-                    self_return_type.to_string(semantic_state_db)
-                )
-            }
-        }
-    }
 }
 
 impl AbstractType for Lambda {
@@ -190,18 +151,12 @@ impl AbstractType for Lambda {
                         {
                             match self_concrete_symbol_data.index {
                                 Some(self_index) => {
-                                    let self_symbol_data =
-                                        self_concrete_symbol_data.symbol_data.get_core_ref();
-                                    let self_lambda_data = self_symbol_data.get_lambda_data_ref();
                                     let self_concrete_types = self_concrete_symbol_data
                                         .get_concrete_types(registry, self_index)
                                         .0;
                                     let self_len = self_concrete_types.len();
 
                                     let other_index = other_concrete_symbol_data.index.unwrap();
-                                    let other_symbol_data =
-                                        other_concrete_symbol_data.symbol_data.get_core_ref();
-                                    let other_lambda_data = other_symbol_data.get_lambda_data_ref();
                                     let other_concrete_types = other_concrete_symbol_data
                                         .get_concrete_types(registry, other_index)
                                         .0;
@@ -242,7 +197,6 @@ impl AbstractType for Lambda {
             Lambda::Named(concrete_symbol_data) => match concrete_symbol_data.index {
                 Some(index) => {
                     let symbol_data = concrete_symbol_data.get_core_ref();
-                    let lambda_data = symbol_data.get_lambda_data_ref();
                     let concrete_types = concrete_symbol_data.get_concrete_types(registry, index).0;
                     let mut concretized_concrete_types = vec![];
                     for ty in concrete_types {
@@ -264,8 +218,7 @@ impl AbstractType for Lambda {
     fn is_type_bounded_by_interfaces(
         &self,
         _interface_bounds: &InterfaceBounds,
-        _interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        _ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        _semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
         unreachable!()
     }
@@ -322,6 +275,43 @@ impl AbstractType for Lambda {
                 Lambda::Unnamed(_) => unreachable!(),
             },
             _ => Err(()),
+        }
+    }
+
+    fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        match self {
+            Lambda::Named(semantic_data) => {
+                let mut s = semantic_data.symbol_data.identifier_name().to_string();
+                match semantic_data.index {
+                    Some(index) => {
+                        s.push('<');
+                        let concrete_types = semantic_data
+                            .get_concrete_types(&semantic_state_db.type_registry_table, index);
+                        s.push_str(&concrete_types.to_string(semantic_state_db));
+                        s.push('>');
+                        return s;
+                    }
+                    None => return s,
+                }
+            }
+            Lambda::Unnamed(unnamed) => {
+                let self_param_types = &unnamed.params;
+                let self_return_type = &unnamed.return_type;
+                let mut params_str = "".to_string();
+                let mut flag = false;
+                for param in self_param_types {
+                    if flag {
+                        params_str.push_str(", ")
+                    }
+                    params_str.push_str(&format!("{}", param.to_string(semantic_state_db)));
+                    flag = true;
+                }
+                format!(
+                    "lambda({}) -> {}",
+                    params_str,
+                    self_return_type.to_string(semantic_state_db)
+                )
+            }
         }
     }
 }

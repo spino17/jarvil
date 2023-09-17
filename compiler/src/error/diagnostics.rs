@@ -1,4 +1,5 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
+use crate::types::core::AbstractType;
 use crate::{
     lexer::token::Token,
     parser::helper::format_symbol,

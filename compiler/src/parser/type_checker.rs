@@ -15,7 +15,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcretizationContext};
-use crate::scope::core::{AbstractConcreteTypesHandler, GenericTypeParams};
+use crate::scope::core::GenericTypeParams;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{
     CallableData, PartialCallableDataPrototypeCheckError, PrototypeConcretizationResult,
@@ -497,8 +497,7 @@ impl TypeChecker {
                     let interface_bounds = &generic_type_decls.0[index].1;
                     if !inferred_ty.is_type_bounded_by_interfaces(
                         interface_bounds,
-                        &self.semantic_state_db.interface_registry_table,
-                        &mut self.semantic_state_db.type_registry_table,
+                        &mut self.semantic_state_db,
                     ) {
                         error_strs.push((
                             inferred_ty.to_string(&self.semantic_state_db),
@@ -1813,8 +1812,7 @@ impl TypeChecker {
                             partial_concrete_interface_methods
                                 .is_struct_implements_interface_methods(
                                     struct_methods,
-                                    &self.semantic_state_db.interface_registry_table,
-                                    &mut self.semantic_state_db.type_registry_table,
+                                    &mut self.semantic_state_db,
                                 )
                         {
                             let err = InterfaceMethodsInStructCheckError::new(

@@ -1,5 +1,4 @@
 use crate::scope::common::{FieldsMap, MethodsMap};
-use crate::scope::concrete::core::ConcreteTypesTuple;
 use crate::scope::concrete::registry::GenericsSpecAndConcreteTypesRegistry;
 use crate::scope::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
 use crate::scope::interfaces::InterfaceBounds;

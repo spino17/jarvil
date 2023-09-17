@@ -2,7 +2,7 @@ use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::SymbolData;
 use crate::scope::handler::SemanticStateDatabase;
 use crate::scope::handler::SymbolDataRegistryTable;
-use crate::scope::types::core::UserDefinedTypeData;
+use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use std::cell::Ref;
 use std::cell::RefMut;

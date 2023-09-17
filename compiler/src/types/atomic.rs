@@ -2,7 +2,7 @@ use super::core::OperatorCompatiblity;
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::ConcretizationContext;
-use crate::scope::handler::SymbolDataRegistryTable;
+use crate::scope::handler::{SemanticStateDatabase, SymbolDataRegistryTable};
 use crate::scope::interfaces::{InterfaceBounds, InterfaceData};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
@@ -105,8 +105,7 @@ impl AbstractType for Atomic {
     fn is_type_bounded_by_interfaces(
         &self,
         _interface_bounds: &InterfaceBounds,
-        _interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        _ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        _semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
         unreachable!()
     }
@@ -122,10 +121,8 @@ impl AbstractType for Atomic {
     ) -> Result<(), ()> {
         unreachable!()
     }
-}
 
-impl ToString for Atomic {
-    fn to_string(&self) -> String {
+    fn to_string(&self, _semantic_state_db: &SemanticStateDatabase) -> String {
         match self {
             Atomic::Int => String::from(INT),
             Atomic::Float => String::from(FLOAT),

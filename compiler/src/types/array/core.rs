@@ -45,10 +45,6 @@ impl Array {
             _ => None,
         }
     }
-
-    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
-        format!("[{}]", self.element_type.to_string(semantic_state_db))
-    }
 }
 
 impl AbstractType for Array {
@@ -92,8 +88,7 @@ impl AbstractType for Array {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
         // TODO - add checks for interfaces which `Array` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0
@@ -119,6 +114,10 @@ impl AbstractType for Array {
             ),
             _ => Err(()),
         }
+    }
+
+    fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        format!("[{}]", self.element_type.to_string(semantic_state_db))
     }
 }
 

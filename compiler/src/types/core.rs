@@ -47,9 +47,9 @@ pub trait AbstractType {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool;
+    fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String;
 }
 
 pub trait AbstractNonStructTypes {
@@ -411,22 +411,6 @@ impl Type {
             }
         }
     }
-
-    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
-        match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => atomic_type.to_string(),
-            CoreType::Struct(struct_type) => struct_type.to_string(semantic_state_db),
-            CoreType::Lambda(lambda_type) => lambda_type.to_string(semantic_state_db),
-            CoreType::Array(array_type) => array_type.to_string(semantic_state_db),
-            CoreType::Tuple(tuple_type) => tuple_type.to_string(semantic_state_db),
-            CoreType::HashMap(hashmap_type) => hashmap_type.to_string(semantic_state_db),
-            CoreType::Generic(generic_type) => generic_type.to_string(semantic_state_db),
-            CoreType::Unknown => UNKNOWN.to_string(),
-            CoreType::Void => "()".to_string(),
-            CoreType::Unset => UNSET.to_string(),
-            CoreType::Any => ANY.to_string(),
-        }
-    }
 }
 
 impl AbstractType for Type {
@@ -512,38 +496,27 @@ impl AbstractType for Type {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
         if interface_bounds.len() == 0 {
             return true;
         }
         match self.0.as_ref() {
-            CoreType::Struct(struct_ty) => struct_ty.is_type_bounded_by_interfaces(
-                interface_bounds,
-                interface_registry,
-                ty_registry,
-            ),
-            CoreType::Generic(generic_ty) => generic_ty.is_type_bounded_by_interfaces(
-                interface_bounds,
-                interface_registry,
-                ty_registry,
-            ),
-            CoreType::Array(array_ty) => array_ty.is_type_bounded_by_interfaces(
-                interface_bounds,
-                interface_registry,
-                ty_registry,
-            ),
-            CoreType::HashMap(hashmap_ty) => hashmap_ty.is_type_bounded_by_interfaces(
-                interface_bounds,
-                interface_registry,
-                ty_registry,
-            ),
-            CoreType::Tuple(tuple_ty) => tuple_ty.is_type_bounded_by_interfaces(
-                interface_bounds,
-                interface_registry,
-                ty_registry,
-            ),
+            CoreType::Struct(struct_ty) => {
+                struct_ty.is_type_bounded_by_interfaces(interface_bounds, semantic_state_db)
+            }
+            CoreType::Generic(generic_ty) => {
+                generic_ty.is_type_bounded_by_interfaces(interface_bounds, semantic_state_db)
+            }
+            CoreType::Array(array_ty) => {
+                array_ty.is_type_bounded_by_interfaces(interface_bounds, semantic_state_db)
+            }
+            CoreType::HashMap(hashmap_ty) => {
+                hashmap_ty.is_type_bounded_by_interfaces(interface_bounds, semantic_state_db)
+            }
+            CoreType::Tuple(tuple_ty) => {
+                tuple_ty.is_type_bounded_by_interfaces(interface_bounds, semantic_state_db)
+            }
             CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Any => false,
             CoreType::Unknown | CoreType::Unset | CoreType::Void => false,
         }
@@ -617,6 +590,22 @@ impl AbstractType for Type {
                 }
                 Ok(())
             }
+        }
+    }
+
+    fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        match self.0.as_ref() {
+            CoreType::Atomic(atomic_type) => atomic_type.to_string(semantic_state_db),
+            CoreType::Struct(struct_type) => struct_type.to_string(semantic_state_db),
+            CoreType::Lambda(lambda_type) => lambda_type.to_string(semantic_state_db),
+            CoreType::Array(array_type) => array_type.to_string(semantic_state_db),
+            CoreType::Tuple(tuple_type) => tuple_type.to_string(semantic_state_db),
+            CoreType::HashMap(hashmap_type) => hashmap_type.to_string(semantic_state_db),
+            CoreType::Generic(generic_type) => generic_type.to_string(semantic_state_db),
+            CoreType::Unknown => UNKNOWN.to_string(),
+            CoreType::Void => "()".to_string(),
+            CoreType::Unset => UNSET.to_string(),
+            CoreType::Any => ANY.to_string(),
         }
     }
 }

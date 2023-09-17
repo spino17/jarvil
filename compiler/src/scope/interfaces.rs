@@ -1,8 +1,8 @@
 use super::{
     common::{FieldsMap, MethodsMap},
     concrete::{
-        core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
-        registry::{self, ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
+        core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
+        registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
     },
     core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
     function::{CallableData, PartialConcreteCallableDataRef},
@@ -93,36 +93,41 @@ impl InterfaceObject {
     pub fn is_eq(
         &self,
         other: &InterfaceObject,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
         if self.0.as_ref().0.eq(&other.0.as_ref().0) {
             // names of interfaces should be same
             match self.0.as_ref().1.index {
                 Some(self_key) => match other.0.as_ref().1.index {
                     Some(other_key) => {
-                        let self_ref = &*self.0.as_ref().1.get_core_ref();
                         let self_concrete_types = self
                             .0
                             .as_ref()
                             .1
-                            .get_concrete_types(interface_registry, self_key)
+                            .get_concrete_types(
+                                &semantic_state_db.interface_registry_table,
+                                self_key,
+                            )
                             .0;
                         let self_len = self_concrete_types.len();
 
-                        let other_ref = &*other.0.as_ref().1.get_core_ref();
                         let other_concrete_types = other
                             .0
                             .as_ref()
                             .1
-                            .get_concrete_types(interface_registry, other_key)
+                            .get_concrete_types(
+                                &semantic_state_db.interface_registry_table,
+                                other_key,
+                            )
                             .0;
                         let other_len = other_concrete_types.len();
 
                         assert!(self_len == other_len);
                         for i in 0..self_len {
-                            if !self_concrete_types[i].is_eq(&other_concrete_types[i], ty_registry)
-                            {
+                            if !self_concrete_types[i].is_eq(
+                                &other_concrete_types[i],
+                                &mut semantic_state_db.type_registry_table,
+                            ) {
                                 return false;
                             }
                         }
@@ -140,7 +145,6 @@ impl InterfaceObject {
         let mut s = self.0.as_ref().0.to_string();
         match self.0.as_ref().1.index {
             Some(index) => {
-                let interface_data_ref = &*self.0.as_ref().1.get_core_ref();
                 s.push('<');
                 s.push_str(
                     &self
@@ -188,11 +192,10 @@ impl InterfaceBounds {
     pub fn contains(
         &self,
         obj: &InterfaceObject,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Option<TextRange> {
         for (entry, decl_range) in &self.interfaces {
-            if entry.is_eq(obj, interface_registry, ty_registry) {
+            if entry.is_eq(obj, semantic_state_db) {
                 return Some(*decl_range);
             }
         }
@@ -203,10 +206,9 @@ impl InterfaceBounds {
         &mut self,
         obj: InterfaceObject,
         decl_range: TextRange,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Option<TextRange> {
-        match self.contains(&obj, interface_registry, ty_registry) {
+        match self.contains(&obj, semantic_state_db) {
             Some(previous_decl_range) => Some(previous_decl_range),
             None => {
                 self.interfaces.push((obj, decl_range));
@@ -218,14 +220,10 @@ impl InterfaceBounds {
     pub fn is_subset(
         &self,
         other: &InterfaceBounds,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
         for (self_entry, _) in &self.interfaces {
-            if other
-                .contains(&self_entry, interface_registry, ty_registry)
-                .is_none()
-            {
+            if other.contains(&self_entry, semantic_state_db).is_none() {
                 return false;
             }
         }
@@ -235,11 +233,9 @@ impl InterfaceBounds {
     pub fn is_eq(
         &self,
         other: &InterfaceBounds,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
-        self.is_subset(other, interface_registry, ty_registry)
-            && other.is_subset(self, interface_registry, ty_registry)
+        self.is_subset(other, semantic_state_db) && other.is_subset(self, semantic_state_db)
     }
 
     pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
@@ -296,8 +292,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         interface_method_callable_data: &CallableData,
         struct_method_callable_data: &CallableData,
         range: TextRange,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Result<(), PartialConcreteInterfaceMethodsCheckError> {
         let interface_method_generic_type_decls =
             &interface_method_callable_data.generics.generics_spec;
@@ -318,18 +313,16 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                             let interface_generic_bound =
                                 &interface_method_generic_type_decls.0[index].1;
                             let struct_generic_bound = &struct_method_generic_type_decls.0[index].1;
-                            if !interface_generic_bound.is_eq(
-                                struct_generic_bound,
-                                interface_registry,
-                                ty_registry,
-                            ) {
+                            if !interface_generic_bound
+                                .is_eq(struct_generic_bound, semantic_state_db)
+                            {
                                 return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
                             }
                         }
                         // check if prototypes match
                         if !interface_method_callable_data.prototype.is_structurally_eq(
                             &struct_method_callable_data.prototype,
-                            ty_registry,
+                            &mut semantic_state_db.type_registry_table,
                             &ConcretizationContext::new(self.concrete_types, None),
                         ) {
                             return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
@@ -352,7 +345,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                 None => {
                     if !interface_method_callable_data.prototype.is_structurally_eq(
                         &struct_method_callable_data.prototype,
-                        ty_registry,
+                        &mut semantic_state_db.type_registry_table,
                         &ConcretizationContext::new(self.concrete_types, None),
                     ) {
                         return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
@@ -366,8 +359,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
     pub fn is_struct_implements_interface_methods(
         &self,
         struct_methods: &MethodsMap,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Result<
         (),
         (
@@ -387,8 +379,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         interface_method_callable_data,
                         struct_method_callable_data,
                         *range,
-                        interface_registry,
-                        ty_registry,
+                        semantic_state_db,
                     ) {
                         errors.push((interface_method_name, err));
                     }

@@ -810,8 +810,7 @@ impl Resolver {
                                         if let Some(previous_decl_range) = interface_bounds.insert(
                                             interface_obj,
                                             interface_expr.range(),
-                                            &self.semantic_state_db.interface_registry_table,
-                                            &mut self.semantic_state_db.type_registry_table,
+                                            &mut self.semantic_state_db,
                                         ) {
                                             let name = &interface_expr.token_value(&self.code);
                                             let err =
@@ -1327,8 +1326,7 @@ impl Resolver {
                         if let Some(previous_decl_range) = interfaces.insert(
                             interface_obj,
                             interface_expr.range(),
-                            &self.semantic_state_db.interface_registry_table,
-                            &mut self.semantic_state_db.type_registry_table,
+                            &mut self.semantic_state_db,
                         ) {
                             let name = &interface_expr.token_value(&self.code);
                             let err = InterfaceAlreadyExistInBoundsDeclarationError::new(

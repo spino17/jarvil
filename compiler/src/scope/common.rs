@@ -1,13 +1,7 @@
 use super::{
-    concrete::{
-        core::{ConcreteTypesRegistryKey, ConcretizationContext},
-        registry::ConcreteTypesRegistryCore,
-    },
+    concrete::{core::ConcreteTypesRegistryKey, registry::ConcreteTypesRegistryCore},
     function::{CallableData, PartialConcreteCallableDataRef},
-    handler::SymbolDataRegistryTable,
-    types::core::UserDefinedTypeData,
 };
-use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use text_size::TextRange;

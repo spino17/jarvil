@@ -27,14 +27,6 @@ impl HashMap {
             value_type,
         }
     }
-
-    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
-        format!(
-            "{{{} : {}}}",
-            self.key_type.to_string(semantic_state_db),
-            self.value_type.to_string(semantic_state_db)
-        )
-    }
 }
 
 impl AbstractType for HashMap {
@@ -86,8 +78,7 @@ impl AbstractType for HashMap {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> bool {
         // TODO - add checks for interfaces which `HashMap` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0
@@ -124,6 +115,14 @@ impl AbstractType for HashMap {
             }
             _ => Err(()),
         }
+    }
+
+    fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        format!(
+            "{{{} : {}}}",
+            self.key_type.to_string(semantic_state_db),
+            self.value_type.to_string(semantic_state_db)
+        )
     }
 }
 
