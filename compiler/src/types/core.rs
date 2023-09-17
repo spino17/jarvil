@@ -6,7 +6,10 @@ use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::concrete::core::{ConcreteTypesRegistryKey, ConcretizationContext};
+use crate::scope::concrete::core::{
+    ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext,
+};
+use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::interfaces::InterfaceBounds;
@@ -126,10 +129,10 @@ impl Type {
     // user-defined-types
     pub fn new_with_struct(
         symbol_data: &SymbolData<UserDefinedTypeData>,
-        index: Option<ConcreteTypesRegistryKey>,
+        concrete_types: Option<ConcreteTypesTuple>,
     ) -> Type {
         Type(
-            Rc::new(CoreType::Struct(Struct::new(symbol_data, index))),
+            Rc::new(CoreType::Struct(Struct::new(symbol_data, concrete_types))),
             false,
         )
     }

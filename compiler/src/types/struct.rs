@@ -1,6 +1,7 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use super::helper::try_infer_types_from_tuple;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
+use crate::scope::concrete::core::ConcreteTypesTuple;
 use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::{
@@ -12,24 +13,23 @@ use crate::scope::{
 
 #[derive(Debug, Clone)]
 pub struct Struct {
-    pub semantic_data: ConcreteSymbolData<UserDefinedTypeData>,
+    pub symbol_data: SymbolData<UserDefinedTypeData>,
+    pub concrete_types: Option<ConcreteTypesTuple>,
 }
 
 impl Struct {
     pub fn new(
         symbol_data: &SymbolData<UserDefinedTypeData>,
-        index: Option<ConcreteTypesRegistryKey>,
+        concrete_types: Option<ConcreteTypesTuple>,
     ) -> Struct {
         Struct {
-            semantic_data: ConcreteSymbolData {
-                symbol_data: symbol_data.clone(),
-                index,
-            },
+            symbol_data: symbol_data.clone(),
+            concrete_types,
         }
     }
 
     fn name(&self) -> &str {
-        self.semantic_data.symbol_data.identifier_name()
+        self.symbol_data.identifier_name()
     }
 
     fn compare<F: Fn(&Type, &Type, &ConcretizationContext) -> bool>(
@@ -39,25 +39,17 @@ impl Struct {
         context: &ConcretizationContext,
     ) -> bool {
         if other.name() == self.name() {
-            match self.semantic_data.index {
-                Some(self_key) => match other.semantic_data.index {
-                    Some(other_key) => {
-                        let self_symbol_data = self.semantic_data.get_core_ref();
-                        let self_struct_data = self_symbol_data.get_struct_data_ref();
-                        let self_concrete_types = &self_struct_data.get_concrete_types(self_key).0;
-                        let self_len = self_concrete_types.len();
-
-                        let other_symbol_data = other.semantic_data.get_core_ref();
-                        let other_struct_data = other_symbol_data.get_struct_data_ref();
-                        let other_concrete_types =
-                            &other_struct_data.get_concrete_types(other_key).0;
-                        let other_len = other_concrete_types.len();
+            match &self.concrete_types {
+                Some(self_concrete_types) => match &other.concrete_types {
+                    Some(other_concrete_types) => {
+                        let self_len = self_concrete_types.0.len();
+                        let other_len = other_concrete_types.0.len();
 
                         assert!(self_len == other_len);
                         for i in 0..self_len {
                             if !ty_cmp_func(
-                                &self_concrete_types[i],
-                                &other_concrete_types[i],
+                                &self_concrete_types.0[i],
+                                &other_concrete_types.0[i],
                                 context,
                             ) {
                                 return false;
@@ -100,27 +92,23 @@ impl AbstractType for Struct {
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
-        match self.semantic_data.index {
-            Some(index) => {
-                let symbol_data = self.semantic_data.get_core_ref();
-                let struct_data = symbol_data.get_struct_data_ref();
-                let concrete_types = &struct_data.get_concrete_types(index).0;
+        match &self.concrete_types {
+            Some(concrete_types) => {
                 let mut concretized_concrete_types = vec![];
-                for ty in concrete_types {
+                for ty in &concrete_types.0 {
                     concretized_concrete_types.push(ty.concretize(context));
                 }
-                let new_key = self
-                    .semantic_data
-                    .symbol_data
-                    .register_concrete_types(Some(concretized_concrete_types));
-                return Type::new_with_struct(&self.semantic_data.symbol_data, new_key);
+                return Type::new_with_struct(
+                    &self.symbol_data,
+                    Some(ConcreteTypesTuple(concretized_concrete_types)),
+                );
             }
-            None => return Type::new_with_struct(&self.semantic_data.symbol_data, None),
+            None => return Type::new_with_struct(&self.symbol_data, None),
         }
     }
 
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
-        let symbol_data = self.semantic_data.get_core_ref();
+        let symbol_data = self.symbol_data.get_core_ref();
         match &symbol_data.get_struct_data_ref().implementing_interfaces {
             Some(ty_interface_bounds) => return interface_bounds.is_subset(ty_interface_bounds),
             None => return false,
@@ -138,22 +126,15 @@ impl AbstractType for Struct {
         match received_ty.0.as_ref() {
             CoreType::Struct(struct_ty) => {
                 if self.name() == struct_ty.name() {
-                    match self.semantic_data.index {
-                        Some(self_index) => {
-                            let self_symbol_data = self.semantic_data.symbol_data.get_core_ref();
-                            let self_struct_data = self_symbol_data.get_struct_data_ref();
-                            let generics_containing_types_tuple =
-                                &self_struct_data.get_concrete_types(self_index).0;
-
-                            let other_index = struct_ty.semantic_data.index.unwrap();
-                            let other_symbol_data =
-                                struct_ty.semantic_data.symbol_data.get_core_ref();
-                            let other_struct_data = other_symbol_data.get_struct_data_ref();
-                            let base_types_tuple =
-                                &other_struct_data.get_concrete_types(other_index).0;
+                    match &self.concrete_types {
+                        Some(generics_containing_types_tuple) => {
+                            let base_types_tuple = match &struct_ty.concrete_types {
+                                Some(concrete_types) => concrete_types,
+                                None => unreachable!(),
+                            };
                             try_infer_types_from_tuple(
-                                base_types_tuple,
-                                generics_containing_types_tuple,
+                                &base_types_tuple.0,
+                                &generics_containing_types_tuple.0,
                                 inferred_concrete_types,
                                 global_concrete_types,
                                 num_inferred_types,
@@ -174,12 +155,9 @@ impl AbstractType for Struct {
 impl ToString for Struct {
     fn to_string(&self) -> String {
         let mut s = self.name().to_string();
-        match self.semantic_data.index {
-            Some(index) => {
+        match &self.concrete_types {
+            Some(concrete_types) => {
                 s.push('<');
-                let symbol_data = self.semantic_data.get_core_ref();
-                let struct_data = symbol_data.get_struct_data_ref();
-                let concrete_types = struct_data.get_concrete_types(index);
                 s.push_str(&concrete_types.to_string());
                 s.push('>');
                 return s;

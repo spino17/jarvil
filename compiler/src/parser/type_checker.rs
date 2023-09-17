@@ -14,7 +14,7 @@ use crate::error::diagnostics::{
     TypeInferenceFailedError,
 };
 use crate::error::helper::IdentifierKind;
-use crate::scope::concrete::core::{ConcreteSymbolData, ConcretizationContext};
+use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{
@@ -696,8 +696,21 @@ impl TypeChecker {
                     ) => {
                         let prototype_ref = prototype.get_prototype_ref();
                         let _ = self.check_params_type_and_count(&prototype_ref.params, params)?;
-                        let return_ty =
-                            Type::new_with_struct(&concrete_symbol_data.symbol_data, index);
+                        let concrete_types = match index {
+                            Some(index) => Some(
+                                concrete_symbol_data
+                                    .symbol_data
+                                    .get_core_ref()
+                                    .get_struct_data_ref()
+                                    .get_concrete_types(index)
+                                    .clone(),
+                            ),
+                            None => None,
+                        };
+                        let return_ty = Type::new_with_struct(
+                            &concrete_symbol_data.symbol_data,
+                            concrete_types,
+                        );
                         StructConstructorPrototypeCheckResult::Basic(return_ty)
                     }
                     CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
@@ -723,12 +736,9 @@ impl TypeChecker {
         match struct_constructor_prototype_check_result {
             StructConstructorPrototypeCheckResult::Basic(return_ty) => return Ok(return_ty),
             StructConstructorPrototypeCheckResult::Inferred(concrete_types) => {
-                let index = concrete_symbol_data
-                    .get_core_mut_ref()
-                    .register_concrete_types(concrete_types);
                 return Ok(Type::new_with_struct(
                     &concrete_symbol_data.symbol_data,
-                    Some(index),
+                    Some(ConcreteTypesTuple(concrete_types)),
                 ));
             }
         }
@@ -820,7 +830,11 @@ impl TypeChecker {
                         CoreIdentifierInUseNode::Ok(class_method) => {
                             let class_method_name = class_method.token_value(&self.code);
                             let index = type_symbol_data.index;
-                            match struct_data.try_class_method(&class_method_name, index) {
+                            let concrete_types = match index {
+                                Some(index) => Some(&struct_data.get_concrete_types(index).0),
+                                None => None,
+                            };
+                            match struct_data.try_class_method(&class_method_name, concrete_types) {
                                 Some((partial_concrete_callable_data, _)) => {
                                     let (concrete_types, ty_ranges, _) = self
                                         .extract_angle_bracket_content_from_identifier_in_use(
@@ -962,10 +976,19 @@ impl TypeChecker {
                     let property_name_str = ok_identifier.token_value(&self.code);
                     let result = match atom_type_obj.0.as_ref() {
                         CoreType::Struct(struct_ty) => {
-                            let index = struct_ty.semantic_data.index;
-                            let symbol_data = struct_ty.semantic_data.symbol_data.get_core_ref();
+                            let concrete_types = &struct_ty.concrete_types;
+                            let symbol_data = struct_ty.symbol_data.get_core_ref();
                             let struct_data = symbol_data.get_struct_data_ref();
-                            match struct_data.try_field(&property_name_str, index) {
+                            match struct_data.try_field(
+                                &property_name_str,
+                                &ConcretizationContext::new(
+                                    match concrete_types {
+                                        Some(concrete_types) => Some(&concrete_types.0),
+                                        None => None,
+                                    },
+                                    None,
+                                ),
+                            ) {
                                 Some((type_obj, _)) => Ok(type_obj),
                                 None => Err(()),
                             }
@@ -1005,11 +1028,20 @@ impl TypeChecker {
         // (for example: a field with lambda type) and then it goes on to find it in methods.
         // This is in sync with what Python does.
         let method_name = method_name_ok_identifier.token_value(&self.code);
-        let index = struct_ty.semantic_data.index;
-        let symbol_data = struct_ty.semantic_data.symbol_data.get_core_ref();
+        let concrete_types = &struct_ty.concrete_types;
+        let symbol_data = struct_ty.symbol_data.get_core_ref();
         let struct_data = symbol_data.get_struct_data_ref();
         // first check if it's a property
-        match struct_data.try_field(&method_name, index) {
+        match struct_data.try_field(
+            &method_name,
+            &ConcretizationContext::new(
+                match concrete_types {
+                    Some(concrete_types) => Some(&concrete_types.0),
+                    None => None,
+                },
+                None,
+            ),
+        ) {
             Some((propetry_ty, _)) => {
                 if method_name_ok_identifier
                     .core_ref()
@@ -1033,7 +1065,13 @@ impl TypeChecker {
             }
             None => {
                 // if field is not there then check in methods
-                match struct_data.try_method(&method_name, index) {
+                match struct_data.try_method(
+                    &method_name,
+                    match concrete_types {
+                        Some(concrete_types) => Some(&concrete_types.0),
+                        None => None,
+                    },
+                ) {
                     Some((partial_concrete_callable_data, _)) => {
                         let (concrete_types, ty_ranges, _) = self
                             .extract_angle_bracket_content_from_identifier_in_use(

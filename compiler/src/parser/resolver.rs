@@ -18,10 +18,10 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
-use crate::scope::concrete::core::ConcreteTypesRegistryKey;
+use crate::scope::concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple};
 use crate::scope::core::{
-    AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData, LookupData,
-    LookupResult, UserDefinedTypeSymbolData, VariableSymbolData,
+    AbstractSymbolData, AbstractSymbolMetaData, FunctionSymbolData, GenericTypeParams,
+    InterfaceSymbolData, LookupData, LookupResult, UserDefinedTypeSymbolData, VariableSymbolData,
 };
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{CallableKind, CallablePrototypeData};
@@ -566,9 +566,20 @@ impl Resolver {
                                     if has_generics_inside_angle_bracket_types {
                                         *has_generics = true;
                                     }
+                                    let concrete_types = match index {
+                                        Some(index) => Some(
+                                            symbol_data
+                                                .0
+                                                .get_core_ref()
+                                                .get_struct_data_ref()
+                                                .get_concrete_types(index)
+                                                .clone(),
+                                        ),
+                                        None => None,
+                                    };
                                     TypeResolveKind::Resolved(Type::new_with_struct(
                                         &symbol_data.0,
-                                        index,
+                                        concrete_types,
                                     ))
                                 }
                                 Err(err) => TypeResolveKind::Unresolved(vec![
@@ -1287,10 +1298,13 @@ impl Resolver {
                         GenericTypeDeclarationPlaceCategory::InStruct,
                     );
                 let struct_ty = match &symbol_data {
-                    Some(symbol_data) => {
-                        let index = symbol_data.0.register_concrete_types(concrete_types);
-                        Type::new_with_struct(&symbol_data.0, index)
-                    }
+                    Some(symbol_data) => Type::new_with_struct(
+                        &symbol_data.0,
+                        match concrete_types {
+                            Some(concrete_types) => Some(ConcreteTypesTuple(concrete_types)),
+                            None => None,
+                        },
+                    ),
                     None => Type::new_with_unknown(),
                 };
                 (struct_generic_type_decls, struct_ty)

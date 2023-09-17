@@ -21,28 +21,15 @@ impl FieldsMap {
         FieldsMap { fields }
     }
 
-    pub fn try_field<T: AbstractSymbolMetaData>(
+    pub fn try_field(
         &self,
         field_name: &str,
-        key: Option<ConcreteTypesRegistryKey>,
-        registry_manager: &T,
+        context: &ConcretizationContext,
     ) -> Option<(Type, TextRange)> {
         match self.fields.get(field_name) {
             Some((ty, range)) => {
                 if ty.is_concretization_required() {
-                    match key {
-                        Some(key) => {
-                            let concrete_types = registry_manager.get_concrete_types(key);
-                            return Some((
-                                ty.concretize(&ConcretizationContext::new(
-                                    Some(&concrete_types.0),
-                                    None,
-                                )),
-                                *range,
-                            ));
-                        }
-                        None => unreachable!(),
-                    }
+                    return Some((ty.concretize(context), *range));
                 } else {
                     return Some((ty.clone(), *range));
                 }
@@ -69,16 +56,14 @@ impl MethodsMap {
     pub fn try_method<'a>(
         &'a self,
         method_name: &str,
-        key: Option<ConcreteTypesRegistryKey>,
-        registry: &'a ConcreteTypesRegistryCore,
+        global_concrete_types: Option<&'a Vec<Type>>,
     ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         match self.methods.get(method_name) {
             Some((callable_data, range)) => {
                 return Some((
                     PartialConcreteCallableDataRef::get_from_registry_key(
                         callable_data,
-                        registry,
-                        key,
+                        global_concrete_types,
                     ),
                     *range,
                 ))

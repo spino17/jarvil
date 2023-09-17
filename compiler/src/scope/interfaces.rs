@@ -39,18 +39,17 @@ impl InterfaceData {
     pub fn try_field(
         &self,
         field_name: &str,
-        key: Option<ConcreteTypesRegistryKey>,
+        context: &ConcretizationContext,
     ) -> Option<(Type, TextRange)> {
-        self.fields.try_field(field_name, key, self)
+        self.fields.try_field(field_name, context)
     }
 
-    pub fn try_method(
-        &self,
+    pub fn try_method<'a>(
+        &'a self,
         method_name: &str,
-        key: Option<ConcreteTypesRegistryKey>,
+        global_concrete_types: Option<&'a Vec<Type>>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
-        self.methods
-            .try_method(method_name, key, &self.generics.concrete_types_registry)
+        self.methods.try_method(method_name, global_concrete_types)
     }
 
     pub fn get_partially_concrete_interface_methods(

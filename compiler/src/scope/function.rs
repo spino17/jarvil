@@ -302,14 +302,9 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
 
     pub fn get_from_registry_key(
         callable_data: &'a CallableData,
-        registry: &'a ConcreteTypesRegistryCore,
-        key: Option<ConcreteTypesRegistryKey>,
+        global_concrete_types: Option<&'a Vec<Type>>,
     ) -> PartialConcreteCallableDataRef<'a> {
-        let concrete_types = match key {
-            Some(key) => Some(&registry.get_concrete_types_at_key(key).0),
-            None => None,
-        };
-        return PartialConcreteCallableDataRef::new(callable_data, concrete_types);
+        return PartialConcreteCallableDataRef::new(callable_data, global_concrete_types);
     }
 
     // Type-Checking exclusive method
