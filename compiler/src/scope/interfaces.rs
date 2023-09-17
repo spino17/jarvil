@@ -47,7 +47,7 @@ impl InterfaceData {
     pub fn try_method<'a>(
         &'a self,
         method_name: &str,
-        global_concrete_types: Option<&'a Vec<Type>>,
+        global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.methods.try_method(method_name, global_concrete_types)
     }
@@ -109,11 +109,13 @@ impl InterfaceObject {
                 Some(self_key) => match other.0.as_ref().1.index {
                     Some(other_key) => {
                         let self_ref = &*self.0.as_ref().1.get_core_ref();
-                        let self_concrete_types = &self_ref.get_concrete_types(self_key).0;
+                        let self_concrete_types =
+                            self_ref.get_concrete_types(self_key).get_core_ref();
                         let self_len = self_concrete_types.len();
 
                         let other_ref = &*other.0.as_ref().1.get_core_ref();
-                        let other_concrete_types = &other_ref.get_concrete_types(other_key).0;
+                        let other_concrete_types =
+                            other_ref.get_concrete_types(other_key).get_core_ref();
                         let other_len = other_concrete_types.len();
 
                         assert!(self_len == other_len);
@@ -253,7 +255,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         key: Option<ConcreteTypesRegistryKey>,
     ) -> PartialConcreteInterfaceMethods<'a> {
         let concrete_types = match key {
-            Some(key) => Some(&registry.get_concrete_types_at_key(key).0),
+            Some(key) => Some(registry.get_concrete_types_at_key(key).get_core_ref()),
             None => None,
         };
         return PartialConcreteInterfaceMethods::new(methods, concrete_types);

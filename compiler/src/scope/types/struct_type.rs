@@ -62,7 +62,7 @@ impl StructTypeData {
     pub fn try_method<'a>(
         &'a self,
         method_name: &str,
-        global_concrete_types: Option<&'a Vec<Type>>,
+        global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.methods.try_method(method_name, global_concrete_types)
     }
@@ -70,7 +70,7 @@ impl StructTypeData {
     pub fn try_class_method<'a>(
         &'a self,
         class_method_name: &str,
-        global_concrete_types: Option<&'a Vec<Type>>,
+        global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.class_methods
             .try_method(class_method_name, global_concrete_types)

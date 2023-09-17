@@ -8,7 +8,7 @@ use std::cell::RefMut;
 pub struct ConcreteTypesRegistryKey(pub usize);
 
 #[derive(Debug, Clone)]
-pub struct ConcreteTypesTuple(pub Vec<Type>);
+pub struct ConcreteTypesTuple(Vec<Type>);
 
 impl ConcreteTypesTuple {
     pub fn new(concrete_types: Vec<Type>) -> Self {
@@ -17,6 +17,14 @@ impl ConcreteTypesTuple {
 
     pub fn get_concrete_types(&self) -> &ConcreteTypesTuple {
         self
+    }
+
+    pub fn get_core_ref(&self) -> &Vec<Type> {
+        &self.0
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
     }
 }
 

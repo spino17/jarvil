@@ -56,10 +56,7 @@ impl Lambda {
                 let concrete_types = &semantic_data.concrete_types;
                 let symbol_data = semantic_data.symbol_data.get_core_ref();
                 let lambda_data = symbol_data.get_lambda_data_ref();
-                let prototype_result = lambda_data.get_concrete_prototype(match concrete_types {
-                    Some(concrete_types) => Some(&concrete_types.0),
-                    None => None,
-                });
+                let prototype_result = lambda_data.get_concrete_prototype(concrete_types.as_ref());
                 let prototype_ref = prototype_result.get_prototype_ref();
                 let expected_param_types = &prototype_ref.params;
                 let return_type = &prototype_ref.return_type;
@@ -89,21 +86,15 @@ impl AbstractType for Lambda {
                         let self_data = self_symbol_data.get_lambda_data_ref();
                         let self_concrete_types = &self_named.concrete_types;
                         let self_prototype_result =
-                            self_data.get_concrete_prototype(match self_concrete_types {
-                                Some(concrete_types) => Some(&concrete_types.0),
-                                None => None,
-                            });
+                            self_data.get_concrete_prototype(self_concrete_types.as_ref());
                         let self_prototype_ref = self_prototype_result.get_prototype_ref();
                         match other_data {
                             Lambda::Named(other_named) => {
                                 let other_symbol_data = other_named.symbol_data.get_core_ref();
                                 let other_data = other_symbol_data.get_lambda_data_ref();
                                 let other_concrete_types = &other_named.concrete_types;
-                                let other_prototype_result =
-                                    other_data.get_concrete_prototype(match other_concrete_types {
-                                        Some(concrete_types) => Some(&concrete_types.0),
-                                        None => None,
-                                    });
+                                let other_prototype_result = other_data
+                                    .get_concrete_prototype(other_concrete_types.as_ref());
                                 let other_prototype_ref =
                                     other_prototype_result.get_prototype_ref();
                                 return other_prototype_ref.is_eq(self_prototype_ref);
@@ -119,10 +110,7 @@ impl AbstractType for Lambda {
                             let other_data = other_symbol_data.get_lambda_data_ref();
                             let other_concrete_types = &other_named.concrete_types;
                             let other_prototype_result =
-                                other_data.get_concrete_prototype(match other_concrete_types {
-                                    Some(concrete_types) => Some(&concrete_types.0),
-                                    None => None,
-                                });
+                                other_data.get_concrete_prototype(other_concrete_types.as_ref());
                             let other_prototype_ref = other_prototype_result.get_prototype_ref();
                             return other_prototype_ref.is_eq(self_prototype);
                         }
@@ -147,19 +135,22 @@ impl AbstractType for Lambda {
                         {
                             match &self_concrete_symbol_data.concrete_types {
                                 Some(self_concrete_types) => {
-                                    let self_len = self_concrete_types.0.len();
+                                    let self_len = self_concrete_types.len();
 
                                     let other_concrete_types =
                                         match &other_concrete_symbol_data.concrete_types {
                                             Some(concrete_types) => concrete_types,
                                             None => unreachable!(),
                                         };
-                                    let other_len = other_concrete_types.0.len();
+                                    let other_len = other_concrete_types.len();
 
                                     assert!(self_len == other_len);
                                     for i in 0..self_len {
-                                        if !&self_concrete_types.0[i]
-                                            .is_structurally_eq(&other_concrete_types.0[i], context)
+                                        if !self_concrete_types.get_core_ref()[i]
+                                            .is_structurally_eq(
+                                                &other_concrete_types.get_core_ref()[i],
+                                                context,
+                                            )
                                         {
                                             return false;
                                         }
@@ -185,12 +176,12 @@ impl AbstractType for Lambda {
             Lambda::Named(concrete_symbol_data) => match &concrete_symbol_data.concrete_types {
                 Some(concrete_types) => {
                     let mut concretized_concrete_types = vec![];
-                    for ty in &concrete_types.0 {
+                    for ty in concrete_types.get_core_ref() {
                         concretized_concrete_types.push(ty.concretize(context));
                     }
                     return Type::new_with_lambda_named(
                         &concrete_symbol_data.symbol_data,
-                        Some(ConcreteTypesTuple(concretized_concrete_types)),
+                        Some(ConcreteTypesTuple::new(concretized_concrete_types)),
                     );
                 }
                 None => {
@@ -220,10 +211,7 @@ impl AbstractType for Lambda {
                     let self_data = self_symbol_data.get_lambda_data_ref();
                     let self_concrete_types = &self_named.concrete_types;
                     let self_prototype_result =
-                        self_data.get_concrete_prototype(match self_concrete_types {
-                            Some(concrete_types) => Some(&concrete_types.0),
-                            None => None,
-                        });
+                        self_data.get_concrete_prototype(self_concrete_types.as_ref());
                     let self_prototype_ref = self_prototype_result.get_prototype_ref();
                     match lambda_ty {
                         Lambda::Named(other_named) => {
@@ -231,10 +219,7 @@ impl AbstractType for Lambda {
                             let other_data = other_symbol_data.get_lambda_data_ref();
                             let other_concrete_types = &other_named.concrete_types;
                             let other_prototype_result =
-                                other_data.get_concrete_prototype(match other_concrete_types {
-                                    Some(concrete_types) => Some(&concrete_types.0),
-                                    None => None,
-                                });
+                                other_data.get_concrete_prototype(other_concrete_types.as_ref());
                             let other_prototype_ref = other_prototype_result.get_prototype_ref();
                             self_prototype_ref.try_infer_type(
                                 other_prototype_ref,

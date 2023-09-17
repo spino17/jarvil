@@ -39,14 +39,14 @@ impl Struct {
             match &self.concrete_types {
                 Some(self_concrete_types) => match &other.concrete_types {
                     Some(other_concrete_types) => {
-                        let self_len = self_concrete_types.0.len();
-                        let other_len = other_concrete_types.0.len();
+                        let self_len = self_concrete_types.len();
+                        let other_len = other_concrete_types.len();
 
                         assert!(self_len == other_len);
                         for i in 0..self_len {
                             if !ty_cmp_func(
-                                &self_concrete_types.0[i],
-                                &other_concrete_types.0[i],
+                                &self_concrete_types.get_core_ref()[i],
+                                &other_concrete_types.get_core_ref()[i],
                                 context,
                             ) {
                                 return false;
@@ -92,12 +92,12 @@ impl AbstractType for Struct {
         match &self.concrete_types {
             Some(concrete_types) => {
                 let mut concretized_concrete_types = vec![];
-                for ty in &concrete_types.0 {
+                for ty in concrete_types.get_core_ref() {
                     concretized_concrete_types.push(ty.concretize(context));
                 }
                 return Type::new_with_struct(
                     &self.symbol_data,
-                    Some(ConcreteTypesTuple(concretized_concrete_types)),
+                    Some(ConcreteTypesTuple::new(concretized_concrete_types)),
                 );
             }
             None => return Type::new_with_struct(&self.symbol_data, None),
@@ -130,8 +130,8 @@ impl AbstractType for Struct {
                                 None => unreachable!(),
                             };
                             try_infer_types_from_tuple(
-                                &base_types_tuple.0,
-                                &generics_containing_types_tuple.0,
+                                base_types_tuple.get_core_ref(),
+                                generics_containing_types_tuple.get_core_ref(),
                                 inferred_concrete_types,
                                 global_concrete_types,
                                 num_inferred_types,

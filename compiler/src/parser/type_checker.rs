@@ -581,7 +581,7 @@ impl TypeChecker {
                 let concrete_types = func_data.get_concrete_types(index);
                 let concrete_prototype = func_data
                     .prototype
-                    .concretize_prototype(None, Some(&concrete_types.0));
+                    .concretize_prototype(None, Some(concrete_types.get_core_ref()));
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
                 )
@@ -666,7 +666,7 @@ impl TypeChecker {
                         let concrete_types = struct_symbol_data.get_concrete_types(index);
                         let concrete_prototype = constructor_meta_data
                             .prototype
-                            .concretize_prototype(Some(&concrete_types.0), None);
+                            .concretize_prototype(Some(concrete_types.get_core_ref()), None);
                         CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                             concrete_prototype,
                         )
@@ -738,7 +738,7 @@ impl TypeChecker {
             StructConstructorPrototypeCheckResult::Inferred(concrete_types) => {
                 return Ok(Type::new_with_struct(
                     &concrete_symbol_data.symbol_data,
-                    Some(ConcreteTypesTuple(concrete_types)),
+                    Some(ConcreteTypesTuple::new(concrete_types)),
                 ));
             }
         }
@@ -831,7 +831,7 @@ impl TypeChecker {
                             let class_method_name = class_method.token_value(&self.code);
                             let index = type_symbol_data.index;
                             let concrete_types = match index {
-                                Some(index) => Some(&struct_data.get_concrete_types(index).0),
+                                Some(index) => Some(struct_data.get_concrete_types(index)),
                                 None => None,
                             };
                             match struct_data.try_class_method(&class_method_name, concrete_types) {
@@ -983,7 +983,7 @@ impl TypeChecker {
                                 &property_name_str,
                                 &ConcretizationContext::new(
                                     match concrete_types {
-                                        Some(concrete_types) => Some(&concrete_types.0),
+                                        Some(concrete_types) => Some(concrete_types.get_core_ref()),
                                         None => None,
                                     },
                                     None,
@@ -1036,7 +1036,7 @@ impl TypeChecker {
             &method_name,
             &ConcretizationContext::new(
                 match concrete_types {
-                    Some(concrete_types) => Some(&concrete_types.0),
+                    Some(concrete_types) => Some(concrete_types.get_core_ref()),
                     None => None,
                 },
                 None,
@@ -1065,13 +1065,7 @@ impl TypeChecker {
             }
             None => {
                 // if field is not there then check in methods
-                match struct_data.try_method(
-                    &method_name,
-                    match concrete_types {
-                        Some(concrete_types) => Some(&concrete_types.0),
-                        None => None,
-                    },
-                ) {
+                match struct_data.try_method(&method_name, concrete_types.as_ref()) {
                     Some((partial_concrete_callable_data, _)) => {
                         let (concrete_types, ty_ranges, _) = self
                             .extract_angle_bracket_content_from_identifier_in_use(

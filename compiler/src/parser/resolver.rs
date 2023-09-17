@@ -801,7 +801,7 @@ impl Resolver {
         &mut self,
         ok_identifier_in_decl: &OkIdentifierInDeclNode,
         decl_place_category: GenericTypeDeclarationPlaceCategory,
-    ) -> (Option<GenericTypeParams>, Option<Vec<Type>>) {
+    ) -> (Option<GenericTypeParams>, Option<ConcreteTypesTuple>) {
         match &ok_identifier_in_decl.core_ref().generic_type_decls {
             Some((_, generic_type_decls, _)) => {
                 let mut generic_type_params_vec: Vec<(String, InterfaceBounds, TextRange)> = vec![];
@@ -881,7 +881,7 @@ impl Resolver {
                 }
                 return (
                     Some(GenericTypeParams(generic_type_params_vec)),
-                    Some(concrete_types),
+                    Some(ConcreteTypesTuple::new(concrete_types)),
                 );
             }
             None => return (None, None),
@@ -1309,13 +1309,7 @@ impl Resolver {
                         GenericTypeDeclarationPlaceCategory::InStruct,
                     );
                 let struct_ty = match &symbol_data {
-                    Some(symbol_data) => Type::new_with_struct(
-                        &symbol_data.0,
-                        match concrete_types {
-                            Some(concrete_types) => Some(ConcreteTypesTuple(concrete_types)),
-                            None => None,
-                        },
-                    ),
+                    Some(symbol_data) => Type::new_with_struct(&symbol_data.0, concrete_types),
                     None => Type::new_with_unknown(),
                 };
                 (struct_generic_type_decls, struct_ty)

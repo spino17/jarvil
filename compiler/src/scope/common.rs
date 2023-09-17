@@ -1,5 +1,5 @@
 use super::{
-    concrete::core::ConcretizationContext,
+    concrete::core::{ConcreteTypesTuple, ConcretizationContext},
     function::{CallableData, PartialConcreteCallableDataRef},
 };
 use crate::types::core::AbstractType;
@@ -52,12 +52,18 @@ impl MethodsMap {
     pub fn try_method<'a>(
         &'a self,
         method_name: &str,
-        global_concrete_types: Option<&'a Vec<Type>>,
+        global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         match self.methods.get(method_name) {
             Some((callable_data, range)) => {
                 return Some((
-                    PartialConcreteCallableDataRef::new(callable_data, global_concrete_types),
+                    PartialConcreteCallableDataRef::new(
+                        callable_data,
+                        match global_concrete_types {
+                            Some(concrete_types) => Some(concrete_types.get_core_ref()),
+                            None => None,
+                        },
+                    ),
                     *range,
                 ))
             }
