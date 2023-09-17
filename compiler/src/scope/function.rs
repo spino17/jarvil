@@ -133,7 +133,7 @@ impl CallablePrototypeData {
         Ok(())
     }
 
-    fn concretize_prototype_core(
+    pub fn concretize_prototype_core(
         &self,
         context: &ConcretizationContext,
     ) -> PrototypeConcretizationResult {

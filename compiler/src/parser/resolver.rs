@@ -600,9 +600,20 @@ impl Resolver {
                                     if has_generics_inside_angle_bracket_types {
                                         *has_generics = true;
                                     }
+                                    let concrete_types = match index {
+                                        Some(index) => Some(
+                                            symbol_data
+                                                .0
+                                                .get_core_ref()
+                                                .get_lambda_data_ref()
+                                                .get_concrete_types(index)
+                                                .clone(),
+                                        ),
+                                        None => None,
+                                    };
                                     TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                         &symbol_data.0,
-                                        index,
+                                        concrete_types,
                                     ))
                                 }
                                 Err(err) => TypeResolveKind::Unresolved(vec![

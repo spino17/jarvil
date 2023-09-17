@@ -32,15 +32,14 @@ impl LambdaTypeData {
 
     pub fn get_concrete_prototype(
         &self,
-        key: Option<ConcreteTypesRegistryKey>,
+        global_concrete_types: Option<&Vec<Type>>,
     ) -> PrototypeConcretizationResult {
-        match key {
-            Some(key) => {
-                let concrete_types = self.meta_data.get_concrete_types(key);
+        match global_concrete_types {
+            Some(concrete_types) => {
                 return self
                     .meta_data
                     .prototype
-                    .concretize_prototype(None, Some(&concrete_types.0));
+                    .concretize_prototype(None, Some(concrete_types));
             }
             None => return PrototypeConcretizationResult::UnConcretized(&self.meta_data.prototype),
         }

@@ -139,10 +139,13 @@ impl Type {
 
     pub fn new_with_lambda_named(
         symbol_data: &SymbolData<UserDefinedTypeData>,
-        index: Option<ConcreteTypesRegistryKey>,
+        concrete_types: Option<ConcreteTypesTuple>,
     ) -> Type {
         Type(
-            Rc::new(CoreType::Lambda(Lambda::new_with_named(symbol_data, index))),
+            Rc::new(CoreType::Lambda(Lambda::new_with_named(
+                symbol_data,
+                concrete_types,
+            ))),
             false,
         )
     }
