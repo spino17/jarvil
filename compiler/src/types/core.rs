@@ -6,10 +6,7 @@ use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::concrete::core::{
-    ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext,
-};
-use crate::scope::core::AbstractSymbolMetaData;
+use crate::scope::concrete::core::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
 use crate::scope::interfaces::InterfaceBounds;

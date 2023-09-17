@@ -3,10 +3,7 @@ use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
 use crate::parser::type_checker::{
     InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
 };
-use crate::scope::concrete::core::{
-    ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext,
-};
-use crate::scope::core::AbstractSymbolMetaData;
+use crate::scope::concrete::core::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::core::SymbolData;
 use crate::scope::function::CallablePrototypeData;
 use crate::scope::interfaces::InterfaceBounds;
@@ -187,8 +184,6 @@ impl AbstractType for Lambda {
         match self {
             Lambda::Named(concrete_symbol_data) => match &concrete_symbol_data.concrete_types {
                 Some(concrete_types) => {
-                    let symbol_data = concrete_symbol_data.symbol_data.get_core_ref();
-                    let lambda_data = symbol_data.get_lambda_data_ref();
                     let mut concretized_concrete_types = vec![];
                     for ty in &concrete_types.0 {
                         concretized_concrete_types.push(ty.concretize(context));

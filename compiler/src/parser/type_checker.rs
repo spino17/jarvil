@@ -15,7 +15,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams};
+use crate::scope::core::{AbstractSymbolMetaData, GenericTypeParams};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{
     CallableData, PartialCallableDataPrototypeCheckError, PrototypeConcretizationResult,

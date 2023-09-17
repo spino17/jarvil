@@ -1,7 +1,7 @@
 use super::{
     concrete::{
         core::{ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext},
-        registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
+        registry::GenericsSpecAndConcreteTypesRegistry,
     },
     core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams},
     errors::GenericTypeArgsCheckError,

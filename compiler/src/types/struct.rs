@@ -2,12 +2,9 @@ use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use super::helper::try_infer_types_from_tuple;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::ConcreteTypesTuple;
-use crate::scope::core::AbstractSymbolMetaData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::{
-    concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcretizationContext},
-    core::SymbolData,
-    interfaces::InterfaceBounds,
+    concrete::core::ConcretizationContext, core::SymbolData, interfaces::InterfaceBounds,
     types::core::UserDefinedTypeData,
 };
 

@@ -43,8 +43,6 @@ use crate::ast::ast::SkippedTokensNode;
 use crate::code::JarvilCode;
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
-use crate::scope::handler::SemanticStateDatabase;
-use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
