@@ -61,10 +61,7 @@ impl MethodsMap {
         match self.methods.get(method_name) {
             Some((callable_data, range)) => {
                 return Some((
-                    PartialConcreteCallableDataRef::get_from_registry_key(
-                        callable_data,
-                        global_concrete_types,
-                    ),
+                    PartialConcreteCallableDataRef::new(callable_data, global_concrete_types),
                     *range,
                 ))
             }

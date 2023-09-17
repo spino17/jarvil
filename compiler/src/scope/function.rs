@@ -300,13 +300,6 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
         }
     }
 
-    pub fn get_from_registry_key(
-        callable_data: &'a CallableData,
-        global_concrete_types: Option<&'a Vec<Type>>,
-    ) -> PartialConcreteCallableDataRef<'a> {
-        return PartialConcreteCallableDataRef::new(callable_data, global_concrete_types);
-    }
-
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
