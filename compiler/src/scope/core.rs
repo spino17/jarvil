@@ -64,8 +64,7 @@ pub trait AbstractSymbolData {
         concrete_types: &Option<Vec<Type>>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Result<(), GenericTypeArgsCheckError>;
 }
 
@@ -86,8 +85,7 @@ impl GenericTypeParams {
         &self,
         concrete_types: &Vec<Type>,
         type_ranges: &Vec<TextRange>,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Result<(), GenericTypeArgsCheckError> {
         let expected_len = self.len();
         let received_len = concrete_types.len();
@@ -100,11 +98,14 @@ impl GenericTypeParams {
         let mut incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
             let ty = &concrete_types[index];
-            if !ty.is_type_bounded_by_interfaces(interface_bounds, interface_registry, ty_registry)
-            {
+            if !ty.is_type_bounded_by_interfaces(
+                interface_bounds,
+                &semantic_state_db.interface_registry_table,
+                &mut semantic_state_db.type_registry_table,
+            ) {
                 incorrectly_bounded_types.push((
                     type_ranges[index],
-                    interface_bounds.to_string(interface_registry),
+                    interface_bounds.to_string(semantic_state_db),
                 ))
             }
         }
@@ -236,8 +237,7 @@ impl AbstractSymbolData for VariableSymbolData {
         concrete_types: &Option<Vec<Type>>,
         _type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        _interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        _ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        _semantic_state_db: &mut SemanticStateDatabase,
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(!is_concrete_types_none_allowed);
         if concrete_types.is_some() {
@@ -271,8 +271,7 @@ impl AbstractSymbolData for FunctionSymbolData {
         concrete_types: &Option<Vec<Type>>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(is_concrete_types_none_allowed);
         let function_data = self.0.get_core_ref();
@@ -282,8 +281,7 @@ impl AbstractSymbolData for FunctionSymbolData {
             concrete_types,
             type_ranges,
             true,
-            interface_registry,
-            ty_registry,
+            semantic_state_db,
         )
     }
 }
@@ -310,8 +308,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
         concrete_types: &Option<Vec<Type>>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Result<(), GenericTypeArgsCheckError> {
         match &*self.0.get_core_ref() {
             UserDefinedTypeData::Struct(struct_data) => {
@@ -321,8 +318,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
                     concrete_types,
                     type_ranges,
                     is_concrete_types_none_allowed,
-                    interface_registry,
-                    ty_registry,
+                    semantic_state_db,
                 );
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
@@ -332,8 +328,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
                     concrete_types,
                     type_ranges,
                     false,
-                    interface_registry,
-                    ty_registry,
+                    semantic_state_db,
                 );
             }
             UserDefinedTypeData::Generic(_) => {
@@ -370,8 +365,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
         concrete_types: &Option<Vec<Type>>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        interface_registry: &SymbolDataRegistryTable<InterfaceData>,
-        ty_registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
+        semantic_state_db: &mut SemanticStateDatabase,
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(!is_concrete_types_none_allowed);
         let interface_data = self.0.get_core_ref();
@@ -381,8 +375,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
             concrete_types,
             type_ranges,
             false,
-            interface_registry,
-            ty_registry,
+            semantic_state_db,
         )
     }
 }

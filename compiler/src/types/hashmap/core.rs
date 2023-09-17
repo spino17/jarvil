@@ -6,7 +6,7 @@ use crate::{
     scope::{
         concrete::core::ConcretizationContext,
         function::CallableData,
-        handler::SymbolDataRegistryTable,
+        handler::{SemanticStateDatabase, SymbolDataRegistryTable},
         interfaces::{InterfaceBounds, InterfaceData},
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
     },
@@ -26,6 +26,14 @@ impl HashMap {
             key_type,
             value_type,
         }
+    }
+
+    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        format!(
+            "{{{} : {}}}",
+            self.key_type.to_string(semantic_state_db),
+            self.value_type.to_string(semantic_state_db)
+        )
     }
 }
 
@@ -116,16 +124,6 @@ impl AbstractType for HashMap {
             }
             _ => Err(()),
         }
-    }
-}
-
-impl ToString for HashMap {
-    fn to_string(&self) -> String {
-        format!(
-            "{{{} : {}}}",
-            self.key_type.to_string(),
-            self.value_type.to_string()
-        )
     }
 }
 

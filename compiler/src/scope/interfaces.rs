@@ -6,7 +6,7 @@ use super::{
     },
     core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
     function::{CallableData, PartialConcreteCallableDataRef},
-    handler::SymbolDataRegistryTable,
+    handler::{SemanticStateDatabase, SymbolDataRegistryTable},
     types::core::UserDefinedTypeData,
 };
 use crate::types::core::Type;
@@ -136,7 +136,7 @@ impl InterfaceObject {
         return false;
     }
 
-    pub fn to_string(&self, registry: &SymbolDataRegistryTable<InterfaceData>) -> String {
+    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
         let mut s = self.0.as_ref().0.to_string();
         match self.0.as_ref().1.index {
             Some(index) => {
@@ -147,8 +147,8 @@ impl InterfaceObject {
                         .0
                         .as_ref()
                         .1
-                        .get_concrete_types(registry, index)
-                        .to_string(),
+                        .get_concrete_types(&semantic_state_db.interface_registry_table, index)
+                        .to_string(semantic_state_db),
                 );
                 s.push('>');
                 return s;
@@ -242,15 +242,15 @@ impl InterfaceBounds {
             && other.is_subset(self, interface_registry, ty_registry)
     }
 
-    pub fn to_string(&self, interface_registry: &SymbolDataRegistryTable<InterfaceData>) -> String {
+    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
         let mut s = "{".to_string();
         let len = self.interfaces.len();
         if len > 0 {
-            s.push_str(&self.interfaces[0].0.to_string(interface_registry));
+            s.push_str(&self.interfaces[0].0.to_string(semantic_state_db));
         }
         for i in 1..len {
             s.push_str(" + ");
-            s.push_str(&self.interfaces[i].0.to_string(interface_registry));
+            s.push_str(&self.interfaces[i].0.to_string(semantic_state_db));
         }
         s.push('}');
         s

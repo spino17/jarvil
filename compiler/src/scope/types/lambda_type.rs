@@ -1,9 +1,9 @@
 use crate::{
     scope::{
         concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple},
-        core::{AbstractConcreteTypesHandler, GenericTypeParams},
+        core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
         function::{CallableData, CallableKind, PrototypeConcretizationResult},
-        handler::SymbolDataRegistryTable,
+        handler::{SemanticStateDatabase, SymbolDataRegistryTable},
     },
     types::core::Type,
 };
@@ -36,11 +36,12 @@ impl LambdaTypeData {
     pub fn get_concrete_prototype(
         &self,
         key: Option<ConcreteTypesRegistryKey>,
+        symbol_data: &SymbolData<UserDefinedTypeData>,
         registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> PrototypeConcretizationResult {
         match key {
             Some(key) => {
-                let concrete_types = self.meta_data.get_concrete_types(key);
+                let concrete_types = registry.get_concrete_types(symbol_data, key);
                 return self.meta_data.prototype.concretize_prototype(
                     None,
                     Some(&concrete_types.0),

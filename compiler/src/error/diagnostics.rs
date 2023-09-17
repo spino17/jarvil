@@ -1,7 +1,11 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
 use crate::{
-    lexer::token::Token, parser::helper::format_symbol,
-    scope::interfaces::PartialConcreteInterfaceMethodsCheckError, types::core::Type,
+    lexer::token::Token,
+    parser::helper::format_symbol,
+    scope::{
+        handler::SemanticStateDatabase, interfaces::PartialConcreteInterfaceMethodsCheckError,
+    },
+    types::core::Type,
 };
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use owo_colors::{OwoColorize, Style};
@@ -888,9 +892,9 @@ pub struct ImmutableTypeNotAssignableError {
 }
 
 impl ImmutableTypeNotAssignableError {
-    pub fn new(ty: &Type, range: TextRange) -> Self {
+    pub fn new(ty: String, range: TextRange) -> Self {
         ImmutableTypeNotAssignableError {
-            ty: ty.to_string(),
+            ty,
             span: range_to_span(range).into(),
             help: Some(
                 "`str` and `tuple` are immutable types which are not assignable"
@@ -1224,12 +1228,16 @@ impl InferredTypesNotBoundedByInterfacesError {
         range: TextRange,
         err_strs: Vec<(String, String)>,
         concrete_types: Vec<Type>,
+        semantic_state_db: &SemanticStateDatabase,
     ) -> Self {
         let mut concrete_types_str = "<".to_string();
         let concrete_types_len = concrete_types.len();
-        concrete_types_str.push_str(&concrete_types[0].to_string());
+        concrete_types_str.push_str(&concrete_types[0].to_string(semantic_state_db));
         for i in 1..concrete_types_len {
-            concrete_types_str.push_str(&format!(", {}", concrete_types[i].to_string()));
+            concrete_types_str.push_str(&format!(
+                ", {}",
+                concrete_types[i].to_string(semantic_state_db)
+            ));
         }
         concrete_types_str.push('>');
         let mut err_msg = format!(

@@ -1,5 +1,6 @@
 use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::SymbolData;
+use crate::scope::handler::SemanticStateDatabase;
 use crate::scope::handler::SymbolDataRegistryTable;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
@@ -20,16 +21,17 @@ impl ConcreteTypesTuple {
     pub fn get_concrete_types(&self) -> &ConcreteTypesTuple {
         self
     }
-}
 
-impl ToString for ConcreteTypesTuple {
-    fn to_string(&self) -> String {
+    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
         let mut s = "".to_string();
         let concrete_types = &self.0;
         let len = concrete_types.len();
-        s.push_str(&concrete_types[0].to_string());
+        s.push_str(&concrete_types[0].to_string(semantic_state_db));
         for i in 1..len {
-            s.push_str(&format!(", {}", concrete_types[i].to_string()));
+            s.push_str(&format!(
+                ", {}",
+                concrete_types[i].to_string(semantic_state_db)
+            ));
         }
         return s;
     }
@@ -73,9 +75,7 @@ impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
         registry: &SymbolDataRegistryTable<T>,
         index: ConcreteTypesRegistryKey,
     ) -> ConcreteTypesTuple {
-        registry
-            .get_concrete_types(&self.symbol_data, index)
-            .clone()
+        registry.get_concrete_types(&self.symbol_data, index)
     }
 }
 

@@ -308,8 +308,7 @@ impl Resolver {
             &concrete_types,
             &ty_ranges,
             is_concrete_types_none_allowed,
-            &self.semantic_state_db.interface_registry_table,
-            &mut self.semantic_state_db.type_registry_table,
+            &mut self.semantic_state_db,
         );
         match result {
             Ok(_) => {
@@ -1179,8 +1178,8 @@ impl Resolver {
                             .is_eq(&lambda_ty, &mut self.semantic_state_db.type_registry_table)
                         {
                             let err = InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError::new(
-                                ty_from_optional_annotation.to_string(),
-                                lambda_ty.to_string(),
+                                ty_from_optional_annotation.to_string(&self.semantic_state_db),
+                                lambda_ty.to_string(&self.semantic_state_db),
                                 range
                             );
                             self.errors.push(Diagnostics::InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(err));

@@ -346,8 +346,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                             Some(type_ranges) => type_ranges,
                             None => unreachable!(),
                         },
-                        &type_checker.semantic_state_db.interface_registry_table,
-                        &mut type_checker.semantic_state_db.type_registry_table,
+                        &mut type_checker.semantic_state_db,
                     )?;
                     let concrete_prototype = self.callable_data.prototype.concretize_prototype(
                         self.concrete_types,

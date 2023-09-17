@@ -9,7 +9,7 @@ use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::{ConcreteTypesRegistryKey, ConcretizationContext};
 use crate::scope::core::SymbolData;
 use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
-use crate::scope::handler::SymbolDataRegistryTable;
+use crate::scope::handler::{SemanticStateDatabase, SymbolDataRegistryTable};
 use crate::scope::interfaces::{InterfaceBounds, InterfaceData};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
@@ -411,6 +411,22 @@ impl Type {
             }
         }
     }
+
+    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        match self.0.as_ref() {
+            CoreType::Atomic(atomic_type) => atomic_type.to_string(),
+            CoreType::Struct(struct_type) => struct_type.to_string(semantic_state_db),
+            CoreType::Lambda(lambda_type) => lambda_type.to_string(semantic_state_db),
+            CoreType::Array(array_type) => array_type.to_string(semantic_state_db),
+            CoreType::Tuple(tuple_type) => tuple_type.to_string(semantic_state_db),
+            CoreType::HashMap(hashmap_type) => hashmap_type.to_string(semantic_state_db),
+            CoreType::Generic(generic_type) => generic_type.to_string(semantic_state_db),
+            CoreType::Unknown => UNKNOWN.to_string(),
+            CoreType::Void => "()".to_string(),
+            CoreType::Unset => UNSET.to_string(),
+            CoreType::Any => ANY.to_string(),
+        }
+    }
 }
 
 impl AbstractType for Type {
@@ -601,25 +617,6 @@ impl AbstractType for Type {
                 }
                 Ok(())
             }
-        }
-    }
-}
-
-impl std::fmt::Display for Type {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => write!(f, "{}", atomic_type.to_string()),
-            CoreType::Struct(struct_type) => write!(f, "{}", struct_type.to_string()),
-            CoreType::Lambda(lambda_type) => write!(f, "{}", lambda_type.to_string()),
-            CoreType::Array(array_type) => write!(f, "{}", array_type.to_string()),
-            CoreType::Tuple(tuple_type) => write!(f, "{}", tuple_type.to_string()),
-            CoreType::HashMap(hashmap_type) => write!(f, "{}", hashmap_type.to_string()),
-            CoreType::Generic(generic_type) => write!(f, "{}", generic_type.to_string()),
-            CoreType::Unknown => write!(f, "{}", UNKNOWN),
-            CoreType::Void => write!(f, "()"),
-            CoreType::Unset => write!(f, "{}", UNSET),
-            CoreType::Any => write!(f, "{}", ANY),
-            _ => Ok(()),
         }
     }
 }

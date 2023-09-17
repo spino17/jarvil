@@ -464,8 +464,8 @@ impl TypeChecker {
                             .is_eq(expected_ty, &mut self.semantic_state_db.type_registry_table)
                         {
                             mismatch_types_vec.push((
-                                expected_ty.to_string(),
-                                param_ty.to_string(),
+                                expected_ty.to_string(&self.semantic_state_db),
+                                param_ty.to_string(&self.semantic_state_db),
                                 index + 1,
                                 received_param.range(),
                             ));
@@ -501,9 +501,8 @@ impl TypeChecker {
                         &mut self.semantic_state_db.type_registry_table,
                     ) {
                         error_strs.push((
-                            inferred_ty.to_string(),
-                            interface_bounds
-                                .to_string(&self.semantic_state_db.interface_registry_table),
+                            inferred_ty.to_string(&self.semantic_state_db),
+                            interface_bounds.to_string(&self.semantic_state_db),
                         ));
                     }
                 }
@@ -545,8 +544,8 @@ impl TypeChecker {
                         &mut self.semantic_state_db.type_registry_table,
                     ) {
                         mismatch_types_vec.push((
-                            expected_param_type.to_string(),
-                            param_type_obj.to_string(),
+                            expected_param_type.to_string(&self.semantic_state_db),
+                            param_type_obj.to_string(&self.semantic_state_db),
                             index + 1,
                             received_param.range(),
                         ));
@@ -658,7 +657,7 @@ impl TypeChecker {
             }
             _ => {
                 return Err(AtomStartTypeCheckError::IdentifierNotCallable(
-                    lambda_type.to_string(),
+                    lambda_type.to_string(&self.semantic_state_db),
                 ))
             }
         }
@@ -1007,7 +1006,7 @@ impl TypeChecker {
                         Err(_) => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::Field,
-                                atom_type_obj.to_string(),
+                                atom_type_obj.to_string(&self.semantic_state_db),
                                 property.range(),
                                 atom.range(),
                             );
@@ -1156,15 +1155,17 @@ impl TypeChecker {
                         MethodAccessTypeCheckError::MethodNotFound => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::Method,
-                                atom_type_obj.to_string(),
+                                atom_type_obj.to_string(&self.semantic_state_db),
                                 method.range(),
                                 atom.range(),
                             );
                             self.log_error(Diagnostics::PropertyDoesNotExist(err));
                         }
                         MethodAccessTypeCheckError::FieldNotCallable(ty) => {
-                            let err =
-                                FieldNotCallableError::new(ty.to_string(), ok_identifier.range());
+                            let err = FieldNotCallableError::new(
+                                ty.to_string(&self.semantic_state_db),
+                                ok_identifier.range(),
+                            );
                             self.log_error(Diagnostics::FieldNotCallable(err));
                         }
                         MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
@@ -1289,8 +1290,8 @@ impl TypeChecker {
             Some(ty) => return (ty, Some(atom_type_obj)),
             None => {
                 let err = ExpressionIndexingNotValidError::new(
-                    atom_type_obj.to_string(),
-                    index_type_obj.to_string(),
+                    atom_type_obj.to_string(&self.semantic_state_db),
+                    index_type_obj.to_string(&self.semantic_state_db),
                     atom.range(),
                     index_expr.range(),
                 );
@@ -1363,8 +1364,8 @@ impl TypeChecker {
                         &mut self.semantic_state_db.type_registry_table,
                     ) {
                         let err = IncorrectExpressionTypeError::new(
-                            first_expr_ty.to_string(),
-                            ty.to_string(),
+                            first_expr_ty.to_string(&self.semantic_state_db),
+                            ty.to_string(&self.semantic_state_db),
                             expr.range(),
                         );
                         self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -1403,8 +1404,8 @@ impl TypeChecker {
                         &mut self.semantic_state_db.type_registry_table,
                     ) {
                         let err = IncorrectExpressionTypeError::new(
-                            first_key_ty.to_string(),
-                            key_ty.to_string(),
+                            first_key_ty.to_string(&self.semantic_state_db),
+                            key_ty.to_string(&self.semantic_state_db),
                             core_key_value_pair.key_expr.range(),
                         );
                         self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -1414,8 +1415,8 @@ impl TypeChecker {
                         &mut self.semantic_state_db.type_registry_table,
                     ) {
                         let err = IncorrectExpressionTypeError::new(
-                            first_value_ty.to_string(),
-                            value_ty.to_string(),
+                            first_value_ty.to_string(&self.semantic_state_db),
+                            value_ty.to_string(&self.semantic_state_db),
                             core_key_value_pair.value_expr.range(),
                         );
                         self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -1484,7 +1485,7 @@ impl TypeChecker {
                     return operand_type;
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type.to_string(),
+                        operand_type.to_string(&self.semantic_state_db),
                         "numeric (`int`, `float`)",
                         "`+` or `-`",
                         unary_expr.range(),
@@ -1499,7 +1500,7 @@ impl TypeChecker {
                     return operand_type;
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type.to_string(),
+                        operand_type.to_string(&self.semantic_state_db),
                         "boolean",
                         "`not`",
                         unary_expr.range(),
@@ -1533,8 +1534,8 @@ impl TypeChecker {
             Some(type_obj) => return type_obj,
             None => {
                 let err = BinaryOperatorInvalidOperandsError::new(
-                    l_type.to_string(),
-                    r_type.to_string(),
+                    l_type.to_string(&self.semantic_state_db),
+                    r_type.to_string(&self.semantic_state_db),
                     left_expr.range(),
                     right_expr.range(),
                     operator.range(),
@@ -1572,8 +1573,8 @@ impl TypeChecker {
                 },
                 None => {
                     let err = BinaryOperatorInvalidOperandsError::new(
-                        l_type.to_string(),
-                        r_type.to_string(),
+                        l_type.to_string(&self.semantic_state_db),
+                        r_type.to_string(&self.semantic_state_db),
                         left_expr.range(),
                         right_expr.range(),
                         operator.range(),
@@ -1608,7 +1609,7 @@ impl TypeChecker {
                     if let Some(interior_atom_type) = interior_atom_type {
                         if interior_atom_type.is_immutable() {
                             let err = ImmutableTypeNotAssignableError::new(
-                                &interior_atom_type,
+                                interior_atom_type.to_string(&self.semantic_state_db),
                                 l_index_expr.core_ref().atom.range(),
                             );
                             self.log_error(Diagnostics::ImmutableTypeNotAssignable(err));
@@ -1634,8 +1635,8 @@ impl TypeChecker {
         }
         if !l_type.is_eq(&r_type, &mut self.semantic_state_db.type_registry_table) {
             let err = MismatchedTypesOnLeftRightError::new(
-                l_type.to_string(),
-                r_type.to_string(),
+                l_type.to_string(&self.semantic_state_db),
+                r_type.to_string(&self.semantic_state_db),
                 range,
                 r_assign.range(),
             );
@@ -1664,8 +1665,8 @@ impl TypeChecker {
                     if !variable_ty.is_eq(&r_type, &mut self.semantic_state_db.type_registry_table)
                     {
                         let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
-                            variable_ty.to_string(),
-                            r_type.to_string(),
+                            variable_ty.to_string(&self.semantic_state_db),
+                            r_type.to_string(&self.semantic_state_db),
                             core_variable_decl.name.range(),
                             r_variable_decl.range(),
                         );
@@ -1780,8 +1781,8 @@ impl TypeChecker {
                 &mut self.semantic_state_db.type_registry_table,
             ) {
                 let err = MismatchedReturnTypeError::new(
-                    expected_type_obj.to_string(),
-                    expr_type_obj.to_string(),
+                    expected_type_obj.to_string(&self.semantic_state_db),
+                    expr_type_obj.to_string(&self.semantic_state_db),
                     core_return_stmt.return_keyword.range(),
                 );
                 self.log_error(Diagnostics::MismatchedReturnType(err));
@@ -1819,8 +1820,7 @@ impl TypeChecker {
                             let err = InterfaceMethodsInStructCheckError::new(
                                 missing_interface_method_names,
                                 errors,
-                                interface_obj
-                                    .to_string(&self.semantic_state_db.interface_registry_table),
+                                interface_obj.to_string(&self.semantic_state_db),
                                 *range,
                             );
                             self.log_error(Diagnostics::InterfaceMethodsInStructCheck(err));
@@ -1919,8 +1919,12 @@ impl TypeChecker {
                 err_strs,
                 concrete_types,
             ) => {
-                let err =
-                    InferredTypesNotBoundedByInterfacesError::new(range, err_strs, concrete_types);
+                let err = InferredTypesNotBoundedByInterfacesError::new(
+                    range,
+                    err_strs,
+                    concrete_types,
+                    &self.semantic_state_db,
+                );
                 self.log_error(Diagnostics::InferredTypesNotBoundedByInterfaces(err));
             }
         }

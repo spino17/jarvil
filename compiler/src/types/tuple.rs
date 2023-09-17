@@ -5,7 +5,7 @@ use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{core::ConcretizationContext, registry},
-        handler::SymbolDataRegistryTable,
+        handler::{SemanticStateDatabase, SymbolDataRegistryTable},
         interfaces::{InterfaceBounds, InterfaceData},
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
     },
@@ -48,6 +48,17 @@ impl Tuple {
             }
             _ => None,
         }
+    }
+
+    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        let mut str = self.sub_types[0].to_string(semantic_state_db);
+        for i in 1..self.sub_types.len() {
+            str.push_str(&format!(
+                ", {}",
+                self.sub_types[i].to_string(semantic_state_db)
+            ));
+        }
+        format!("({})", str)
     }
 }
 
@@ -149,16 +160,6 @@ impl AbstractType for Tuple {
             }
             _ => Err(()),
         }
-    }
-}
-
-impl ToString for Tuple {
-    fn to_string(&self) -> String {
-        let mut str = self.sub_types[0].to_string();
-        for i in 1..self.sub_types.len() {
-            str.push_str(&format!(", {}", self.sub_types[i]));
-        }
-        format!("({})", str)
     }
 }
 

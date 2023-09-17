@@ -1,7 +1,7 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use super::helper::try_infer_types_from_tuple;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::handler::SymbolDataRegistryTable;
+use crate::scope::handler::{SemanticStateDatabase, SymbolDataRegistryTable};
 use crate::scope::interfaces::InterfaceData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::{
@@ -86,15 +86,17 @@ impl Struct {
         return false;
     }
 
-    pub fn to_string(&self, registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>) -> String {
+    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
         let mut s = self.name().to_string();
         match self.semantic_data.index {
             Some(index) => {
                 s.push('<');
                 let symbol_data = self.semantic_data.get_core_ref();
                 let struct_data = symbol_data.get_struct_data_ref();
-                let concrete_types = self.semantic_data.get_concrete_types(registry, index);
-                s.push_str(&concrete_types.to_string());
+                let concrete_types = self
+                    .semantic_data
+                    .get_concrete_types(&semantic_state_db.type_registry_table, index);
+                s.push_str(&concrete_types.to_string(semantic_state_db));
                 s.push('>');
                 return s;
             }

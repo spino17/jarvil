@@ -8,7 +8,7 @@ use crate::scope::concrete::core::{
 };
 use crate::scope::core::SymbolData;
 use crate::scope::function::CallablePrototypeData;
-use crate::scope::handler::SymbolDataRegistryTable;
+use crate::scope::handler::{SemanticStateDatabase, SymbolDataRegistryTable};
 use crate::scope::interfaces::{InterfaceBounds, InterfaceData};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
@@ -55,6 +55,7 @@ impl Lambda {
                 let lambda_data = symbol_data.get_lambda_data_ref();
                 let prototype_result = lambda_data.get_concrete_prototype(
                     index,
+                    &semantic_data.symbol_data,
                     &mut type_checker.semantic_state_db.type_registry_table,
                 );
                 let prototype_ref = prototype_result.get_prototype_ref();
@@ -74,7 +75,7 @@ impl Lambda {
         }
     }
 
-    pub fn to_string(&self, registry: &SymbolDataRegistryTable<UserDefinedTypeData>) -> String {
+    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
         match self {
             Lambda::Named(semantic_data) => {
                 let mut s = semantic_data.symbol_data.identifier_name().to_string();
@@ -83,8 +84,9 @@ impl Lambda {
                         s.push('<');
                         let symbol_data = semantic_data.get_core_ref();
                         let lambda_data = symbol_data.get_lambda_data_ref();
-                        let concrete_types = semantic_data.get_concrete_types(registry, index);
-                        s.push_str(&concrete_types.to_string());
+                        let concrete_types = semantic_data
+                            .get_concrete_types(&semantic_state_db.type_registry_table, index);
+                        s.push_str(&concrete_types.to_string(semantic_state_db));
                         s.push('>');
                         return s;
                     }
@@ -100,10 +102,14 @@ impl Lambda {
                     if flag {
                         params_str.push_str(", ")
                     }
-                    params_str.push_str(&format!("{}", param.to_string()));
+                    params_str.push_str(&format!("{}", param.to_string(semantic_state_db)));
                     flag = true;
                 }
-                format!("lambda({}) -> {}", params_str, self_return_type)
+                format!(
+                    "lambda({}) -> {}",
+                    params_str,
+                    self_return_type.to_string(semantic_state_db)
+                )
             }
         }
     }
@@ -122,15 +128,21 @@ impl AbstractType for Lambda {
                     Lambda::Named(self_named) => {
                         let self_symbol_data = self_named.get_core_ref();
                         let self_data = self_symbol_data.get_lambda_data_ref();
-                        let self_prototype_result =
-                            self_data.get_concrete_prototype(self_named.index, registry);
+                        let self_prototype_result = self_data.get_concrete_prototype(
+                            self_named.index,
+                            &self_named.symbol_data,
+                            registry,
+                        );
                         let self_prototype_ref = self_prototype_result.get_prototype_ref();
                         match other_data {
                             Lambda::Named(other_named) => {
                                 let other_symbol_data = other_named.symbol_data.get_core_ref();
                                 let other_data = other_symbol_data.get_lambda_data_ref();
-                                let other_prototype_result =
-                                    other_data.get_concrete_prototype(other_named.index, registry);
+                                let other_prototype_result = other_data.get_concrete_prototype(
+                                    other_named.index,
+                                    &other_named.symbol_data,
+                                    registry,
+                                );
                                 let other_prototype_ref =
                                     other_prototype_result.get_prototype_ref();
                                 return other_prototype_ref.is_eq(self_prototype_ref, registry);
@@ -144,8 +156,11 @@ impl AbstractType for Lambda {
                         Lambda::Named(other_named) => {
                             let other_symbol_data = other_named.get_core_ref();
                             let other_data = other_symbol_data.get_lambda_data_ref();
-                            let other_prototype_result =
-                                other_data.get_concrete_prototype(other_named.index, registry);
+                            let other_prototype_result = other_data.get_concrete_prototype(
+                                other_named.index,
+                                &other_named.symbol_data,
+                                registry,
+                            );
                             let other_prototype_ref = other_prototype_result.get_prototype_ref();
                             return other_prototype_ref.is_eq(self_prototype, registry);
                         }
@@ -269,15 +284,21 @@ impl AbstractType for Lambda {
                 Lambda::Named(self_named) => {
                     let self_symbol_data = self_named.get_core_ref();
                     let self_data = self_symbol_data.get_lambda_data_ref();
-                    let self_prototype_result =
-                        self_data.get_concrete_prototype(self_named.index, registry);
+                    let self_prototype_result = self_data.get_concrete_prototype(
+                        self_named.index,
+                        &self_named.symbol_data,
+                        registry,
+                    );
                     let self_prototype_ref = self_prototype_result.get_prototype_ref();
                     match lambda_ty {
                         Lambda::Named(other_named) => {
                             let other_symbol_data = other_named.symbol_data.get_core_ref();
                             let other_data = other_symbol_data.get_lambda_data_ref();
-                            let other_prototype_result =
-                                other_data.get_concrete_prototype(other_named.index, registry);
+                            let other_prototype_result = other_data.get_concrete_prototype(
+                                other_named.index,
+                                &other_named.symbol_data,
+                                registry,
+                            );
                             let other_prototype_ref = other_prototype_result.get_prototype_ref();
                             self_prototype_ref.try_infer_type(
                                 other_prototype_ref,

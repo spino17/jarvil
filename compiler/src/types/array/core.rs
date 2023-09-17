@@ -3,7 +3,7 @@ use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::core::ConcretizationContext;
 use crate::scope::function::CallableData;
-use crate::scope::handler::SymbolDataRegistryTable;
+use crate::scope::handler::{SemanticStateDatabase, SymbolDataRegistryTable};
 use crate::scope::interfaces::{InterfaceBounds, InterfaceData};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
@@ -44,6 +44,10 @@ impl Array {
             }
             _ => None,
         }
+    }
+
+    pub fn to_string(&self, semantic_state_db: &SemanticStateDatabase) -> String {
+        format!("[{}]", self.element_type.to_string(semantic_state_db))
     }
 }
 
@@ -115,12 +119,6 @@ impl AbstractType for Array {
             ),
             _ => Err(()),
         }
-    }
-}
-
-impl ToString for Array {
-    fn to_string(&self) -> String {
-        format!("[{}]", self.element_type.to_string())
     }
 }
 

@@ -91,9 +91,9 @@ impl<T: AbstractConcreteTypesHandler> SymbolDataRegistryTable<T> {
         &self,
         key: &SymbolData<T>,
         index: ConcreteTypesRegistryKey,
-    ) -> &ConcreteTypesTuple {
+    ) -> ConcreteTypesTuple {
         match self.core.get(key) {
-            Some(registry) => registry.get_concrete_types_at_key(index),
+            Some(registry) => registry.get_concrete_types_at_key(index).clone(),
             None => unreachable!(),
         }
     }
