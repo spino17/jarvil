@@ -41,10 +41,10 @@ impl InterfaceData {
     pub fn try_field(
         &self,
         field_name: &str,
-        key: Option<ConcreteTypesRegistryKey>,
+        concrete_types: Option<Vec<Type>>,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Option<(Type, TextRange)> {
-        // self.fields.try_field(field_name, key, self)
-        todo!()
+        self.fields.try_field(field_name, concrete_types, registry)
     }
 
     pub fn try_method(
@@ -104,6 +104,7 @@ impl InterfaceObject {
                             .0
                             .as_ref()
                             .1
+                            .get_symbol_data_ref()
                             .get_concrete_types(
                                 &semantic_state_db.interface_registry_table,
                                 self_key,
@@ -115,6 +116,7 @@ impl InterfaceObject {
                             .0
                             .as_ref()
                             .1
+                            .get_symbol_data_ref()
                             .get_concrete_types(
                                 &semantic_state_db.interface_registry_table,
                                 other_key,
@@ -151,6 +153,7 @@ impl InterfaceObject {
                         .0
                         .as_ref()
                         .1
+                        .get_symbol_data_ref()
                         .get_concrete_types(&semantic_state_db.interface_registry_table, index)
                         .to_string(semantic_state_db),
                 );

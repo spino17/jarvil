@@ -56,26 +56,8 @@ impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
         self.symbol_data.get_core_mut_ref::<'a>()
     }
 
-    pub fn register_concrete_types(
-        &self,
-        concrete_types: Vec<Type>,
-        registry: &mut SymbolDataRegistryTable<T>,
-    ) -> ConcreteTypesRegistryKey {
-        match self
-            .symbol_data
-            .register_concrete_types(Some(concrete_types), registry)
-        {
-            Some(key) => key,
-            None => unreachable!(),
-        }
-    }
-
-    pub fn get_concrete_types(
-        &self,
-        registry: &SymbolDataRegistryTable<T>,
-        index: ConcreteTypesRegistryKey,
-    ) -> ConcreteTypesTuple {
-        registry.get_concrete_types(&self.symbol_data, index)
+    pub fn get_symbol_data_ref(&self) -> &SymbolData<T> {
+        &self.symbol_data
     }
 }
 

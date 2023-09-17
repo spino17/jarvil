@@ -1,7 +1,13 @@
 use super::{
-    concrete::{core::ConcreteTypesRegistryKey, registry::ConcreteTypesRegistryCore},
+    concrete::{
+        core::{ConcreteTypesRegistryKey, ConcretizationContext},
+        registry::ConcreteTypesRegistryCore,
+    },
     function::{CallableData, PartialConcreteCallableDataRef},
+    handler::SymbolDataRegistryTable,
+    types::core::UserDefinedTypeData,
 };
+use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
@@ -19,21 +25,19 @@ impl FieldsMap {
     pub fn try_field(
         &self,
         field_name: &str,
-        key: Option<ConcreteTypesRegistryKey>,
-        registry: &mut ConcreteTypesRegistryCore,
+        concrete_types: Option<Vec<Type>>,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Option<(Type, TextRange)> {
-        /*
         match self.fields.get(field_name) {
             Some((ty, range)) => {
                 if ty.is_concretization_required() {
-                    match key {
-                        Some(key) => {
-                            let concrete_types = registry.get_concrete_types_at_key(key);
+                    match concrete_types {
+                        Some(concrete_types) => {
                             return Some((
-                                ty.concretize(&ConcretizationContext::new(
-                                    Some(&concrete_types.0),
-                                    None,
-                                ), ),
+                                ty.concretize(
+                                    &ConcretizationContext::new(Some(&concrete_types), None),
+                                    registry,
+                                ),
                                 *range,
                             ));
                         }
@@ -44,8 +48,7 @@ impl FieldsMap {
                 }
             }
             None => None,
-        }*/
-        todo!()
+        }
     }
 }
 

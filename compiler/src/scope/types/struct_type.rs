@@ -1,6 +1,7 @@
 use crate::scope::common::{FieldsMap, MethodsMap};
 use crate::scope::concrete::registry::GenericsSpecAndConcreteTypesRegistry;
 use crate::scope::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
+use crate::scope::handler::SymbolDataRegistryTable;
 use crate::scope::interfaces::InterfaceBounds;
 use crate::{
     scope::{
@@ -11,6 +12,8 @@ use crate::{
 };
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
+
+use super::core::UserDefinedTypeData;
 
 #[derive(Debug)]
 pub struct StructTypeData {
@@ -52,10 +55,10 @@ impl StructTypeData {
     pub fn try_field(
         &self,
         field_name: &str,
-        key: Option<ConcreteTypesRegistryKey>,
+        concrete_types: Option<Vec<Type>>,
+        registry: &mut SymbolDataRegistryTable<UserDefinedTypeData>,
     ) -> Option<(Type, TextRange)> {
-        // self.fields.try_field(field_name, key, self)
-        todo!()
+        self.fields.try_field(field_name, concrete_types, registry)
     }
 
     pub fn try_method(

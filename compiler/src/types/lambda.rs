@@ -152,12 +152,14 @@ impl AbstractType for Lambda {
                             match self_concrete_symbol_data.index {
                                 Some(self_index) => {
                                     let self_concrete_types = self_concrete_symbol_data
+                                        .get_symbol_data_ref()
                                         .get_concrete_types(registry, self_index)
                                         .0;
                                     let self_len = self_concrete_types.len();
 
                                     let other_index = other_concrete_symbol_data.index.unwrap();
                                     let other_concrete_types = other_concrete_symbol_data
+                                        .get_symbol_data_ref()
                                         .get_concrete_types(registry, other_index)
                                         .0;
                                     let other_len = other_concrete_types.len();
@@ -197,7 +199,10 @@ impl AbstractType for Lambda {
             Lambda::Named(concrete_symbol_data) => match concrete_symbol_data.index {
                 Some(index) => {
                     let symbol_data = concrete_symbol_data.get_core_ref();
-                    let concrete_types = concrete_symbol_data.get_concrete_types(registry, index).0;
+                    let concrete_types = concrete_symbol_data
+                        .get_symbol_data_ref()
+                        .get_concrete_types(registry, index)
+                        .0;
                     let mut concretized_concrete_types = vec![];
                     for ty in concrete_types {
                         concretized_concrete_types.push(ty.concretize(context, registry));
@@ -286,6 +291,7 @@ impl AbstractType for Lambda {
                     Some(index) => {
                         s.push('<');
                         let concrete_types = semantic_data
+                            .get_symbol_data_ref()
                             .get_concrete_types(&semantic_state_db.type_registry_table, index);
                         s.push_str(&concrete_types.to_string(semantic_state_db));
                         s.push('>');

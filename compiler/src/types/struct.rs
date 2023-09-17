@@ -33,6 +33,20 @@ impl Struct {
         self.semantic_data.symbol_data.identifier_name()
     }
 
+    pub fn get_concrete_types(
+        &self,
+        registry: &SymbolDataRegistryTable<UserDefinedTypeData>,
+    ) -> Option<Vec<Type>> {
+        match self.semantic_data.index {
+            Some(index) => Some(
+                registry
+                    .get_concrete_types(&self.semantic_data.symbol_data, index)
+                    .0,
+            ),
+            None => None,
+        }
+    }
+
     fn compare<
         F: Fn(
             &Type,
@@ -53,14 +67,18 @@ impl Struct {
                     Some(other_key) => {
                         let self_symbol_data = self.semantic_data.get_core_ref();
                         let self_struct_data = self_symbol_data.get_struct_data_ref();
-                        let self_concrete_types =
-                            self.semantic_data.get_concrete_types(registry, self_key).0;
+                        let self_concrete_types = self
+                            .semantic_data
+                            .get_symbol_data_ref()
+                            .get_concrete_types(registry, self_key)
+                            .0;
                         let self_len = self_concrete_types.len();
 
                         let other_symbol_data = other.semantic_data.get_core_ref();
                         let other_struct_data = other_symbol_data.get_struct_data_ref();
                         let other_concrete_types = other
                             .semantic_data
+                            .get_symbol_data_ref()
                             .get_concrete_types(registry, other_key)
                             .0;
                         let other_len = other_concrete_types.len();
@@ -144,7 +162,11 @@ impl AbstractType for Struct {
             Some(index) => {
                 let symbol_data = self.semantic_data.get_core_ref();
                 let struct_data = symbol_data.get_struct_data_ref();
-                let concrete_types = self.semantic_data.get_concrete_types(registry, index).0;
+                let concrete_types = self
+                    .semantic_data
+                    .get_symbol_data_ref()
+                    .get_concrete_types(registry, index)
+                    .0;
                 let mut concretized_concrete_types = vec![];
                 for ty in concrete_types {
                     concretized_concrete_types.push(ty.concretize(context, registry));
@@ -191,6 +213,7 @@ impl AbstractType for Struct {
                             let self_struct_data = self_symbol_data.get_struct_data_ref();
                             let generics_containing_types_tuple = self
                                 .semantic_data
+                                .get_symbol_data_ref()
                                 .get_concrete_types(registry, self_index)
                                 .0;
 
@@ -200,6 +223,7 @@ impl AbstractType for Struct {
                             let other_struct_data = other_symbol_data.get_struct_data_ref();
                             let base_types_tuple = struct_ty
                                 .semantic_data
+                                .get_symbol_data_ref()
                                 .get_concrete_types(registry, other_index)
                                 .0;
                             try_infer_types_from_tuple(
@@ -231,6 +255,7 @@ impl AbstractType for Struct {
                 let struct_data = symbol_data.get_struct_data_ref();
                 let concrete_types = self
                     .semantic_data
+                    .get_symbol_data_ref()
                     .get_concrete_types(&semantic_state_db.type_registry_table, index);
                 s.push_str(&concrete_types.to_string(semantic_state_db));
                 s.push('>');

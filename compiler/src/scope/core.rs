@@ -1,4 +1,4 @@
-use super::concrete::core::ConcreteTypesRegistryKey;
+use super::concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple};
 use super::errors::GenericTypeArgsCheckError;
 use super::function::{CallableData, CallableKind};
 use super::handler::{SemanticStateDatabase, SymbolDataEntry, SymbolDataRegistryTable};
@@ -187,6 +187,14 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
             Some(concrete_types) => Some(registry.register_concrete_types(self, concrete_types)),
             None => return None,
         }
+    }
+
+    pub fn get_concrete_types(
+        &self,
+        registry: &SymbolDataRegistryTable<T>,
+        index: ConcreteTypesRegistryKey,
+    ) -> ConcreteTypesTuple {
+        registry.get_concrete_types(self, index)
     }
 }
 

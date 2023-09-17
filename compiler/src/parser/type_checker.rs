@@ -587,6 +587,7 @@ impl TypeChecker {
             Some(index) => {
                 // CASE 1
                 let concrete_types = concrete_symbol
+                    .get_symbol_data_ref()
                     .get_concrete_types(&self.semantic_state_db.function_registry_table, index);
                 let concrete_prototype = func_data.prototype.concretize_prototype(
                     None,
@@ -677,6 +678,7 @@ impl TypeChecker {
                     Some(index) => {
                         // CASE 1
                         let concrete_types = concrete_symbol_data
+                            .get_symbol_data_ref()
                             .get_concrete_types(&self.semantic_state_db.type_registry_table, index);
                         let concrete_prototype =
                             constructor_meta_data.prototype.concretize_prototype(
@@ -740,10 +742,15 @@ impl TypeChecker {
         match struct_constructor_prototype_check_result {
             StructConstructorPrototypeCheckResult::Basic(return_ty) => return Ok(return_ty),
             StructConstructorPrototypeCheckResult::Inferred(concrete_types) => {
-                let index = concrete_symbol_data.register_concrete_types(
-                    concrete_types,
-                    &mut self.semantic_state_db.type_registry_table,
-                );
+                let index = match concrete_symbol_data
+                    .get_symbol_data_ref()
+                    .register_concrete_types(
+                        Some(concrete_types),
+                        &mut self.semantic_state_db.type_registry_table,
+                    ) {
+                    Some(index) => index,
+                    None => unreachable!(),
+                };
                 return Ok(Type::new_with_struct(
                     &concrete_symbol_data.symbol_data,
                     Some(index),
@@ -986,10 +993,15 @@ impl TypeChecker {
                     let property_name_str = ok_identifier.token_value(&self.code);
                     let result = match atom_type_obj.0.as_ref() {
                         CoreType::Struct(struct_ty) => {
-                            let index = struct_ty.semantic_data.index;
                             let symbol_data = struct_ty.semantic_data.symbol_data.get_core_ref();
                             let struct_data = symbol_data.get_struct_data_ref();
-                            match struct_data.try_field(&property_name_str, index) {
+                            let concrete_types = struct_ty
+                                .get_concrete_types(&self.semantic_state_db.type_registry_table);
+                            match struct_data.try_field(
+                                &property_name_str,
+                                concrete_types,
+                                &mut self.semantic_state_db.type_registry_table,
+                            ) {
                                 Some((type_obj, _)) => Ok(type_obj),
                                 None => Err(()),
                             }
@@ -1032,8 +1044,14 @@ impl TypeChecker {
         let index = struct_ty.semantic_data.index;
         let symbol_data = struct_ty.semantic_data.symbol_data.get_core_ref();
         let struct_data = symbol_data.get_struct_data_ref();
+        let concrete_types =
+            struct_ty.get_concrete_types(&self.semantic_state_db.type_registry_table);
         // first check if it's a property
-        match struct_data.try_field(&method_name, index) {
+        match struct_data.try_field(
+            &method_name,
+            concrete_types,
+            &mut self.semantic_state_db.type_registry_table,
+        ) {
             Some((propetry_ty, _)) => {
                 if method_name_ok_identifier
                     .core_ref()
