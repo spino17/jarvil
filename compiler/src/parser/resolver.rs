@@ -304,23 +304,17 @@ impl Resolver {
         // (index to the registry, has_generics)
         let (concrete_types, ty_ranges, has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
-        let result = symbol_data.check_generic_type_args(
+        let _ = symbol_data.check_generic_type_args(
             &concrete_types,
             &ty_ranges,
             is_concrete_types_none_allowed,
-        );
-        match result {
-            Ok(_) => {
-                let index = symbol_data.register_concrete_types(concrete_types);
-                let concrete_symbol_data =
-                    ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
-                self.semantic_state_db
-                    .identifier_in_use_binding_table
-                    .insert(node.clone(), concrete_symbol_data);
-                return Ok((index, has_generics));
-            }
-            Err(err) => return Err(err),
-        }
+        )?;
+        let index = symbol_data.register_concrete_types(concrete_types);
+        let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
+        self.semantic_state_db
+            .identifier_in_use_binding_table
+            .insert(node.clone(), concrete_symbol_data);
+        return Ok((index, has_generics));
     }
 
     pub fn bind_decl_to_self_keyword(
