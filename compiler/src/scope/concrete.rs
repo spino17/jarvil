@@ -3,6 +3,8 @@ use crate::scope::core::SymbolData;
 use crate::types::core::Type;
 use std::cell::Ref;
 use std::cell::RefMut;
+use std::ops::Index;
+use std::slice::Iter;
 
 #[derive(Debug, Clone)]
 pub struct ConcreteTypesTuple(Vec<Type>);
@@ -12,12 +14,12 @@ impl ConcreteTypesTuple {
         ConcreteTypesTuple(concrete_types)
     }
 
-    pub fn get_concrete_types(&self) -> &ConcreteTypesTuple {
-        self
-    }
-
     pub fn get_core_ref(&self) -> &Vec<Type> {
         &self.0
+    }
+
+    pub fn iter(&self) -> Iter<Type> {
+        self.0.iter()
     }
 
     pub fn len(&self) -> usize {
@@ -35,6 +37,13 @@ impl ToString for ConcreteTypesTuple {
             s.push_str(&format!(", {}", concrete_types[i].to_string()));
         }
         return s;
+    }
+}
+
+impl Index<usize> for ConcreteTypesTuple {
+    type Output = Type;
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
     }
 }
 

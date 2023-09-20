@@ -146,11 +146,8 @@ impl AbstractType for Lambda {
 
                                     assert!(self_len == other_len);
                                     for i in 0..self_len {
-                                        if !self_concrete_types.get_core_ref()[i]
-                                            .is_structurally_eq(
-                                                &other_concrete_types.get_core_ref()[i],
-                                                context,
-                                            )
+                                        if !self_concrete_types[i]
+                                            .is_structurally_eq(&other_concrete_types[i], context)
                                         {
                                             return false;
                                         }
@@ -176,7 +173,7 @@ impl AbstractType for Lambda {
             Lambda::Named(concrete_symbol_data) => match &concrete_symbol_data.concrete_types {
                 Some(concrete_types) => {
                     let mut concretized_concrete_types = vec![];
-                    for ty in concrete_types.get_core_ref() {
+                    for ty in concrete_types.iter() {
                         concretized_concrete_types.push(ty.concretize(context));
                     }
                     return Type::new_with_lambda_named(

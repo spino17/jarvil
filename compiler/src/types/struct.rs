@@ -45,8 +45,8 @@ impl Struct {
                         assert!(self_len == other_len);
                         for i in 0..self_len {
                             if !ty_cmp_func(
-                                &self_concrete_types.get_core_ref()[i],
-                                &other_concrete_types.get_core_ref()[i],
+                                &self_concrete_types[i],
+                                &other_concrete_types[i],
                                 context,
                             ) {
                                 return false;
@@ -92,7 +92,7 @@ impl AbstractType for Struct {
         match &self.concrete_types {
             Some(concrete_types) => {
                 let mut concretized_concrete_types = vec![];
-                for ty in concrete_types.get_core_ref() {
+                for ty in concrete_types.iter() {
                     concretized_concrete_types.push(ty.concretize(context));
                 }
                 return Type::new_with_struct(

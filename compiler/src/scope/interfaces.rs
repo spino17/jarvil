@@ -99,9 +99,7 @@ impl InterfaceObject {
 
                         assert!(self_len == other_len);
                         for i in 0..self_len {
-                            if !self_concrete_types.get_core_ref()[i]
-                                .is_eq(&other_concrete_types.get_core_ref()[i])
-                            {
+                            if !self_concrete_types[i].is_eq(&other_concrete_types[i]) {
                                 return false;
                             }
                         }

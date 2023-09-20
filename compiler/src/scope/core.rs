@@ -90,7 +90,7 @@ impl GenericTypeParams {
         }
         let mut incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
-            let ty = &concrete_types.get_core_ref()[index];
+            let ty = &concrete_types[index];
             if !ty.is_type_bounded_by_interfaces(interface_bounds) {
                 incorrectly_bounded_types.push((type_ranges[index], interface_bounds.to_string()))
             }
