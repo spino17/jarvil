@@ -3,7 +3,7 @@ use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
 use crate::parser::type_checker::{
     InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
 };
-use crate::scope::concrete::core::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::core::SymbolData;
 use crate::scope::function::CallablePrototypeData;
 use crate::scope::interfaces::InterfaceBounds;

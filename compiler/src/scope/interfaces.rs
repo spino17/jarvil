@@ -1,14 +1,11 @@
 use super::{
     common::{FieldsMap, MethodsMap},
-    concrete::{
-        core::{ConcreteSymbolData, ConcreteTypesRegistryKey, ConcreteTypesTuple},
-        registry::{ConcreteTypesRegistryCore, GenericsSpecAndConcreteTypesRegistry},
-    },
-    core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams, SymbolData},
+    concrete::{ConcreteSymbolData, ConcreteTypesTuple},
+    core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
     function::{CallableData, PartialConcreteCallableDataRef},
 };
-use crate::types::core::Type;
-use crate::{scope::concrete::core::ConcretizationContext, types::core::AbstractType};
+use crate::types::{core::Type, generic::Generic};
+use crate::{scope::concrete::ConcretizationContext, types::core::AbstractType};
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
 use text_size::TextRange;
@@ -17,7 +14,7 @@ use text_size::TextRange;
 pub struct InterfaceData {
     fields: FieldsMap,
     methods: MethodsMap,
-    pub generics: GenericsSpecAndConcreteTypesRegistry,
+    pub generics: Option<GenericTypeParams>,
     pub is_init: bool,
 }
 
@@ -32,7 +29,7 @@ impl InterfaceData {
     }
 
     pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
-        self.generics.generics_spec = generics_spec;
+        self.generics = generics_spec;
         self.is_init = true;
     }
 
@@ -67,24 +64,8 @@ impl InterfaceData {
 }
 
 impl AbstractConcreteTypesHandler for InterfaceData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        return self
-            .generics
-            .concrete_types_registry
-            .register_concrete_types(concrete_types);
-    }
-
     fn is_initialized(&self) -> bool {
         self.is_init
-    }
-}
-
-impl AbstractSymbolMetaData for InterfaceData {
-    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        return self
-            .generics
-            .concrete_types_registry
-            .get_concrete_types_at_key(key);
     }
 }
 
@@ -248,27 +229,14 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         }
     }
 
-    pub fn get_from_registry_key(
-        methods: &'a MethodsMap,
-        registry: &'a ConcreteTypesRegistryCore,
-        key: Option<ConcreteTypesRegistryKey>,
-    ) -> PartialConcreteInterfaceMethods<'a> {
-        let concrete_types = match key {
-            Some(key) => Some(registry.get_concrete_types_at_key(key).get_core_ref()),
-            None => None,
-        };
-        return PartialConcreteInterfaceMethods::new(methods, concrete_types);
-    }
-
     fn compare_interface_method_with_struct_method(
         &self,
         interface_method_callable_data: &CallableData,
         struct_method_callable_data: &CallableData,
         range: TextRange,
     ) -> Result<(), PartialConcreteInterfaceMethodsCheckError> {
-        let interface_method_generic_type_decls =
-            &interface_method_callable_data.generics.generics_spec;
-        let struct_method_generic_type_decls = &struct_method_callable_data.generics.generics_spec;
+        let interface_method_generic_type_decls = &interface_method_callable_data.generics;
+        let struct_method_generic_type_decls = &struct_method_callable_data.generics;
         match interface_method_generic_type_decls {
             Some(interface_method_generic_type_decls) => {
                 match struct_method_generic_type_decls {

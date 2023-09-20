@@ -1,4 +1,4 @@
-use super::{concrete::core::ConcreteTypesRegistryKey, core::AbstractConcreteTypesHandler};
+use super::core::AbstractConcreteTypesHandler;
 use crate::types::core::Type;
 
 #[derive(Debug)]
@@ -30,10 +30,6 @@ impl VariableData {
 }
 
 impl AbstractConcreteTypesHandler for VariableData {
-    fn register_concrete_types(&mut self, _concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        unreachable!()
-    }
-
     fn is_initialized(&self) -> bool {
         self.is_init
     }

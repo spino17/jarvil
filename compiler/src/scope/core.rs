@@ -1,4 +1,3 @@
-use super::concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple};
 use super::errors::GenericTypeArgsCheckError;
 use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
@@ -49,20 +48,11 @@ pub enum IntermediateLookupResult<T: AbstractConcreteTypesHandler> {
 }
 
 pub trait AbstractConcreteTypesHandler {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey;
     fn is_initialized(&self) -> bool;
-}
-
-pub trait AbstractSymbolMetaData {
-    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple;
 }
 
 pub trait AbstractSymbolData {
     fn get_entry(&self) -> SymbolDataEntry;
-    fn register_concrete_types(
-        &self,
-        concrete_types: Option<Vec<Type>>,
-    ) -> Option<ConcreteTypesRegistryKey>;
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
@@ -176,21 +166,6 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn is_suffix_required(&self) -> bool {
         self.0.is_suffix_required
     }
-
-    pub fn register_concrete_types(
-        &self,
-        concrete_types: Option<Vec<Type>>,
-    ) -> Option<ConcreteTypesRegistryKey> {
-        match concrete_types {
-            Some(concrete_types) => {
-                return Some(
-                    self.get_core_mut_ref()
-                        .register_concrete_types(concrete_types),
-                )
-            }
-            None => return None,
-        }
-    }
 }
 
 impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
@@ -222,13 +197,6 @@ impl AbstractSymbolData for VariableSymbolData {
         SymbolDataEntry::Variable(self.0.clone())
     }
 
-    fn register_concrete_types(
-        &self,
-        concrete_types: Option<Vec<Type>>,
-    ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types)
-    }
-
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
@@ -251,13 +219,6 @@ impl AbstractSymbolData for FunctionSymbolData {
         SymbolDataEntry::Function(self.0.clone())
     }
 
-    fn register_concrete_types(
-        &self,
-        concrete_types: Option<Vec<Type>>,
-    ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types)
-    }
-
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
@@ -266,7 +227,7 @@ impl AbstractSymbolData for FunctionSymbolData {
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(is_concrete_types_none_allowed);
         let function_data = self.0.get_core_ref();
-        let generic_type_decls = &function_data.generics.generics_spec;
+        let generic_type_decls = &function_data.generics;
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,
             concrete_types,
@@ -284,13 +245,6 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
         SymbolDataEntry::Type(self.0.clone())
     }
 
-    fn register_concrete_types(
-        &self,
-        concrete_types: Option<Vec<Type>>,
-    ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types)
-    }
-
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
@@ -299,7 +253,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
     ) -> Result<(), GenericTypeArgsCheckError> {
         match &*self.0.get_core_ref() {
             UserDefinedTypeData::Struct(struct_data) => {
-                let generic_type_decls = &struct_data.generics.generics_spec;
+                let generic_type_decls = &struct_data.generics;
                 return check_concrete_types_bounded_by_interfaces(
                     generic_type_decls,
                     concrete_types,
@@ -334,13 +288,6 @@ impl AbstractSymbolData for InterfaceSymbolData {
         SymbolDataEntry::Interface(self.0.clone())
     }
 
-    fn register_concrete_types(
-        &self,
-        concrete_types: Option<Vec<Type>>,
-    ) -> Option<ConcreteTypesRegistryKey> {
-        self.0.register_concrete_types(concrete_types)
-    }
-
     fn check_generic_type_args(
         &self,
         concrete_types: &Option<Vec<Type>>,
@@ -349,7 +296,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
     ) -> Result<(), GenericTypeArgsCheckError> {
         assert!(!is_concrete_types_none_allowed);
         let interface_data = self.0.get_core_ref();
-        let generic_type_decls = &interface_data.generics.generics_spec;
+        let generic_type_decls = &interface_data.generics;
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,
             concrete_types,

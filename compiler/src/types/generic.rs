@@ -2,7 +2,7 @@ use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::core::ConcretizationContext,
+        concrete::ConcretizationContext,
         core::SymbolData,
         interfaces::InterfaceBounds,
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},

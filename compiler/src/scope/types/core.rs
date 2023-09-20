@@ -1,10 +1,6 @@
-use crate::{
-    scope::{
-        concrete::core::ConcreteTypesRegistryKey, core::AbstractConcreteTypesHandler,
-        types::generic_type::GenericTypeData, types::lambda_type::LambdaTypeData,
-        types::struct_type::StructTypeData,
-    },
-    types::core::Type,
+use crate::scope::{
+    core::AbstractConcreteTypesHandler, types::generic_type::GenericTypeData,
+    types::lambda_type::LambdaTypeData, types::struct_type::StructTypeData,
 };
 
 #[derive(Debug)]
@@ -87,18 +83,6 @@ impl UserDefinedTypeData {
 }
 
 impl AbstractConcreteTypesHandler for UserDefinedTypeData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        match self {
-            UserDefinedTypeData::Struct(struct_type_data) => {
-                struct_type_data.register_concrete_types(concrete_types)
-            }
-            UserDefinedTypeData::Lambda(lambda_type_data) => {
-                lambda_type_data.register_concrete_types(concrete_types)
-            }
-            UserDefinedTypeData::Generic(_) => unreachable!(),
-        }
-    }
-
     fn is_initialized(&self) -> bool {
         match self {
             UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.is_initialized(),

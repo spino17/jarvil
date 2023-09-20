@@ -1,9 +1,6 @@
 use super::{
-    concrete::{
-        core::{ConcreteTypesRegistryKey, ConcreteTypesTuple, ConcretizationContext},
-        registry::GenericsSpecAndConcreteTypesRegistry,
-    },
-    core::{AbstractConcreteTypesHandler, AbstractSymbolMetaData, GenericTypeParams},
+    concrete::ConcretizationContext,
+    core::{AbstractConcreteTypesHandler, GenericTypeParams},
     errors::GenericTypeArgsCheckError,
 };
 use crate::{
@@ -198,7 +195,7 @@ impl Default for CallablePrototypeData {
 pub struct CallableData {
     pub prototype: CallablePrototypeData,
     pub kind: CallableKind,
-    pub generics: GenericsSpecAndConcreteTypesRegistry,
+    pub generics: Option<GenericTypeParams>,
 }
 
 impl CallableData {
@@ -216,7 +213,7 @@ impl CallableData {
                 is_concretization_required,
             },
             kind,
-            generics: GenericsSpecAndConcreteTypesRegistry::new(generics_spec),
+            generics: generics_spec,
         }
     }
 
@@ -224,7 +221,7 @@ impl CallableData {
         CallableData {
             prototype: CallablePrototypeData::default(),
             kind,
-            generics: GenericsSpecAndConcreteTypesRegistry::default(),
+            generics: Option::default(),
         }
     }
 
@@ -242,29 +239,13 @@ impl CallableData {
     }
 
     pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
-        self.generics.generics_spec = generics_spec;
+        self.generics = generics_spec;
     }
 }
 
 impl AbstractConcreteTypesHandler for CallableData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        return self
-            .generics
-            .concrete_types_registry
-            .register_concrete_types(concrete_types);
-    }
-
     fn is_initialized(&self) -> bool {
         true
-    }
-}
-
-impl AbstractSymbolMetaData for CallableData {
-    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        return self
-            .generics
-            .concrete_types_registry
-            .get_concrete_types_at_key(key);
     }
 }
 
@@ -308,7 +289,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
         local_concrete_ty_ranges: Option<Vec<TextRange>>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PartialCallableDataPrototypeCheckError> {
-        let generic_type_decls = &self.callable_data.generics.generics_spec;
+        let generic_type_decls = &self.callable_data.generics;
         match local_concrete_types {
             Some(local_concrete_types) => match generic_type_decls {
                 Some(generic_type_decls) => {

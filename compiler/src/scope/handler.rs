@@ -1,5 +1,5 @@
 use super::{
-    concrete::core::{ConcreteSymbolData, ConcreteTypesTuple},
+    concrete::{ConcreteSymbolData, ConcreteTypesTuple},
     core::{Namespace, SymbolData},
     function::CallableData,
     interfaces::InterfaceData,

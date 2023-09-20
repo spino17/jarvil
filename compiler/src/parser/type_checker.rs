@@ -14,7 +14,7 @@ use crate::error::diagnostics::{
     TypeInferenceFailedError,
 };
 use crate::error::helper::IdentifierKind;
-use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::{ConcreteSymbolData, ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::core::GenericTypeParams;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{
@@ -587,7 +587,7 @@ impl TypeChecker {
                 )
             }
             None => {
-                match &func_data.generics.generics_spec {
+                match &func_data.generics {
                     Some(generic_type_decls) => {
                         // CASE 2
                         CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
@@ -672,7 +672,7 @@ impl TypeChecker {
                         )
                     }
                     None => {
-                        match &struct_symbol_data.generics.generics_spec {
+                        match &struct_symbol_data.generics {
                             Some(generic_type_decls) => {
                                 // CASE 2
                                 CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(

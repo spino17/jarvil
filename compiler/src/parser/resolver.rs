@@ -18,7 +18,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
-use crate::scope::concrete::core::ConcreteTypesTuple;
+use crate::scope::concrete::ConcreteTypesTuple;
 use crate::scope::core::{
     AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData, LookupData,
     LookupResult, UserDefinedTypeSymbolData, VariableSymbolData,

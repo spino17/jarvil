@@ -1,7 +1,7 @@
 use super::core::OperatorCompatiblity;
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::concrete::core::ConcretizationContext;
+use crate::scope::concrete::ConcretizationContext;
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};

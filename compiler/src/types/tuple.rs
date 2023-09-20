@@ -4,7 +4,7 @@ use crate::{
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::core::ConcretizationContext, interfaces::InterfaceBounds,
+        concrete::ConcretizationContext, interfaces::InterfaceBounds,
         types::generic_type::GenericTypeDeclarationPlaceCategory,
     },
     types::core::{AbstractType, CoreType, Type},

@@ -1,14 +1,10 @@
 use crate::scope::common::{FieldsMap, MethodsMap};
-use crate::scope::concrete::core::{ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::concrete::registry::GenericsSpecAndConcreteTypesRegistry;
-use crate::scope::core::AbstractSymbolMetaData;
+use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
 use crate::scope::interfaces::InterfaceBounds;
+use crate::types::generic::Generic;
 use crate::{
-    scope::{
-        concrete::core::ConcreteTypesRegistryKey,
-        core::{AbstractConcreteTypesHandler, GenericTypeParams},
-    },
+    scope::core::{AbstractConcreteTypesHandler, GenericTypeParams},
     types::core::Type,
 };
 use rustc_hash::FxHashMap;
@@ -20,7 +16,7 @@ pub struct StructTypeData {
     pub constructor: CallableData,
     methods: MethodsMap,
     class_methods: MethodsMap,
-    pub generics: GenericsSpecAndConcreteTypesRegistry,
+    pub generics: Option<GenericTypeParams>,
     pub implementing_interfaces: Option<InterfaceBounds>,
     pub is_init: bool,
 }
@@ -46,7 +42,7 @@ impl StructTypeData {
         generics_spec: Option<GenericTypeParams>,
         implementing_interfaces: Option<InterfaceBounds>,
     ) {
-        self.generics.generics_spec = generics_spec;
+        self.generics = generics_spec;
         self.implementing_interfaces = implementing_interfaces;
         self.is_init = true;
     }
@@ -82,24 +78,8 @@ impl StructTypeData {
 }
 
 impl AbstractConcreteTypesHandler for StructTypeData {
-    fn register_concrete_types(&mut self, concrete_types: Vec<Type>) -> ConcreteTypesRegistryKey {
-        return self
-            .generics
-            .concrete_types_registry
-            .register_concrete_types(concrete_types);
-    }
-
     fn is_initialized(&self) -> bool {
         self.is_init
-    }
-}
-
-impl AbstractSymbolMetaData for StructTypeData {
-    fn get_concrete_types(&self, key: ConcreteTypesRegistryKey) -> &ConcreteTypesTuple {
-        return self
-            .generics
-            .concrete_types_registry
-            .get_concrete_types_at_key(key);
     }
 }
 
@@ -110,7 +90,7 @@ impl Default for StructTypeData {
             constructor: CallableData::default_for_kind(CallableKind::Method),
             methods: MethodsMap::default(),
             class_methods: MethodsMap::default(),
-            generics: GenericsSpecAndConcreteTypesRegistry::default(),
+            generics: Option::default(),
             implementing_interfaces: Option::default(),
             is_init: false,
         }

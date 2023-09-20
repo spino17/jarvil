@@ -1,7 +1,4 @@
-use super::{
-    concrete::registry::GenericsSpecAndConcreteTypesRegistry,
-    function::{CallableData, CallableKind, CallablePrototypeData},
-};
+use super::function::{CallableData, CallableKind, CallablePrototypeData};
 use crate::{constants::common::INT, types::core::Type};
 use std::str::Chars;
 
@@ -14,7 +11,7 @@ pub fn print_meta_data() -> CallableData {
             is_concretization_required: None,
         },
         kind: CallableKind::Function,
-        generics: GenericsSpecAndConcreteTypesRegistry::default(),
+        generics: Option::default(),
     }
 }
 
@@ -27,7 +24,7 @@ pub fn range_meta_data() -> CallableData {
             is_concretization_required: None,
         },
         kind: CallableKind::Function,
-        generics: GenericsSpecAndConcreteTypesRegistry::default(),
+        generics: Option::default(),
     }
 }
 

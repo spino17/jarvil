@@ -1,5 +1,5 @@
 use super::{
-    concrete::core::{ConcreteTypesTuple, ConcretizationContext},
+    concrete::{ConcreteTypesTuple, ConcretizationContext},
     function::{CallableData, PartialConcreteCallableDataRef},
 };
 use crate::types::core::AbstractType;
