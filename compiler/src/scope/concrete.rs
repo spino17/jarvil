@@ -4,9 +4,6 @@ use crate::types::core::Type;
 use std::cell::Ref;
 use std::cell::RefMut;
 
-#[derive(Debug, Clone, Copy)]
-pub struct ConcreteTypesRegistryKey(pub usize);
-
 #[derive(Debug, Clone)]
 pub struct ConcreteTypesTuple(Vec<Type>);
 
