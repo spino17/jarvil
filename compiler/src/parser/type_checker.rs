@@ -15,7 +15,7 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::core::{ConcreteSymbolData, ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::core::{AbstractSymbolMetaData, GenericTypeParams};
+use crate::scope::core::GenericTypeParams;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{
     CallableData, PartialCallableDataPrototypeCheckError, PrototypeConcretizationResult,
@@ -574,11 +574,11 @@ impl TypeChecker {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
         let func_data = &*concrete_symbol.get_core_ref();
-        let index = concrete_symbol.index;
-        let prototype_result = match index {
-            Some(index) => {
+        let concrete_types = &concrete_symbol.concrete_types;
+        let prototype_result = match concrete_types {
+            Some(concrete_types) => {
                 // CASE 1
-                let concrete_types = func_data.get_concrete_types(index);
+                // let concrete_types = func_data.get_concrete_types(index);
                 let concrete_prototype = func_data
                     .prototype
                     .concretize_prototype(None, Some(concrete_types.get_core_ref()));
@@ -634,7 +634,7 @@ impl TypeChecker {
         concrete_symbol_data: &ConcreteSymbolData<VariableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
-        assert!(concrete_symbol_data.index.is_none());
+        assert!(concrete_symbol_data.concrete_types.is_none());
         let lambda_type = &concrete_symbol_data.get_core_ref().data_type;
         match lambda_type.0.as_ref() {
             CoreType::Lambda(lambda_data) => {
@@ -658,12 +658,12 @@ impl TypeChecker {
         let struct_constructor_prototype_check_result = match &*concrete_symbol_data.get_core_ref()
         {
             UserDefinedTypeData::Struct(struct_symbol_data) => {
-                let index = concrete_symbol_data.index;
+                let concrete_types = &concrete_symbol_data.concrete_types;
                 let constructor_meta_data = &struct_symbol_data.constructor;
-                let prototype_result = match index {
-                    Some(index) => {
+                let prototype_result = match concrete_types {
+                    Some(concrete_types) => {
                         // CASE 1
-                        let concrete_types = struct_symbol_data.get_concrete_types(index);
+                        // let concrete_types = struct_symbol_data.get_concrete_types(index);
                         let concrete_prototype = constructor_meta_data
                             .prototype
                             .concretize_prototype(Some(concrete_types.get_core_ref()), None);
@@ -696,20 +696,9 @@ impl TypeChecker {
                     ) => {
                         let prototype_ref = prototype.get_prototype_ref();
                         let _ = self.check_params_type_and_count(&prototype_ref.params, params)?;
-                        let concrete_types = match index {
-                            Some(index) => Some(
-                                concrete_symbol_data
-                                    .symbol_data
-                                    .get_core_ref()
-                                    .get_struct_data_ref()
-                                    .get_concrete_types(index)
-                                    .clone(),
-                            ),
-                            None => None,
-                        };
                         let return_ty = Type::new_with_struct(
                             &concrete_symbol_data.symbol_data,
-                            concrete_types,
+                            concrete_types.clone(), // expensive clone
                         );
                         StructConstructorPrototypeCheckResult::Basic(return_ty)
                     }
@@ -829,12 +818,10 @@ impl TypeChecker {
                     UserDefinedTypeData::Struct(struct_data) => match class_method.core_ref() {
                         CoreIdentifierInUseNode::Ok(class_method) => {
                             let class_method_name = class_method.token_value(&self.code);
-                            let index = type_symbol_data.index;
-                            let concrete_types = match index {
-                                Some(index) => Some(struct_data.get_concrete_types(index)),
-                                None => None,
-                            };
-                            match struct_data.try_class_method(&class_method_name, concrete_types) {
+                            let concrete_types = &type_symbol_data.concrete_types;
+                            match struct_data
+                                .try_class_method(&class_method_name, concrete_types.as_ref())
+                            {
                                 Some((partial_concrete_callable_data, _)) => {
                                     let (concrete_types, ty_ranges, _) = self
                                         .extract_angle_bracket_content_from_identifier_in_use(
@@ -1787,11 +1774,11 @@ impl TypeChecker {
                     let struct_methods = struct_data.get_methods_ref();
                     for (interface_obj, range) in &implementing_interfaces.interfaces {
                         let (_, interface_concrete_symbol_data) = interface_obj.get_core_ref();
-                        let index = interface_concrete_symbol_data.index;
+                        let concrete_types = &interface_concrete_symbol_data.concrete_types;
                         let interface_data =
                             &*interface_concrete_symbol_data.symbol_data.get_core_ref();
-                        let partial_concrete_interface_methods =
-                            interface_data.get_partially_concrete_interface_methods(index);
+                        let partial_concrete_interface_methods = interface_data
+                            .get_partially_concrete_interface_methods(concrete_types.as_ref());
                         if let Err((missing_interface_method_names, errors)) =
                             partial_concrete_interface_methods
                                 .is_struct_implements_interface_methods(struct_methods)

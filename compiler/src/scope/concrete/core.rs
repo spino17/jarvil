@@ -44,12 +44,15 @@ impl ToString for ConcreteTypesTuple {
 #[derive(Debug)]
 pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler> {
     pub symbol_data: SymbolData<T>,
-    pub index: Option<ConcreteTypesRegistryKey>, // This will be `None` for symbol data which does not have any generic type params
+    pub concrete_types: Option<ConcreteTypesTuple>, // This will be `None` for symbol data which does not have any generic type params
 }
 
 impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
-    pub fn new(symbol_data: SymbolData<T>, index: Option<ConcreteTypesRegistryKey>) -> Self {
-        ConcreteSymbolData { symbol_data, index }
+    pub fn new(symbol_data: SymbolData<T>, concrete_types: Option<ConcreteTypesTuple>) -> Self {
+        ConcreteSymbolData {
+            symbol_data,
+            concrete_types,
+        }
     }
 
     pub fn get_core_ref<'a>(&'a self) -> Ref<'a, T> {
@@ -59,14 +62,9 @@ impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
     pub fn get_core_mut_ref<'a>(&'a self) -> RefMut<'a, T> {
         self.symbol_data.get_core_mut_ref::<'a>()
     }
-}
 
-impl<T: AbstractConcreteTypesHandler> Clone for ConcreteSymbolData<T> {
-    fn clone(&self) -> Self {
-        ConcreteSymbolData {
-            symbol_data: self.symbol_data.clone(),
-            index: self.index,
-        }
+    pub fn get_concrete_types(&self) -> &Option<ConcreteTypesTuple> {
+        &self.concrete_types
     }
 }
 

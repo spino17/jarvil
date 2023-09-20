@@ -52,14 +52,16 @@ impl InterfaceData {
         self.methods.try_method(method_name, global_concrete_types)
     }
 
-    pub fn get_partially_concrete_interface_methods(
-        &self,
-        key: Option<ConcreteTypesRegistryKey>,
+    pub fn get_partially_concrete_interface_methods<'a>(
+        &'a self,
+        key: Option<&'a ConcreteTypesTuple>,
     ) -> PartialConcreteInterfaceMethods {
-        PartialConcreteInterfaceMethods::get_from_registry_key(
+        PartialConcreteInterfaceMethods::new(
             &self.methods,
-            &self.generics.concrete_types_registry,
-            key,
+            match key {
+                Some(concrete_types) => Some(concrete_types.get_core_ref()),
+                None => None,
+            },
         )
     }
 }
@@ -93,9 +95,12 @@ impl InterfaceObject {
     pub fn new(
         name: String,
         symbol_data: SymbolData<InterfaceData>,
-        index: Option<ConcreteTypesRegistryKey>,
+        concrete_types: Option<ConcreteTypesTuple>,
     ) -> Self {
-        InterfaceObject(Rc::new((name, ConcreteSymbolData::new(symbol_data, index))))
+        InterfaceObject(Rc::new((
+            name,
+            ConcreteSymbolData::new(symbol_data, concrete_types),
+        )))
     }
 
     pub fn get_core_ref(&self) -> &(String, ConcreteSymbolData<InterfaceData>) {
@@ -105,22 +110,17 @@ impl InterfaceObject {
     pub fn is_eq(&self, other: &InterfaceObject) -> bool {
         if self.0.as_ref().0.eq(&other.0.as_ref().0) {
             // names of interfaces should be same
-            match self.0.as_ref().1.index {
-                Some(self_key) => match other.0.as_ref().1.index {
-                    Some(other_key) => {
-                        let self_ref = &*self.0.as_ref().1.get_core_ref();
-                        let self_concrete_types =
-                            self_ref.get_concrete_types(self_key).get_core_ref();
+            match &self.0.as_ref().1.concrete_types {
+                Some(self_concrete_types) => match &other.0.as_ref().1.concrete_types {
+                    Some(other_concrete_types) => {
                         let self_len = self_concrete_types.len();
-
-                        let other_ref = &*other.0.as_ref().1.get_core_ref();
-                        let other_concrete_types =
-                            other_ref.get_concrete_types(other_key).get_core_ref();
                         let other_len = other_concrete_types.len();
 
                         assert!(self_len == other_len);
                         for i in 0..self_len {
-                            if !self_concrete_types[i].is_eq(&other_concrete_types[i]) {
+                            if !self_concrete_types.get_core_ref()[i]
+                                .is_eq(&other_concrete_types.get_core_ref()[i])
+                            {
                                 return false;
                             }
                         }
@@ -138,11 +138,10 @@ impl InterfaceObject {
 impl ToString for InterfaceObject {
     fn to_string(&self) -> String {
         let mut s = self.0.as_ref().0.to_string();
-        match self.0.as_ref().1.index {
-            Some(index) => {
-                let interface_data_ref = &*self.0.as_ref().1.get_core_ref();
+        match &self.0.as_ref().1.concrete_types {
+            Some(concrete_types) => {
                 s.push('<');
-                s.push_str(&interface_data_ref.get_concrete_types(index).to_string());
+                s.push_str(&concrete_types.to_string());
                 s.push('>');
                 return s;
             }

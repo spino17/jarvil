@@ -18,10 +18,10 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
-use crate::scope::concrete::core::{ConcreteTypesRegistryKey, ConcreteTypesTuple};
+use crate::scope::concrete::core::ConcreteTypesTuple;
 use crate::scope::core::{
-    AbstractSymbolData, AbstractSymbolMetaData, FunctionSymbolData, GenericTypeParams,
-    InterfaceSymbolData, LookupData, LookupResult, UserDefinedTypeSymbolData, VariableSymbolData,
+    AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData, LookupData,
+    LookupResult, UserDefinedTypeSymbolData, VariableSymbolData,
 };
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{CallableKind, CallablePrototypeData};
@@ -54,7 +54,7 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub enum ResolveResult<T: AbstractSymbolData> {
-    Ok(LookupData<T>, Option<ConcreteTypesRegistryKey>, String),
+    Ok(LookupData<T>, Option<ConcreteTypesTuple>, String),
     InvalidGenericTypeArgsProvided(GenericTypeArgsCheckError),
     NotInitialized(TextRange, String),
     Unresolved,
@@ -300,7 +300,7 @@ impl Resolver {
         node: &OkIdentifierInUseNode,
         symbol_data: &T,
         is_concrete_types_none_allowed: bool,
-    ) -> Result<(Option<ConcreteTypesRegistryKey>, bool), GenericTypeArgsCheckError> {
+    ) -> Result<(Option<ConcreteTypesTuple>, bool), GenericTypeArgsCheckError> {
         // (index to the registry, has_generics)
         let (concrete_types, ty_ranges, has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
@@ -309,12 +309,17 @@ impl Resolver {
             &ty_ranges,
             is_concrete_types_none_allowed,
         )?;
-        let index = symbol_data.register_concrete_types(concrete_types);
-        let concrete_symbol_data = ConcreteSymbolDataEntry::new(symbol_data.get_entry(), index);
+        // let index = symbol_data.register_concrete_types(concrete_types);
+        let concrete_types = match concrete_types {
+            Some(concrete_types) => Some(ConcreteTypesTuple::new(concrete_types)),
+            None => None,
+        };
+        let concrete_symbol_data =
+            ConcreteSymbolDataEntry::new(symbol_data.get_entry(), concrete_types.clone());
         self.semantic_state_db
             .identifier_in_use_binding_table
             .insert(node.clone(), concrete_symbol_data);
-        return Ok((index, has_generics));
+        return Ok((concrete_types, has_generics));
     }
 
     pub fn bind_decl_to_self_keyword(
@@ -346,7 +351,9 @@ impl Resolver {
                     &lookup_data.symbol_data,
                     is_concrete_types_none_allowed,
                 ) {
-                    Ok((key, _)) => return ResolveResult::Ok(lookup_data, key, name),
+                    Ok((concrete_types, _)) => {
+                        return ResolveResult::Ok(lookup_data, concrete_types, name)
+                    }
                     Err(err) => {
                         if log_error {
                             let err = err_for_generic_type_args(
@@ -556,21 +563,10 @@ impl Resolver {
                                 &symbol_data,
                                 false,
                             ) {
-                                Ok((index, has_generics_inside_angle_bracket_types)) => {
+                                Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
                                     if has_generics_inside_angle_bracket_types {
                                         *has_generics = true;
                                     }
-                                    let concrete_types = match index {
-                                        Some(index) => Some(
-                                            symbol_data
-                                                .0
-                                                .get_core_ref()
-                                                .get_struct_data_ref()
-                                                .get_concrete_types(index)
-                                                .clone(),
-                                        ),
-                                        None => None,
-                                    };
                                     TypeResolveKind::Resolved(Type::new_with_struct(
                                         &symbol_data.0,
                                         concrete_types,
@@ -590,21 +586,10 @@ impl Resolver {
                                 &symbol_data,
                                 false,
                             ) {
-                                Ok((index, has_generics_inside_angle_bracket_types)) => {
+                                Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
                                     if has_generics_inside_angle_bracket_types {
                                         *has_generics = true;
                                     }
-                                    let concrete_types = match index {
-                                        Some(index) => Some(
-                                            symbol_data
-                                                .0
-                                                .get_core_ref()
-                                                .get_lambda_data_ref()
-                                                .get_concrete_types(index)
-                                                .clone(),
-                                        ),
-                                        None => None,
-                                    };
                                     TypeResolveKind::Resolved(Type::new_with_lambda_named(
                                         &symbol_data.0,
                                         concrete_types,
@@ -644,8 +629,8 @@ impl Resolver {
                                         &symbol_data,
                                         false,
                                     ) {
-                                        Ok((index, _)) => {
-                                            assert!(index.is_none());
+                                        Ok((concrete_types, _)) => {
+                                            assert!(concrete_types.is_none());
                                             *has_generics = true;
                                             TypeResolveKind::Resolved(Type::new_with_generic(
                                                 &symbol_data.0,
@@ -761,9 +746,11 @@ impl Resolver {
         interface_expr: &OkIdentifierInUseNode,
     ) -> Option<InterfaceObject> {
         match self.try_resolving_interface(interface_expr, true) {
-            ResolveResult::Ok(lookup_data, index, name) => {
-                Some(InterfaceObject::new(name, lookup_data.symbol_data.0, index))
-            }
+            ResolveResult::Ok(lookup_data, concrete_types, name) => Some(InterfaceObject::new(
+                name,
+                lookup_data.symbol_data.0,
+                concrete_types,
+            )),
             _ => None,
         }
     }

@@ -1,5 +1,5 @@
 use super::{
-    concrete::core::{ConcreteSymbolData, ConcreteTypesRegistryKey},
+    concrete::core::{ConcreteSymbolData, ConcreteTypesTuple},
     core::{Namespace, SymbolData},
     function::CallableData,
     interfaces::InterfaceData,
@@ -22,29 +22,6 @@ pub enum SymbolDataEntry {
     Interface(SymbolData<InterfaceData>),
 }
 
-impl SymbolDataEntry {
-    pub fn register_concrete_types(
-        &self,
-        concrete_types: Option<Vec<Type>>,
-        has_generics: bool,
-    ) -> Option<ConcreteTypesRegistryKey> {
-        match self {
-            SymbolDataEntry::Variable(variable_symbol_data) => {
-                variable_symbol_data.register_concrete_types(concrete_types)
-            }
-            SymbolDataEntry::Function(func_symbol_data) => {
-                func_symbol_data.register_concrete_types(concrete_types)
-            }
-            SymbolDataEntry::Type(type_symbol_data) => {
-                type_symbol_data.register_concrete_types(concrete_types)
-            }
-            SymbolDataEntry::Interface(interface_symbol_data) => {
-                interface_symbol_data.register_concrete_types(concrete_types)
-            }
-        }
-    }
-}
-
 pub enum ConcreteSymbolDataEntry {
     Variable(ConcreteSymbolData<VariableData>),
     Function(ConcreteSymbolData<CallableData>),
@@ -53,21 +30,21 @@ pub enum ConcreteSymbolDataEntry {
 }
 
 impl ConcreteSymbolDataEntry {
-    pub fn new(symbol_data: SymbolDataEntry, index: Option<ConcreteTypesRegistryKey>) -> Self {
+    pub fn new(symbol_data: SymbolDataEntry, concrete_types: Option<ConcreteTypesTuple>) -> Self {
         match symbol_data {
             SymbolDataEntry::Variable(variable_symbol_data) => ConcreteSymbolDataEntry::Variable(
-                ConcreteSymbolData::new(variable_symbol_data, index),
+                ConcreteSymbolData::new(variable_symbol_data, concrete_types),
             ),
-            SymbolDataEntry::Function(func_symbol_data) => {
-                ConcreteSymbolDataEntry::Function(ConcreteSymbolData::new(func_symbol_data, index))
-            }
-            SymbolDataEntry::Type(type_symbol_data) => {
-                ConcreteSymbolDataEntry::Type(ConcreteSymbolData::new(type_symbol_data, index))
-            }
+            SymbolDataEntry::Function(func_symbol_data) => ConcreteSymbolDataEntry::Function(
+                ConcreteSymbolData::new(func_symbol_data, concrete_types),
+            ),
+            SymbolDataEntry::Type(type_symbol_data) => ConcreteSymbolDataEntry::Type(
+                ConcreteSymbolData::new(type_symbol_data, concrete_types),
+            ),
             SymbolDataEntry::Interface(interface_symbol_data) => {
                 ConcreteSymbolDataEntry::Interface(ConcreteSymbolData::new(
                     interface_symbol_data,
-                    index,
+                    concrete_types,
                 ))
             }
         }
