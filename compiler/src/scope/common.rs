@@ -60,7 +60,7 @@ impl MethodsMap {
                     PartialConcreteCallableDataRef::new(
                         callable_data,
                         match global_concrete_types {
-                            Some(concrete_types) => Some(concrete_types.get_core_ref()),
+                            Some(concrete_types) => Some(concrete_types),
                             None => None,
                         },
                     ),

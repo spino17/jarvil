@@ -25,7 +25,7 @@ pub trait AbstractType {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&Vec<Type>>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()>;
@@ -33,7 +33,7 @@ pub trait AbstractType {
 }
 
 pub trait AbstractNonStructTypes {
-    fn get_concrete_types(&self) -> Vec<Type>;
+    fn get_concrete_types(&self) -> ConcreteTypesTuple;
     fn get_builtin_methods(&self) -> Rc<StdHashMap<&'static str, CallableData>>;
     fn try_method(&self, method_name: &str) -> Option<CallablePrototypeData> {
         let builtin_methods = self.get_builtin_methods();
@@ -412,7 +412,7 @@ impl AbstractType for Type {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&Vec<Type>>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {

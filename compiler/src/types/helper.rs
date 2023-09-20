@@ -2,6 +2,7 @@ use super::core::Type;
 use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
+        concrete::ConcreteTypesTuple,
         core::SymbolData,
         interfaces::InterfaceBounds,
         types::{
@@ -30,7 +31,7 @@ pub fn try_infer_types_from_tuple(
     base_types_tuple: &Vec<Type>,
     generics_containing_types_tuple: &Vec<Type>,
     inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-    global_concrete_types: Option<&Vec<Type>>,
+    global_concrete_types: Option<&ConcreteTypesTuple>,
     num_inferred_types: &mut usize,
     inference_category: GenericTypeDeclarationPlaceCategory,
 ) -> Result<(), ()> {

@@ -70,14 +70,14 @@ impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
 
 #[derive(Debug, Default)]
 pub struct ConcretizationContext<'a> {
-    pub struct_concrete_types: Option<&'a Vec<Type>>,
-    pub function_local_concrete_types: Option<&'a Vec<Type>>,
+    pub struct_concrete_types: Option<&'a ConcreteTypesTuple>,
+    pub function_local_concrete_types: Option<&'a ConcreteTypesTuple>,
 }
 
 impl<'a> ConcretizationContext<'a> {
     pub fn new(
-        struct_concrete_types: Option<&'a Vec<Type>>,
-        function_local_concrete_types: Option<&'a Vec<Type>>,
+        struct_concrete_types: Option<&'a ConcreteTypesTuple>,
+        function_local_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Self {
         ConcretizationContext {
             struct_concrete_types,

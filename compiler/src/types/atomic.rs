@@ -1,7 +1,7 @@
 use super::core::OperatorCompatiblity;
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::concrete::ConcretizationContext;
+use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
@@ -95,7 +95,7 @@ impl AbstractType for Atomic {
         &self,
         _received_ty: &Type,
         _inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        _global_concrete_types: Option<&Vec<Type>>,
+        _global_concrete_types: Option<&ConcreteTypesTuple>,
         _num_inferred_types: &mut usize,
         _inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {

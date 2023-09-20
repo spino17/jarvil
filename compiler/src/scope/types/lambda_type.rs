@@ -39,7 +39,7 @@ impl LambdaTypeData {
                 return self
                     .meta_data
                     .prototype
-                    .concretize_prototype(None, Some(concrete_types.get_core_ref()));
+                    .concretize_prototype(None, Some(concrete_types));
             }
             None => return PrototypeConcretizationResult::UnConcretized(&self.meta_data.prototype),
         }

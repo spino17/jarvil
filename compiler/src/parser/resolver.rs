@@ -310,10 +310,6 @@ impl Resolver {
             is_concrete_types_none_allowed,
         )?;
         // let index = symbol_data.register_concrete_types(concrete_types);
-        let concrete_types = match concrete_types {
-            Some(concrete_types) => Some(ConcreteTypesTuple::new(concrete_types)),
-            None => None,
-        };
         let concrete_symbol_data =
             ConcreteSymbolDataEntry::new(symbol_data.get_entry(), concrete_types.clone());
         self.semantic_state_db
@@ -758,7 +754,7 @@ impl Resolver {
     fn extract_angle_bracket_content_from_identifier_in_use(
         &mut self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
-    ) -> (Option<Vec<Type>>, Option<Vec<TextRange>>, bool) {
+    ) -> (Option<ConcreteTypesTuple>, Option<Vec<TextRange>>, bool) {
         match &ok_identifier_in_use.core_ref().generic_type_args {
             Some((_, generic_type_args, _)) => {
                 let mut has_generics = false;
@@ -772,7 +768,11 @@ impl Resolver {
                     concrete_types.push(ty);
                     ty_ranges.push(generic_type_expr.range())
                 }
-                return (Some(concrete_types), Some(ty_ranges), has_generics);
+                return (
+                    Some(ConcreteTypesTuple::new(concrete_types)),
+                    Some(ty_ranges),
+                    has_generics,
+                );
             }
             None => return (None, None, false),
         }

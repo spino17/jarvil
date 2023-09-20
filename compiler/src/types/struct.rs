@@ -116,7 +116,7 @@ impl AbstractType for Struct {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&Vec<Type>>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {

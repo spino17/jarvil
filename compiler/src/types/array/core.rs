@@ -1,7 +1,7 @@
 use super::builtin::ARRAY_BUILTIN_METHODS;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::concrete::ConcretizationContext;
+use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::function::CallableData;
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
@@ -75,7 +75,7 @@ impl AbstractType for Array {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&Vec<Type>>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
@@ -148,8 +148,8 @@ impl OperatorCompatiblity for Array {
 }
 
 impl AbstractNonStructTypes for Array {
-    fn get_concrete_types(&self) -> Vec<Type> {
-        vec![self.element_type.clone()]
+    fn get_concrete_types(&self) -> ConcreteTypesTuple {
+        ConcreteTypesTuple::new(vec![self.element_type.clone()])
     }
 
     fn get_builtin_methods(&self) -> Rc<HashMap<&'static str, CallableData>> {

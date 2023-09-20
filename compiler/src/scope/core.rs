@@ -1,3 +1,4 @@
+use super::concrete::ConcreteTypesTuple;
 use super::errors::GenericTypeArgsCheckError;
 use super::function::{CallableData, CallableKind};
 use super::handler::SymbolDataEntry;
@@ -55,7 +56,7 @@ pub trait AbstractSymbolData {
     fn get_entry(&self) -> SymbolDataEntry;
     fn check_generic_type_args(
         &self,
-        concrete_types: &Option<Vec<Type>>,
+        concrete_types: &Option<ConcreteTypesTuple>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError>;
@@ -76,7 +77,7 @@ impl GenericTypeParams {
 
     pub fn check_concrete_types_bounded_by(
         &self,
-        concrete_types: &Vec<Type>,
+        concrete_types: &ConcreteTypesTuple,
         type_ranges: &Vec<TextRange>,
     ) -> Result<(), GenericTypeArgsCheckError> {
         let expected_len = self.len();
@@ -89,7 +90,7 @@ impl GenericTypeParams {
         }
         let mut incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
-            let ty = &concrete_types[index];
+            let ty = &concrete_types.get_core_ref()[index];
             if !ty.is_type_bounded_by_interfaces(interface_bounds) {
                 incorrectly_bounded_types.push((type_ranges[index], interface_bounds.to_string()))
             }
@@ -199,7 +200,7 @@ impl AbstractSymbolData for VariableSymbolData {
 
     fn check_generic_type_args(
         &self,
-        concrete_types: &Option<Vec<Type>>,
+        concrete_types: &Option<ConcreteTypesTuple>,
         _type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
@@ -221,7 +222,7 @@ impl AbstractSymbolData for FunctionSymbolData {
 
     fn check_generic_type_args(
         &self,
-        concrete_types: &Option<Vec<Type>>,
+        concrete_types: &Option<ConcreteTypesTuple>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
@@ -247,7 +248,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
 
     fn check_generic_type_args(
         &self,
-        concrete_types: &Option<Vec<Type>>,
+        concrete_types: &Option<ConcreteTypesTuple>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
@@ -290,7 +291,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
 
     fn check_generic_type_args(
         &self,
-        concrete_types: &Option<Vec<Type>>,
+        concrete_types: &Option<ConcreteTypesTuple>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {

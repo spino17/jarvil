@@ -162,7 +162,7 @@ impl From<PartialCallableDataPrototypeCheckError> for MethodAccessTypeCheckError
 #[derive(Debug)]
 pub enum StructConstructorPrototypeCheckResult {
     Basic(Type),
-    Inferred(Vec<Type>),
+    Inferred(ConcreteTypesTuple),
 }
 
 #[derive(Debug, Clone)]
@@ -231,7 +231,7 @@ impl TypeChecker {
     fn extract_angle_bracket_content_from_identifier_in_use(
         &self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
-    ) -> (Option<Vec<Type>>, Option<Vec<TextRange>>, bool) {
+    ) -> (Option<ConcreteTypesTuple>, Option<Vec<TextRange>>, bool) {
         match &ok_identifier_in_use.core_ref().generic_type_args {
             Some((_, generic_type_args, _)) => {
                 let mut has_generics = false;
@@ -245,7 +245,11 @@ impl TypeChecker {
                     concrete_types.push(ty);
                     ty_ranges.push(generic_type_expr.range())
                 }
-                return (Some(concrete_types), Some(ty_ranges), has_generics);
+                return (
+                    Some(ConcreteTypesTuple::new(concrete_types)),
+                    Some(ty_ranges),
+                    has_generics,
+                );
             }
             None => return (None, None, false),
         }
@@ -427,10 +431,10 @@ impl TypeChecker {
         &self,
         generic_type_decls: &GenericTypeParams,
         expected_prototype: &CallablePrototypeData,
-        global_concrete_types: Option<&Vec<Type>>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         inference_category: GenericTypeDeclarationPlaceCategory,
-    ) -> Result<Vec<Type>, PrototypeEquivalenceCheckError> {
+    ) -> Result<ConcreteTypesTuple, PrototypeEquivalenceCheckError> {
         // (inferred_concrete_types, params_ty_vec)
         match received_params {
             Some(received_params) => {
@@ -508,7 +512,7 @@ impl TypeChecker {
                         ),
                     );
                 }
-                return Ok(unpacked_inferred_concrete_types);
+                return Ok(ConcreteTypesTuple::new(unpacked_inferred_concrete_types));
             }
             None => Err(PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred),
         }
@@ -581,7 +585,7 @@ impl TypeChecker {
                 // let concrete_types = func_data.get_concrete_types(index);
                 let concrete_prototype = func_data
                     .prototype
-                    .concretize_prototype(None, Some(concrete_types.get_core_ref()));
+                    .concretize_prototype(None, Some(concrete_types));
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
                 )
@@ -666,7 +670,7 @@ impl TypeChecker {
                         // let concrete_types = struct_symbol_data.get_concrete_types(index);
                         let concrete_prototype = constructor_meta_data
                             .prototype
-                            .concretize_prototype(Some(concrete_types.get_core_ref()), None);
+                            .concretize_prototype(Some(concrete_types), None);
                         CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                             concrete_prototype,
                         )
@@ -727,7 +731,7 @@ impl TypeChecker {
             StructConstructorPrototypeCheckResult::Inferred(concrete_types) => {
                 return Ok(Type::new_with_struct(
                     &concrete_symbol_data.symbol_data,
-                    Some(ConcreteTypesTuple::new(concrete_types)),
+                    Some(concrete_types),
                 ));
             }
         }
@@ -970,7 +974,7 @@ impl TypeChecker {
                                 &property_name_str,
                                 &ConcretizationContext::new(
                                     match concrete_types {
-                                        Some(concrete_types) => Some(concrete_types.get_core_ref()),
+                                        Some(concrete_types) => Some(concrete_types),
                                         None => None,
                                     },
                                     None,
@@ -1023,7 +1027,7 @@ impl TypeChecker {
             &method_name,
             &ConcretizationContext::new(
                 match concrete_types {
-                    Some(concrete_types) => Some(concrete_types.get_core_ref()),
+                    Some(concrete_types) => Some(concrete_types),
                     None => None,
                 },
                 None,

@@ -56,7 +56,7 @@ impl InterfaceData {
         PartialConcreteInterfaceMethods::new(
             &self.methods,
             match key {
-                Some(concrete_types) => Some(concrete_types.get_core_ref()),
+                Some(concrete_types) => Some(concrete_types),
                 None => None,
             },
         )
@@ -218,11 +218,11 @@ pub enum PartialConcreteInterfaceMethodsCheckError {
 #[derive(Debug)]
 pub struct PartialConcreteInterfaceMethods<'a> {
     methods: &'a MethodsMap,
-    concrete_types: Option<&'a Vec<Type>>,
+    concrete_types: Option<&'a ConcreteTypesTuple>,
 }
 
 impl<'a> PartialConcreteInterfaceMethods<'a> {
-    pub fn new(methods: &'a MethodsMap, concrete_types: Option<&'a Vec<Type>>) -> Self {
+    pub fn new(methods: &'a MethodsMap, concrete_types: Option<&'a ConcreteTypesTuple>) -> Self {
         PartialConcreteInterfaceMethods {
             methods,
             concrete_types,

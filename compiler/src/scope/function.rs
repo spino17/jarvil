@@ -1,5 +1,5 @@
 use super::{
-    concrete::ConcretizationContext,
+    concrete::{ConcreteTypesTuple, ConcretizationContext},
     core::{AbstractConcreteTypesHandler, GenericTypeParams},
     errors::GenericTypeArgsCheckError,
 };
@@ -100,7 +100,7 @@ impl CallablePrototypeData {
         &self,
         other: &CallablePrototypeData,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&Vec<Type>>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
@@ -159,8 +159,8 @@ impl CallablePrototypeData {
 
     pub fn concretize_prototype(
         &self,
-        global_concrete_types: Option<&Vec<Type>>,
-        local_concrete_types: Option<&Vec<Type>>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
+        local_concrete_types: Option<&ConcreteTypesTuple>,
     ) -> PrototypeConcretizationResult {
         return self.concretize_prototype_core(&ConcretizationContext::new(
             global_concrete_types,
@@ -270,11 +270,14 @@ impl From<GenericTypeArgsCheckError> for PartialCallableDataPrototypeCheckError 
 #[derive(Debug)]
 pub struct PartialConcreteCallableDataRef<'a> {
     callable_data: &'a CallableData,
-    concrete_types: Option<&'a Vec<Type>>,
+    concrete_types: Option<&'a ConcreteTypesTuple>,
 }
 
 impl<'a> PartialConcreteCallableDataRef<'a> {
-    pub fn new(callable_data: &'a CallableData, concrete_types: Option<&'a Vec<Type>>) -> Self {
+    pub fn new(
+        callable_data: &'a CallableData,
+        concrete_types: Option<&'a ConcreteTypesTuple>,
+    ) -> Self {
         PartialConcreteCallableDataRef {
             callable_data,
             concrete_types,
@@ -285,7 +288,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
     pub fn is_received_params_valid(
         &self,
         type_checker: &TypeChecker,
-        local_concrete_types: Option<Vec<Type>>,
+        local_concrete_types: Option<ConcreteTypesTuple>,
         local_concrete_ty_ranges: Option<Vec<TextRange>>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PartialCallableDataPrototypeCheckError> {

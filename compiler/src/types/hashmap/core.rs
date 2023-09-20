@@ -4,7 +4,9 @@ use crate::{
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::ConcretizationContext, function::CallableData, interfaces::InterfaceBounds,
+        concrete::{ConcreteTypesTuple, ConcretizationContext},
+        function::CallableData,
+        interfaces::InterfaceBounds,
         types::generic_type::GenericTypeDeclarationPlaceCategory,
     },
     types::core::{AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type},
@@ -66,7 +68,7 @@ impl AbstractType for HashMap {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&Vec<Type>>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
@@ -158,8 +160,8 @@ impl OperatorCompatiblity for HashMap {
 }
 
 impl AbstractNonStructTypes for HashMap {
-    fn get_concrete_types(&self) -> Vec<Type> {
-        return vec![self.key_type.clone(), self.value_type.clone()];
+    fn get_concrete_types(&self) -> ConcreteTypesTuple {
+        ConcreteTypesTuple::new(vec![self.key_type.clone(), self.value_type.clone()])
     }
 
     fn get_builtin_methods(&self) -> Rc<StdHashMap<&'static str, CallableData>> {

@@ -2,7 +2,7 @@ use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::ConcretizationContext,
+        concrete::{ConcreteTypesTuple, ConcretizationContext},
         core::SymbolData,
         interfaces::InterfaceBounds,
         types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
@@ -73,7 +73,7 @@ impl AbstractType for Generic {
                         Some(concrete_types) => concrete_types,
                         None => unreachable!(),
                     };
-                    let concrete_self_ty = &concrete_types[self_index];
+                    let concrete_self_ty = &concrete_types.get_core_ref()[self_index];
                     return concrete_self_ty.is_eq(other_ty);
                 }
             },
@@ -87,12 +87,12 @@ impl AbstractType for Generic {
         let category = &generic_data.category;
         match category {
             GenericTypeDeclarationPlaceCategory::InStruct => match context.struct_concrete_types {
-                Some(concrete_types) => return concrete_types[index].clone(),
+                Some(concrete_types) => return concrete_types.get_core_ref()[index].clone(),
                 None => unreachable!(),
             },
             GenericTypeDeclarationPlaceCategory::InCallable => {
                 match context.function_local_concrete_types {
-                    Some(concrete_types) => return concrete_types[index].clone(),
+                    Some(concrete_types) => return concrete_types.get_core_ref()[index].clone(),
                     None => unreachable!(),
                 }
             }
@@ -109,7 +109,7 @@ impl AbstractType for Generic {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&Vec<Type>>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
@@ -138,7 +138,7 @@ impl AbstractType for Generic {
                 Some(concrete_types) => concrete_types,
                 None => unreachable!(),
             };
-            let expected_ty = &global_concrete_types[index];
+            let expected_ty = &global_concrete_types.get_core_ref()[index];
             if !expected_ty.is_eq(received_ty) {
                 return Err(());
             }
