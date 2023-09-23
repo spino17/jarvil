@@ -4,7 +4,7 @@ use crate::{
     lexer::token::Token,
     parser::parser::JarvilParser,
 };
-pub const R_ASSIGNMENT_STARTING_SYMBOLS: [&'static str; 1] = ["<expression>"];
+pub const R_ASSIGNMENT_STARTING_SYMBOLS: [&str; 1] = ["<expression>"];
 
 pub fn is_r_assignment_starting_with(token: &Token) -> bool {
     is_expression_starting_with(token)
@@ -19,7 +19,7 @@ pub fn assignment(parser: &mut JarvilParser, l_expr: &ExpressionNode) -> Assignm
         Some(atom_node) => AssignmentNode::new(&atom_node, &r_assign_node, &equal_node),
         None => {
             parser.log_invalid_l_value_error(l_expr.range());
-            AssignmentNode::new_with_invalid_l_value(&l_expr, &r_assign_node, &equal_node)
+            AssignmentNode::new_with_invalid_l_value(l_expr, &r_assign_node, &equal_node)
         }
     }
 }

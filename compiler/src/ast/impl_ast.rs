@@ -82,7 +82,7 @@ impl Node for BlockNode {
                     is_empty = true;
                     break;
                 }
-                index = index - 1;
+                index -= 1;
             }
             if is_empty {
                 impl_range!(self.0.as_ref().newline, self.0.as_ref().newline)
@@ -765,10 +765,7 @@ impl ReturnStatementNode {
     ) -> Self {
         let node = Rc::new(CoreReturnStatementNode {
             return_keyword: return_keyword.clone(),
-            expr: match expr {
-                Some(expr) => Some(expr.clone()),
-                None => None,
-            },
+            expr,
             newline: newline.clone(),
         });
         ReturnStatementNode(node)
@@ -926,7 +923,7 @@ impl AtomicTypeNode {
                     &ok_token.token_value(code),
                 ))
             }
-            _ => return TypeResolveKind::Invalid,
+            _ => TypeResolveKind::Invalid,
         }
     }
 
@@ -969,7 +966,7 @@ impl ArrayTypeNode {
             TypeResolveKind::Unresolved(identifier_node) => {
                 return TypeResolveKind::Unresolved(identifier_node)
             }
-            TypeResolveKind::Invalid => return TypeResolveKind::Invalid,
+            TypeResolveKind::Invalid => TypeResolveKind::Invalid,
         }
     }
 
@@ -1016,9 +1013,9 @@ impl TupleTypeNode {
                 TypeResolveKind::Invalid => resolved_types.push(Type::new_with_unknown()),
             }
         }
-        if unresolved_identifiers.len() > 0 {
+        if !unresolved_identifiers.is_empty() {
             return TypeResolveKind::Unresolved(unresolved_identifiers);
-        } else if resolved_types.len() > 0 {
+        } else if !resolved_types.is_empty() {
             return TypeResolveKind::Resolved(Type::new_with_tuple(resolved_types));
         } else {
             return TypeResolveKind::Invalid;
@@ -1095,7 +1092,7 @@ impl HashMapTypeNode {
                 TypeResolveKind::Unresolved(unresolved_vec) => {
                     return TypeResolveKind::Unresolved(unresolved_vec)
                 }
-                TypeResolveKind::Invalid => return TypeResolveKind::Invalid,
+                TypeResolveKind::Invalid => TypeResolveKind::Invalid,
             },
         }
     }
@@ -1235,17 +1232,17 @@ impl ExpressionNode {
                     match &atomic_expr_node.0.as_ref() {
                         CoreAtomicExpressionNode::Atom(atom_node) => {
                             if atom_node.is_valid_l_value() {
-                                return Some(atom_node.clone());
+                                Some(atom_node.clone())
                             } else {
-                                return None;
+                                None
                             }
                         }
-                        _ => return None,
+                        _ => None,
                     }
                 }
-                _ => return None,
+                _ => None,
             },
-            _ => return None,
+            _ => None,
         }
     }
 
@@ -1720,11 +1717,11 @@ impl AtomNode {
             CoreAtomNode::MethodAccess(_) => false,
             CoreAtomNode::IndexAccess(atom_index_access_node) => {
                 let atom = &atom_index_access_node.0.as_ref().atom;
-                return atom.is_valid_l_value();
+                atom.is_valid_l_value()
             }
             CoreAtomNode::PropertyAccess(atom_property_access_node) => {
                 let atom = &atom_property_access_node.0.as_ref().atom;
-                return atom.is_valid_l_value();
+                atom.is_valid_l_value()
             }
         }
     }
@@ -1945,10 +1942,7 @@ impl TokenNode {
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
         match &self.0.as_ref() {
-            CoreTokenNode::Ok(ok_token) => match ok_token.is_binary_operator() {
-                Some(operator) => return Some(operator),
-                None => None,
-            },
+            CoreTokenNode::Ok(ok_token) => ok_token.is_binary_operator(),
             _ => None,
         }
     }
@@ -2095,12 +2089,7 @@ impl OkIdentifierInUseNode {
     ) -> Self {
         let node = Rc::new(CoreOkIdentifierInUseNode {
             name: token.clone(),
-            generic_type_args: match generic_type_args {
-                Some((langle, args, rangle)) => {
-                    Some((langle.clone(), args.clone(), rangle.clone()))
-                }
-                None => None,
-            },
+            generic_type_args: generic_type_args.map(|(langle, args, rangle)| (langle.clone(), args.clone(), rangle.clone())),
         });
         OkIdentifierInUseNode(node)
     }
@@ -2150,12 +2139,7 @@ impl OkIdentifierInDeclNode {
     ) -> Self {
         let node = Rc::new(CoreOkIdentifierInDeclNode {
             name: token.clone(),
-            generic_type_decls: match generic_type_decls {
-                Some((langle, args, rangle)) => {
-                    Some((langle.clone(), args.clone(), rangle.clone()))
-                }
-                None => None,
-            },
+            generic_type_decls: generic_type_decls.map(|(langle, args, rangle)| (langle.clone(), args.clone(), rangle.clone())),
         });
         OkIdentifierInDeclNode(node)
     }
@@ -2201,10 +2185,7 @@ impl GenericTypeDeclNode {
     ) -> Self {
         let node = Rc::new(CoreGenericTypeDeclNode {
             generic_type_name: generic_type_name.clone(),
-            interface_bounds: match interface_bounds {
-                Some((colon, interfaces)) => Some((colon.clone(), interfaces.clone())),
-                None => None,
-            },
+            interface_bounds: interface_bounds.map(|(colon, interfaces)| (colon.clone(), interfaces.clone())),
         });
         GenericTypeDeclNode(node)
     }

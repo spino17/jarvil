@@ -72,13 +72,9 @@ pub fn infix_binary_expr(
     operator_precedence: u8,
 ) -> ExpressionNode {
     let right_expr_node = parser.pratt_expr(operator_precedence);
-    ExpressionNode::new_with_binary(&operator_node, &left_expr_node, &right_expr_node)
+    ExpressionNode::new_with_binary(operator_node, left_expr_node, &right_expr_node)
 }
 
 pub fn is_comparison(precedence: u8) -> bool {
-    if precedence == 3 {
-        true
-    } else {
-        false
-    }
+    precedence == 3
 }

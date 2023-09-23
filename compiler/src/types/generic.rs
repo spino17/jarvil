@@ -30,11 +30,7 @@ impl AbstractType for Generic {
     fn is_eq(&self, other_ty: &Type) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Generic(generic_data) => {
-                if self.name() == generic_data.name() {
-                    true
-                } else {
-                    false
-                }
+                self.name() == generic_data.name()
             }
             CoreType::Any => true,
             _ => false,
@@ -59,22 +55,22 @@ impl AbstractType for Generic {
                     let other_category = &other_generic_data.category;
                     match other_category {
                         GenericTypeDeclarationPlaceCategory::InCallable => {
-                            return self_index == other_index
+                            self_index == other_index
                         }
-                        GenericTypeDeclarationPlaceCategory::InStruct => return false,
+                        GenericTypeDeclarationPlaceCategory::InStruct => false,
                     }
                 }
-                None => return false,
+                None => false,
             },
             GenericTypeDeclarationPlaceCategory::InStruct => match is_other_ty_generic {
-                Some(_) => return false,
+                Some(_) => false,
                 None => {
                     let concrete_types = match context.struct_concrete_types {
                         Some(concrete_types) => concrete_types,
                         None => unreachable!(),
                     };
                     let concrete_self_ty = &concrete_types[self_index];
-                    return concrete_self_ty.is_eq(other_ty);
+                    concrete_self_ty.is_eq(other_ty)
                 }
             },
         }
@@ -87,12 +83,12 @@ impl AbstractType for Generic {
         let category = &generic_data.category;
         match category {
             GenericTypeDeclarationPlaceCategory::InStruct => match context.struct_concrete_types {
-                Some(concrete_types) => return concrete_types[index].clone(),
+                Some(concrete_types) => concrete_types[index].clone(),
                 None => unreachable!(),
             },
             GenericTypeDeclarationPlaceCategory::InCallable => {
                 match context.function_local_concrete_types {
-                    Some(concrete_types) => return concrete_types[index].clone(),
+                    Some(concrete_types) => concrete_types[index].clone(),
                     None => unreachable!(),
                 }
             }
@@ -102,7 +98,7 @@ impl AbstractType for Generic {
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
         let symbol_data = self.semantic_data.get_core_ref();
         let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
-        return interface_bounds.is_subset(ty_interface_bounds);
+        interface_bounds.is_subset(ty_interface_bounds)
     }
 
     fn try_infer_type_or_check_equivalence(
@@ -122,14 +118,14 @@ impl AbstractType for Generic {
             match entry_ty {
                 InferredConcreteTypesEntry::Uninferred => {
                     *entry_ty = InferredConcreteTypesEntry::Inferred(received_ty.clone());
-                    *num_inferred_types = *num_inferred_types + 1;
-                    return Ok(());
+                    *num_inferred_types += 1;
+                    Ok(())
                 }
                 InferredConcreteTypesEntry::Inferred(present_ty) => {
                     if !present_ty.is_eq(received_ty) {
                         return Err(());
                     }
-                    return Ok(());
+                    Ok(())
                 }
             }
         } else {
@@ -142,7 +138,7 @@ impl AbstractType for Generic {
             if !expected_ty.is_eq(received_ty) {
                 return Err(());
             }
-            return Ok(());
+            Ok(())
         }
     }
 }

@@ -272,7 +272,7 @@ impl MissingTokenError {
 
 impl Diagnostic for MissingTokenError {
     fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        return Some(Box::new("SyntaxError"));
+        Some(Box::new("SyntaxError"))
     }
 
     fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
@@ -308,7 +308,7 @@ impl Diagnostic for MissingTokenError {
             self.start_index,
             self.len,
         )];
-        return Some(Box::new(span_vec.into_iter()));
+        Some(Box::new(span_vec.into_iter()))
     }
 }
 
@@ -988,11 +988,11 @@ impl Diagnostic for GenericTypeArgsIncorrectlyBoundedError {
                 len,
             ));
         }
-        return Some(Box::new(span_vec.into_iter()));
+        Some(Box::new(span_vec.into_iter()))
     }
 
     fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
-        return Some(Box::new("TypeCheckError"));
+        Some(Box::new("TypeCheckError"))
     }
 }
 
@@ -1062,11 +1062,11 @@ impl Diagnostic for MismatchedParamTypeError {
                 len,
             ));
         }
-        return Some(Box::new(span_vec.into_iter()));
+        Some(Box::new(span_vec.into_iter()))
     }
 
     fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
-        return Some(Box::new("TypeCheckError"));
+        Some(Box::new("TypeCheckError"))
     }
 }
 
@@ -1088,7 +1088,7 @@ impl InterfaceMethodsInStructCheckError {
         let missing_interface_method_names: Option<String> =
             if let Some(missing_interface_method_names) = missing_interface_method_names {
                 let mut s = "".to_string();
-                if missing_interface_method_names.len() > 0 {
+                if !missing_interface_method_names.is_empty() {
                     s.push_str(missing_interface_method_names[0]);
                 }
                 for i in 1..missing_interface_method_names.len() {
@@ -1152,11 +1152,11 @@ impl Diagnostic for InterfaceMethodsInStructCheckError {
                 ));
             }
         }
-        return Some(Box::new(span_vec.into_iter()));
+        Some(Box::new(span_vec.into_iter()))
     }
 
     fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
-        return Some(Box::new("TypeCheckError"));
+        Some(Box::new("TypeCheckError"))
     }
 }
 
@@ -1229,7 +1229,7 @@ impl InferredTypesNotBoundedByInterfacesError {
         let concrete_types_len = concrete_types.len();
         concrete_types_str.push_str(&concrete_types[0].to_string());
         for i in 1..concrete_types_len {
-            concrete_types_str.push_str(&format!(", {}", concrete_types[i].to_string()));
+            concrete_types_str.push_str(&format!(", {}", concrete_types[i]));
         }
         concrete_types_str.push('>');
         let mut err_msg = format!(
@@ -1789,8 +1789,8 @@ pub struct MismatchedReturnTypeError {
 impl MismatchedReturnTypeError {
     pub fn new(expected_type: String, received_type: String, range: TextRange) -> Self {
         MismatchedReturnTypeError {
-            expected_type: expected_type,
-            received_type: received_type,
+            expected_type,
+            received_type,
             span: range_to_span(range).into(),
         }
     }

@@ -92,7 +92,7 @@ impl SemanticStateDatabase {
 
     pub fn get_type_obj_from_expr(&self, ty_expr: &TypeExpressionNode) -> (Type, bool) {
         match self.type_expr_obj_table.get(ty_expr) {
-            Some((ty, has_generics)) => return (ty.clone(), *has_generics),
+            Some((ty, has_generics)) => (ty.clone(), *has_generics),
             None => unreachable!(),
         }
     }

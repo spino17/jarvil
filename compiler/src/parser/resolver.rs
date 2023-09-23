@@ -142,7 +142,7 @@ impl Resolver {
         mut self,
         ast: &BlockNode,
     ) -> (SemanticStateDatabase, Vec<Diagnostics>, JarvilCode) {
-        let code_block = &*ast.0.as_ref();
+        let code_block = ast.0.as_ref();
         // setting builtin functions to global scope
         self.semantic_state_db.namespace.functions.force_insert(
             self.scope_index,
@@ -158,7 +158,7 @@ impl Resolver {
             TextRange::default(),
             false,
         );
-        for stmt in &*code_block.stmts.as_ref() {
+        for stmt in code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
         match self
@@ -171,7 +171,7 @@ impl Resolver {
                 let func_meta_data = &*symbol_data.get_core_ref();
                 let params = &func_meta_data.prototype.params;
                 let return_type = &func_meta_data.prototype.return_type;
-                if params.len() > 0 || !return_type.is_void() {
+                if !params.is_empty() || !return_type.is_void() {
                     let span = symbol_data.declaration_line_number();
                     let err = MainFunctionWrongTypeError::new(span);
                     self.errors.push(Diagnostics::MainFunctionWrongType(err));
@@ -191,7 +191,7 @@ impl Resolver {
             .namespace
             .open_scope(self.scope_index);
         self.scope_index = new_scope_index;
-        self.indent_level = self.indent_level + 1;
+        self.indent_level += 1;
         self.context.block_context_stack.push(BlockContext {
             variable_non_locals: FxHashSet::default(),
             function_non_locals: FxHashMap::default(),
@@ -210,7 +210,7 @@ impl Resolver {
             None => unreachable!(),
         };
         self.scope_index = parent_scope_index;
-        self.indent_level = self.indent_level - 1;
+        self.indent_level -= 1;
         let non_locals = match self.context.block_context_stack.pop() {
             Some(block_context) => block_context,
             None => unreachable!(),
@@ -268,7 +268,7 @@ impl Resolver {
     pub fn get_enclosing_generics_declarative_scope_index(&self) -> (usize, Option<usize>) {
         // (enclosing_scope, enclosing_class_scope `if enclosing scope is method`)
         let mut index = self.context.block_context_stack.len() - 1;
-        while index >= 0 {
+        loop {
             let block_context = &self.context.block_context_stack[index];
             if block_context.block_kind.is_generics_shielding_block() {
                 if block_context.block_kind.is_method() {
@@ -280,7 +280,7 @@ impl Resolver {
                     return (block_context.scope_index, None);
                 }
             }
-            index = index - 1;
+            index -= 1;
         }
         unreachable!()
     }
@@ -304,7 +304,7 @@ impl Resolver {
         // (index to the registry, has_generics)
         let (concrete_types, ty_ranges, has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
-        let _ = symbol_data.check_generic_type_args(
+        symbol_data.check_generic_type_args(
             &concrete_types,
             &ty_ranges,
             is_concrete_types_none_allowed,
@@ -315,7 +315,7 @@ impl Resolver {
         self.semantic_state_db
             .identifier_in_use_binding_table
             .insert(node.clone(), concrete_symbol_data);
-        return Ok((concrete_types, has_generics));
+        Ok((concrete_types, has_generics))
     }
 
     pub fn bind_decl_to_self_keyword(
@@ -347,9 +347,7 @@ impl Resolver {
                     &lookup_data.symbol_data,
                     is_concrete_types_none_allowed,
                 ) {
-                    Ok((concrete_types, _)) => {
-                        return ResolveResult::Ok(lookup_data, concrete_types, name)
-                    }
+                    Ok((concrete_types, _)) => ResolveResult::Ok(lookup_data, concrete_types, name),
                     Err(err) => {
                         if log_error {
                             let err = err_for_generic_type_args(
@@ -359,7 +357,7 @@ impl Resolver {
                             );
                             self.errors.push(err);
                         }
-                        return ResolveResult::InvalidGenericTypeArgsProvided(err);
+                        ResolveResult::InvalidGenericTypeArgsProvided(err)
                     }
                 }
             }
@@ -448,7 +446,7 @@ impl Resolver {
         self_keyword: &OkSelfKeywordNode,
     ) -> Option<(SymbolData<VariableData>, usize)> {
         let name = self_keyword.token_value(&self.code);
-        assert!(name == "self".to_string());
+        assert!(name == *"self");
         match self
             .semantic_state_db
             .namespace
@@ -458,10 +456,10 @@ impl Resolver {
                 let symbol_data = lookup_data.symbol_data;
                 let depth = lookup_data.depth;
                 self.bind_decl_to_self_keyword(self_keyword, symbol_data.0.clone());
-                return Some((symbol_data.0, depth));
+                Some((symbol_data.0, depth))
             }
             LookupResult::NotInitialized(_) => unreachable!(),
-            LookupResult::Unresolved => return None,
+            LookupResult::Unresolved => None,
         }
     }
 
@@ -664,7 +662,7 @@ impl Resolver {
                 }
             }
         }
-        return TypeResolveKind::Invalid;
+        TypeResolveKind::Invalid
     }
 
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> (Type, bool) {
@@ -761,20 +759,20 @@ impl Resolver {
                 let mut concrete_types: Vec<Type> = vec![];
                 let mut ty_ranges: Vec<TextRange> = vec![];
                 for generic_type_expr in generic_type_args.iter() {
-                    let (ty, ty_has_generics) = self.type_obj_from_expression(&generic_type_expr);
+                    let (ty, ty_has_generics) = self.type_obj_from_expression(generic_type_expr);
                     if ty_has_generics {
                         has_generics = true;
                     }
                     concrete_types.push(ty);
                     ty_ranges.push(generic_type_expr.range())
                 }
-                return (
+                (
                     Some(ConcreteTypesTuple::new(concrete_types)),
                     Some(ty_ranges),
                     has_generics,
-                );
+                )
             }
-            None => return (None, None, false),
+            None => (None, None, false),
         }
     }
 
@@ -806,7 +804,7 @@ impl Resolver {
                                     interface_expr.core_ref()
                                 {
                                     if let Some(interface_obj) =
-                                        self.interface_obj_from_expression(&interface_expr)
+                                        self.interface_obj_from_expression(interface_expr)
                                     {
                                         if let Some(previous_decl_range) = interface_bounds
                                             .insert(interface_obj, interface_expr.range())
@@ -860,12 +858,12 @@ impl Resolver {
                         }
                     }
                 }
-                return (
+                (
                     Some(GenericTypeParams(generic_type_params_vec)),
                     Some(ConcreteTypesTuple::new(concrete_types)),
-                );
+                )
             }
-            None => return (None, None),
+            None => (None, None),
         }
     }
 
@@ -875,11 +873,10 @@ impl Resolver {
         name: &str,
     ) -> Option<TextRange> {
         match methods.get(name) {
-            Some((_, previous_decl_range)) => return Some(*previous_decl_range),
-            None => match class_methods.get(name) {
-                Some((_, previous_decl_range)) => return Some(*previous_decl_range),
-                None => return None,
-            },
+            Some((_, previous_decl_range)) => Some(*previous_decl_range),
+            None => class_methods
+                .get(name)
+                .map(|(_, previous_decl_range)| *previous_decl_range),
         }
     }
 
@@ -967,7 +964,7 @@ impl Resolver {
                 }
             }
         }
-        let is_concretization_required = if generics_containing_params_indexes.len() == 0
+        let is_concretization_required = if generics_containing_params_indexes.is_empty()
             && !is_concretization_required_for_return_type
         {
             None
@@ -1014,7 +1011,7 @@ impl Resolver {
                 .get_core_mut_ref()
                 .set_generics(generic_type_decls);
         }
-        for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
+        for stmt in callable_body.0.as_ref().stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.close_block(Some(callable_body));
@@ -1048,7 +1045,7 @@ impl Resolver {
             generic_type_decls,
         ) = self
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
-        for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
+        for stmt in callable_body.0.as_ref().stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.close_block(Some(callable_body));
@@ -1077,7 +1074,7 @@ impl Resolver {
         self.open_block(callable_body.core_ref().kind);
         let (param_types_vec, return_type, return_type_range, is_concretization_required, _) =
             self.declare_callable_prototype(&core_callable_body.prototype, None);
-        for stmt in &*callable_body.0.as_ref().stmts.as_ref() {
+        for stmt in callable_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
@@ -1086,7 +1083,7 @@ impl Resolver {
                 }
                 _ => continue,
             };
-            self.walk_stmt(&stmt);
+            self.walk_stmt(stmt);
             if let CoreStatementNode::Assignment(assignment) = stmt.core_ref() {
                 if let CoreAssignmentNode::Ok(ok_assignment) = assignment.core_ref() {
                     let l_atom = &ok_assignment.core_ref().l_atom;
@@ -1149,10 +1146,10 @@ impl Resolver {
             }
         }
 
-        let ty_from_optional_annotation = match &core_variable_decl.ty_annotation {
-            Some((_, ty_expr)) => Some((self.type_obj_from_expression(ty_expr).0, ty_expr.range())),
-            None => None,
-        };
+        let ty_from_optional_annotation = core_variable_decl
+            .ty_annotation
+            .as_ref()
+            .map(|(_, ty_expr)| (self.type_obj_from_expression(ty_expr).0, ty_expr.range()));
         // Except `CoreRAssignmentNode::LAMBDA`, type of the variable is set in the `type_checker.rs`. For `CoreRAssignmentNode::LAMBDA`,
         // it's type is set to the variable symbol_data here itself.
         match core_variable_decl.r_node.core_ref() {
@@ -1312,7 +1309,7 @@ impl Resolver {
             let mut interfaces = InterfaceBounds::default();
             for interface_expr in interfaces_node.iter() {
                 if let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref() {
-                    if let Some(interface_obj) = self.interface_obj_from_expression(&interface_expr)
+                    if let Some(interface_obj) = self.interface_obj_from_expression(interface_expr)
                     {
                         if let Some(previous_decl_range) =
                             interfaces.insert(interface_obj, interface_expr.range())
@@ -1346,7 +1343,7 @@ impl Resolver {
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<String> = FxHashSet::default();
-        for stmt in &*struct_body.0.as_ref().stmts.as_ref() {
+        for stmt in struct_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
@@ -1524,7 +1521,7 @@ impl Resolver {
                             missing_fields_from_constructor.push(field_name);
                         }
                     }
-                    if missing_fields_from_constructor.len() > 0 {
+                    if !missing_fields_from_constructor.is_empty() {
                         let err = FieldsNotInitializedInConstructorError::new(
                             missing_fields_from_constructor,
                             construct_span,
@@ -1585,7 +1582,7 @@ impl Resolver {
             let type_tuple_iter = type_tuple.iter();
             for data_type in type_tuple_iter {
                 let (ty, ty_has_generics) =
-                    self.type_obj_for_expression_contained_inside_declarations(&data_type);
+                    self.type_obj_for_expression_contained_inside_declarations(data_type);
                 if ty_has_generics {
                     generics_containing_params_indexes.push(types_vec.len());
                 }
@@ -1603,7 +1600,7 @@ impl Resolver {
                     name,
                     types_vec,
                     return_type,
-                    if generics_containing_params_indexes.len() == 0
+                    if generics_containing_params_indexes.is_empty()
                         && !is_concretization_required_for_return_type
                     {
                         None
@@ -1676,7 +1673,7 @@ impl Resolver {
 
         let mut fields_map: FxHashMap<String, (Type, TextRange)> = FxHashMap::default();
         let mut methods: FxHashMap<String, (CallableData, TextRange)> = FxHashMap::default();
-        for stmt in &*interface_body.0.as_ref().stmts.as_ref() {
+        for stmt in interface_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
@@ -1763,35 +1760,35 @@ impl Visitor for Resolver {
             ASTNode::Block(block) => {
                 let core_block = block.0.as_ref();
                 self.open_block(core_block.kind);
-                for stmt in &*core_block.stmts.as_ref() {
+                for stmt in core_block.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block(Some(block));
-                return None;
+                None
             }
             ASTNode::VariableDeclaration(variable_decl) => {
                 self.declare_variable(variable_decl);
-                return None;
+                None
             }
             ASTNode::FunctionWrapper(func_wrapper) => {
                 self.declare_function(func_wrapper);
-                return None;
+                None
             }
             ASTNode::StructDeclaration(struct_decl) => {
                 self.declare_struct_type(struct_decl);
-                return None;
+                None
             }
             ASTNode::InterfaceDeclaration(interface_decl) => {
                 self.declare_interface(interface_decl);
-                return None;
+                None
             }
             ASTNode::LambdaTypeDeclaration(lambda_type_decl) => {
                 self.declare_lambda_type(lambda_type_decl);
-                return None;
+                None
             }
             ASTNode::TypeExpression(type_expr) => {
                 self.type_obj_from_expression(type_expr);
-                return None;
+                None
             }
             ASTNode::AtomStart(atom_start) => {
                 match atom_start.core_ref() {
@@ -1934,9 +1931,9 @@ impl Visitor for Resolver {
                         }
                     }
                 }
-                return None;
+                None
             }
-            _ => return Some(()),
+            _ => Some(()),
         }
     }
 }

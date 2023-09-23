@@ -4,7 +4,7 @@ use super::{
     core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
     function::{CallableData, PartialConcreteCallableDataRef},
 };
-use crate::types::{core::Type, generic::Generic};
+use crate::types::{core::Type};
 use crate::{scope::concrete::ConcretizationContext, types::core::AbstractType};
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
@@ -110,7 +110,7 @@ impl InterfaceObject {
                 None => return true,
             }
         }
-        return false;
+        false
     }
 }
 
@@ -122,9 +122,9 @@ impl ToString for InterfaceObject {
                 s.push('<');
                 s.push_str(&concrete_types.to_string());
                 s.push('>');
-                return s;
+                s
             }
-            None => return s,
+            None => s,
         }
     }
 }
@@ -162,7 +162,7 @@ impl InterfaceBounds {
                 return Some(*decl_range);
             }
         }
-        return None;
+        None
     }
 
     pub fn insert(&mut self, obj: InterfaceObject, decl_range: TextRange) -> Option<TextRange> {
@@ -170,18 +170,18 @@ impl InterfaceBounds {
             Some(previous_decl_range) => Some(previous_decl_range),
             None => {
                 self.interfaces.push((obj, decl_range));
-                return None;
+                None
             }
         }
     }
 
     pub fn is_subset(&self, other: &InterfaceBounds) -> bool {
         for (self_entry, _) in &self.interfaces {
-            if other.contains(&self_entry).is_none() {
+            if other.contains(self_entry).is_none() {
                 return false;
             }
         }
-        return true;
+        true
     }
 
     pub fn is_eq(&self, other: &InterfaceBounds) -> bool {
@@ -262,9 +262,9 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         ) {
                             return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
                         }
-                        return Ok(());
+                        Ok(())
                     }
-                    None => return Err(
+                    None => Err(
                         PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationExpected(
                             range,
                         ),
@@ -272,7 +272,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                 }
             }
             None => match struct_method_generic_type_decls {
-                Some(_) => return Err(
+                Some(_) => Err(
                     PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationNotExpected(
                         range,
                     ),
@@ -284,7 +284,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                     ) {
                         return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
                     }
-                    return Ok(());
+                    Ok(())
                 }
             },
         }
@@ -320,15 +320,15 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
             }
         }
         let mut final_err = (None, None);
-        if missing_interface_method_names.len() > 0 {
+        if !missing_interface_method_names.is_empty() {
             final_err.0 = Some(missing_interface_method_names);
         }
-        if errors.len() > 0 {
+        if !errors.is_empty() {
             final_err.1 = Some(errors);
         }
         if final_err.0.is_some() || final_err.1.is_some() {
             return Err(final_err);
         }
-        return Ok(());
+        Ok(())
     }
 }

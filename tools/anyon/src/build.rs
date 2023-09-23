@@ -42,7 +42,7 @@ impl AbstractCommand for BuildCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         let len = self.command_line_args.len();
         if len == 2 {
-            return Ok(());
+            Ok(())
         } else if len == 3 {
             let file_name = check_jarvil_code_file_extension(&self.command_line_args[2])?;
             self.alternate_code_file_name = Some(file_name.to_string());
@@ -63,7 +63,7 @@ impl AbstractCommand for BuildCommand {
             curr_dir_path, code_file_name
         );
 
-        let code_str = fs::read_to_string(&jarvil_code_file_path)?;
+        let code_str = fs::read_to_string(jarvil_code_file_path)?;
         let code = JarvilCode::new(&code_str);
         let py_code = build_code(code, code_str)?;
         fs::write(&transpiled_py_code_file_path, py_code)?;

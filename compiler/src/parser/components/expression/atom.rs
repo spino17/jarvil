@@ -26,7 +26,7 @@ pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> At
                         &rparen_node,
                         &dot_node,
                     );
-                    return parser.trailing_atom(atom_node);
+                    parser.trailing_atom(atom_node)
                 }
                 _ => {
                     let atom_node = AtomNode::new_with_propertry_access(
@@ -34,7 +34,7 @@ pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> At
                         &property_or_method_name_node,
                         &dot_node,
                     );
-                    return parser.trailing_atom(atom_node);
+                    parser.trailing_atom(atom_node)
                 }
             }
         }
@@ -47,7 +47,7 @@ pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> At
             let rparen_node = parser.expect(")");
             let atom_node =
                 AtomNode::new_with_call(&atom_start_node, params_node, &lparen_node, &rparen_node);
-            return parser.trailing_atom(atom_node);
+            parser.trailing_atom(atom_node)
         }
         CoreToken::LSQUARE => {
             let lsquare_node = parser.expect("[");
@@ -59,10 +59,10 @@ pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> At
                 &lsquare_node,
                 &rsquare_node,
             );
-            return parser.trailing_atom(atom_node);
+            parser.trailing_atom(atom_node)
         }
         _ => {
-            return atom_start_node;
+            atom_start_node
         }
     }
 }
@@ -87,7 +87,7 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
                         &lparen_node,
                         &rparen_node,
                     );
-                    return AtomStartNode::new_with_function_call(&call_expr_node);
+                    AtomStartNode::new_with_function_call(&call_expr_node)
                 }
                 CoreToken::DOUBLE_COLON => {
                     let double_colon_node = parser.expect("::");
@@ -98,21 +98,21 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
                         params_node = Some(parser.params());
                     }
                     let rparen_node = parser.expect(")");
-                    return AtomStartNode::new_with_class_method_call(
+                    AtomStartNode::new_with_class_method_call(
                         &leading_identifier_node,
                         &class_method_name,
                         params_node,
                         &double_colon_node,
                         &lparen_node,
                         &rparen_node,
-                    );
+                    )
                 }
-                _ => return AtomStartNode::new_with_identifier(&leading_identifier_node),
+                _ => AtomStartNode::new_with_identifier(&leading_identifier_node),
             }
         }
         CoreToken::SELF => {
             let self_keyword_node = parser.expect_self();
-            return AtomStartNode::new_with_self_keyword(&self_keyword_node);
+            AtomStartNode::new_with_self_keyword(&self_keyword_node)
         }
         _ => unreachable!(),
     }
@@ -121,5 +121,5 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
 pub fn atom(parser: &mut JarvilParser) -> AtomNode {
     let atom_start_node = parser.atom_start();
     let atom_node = AtomNode::new_with_atom_start(&atom_start_node);
-    return parser.trailing_atom(atom_node);
+    parser.trailing_atom(atom_node)
 }

@@ -29,20 +29,20 @@ impl Lexer for CoreLexer {
             line_number: self.line_number,
             core_token: CoreToken::NEWLINE,
             range: TextRange::new(
-                TextSize::try_from(0 as usize).unwrap(),
-                TextSize::try_from(0 as usize).unwrap(),
+                TextSize::try_from(0_usize).unwrap(),
+                TextSize::try_from(0_usize).unwrap(),
             ),
             trivia: None,
         });
         let mut eof_trivia_vec: Vec<Token> = vec![];
         while self.begin_lexeme < code.len() {
-            let token = self.extract_lexeme(&code);
+            let token = self.extract_lexeme(code);
             if token.is_trivia() {
                 let mut trivia_vec = vec![token];
                 let mut is_eof: Option<Token> = None;
                 // spin loop to collect other trivia tokens as well
                 while self.begin_lexeme < code.len() {
-                    let token = self.extract_lexeme(&code);
+                    let token = self.extract_lexeme(code);
                     if token.is_trivia() {
                         trivia_vec.push(token);
                     } else {
@@ -79,7 +79,7 @@ impl Lexer for CoreLexer {
             ),
             trivia: None,
         };
-        if eof_trivia_vec.len() > 0 {
+        if !eof_trivia_vec.is_empty() {
             token.set_trivia(eof_trivia_vec);
         }
         token_vec.push(token);
@@ -109,39 +109,39 @@ impl CoreLexer {
         let critical_char = code.get_char(*begin_lexeme);
         let core_token = match critical_char {
             '(' => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::LPAREN
             }
             ')' => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::RPAREN
             }
             '{' => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::LBRACE
             }
             '}' => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::RBRACE
             }
             '[' => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::LSQUARE
             }
             ']' => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::RSQUARE
             }
             ';' => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::SEMICOLON
             }
             ',' => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::COMMA
             }
             '.' => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::DOT
             }
             /*
@@ -151,14 +151,14 @@ impl CoreLexer {
             },
              */
             '+' => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::PLUS
             }
             '\n' => {
                 code_lines.push(*line_start_index);
                 *line_start_index = *begin_lexeme + 1;
-                *begin_lexeme = *begin_lexeme + 1;
-                *line_number = *line_number + 1;
+                *begin_lexeme += 1;
+                *line_number += 1;
                 CoreToken::NEWLINE
             }
             '/' => helper::extract_slash_prefix_lexeme(
@@ -195,10 +195,10 @@ impl CoreLexer {
                 let token: CoreToken;
                 if helper::is_letter(&c) {
                     token = helper::extract_letter_prefix_lexeme(begin_lexeme, code);
-                } else if c.is_digit(10) {
+                } else if c.is_ascii_digit() {
                     token = helper::extract_digit_prefix_lexeme(begin_lexeme, code);
                 } else {
-                    *begin_lexeme = *begin_lexeme + 1;
+                    *begin_lexeme += 1;
                     token = CoreToken::LEXICAL_ERROR(LexicalErrorKind::InvalidChar);
                 }
                 token

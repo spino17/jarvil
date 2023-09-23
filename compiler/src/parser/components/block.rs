@@ -34,13 +34,13 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
     loop {
         let indent_result = parser.expect_indent_spaces();
         let skipped_tokens = indent_result.skipped_tokens;
-        if skipped_tokens.len() > 0 {
+        if !skipped_tokens.is_empty() {
             stmts_vec.push(StatemenIndentWrapperNode::new_with_trailing_skipped_tokens(
                 &SkippedTokensNode::new_with_trailing_skipped_tokens(skipped_tokens),
             ));
         }
         let extra_newlines = indent_result.extra_newlines;
-        if extra_newlines.len() > 0 {
+        if !extra_newlines.is_empty() {
             stmts_vec.push(StatemenIndentWrapperNode::new_with_extra_newlines(
                 &SkippedTokensNode::new_with_extra_newlines(extra_newlines),
             ));
@@ -65,7 +65,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
             }
             parser.scan_next_token();
         }
-        if leading_skipped_tokens.len() > 0 {
+        if !leading_skipped_tokens.is_empty() {
             stmts_vec.push(StatemenIndentWrapperNode::new_with_leading_skipped_tokens(
                 &SkippedTokensNode::new_with_leading_skipped_tokens(mem::take(
                     &mut leading_skipped_tokens,

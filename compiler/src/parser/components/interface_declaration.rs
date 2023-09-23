@@ -36,12 +36,12 @@ pub fn interface_method_prototype_wrapper(
     let func_name_node = parser.expect_identifier_in_decl(); // decl
     let prototype = parser.callable_prototype();
     let newline = parser.expect_terminators();
-    return InterfaceMethodPrototypeWrapperNode::new(
+    InterfaceMethodPrototypeWrapperNode::new(
         &def_keyword_node,
         &func_name_node,
         &prototype,
         InterfaceMethodTerminalNode::NoDefaultBody(newline),
-    );
+    )
     /*
     let curr_token = parser.curr_token();
     match curr_token.core_token {

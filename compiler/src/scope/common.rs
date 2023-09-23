@@ -25,9 +25,9 @@ impl FieldsMap {
         match self.fields.get(field_name) {
             Some((ty, range)) => {
                 if ty.is_concretization_required() {
-                    return Some((ty.concretize(context), *range));
+                    Some((ty.concretize(context), *range))
                 } else {
-                    return Some((ty.clone(), *range));
+                    Some((ty.clone(), *range))
                 }
             }
             None => None,

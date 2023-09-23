@@ -21,15 +21,15 @@ pub fn compile(code_str: &str) -> Result<String, String> {
     let py_result = build_code(code, code_str.to_string());
     let mut buffer = String::new();
     match py_result {
-        Ok(py_code) => return Ok(py_code),
+        Ok(py_code) => Ok(py_code),
         Err(err) => match write!(&mut buffer, "{:?}", err) {
             Ok(()) => {
-                return Err(buffer);
+                Err(buffer)
             }
             Err(err) => {
-                return Err(format!(
+                Err(format!(
                     "Failed to write Jarvil error to buffer: {}",
-                    err.to_string()
+                    err
                 ))
             }
         },

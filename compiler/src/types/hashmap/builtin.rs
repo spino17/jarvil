@@ -1,6 +1,5 @@
 use crate::{
-    scope::function::{CallableData, CallableKind},
-    types::helper::get_unbounded_generic_type_with_declaration_index,
+    scope::function::{CallableData},
 };
 use std::{collections::HashMap, rc::Rc};
 

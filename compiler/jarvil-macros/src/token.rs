@@ -15,7 +15,7 @@ pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
     let variant_iter = &mut enum_data.variants.iter();
     let mut args_str = "".to_string();
     let mut flag = false;
-    while let Some(variant) = variant_iter.next() {
+    for variant in variant_iter.by_ref() {
         let variant_name = &variant.ident.to_string();
         if variant_name.eq("LEXICAL_ERROR") {
             continue;

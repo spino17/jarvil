@@ -95,14 +95,14 @@ impl GenericTypeParams {
                 incorrectly_bounded_types.push((type_ranges[index], interface_bounds.to_string()))
             }
         }
-        if incorrectly_bounded_types.len() > 0 {
+        if !incorrectly_bounded_types.is_empty() {
             return Err(
                 GenericTypeArgsCheckError::GenericTypeArgsIncorrectlyBounded(
                     incorrectly_bounded_types,
                 ),
             );
         }
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -148,11 +148,11 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
         )))
     }
 
-    pub fn get_core_ref<'a>(&'a self) -> Ref<'a, T> {
+    pub fn get_core_ref(&self) -> Ref<'_, T> {
         self.0.as_ref().identifier_data.borrow()
     }
 
-    pub fn get_core_mut_ref<'a>(&'a self) -> RefMut<'a, T> {
+    pub fn get_core_mut_ref(&self) -> RefMut<'_, T> {
         self.0.as_ref().identifier_data.borrow_mut()
     }
 
@@ -208,7 +208,7 @@ impl AbstractSymbolData for VariableSymbolData {
         if concrete_types.is_some() {
             return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
         }
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -255,27 +255,27 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
         match &*self.0.get_core_ref() {
             UserDefinedTypeData::Struct(struct_data) => {
                 let generic_type_decls = &struct_data.generics;
-                return check_concrete_types_bounded_by_interfaces(
+                check_concrete_types_bounded_by_interfaces(
                     generic_type_decls,
                     concrete_types,
                     type_ranges,
                     is_concrete_types_none_allowed,
-                );
+                )
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
                 let generic_type_decls = &lambda_data.get_generic_type_decls();
-                return check_concrete_types_bounded_by_interfaces(
+                check_concrete_types_bounded_by_interfaces(
                     generic_type_decls,
                     concrete_types,
                     type_ranges,
                     false,
-                );
+                )
             }
             UserDefinedTypeData::Generic(_) => {
                 if concrete_types.is_some() {
                     return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
                 }
-                return Ok(());
+                Ok(())
             }
         }
     }
@@ -343,16 +343,11 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
             Some(value) => Some((value.clone(), scope_index, 0, self.is_global)),
             None => {
                 if let Some(parent_scope_index) = self.parent_scope {
-                    match global_scope_vec[parent_scope_index].lookup(
+                    global_scope_vec[parent_scope_index].lookup(
                         parent_scope_index,
                         key,
                         global_scope_vec,
-                    ) {
-                        Some((symbol_data, resolved_scope_index, depth, range)) => {
-                            Some((symbol_data, resolved_scope_index, depth + 1, range))
-                        }
-                        None => None,
-                    }
+                    ).map(|(symbol_data, resolved_scope_index, depth, range)| (symbol_data, resolved_scope_index, depth + 1, range))
                 } else {
                     None
                 }
@@ -384,7 +379,7 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
             parent_scope: Some(parent_scope_index),
             is_global: false,
         });
-        return new_scope_index;
+        new_scope_index
     }
 
     pub fn force_insert(
@@ -428,19 +423,19 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         match self.lookup(scope_index, key) {
             Some((symbol_data, resolved_scope_index, depth, is_global)) => {
                 if symbol_data.get_core_ref().is_initialized() {
-                    return IntermediateLookupResult::Ok((
+                    IntermediateLookupResult::Ok((
                         symbol_data,
                         resolved_scope_index,
                         depth,
                         is_global,
-                    ));
+                    ))
                 } else {
-                    return IntermediateLookupResult::NotInitialized(
+                    IntermediateLookupResult::NotInitialized(
                         symbol_data.declaration_line_number(),
-                    );
+                    )
                 }
             }
-            None => return IntermediateLookupResult::Unresolved,
+            None => IntermediateLookupResult::Unresolved,
         }
     }
 }
@@ -595,13 +590,9 @@ impl Namespace {
         name: String,
         decl_range: TextRange,
     ) -> Result<VariableSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
+        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| scope
             .flattened_vec[scope_index]
-            .get(key)
-        {
-            Some(symbol_data) => Some(symbol_data.declaration_line_number()),
-            None => None,
-        };
+            .get(key).map(|symbol_data| symbol_data.declaration_line_number());
         match self.variables.insert(
             scope_index,
             name,
@@ -623,13 +614,9 @@ impl Namespace {
         decl_range: TextRange,
         is_init: bool,
     ) -> Result<VariableSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| match scope
+        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| scope
             .flattened_vec[scope_index]
-            .get(key)
-        {
-            Some(symbol_data) => Some(symbol_data.declaration_line_number()),
-            None => None,
-        };
+            .get(key).map(|symbol_data| symbol_data.declaration_line_number());
         match self.variables.insert(
             scope_index,
             name,
@@ -649,13 +636,9 @@ impl Namespace {
         name: String,
         decl_range: TextRange,
     ) -> Result<FunctionSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<CallableData>, scope_index: usize, key: &str| match scope
+        let lookup_func = |scope: &Scope<CallableData>, scope_index: usize, key: &str| scope
             .flattened_vec[scope_index]
-            .get(key)
-        {
-            Some(symbol_data) => Some(symbol_data.declaration_line_number()),
-            None => None,
-        };
+            .get(key).map(|symbol_data| symbol_data.declaration_line_number());
         match self.functions.insert(
             scope_index,
             name,
@@ -677,12 +660,8 @@ impl Namespace {
         decl_range: TextRange,
     ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let lookup_func =
-            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| match scope
-                .lookup(scope_index, key)
-            {
-                Some((symbol_data, _, _, _)) => Some(symbol_data.declaration_line_number()),
-                None => None,
-            };
+            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| scope
+                .lookup(scope_index, key).map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number());
         match self
             .types
             .insert(scope_index, name, meta_data, decl_range, lookup_func, true)
@@ -744,12 +723,8 @@ impl Namespace {
         name: String,
         decl_range: TextRange,
     ) -> Result<InterfaceSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| match scope
-            .lookup(scope_index, key)
-        {
-            Some((symbol_data, _, _, _)) => Some(symbol_data.declaration_line_number()),
-            None => None,
-        };
+        let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| scope
+            .lookup(scope_index, key).map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number());
         match self.interfaces.insert(
             scope_index,
             name,

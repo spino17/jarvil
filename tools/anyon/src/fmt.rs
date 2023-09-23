@@ -11,7 +11,7 @@ impl FmtCommand {
         FmtCommand { command_line_args }
     }
 
-    pub fn format_code(&self, code: JarvilCode) -> String {
+    pub fn format_code(&self, _code: JarvilCode) -> String {
         todo!()
     }
 }

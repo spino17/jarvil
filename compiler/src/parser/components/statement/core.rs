@@ -3,10 +3,10 @@ use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::JarvilParser;
 
-pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&'static str; 3] =
+pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&str; 3] =
     ["def", "type", "interface"];
 
-pub const STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS: [&'static str; 9] = [
+pub const STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS: [&str; 9] = [
     "let",
     "def",
     "for",
@@ -111,9 +111,9 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
             let newline_node = parser.expect_terminators();
             let struct_stmt =
                 StructPropertyDeclarationNode::new(&name_type_spec_node, &newline_node);
-            return StatementNode::new_with_struct_stmt(&struct_stmt);
+            StatementNode::new_with_struct_stmt(&struct_stmt)
         }
-        CoreToken::DEF => return parser.function_stmt(CallableKind::Method),
+        CoreToken::DEF => parser.function_stmt(CallableKind::Method),
         _ => unreachable!(),
     }
 }
@@ -126,14 +126,14 @@ pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
             let newline_node = parser.expect_terminators();
             let struct_stmt =
                 StructPropertyDeclarationNode::new(&name_type_spec_node, &newline_node);
-            return StatementNode::new_with_struct_stmt(&struct_stmt);
+            StatementNode::new_with_struct_stmt(&struct_stmt)
         }
         CoreToken::DEF => {
             let interface_method_prototype_wrapper_node =
                 parser.interface_method_prototype_wrapper();
-            return StatementNode::new_with_interface_method_prototype_wrapper(
+            StatementNode::new_with_interface_method_prototype_wrapper(
                 &interface_method_prototype_wrapper_node,
-            );
+            )
         }
         _ => unreachable!(),
     }

@@ -17,9 +17,7 @@ use crate::{
 // "+", "-", "not", (...)
 
 pub fn is_expression_starting_with(token: &Token) -> bool {
-    match token.core_token {
-        _ => is_unary_expression_starting_with(token),
-    }
+    is_unary_expression_starting_with(token)
 }
 
 pub fn expr(parser: &mut JarvilParser) -> ExpressionNode {
@@ -37,7 +35,8 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
 
 pub fn unary_expr(parser: &mut JarvilParser) -> UnaryExpressionNode {
     let token = parser.curr_token();
-    let unary_expr_node = match token.core_token {
+    
+    match token.core_token {
         CoreToken::PLUS => {
             let plus_node = parser.expect("+");
             let unary_expr_node = parser.unary_expr();
@@ -65,8 +64,7 @@ pub fn unary_expr(parser: &mut JarvilParser) -> UnaryExpressionNode {
             let atomic_expr_node = parser.atomic_expr();
             UnaryExpressionNode::new_with_atomic(&atomic_expr_node)
         }
-    };
-    unary_expr_node
+    }
 }
 
 pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
@@ -85,7 +83,7 @@ pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
     }
 }
 
-pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&'static str; 10] = [
+pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&str; 10] = [
     TRUE,
     FALSE,
     INTEGER,

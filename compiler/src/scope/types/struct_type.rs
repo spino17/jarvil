@@ -2,7 +2,7 @@ use crate::scope::common::{FieldsMap, MethodsMap};
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
 use crate::scope::interfaces::InterfaceBounds;
-use crate::types::generic::Generic;
+
 use crate::{
     scope::core::{AbstractConcreteTypesHandler, GenericTypeParams},
     types::core::Type,

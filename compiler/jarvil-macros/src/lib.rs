@@ -40,8 +40,8 @@ fn get_macro_expr_stmt(macro_name: &str, macro_expr_str: &str) -> Stmt {
             tokens: token_stream,
         },
     };
-    let set_parents_macro_call_stmt = Stmt::Expr(Expr::Macro(expr_macro));
-    set_parents_macro_call_stmt
+    
+    Stmt::Expr(Expr::Macro(expr_macro))
 }
 
 #[proc_macro_derive(Nodify)]

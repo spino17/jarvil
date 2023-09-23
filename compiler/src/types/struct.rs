@@ -59,7 +59,7 @@ impl Struct {
                 None => return true,
             }
         }
-        return false;
+        false
     }
 }
 
@@ -95,20 +95,20 @@ impl AbstractType for Struct {
                 for ty in concrete_types.iter() {
                     concretized_concrete_types.push(ty.concretize(context));
                 }
-                return Type::new_with_struct(
+                Type::new_with_struct(
                     &self.symbol_data,
                     Some(ConcreteTypesTuple::new(concretized_concrete_types)),
-                );
+                )
             }
-            None => return Type::new_with_struct(&self.symbol_data, None),
+            None => Type::new_with_struct(&self.symbol_data, None),
         }
     }
 
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
         let symbol_data = self.symbol_data.get_core_ref();
         match &symbol_data.get_struct_data_ref().implementing_interfaces {
-            Some(ty_interface_bounds) => return interface_bounds.is_subset(ty_interface_bounds),
-            None => return false,
+            Some(ty_interface_bounds) => interface_bounds.is_subset(ty_interface_bounds),
+            None => false,
         }
     }
 
@@ -138,10 +138,10 @@ impl AbstractType for Struct {
                                 inference_category,
                             )
                         }
-                        None => return Ok(()),
+                        None => Ok(()),
                     }
                 } else {
-                    return Err(());
+                    Err(())
                 }
             }
             _ => Err(()),
@@ -157,9 +157,9 @@ impl ToString for Struct {
                 s.push('<');
                 s.push_str(&concrete_types.to_string());
                 s.push('>');
-                return s;
+                s
             }
-            None => return s,
+            None => s,
         }
     }
 }
@@ -172,9 +172,9 @@ impl OperatorCompatiblity for Struct {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Add` interface
-                    return None;
+                    None
                 } else {
-                    return None;
+                    None
                 }
             }
             _ => None,
@@ -186,9 +186,9 @@ impl OperatorCompatiblity for Struct {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Subtract` interface
-                    return None;
+                    None
                 } else {
-                    return None;
+                    None
                 }
             }
             _ => None,
@@ -200,9 +200,9 @@ impl OperatorCompatiblity for Struct {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Multiply` interface
-                    return None;
+                    None
                 } else {
-                    return None;
+                    None
                 }
             }
             _ => None,
@@ -214,9 +214,9 @@ impl OperatorCompatiblity for Struct {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Divide` interface
-                    return None;
+                    None
                 } else {
-                    return None;
+                    None
                 }
             }
             _ => None,
@@ -228,9 +228,9 @@ impl OperatorCompatiblity for Struct {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Equal` interface
-                    return None;
+                    None
                 } else {
-                    return None;
+                    None
                 }
             }
             _ => None,
@@ -242,9 +242,9 @@ impl OperatorCompatiblity for Struct {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Greater` interface
-                    return None;
+                    None
                 } else {
-                    return None;
+                    None
                 }
             }
             _ => None,
@@ -256,9 +256,9 @@ impl OperatorCompatiblity for Struct {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Less` interface
-                    return None;
+                    None
                 } else {
-                    return None;
+                    None
                 }
             }
             _ => None,
@@ -270,9 +270,9 @@ impl OperatorCompatiblity for Struct {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `And` interface
-                    return None;
+                    None
                 } else {
-                    return None;
+                    None
                 }
             }
             _ => None,
@@ -284,9 +284,9 @@ impl OperatorCompatiblity for Struct {
             CoreType::Struct(other_struct) => {
                 if self.name() == other_struct.name() {
                     // This will be replaced with checking whether struct implements `Or` interface
-                    return None;
+                    None
                 } else {
-                    return None;
+                    None
                 }
             }
             _ => None,

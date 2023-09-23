@@ -56,7 +56,7 @@ impl AbstractType for HashMap {
     fn concretize(&self, context: &ConcretizationContext) -> Type {
         let concrete_key_ty = self.key_type.concretize(context);
         let concrete_value_ty = self.value_type.concretize(context);
-        return Type::new_with_hashmap(concrete_key_ty, concrete_value_ty);
+        Type::new_with_hashmap(concrete_key_ty, concrete_value_ty)
     }
 
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
@@ -74,14 +74,14 @@ impl AbstractType for HashMap {
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::HashMap(hashmap_ty) => {
-                let _ = self.key_type.try_infer_type_or_check_equivalence(
+                self.key_type.try_infer_type_or_check_equivalence(
                     &hashmap_ty.key_type,
                     inferred_concrete_types,
                     global_concrete_types,
                     num_inferred_types,
                     inference_category,
                 )?;
-                let _ = self.value_type.try_infer_type_or_check_equivalence(
+                self.value_type.try_infer_type_or_check_equivalence(
                     &hashmap_ty.value_type,
                     inferred_concrete_types,
                     global_concrete_types,
@@ -99,8 +99,8 @@ impl ToString for HashMap {
     fn to_string(&self) -> String {
         format!(
             "{{{} : {}}}",
-            self.key_type.to_string(),
-            self.value_type.to_string()
+            self.key_type,
+            self.value_type
         )
     }
 }
@@ -136,9 +136,9 @@ impl OperatorCompatiblity for HashMap {
                 {
                     return Some(Type::new_with_atomic(BOOL));
                 }
-                return None;
+                None
             }
-            _ => return None,
+            _ => None,
         }
     }
 

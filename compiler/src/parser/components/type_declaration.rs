@@ -11,7 +11,8 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
     let type_keyword_node = parser.expect("type");
     let type_name_node = parser.expect_identifier_in_decl();
     let token = parser.curr_token();
-    let type_decl_node = match token.core_token {
+    
+    match token.core_token {
         CoreToken::STRUCT_KEYWORD => {
             let mut implementing_interfaces_node: Option<(
                 TokenNode,
@@ -21,7 +22,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             if parser.curr_token().is_eq("implements") {
                 let implements_keyword_node = parser.expect("implements");
                 let interfaces_nodes = parser.expect_symbol_separated_sequence(
-                    |parser: &mut JarvilParser| return parser.expect_identifier_in_use(),
+                    |parser: &mut JarvilParser| parser.expect_identifier_in_use(),
                     ",",
                 );
                 implementing_interfaces_node = Some((implements_keyword_node, interfaces_nodes));
@@ -76,11 +77,10 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
         }
         _ => {
             parser.log_missing_token_error(&["struct", "lambda"], token);
-            return TypeDeclarationNode::new_with_missing_tokens(
+            TypeDeclarationNode::new_with_missing_tokens(
                 ["struct", "lambda"].to_vec(),
                 token,
-            );
+            )
         }
-    };
-    type_decl_node
+    }
 }

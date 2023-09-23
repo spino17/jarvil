@@ -37,7 +37,7 @@ impl Array {
                 {
                     return Some(Type::new_with_atomic(BOOL));
                 }
-                return None;
+                None
             }
             _ => None,
         }
@@ -94,7 +94,7 @@ impl AbstractType for Array {
 
 impl ToString for Array {
     fn to_string(&self) -> String {
-        format!("[{}]", self.element_type.to_string())
+        format!("[{}]", self.element_type)
     }
 }
 
@@ -104,9 +104,9 @@ impl OperatorCompatiblity for Array {
             CoreType::Array(array) => {
                 let sub_type = &array.element_type;
                 if self.element_type.is_eq(sub_type) {
-                    return Some(Type::new_with_array(sub_type.clone()));
+                    Some(Type::new_with_array(sub_type.clone()))
                 } else {
-                    return None;
+                    None
                 }
             }
             _ => None,

@@ -70,14 +70,14 @@ pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
     if parser.check_curr_token("->") {
         let r_arrow_node = parser.expect("->");
         let return_type_node = parser.type_expr();
-        return CallablePrototypeNode::new(
+        CallablePrototypeNode::new(
             args_node,
             Some((r_arrow_node, return_type_node)),
             &lparen_node,
             &rparen_node,
-        );
+        )
     } else {
-        return CallablePrototypeNode::new(args_node, None, &lparen_node, &rparen_node);
+        CallablePrototypeNode::new(args_node, None, &lparen_node, &rparen_node)
     }
 }
 
@@ -85,12 +85,12 @@ pub fn callable_body(parser: &mut JarvilParser, block_kind: BlockKind) -> Callab
     let callable_prototype = parser.callable_prototype();
     let colon_node = parser.expect(":");
     let func_block_node = parser.block(
-        |token| is_statement_within_function_starting_with(token),
+        is_statement_within_function_starting_with,
         |parser| parser.stmt(),
         &STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
         block_kind,
     );
-    return CallableBodyNode::new(&func_block_node, &colon_node, &callable_prototype);
+    CallableBodyNode::new(&func_block_node, &colon_node, &callable_prototype)
 }
 
 pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> StatementNode {
@@ -105,12 +105,12 @@ pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> 
         FunctionDeclarationNode::new(&func_name_node, &def_keyword_node, &callable_body);
     match callable_kind {
         CallableKind::Function => {
-            return StatementNode::new_with_function_wrapper(&FunctionWrapperNode::new(
+            StatementNode::new_with_function_wrapper(&FunctionWrapperNode::new(
                 &func_decl_node,
             ))
         }
         CallableKind::Method => {
-            return StatementNode::new_with_bounded_method_wrapper(&BoundedMethodWrapperNode::new(
+            StatementNode::new_with_bounded_method_wrapper(&BoundedMethodWrapperNode::new(
                 &func_decl_node,
             ))
         }

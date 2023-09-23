@@ -35,14 +35,10 @@ impl Tuple {
                 let self_len = self.sub_types.len();
                 let min_len = cmp::min(self_len, other_len);
                 for i in 0..min_len {
-                    if self.sub_types[i]
-                        .check_operator(&other_tuple.sub_types[i], operator_kind)
-                        .is_none()
-                    {
-                        return None;
-                    }
+                    self.sub_types[i]
+                        .check_operator(&other_tuple.sub_types[i], operator_kind)?;
                 }
-                return Some(Type::new_with_atomic(BOOL));
+                Some(Type::new_with_atomic(BOOL))
             }
             _ => None,
         }
@@ -62,7 +58,7 @@ impl AbstractType for Tuple {
                         return false;
                     }
                 }
-                return true;
+                true
             }
             CoreType::Any => true,
             _ => false,
@@ -81,7 +77,7 @@ impl AbstractType for Tuple {
                         return false;
                     }
                 }
-                return true;
+                true
             }
             _ => false,
         }
@@ -92,7 +88,7 @@ impl AbstractType for Tuple {
         for ty in &self.sub_types {
             concrete_types.push(ty.concretize(context));
         }
-        return Type::new_with_tuple(concrete_types);
+        Type::new_with_tuple(concrete_types)
     }
 
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
@@ -149,9 +145,9 @@ impl OperatorCompatiblity for Tuple {
                 for ty in other_sub_types {
                     combined_sub_types.push(ty.clone())
                 }
-                return Some(Type::new_with_tuple(combined_sub_types));
+                Some(Type::new_with_tuple(combined_sub_types))
             }
-            _ => return None,
+            _ => None,
         }
     }
 

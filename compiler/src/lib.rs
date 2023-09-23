@@ -34,7 +34,7 @@ pub fn curr_dir_path() -> Rc<String> {
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
     match result.map_err(|error| error.with_source_code(source)).err() {
-        Some(err) => return err,
+        Some(err) => err,
         None => unreachable!("the result should always unwrap to an error"),
     }
 }
@@ -60,7 +60,7 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
     let type_checker = TypeChecker::new(code, semantic_state_db);
     let (semantic_state_db, code) = type_checker.check_ast(&ast, &mut errors);
 
-    if errors.len() > 0 {
+    if !errors.is_empty() {
         let err = &errors[0];
         return Err(attach_source_code(err.report(), code_str));
     }

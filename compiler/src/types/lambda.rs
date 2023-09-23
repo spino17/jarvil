@@ -60,16 +60,16 @@ impl Lambda {
                 let prototype_ref = prototype_result.get_prototype_ref();
                 let expected_param_types = &prototype_ref.params;
                 let return_type = &prototype_ref.return_type;
-                let _ = type_checker
+                type_checker
                     .check_params_type_and_count(expected_param_types, received_params)?;
-                return Ok(return_type.clone());
+                Ok(return_type.clone())
             }
             Lambda::Unnamed(unnamed_lambda) => {
                 let expected_param_types = &unnamed_lambda.params;
                 let return_type = &unnamed_lambda.return_type;
-                let _ = type_checker
+                type_checker
                     .check_params_type_and_count(expected_param_types, received_params)?;
-                return Ok(return_type.clone());
+                Ok(return_type.clone())
             }
         }
     }
@@ -97,10 +97,10 @@ impl AbstractType for Lambda {
                                     .get_concrete_prototype(other_concrete_types.as_ref());
                                 let other_prototype_ref =
                                     other_prototype_result.get_prototype_ref();
-                                return other_prototype_ref.is_eq(self_prototype_ref);
+                                other_prototype_ref.is_eq(self_prototype_ref)
                             }
                             Lambda::Unnamed(other_prototype) => {
-                                return self_prototype_ref.is_eq(other_prototype)
+                                self_prototype_ref.is_eq(other_prototype)
                             }
                         }
                     }
@@ -112,10 +112,10 @@ impl AbstractType for Lambda {
                             let other_prototype_result =
                                 other_data.get_concrete_prototype(other_concrete_types.as_ref());
                             let other_prototype_ref = other_prototype_result.get_prototype_ref();
-                            return other_prototype_ref.is_eq(self_prototype);
+                            other_prototype_ref.is_eq(self_prototype)
                         }
                         Lambda::Unnamed(other_prototype) => {
-                            return self_prototype.is_eq(other_prototype)
+                            self_prototype.is_eq(other_prototype)
                         }
                     },
                 }
@@ -152,12 +152,12 @@ impl AbstractType for Lambda {
                                             return false;
                                         }
                                     }
-                                    return true;
+                                    true
                                 }
-                                None => return true,
+                                None => true,
                             }
                         } else {
-                            return false;
+                            false
                         }
                     }
                     Lambda::Unnamed(_) => unreachable!(),
@@ -176,13 +176,13 @@ impl AbstractType for Lambda {
                     for ty in concrete_types.iter() {
                         concretized_concrete_types.push(ty.concretize(context));
                     }
-                    return Type::new_with_lambda_named(
+                    Type::new_with_lambda_named(
                         &concrete_symbol_data.symbol_data,
                         Some(ConcreteTypesTuple::new(concretized_concrete_types)),
-                    );
+                    )
                 }
                 None => {
-                    return Type::new_with_lambda_named(&concrete_symbol_data.symbol_data, None)
+                    Type::new_with_lambda_named(&concrete_symbol_data.symbol_data, None)
                 }
             },
             Lambda::Unnamed(prototype) => Type::new_with_lambda_unnamed(prototype.clone()),
@@ -252,9 +252,9 @@ impl ToString for Lambda {
                         s.push('<');
                         s.push_str(&concrete_types.to_string());
                         s.push('>');
-                        return s;
+                        s
                     }
-                    None => return s,
+                    None => s,
                 }
             }
             Lambda::Unnamed(unnamed) => {
@@ -266,7 +266,7 @@ impl ToString for Lambda {
                     if flag {
                         params_str.push_str(", ")
                     }
-                    params_str.push_str(&format!("{}", param.to_string()));
+                    params_str.push_str(&format!("{}", param));
                     flag = true;
                 }
                 format!("lambda({}) -> {}", params_str, self_return_type)

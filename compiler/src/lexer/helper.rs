@@ -2,11 +2,7 @@ use super::token::LexicalErrorKind;
 use crate::{code::JarvilCode, lexer::token::CoreToken};
 
 pub fn is_letter(c: &char) -> bool {
-    if c.is_ascii_alphabetic() || (*c == '_') {
-        true
-    } else {
-        false
-    }
+    c.is_ascii_alphabetic() || (*c == '_')
 }
 
 // ' ' -> '...'
@@ -18,10 +14,10 @@ pub fn extract_blank_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) 
             *begin_lexeme = forward_lexeme;
             return CoreToken::BLANK;
         }
-        forward_lexeme = forward_lexeme + 1;
+        forward_lexeme += 1;
     }
     *begin_lexeme = forward_lexeme;
-    return CoreToken::BLANK;
+    CoreToken::BLANK
 }
 
 // - -> -, ->
@@ -32,16 +28,16 @@ pub fn extract_dash_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -
         match next_char {
             '>' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::RIGHT_ARROW;
+                CoreToken::RIGHT_ARROW
             }
             _ => {
-                *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::DASH;
+                *begin_lexeme += 1;
+                CoreToken::DASH
             }
         }
     } else {
-        *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::DASH;
+        *begin_lexeme += 1;
+        CoreToken::DASH
     }
 }
 
@@ -53,16 +49,16 @@ pub fn extract_star_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -
         match next_char {
             '*' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::DOUBLE_STAR;
+                CoreToken::DOUBLE_STAR
             }
             _ => {
-                *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::STAR;
+                *begin_lexeme += 1;
+                CoreToken::STAR
             }
         }
     } else {
-        *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::STAR;
+        *begin_lexeme += 1;
+        CoreToken::STAR
     }
 }
 
@@ -87,7 +83,7 @@ pub fn extract_slash_prefix_lexeme(
                     state = 2;
                 }
                 _ => {
-                    *begin_lexeme = *begin_lexeme + 1;
+                    *begin_lexeme += 1;
                     return CoreToken::SLASH;
                 }
             },
@@ -104,7 +100,7 @@ pub fn extract_slash_prefix_lexeme(
                 }
                 '\n' => {
                     code_lines.push(*line_start_index);
-                    *line_number = *line_number + 1;
+                    *line_number += 1;
                     *line_start_index = forward_lexeme + 1;
                 }
                 _ => {}
@@ -122,24 +118,24 @@ pub fn extract_slash_prefix_lexeme(
                 unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
             }
         }
-        forward_lexeme = forward_lexeme + 1;
+        forward_lexeme += 1;
     }
     match state {
         0 => {
-            *begin_lexeme = *begin_lexeme + 1;
-            return CoreToken::SLASH;
+            *begin_lexeme += 1;
+            CoreToken::SLASH
         }
         1 => {
             *begin_lexeme = forward_lexeme;
-            return CoreToken::SINGLE_LINE_COMMENT;
+            CoreToken::SINGLE_LINE_COMMENT
         }
         2 => {
             *begin_lexeme = forward_lexeme;
-            return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("*/"));
+            CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("*/"))
         }
         3 => {
             *begin_lexeme = forward_lexeme;
-            return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("*/"));
+            CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("*/"))
         }
         _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable"),
     }
@@ -157,10 +153,10 @@ pub fn extract_hash_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) -
             }
             _ => {}
         }
-        forward_lexeme = forward_lexeme + 1;
+        forward_lexeme += 1;
     }
     *begin_lexeme = forward_lexeme;
-    return CoreToken::SINGLE_LINE_COMMENT;
+    CoreToken::SINGLE_LINE_COMMENT
 }
 
 // = -> =, ==
@@ -171,16 +167,16 @@ pub fn extract_equal_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) 
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::DOUBLE_EQUAL;
+                CoreToken::DOUBLE_EQUAL
             }
             _ => {
-                *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::EQUAL;
+                *begin_lexeme += 1;
+                CoreToken::EQUAL
             }
         }
     } else {
-        *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::EQUAL;
+        *begin_lexeme += 1;
+        CoreToken::EQUAL
     }
 }
 
@@ -192,16 +188,16 @@ pub fn extract_rbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCod
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::GREATER_EQUAL;
+                CoreToken::GREATER_EQUAL
             }
             _ => {
-                *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::RBRACKET;
+                *begin_lexeme += 1;
+                CoreToken::RBRACKET
             }
         }
     } else {
-        *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::RBRACKET;
+        *begin_lexeme += 1;
+        CoreToken::RBRACKET
     }
 }
 
@@ -213,16 +209,16 @@ pub fn extract_lbracket_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCod
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::LESS_EQUAL;
+                CoreToken::LESS_EQUAL
             }
             _ => {
-                *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::LBRACKET;
+                *begin_lexeme += 1;
+                CoreToken::LBRACKET
             }
         }
     } else {
-        *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::LBRACKET;
+        *begin_lexeme += 1;
+        CoreToken::LBRACKET
     }
 }
 
@@ -237,15 +233,15 @@ pub fn extract_exclaimation_prefix_lexeme(
         match next_char {
             '=' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::NOT_EQUAL;
+                CoreToken::NOT_EQUAL
             }
             _ => {
-                *begin_lexeme = *begin_lexeme + 1;
+                *begin_lexeme += 1;
                 CoreToken::LEXICAL_ERROR(LexicalErrorKind::InvalidChar)
             }
         }
     } else {
-        *begin_lexeme = *begin_lexeme + 1;
+        *begin_lexeme += 1;
         CoreToken::LEXICAL_ERROR(LexicalErrorKind::InvalidChar)
     }
 }
@@ -268,15 +264,15 @@ pub fn extract_single_quote_prefix_lexeme(
             }
             '\n' => {
                 code_lines.push(*line_start_index);
-                *line_number = *line_number + 1;
+                *line_number += 1;
                 *line_start_index = forward_lexeme + 1;
             }
             _ => {}
         }
-        forward_lexeme = forward_lexeme + 1;
+        forward_lexeme += 1;
     }
     *begin_lexeme = forward_lexeme;
-    return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("'"));
+    CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("'"))
 }
 
 // " -> "..."
@@ -297,15 +293,15 @@ pub fn extract_double_quote_prefix_lexeme(
             }
             '\n' => {
                 code_lines.push(*line_start_index);
-                *line_number = *line_number + 1;
+                *line_number += 1;
                 *line_start_index = forward_lexeme + 1;
             }
             _ => {}
         }
-        forward_lexeme = forward_lexeme + 1;
+        forward_lexeme += 1;
     }
     *begin_lexeme = forward_lexeme;
-    return CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols(r#"""#));
+    CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols(r#"""#))
 }
 
 // letter -> letter((letter|digit|_)*) or keyword or type
@@ -313,18 +309,18 @@ pub fn extract_letter_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode)
     let mut forward_lexeme = *begin_lexeme + 1;
     while forward_lexeme < code.len() {
         let next_char = code.get_char(forward_lexeme);
-        if is_letter(&next_char) || next_char.is_digit(10) {
+        if is_letter(&next_char) || next_char.is_ascii_digit() {
             // do nothing
         } else {
             let value_iter = code.token_value_as_iter(*begin_lexeme, Some(forward_lexeme));
             *begin_lexeme = forward_lexeme;
             return token_for_identifier(value_iter);
         }
-        forward_lexeme = forward_lexeme + 1;
+        forward_lexeme += 1;
     }
     let value_iter = code.token_value_as_iter(*begin_lexeme, Some(forward_lexeme));
     *begin_lexeme = forward_lexeme;
-    return token_for_identifier(value_iter);
+    token_for_identifier(value_iter)
 }
 
 // digit -> digit((digit)*(.digit(digit*)|empty))
@@ -335,7 +331,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) 
         let next_char = code.get_char(forward_lexeme);
         match state {
             0 => {
-                if next_char.is_digit(10) {
+                if next_char.is_ascii_digit() {
                     // do nothing
                 } else if next_char == '.' {
                     state = 1;
@@ -345,7 +341,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) 
                 }
             }
             1 => {
-                if next_char.is_digit(10) {
+                if next_char.is_ascii_digit() {
                     state = 2;
                 } else {
                     *begin_lexeme = forward_lexeme - 1;
@@ -353,7 +349,7 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) 
                 }
             }
             2 => {
-                if next_char.is_digit(10) {
+                if next_char.is_ascii_digit() {
                     // do nothing
                 } else {
                     *begin_lexeme = forward_lexeme;
@@ -364,20 +360,20 @@ pub fn extract_digit_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) 
                 unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
             }
         }
-        forward_lexeme = forward_lexeme + 1;
+        forward_lexeme += 1;
     }
     match state {
         0 => {
             *begin_lexeme = forward_lexeme;
-            return CoreToken::INTEGER;
+            CoreToken::INTEGER
         }
         1 => {
             *begin_lexeme = forward_lexeme - 1;
-            return CoreToken::INTEGER;
+            CoreToken::INTEGER
         }
         2 => {
             *begin_lexeme = forward_lexeme;
-            return CoreToken::FLOATING_POINT_NUMBER;
+            CoreToken::FLOATING_POINT_NUMBER
         }
         _ => unreachable!("any state other than 0, 1, and 2 is not reachable"),
     }
@@ -391,16 +387,16 @@ pub fn extract_colon_prefix_lexeme(begin_lexeme: &mut usize, code: &JarvilCode) 
         match next_char {
             ':' => {
                 *begin_lexeme = forward_lexeme + 1;
-                return CoreToken::DOUBLE_COLON;
+                CoreToken::DOUBLE_COLON
             }
             _ => {
-                *begin_lexeme = *begin_lexeme + 1;
-                return CoreToken::COLON;
+                *begin_lexeme += 1;
+                CoreToken::COLON
             }
         }
     } else {
-        *begin_lexeme = *begin_lexeme + 1;
-        return CoreToken::COLON;
+        *begin_lexeme += 1;
+        CoreToken::COLON
     }
 }
 
@@ -431,9 +427,9 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                             'l' => check_keyword("oat", value_iter, CoreToken::ATOMIC_TYPE),
                             'i' => check_keyword("nally", value_iter, CoreToken::FINALLY_KEYWORD),
                             'r' => check_keyword("om", value_iter, CoreToken::FROM_KEYWORD),
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // for, float, finally, from
                 'w' => {
@@ -442,9 +438,9 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                         Some(next_c) => match next_c {
                             'h' => check_keyword("ile", value_iter, CoreToken::WHILE),
                             'i' => check_keyword("th", value_iter, CoreToken::WITH_KEYWORD),
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // with, while
                 'c' => {
@@ -453,9 +449,9 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                         Some(next_c) => match next_c {
                             'o' => check_keyword("ntinue", value_iter, CoreToken::CONTINUE),
                             'l' => check_keyword("ass", value_iter, CoreToken::CLASS_KEYWORD),
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // continue, class
                 'b' => {
@@ -464,9 +460,9 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                         Some(next_c) => match next_c {
                             'r' => check_keyword("eak", value_iter, CoreToken::BREAK),
                             'o' => check_keyword("ol", value_iter, CoreToken::ATOMIC_TYPE),
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // break, bool
                 'i' => {
@@ -488,14 +484,14 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                                         value_iter,
                                                         CoreToken::INTERFACE_KEYWORD,
                                                     ),
-                                                    _ => return CoreToken::IDENTIFIER,
+                                                    _ => CoreToken::IDENTIFIER,
                                                 },
-                                                None => return CoreToken::ATOMIC_TYPE,
+                                                None => CoreToken::ATOMIC_TYPE,
                                             }
                                         }
-                                        _ => return CoreToken::IDENTIFIER,
+                                        _ => CoreToken::IDENTIFIER,
                                     },
-                                    None => return CoreToken::IN,
+                                    None => CoreToken::IN,
                                 }
                             }
                             'm' => {
@@ -516,19 +512,19 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                                         value_iter,
                                                         CoreToken::IMPORT_KEYWORD,
                                                     ),
-                                                    _ => return CoreToken::IDENTIFIER,
+                                                    _ => CoreToken::IDENTIFIER,
                                                 },
-                                                None => return CoreToken::IDENTIFIER,
+                                                None => CoreToken::IDENTIFIER,
                                             }
                                         }
-                                        _ => return CoreToken::IDENTIFIER,
+                                        _ => CoreToken::IDENTIFIER,
                                     },
-                                    None => return CoreToken::IDENTIFIER,
+                                    None => CoreToken::IDENTIFIER,
                                 }
                             }
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // if, interface, in, impl, int, import, is
                 'e' => {
@@ -541,15 +537,15 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                     Some(next_next_c) => match next_next_c {
                                         's' => check_keyword("e", value_iter, CoreToken::ELSE),
                                         'i' => check_keyword("f", value_iter, CoreToken::ELIF),
-                                        _ => return CoreToken::IDENTIFIER,
+                                        _ => CoreToken::IDENTIFIER,
                                     },
-                                    None => return CoreToken::IDENTIFIER,
+                                    None => CoreToken::IDENTIFIER,
                                 }
                             }
                             'x' => check_keyword("cept", value_iter, CoreToken::EXCEPT_KEYWORD),
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // else, elif, except
                 't' => {
@@ -558,9 +554,9 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                         Some(next_c) => match next_c {
                             'y' => check_keyword("pe", value_iter, CoreToken::TYPE_KEYWORD),
                             'r' => check_keyword("y", value_iter, CoreToken::TRY_KEYWORD),
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // type, try
                 'd' => {
@@ -575,14 +571,14 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                         'l' => {
                                             check_keyword("", value_iter, CoreToken::DEL_KEYWORD)
                                         }
-                                        _ => return CoreToken::IDENTIFIER,
+                                        _ => CoreToken::IDENTIFIER,
                                     },
-                                    None => return CoreToken::IDENTIFIER,
+                                    None => CoreToken::IDENTIFIER,
                                 }
                             }
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // del, def
                 'l' => {
@@ -591,9 +587,9 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                         Some(next_c) => match next_c {
                             'e' => check_keyword("t", value_iter, CoreToken::LET),
                             'a' => check_keyword("mbda", value_iter, CoreToken::LAMBDA_KEYWORD),
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // let, lambda
                 's' => {
@@ -616,17 +612,17 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                                     ),
                                                     _ => CoreToken::IDENTIFIER,
                                                 },
-                                                None => return CoreToken::ATOMIC_TYPE,
+                                                None => CoreToken::ATOMIC_TYPE,
                                             }
                                         }
-                                        _ => return CoreToken::IDENTIFIER,
+                                        _ => CoreToken::IDENTIFIER,
                                     },
-                                    None => return CoreToken::IDENTIFIER,
+                                    None => CoreToken::IDENTIFIER,
                                 }
                             }
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // self, str, struct
                 'a' => {
@@ -648,15 +644,15 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                             value_iter,
                                             CoreToken::ASYNC_KEYWORD,
                                         ),
-                                        _ => return CoreToken::IDENTIFIER,
+                                        _ => CoreToken::IDENTIFIER,
                                     },
-                                    None => return CoreToken::AS,
+                                    None => CoreToken::AS,
                                 }
                             }
                             'w' => check_keyword("ait", value_iter, CoreToken::AWAIT_KEYWORD),
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // and, as, assert, async, await
                 'n' => {
@@ -673,14 +669,14 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                             value_iter,
                                             CoreToken::NONLOCAL_KEYWORD,
                                         ),
-                                        _ => return CoreToken::IDENTIFIER,
+                                        _ => CoreToken::IDENTIFIER,
                                     },
-                                    None => return CoreToken::IDENTIFIER,
+                                    None => CoreToken::IDENTIFIER,
                                 }
                             }
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // not, nonlocal
                 'o' => check_keyword("r", value_iter, CoreToken::OR), // or
@@ -692,9 +688,9 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                         Some(next_c) => match next_c {
                             'e' => check_keyword("turn", value_iter, CoreToken::RETURN),
                             'a' => check_keyword("ise", value_iter, CoreToken::RAISE_KEYWORD),
-                            _ => return CoreToken::IDENTIFIER,
+                            _ => CoreToken::IDENTIFIER,
                         },
-                        None => return CoreToken::IDENTIFIER,
+                        None => CoreToken::IDENTIFIER,
                     }
                 } // raise, return
                 'N' => check_keyword("one", value_iter, CoreToken::NONE), // None

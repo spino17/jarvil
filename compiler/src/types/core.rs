@@ -46,11 +46,11 @@ pub trait AbstractNonStructTypes {
                 {
                     PrototypeConcretizationResult::UnConcretized(_) => unreachable!(),
                     PrototypeConcretizationResult::Concretized(prototype) => {
-                        return Some(prototype)
+                        Some(prototype)
                     }
                 }
             }
-            None => return None,
+            None => None,
         }
     }
 }
@@ -69,19 +69,19 @@ pub trait OperatorCompatiblity {
         if self.check_double_equal(other).is_some() {
             return Some(Type::new_with_atomic(BOOL));
         }
-        return None;
+        None
     }
     fn check_greater_equal(&self, other: &Type) -> Option<Type> {
         if self.check_greater(other).is_some() && self.check_double_equal(other).is_some() {
             return Some(Type::new_with_atomic(BOOL));
         }
-        return None;
+        None
     }
     fn check_less_equal(&self, other: &Type) -> Option<Type> {
         if self.check_less(other).is_some() && self.check_double_equal(other).is_some() {
             return Some(Type::new_with_atomic(BOOL));
         }
-        return None;
+        None
     }
 }
 
@@ -219,11 +219,7 @@ impl Type {
     }
 
     pub fn is_numeric(&self) -> bool {
-        if self.is_int() || self.is_float() {
-            true
-        } else {
-            false
-        }
+        self.is_int() || self.is_float()
     }
 
     pub fn is_lambda(&self) -> bool {
@@ -255,7 +251,7 @@ impl Type {
         // `int`, `float`, `str` and `tuple` with hashable sub_types are only hashable types
         match self.0.as_ref() {
             CoreType::Atomic(atomic) => {
-                return atomic.is_int() || atomic.is_string() || atomic.is_float()
+                atomic.is_int() || atomic.is_string() || atomic.is_float()
             }
             CoreType::Tuple(tuple) => {
                 for ty in &tuple.sub_types {
@@ -263,7 +259,7 @@ impl Type {
                         return false;
                     }
                 }
-                return true;
+                true
             }
             _ => false,
         }
@@ -348,9 +344,9 @@ impl AbstractType for Type {
                 CoreType::Void => true,
                 _ => false,
             },
-            CoreType::Unknown => return false,
-            CoreType::Unset => return false,
-            CoreType::Any => return true,
+            CoreType::Unknown => false,
+            CoreType::Unset => false,
+            CoreType::Any => true,
         }
     }
 

@@ -31,11 +31,11 @@ pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
             RVariableDeclarationNode::new_with_expr(&expr_node, &newline_node)
         }
     };
-    return VariableDeclarationNode::new(
+    VariableDeclarationNode::new(
         &identifier_node,
         &r_node,
         &let_keyword_node,
         &equal_node,
         optional_ty_annotation_node,
-    );
+    )
 }

@@ -11,11 +11,11 @@ use std::path::Path;
 
 pub fn get_cmd_from_command_line_args(args: Vec<String>) -> Result<AnyonCommand, AnyonError> {
     if args.len() < 2 {
-        return Ok(AnyonCommand::Help(HelpCommand::new(args)));
+        Ok(AnyonCommand::Help(HelpCommand::new(args)))
     } else {
         let core_cmd = &args[1];
         if core_cmd.eq("new") {
-            return Ok(AnyonCommand::New(NewCommand::new(args)));
+            Ok(AnyonCommand::New(NewCommand::new(args)))
         } else if core_cmd.eq("build") {
             return Ok(AnyonCommand::Build(BuildCommand::new(
                 args,
@@ -44,27 +44,27 @@ pub fn check_jarvil_code_file_extension(file_name: &str) -> Result<String, Anyon
             if extension == "jv" {
                 match path.file_stem() {
                     Some(file_name) => match file_name.to_str() {
-                        Some(valid_file_name) => return Ok(valid_file_name.to_string()),
+                        Some(valid_file_name) => Ok(valid_file_name.to_string()),
                         None => {
-                            return Err(AnyonError::new_with_vanilla(
+                            Err(AnyonError::new_with_vanilla(
                                 "provided file does not have a valid name".to_string(),
                             ))
                         }
                     },
                     None => {
-                        return Err(AnyonError::new_with_vanilla(
+                        Err(AnyonError::new_with_vanilla(
                             "provided file does not have a valid name".to_string(),
                         ))
                     }
                 }
             } else {
-                return Err(AnyonError::new_with_vanilla(
+                Err(AnyonError::new_with_vanilla(
                     "provided file does not have `.jv` extension".to_string(),
-                ));
+                ))
             }
         }
         None => {
-            return Err(AnyonError::new_with_vanilla(
+            Err(AnyonError::new_with_vanilla(
                 "provided file does not have an extension".to_string(),
             ))
         }

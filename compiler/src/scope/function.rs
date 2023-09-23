@@ -69,7 +69,7 @@ impl CallablePrototypeData {
         if self_params_len != other_params_len {
             return false;
         }
-        if !cmp_func(&self_return_type, &other_return_type, context) {
+        if !cmp_func(self_return_type, other_return_type, context) {
             return false;
         }
         for index in 0..self_params_len {
@@ -77,7 +77,7 @@ impl CallablePrototypeData {
                 return false;
             }
         }
-        return true;
+        true
     }
 
     pub fn is_eq(&self, other: &CallablePrototypeData) -> bool {
@@ -111,7 +111,7 @@ impl CallablePrototypeData {
         if self_params_len != other_params_len {
             return Err(());
         }
-        let _ = self_return_type.try_infer_type_or_check_equivalence(
+        self_return_type.try_infer_type_or_check_equivalence(
             other_return_type,
             inferred_concrete_types,
             global_concrete_types,
@@ -176,8 +176,8 @@ impl CallablePrototypeData {
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         let expected_params = &self.params;
         let return_type = &self.return_type;
-        let _ = type_checker.check_params_type_and_count(expected_params, received_params)?;
-        return Ok(return_type.clone());
+        type_checker.check_params_type_and_count(expected_params, received_params)?;
+        Ok(return_type.clone())
     }
 }
 
@@ -296,7 +296,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
         match local_concrete_types {
             Some(local_concrete_types) => match generic_type_decls {
                 Some(generic_type_decls) => {
-                    let _ = generic_type_decls.check_concrete_types_bounded_by(
+                    generic_type_decls.check_concrete_types_bounded_by(
                         &local_concrete_types,
                         match &local_concrete_ty_ranges {
                             Some(type_ranges) => type_ranges,
@@ -310,10 +310,10 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     let prototype_ref = concrete_prototype.get_prototype_ref();
                     let return_ty =
                         prototype_ref.is_received_params_valid(type_checker, received_params)?;
-                    return Ok(return_ty);
+                    Ok(return_ty)
                 }
                 None => {
-                    return Err(
+                    Err(
                         PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(
                             GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
                         ),
@@ -338,14 +338,14 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     } else {
                         unconcrete_return_ty.clone()
                     };
-                    return Ok(concrete_return_ty);
+                    Ok(concrete_return_ty)
                 }
                 None => {
                     let return_ty = self
                         .callable_data
                         .prototype
                         .is_received_params_valid(type_checker, received_params)?;
-                    return Ok(return_ty);
+                    Ok(return_ty)
                 }
             },
         }

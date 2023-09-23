@@ -24,7 +24,7 @@ pub fn format_symbol(symbol: &str) -> &str {
     if symbol == "\n" {
         return NEWLINE;
     }
-    return symbol;
+    symbol
 }
 
 pub fn err_for_generic_type_args(
@@ -35,11 +35,11 @@ pub fn err_for_generic_type_args(
     match err {
         GenericTypeArgsCheckError::GenericTypeArgsNotExpected => {
             let err = GenericTypeArgsNotExpectedError::new(identifier_kind, identifier_decl_range);
-            return Diagnostics::GenericTypeArgsNotExpected(err);
+            Diagnostics::GenericTypeArgsNotExpected(err)
         }
         GenericTypeArgsCheckError::GenericTypeArgsExpected => {
             let err = GenericTypeArgsExpectedError::new(identifier_kind, identifier_decl_range);
-            return Diagnostics::GenericTypeArgsExpected(err);
+            Diagnostics::GenericTypeArgsExpected(err)
         }
         GenericTypeArgsCheckError::GenericTypeArgsCountMismatched(
             received_count,
@@ -50,11 +50,11 @@ pub fn err_for_generic_type_args(
                 *expected_count,
                 identifier_decl_range,
             );
-            return Diagnostics::GenericTypeArgsCountMismatched(err);
+            Diagnostics::GenericTypeArgsCountMismatched(err)
         }
         GenericTypeArgsCheckError::GenericTypeArgsIncorrectlyBounded(incorrectly_bounded_types) => {
             let err = GenericTypeArgsIncorrectlyBoundedError::new(incorrectly_bounded_types);
-            return Diagnostics::GenericTypeArgsIncorrectlyBounded(err);
+            Diagnostics::GenericTypeArgsIncorrectlyBounded(err)
         }
     }
 }

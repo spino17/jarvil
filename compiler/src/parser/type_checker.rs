@@ -207,7 +207,7 @@ impl TypeChecker {
         global_errors: &mut Vec<Diagnostics>,
     ) -> (SemanticStateDatabase, JarvilCode) {
         let core_block = ast.0.as_ref();
-        for stmt in &*core_block.stmts.as_ref() {
+        for stmt in core_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
         unsafe {
@@ -225,7 +225,7 @@ impl TypeChecker {
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> (Type, bool) {
-        return self.semantic_state_db.get_type_obj_from_expr(type_expr);
+        self.semantic_state_db.get_type_obj_from_expr(type_expr)
     }
 
     fn extract_angle_bracket_content_from_identifier_in_use(
@@ -238,20 +238,20 @@ impl TypeChecker {
                 let mut concrete_types: Vec<Type> = vec![];
                 let mut ty_ranges: Vec<TextRange> = vec![];
                 for generic_type_expr in generic_type_args.iter() {
-                    let (ty, ty_has_generics) = self.type_obj_from_expression(&generic_type_expr);
+                    let (ty, ty_has_generics) = self.type_obj_from_expression(generic_type_expr);
                     if ty_has_generics {
                         has_generics = true;
                     }
                     concrete_types.push(ty);
                     ty_ranges.push(generic_type_expr.range())
                 }
-                return (
+                (
                     Some(ConcreteTypesTuple::new(concrete_types)),
                     Some(ty_ranges),
                     has_generics,
-                );
+                )
             }
-            None => return (None, None, false),
+            None => (None, None, false),
         }
     }
 
@@ -291,7 +291,7 @@ impl TypeChecker {
                 }
             }
         }
-        let is_concretization_required = if generics_containing_params_indexes.len() == 0
+        let is_concretization_required = if generics_containing_params_indexes.is_empty()
             && !is_concretization_required_for_return_type
         {
             None
@@ -321,12 +321,12 @@ impl TypeChecker {
             },
             _ => self.params_and_return_type_obj_from_expr(return_type, params),
         };
-        let lambda_type_obj = Type::new_with_lambda_unnamed(CallablePrototypeData::new(
+
+        Type::new_with_lambda_unnamed(CallablePrototypeData::new(
             params_vec,
             return_type,
             is_concretization_required,
-        ));
-        return lambda_type_obj;
+        ))
     }
 
     pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
@@ -337,11 +337,11 @@ impl TypeChecker {
                 let operand_value = self.is_unary_expr_int_valued(&core_unary.unary_expr);
                 match operand_value {
                     Some(value) => match operator_kind {
-                        UnaryOperatorKind::Plus => return Some(value),
-                        UnaryOperatorKind::Minus => return Some(-value),
-                        UnaryOperatorKind::Not => return None,
+                        UnaryOperatorKind::Plus => Some(value),
+                        UnaryOperatorKind::Minus => Some(-value),
+                        UnaryOperatorKind::Not => None,
                     },
-                    None => return None,
+                    None => None,
                 }
             }
             CoreUnaryExpressionNode::Atomic(atomic) => match atomic.core_ref() {
@@ -350,14 +350,14 @@ impl TypeChecker {
                         CoreTokenNode::Ok(ok_token) => {
                             let value = ok_token.token_value(&self.code);
                             match value.parse::<i32>() {
-                                Ok(value) => return Some(value),
-                                Err(_) => return None,
+                                Ok(value) => Some(value),
+                                Err(_) => None,
                             }
                         }
-                        _ => return None,
+                        _ => None,
                     }
                 }
-                _ => return None,
+                _ => None,
             },
         }
     }
@@ -369,16 +369,14 @@ impl TypeChecker {
     ) -> TupleIndexCheckResult {
         if index_value >= 0 {
             if index_value < tuple_len as i32 {
-                return TupleIndexCheckResult::Ok(index_value as usize);
+                TupleIndexCheckResult::Ok(index_value as usize)
             } else {
-                return TupleIndexCheckResult::PositiveIndexOutOfBound;
+                TupleIndexCheckResult::PositiveIndexOutOfBound
             }
+        } else if -(tuple_len as i32) <= index_value {
+            TupleIndexCheckResult::Ok((tuple_len as i32 + index_value) as usize)
         } else {
-            if -(tuple_len as i32) <= index_value {
-                return TupleIndexCheckResult::Ok((tuple_len as i32 + index_value) as usize);
-            } else {
-                return TupleIndexCheckResult::NegativeIndexOutOfBound;
-            }
+            TupleIndexCheckResult::NegativeIndexOutOfBound
         }
     }
 
@@ -387,30 +385,30 @@ impl TypeChecker {
         match other_ty.0.as_ref() {
             CoreType::Array(array) => {
                 if index_type.is_int() {
-                    return Some(array.element_type.clone());
+                    Some(array.element_type.clone())
                 } else {
-                    return None;
+                    None
                 }
             }
             CoreType::Atomic(atomic) => match atomic {
                 Atomic::String => {
                     if index_type.is_int() {
-                        return Some(Type::new_with_atomic("str"));
+                        Some(Type::new_with_atomic("str"))
                     } else {
-                        return None;
+                        None
                     }
                 }
-                _ => return None,
+                _ => None,
             },
             CoreType::HashMap(hashmap) => {
                 // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
                 if index_type.is_eq(&hashmap.key_type) && index_type.is_hashable() {
-                    return Some(hashmap.value_type.clone());
+                    Some(hashmap.value_type.clone())
                 } else {
-                    return None;
+                    None
                 }
             }
-            _ => return None,
+            _ => None,
         }
     }
 
@@ -423,8 +421,8 @@ impl TypeChecker {
         //if l_type.is_unknown() || r_type.is_unknown() {
         //    return Some(Type::new_with_unknown());
         //}
-        let result = l_type.check_operator(r_type, operator_kind);
-        result
+
+        l_type.check_operator(r_type, operator_kind)
     }
 
     pub fn infer_concrete_types_from_arguments(
@@ -448,7 +446,7 @@ impl TypeChecker {
                 let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![];
                 let mut params_len = 0;
                 for (index, received_param) in received_params_iter.enumerate() {
-                    let param_ty = self.check_expr(&received_param);
+                    let param_ty = self.check_expr(received_param);
                     if index >= expected_params_len {
                         return Err(PrototypeEquivalenceCheckError::MoreParams(
                             expected_params_len,
@@ -466,24 +464,22 @@ impl TypeChecker {
                         if let Err(()) = inference_result {
                             return Err(PrototypeEquivalenceCheckError::TypeInferenceFailed);
                         }
-                    } else {
-                        if !param_ty.is_eq(expected_ty) {
-                            mismatch_types_vec.push((
-                                expected_ty.to_string(),
-                                param_ty.to_string(),
-                                index + 1,
-                                received_param.range(),
-                            ));
-                        }
+                    } else if !param_ty.is_eq(expected_ty) {
+                        mismatch_types_vec.push((
+                            expected_ty.to_string(),
+                            param_ty.to_string(),
+                            index + 1,
+                            received_param.range(),
+                        ));
                     }
-                    params_len = params_len + 1;
+                    params_len += 1;
                 }
                 if expected_params_len > params_len {
                     return Err(PrototypeEquivalenceCheckError::LessParams((
                         expected_params_len,
                         params_len,
                     )));
-                } else if mismatch_types_vec.len() > 0 {
+                } else if !mismatch_types_vec.is_empty() {
                     return Err(PrototypeEquivalenceCheckError::MismatchedType(
                         mismatch_types_vec,
                     ));
@@ -504,7 +500,7 @@ impl TypeChecker {
                         error_strs.push((inferred_ty.to_string(), interface_bounds.to_string()));
                     }
                 }
-                if error_strs.len() > 0 {
+                if !error_strs.is_empty() {
                     return Err(
                         PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(
                             error_strs,
@@ -512,7 +508,7 @@ impl TypeChecker {
                         ),
                     );
                 }
-                return Ok(ConcreteTypesTuple::new(unpacked_inferred_concrete_types));
+                Ok(ConcreteTypesTuple::new(unpacked_inferred_concrete_types))
             }
             None => Err(PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred),
         }
@@ -530,7 +526,7 @@ impl TypeChecker {
                 let mut index = 0;
                 let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![];
                 for received_param in received_params_iter {
-                    let param_type_obj = self.check_expr(&received_param);
+                    let param_type_obj = self.check_expr(received_param);
                     if index >= expected_params_len {
                         return Err(PrototypeEquivalenceCheckError::MoreParams(
                             expected_params_len,
@@ -545,28 +541,28 @@ impl TypeChecker {
                             received_param.range(),
                         ));
                     }
-                    index = index + 1;
+                    index += 1;
                 }
                 if index < expected_params_len {
                     return Err(PrototypeEquivalenceCheckError::LessParams((
                         expected_params_len,
                         index,
                     )));
-                } else if mismatch_types_vec.len() > 0 {
+                } else if !mismatch_types_vec.is_empty() {
                     return Err(PrototypeEquivalenceCheckError::MismatchedType(
                         mismatch_types_vec,
                     ));
                 }
-                return Ok(());
+                Ok(())
             }
             None => {
                 if expected_params_len != 0 {
-                    return Err(PrototypeEquivalenceCheckError::LessParams((
+                    Err(PrototypeEquivalenceCheckError::LessParams((
                         expected_params_len,
                         0,
-                    )));
+                    )))
                 } else {
-                    return Ok(());
+                    Ok(())
                 }
             }
         }
@@ -609,7 +605,7 @@ impl TypeChecker {
             CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
                 let prototype_ref = prototype.get_prototype_ref();
                 let return_ty = prototype_ref.is_received_params_valid(self, params)?;
-                return Ok(return_ty);
+                Ok(return_ty)
             }
             CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
                 generic_type_decls,
@@ -628,7 +624,7 @@ impl TypeChecker {
                 } else {
                     unconcrete_return_ty.clone()
                 };
-                return Ok(concrete_return_ty);
+                Ok(concrete_return_ty)
             }
         }
     }
@@ -643,13 +639,11 @@ impl TypeChecker {
         match lambda_type.0.as_ref() {
             CoreType::Lambda(lambda_data) => {
                 let return_ty = lambda_data.is_received_params_valid(self, params)?;
-                return Ok(return_ty);
+                Ok(return_ty)
             }
-            _ => {
-                return Err(AtomStartTypeCheckError::IdentifierNotCallable(
-                    lambda_type.to_string(),
-                ))
-            }
+            _ => Err(AtomStartTypeCheckError::IdentifierNotCallable(
+                lambda_type.to_string(),
+            )),
         }
     }
 
@@ -699,7 +693,7 @@ impl TypeChecker {
                         prototype,
                     ) => {
                         let prototype_ref = prototype.get_prototype_ref();
-                        let _ = self.check_params_type_and_count(&prototype_ref.params, params)?;
+                        self.check_params_type_and_count(&prototype_ref.params, params)?;
                         let return_ty = Type::new_with_struct(
                             &concrete_symbol_data.symbol_data,
                             concrete_types.clone(), // expensive clone
@@ -727,13 +721,10 @@ impl TypeChecker {
             }
         };
         match struct_constructor_prototype_check_result {
-            StructConstructorPrototypeCheckResult::Basic(return_ty) => return Ok(return_ty),
-            StructConstructorPrototypeCheckResult::Inferred(concrete_types) => {
-                return Ok(Type::new_with_struct(
-                    &concrete_symbol_data.symbol_data,
-                    Some(concrete_types),
-                ));
-            }
+            StructConstructorPrototypeCheckResult::Basic(return_ty) => Ok(return_ty),
+            StructConstructorPrototypeCheckResult::Inferred(concrete_types) => Ok(
+                Type::new_with_struct(&concrete_symbol_data.symbol_data, Some(concrete_types)),
+            ),
         }
     }
 
@@ -896,7 +887,7 @@ impl TypeChecker {
                         Some(variable_symbol_data) => {
                             return variable_symbol_data.get_core_ref().data_type.clone()
                         }
-                        None => return Type::new_with_unknown(),
+                        None => Type::new_with_unknown(),
                     }
                 }
                 _ => Type::new_with_unknown(),
@@ -912,7 +903,7 @@ impl TypeChecker {
                             Some(symbol_data) => {
                                 return symbol_data.get_core_ref().data_type.clone()
                             }
-                            None => return Type::new_with_unknown(),
+                            None => Type::new_with_unknown(),
                         }
                     }
                     _ => Type::new_with_unknown(),
@@ -934,17 +925,17 @@ impl TypeChecker {
             CoreType::Lambda(lambda_data) => {
                 let result = lambda_data.is_received_params_valid(self, params);
                 match result {
-                    Ok(return_ty) => return (return_ty, Some(atom_type_obj)),
+                    Ok(return_ty) => (return_ty, Some(atom_type_obj)),
                     Err(err) => {
                         self.log_params_type_and_count_check_error(atom.range(), err);
-                        return (Type::new_with_unknown(), Some(atom_type_obj));
+                        (Type::new_with_unknown(), Some(atom_type_obj))
                     }
                 }
             }
             _ => {
                 let err = ExpressionNotCallableError::new(atom.range());
                 self.log_error(Diagnostics::ExpressionNotCallable(err));
-                return (Type::new_with_unknown(), Some(atom_type_obj));
+                (Type::new_with_unknown(), Some(atom_type_obj))
             }
         }
     }
@@ -984,7 +975,7 @@ impl TypeChecker {
                                 None => Err(()),
                             }
                         }
-                        CoreType::Generic(generic_ty) => {
+                        CoreType::Generic(_generic_ty) => {
                             // TODO - change this to allow property access for generic types also
                             Err(())
                         }
@@ -1039,18 +1030,18 @@ impl TypeChecker {
                     .generic_type_args
                     .is_some()
                 {
-                    return Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
+                    Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
                         GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
                         IdentifierKind::Field,
-                    ));
+                    ))
                 } else {
                     // check if the `property_ty` is callable
                     match propetry_ty.0.as_ref() {
                         CoreType::Lambda(lambda_ty) => {
                             let return_ty = lambda_ty.is_received_params_valid(self, params)?;
-                            return Ok(return_ty);
+                            Ok(return_ty)
                         }
-                        _ => return Err(MethodAccessTypeCheckError::FieldNotCallable(propetry_ty)),
+                        _ => Err(MethodAccessTypeCheckError::FieldNotCallable(propetry_ty)),
                     }
                 }
             }
@@ -1068,9 +1059,9 @@ impl TypeChecker {
                             ty_ranges,
                             params,
                         )?;
-                        return Ok(return_ty);
+                        Ok(return_ty)
                     }
-                    None => return Err(MethodAccessTypeCheckError::MethodNotFound),
+                    None => Err(MethodAccessTypeCheckError::MethodNotFound),
                 }
             }
         }
@@ -1078,9 +1069,9 @@ impl TypeChecker {
 
     fn check_method_access_for_generic_ty(
         &self,
-        generic_ty: &Generic,
-        method_name_ok_identifier: &OkIdentifierInUseNode,
-        params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        _generic_ty: &Generic,
+        _method_name_ok_identifier: &OkIdentifierInUseNode,
+        _params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         // TODO - change this to allow method access for generic types also
         Err(MethodAccessTypeCheckError::MethodNotFound)
@@ -1096,9 +1087,9 @@ impl TypeChecker {
         match array_ty.try_method(&method_name) {
             Some(prototype) => {
                 let return_ty = prototype.is_received_params_valid(self, params)?;
-                return Ok(return_ty);
+                Ok(return_ty)
             }
-            None => return Err(MethodAccessTypeCheckError::MethodNotFound),
+            None => Err(MethodAccessTypeCheckError::MethodNotFound),
         }
     }
 
@@ -1112,9 +1103,9 @@ impl TypeChecker {
         match hashmap_ty.try_method(&method_name) {
             Some(prototype) => {
                 let return_ty = prototype.is_received_params_valid(self, params)?;
-                return Ok(return_ty);
+                Ok(return_ty)
             }
-            None => return Err(MethodAccessTypeCheckError::MethodNotFound),
+            None => Err(MethodAccessTypeCheckError::MethodNotFound),
         }
     }
 
@@ -1197,7 +1188,7 @@ impl TypeChecker {
                     Some(index_value) => {
                         match self.is_valid_index_for_tuple(index_value, sub_types.len()) {
                             TupleIndexCheckResult::Ok(index_value) => {
-                                return sub_types[index_value].clone()
+                                sub_types[index_value].clone()
                             }
                             TupleIndexCheckResult::PositiveIndexOutOfBound => {
                                 let err = TupleIndexOutOfBoundError::new(
@@ -1205,7 +1196,7 @@ impl TypeChecker {
                                     index_expr.range(),
                                 );
                                 self.log_error(Diagnostics::TupleIndexOutOfBound(err));
-                                return Type::new_with_unknown();
+                                Type::new_with_unknown()
                             }
                             TupleIndexCheckResult::NegativeIndexOutOfBound => {
                                 let err = TupleIndexOutOfBoundError::new(
@@ -1213,21 +1204,21 @@ impl TypeChecker {
                                     index_expr.range(),
                                 );
                                 self.log_error(Diagnostics::TupleIndexOutOfBound(err));
-                                return Type::new_with_unknown();
+                                Type::new_with_unknown()
                             }
                         }
                     }
                     None => {
                         let err = UnresolvedIndexExpressionInTupleError::new(index_expr.range());
                         self.log_error(Diagnostics::UnresolvedIndexExpressionInTuple(err));
-                        return Type::new_with_unknown();
+                        Type::new_with_unknown()
                     }
                 }
             }
             CoreExpressionNode::Binary(_) | CoreExpressionNode::Comparison(_) => {
                 let err = InvalidIndexExpressionForTupleError::new(index_expr.range());
                 self.log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
-                return Type::new_with_unknown();
+                Type::new_with_unknown()
             }
         }
     }
@@ -1273,7 +1264,7 @@ impl TypeChecker {
             _ => None,
         };
         match result {
-            Some(ty) => return (ty, Some(atom_type_obj)),
+            Some(ty) => (ty, Some(atom_type_obj)),
             None => {
                 let err = ExpressionIndexingNotValidError::new(
                     atom_type_obj.to_string(),
@@ -1282,7 +1273,7 @@ impl TypeChecker {
                     index_expr.range(),
                 );
                 self.log_error(Diagnostics::ExpressionIndexingNotValid(err));
-                return (Type::new_with_unknown(), Some(atom_type_obj));
+                (Type::new_with_unknown(), Some(atom_type_obj))
             }
         }
     }
@@ -1317,7 +1308,7 @@ impl TypeChecker {
             CoreRVariableDeclarationNode::Lambda(lambda) => {
                 let body = &lambda.core_ref().body.core_ref();
                 self.check_callable_body(&body.prototype, &body.block, false);
-                return self.type_of_lambda(lambda);
+                self.type_of_lambda(lambda)
             }
         }
     }
@@ -1453,13 +1444,13 @@ impl TypeChecker {
     pub fn check_only_unary_expr(&self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
         let core_only_unary_expr = only_unary_expr.core_ref();
         let unary_expr = &core_only_unary_expr.unary_expr;
-        let operand_type = self.check_unary_expr(&unary_expr);
+        let operand_type = self.check_unary_expr(unary_expr);
         let operator = &core_only_unary_expr.operator;
         let operator_kind = &core_only_unary_expr.operator_kind;
         match operator_kind {
             UnaryOperatorKind::Plus | UnaryOperatorKind::Minus => {
                 if operand_type.is_numeric() {
-                    return operand_type;
+                    operand_type
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
                         operand_type.to_string(),
@@ -1469,12 +1460,12 @@ impl TypeChecker {
                         operator.range(),
                     );
                     self.log_error(Diagnostics::UnaryOperatorInvalidUse(err));
-                    return Type::new_with_unknown();
+                    Type::new_with_unknown()
                 }
             }
             UnaryOperatorKind::Not => {
                 if operand_type.is_bool() {
-                    return operand_type;
+                    operand_type
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
                         operand_type.to_string(),
@@ -1484,7 +1475,7 @@ impl TypeChecker {
                         operator.range(),
                     );
                     self.log_error(Diagnostics::UnaryOperatorInvalidUse(err));
-                    return Type::new_with_unknown();
+                    Type::new_with_unknown()
                 }
             }
         }
@@ -1508,7 +1499,7 @@ impl TypeChecker {
         let r_type = self.check_expr(right_expr);
         let result = self.is_binary_operation_valid(&l_type, &r_type, operator_kind);
         match result {
-            Some(type_obj) => return type_obj,
+            Some(type_obj) => type_obj,
             None => {
                 let err = BinaryOperatorInvalidOperandsError::new(
                     l_type.to_string(),
@@ -1518,7 +1509,7 @@ impl TypeChecker {
                     operator.range(),
                 );
                 self.log_error(Diagnostics::BinaryOperatorInvalidOperands(err));
-                return Type::new_with_unknown();
+                Type::new_with_unknown()
             }
         }
     }
@@ -1640,20 +1631,16 @@ impl TypeChecker {
                     // TODO - check if the `r_type` is ambigious type
                     // enforce availablity of type annotation here!
                     symbol_data_mut_ref.set_data_type(&r_type);
-                } else {
-                    if !variable_ty.is_eq(&r_type) {
-                        let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
-                            variable_ty.to_string(),
-                            r_type.to_string(),
-                            core_variable_decl.name.range(),
-                            r_variable_decl.range(),
-                        );
-                        self.log_error(
-                            Diagnostics::RightSideExpressionTypeMismatchedWithTypeFromAnnotation(
-                                err,
-                            ),
-                        )
-                    }
+                } else if !variable_ty.is_eq(&r_type) {
+                    let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
+                        variable_ty.to_string(),
+                        r_type.to_string(),
+                        core_variable_decl.name.range(),
+                        r_variable_decl.range(),
+                    );
+                    self.log_error(
+                        Diagnostics::RightSideExpressionTypeMismatchedWithTypeFromAnnotation(err),
+                    )
                 }
             }
         };
@@ -1662,11 +1649,11 @@ impl TypeChecker {
     pub fn check_callable_prototype(&self, callable_prototype: &CallablePrototypeNode) -> Type {
         let core_callable_prototype = callable_prototype.0.as_ref();
         let return_type_node = &core_callable_prototype.return_type;
-        let return_type_obj = match return_type_node {
+
+        match return_type_node {
             Some((_, return_type_expr)) => self.type_obj_from_expression(return_type_expr).0,
             None => Type::new_with_void(),
-        };
-        return_type_obj
+        }
     }
 
     pub fn check_callable_body(
@@ -1681,7 +1668,7 @@ impl TypeChecker {
             .func_stack
             .push((is_constructor, return_type_obj.clone()));
         let mut has_return_stmt: Option<TextRange> = None;
-        for stmt in &*body.0.as_ref().stmts.as_ref() {
+        for stmt in body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
                 CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
@@ -1690,7 +1677,7 @@ impl TypeChecker {
                 }
                 _ => continue,
             };
-            self.walk_stmt(&stmt);
+            self.walk_stmt(stmt);
             if let CoreStatementNode::Return(return_stmt) = stmt.core_ref() {
                 has_return_stmt = Some(return_stmt.range());
             }
@@ -1706,18 +1693,16 @@ impl TypeChecker {
                 }
                 None => {}
             }
-        } else {
-            if !has_return_stmt.is_some() && !return_type_obj.is_void() {
-                let (_, return_type_node) = prototype.core_ref().return_type.as_ref().unwrap();
-                let err = NoReturnStatementInFunctionError::new(return_type_node.range());
-                self.log_error(Diagnostics::NoReturnStatementInFunction(err));
-            }
+        } else if has_return_stmt.is_none() && !return_type_obj.is_void() {
+            let (_, return_type_node) = prototype.core_ref().return_type.as_ref().unwrap();
+            let err = NoReturnStatementInFunctionError::new(return_type_node.range());
+            self.log_error(Diagnostics::NoReturnStatementInFunction(err));
         }
         self.context.func_stack.pop();
     }
 
     pub fn check_bounded_method(&mut self, bounded_method_wrapper: &BoundedMethodWrapperNode) {
-        let core_bounded_method_wrapper = &*bounded_method_wrapper.0.as_ref();
+        let core_bounded_method_wrapper = bounded_method_wrapper.0.as_ref();
         let is_constructor = match self
             .semantic_state_db
             .get_bounded_kind_ref(bounded_method_wrapper)
@@ -1754,15 +1739,13 @@ impl TypeChecker {
             self.log_error(Diagnostics::ExplicitReturnStatementFoundInConstructorBody(
                 err,
             ));
-        } else {
-            if !expr_type_obj.is_eq(&expected_type_obj) {
-                let err = MismatchedReturnTypeError::new(
-                    expected_type_obj.to_string(),
-                    expr_type_obj.to_string(),
-                    core_return_stmt.return_keyword.range(),
-                );
-                self.log_error(Diagnostics::MismatchedReturnType(err));
-            }
+        } else if !expr_type_obj.is_eq(expected_type_obj) {
+            let err = MismatchedReturnTypeError::new(
+                expected_type_obj.to_string(),
+                expr_type_obj.to_string(),
+                core_return_stmt.return_keyword.range(),
+            );
+            self.log_error(Diagnostics::MismatchedReturnType(err));
         }
     }
 
@@ -1831,9 +1814,7 @@ impl TypeChecker {
                     // self.walk_block(&struct_decl.core_ref().block);
                     self.check_struct_declaration(struct_decl);
                 }
-                CoreTypeDeclarationNode::Lambda(_) | CoreTypeDeclarationNode::MissingTokens(_) => {
-                    return
-                }
+                CoreTypeDeclarationNode::Lambda(_) | CoreTypeDeclarationNode::MissingTokens(_) => {}
             },
             CoreStatementNode::InterfaceDeclaration(interface_decl) => {
                 self.walk_block(&interface_decl.core_ref().block);
@@ -1853,7 +1834,7 @@ impl TypeChecker {
                     );
                 }
             }
-            CoreStatementNode::StructPropertyDeclaration(_) => return,
+            CoreStatementNode::StructPropertyDeclaration(_) => (),
         }
     }
 
@@ -1905,7 +1886,7 @@ impl Visitor for TypeChecker {
         match node {
             ASTNode::Statement(stmt) => {
                 self.check_stmt(stmt);
-                return None;
+                None
             }
             _ => Some(()),
         }

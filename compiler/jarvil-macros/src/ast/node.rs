@@ -41,7 +41,7 @@ pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
     let mut impl_ast_node = "".to_string();
     let mut flag = false;
     let mut variants_info: Vec<ExprTuple> = vec![];
-    while let Some(variant) = variant_iter.next() {
+    for variant in variant_iter.by_ref() {
         let variant_name = variant.ident.to_string(); // eg. `BLOCK`
         let field_name = match &variant.fields {
             syn::Fields::Unnamed(field) => field,
@@ -103,7 +103,7 @@ pub fn impl_node_trait(ast: &syn::DeriveInput) -> TokenStream {
     let variant_iter = &mut enum_data.variants.iter();
     let mut flag = false;
     let mut common_str = "".to_string();
-    while let Some(variant) = variant_iter.next() {
+    for variant in variant_iter.by_ref() {
         let variant_name = variant.ident.to_string(); // eg. `BLOCK`
         if flag {
             common_str.push_str(", ");
