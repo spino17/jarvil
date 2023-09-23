@@ -1637,6 +1637,8 @@ impl TypeChecker {
                 let mut symbol_data_mut_ref = symbol_data.get_core_mut_ref();
                 let variable_ty = &symbol_data_mut_ref.data_type;
                 if variable_ty.is_unset() {
+                    // TODO - check if the `r_type` is ambigious type
+                    // enforce availablity of type annotation here!
                     symbol_data_mut_ref.set_data_type(&r_type);
                 } else {
                     if !variable_ty.is_eq(&r_type) {
