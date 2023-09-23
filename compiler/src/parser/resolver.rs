@@ -282,7 +282,6 @@ impl Resolver {
             }
             index -= 1;
         }
-        unreachable!()
     }
 
     pub fn bind_decl_to_identifier_in_decl(
