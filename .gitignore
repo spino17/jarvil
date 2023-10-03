@@ -12,6 +12,7 @@ Makefile.am
 
 # ignores from my local machine
 *.jv
+*.ts
 __*
 macro_output.rs
 scratch.ipynb

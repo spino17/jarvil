@@ -21,8 +21,7 @@ use std::convert::TryInto;
 // Utility functions
 pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
     let expected_indent_spaces = context::indent_spaces() * indent_level;
-    " "
-        .to_string()
+    " ".to_string()
         .repeat(expected_indent_spaces.try_into().unwrap())
 }
 
@@ -389,6 +388,7 @@ impl Visitor for PythonCodeGenerator {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {
+                // TODO - apply condition to process `nonlocal` only if the `BlockKind` is of function type
                 self.open_block();
                 let core_block = block.0.as_ref();
                 self.print_token_node(&core_block.newline);
