@@ -97,11 +97,7 @@ impl AbstractType for HashMap {
 
 impl ToString for HashMap {
     fn to_string(&self) -> String {
-        format!(
-            "{{{} : {}}}",
-            self.key_type,
-            self.value_type
-        )
+        format!("{{{} : {}}}", self.key_type, self.value_type)
     }
 }
 

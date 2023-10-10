@@ -312,13 +312,11 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         prototype_ref.is_received_params_valid(type_checker, received_params)?;
                     Ok(return_ty)
                 }
-                None => {
-                    Err(
-                        PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(
-                            GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
-                        ),
-                    )
-                }
+                None => Err(
+                    PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(
+                        GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
+                    ),
+                ),
             },
             None => match generic_type_decls {
                 Some(generic_type_decls) => {

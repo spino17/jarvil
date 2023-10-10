@@ -29,9 +29,7 @@ impl Generic {
 impl AbstractType for Generic {
     fn is_eq(&self, other_ty: &Type) -> bool {
         match other_ty.0.as_ref() {
-            CoreType::Generic(generic_data) => {
-                self.name() == generic_data.name()
-            }
+            CoreType::Generic(generic_data) => self.name() == generic_data.name(),
             CoreType::Any => true,
             _ => false,
         }

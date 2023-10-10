@@ -61,9 +61,7 @@ pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> At
             );
             parser.trailing_atom(atom_node)
         }
-        _ => {
-            atom_start_node
-        }
+        _ => atom_start_node,
     }
 }
 

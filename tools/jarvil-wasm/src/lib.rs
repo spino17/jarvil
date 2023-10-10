@@ -23,15 +23,8 @@ pub fn compile(code_str: &str) -> Result<String, String> {
     match py_result {
         Ok(py_code) => Ok(py_code),
         Err(err) => match write!(&mut buffer, "{:?}", err) {
-            Ok(()) => {
-                Err(buffer)
-            }
-            Err(err) => {
-                Err(format!(
-                    "Failed to write Jarvil error to buffer: {}",
-                    err
-                ))
-            }
+            Ok(()) => Err(buffer),
+            Err(err) => Err(format!("Failed to write Jarvil error to buffer: {}", err)),
         },
     }
 }

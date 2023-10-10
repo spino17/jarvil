@@ -45,9 +45,7 @@ pub trait AbstractNonStructTypes {
                     .concretize_prototype(Some(&concrete_types), None)
                 {
                     PrototypeConcretizationResult::UnConcretized(_) => unreachable!(),
-                    PrototypeConcretizationResult::Concretized(prototype) => {
-                        Some(prototype)
-                    }
+                    PrototypeConcretizationResult::Concretized(prototype) => Some(prototype),
                 }
             }
             None => None,
@@ -250,9 +248,7 @@ impl Type {
     pub fn is_hashable(&self) -> bool {
         // `int`, `float`, `str` and `tuple` with hashable sub_types are only hashable types
         match self.0.as_ref() {
-            CoreType::Atomic(atomic) => {
-                atomic.is_int() || atomic.is_string() || atomic.is_float()
-            }
+            CoreType::Atomic(atomic) => atomic.is_int() || atomic.is_string() || atomic.is_float(),
             CoreType::Tuple(tuple) => {
                 for ty in &tuple.sub_types {
                     if !ty.is_hashable() {

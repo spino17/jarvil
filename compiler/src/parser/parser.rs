@@ -107,7 +107,8 @@ impl JarvilParser {
             return true;
         }
         self.token_vec[self.lookahead - 1].is_eq("\n")
-            || self.token_vec[self.lookahead].is_eq("\n") || self.token_vec[self.lookahead].is_eq(ENDMARKER)
+            || self.token_vec[self.lookahead].is_eq("\n")
+            || self.token_vec[self.lookahead].is_eq(ENDMARKER)
     }
 
     pub fn skip_to_newline(&mut self) -> Vec<SkippedTokenNode> {
@@ -165,12 +166,7 @@ impl JarvilParser {
     }
 
     pub fn expect_generic_type_args(&mut self) -> SymbolSeparatedSequenceNode<TypeExpressionNode> {
-        self.expect_symbol_separated_sequence(
-            |parser: &mut JarvilParser| {
-                parser.type_expr()
-            },
-            ",",
-        )
+        self.expect_symbol_separated_sequence(|parser: &mut JarvilParser| parser.type_expr(), ",")
     }
 
     pub fn expect_generic_type_decls(
@@ -183,9 +179,7 @@ impl JarvilParser {
                 CoreToken::COLON => {
                     let colon_node = parser.expect(":");
                     let interface_bounds_node = parser.expect_symbol_separated_sequence(
-                        |parser: &mut JarvilParser| {
-                            parser.expect_identifier_in_use()
-                        },
+                        |parser: &mut JarvilParser| parser.expect_identifier_in_use(),
                         "+",
                     );
                     GenericTypeDeclNode::new(
@@ -193,9 +187,7 @@ impl JarvilParser {
                         Some((colon_node, interface_bounds_node)),
                     )
                 }
-                _ => {
-                    GenericTypeDeclNode::new(&identifier_in_decl_node, None)
-                }
+                _ => GenericTypeDeclNode::new(&identifier_in_decl_node, None),
             }
         };
         self.expect_symbol_separated_sequence(parsing_fn, ",")
@@ -229,9 +221,7 @@ impl JarvilParser {
                         Some((langle_node, angle_bracketed_content_node, rangle_node)),
                     )
                 }
-                _ => {
-                    node_creation_method_with_some(&ok_token_node, None)
-                }
+                _ => node_creation_method_with_some(&ok_token_node, None),
             }
         } else {
             self.log_missing_token_error(&[symbol], token);
@@ -253,10 +243,9 @@ impl JarvilParser {
     }
 
     pub fn expect_identifier_in_use(&mut self) -> IdentifierInUseNode {
-        let angle_bracketed_content_parsing_fn =
-            |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<TypeExpressionNode> {
-                parser.expect_generic_type_args()
-            };
+        let angle_bracketed_content_parsing_fn = |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<
+            TypeExpressionNode,
+        > { parser.expect_generic_type_args() };
         let node_creation_method_with_some = |ident_name: &OkTokenNode,
                                               symbol_separated_sequence: Option<(
             TokenNode,
@@ -267,10 +256,7 @@ impl JarvilParser {
         };
         let node_creation_method_with_err =
             |expected_symbols: Vec<&'static str>, received_token: &Token| {
-                IdentifierInUseNode::new_with_missing_tokens(
-                    expected_symbols,
-                    received_token,
-                )
+                IdentifierInUseNode::new_with_missing_tokens(expected_symbols, received_token)
             };
         self.expect_identifier_in(
             angle_bracketed_content_parsing_fn,
@@ -280,10 +266,9 @@ impl JarvilParser {
     }
 
     pub fn expect_identifier_in_decl(&mut self) -> IdentifierInDeclNode {
-        let angle_bracketed_content_parsing_fn =
-            |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<GenericTypeDeclNode> {
-                parser.expect_generic_type_decls()
-            };
+        let angle_bracketed_content_parsing_fn = |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<
+            GenericTypeDeclNode,
+        > { parser.expect_generic_type_decls() };
         let node_creation_method_with_some = |ident_name: &OkTokenNode,
                                               symbol_separated_sequence: Option<(
             TokenNode,
@@ -294,10 +279,7 @@ impl JarvilParser {
         };
         let node_creation_method_with_err =
             |expected_symbols: Vec<&'static str>, received_token: &Token| {
-                IdentifierInDeclNode::new_with_missing_tokens(
-                    expected_symbols,
-                    received_token,
-                )
+                IdentifierInDeclNode::new_with_missing_tokens(expected_symbols, received_token)
             };
         self.expect_identifier_in(
             angle_bracketed_content_parsing_fn,

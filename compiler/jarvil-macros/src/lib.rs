@@ -40,7 +40,7 @@ fn get_macro_expr_stmt(macro_name: &str, macro_expr_str: &str) -> Stmt {
             tokens: token_stream,
         },
     };
-    
+
     Stmt::Expr(Expr::Macro(expr_macro))
 }
 

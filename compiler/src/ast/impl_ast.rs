@@ -2089,7 +2089,8 @@ impl OkIdentifierInUseNode {
     ) -> Self {
         let node = Rc::new(CoreOkIdentifierInUseNode {
             name: token.clone(),
-            generic_type_args: generic_type_args.map(|(langle, args, rangle)| (langle.clone(), args.clone(), rangle.clone())),
+            generic_type_args: generic_type_args
+                .map(|(langle, args, rangle)| (langle.clone(), args.clone(), rangle.clone())),
         });
         OkIdentifierInUseNode(node)
     }
@@ -2139,7 +2140,8 @@ impl OkIdentifierInDeclNode {
     ) -> Self {
         let node = Rc::new(CoreOkIdentifierInDeclNode {
             name: token.clone(),
-            generic_type_decls: generic_type_decls.map(|(langle, args, rangle)| (langle.clone(), args.clone(), rangle.clone())),
+            generic_type_decls: generic_type_decls
+                .map(|(langle, args, rangle)| (langle.clone(), args.clone(), rangle.clone())),
         });
         OkIdentifierInDeclNode(node)
     }
@@ -2185,7 +2187,8 @@ impl GenericTypeDeclNode {
     ) -> Self {
         let node = Rc::new(CoreGenericTypeDeclNode {
             generic_type_name: generic_type_name.clone(),
-            interface_bounds: interface_bounds.map(|(colon, interfaces)| (colon.clone(), interfaces.clone())),
+            interface_bounds: interface_bounds
+                .map(|(colon, interfaces)| (colon.clone(), interfaces.clone())),
         });
         GenericTypeDeclNode(node)
     }

@@ -35,7 +35,7 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
 
 pub fn unary_expr(parser: &mut JarvilParser) -> UnaryExpressionNode {
     let token = parser.curr_token();
-    
+
     match token.core_token {
         CoreToken::PLUS => {
             let plus_node = parser.expect("+");

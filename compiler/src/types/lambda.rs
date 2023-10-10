@@ -60,15 +60,13 @@ impl Lambda {
                 let prototype_ref = prototype_result.get_prototype_ref();
                 let expected_param_types = &prototype_ref.params;
                 let return_type = &prototype_ref.return_type;
-                type_checker
-                    .check_params_type_and_count(expected_param_types, received_params)?;
+                type_checker.check_params_type_and_count(expected_param_types, received_params)?;
                 Ok(return_type.clone())
             }
             Lambda::Unnamed(unnamed_lambda) => {
                 let expected_param_types = &unnamed_lambda.params;
                 let return_type = &unnamed_lambda.return_type;
-                type_checker
-                    .check_params_type_and_count(expected_param_types, received_params)?;
+                type_checker.check_params_type_and_count(expected_param_types, received_params)?;
                 Ok(return_type.clone())
             }
         }
@@ -114,9 +112,7 @@ impl AbstractType for Lambda {
                             let other_prototype_ref = other_prototype_result.get_prototype_ref();
                             other_prototype_ref.is_eq(self_prototype)
                         }
-                        Lambda::Unnamed(other_prototype) => {
-                            self_prototype.is_eq(other_prototype)
-                        }
+                        Lambda::Unnamed(other_prototype) => self_prototype.is_eq(other_prototype),
                     },
                 }
             }
@@ -181,9 +177,7 @@ impl AbstractType for Lambda {
                         Some(ConcreteTypesTuple::new(concretized_concrete_types)),
                     )
                 }
-                None => {
-                    Type::new_with_lambda_named(&concrete_symbol_data.symbol_data, None)
-                }
+                None => Type::new_with_lambda_named(&concrete_symbol_data.symbol_data, None),
             },
             Lambda::Unnamed(prototype) => Type::new_with_lambda_unnamed(prototype.clone()),
         }

@@ -1,6 +1,4 @@
-use crate::{
-    scope::function::{CallableData},
-};
+use crate::scope::function::CallableData;
 use std::{collections::HashMap, rc::Rc};
 
 thread_local!(

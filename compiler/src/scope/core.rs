@@ -167,6 +167,10 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn is_suffix_required(&self) -> bool {
         self.0.is_suffix_required
     }
+
+    pub fn get_mangled_name(&self) -> &str {
+        todo!()
+    }
 }
 
 impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
@@ -343,11 +347,11 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
             Some(value) => Some((value.clone(), scope_index, 0, self.is_global)),
             None => {
                 if let Some(parent_scope_index) = self.parent_scope {
-                    global_scope_vec[parent_scope_index].lookup(
-                        parent_scope_index,
-                        key,
-                        global_scope_vec,
-                    ).map(|(symbol_data, resolved_scope_index, depth, range)| (symbol_data, resolved_scope_index, depth + 1, range))
+                    global_scope_vec[parent_scope_index]
+                        .lookup(parent_scope_index, key, global_scope_vec)
+                        .map(|(symbol_data, resolved_scope_index, depth, range)| {
+                            (symbol_data, resolved_scope_index, depth + 1, range)
+                        })
                 } else {
                     None
                 }
@@ -430,9 +434,7 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
                         is_global,
                     ))
                 } else {
-                    IntermediateLookupResult::NotInitialized(
-                        symbol_data.declaration_line_number(),
-                    )
+                    IntermediateLookupResult::NotInitialized(symbol_data.declaration_line_number())
                 }
             }
             None => IntermediateLookupResult::Unresolved,
@@ -590,9 +592,11 @@ impl Namespace {
         name: String,
         decl_range: TextRange,
     ) -> Result<VariableSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| scope
-            .flattened_vec[scope_index]
-            .get(key).map(|symbol_data| symbol_data.declaration_line_number());
+        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| {
+            scope.flattened_vec[scope_index]
+                .get(key)
+                .map(|symbol_data| symbol_data.declaration_line_number())
+        };
         match self.variables.insert(
             scope_index,
             name,
@@ -614,9 +618,11 @@ impl Namespace {
         decl_range: TextRange,
         is_init: bool,
     ) -> Result<VariableSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| scope
-            .flattened_vec[scope_index]
-            .get(key).map(|symbol_data| symbol_data.declaration_line_number());
+        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| {
+            scope.flattened_vec[scope_index]
+                .get(key)
+                .map(|symbol_data| symbol_data.declaration_line_number())
+        };
         match self.variables.insert(
             scope_index,
             name,
@@ -636,9 +642,11 @@ impl Namespace {
         name: String,
         decl_range: TextRange,
     ) -> Result<FunctionSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<CallableData>, scope_index: usize, key: &str| scope
-            .flattened_vec[scope_index]
-            .get(key).map(|symbol_data| symbol_data.declaration_line_number());
+        let lookup_func = |scope: &Scope<CallableData>, scope_index: usize, key: &str| {
+            scope.flattened_vec[scope_index]
+                .get(key)
+                .map(|symbol_data| symbol_data.declaration_line_number())
+        };
         match self.functions.insert(
             scope_index,
             name,
@@ -659,9 +667,11 @@ impl Namespace {
         meta_data: UserDefinedTypeData,
         decl_range: TextRange,
     ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
-        let lookup_func =
-            |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| scope
-                .lookup(scope_index, key).map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number());
+        let lookup_func = |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| {
+            scope
+                .lookup(scope_index, key)
+                .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())
+        };
         match self
             .types
             .insert(scope_index, name, meta_data, decl_range, lookup_func, true)
@@ -723,8 +733,11 @@ impl Namespace {
         name: String,
         decl_range: TextRange,
     ) -> Result<InterfaceSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| scope
-            .lookup(scope_index, key).map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number());
+        let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| {
+            scope
+                .lookup(scope_index, key)
+                .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())
+        };
         match self.interfaces.insert(
             scope_index,
             name,

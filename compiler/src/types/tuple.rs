@@ -35,8 +35,7 @@ impl Tuple {
                 let self_len = self.sub_types.len();
                 let min_len = cmp::min(self_len, other_len);
                 for i in 0..min_len {
-                    self.sub_types[i]
-                        .check_operator(&other_tuple.sub_types[i], operator_kind)?;
+                    self.sub_types[i].check_operator(&other_tuple.sub_types[i], operator_kind)?;
                 }
                 Some(Type::new_with_atomic(BOOL))
             }

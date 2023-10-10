@@ -4,7 +4,7 @@ use super::{
     core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
     function::{CallableData, PartialConcreteCallableDataRef},
 };
-use crate::types::{core::Type};
+use crate::types::core::Type;
 use crate::{scope::concrete::ConcretizationContext, types::core::AbstractType};
 use rustc_hash::FxHashMap;
 use std::rc::Rc;

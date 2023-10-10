@@ -12,15 +12,13 @@ pub fn check_concrete_types_bounded_by_interfaces(
 ) -> Result<(), GenericTypeArgsCheckError> {
     match concrete_types {
         Some(concrete_types) => match generic_type_decls {
-            Some(generic_type_decls) => {
-                generic_type_decls.check_concrete_types_bounded_by(
-                    concrete_types,
-                    match type_ranges {
-                        Some(type_ranges) => type_ranges,
-                        None => unreachable!(),
-                    },
-                )
-            }
+            Some(generic_type_decls) => generic_type_decls.check_concrete_types_bounded_by(
+                concrete_types,
+                match type_ranges {
+                    Some(type_ranges) => type_ranges,
+                    None => unreachable!(),
+                },
+            ),
             None => Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected),
         },
         None => match generic_type_decls {

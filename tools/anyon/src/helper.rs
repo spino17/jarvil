@@ -45,17 +45,13 @@ pub fn check_jarvil_code_file_extension(file_name: &str) -> Result<String, Anyon
                 match path.file_stem() {
                     Some(file_name) => match file_name.to_str() {
                         Some(valid_file_name) => Ok(valid_file_name.to_string()),
-                        None => {
-                            Err(AnyonError::new_with_vanilla(
-                                "provided file does not have a valid name".to_string(),
-                            ))
-                        }
-                    },
-                    None => {
-                        Err(AnyonError::new_with_vanilla(
+                        None => Err(AnyonError::new_with_vanilla(
                             "provided file does not have a valid name".to_string(),
-                        ))
-                    }
+                        )),
+                    },
+                    None => Err(AnyonError::new_with_vanilla(
+                        "provided file does not have a valid name".to_string(),
+                    )),
                 }
             } else {
                 Err(AnyonError::new_with_vanilla(
@@ -63,10 +59,8 @@ pub fn check_jarvil_code_file_extension(file_name: &str) -> Result<String, Anyon
                 ))
             }
         }
-        None => {
-            Err(AnyonError::new_with_vanilla(
-                "provided file does not have an extension".to_string(),
-            ))
-        }
+        None => Err(AnyonError::new_with_vanilla(
+            "provided file does not have an extension".to_string(),
+        )),
     }
 }
