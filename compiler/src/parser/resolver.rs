@@ -149,14 +149,12 @@ impl Resolver {
             "print".to_string(),
             print_meta_data(),
             TextRange::default(),
-            false,
         );
         self.semantic_state_db.namespace.functions.force_insert(
             self.scope_index,
             "range".to_string(),
             range_meta_data(),
             TextRange::default(),
-            false,
         );
         for stmt in code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
@@ -464,11 +462,12 @@ impl Resolver {
 
     pub fn try_declare_and_bind<
         T: AbstractSymbolData,
-        U: Fn(&mut Namespace, usize, String, TextRange) -> Result<T, (String, TextRange)>,
+        U: Fn(&mut Namespace, usize, String, TextRange, usize) -> Result<T, (String, TextRange)>,
     >(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
         declare_fn: U,
+        unique_id: usize,
     ) -> Result<T, (String, TextRange)> {
         let name = identifier.token_value(&self.code);
         let result = declare_fn(
@@ -476,6 +475,7 @@ impl Resolver {
             self.scope_index,
             name,
             identifier.core_ref().name.range(),
+            unique_id,
         );
         match result {
             Ok(symbol_data) => {
@@ -490,44 +490,72 @@ impl Resolver {
         &mut self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<VariableSymbolData, (String, TextRange)> {
-        let declare_fn =
-            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-                namespace.declare_variable(scope_index, name, decl_range)
-            };
-        self.try_declare_and_bind(identifier, declare_fn)
+        let declare_fn = |namespace: &mut Namespace,
+                          scope_index: usize,
+                          name: String,
+                          decl_range: TextRange,
+                          unique_id: usize| {
+            namespace.declare_variable(scope_index, name, decl_range, unique_id)
+        };
+        let unique_id = self
+            .semantic_state_db
+            .unique_key_generator
+            .generate_unique_id_for_variable();
+        self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
     pub fn try_declare_and_bind_function(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<FunctionSymbolData, (String, TextRange)> {
-        let declare_fn =
-            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-                namespace.declare_function(scope_index, name, decl_range)
-            };
-        self.try_declare_and_bind(identifier, declare_fn)
+        let declare_fn = |namespace: &mut Namespace,
+                          scope_index: usize,
+                          name: String,
+                          decl_range: TextRange,
+                          unique_id: usize| {
+            namespace.declare_function(scope_index, name, decl_range, unique_id)
+        };
+        let unique_id = self
+            .semantic_state_db
+            .unique_key_generator
+            .generate_unique_id_for_function();
+        self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
     pub fn try_declare_and_bind_struct_type(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
-        let declare_fn =
-            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-                namespace.declare_struct_type(scope_index, name, decl_range)
-            };
-        self.try_declare_and_bind(identifier, declare_fn)
+        let declare_fn = |namespace: &mut Namespace,
+                          scope_index: usize,
+                          name: String,
+                          decl_range: TextRange,
+                          unique_id: usize| {
+            namespace.declare_struct_type(scope_index, name, decl_range, unique_id)
+        };
+        let unique_id = self
+            .semantic_state_db
+            .unique_key_generator
+            .generate_unique_id_for_type();
+        self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
     pub fn try_declare_and_bind_interface(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<InterfaceSymbolData, (String, TextRange)> {
-        let declare_fn =
-            |namespace: &mut Namespace, scope_index: usize, name: String, decl_range: TextRange| {
-                namespace.declare_interface(scope_index, name, decl_range)
-            };
-        self.try_declare_and_bind(identifier, declare_fn)
+        let declare_fn = |namespace: &mut Namespace,
+                          scope_index: usize,
+                          name: String,
+                          decl_range: TextRange,
+                          unique_id: usize| {
+            namespace.declare_interface(scope_index, name, decl_range, unique_id)
+        };
+        let unique_id = self
+            .semantic_state_db
+            .unique_key_generator
+            .generate_unique_id_for_interface();
+        self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
     pub fn type_obj_from_user_defined_type_expr<'a>(
@@ -821,6 +849,10 @@ impl Resolver {
                                 }
                             }
                         }
+                        let unique_id = self
+                            .semantic_state_db
+                            .unique_key_generator
+                            .generate_unique_id_for_type();
                         match self
                             .semantic_state_db
                             .namespace
@@ -831,6 +863,7 @@ impl Resolver {
                                 decl_place_category,
                                 &interface_bounds,
                                 ok_identifier_in_decl.range(),
+                                unique_id,
                             ) {
                             Ok(symbol_data) => {
                                 self.bind_decl_to_identifier_in_decl(
@@ -931,12 +964,17 @@ impl Resolver {
                         .type_obj_for_expression_contained_inside_declarations(
                             &core_param.data_type,
                         );
+                    let unique_id = self
+                        .semantic_state_db
+                        .unique_key_generator
+                        .generate_unique_id_for_variable();
                     let result = self.semantic_state_db.namespace.declare_variable_with_type(
                         self.scope_index,
                         param_name,
                         &param_type,
                         ok_identifier.range(),
                         true,
+                        unique_id,
                     );
                     match result {
                         Ok(symbol_data) => {
@@ -1293,13 +1331,17 @@ impl Resolver {
             }
             None => (None, Type::new_with_unknown()),
         };
-
+        let unique_id = self
+            .semantic_state_db
+            .unique_key_generator
+            .generate_unique_id_for_variable();
         let result = self.semantic_state_db.namespace.declare_variable_with_type(
             self.scope_index,
             "self".to_string(),
             &struct_ty,
             core_struct_decl.name.range(),
             true,
+            unique_id,
         );
         assert!(result.is_ok());
 
@@ -1591,6 +1633,10 @@ impl Resolver {
         self.close_block(None);
         if let Some(ok_identifier) = optional_ok_identifier_node {
             let name = ok_identifier.token_value(&self.code);
+            let unique_id = self
+                .semantic_state_db
+                .unique_key_generator
+                .generate_unique_id_for_type();
             let result = self
                 .semantic_state_db
                 .namespace
@@ -1611,6 +1657,7 @@ impl Resolver {
                     },
                     generic_type_decls,
                     ok_identifier.core_ref().name.range(),
+                    unique_id,
                 );
             match result {
                 Ok(symbol_data) => {

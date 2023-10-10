@@ -111,7 +111,7 @@ pub struct SymbolDataCore<T: AbstractConcreteTypesHandler> {
     pub identifier_name: String,
     pub identifier_data: RefCell<T>,
     pub declaration_line_number: TextRange,
-    pub is_suffix_required: bool,
+    unique_id: Option<usize>,
 }
 
 impl<T: AbstractConcreteTypesHandler> SymbolDataCore<T> {
@@ -119,13 +119,13 @@ impl<T: AbstractConcreteTypesHandler> SymbolDataCore<T> {
         identifier_name: String,
         identifier_data: T,
         decl_range: TextRange,
-        is_suffix_required: bool,
+        unique_id: Option<usize>,
     ) -> Self {
         SymbolDataCore {
             identifier_name,
             identifier_data: RefCell::new(identifier_data),
             declaration_line_number: decl_range,
-            is_suffix_required,
+            unique_id,
         }
     }
 }
@@ -138,13 +138,10 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
         name: String,
         core_data: T,
         decl_range: TextRange,
-        is_suffix_required: bool,
+        unique_id: Option<usize>,
     ) -> Self {
         SymbolData(Rc::new(SymbolDataCore::new(
-            name,
-            core_data,
-            decl_range,
-            is_suffix_required,
+            name, core_data, decl_range, unique_id,
         )))
     }
 
@@ -165,11 +162,7 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     }
 
     pub fn is_suffix_required(&self) -> bool {
-        self.0.is_suffix_required
-    }
-
-    pub fn get_mangled_name(&self) -> &str {
-        todo!()
+        self.0.unique_id.is_some()
     }
 }
 
@@ -324,10 +317,9 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
         name: String,
         meta_data: T,
         decl_range: TextRange,
-        is_suffix_required: bool,
+        unique_id: Option<usize>,
     ) -> SymbolData<T> {
-        let symbol_data =
-            SymbolData::new(name.to_string(), meta_data, decl_range, is_suffix_required);
+        let symbol_data = SymbolData::new(name.to_string(), meta_data, decl_range, unique_id);
         self.symbol_table.insert(name, symbol_data.clone());
         symbol_data
     }
@@ -392,10 +384,9 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         key: String,
         meta_data: T,
         decl_range: TextRange,
-        is_suffix_required: bool,
     ) {
         // use this method only for builtin function where we know that no entry already exist in the scope
-        self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
+        self.flattened_vec[scope_index].set(key, meta_data, decl_range, None);
     }
 
     pub fn insert<U: Fn(&Scope<T>, usize, &str) -> Option<TextRange>>(
@@ -405,13 +396,13 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         meta_data: T,
         decl_range: TextRange,
         lookup_fn: U,
-        is_suffix_required: bool,
+        unique_id: usize,
     ) -> Result<SymbolData<T>, (String, TextRange)> {
         if let Some(previous_decl_range) = lookup_fn(self, scope_index, &key) {
             return Err((key, previous_decl_range));
         }
         let symbol_data =
-            self.flattened_vec[scope_index].set(key, meta_data, decl_range, is_suffix_required);
+            self.flattened_vec[scope_index].set(key, meta_data, decl_range, Some(unique_id));
         Ok(symbol_data)
     }
 
@@ -591,6 +582,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
+        unique_id: usize,
     ) -> Result<VariableSymbolData, (String, TextRange)> {
         let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| {
             scope.flattened_vec[scope_index]
@@ -603,7 +595,7 @@ impl Namespace {
             VariableData::default(),
             decl_range,
             lookup_func,
-            true,
+            unique_id,
         ) {
             Ok(symbol_data) => Ok(VariableSymbolData(symbol_data)),
             Err(err) => Err(err),
@@ -617,6 +609,7 @@ impl Namespace {
         variable_type: &Type,
         decl_range: TextRange,
         is_init: bool,
+        unique_id: usize,
     ) -> Result<VariableSymbolData, (String, TextRange)> {
         let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| {
             scope.flattened_vec[scope_index]
@@ -629,7 +622,7 @@ impl Namespace {
             VariableData::new(variable_type, is_init),
             decl_range,
             lookup_func,
-            true,
+            unique_id,
         ) {
             Ok(symbol_data) => Ok(VariableSymbolData(symbol_data)),
             Err(err) => Err(err),
@@ -641,6 +634,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
+        unique_id: usize,
     ) -> Result<FunctionSymbolData, (String, TextRange)> {
         let lookup_func = |scope: &Scope<CallableData>, scope_index: usize, key: &str| {
             scope.flattened_vec[scope_index]
@@ -653,7 +647,7 @@ impl Namespace {
             CallableData::default_for_kind(CallableKind::Function),
             decl_range,
             lookup_func,
-            true,
+            unique_id,
         ) {
             Ok(symbol_data) => Ok(FunctionSymbolData(symbol_data)),
             Err(err) => Err(err),
@@ -666,16 +660,21 @@ impl Namespace {
         name: String,
         meta_data: UserDefinedTypeData,
         decl_range: TextRange,
+        unique_id: usize,
     ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let lookup_func = |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| {
             scope
                 .lookup(scope_index, key)
                 .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())
         };
-        match self
-            .types
-            .insert(scope_index, name, meta_data, decl_range, lookup_func, true)
-        {
+        match self.types.insert(
+            scope_index,
+            name,
+            meta_data,
+            decl_range,
+            lookup_func,
+            unique_id,
+        ) {
             Ok(symbol_data) => Ok(UserDefinedTypeSymbolData(symbol_data)),
             Err(err) => Err(err),
         }
@@ -686,9 +685,10 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
+        unique_id: usize,
     ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let meta_data = UserDefinedTypeData::default_with_struct();
-        self.declare_user_defined_type(scope_index, name, meta_data, decl_range)
+        self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)
     }
 
     pub fn declare_lambda_type_with_meta_data(
@@ -700,6 +700,7 @@ impl Namespace {
         is_concretization_required: Option<(Vec<usize>, bool)>,
         generics_spec: Option<GenericTypeParams>,
         decl_range: TextRange,
+        unique_id: usize,
     ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let meta_data = UserDefinedTypeData::Lambda(LambdaTypeData::new(
             param_types,
@@ -707,7 +708,7 @@ impl Namespace {
             is_concretization_required,
             generics_spec,
         ));
-        self.declare_user_defined_type(scope_index, name, meta_data, decl_range)
+        self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)
     }
 
     pub fn declare_generic_type_with_meta_data(
@@ -718,13 +719,14 @@ impl Namespace {
         category: GenericTypeDeclarationPlaceCategory,
         interface_bounds: &InterfaceBounds,
         decl_range: TextRange,
+        unique_id: usize,
     ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
         let meta_data = UserDefinedTypeData::Generic(GenericTypeData::new(
             index,
             category,
             interface_bounds.clone(),
         ));
-        self.declare_user_defined_type(scope_index, name, meta_data, decl_range)
+        self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)
     }
 
     pub fn declare_interface(
@@ -732,6 +734,7 @@ impl Namespace {
         scope_index: usize,
         name: String,
         decl_range: TextRange,
+        unique_id: usize,
     ) -> Result<InterfaceSymbolData, (String, TextRange)> {
         let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| {
             scope
@@ -744,7 +747,7 @@ impl Namespace {
             InterfaceData::default(),
             decl_range,
             lookup_func,
-            true,
+            unique_id,
         ) {
             Ok(symbol_data) => Ok(InterfaceSymbolData(symbol_data)),
             Err(err) => Err(err),

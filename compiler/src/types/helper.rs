@@ -23,7 +23,7 @@ pub fn get_unbounded_generic_type_with_declaration_index(index: usize) -> Type {
             interface_bounds: InterfaceBounds::new(vec![]),
         }),
         TextRange::default(),
-        true,
+        None,
     ))
 }
 

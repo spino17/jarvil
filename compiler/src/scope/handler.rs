@@ -1,4 +1,5 @@
 use super::{
+    common::GlobalUniqueKeyGenerator,
     concrete::{ConcreteSymbolData, ConcreteTypesTuple},
     core::{Namespace, SymbolData},
     function::CallableData,
@@ -59,6 +60,7 @@ pub enum IdentifierNodeWrapper<'a> {
 // This contains all the relevant semantic information collected over various AST passes
 pub struct SemanticStateDatabase {
     pub namespace: Namespace,
+    pub unique_key_generator: GlobalUniqueKeyGenerator,
     pub identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
     pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
     pub type_expr_obj_table: FxHashMap<TypeExpressionNode, (Type, bool)>,
@@ -71,6 +73,7 @@ impl SemanticStateDatabase {
     pub fn new() -> Self {
         SemanticStateDatabase {
             namespace: Namespace::new(),
+            unique_key_generator: GlobalUniqueKeyGenerator::default(),
             identifier_in_decl_binding_table: FxHashMap::default(),
             identifier_in_use_binding_table: FxHashMap::default(),
             type_expr_obj_table: FxHashMap::default(),
