@@ -1,7 +1,7 @@
 use super::{
     common::GlobalUniqueKeyGenerator,
     concrete::{ConcreteSymbolData, ConcreteTypesTuple},
-    core::{Namespace, SymbolData},
+    core::{FunctionSymbolData, Namespace, SymbolData, VariableSymbolData},
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
@@ -65,7 +65,7 @@ pub struct SemanticStateDatabase {
     pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
     pub type_expr_obj_table: FxHashMap<TypeExpressionNode, (Type, bool)>,
     pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
-    pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashMap<String, bool>)>, // block_node -> (non_locally resolved variables, (non_locally resolved functions -> is_in_global_scope))
+    pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashSet<String>)>,
     pub bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
 }
 
@@ -233,7 +233,7 @@ impl SemanticStateDatabase {
         &mut self,
         block: &BlockNode,
         variable_non_locals: FxHashSet<String>,
-        function_non_locals: FxHashMap<String, bool>,
+        function_non_locals: FxHashSet<String>,
     ) {
         self.block_non_locals
             .insert(block.clone(), (variable_non_locals, function_non_locals));
@@ -242,7 +242,7 @@ impl SemanticStateDatabase {
     pub fn get_non_locals_ref(
         &self,
         block: &BlockNode,
-    ) -> (&FxHashSet<String>, &FxHashMap<String, bool>) {
+    ) -> (&FxHashSet<String>, &FxHashSet<String>) {
         match self.block_non_locals.get(block) {
             Some((variable_non_locals, function_non_locals)) => {
                 (variable_non_locals, function_non_locals)

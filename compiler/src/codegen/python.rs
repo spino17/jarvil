@@ -11,11 +11,12 @@ use crate::{
         walk::Visitor,
     },
     code::JarvilCode,
+    constants::common::{FUNC_SUFFIX, TY_SUFFIX, VAR_SUFFIX},
     context,
     lexer::token::{CoreToken, Token},
     scope::handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
 };
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashSet;
 use std::convert::TryInto;
 
 // Utility functions
@@ -78,76 +79,63 @@ impl PythonCodeGenerator {
         self.generate_code.push_str(str);
     }
 
-    pub fn get_non_locals(
-        &self,
-        block: &BlockNode,
-    ) -> (&FxHashSet<String>, &FxHashMap<String, bool>) {
+    pub fn get_non_locals(&self, block: &BlockNode) -> (&FxHashSet<String>, &FxHashSet<String>) {
         self.semantic_state_db.get_non_locals_ref(block)
     }
 
-    pub fn get_suffix_str_for_identifier_in_decl(
+    pub fn get_mangled_identifier_name_in_decl(
         &self,
         identifier: &OkIdentifierInDeclNode,
-    ) -> &'static str {
+    ) -> String {
         match self
             .semantic_state_db
             .get_symbol_data_for_identifier_in_decl(identifier)
         {
             Some(symbol_data) => match symbol_data {
                 SymbolDataEntry::Variable(variable_symbol_data) => {
-                    if variable_symbol_data.is_suffix_required() {
-                        return "_var";
-                    }
-                    ""
+                    return variable_symbol_data
+                        .get_mangled_name()
+                        .to_string(VAR_SUFFIX);
                 }
                 SymbolDataEntry::Function(func_symbol_data) => {
-                    if func_symbol_data.is_suffix_required() {
-                        return "_func";
-                    }
-                    ""
+                    return func_symbol_data.get_mangled_name().to_string(FUNC_SUFFIX);
                 }
                 SymbolDataEntry::Type(type_symbol_data) => {
-                    if type_symbol_data.is_suffix_required() {
-                        return "_ty";
-                    }
-                    ""
+                    return type_symbol_data.get_mangled_name().to_string(TY_SUFFIX);
                 }
                 SymbolDataEntry::Interface(_) => unreachable!(),
             },
-            None => "",
+            None => identifier.token_value(&self.code),
         }
     }
 
-    pub fn get_suffix_str_for_identifier_in_use(
-        &self,
-        identifier: &OkIdentifierInUseNode,
-    ) -> &'static str {
+    pub fn get_mangled_identifier_name_in_use(&self, identifier: &OkIdentifierInUseNode) -> String {
         match self
             .semantic_state_db
             .get_symbol_data_for_identifier_in_use(identifier)
         {
             Some(symbol_data) => match symbol_data {
                 ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
-                    if variable_symbol_data.symbol_data.is_suffix_required() {
-                        return "_var";
-                    }
-                    ""
+                    return variable_symbol_data
+                        .symbol_data
+                        .get_mangled_name()
+                        .to_string(VAR_SUFFIX);
                 }
                 ConcreteSymbolDataEntry::Function(func_symbol_data) => {
-                    if func_symbol_data.symbol_data.is_suffix_required() {
-                        return "_func";
-                    }
-                    ""
+                    return func_symbol_data
+                        .symbol_data
+                        .get_mangled_name()
+                        .to_string(FUNC_SUFFIX);
                 }
                 ConcreteSymbolDataEntry::Type(type_symbol_data) => {
-                    if type_symbol_data.symbol_data.is_suffix_required() {
-                        return "_ty";
-                    }
-                    ""
+                    return type_symbol_data
+                        .symbol_data
+                        .get_mangled_name()
+                        .to_string(TY_SUFFIX)
                 }
                 ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
             },
-            None => "",
+            None => identifier.token_value(&self.code),
         }
     }
 
@@ -215,9 +203,7 @@ impl PythonCodeGenerator {
             CoreIdentifierInDeclNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
-        let suffix_str = self.get_suffix_str_for_identifier_in_decl(identifier);
-        let mut token_value = identifier.token_value(&self.code);
-        token_value.push_str(suffix_str);
+        let token_value = self.get_mangled_identifier_name_in_decl(identifier);
         let token = &identifier.0.as_ref().name.core_ref().token;
         let trivia = match &token.trivia {
             Some(trivia) => Some(trivia),
@@ -232,9 +218,7 @@ impl PythonCodeGenerator {
             CoreIdentifierInUseNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
-        let suffix_str = self.get_suffix_str_for_identifier_in_use(identifier);
-        let mut token_value = identifier.token_value(&self.code);
-        token_value.push_str(suffix_str);
+        let token_value = self.get_mangled_identifier_name_in_use(identifier);
         let token = &identifier.0.as_ref().name.core_ref().token;
         let trivia = match &token.trivia {
             Some(trivia) => Some(trivia),
@@ -249,9 +233,7 @@ impl PythonCodeGenerator {
             CoreIdentifierInDeclNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
-        let suffix_str = self.get_suffix_str_for_identifier_in_decl(identifier);
-        let mut token_value = identifier.token_value(&self.code);
-        token_value.push_str(suffix_str);
+        let token_value = self.get_mangled_identifier_name_in_decl(identifier);
         self.add_str_to_python_code(&token_value);
     }
 
@@ -260,9 +242,7 @@ impl PythonCodeGenerator {
             CoreIdentifierInUseNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
-        let suffix_str = self.get_suffix_str_for_identifier_in_use(identifier);
-        let mut token_value = identifier.token_value(&self.code);
-        token_value.push_str(suffix_str);
+        let token_value = self.get_mangled_identifier_name_in_use(identifier);
         self.add_str_to_python_code(&token_value);
     }
 
@@ -393,34 +373,13 @@ impl Visitor for PythonCodeGenerator {
                 let core_block = block.0.as_ref();
                 self.print_token_node(&core_block.newline);
                 let mut nonlocal_strs = vec![];
-                let (variable_non_locals, func_non_locals) = self.get_non_locals(block);
+                let (variable_non_locals, _) = self.get_non_locals(block);
                 for variable_name in variable_non_locals.iter() {
                     nonlocal_strs.push(format!(
-                        "{}nonlocal {}_var\n",
+                        "{}nonlocal {}\n",
                         get_whitespaces_from_indent_level(self.indent_level),
                         variable_name
                     ));
-                }
-                for (func_name, &is_global) in func_non_locals.iter() {
-                    if is_global {
-                        // TODO - if declarations are in global we can completely remove this
-                        // as there are no variable declarations which needs to have proper
-                        // behaviour of non-local assignments but global scope does not have
-                        // any variable declarartions and functions cannot be assigned so
-                        // we can safely remove explicit global statement here
-                        // self.add_str_to_python_code(&format!("global {}\n", func_name));
-                        nonlocal_strs.push(format!(
-                            "{}global {}_func\n",
-                            get_whitespaces_from_indent_level(self.indent_level),
-                            func_name
-                        ))
-                    } else {
-                        nonlocal_strs.push(format!(
-                            "{}nonlocal {}_func\n",
-                            get_whitespaces_from_indent_level(self.indent_level),
-                            func_name
-                        ))
-                    }
                 }
                 for nonlocal_str in nonlocal_strs {
                     self.add_str_to_python_code(&nonlocal_str);

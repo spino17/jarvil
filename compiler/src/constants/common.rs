@@ -84,3 +84,8 @@ pub const YIELD_KEYWORD: &'static str           = "yield";
 pub const ASYNC_KEYWORD: &'static str           = "async";
 pub const AWAIT_KEYWORD: &'static str           = "await";
 pub const PEG_PARSER: &'static str              = "__peg_parser__";
+
+// suffix for name-mangling
+pub const VAR_SUFFIX: &'static str              = "var";
+pub const FUNC_SUFFIX: &'static str             = "func";
+pub const TY_SUFFIX: &'static str               = "ty";

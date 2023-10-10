@@ -6,6 +6,7 @@ use super::helper::check_concrete_types_bounded_by_interfaces;
 use super::interfaces::{InterfaceBounds, InterfaceData};
 use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use super::types::lambda_type::LambdaTypeData;
+use crate::constants::common::{FUNC_SUFFIX, TY_SUFFIX, VAR_SUFFIX};
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::AbstractType;
@@ -21,16 +22,33 @@ pub struct LookupData<T: AbstractSymbolData> {
     pub symbol_data: T,
     pub resolved_scope_index: usize,
     pub depth: usize,
-    pub is_global: bool,
 }
 
 impl<T: AbstractSymbolData> LookupData<T> {
-    fn new(symbol_data: T, resolved_scope_index: usize, depth: usize, is_global: bool) -> Self {
+    fn new(symbol_data: T, resolved_scope_index: usize, depth: usize) -> Self {
         LookupData {
             symbol_data,
             resolved_scope_index,
             depth,
-            is_global,
+        }
+    }
+}
+
+pub struct MangledIdentifierName<'a> {
+    jarvil_identifer_name: &'a str,
+    unique_id: Option<usize>,
+}
+
+impl<'a> MangledIdentifierName<'a> {
+    pub fn to_string(&self, suffix: &str) -> String {
+        match self.unique_id {
+            Some(id) => format!(
+                "{}_{}_{}",
+                self.jarvil_identifer_name,
+                id.to_string(),
+                suffix
+            ),
+            None => self.jarvil_identifer_name.to_string(),
         }
     }
 }
@@ -60,6 +78,7 @@ pub trait AbstractSymbolData {
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError>;
+    fn get_mangled_name(&self) -> String;
 }
 
 pub enum ConcreteTypesRegistrationKind {
@@ -164,6 +183,13 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     pub fn is_suffix_required(&self) -> bool {
         self.0.unique_id.is_some()
     }
+
+    pub fn get_mangled_name(&self) -> MangledIdentifierName {
+        MangledIdentifierName {
+            jarvil_identifer_name: self.identifier_name(),
+            unique_id: self.0.unique_id,
+        }
+    }
 }
 
 impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
@@ -207,6 +233,10 @@ impl AbstractSymbolData for VariableSymbolData {
         }
         Ok(())
     }
+
+    fn get_mangled_name(&self) -> String {
+        self.0.get_mangled_name().to_string(VAR_SUFFIX)
+    }
 }
 
 #[derive(Debug)]
@@ -232,6 +262,10 @@ impl AbstractSymbolData for FunctionSymbolData {
             type_ranges,
             true,
         )
+    }
+
+    fn get_mangled_name(&self) -> String {
+        self.0.get_mangled_name().to_string(FUNC_SUFFIX)
     }
 }
 
@@ -276,6 +310,10 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
             }
         }
     }
+
+    fn get_mangled_name(&self) -> String {
+        self.0.get_mangled_name().to_string(TY_SUFFIX)
+    }
 }
 
 #[derive(Debug)]
@@ -301,6 +339,10 @@ impl AbstractSymbolData for InterfaceSymbolData {
             type_ranges,
             false,
         )
+    }
+
+    fn get_mangled_name(&self) -> String {
+        unreachable!()
     }
 }
 
@@ -507,12 +549,9 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<VariableSymbolData> {
         match self.variables.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(
-                VariableSymbolData(data.0),
-                data.1,
-                data.2,
-                data.3,
-            )),
+            IntermediateLookupResult::Ok(data) => {
+                LookupResult::Ok(LookupData::new(VariableSymbolData(data.0), data.1, data.2))
+            }
             IntermediateLookupResult::NotInitialized(decl_range) => {
                 LookupResult::NotInitialized(decl_range)
             }
@@ -526,12 +565,9 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<FunctionSymbolData> {
         match self.functions.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(
-                FunctionSymbolData(data.0),
-                data.1,
-                data.2,
-                data.3,
-            )),
+            IntermediateLookupResult::Ok(data) => {
+                LookupResult::Ok(LookupData::new(FunctionSymbolData(data.0), data.1, data.2))
+            }
             IntermediateLookupResult::NotInitialized(decl_range) => {
                 LookupResult::NotInitialized(decl_range)
             }
@@ -549,7 +585,6 @@ impl Namespace {
                 UserDefinedTypeSymbolData(data.0),
                 data.1,
                 data.2,
-                data.3,
             )),
             IntermediateLookupResult::NotInitialized(decl_range) => {
                 LookupResult::NotInitialized(decl_range)
@@ -564,12 +599,9 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<InterfaceSymbolData> {
         match self.interfaces.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(
-                InterfaceSymbolData(data.0),
-                data.1,
-                data.2,
-                data.3,
-            )),
+            IntermediateLookupResult::Ok(data) => {
+                LookupResult::Ok(LookupData::new(InterfaceSymbolData(data.0), data.1, data.2))
+            }
             IntermediateLookupResult::NotInitialized(decl_range) => {
                 LookupResult::NotInitialized(decl_range)
             }

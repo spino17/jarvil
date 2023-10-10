@@ -99,7 +99,7 @@ pub struct ClassContext {
 
 pub struct BlockContext {
     variable_non_locals: FxHashSet<String>,
-    function_non_locals: FxHashMap<String, bool>,
+    function_non_locals: FxHashSet<String>,
     block_kind: BlockKind,
     scope_index: usize,
 }
@@ -128,7 +128,7 @@ impl Resolver {
                 class_context_stack: vec![],
                 block_context_stack: vec![BlockContext {
                     variable_non_locals: FxHashSet::default(),
-                    function_non_locals: FxHashMap::default(),
+                    function_non_locals: FxHashSet::default(),
                     block_kind: BlockKind::Function,
                     scope_index: 0,
                 }],
@@ -192,7 +192,7 @@ impl Resolver {
         self.indent_level += 1;
         self.context.block_context_stack.push(BlockContext {
             variable_non_locals: FxHashSet::default(),
-            function_non_locals: FxHashMap::default(),
+            function_non_locals: FxHashSet::default(),
             block_kind,
             scope_index: new_scope_index,
         });
@@ -248,11 +248,11 @@ impl Resolver {
             .is_some()
     }
 
-    pub fn set_to_function_non_locals(&mut self, name: String, is_global: bool) {
+    pub fn set_to_function_non_locals(&mut self, name: String) {
         let len = self.context.block_context_stack.len();
         self.context.block_context_stack[len - 1]
             .function_non_locals
-            .insert(name, is_global);
+            .insert(name);
     }
 
     pub fn is_function_in_non_locals(&self, name: &str) -> bool {
@@ -1840,11 +1840,13 @@ impl Visitor for Resolver {
                 match atom_start.core_ref() {
                     CoreAtomStartNode::Identifier(identifier) => {
                         if let CoreIdentifierInUseNode::Ok(ok_identifier) = identifier.core_ref() {
-                            if let ResolveResult::Ok(lookup_data, _, name) =
+                            if let ResolveResult::Ok(lookup_data, _, _) =
                                 self.try_resolving_variable(ok_identifier, true)
                             {
                                 if lookup_data.depth > 0 {
-                                    self.set_to_variable_non_locals(name);
+                                    self.set_to_variable_non_locals(
+                                        lookup_data.symbol_data.get_mangled_name(),
+                                    );
                                 }
                             }
                         }
@@ -1869,12 +1871,13 @@ impl Visitor for Resolver {
                         {
                             // order of namespace search: function => type => variable
                             match self.try_resolving_function(ok_identifier, false) {
-                                ResolveResult::Ok(lookup_data, _, name) => {
+                                ResolveResult::Ok(lookup_data, _, _) => {
                                     let symbol_data = lookup_data.symbol_data;
                                     let depth = lookup_data.depth;
-                                    let is_global = lookup_data.is_global;
                                     if depth > 0 && symbol_data.0.is_suffix_required() {
-                                        self.set_to_function_non_locals(name, is_global);
+                                        self.set_to_function_non_locals(
+                                            symbol_data.get_mangled_name(),
+                                        );
                                     }
                                 }
                                 ResolveResult::NotInitialized(_, _) => unreachable!(),
@@ -1915,10 +1918,14 @@ impl Visitor for Resolver {
                                         ResolveResult::Unresolved => {
                                             match self.try_resolving_variable(ok_identifier, false)
                                             {
-                                                ResolveResult::Ok(lookup_data, _, name) => {
+                                                ResolveResult::Ok(lookup_data, _, _) => {
                                                     let depth = lookup_data.depth;
                                                     if depth > 0 {
-                                                        self.set_to_variable_non_locals(name);
+                                                        self.set_to_variable_non_locals(
+                                                            lookup_data
+                                                                .symbol_data
+                                                                .get_mangled_name(),
+                                                        );
                                                     }
                                                 }
                                                 ResolveResult::NotInitialized(decl_range, name) => {
