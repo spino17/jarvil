@@ -14,7 +14,6 @@ use crate::{
     constants::common::{FUNC_SUFFIX, TY_SUFFIX, VAR_SUFFIX},
     context,
     lexer::token::{CoreToken, Token},
-    parser::resolver::BlockKind,
     scope::{
         core::MangledIdentifierName,
         handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
@@ -378,7 +377,6 @@ impl Visitor for PythonCodeGenerator {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {
-                // TODO - apply condition to process `nonlocal` only if the `BlockKind` is of function type
                 self.open_block();
                 let core_block = block.0.as_ref();
                 self.print_token_node(&core_block.newline);

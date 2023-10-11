@@ -1,7 +1,7 @@
 use super::{
     common::GlobalUniqueKeyGenerator,
     concrete::{ConcreteSymbolData, ConcreteTypesTuple},
-    core::{FunctionSymbolData, MangledIdentifierName, Namespace, SymbolData, VariableSymbolData},
+    core::{MangledIdentifierName, Namespace, SymbolData},
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
