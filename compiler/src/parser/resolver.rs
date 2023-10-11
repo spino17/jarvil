@@ -198,7 +198,7 @@ impl Resolver {
         let new_scope_index = self
             .semantic_state_db
             .namespace
-            .open_scope(self.scope_index);
+            .open_scope(self.scope_index, block_kind);
         self.scope_index = new_scope_index;
         self.indent_level += 1;
         self.context.block_context_stack.push(BlockContext {

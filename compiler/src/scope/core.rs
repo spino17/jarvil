@@ -6,6 +6,7 @@ use super::helper::check_concrete_types_bounded_by_interfaces;
 use super::interfaces::{InterfaceBounds, InterfaceData};
 use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use super::types::lambda_type::LambdaTypeData;
+use crate::parser::resolver::BlockKind;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::core::AbstractType;
@@ -61,7 +62,7 @@ pub enum LookupResult<T: AbstractSymbolData> {
 
 #[derive(Debug)]
 pub enum IntermediateLookupResult<T: AbstractConcreteTypesHandler> {
-    Ok((SymbolData<T>, usize, usize, bool)),
+    Ok((SymbolData<T>, usize, usize)),
     NotInitialized(TextRange),
     Unresolved,
 }
@@ -350,7 +351,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
 pub struct CoreScope<T: AbstractConcreteTypesHandler> {
     symbol_table: FxHashMap<String, SymbolData<T>>,
     pub parent_scope: Option<usize>, // points to the index in the global flattened scope vec
-    is_global: bool,
+    scope_kind: BlockKind,
 }
 
 impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
@@ -375,16 +376,16 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
         scope_index: usize,
         key: &str,
         global_scope_vec: &Vec<CoreScope<T>>,
-    ) -> Option<(SymbolData<T>, usize, usize, bool)> {
+    ) -> Option<(SymbolData<T>, usize, usize)> {
         // (symbol_data, resolved_scope_index, depth, is_global)
         match self.get(key) {
-            Some(value) => Some((value.clone(), scope_index, 0, self.is_global)),
+            Some(value) => Some((value.clone(), scope_index, 0)),
             None => {
                 if let Some(parent_scope_index) = self.parent_scope {
                     global_scope_vec[parent_scope_index]
                         .lookup(parent_scope_index, key, global_scope_vec)
-                        .map(|(symbol_data, resolved_scope_index, depth, range)| {
-                            (symbol_data, resolved_scope_index, depth + 1, range)
+                        .map(|(symbol_data, resolved_scope_index, depth)| {
+                            (symbol_data, resolved_scope_index, depth + 1)
                         })
                 } else {
                     None
@@ -405,17 +406,17 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
             flattened_vec: vec![CoreScope {
                 symbol_table: FxHashMap::default(),
                 parent_scope: None,
-                is_global: true,
+                scope_kind: BlockKind::Function,
             }],
         }
     }
 
-    fn add_new_scope(&mut self, parent_scope_index: usize) -> usize {
+    fn add_new_scope(&mut self, parent_scope_index: usize, scope_kind: BlockKind) -> usize {
         let new_scope_index = self.flattened_vec.len();
         self.flattened_vec.push(CoreScope {
             symbol_table: FxHashMap::default(),
             parent_scope: Some(parent_scope_index),
-            is_global: false,
+            scope_kind,
         });
         new_scope_index
     }
@@ -452,20 +453,15 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         self.flattened_vec[scope_index].get(key)
     }
 
-    fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, usize, bool)> {
+    fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, usize)> {
         self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
     }
 
     fn lookup_with_is_init(&self, scope_index: usize, key: &str) -> IntermediateLookupResult<T> {
         match self.lookup(scope_index, key) {
-            Some((symbol_data, resolved_scope_index, depth, is_global)) => {
+            Some((symbol_data, resolved_scope_index, depth)) => {
                 if symbol_data.get_core_ref().is_initialized() {
-                    IntermediateLookupResult::Ok((
-                        symbol_data,
-                        resolved_scope_index,
-                        depth,
-                        is_global,
-                    ))
+                    IntermediateLookupResult::Ok((symbol_data, resolved_scope_index, depth))
                 } else {
                     IntermediateLookupResult::NotInitialized(symbol_data.declaration_line_number())
                 }
@@ -504,11 +500,11 @@ impl Namespace {
         self.variables.flattened_vec[scope_index].parent_scope
     }
 
-    pub fn open_scope(&mut self, curr_scope_index: usize) -> usize {
-        self.variables.add_new_scope(curr_scope_index);
-        self.types.add_new_scope(curr_scope_index);
-        self.functions.add_new_scope(curr_scope_index);
-        self.interfaces.add_new_scope(curr_scope_index)
+    pub fn open_scope(&mut self, curr_scope_index: usize, scope_kind: BlockKind) -> usize {
+        self.variables.add_new_scope(curr_scope_index, scope_kind);
+        self.types.add_new_scope(curr_scope_index, scope_kind);
+        self.functions.add_new_scope(curr_scope_index, scope_kind);
+        self.interfaces.add_new_scope(curr_scope_index, scope_kind)
     }
 
     pub fn get_from_variables_namespace(
@@ -697,7 +693,7 @@ impl Namespace {
         let lookup_func = |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| {
             scope
                 .lookup(scope_index, key)
-                .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())
+                .map(|(symbol_data, _, _)| symbol_data.declaration_line_number())
         };
         match self.types.insert(
             scope_index,
@@ -771,7 +767,7 @@ impl Namespace {
         let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| {
             scope
                 .lookup(scope_index, key)
-                .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())
+                .map(|(symbol_data, _, _)| symbol_data.declaration_line_number())
         };
         match self.interfaces.insert(
             scope_index,
