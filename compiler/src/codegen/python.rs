@@ -14,7 +14,10 @@ use crate::{
     constants::common::{FUNC_SUFFIX, TY_SUFFIX, VAR_SUFFIX},
     context,
     lexer::token::{CoreToken, Token},
-    scope::handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
+    scope::{
+        core::MangledIdentifierName,
+        handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
+    },
 };
 use rustc_hash::FxHashSet;
 use std::convert::TryInto;
@@ -79,7 +82,13 @@ impl PythonCodeGenerator {
         self.generate_code.push_str(str);
     }
 
-    pub fn get_non_locals(&self, block: &BlockNode) -> (&FxHashSet<String>, &FxHashSet<String>) {
+    pub fn get_non_locals(
+        &self,
+        block: &BlockNode,
+    ) -> (
+        &FxHashSet<MangledIdentifierName>,
+        &FxHashSet<MangledIdentifierName>,
+    ) {
         self.semantic_state_db.get_non_locals_ref(block)
     }
 
@@ -375,10 +384,11 @@ impl Visitor for PythonCodeGenerator {
                 let mut nonlocal_strs = vec![];
                 let (variable_non_locals, _) = self.get_non_locals(block);
                 for variable_name in variable_non_locals.iter() {
+                    let mangled_variable_name = variable_name.to_string(VAR_SUFFIX);
                     nonlocal_strs.push(format!(
                         "{}nonlocal {}\n",
                         get_whitespaces_from_indent_level(self.indent_level),
-                        variable_name
+                        mangled_variable_name
                     ));
                 }
                 for nonlocal_str in nonlocal_strs {

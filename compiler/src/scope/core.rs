@@ -34,12 +34,13 @@ impl<T: AbstractSymbolData> LookupData<T> {
     }
 }
 
-pub struct MangledIdentifierName<'a> {
-    jarvil_identifer_name: &'a str,
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct MangledIdentifierName {
+    pub jarvil_identifer_name: String,
     unique_id: Option<usize>,
 }
 
-impl<'a> MangledIdentifierName<'a> {
+impl MangledIdentifierName {
     pub fn to_string(&self, suffix: &str) -> String {
         match self.unique_id {
             Some(id) => format!(
@@ -78,7 +79,7 @@ pub trait AbstractSymbolData {
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError>;
-    fn get_mangled_name(&self) -> String;
+    fn get_mangled_name(&self) -> MangledIdentifierName;
 }
 
 pub enum ConcreteTypesRegistrationKind {
@@ -186,7 +187,7 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
 
     pub fn get_mangled_name(&self) -> MangledIdentifierName {
         MangledIdentifierName {
-            jarvil_identifer_name: self.identifier_name(),
+            jarvil_identifer_name: self.identifier_name().to_string(),
             unique_id: self.0.unique_id,
         }
     }
@@ -234,8 +235,8 @@ impl AbstractSymbolData for VariableSymbolData {
         Ok(())
     }
 
-    fn get_mangled_name(&self) -> String {
-        self.0.get_mangled_name().to_string(VAR_SUFFIX)
+    fn get_mangled_name(&self) -> MangledIdentifierName {
+        self.0.get_mangled_name()
     }
 }
 
@@ -264,8 +265,8 @@ impl AbstractSymbolData for FunctionSymbolData {
         )
     }
 
-    fn get_mangled_name(&self) -> String {
-        self.0.get_mangled_name().to_string(FUNC_SUFFIX)
+    fn get_mangled_name(&self) -> MangledIdentifierName {
+        self.0.get_mangled_name()
     }
 }
 
@@ -311,8 +312,8 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
         }
     }
 
-    fn get_mangled_name(&self) -> String {
-        self.0.get_mangled_name().to_string(TY_SUFFIX)
+    fn get_mangled_name(&self) -> MangledIdentifierName {
+        self.0.get_mangled_name()
     }
 }
 
@@ -341,7 +342,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
         )
     }
 
-    fn get_mangled_name(&self) -> String {
+    fn get_mangled_name(&self) -> MangledIdentifierName {
         unreachable!()
     }
 }

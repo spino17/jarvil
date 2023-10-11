@@ -1,7 +1,7 @@
 use super::{
     common::GlobalUniqueKeyGenerator,
     concrete::{ConcreteSymbolData, ConcreteTypesTuple},
-    core::{FunctionSymbolData, Namespace, SymbolData, VariableSymbolData},
+    core::{FunctionSymbolData, MangledIdentifierName, Namespace, SymbolData, VariableSymbolData},
     function::CallableData,
     interfaces::InterfaceData,
     types::core::UserDefinedTypeData,
@@ -65,7 +65,13 @@ pub struct SemanticStateDatabase {
     pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
     pub type_expr_obj_table: FxHashMap<TypeExpressionNode, (Type, bool)>,
     pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
-    pub block_non_locals: FxHashMap<BlockNode, (FxHashSet<String>, FxHashSet<String>)>,
+    pub block_non_locals: FxHashMap<
+        BlockNode,
+        (
+            FxHashSet<MangledIdentifierName>,
+            FxHashSet<MangledIdentifierName>,
+        ),
+    >,
     pub bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
 }
 
@@ -232,8 +238,8 @@ impl SemanticStateDatabase {
     pub fn set_non_locals(
         &mut self,
         block: &BlockNode,
-        variable_non_locals: FxHashSet<String>,
-        function_non_locals: FxHashSet<String>,
+        variable_non_locals: FxHashSet<MangledIdentifierName>,
+        function_non_locals: FxHashSet<MangledIdentifierName>,
     ) {
         self.block_non_locals
             .insert(block.clone(), (variable_non_locals, function_non_locals));
@@ -242,7 +248,10 @@ impl SemanticStateDatabase {
     pub fn get_non_locals_ref(
         &self,
         block: &BlockNode,
-    ) -> (&FxHashSet<String>, &FxHashSet<String>) {
+    ) -> (
+        &FxHashSet<MangledIdentifierName>,
+        &FxHashSet<MangledIdentifierName>,
+    ) {
         match self.block_non_locals.get(block) {
             Some((variable_non_locals, function_non_locals)) => {
                 (variable_non_locals, function_non_locals)

@@ -21,7 +21,7 @@ use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta
 use crate::scope::concrete::ConcreteTypesTuple;
 use crate::scope::core::{
     AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData, LookupData,
-    LookupResult, UserDefinedTypeSymbolData, VariableSymbolData,
+    LookupResult, MangledIdentifierName, UserDefinedTypeSymbolData, VariableSymbolData,
 };
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{CallableKind, CallablePrototypeData};
@@ -98,8 +98,8 @@ pub struct ClassContext {
 }
 
 pub struct BlockContext {
-    variable_non_locals: FxHashSet<String>,
-    function_non_locals: FxHashSet<String>,
+    variable_non_locals: FxHashSet<MangledIdentifierName>,
+    function_non_locals: FxHashSet<MangledIdentifierName>,
     block_kind: BlockKind,
     scope_index: usize,
 }
@@ -232,7 +232,7 @@ impl Resolver {
         self.context.class_context_stack[len - 1].is_containing_self
     }
 
-    pub fn set_to_variable_non_locals(&mut self, name: String) {
+    pub fn set_to_variable_non_locals(&mut self, name: MangledIdentifierName) {
         // variables are never resolved to global declarations as they are not allowed in Jarvil
         let len = self.context.block_context_stack.len();
         self.context.block_context_stack[len - 1]
@@ -242,13 +242,15 @@ impl Resolver {
 
     pub fn is_variable_in_non_locals(&self, name: &str) -> bool {
         let len = self.context.block_context_stack.len();
-        self.context.block_context_stack[len - 1]
-            .variable_non_locals
-            .get(name)
-            .is_some()
+        for key in &self.context.block_context_stack[len - 1].variable_non_locals {
+            if key.jarvil_identifer_name == name {
+                return true;
+            }
+        }
+        false
     }
 
-    pub fn set_to_function_non_locals(&mut self, name: String) {
+    pub fn set_to_function_non_locals(&mut self, name: MangledIdentifierName) {
         let len = self.context.block_context_stack.len();
         self.context.block_context_stack[len - 1]
             .function_non_locals
@@ -257,10 +259,12 @@ impl Resolver {
 
     pub fn is_function_in_non_locals(&self, name: &str) -> bool {
         let len = self.context.block_context_stack.len();
-        self.context.block_context_stack[len - 1]
-            .function_non_locals
-            .get(name)
-            .is_some()
+        for key in &self.context.block_context_stack[len - 1].function_non_locals {
+            if key.jarvil_identifer_name == name {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn get_enclosing_generics_declarative_scope_index(&self) -> (usize, Option<usize>) {
