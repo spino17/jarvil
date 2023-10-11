@@ -60,7 +60,7 @@ pub enum ResolveResult<T: AbstractSymbolData> {
     Unresolved,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BlockKind {
     Function,
     Lambda,
@@ -89,6 +89,17 @@ impl BlockKind {
         match self {
             BlockKind::Method => true,
             _ => false,
+        }
+    }
+
+    pub fn has_callable_body(&self) -> bool {
+        match self {
+            BlockKind::Function | BlockKind::Method | BlockKind::Lambda => true,
+            BlockKind::LambdaType
+            | BlockKind::Struct
+            | BlockKind::Interface
+            | BlockKind::Conditional
+            | BlockKind::Loop => false,
         }
     }
 }

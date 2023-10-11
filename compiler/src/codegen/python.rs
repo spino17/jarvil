@@ -14,6 +14,7 @@ use crate::{
     constants::common::{FUNC_SUFFIX, TY_SUFFIX, VAR_SUFFIX},
     context,
     lexer::token::{CoreToken, Token},
+    parser::resolver::BlockKind,
     scope::{
         core::MangledIdentifierName,
         handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
@@ -381,19 +382,23 @@ impl Visitor for PythonCodeGenerator {
                 self.open_block();
                 let core_block = block.0.as_ref();
                 self.print_token_node(&core_block.newline);
-                let mut nonlocal_strs = vec![];
-                let (variable_non_locals, _) = self.get_non_locals(block);
-                for variable_name in variable_non_locals.iter() {
-                    let mangled_variable_name = variable_name.to_string(VAR_SUFFIX);
-                    nonlocal_strs.push(format!(
-                        "{}nonlocal {}\n",
-                        get_whitespaces_from_indent_level(self.indent_level),
-                        mangled_variable_name
-                    ));
+
+                if block.core_ref().kind.has_callable_body() {
+                    let mut nonlocal_strs = vec![];
+                    let (variable_non_locals, _) = self.get_non_locals(block);
+                    for variable_name in variable_non_locals.iter() {
+                        let mangled_variable_name = variable_name.to_string(VAR_SUFFIX);
+                        nonlocal_strs.push(format!(
+                            "{}nonlocal {}\n",
+                            get_whitespaces_from_indent_level(self.indent_level),
+                            mangled_variable_name
+                        ));
+                    }
+                    for nonlocal_str in nonlocal_strs {
+                        self.add_str_to_python_code(&nonlocal_str);
+                    }
                 }
-                for nonlocal_str in nonlocal_strs {
-                    self.add_str_to_python_code(&nonlocal_str);
-                }
+
                 for stmt in core_block.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
