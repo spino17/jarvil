@@ -371,13 +371,13 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
         self.symbol_table.get(name)
     }
 
+    /*
     pub fn lookup(
         &self,
         scope_index: usize,
         key: &str,
         global_scope_vec: &Vec<CoreScope<T>>,
     ) -> Option<(SymbolData<T>, usize, usize)> {
-        // (symbol_data, resolved_scope_index, depth, is_global)
         match self.get(key) {
             Some(value) => Some((value.clone(), scope_index, 0)),
             None => {
@@ -390,6 +390,40 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
                 } else {
                     None
                 }
+            }
+        }
+    }*/
+
+    pub fn lookup(
+        &self,
+        scope_index: usize,
+        key: &str,
+        global_scope_vec: &Vec<CoreScope<T>>,
+    ) -> Option<(SymbolData<T>, usize, usize)> {
+        let mut enclosing_func_scope_depth: Option<usize> = None;
+        let mut previous_scope_kind = self.scope_kind;
+        match self.get(key) {
+            Some(value) => Some((value.clone(), scope_index, 0)),
+            None => {
+                let mut parent_scope_index = self.parent_scope;
+                let mut depth = 1;
+                while let Some(scope_index) = parent_scope_index {
+                    if enclosing_func_scope_depth.is_none()
+                        && previous_scope_kind.has_callable_body()
+                    {
+                        enclosing_func_scope_depth = Some(depth);
+                    }
+                    let scope = &global_scope_vec[scope_index];
+                    match scope.get(key) {
+                        Some(value) => return Some((value.clone(), scope_index, depth)),
+                        None => {
+                            parent_scope_index = scope.parent_scope;
+                            depth += 1;
+                            previous_scope_kind = scope.scope_kind;
+                        }
+                    }
+                }
+                None
             }
         }
     }
