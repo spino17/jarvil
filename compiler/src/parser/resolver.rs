@@ -48,6 +48,7 @@ use crate::{
     },
     types::core::Type,
 };
+use owo_colors::colors::xterm::MangoTango;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::vec;
 use text_size::TextRange;
@@ -111,6 +112,7 @@ pub struct ClassContext {
 pub struct BlockContext {
     variable_non_locals: FxHashSet<MangledIdentifierName>,
     function_non_locals: FxHashSet<MangledIdentifierName>,
+    inner_non_locals: FxHashSet<MangledIdentifierName>,
     block_kind: BlockKind,
     scope_index: usize,
 }
@@ -140,6 +142,7 @@ impl Resolver {
                 block_context_stack: vec![BlockContext {
                     variable_non_locals: FxHashSet::default(),
                     function_non_locals: FxHashSet::default(),
+                    inner_non_locals: FxHashSet::default(),
                     block_kind: BlockKind::Function,
                     scope_index: 0,
                 }],
@@ -205,6 +208,7 @@ impl Resolver {
         self.context.block_context_stack.push(BlockContext {
             variable_non_locals: FxHashSet::default(),
             function_non_locals: FxHashSet::default(),
+            inner_non_locals: FxHashSet::default(),
             block_kind,
             scope_index: new_scope_index,
         });
@@ -221,11 +225,14 @@ impl Resolver {
         };
         self.scope_index = parent_scope_index;
         self.indent_level -= 1;
-        let non_locals = match self.context.block_context_stack.pop() {
+        let mut non_locals = match self.context.block_context_stack.pop() {
             Some(block_context) => block_context,
             None => unreachable!(),
         };
         if let Some(block) = block {
+            non_locals
+                .variable_non_locals
+                .extend(non_locals.inner_non_locals);
             self.semantic_state_db
                 .set_non_locals(block, non_locals.variable_non_locals);
         }
@@ -246,9 +253,14 @@ impl Resolver {
         name: MangledIdentifierName,
         enclosing_func_scope_depth: Option<usize>,
     ) {
-        // variables are never resolved to global declarations as they are not allowed in Jarvil
         let len = self.context.block_context_stack.len();
-        // TODO - add name inside enclosing function scope depth
+        if let Some(enclosing_func_scope_depth) = enclosing_func_scope_depth {
+            if enclosing_func_scope_depth > 1 {
+                self.context.block_context_stack[len - 1 - (enclosing_func_scope_depth - 1)]
+                    .inner_non_locals
+                    .insert(name.clone());
+            }
+        }
         self.context.block_context_stack[len - 1]
             .variable_non_locals
             .insert(name);
