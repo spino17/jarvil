@@ -22,19 +22,26 @@ pub struct LookupData<T: AbstractSymbolData> {
     pub symbol_data: T,
     pub resolved_scope_index: usize,
     pub depth: usize,
+    pub enclosing_func_scope_depth: Option<usize>,
 }
 
 impl<T: AbstractSymbolData> LookupData<T> {
-    fn new(symbol_data: T, resolved_scope_index: usize, depth: usize) -> Self {
+    fn new(
+        symbol_data: T,
+        resolved_scope_index: usize,
+        depth: usize,
+        enclosing_func_scope_depth: Option<usize>,
+    ) -> Self {
         LookupData {
             symbol_data,
             resolved_scope_index,
             depth,
+            enclosing_func_scope_depth,
         }
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct MangledIdentifierName {
     pub jarvil_identifer_name: String,
     unique_id: Option<usize>,
@@ -62,7 +69,7 @@ pub enum LookupResult<T: AbstractSymbolData> {
 
 #[derive(Debug)]
 pub enum IntermediateLookupResult<T: AbstractConcreteTypesHandler> {
-    Ok((SymbolData<T>, usize, usize)),
+    Ok((SymbolData<T>, usize, usize, Option<usize>)),
     NotInitialized(TextRange),
     Unresolved,
 }
@@ -399,11 +406,11 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
         scope_index: usize,
         key: &str,
         global_scope_vec: &Vec<CoreScope<T>>,
-    ) -> Option<(SymbolData<T>, usize, usize)> {
+    ) -> Option<(SymbolData<T>, usize, usize, Option<usize>)> {
         let mut enclosing_func_scope_depth: Option<usize> = None;
         let mut previous_scope_kind = self.scope_kind;
         match self.get(key) {
-            Some(value) => Some((value.clone(), scope_index, 0)),
+            Some(value) => Some((value.clone(), scope_index, 0, None)),
             None => {
                 let mut parent_scope_index = self.parent_scope;
                 let mut depth = 1;
@@ -415,7 +422,14 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
                     }
                     let scope = &global_scope_vec[scope_index];
                     match scope.get(key) {
-                        Some(value) => return Some((value.clone(), scope_index, depth)),
+                        Some(value) => {
+                            return Some((
+                                value.clone(),
+                                scope_index,
+                                depth,
+                                enclosing_func_scope_depth,
+                            ))
+                        }
                         None => {
                             parent_scope_index = scope.parent_scope;
                             depth += 1;
@@ -487,15 +501,24 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         self.flattened_vec[scope_index].get(key)
     }
 
-    fn lookup(&self, scope_index: usize, key: &str) -> Option<(SymbolData<T>, usize, usize)> {
+    fn lookup(
+        &self,
+        scope_index: usize,
+        key: &str,
+    ) -> Option<(SymbolData<T>, usize, usize, Option<usize>)> {
         self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
     }
 
     fn lookup_with_is_init(&self, scope_index: usize, key: &str) -> IntermediateLookupResult<T> {
         match self.lookup(scope_index, key) {
-            Some((symbol_data, resolved_scope_index, depth)) => {
+            Some((symbol_data, resolved_scope_index, depth, enclosing_func_scope_depth)) => {
                 if symbol_data.get_core_ref().is_initialized() {
-                    IntermediateLookupResult::Ok((symbol_data, resolved_scope_index, depth))
+                    IntermediateLookupResult::Ok((
+                        symbol_data,
+                        resolved_scope_index,
+                        depth,
+                        enclosing_func_scope_depth,
+                    ))
                 } else {
                     IntermediateLookupResult::NotInitialized(symbol_data.declaration_line_number())
                 }
@@ -579,9 +602,17 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<VariableSymbolData> {
         match self.variables.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => {
-                LookupResult::Ok(LookupData::new(VariableSymbolData(data.0), data.1, data.2))
-            }
+            IntermediateLookupResult::Ok((
+                symbol_data,
+                resolved_scope_index,
+                depth,
+                enclosing_func_scope_depth,
+            )) => LookupResult::Ok(LookupData::new(
+                VariableSymbolData(symbol_data),
+                resolved_scope_index,
+                depth,
+                enclosing_func_scope_depth,
+            )),
             IntermediateLookupResult::NotInitialized(decl_range) => {
                 LookupResult::NotInitialized(decl_range)
             }
@@ -595,9 +626,17 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<FunctionSymbolData> {
         match self.functions.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => {
-                LookupResult::Ok(LookupData::new(FunctionSymbolData(data.0), data.1, data.2))
-            }
+            IntermediateLookupResult::Ok((
+                symbol_data,
+                resolved_scope_index,
+                depth,
+                enclosing_func_scope_depth,
+            )) => LookupResult::Ok(LookupData::new(
+                FunctionSymbolData(symbol_data),
+                resolved_scope_index,
+                depth,
+                enclosing_func_scope_depth,
+            )),
             IntermediateLookupResult::NotInitialized(decl_range) => {
                 LookupResult::NotInitialized(decl_range)
             }
@@ -611,10 +650,16 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<UserDefinedTypeSymbolData> {
         match self.types.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => LookupResult::Ok(LookupData::new(
-                UserDefinedTypeSymbolData(data.0),
-                data.1,
-                data.2,
+            IntermediateLookupResult::Ok((
+                symbol_data,
+                resolved_scope_index,
+                depth,
+                enclosing_func_scope_depth,
+            )) => LookupResult::Ok(LookupData::new(
+                UserDefinedTypeSymbolData(symbol_data),
+                resolved_scope_index,
+                depth,
+                enclosing_func_scope_depth,
             )),
             IntermediateLookupResult::NotInitialized(decl_range) => {
                 LookupResult::NotInitialized(decl_range)
@@ -629,9 +674,17 @@ impl Namespace {
         key: &str,
     ) -> LookupResult<InterfaceSymbolData> {
         match self.interfaces.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok(data) => {
-                LookupResult::Ok(LookupData::new(InterfaceSymbolData(data.0), data.1, data.2))
-            }
+            IntermediateLookupResult::Ok((
+                symbol_data,
+                resolved_scope_index,
+                depth,
+                enclosing_func_scope_depth,
+            )) => LookupResult::Ok(LookupData::new(
+                InterfaceSymbolData(symbol_data),
+                resolved_scope_index,
+                depth,
+                enclosing_func_scope_depth,
+            )),
             IntermediateLookupResult::NotInitialized(decl_range) => {
                 LookupResult::NotInitialized(decl_range)
             }
@@ -727,7 +780,7 @@ impl Namespace {
         let lookup_func = |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| {
             scope
                 .lookup(scope_index, key)
-                .map(|(symbol_data, _, _)| symbol_data.declaration_line_number())
+                .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())
         };
         match self.types.insert(
             scope_index,
@@ -801,7 +854,7 @@ impl Namespace {
         let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| {
             scope
                 .lookup(scope_index, key)
-                .map(|(symbol_data, _, _)| symbol_data.declaration_line_number())
+                .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())
         };
         match self.interfaces.insert(
             scope_index,

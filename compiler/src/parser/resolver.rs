@@ -155,6 +155,7 @@ impl Resolver {
     ) -> (SemanticStateDatabase, Vec<Diagnostics>, JarvilCode) {
         let code_block = ast.0.as_ref();
         // setting builtin functions to global scope
+        // TODO - shift them to standard library
         self.semantic_state_db.namespace.functions.force_insert(
             self.scope_index,
             "print".to_string(),
@@ -225,11 +226,8 @@ impl Resolver {
             None => unreachable!(),
         };
         if let Some(block) = block {
-            self.semantic_state_db.set_non_locals(
-                block,
-                non_locals.variable_non_locals,
-                non_locals.function_non_locals,
-            );
+            self.semantic_state_db
+                .set_non_locals(block, non_locals.variable_non_locals);
         }
     }
 
@@ -243,9 +241,14 @@ impl Resolver {
         self.context.class_context_stack[len - 1].is_containing_self
     }
 
-    pub fn set_to_variable_non_locals(&mut self, name: MangledIdentifierName) {
+    pub fn set_to_variable_non_locals(
+        &mut self,
+        name: MangledIdentifierName,
+        enclosing_func_scope_depth: Option<usize>,
+    ) {
         // variables are never resolved to global declarations as they are not allowed in Jarvil
         let len = self.context.block_context_stack.len();
+        // TODO - add name inside enclosing function scope depth
         self.context.block_context_stack[len - 1]
             .variable_non_locals
             .insert(name);
@@ -1861,6 +1864,7 @@ impl Visitor for Resolver {
                                 if lookup_data.depth > 0 {
                                     self.set_to_variable_non_locals(
                                         lookup_data.symbol_data.get_mangled_name(),
+                                        lookup_data.enclosing_func_scope_depth,
                                     );
                                 }
                             }
@@ -1940,6 +1944,7 @@ impl Visitor for Resolver {
                                                             lookup_data
                                                                 .symbol_data
                                                                 .get_mangled_name(),
+                                                            lookup_data.enclosing_func_scope_depth,
                                                         );
                                                     }
                                                 }

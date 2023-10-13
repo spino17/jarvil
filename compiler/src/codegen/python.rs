@@ -82,13 +82,7 @@ impl PythonCodeGenerator {
         self.generate_code.push_str(str);
     }
 
-    pub fn get_non_locals(
-        &self,
-        block: &BlockNode,
-    ) -> (
-        &FxHashSet<MangledIdentifierName>,
-        &FxHashSet<MangledIdentifierName>,
-    ) {
+    pub fn get_non_locals(&self, block: &BlockNode) -> &FxHashSet<MangledIdentifierName> {
         self.semantic_state_db.get_non_locals_ref(block)
     }
 
@@ -383,7 +377,7 @@ impl Visitor for PythonCodeGenerator {
 
                 if block.core_ref().kind.has_callable_body() {
                     let mut nonlocal_strs = vec![];
-                    let (variable_non_locals, _) = self.get_non_locals(block);
+                    let variable_non_locals = self.get_non_locals(block);
                     for variable_name in variable_non_locals.iter() {
                         let mangled_variable_name = variable_name.to_string(VAR_SUFFIX);
                         nonlocal_strs.push(format!(
