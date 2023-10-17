@@ -1,5 +1,6 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use crate::{
+    core::string_interner::{Interner, StrId},
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
@@ -21,7 +22,7 @@ impl Generic {
         }
     }
 
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> StrId {
         self.semantic_data.identifier_name()
     }
 }
@@ -139,14 +140,16 @@ impl AbstractType for Generic {
             Ok(())
         }
     }
-}
 
-impl ToString for Generic {
-    fn to_string(&self) -> String {
+    fn to_string(&self, interner: &Interner) -> String {
         let symbol_data = self.semantic_data.get_core_ref();
         let generic_data = symbol_data.get_generic_data_ref();
         let interface_bounds = &generic_data.interface_bounds;
-        format!("{}{}", self.name(), interface_bounds.to_string())
+        format!(
+            "{}{}",
+            interner.lookup(self.name()),
+            interface_bounds.to_string(interner)
+        )
     }
 }
 

@@ -98,17 +98,21 @@ impl PythonCodeGenerator {
                 SymbolDataEntry::Variable(variable_symbol_data) => {
                     return variable_symbol_data
                         .get_mangled_name()
-                        .to_string(VAR_SUFFIX);
+                        .to_string(VAR_SUFFIX, &self.semantic_state_db.interner);
                 }
                 SymbolDataEntry::Function(func_symbol_data) => {
-                    return func_symbol_data.get_mangled_name().to_string(FUNC_SUFFIX);
+                    return func_symbol_data
+                        .get_mangled_name()
+                        .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner);
                 }
                 SymbolDataEntry::Type(type_symbol_data) => {
-                    return type_symbol_data.get_mangled_name().to_string(TY_SUFFIX);
+                    return type_symbol_data
+                        .get_mangled_name()
+                        .to_string(TY_SUFFIX, &self.semantic_state_db.interner);
                 }
                 SymbolDataEntry::Interface(_) => unreachable!(),
             },
-            None => identifier.token_value(&self.code),
+            None => identifier.token_value_str(&self.code),
         }
     }
 
@@ -122,23 +126,23 @@ impl PythonCodeGenerator {
                     return variable_symbol_data
                         .symbol_data
                         .get_mangled_name()
-                        .to_string(VAR_SUFFIX);
+                        .to_string(VAR_SUFFIX, &self.semantic_state_db.interner);
                 }
                 ConcreteSymbolDataEntry::Function(func_symbol_data) => {
                     return func_symbol_data
                         .symbol_data
                         .get_mangled_name()
-                        .to_string(FUNC_SUFFIX);
+                        .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner);
                 }
                 ConcreteSymbolDataEntry::Type(type_symbol_data) => {
                     return type_symbol_data
                         .symbol_data
                         .get_mangled_name()
-                        .to_string(TY_SUFFIX)
+                        .to_string(TY_SUFFIX, &self.semantic_state_db.interner)
                 }
                 ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
             },
-            None => identifier.token_value(&self.code),
+            None => identifier.token_value_str(&self.code),
         }
     }
 
@@ -148,7 +152,7 @@ impl PythonCodeGenerator {
             None => None,
         };
         self.print_trivia(trivia);
-        let token_value = token.token_value(&self.code);
+        let token_value = token.token_value_str(&self.code);
         match token.core_token {
             CoreToken::SINGLE_LINE_COMMENT => {
                 if token_value.starts_with('/') {
@@ -379,7 +383,8 @@ impl Visitor for PythonCodeGenerator {
                     let mut nonlocal_strs = vec![];
                     let variable_non_locals = self.get_non_locals(block);
                     for variable_name in variable_non_locals.iter() {
-                        let mangled_variable_name = variable_name.to_string(VAR_SUFFIX);
+                        let mangled_variable_name =
+                            variable_name.to_string(VAR_SUFFIX, &self.semantic_state_db.interner);
                         nonlocal_strs.push(format!(
                             "{}nonlocal {}\n",
                             get_whitespaces_from_indent_level(self.indent_level),

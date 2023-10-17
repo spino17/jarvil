@@ -1,5 +1,6 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use super::helper::try_infer_types_from_tuple;
+use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::ConcreteTypesTuple;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
@@ -25,7 +26,7 @@ impl Struct {
         }
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> StrId {
         self.symbol_data.identifier_name()
     }
 
@@ -147,15 +148,13 @@ impl AbstractType for Struct {
             _ => Err(()),
         }
     }
-}
 
-impl ToString for Struct {
-    fn to_string(&self) -> String {
-        let mut s = self.name().to_string();
+    fn to_string(&self, interner: &Interner) -> String {
+        let mut s = interner.lookup(self.name()).to_string();
         match &self.concrete_types {
             Some(concrete_types) => {
                 s.push('<');
-                s.push_str(&concrete_types.to_string());
+                s.push_str(&concrete_types.to_string(interner));
                 s.push('>');
                 s
             }

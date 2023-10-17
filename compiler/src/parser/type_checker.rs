@@ -7,6 +7,7 @@ use crate::ast::ast::{
     InterfaceMethodTerminalNode, MethodAccessNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
     PropertyAccessNode, StructDeclarationNode, TupleExpressionNode,
 };
+use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
     GenericTypeArgsNotExpectedError, IncorrectExpressionTypeError,
     InferredTypesNotBoundedByInterfacesError, InterfaceMethodsInStructCheckError,
@@ -123,7 +124,7 @@ pub enum PrototypeEquivalenceCheckError {
 pub enum AtomStartTypeCheckError {
     PrototypeEquivalenceCheckFailed(PrototypeEquivalenceCheckError),
     IdentifierNotCallable(String),
-    ConstructorNotFoundForTypeError(String),
+    ConstructorNotFoundForTypeError(StrId),
 }
 
 impl From<PrototypeEquivalenceCheckError> for AtomStartTypeCheckError {
@@ -176,7 +177,7 @@ pub struct TypeChecker {
     code: JarvilCode,
     errors: UnsafeCell<Vec<Diagnostics>>,
     context: Context,
-    semantic_state_db: SemanticStateDatabase,
+    pub semantic_state_db: SemanticStateDatabase,
 }
 
 impl TypeChecker {
@@ -348,7 +349,7 @@ impl TypeChecker {
                 CoreAtomicExpressionNode::Integer(integer_valued_token) => {
                     match integer_valued_token.core_ref() {
                         CoreTokenNode::Ok(ok_token) => {
-                            let value = ok_token.token_value(&self.code);
+                            let value = ok_token.token_value_str(&self.code);
                             match value.parse::<i32>() {
                                 Ok(value) => Some(value),
                                 Err(_) => None,
@@ -426,7 +427,7 @@ impl TypeChecker {
     }
 
     pub fn infer_concrete_types_from_arguments(
-        &self,
+        &mut self,
         generic_type_decls: &GenericTypeParams,
         expected_prototype: &CallablePrototypeData,
         global_concrete_types: Option<&ConcreteTypesTuple>,
@@ -466,8 +467,8 @@ impl TypeChecker {
                         }
                     } else if !param_ty.is_eq(expected_ty) {
                         mismatch_types_vec.push((
-                            expected_ty.to_string(),
-                            param_ty.to_string(),
+                            expected_ty.to_string(&self.semantic_state_db.interner),
+                            param_ty.to_string(&self.semantic_state_db.interner),
                             index + 1,
                             received_param.range(),
                         ));
@@ -497,7 +498,10 @@ impl TypeChecker {
                 for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
                     let interface_bounds = &generic_type_decls.0[index].1;
                     if !inferred_ty.is_type_bounded_by_interfaces(interface_bounds) {
-                        error_strs.push((inferred_ty.to_string(), interface_bounds.to_string()));
+                        error_strs.push((
+                            inferred_ty.to_string(&self.semantic_state_db.interner),
+                            interface_bounds.to_string(&self.semantic_state_db.interner),
+                        ));
                     }
                 }
                 if !error_strs.is_empty() {
@@ -515,7 +519,7 @@ impl TypeChecker {
     }
 
     pub fn check_params_type_and_count(
-        &self,
+        &mut self,
         expected_param_data: &Vec<Type>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<(), PrototypeEquivalenceCheckError> {
@@ -535,8 +539,8 @@ impl TypeChecker {
                     let expected_param_type = &expected_param_data[index];
                     if !param_type_obj.is_eq(expected_param_type) {
                         mismatch_types_vec.push((
-                            expected_param_type.to_string(),
-                            param_type_obj.to_string(),
+                            expected_param_type.to_string(&self.semantic_state_db.interner),
+                            param_type_obj.to_string(&self.semantic_state_db.interner),
                             index + 1,
                             received_param.range(),
                         ));
@@ -569,7 +573,7 @@ impl TypeChecker {
     }
 
     fn check_func_call_expr(
-        &self,
+        &mut self,
         concrete_symbol: &ConcreteSymbolData<CallableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
@@ -630,7 +634,7 @@ impl TypeChecker {
     }
 
     fn check_variable_call_expr(
-        &self,
+        &mut self,
         concrete_symbol_data: &ConcreteSymbolData<VariableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
@@ -642,14 +646,14 @@ impl TypeChecker {
                 Ok(return_ty)
             }
             _ => Err(AtomStartTypeCheckError::IdentifierNotCallable(
-                lambda_type.to_string(),
+                lambda_type.to_string(&self.semantic_state_db.interner),
             )),
         }
     }
 
     fn check_user_defined_ty_call_expr(
-        &self,
-        name: String,
+        &mut self,
+        name: StrId,
         concrete_symbol_data: &ConcreteSymbolData<UserDefinedTypeData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
@@ -728,7 +732,7 @@ impl TypeChecker {
         }
     }
 
-    fn check_atom_start_call_expr(&self, call_expr: &CallExpressionNode) -> Type {
+    fn check_atom_start_call_expr(&mut self, call_expr: &CallExpressionNode) -> Type {
         let core_call_expr = call_expr.core_ref();
         let func_name = &core_call_expr.function_name;
         let params = &core_call_expr.params;
@@ -748,17 +752,18 @@ impl TypeChecker {
             {
                 let result = match symbol_data {
                     ConcreteSymbolDataEntry::Function(func_symbol_data) => {
-                        self.check_func_call_expr(func_symbol_data, params)
+                        self.check_func_call_expr(&func_symbol_data, params)
                     }
                     ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
-                        self.check_variable_call_expr(variable_symbol_data, params)
+                        self.check_variable_call_expr(&variable_symbol_data, params)
                     }
                     ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
                     ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
-                        let name = ok_identifier.token_value(&self.code);
+                        let name = ok_identifier
+                            .token_value(&self.code, &mut self.semantic_state_db.interner);
                         self.check_user_defined_ty_call_expr(
                             name,
-                            user_defined_type_symbol_data,
+                            &user_defined_type_symbol_data,
                             params,
                         )
                     }
@@ -771,7 +776,7 @@ impl TypeChecker {
                                 struct_name,
                             ) => {
                                 let err = ConstructorNotFoundForTypeError::new(
-                                    struct_name,
+                                    self.semantic_state_db.interner.lookup(struct_name),
                                     func_name.range(),
                                 );
                                 self.log_error(Diagnostics::ConstructorNotFoundForType(err));
@@ -798,13 +803,17 @@ impl TypeChecker {
         Type::new_with_unknown()
     }
 
-    fn check_atom_start_class_method_call(&self, class_method_call: &ClassMethodCallNode) -> Type {
+    fn check_atom_start_class_method_call(
+        &mut self,
+        class_method_call: &ClassMethodCallNode,
+    ) -> Type {
         let core_class_method = class_method_call.core_ref();
         let class = &core_class_method.class_name;
         let class_method = &core_class_method.class_method_name;
         let params = &core_class_method.params;
         if let CoreIdentifierInUseNode::Ok(ok_identifier) = class.core_ref() {
-            let class_name = ok_identifier.token_value(&self.code);
+            let class_name =
+                ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
             match self
                 .semantic_state_db
                 .get_type_symbol_data_for_identifier_in_use(ok_identifier)
@@ -812,7 +821,8 @@ impl TypeChecker {
                 Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
                     UserDefinedTypeData::Struct(struct_data) => match class_method.core_ref() {
                         CoreIdentifierInUseNode::Ok(class_method) => {
-                            let class_method_name = class_method.token_value(&self.code);
+                            let class_method_name = class_method
+                                .token_value(&self.code, &mut self.semantic_state_db.interner);
                             let concrete_types = &type_symbol_data.concrete_types;
                             match struct_data
                                 .try_class_method(&class_method_name, concrete_types.as_ref())
@@ -850,7 +860,7 @@ impl TypeChecker {
                                 }
                                 None => {
                                     let err = ClassmethodDoesNotExistError::new(
-                                        class_name,
+                                        self.semantic_state_db.interner.lookup(class_name),
                                         class_method.range(),
                                     );
                                     self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
@@ -875,7 +885,7 @@ impl TypeChecker {
         Type::new_with_unknown()
     }
 
-    pub fn check_atom_start(&self, atom_start: &AtomStartNode) -> Type {
+    pub fn check_atom_start(&mut self, atom_start: &AtomStartNode) -> Type {
         let core_atom_start = atom_start.core_ref();
         match core_atom_start {
             CoreAtomStartNode::Identifier(token) => match token.core_ref() {
@@ -916,7 +926,7 @@ impl TypeChecker {
         }
     }
 
-    fn check_call(&self, call: &CallNode) -> (Type, Option<Type>) {
+    fn check_call(&mut self, call: &CallNode) -> (Type, Option<Type>) {
         let core_call = call.core_ref();
         let atom = &core_call.atom;
         let params = &core_call.params;
@@ -940,7 +950,10 @@ impl TypeChecker {
         }
     }
 
-    fn check_property_access(&self, property_access: &PropertyAccessNode) -> (Type, Option<Type>) {
+    fn check_property_access(
+        &mut self,
+        property_access: &PropertyAccessNode,
+    ) -> (Type, Option<Type>) {
         let core_property_access = property_access.core_ref();
         let atom = &core_property_access.atom;
         let (atom_type_obj, _) = self.check_atom(atom);
@@ -955,7 +968,8 @@ impl TypeChecker {
                     self.log_error(Diagnostics::GenericTypeArgsNotExpected(err));
                 }
                 None => {
-                    let property_name_str = ok_identifier.token_value(&self.code);
+                    let property_name_str =
+                        ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
                     let result = match atom_type_obj.0.as_ref() {
                         CoreType::Struct(struct_ty) => {
                             let concrete_types = &struct_ty.concrete_types;
@@ -986,7 +1000,7 @@ impl TypeChecker {
                         Err(_) => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::Field,
-                                atom_type_obj.to_string(),
+                                atom_type_obj.to_string(&self.semantic_state_db.interner),
                                 property.range(),
                                 atom.range(),
                             );
@@ -1001,7 +1015,7 @@ impl TypeChecker {
     }
 
     fn check_method_access_for_struct_ty(
-        &self,
+        &mut self,
         struct_ty: &Struct,
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -1009,7 +1023,8 @@ impl TypeChecker {
         // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
         // (for example: a field with lambda type) and then it goes on to find it in methods.
         // This is in sync with what Python does.
-        let method_name = method_name_ok_identifier.token_value(&self.code);
+        let method_name =
+            method_name_ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
         let concrete_types = &struct_ty.concrete_types;
         let symbol_data = struct_ty.symbol_data.get_core_ref();
         let struct_data = symbol_data.get_struct_data_ref();
@@ -1078,12 +1093,12 @@ impl TypeChecker {
     }
 
     fn check_method_access_for_array_ty(
-        &self,
+        &mut self,
         array_ty: &Array,
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
-        let method_name = method_name_ok_identifier.token_value(&self.code);
+        let method_name = method_name_ok_identifier.token_value_str(&self.code);
         match array_ty.try_method(&method_name) {
             Some(prototype) => {
                 let return_ty = prototype.is_received_params_valid(self, params)?;
@@ -1094,12 +1109,12 @@ impl TypeChecker {
     }
 
     fn check_method_access_for_hashmap_ty(
-        &self,
+        &mut self,
         hashmap_ty: &HashMap,
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
-        let method_name = method_name_ok_identifier.token_value(&self.code);
+        let method_name = method_name_ok_identifier.token_value_str(&self.code);
         match hashmap_ty.try_method(&method_name) {
             Some(prototype) => {
                 let return_ty = prototype.is_received_params_valid(self, params)?;
@@ -1109,7 +1124,7 @@ impl TypeChecker {
         }
     }
 
-    fn check_method_access(&self, method_access: &MethodAccessNode) -> (Type, Option<Type>) {
+    fn check_method_access(&mut self, method_access: &MethodAccessNode) -> (Type, Option<Type>) {
         let core_method_access = method_access.core_ref();
         let atom = &core_method_access.atom;
         let (atom_type_obj, _) = self.check_atom(atom);
@@ -1138,15 +1153,17 @@ impl TypeChecker {
                         MethodAccessTypeCheckError::MethodNotFound => {
                             let err = PropertyDoesNotExistError::new(
                                 PropertyKind::Method,
-                                atom_type_obj.to_string(),
+                                atom_type_obj.to_string(&self.semantic_state_db.interner),
                                 method.range(),
                                 atom.range(),
                             );
                             self.log_error(Diagnostics::PropertyDoesNotExist(err));
                         }
                         MethodAccessTypeCheckError::FieldNotCallable(ty) => {
-                            let err =
-                                FieldNotCallableError::new(ty.to_string(), ok_identifier.range());
+                            let err = FieldNotCallableError::new(
+                                ty.to_string(&self.semantic_state_db.interner),
+                                ok_identifier.range(),
+                            );
                             self.log_error(Diagnostics::FieldNotCallable(err));
                         }
                         MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
@@ -1223,7 +1240,7 @@ impl TypeChecker {
         }
     }
 
-    fn check_index_access(&self, index_access: &IndexAccessNode) -> (Type, Option<Type>) {
+    fn check_index_access(&mut self, index_access: &IndexAccessNode) -> (Type, Option<Type>) {
         let core_index_access = index_access.core_ref();
         let atom = &core_index_access.atom;
         let (atom_type_obj, _) = self.check_atom(atom);
@@ -1267,8 +1284,8 @@ impl TypeChecker {
             Some(ty) => (ty, Some(atom_type_obj)),
             None => {
                 let err = ExpressionIndexingNotValidError::new(
-                    atom_type_obj.to_string(),
-                    index_type_obj.to_string(),
+                    atom_type_obj.to_string(&self.semantic_state_db.interner),
+                    index_type_obj.to_string(&self.semantic_state_db.interner),
                     atom.range(),
                     index_expr.range(),
                 );
@@ -1278,7 +1295,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_atom(&self, atom: &AtomNode) -> (Type, Option<Type>) {
+    pub fn check_atom(&mut self, atom: &AtomNode) -> (Type, Option<Type>) {
         let core_atom = atom.core_ref();
         match core_atom {
             CoreAtomNode::AtomStart(atom_start) => (self.check_atom_start(atom_start), None),
@@ -1291,7 +1308,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_r_assign(&self, r_assign: &RAssignmentNode) -> Type {
+    pub fn check_r_assign(&mut self, r_assign: &RAssignmentNode) -> Type {
         let core_r_assign = r_assign.core_ref();
         self.check_expr(&core_r_assign.expr.core_ref().expr)
     }
@@ -1325,7 +1342,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_array_expr(&self, array_expr: &ArrayExpressionNode) -> Type {
+    pub fn check_array_expr(&mut self, array_expr: &ArrayExpressionNode) -> Type {
         let core_array_expr = array_expr.core_ref();
         match &core_array_expr.initials {
             Some(initials) => {
@@ -1338,8 +1355,8 @@ impl TypeChecker {
                     let ty = self.check_expr(expr);
                     if !ty.is_eq(&first_expr_ty) {
                         let err = IncorrectExpressionTypeError::new(
-                            first_expr_ty.to_string(),
-                            ty.to_string(),
+                            first_expr_ty.to_string(&self.semantic_state_db.interner),
+                            ty.to_string(&self.semantic_state_db.interner),
                             expr.range(),
                         );
                         self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -1356,7 +1373,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_hashmap_expr(&self, hashmap_expr: &HashMapExpressionNode) -> Type {
+    pub fn check_hashmap_expr(&mut self, hashmap_expr: &HashMapExpressionNode) -> Type {
         let core_hashmap_expr = hashmap_expr.core_ref();
         match &core_hashmap_expr.initials {
             Some(initials) => {
@@ -1375,16 +1392,16 @@ impl TypeChecker {
                     let value_ty = self.check_expr(&core_key_value_pair.value_expr);
                     if !key_ty.is_eq(&first_key_ty) {
                         let err = IncorrectExpressionTypeError::new(
-                            first_key_ty.to_string(),
-                            key_ty.to_string(),
+                            first_key_ty.to_string(&self.semantic_state_db.interner),
+                            key_ty.to_string(&self.semantic_state_db.interner),
                             core_key_value_pair.key_expr.range(),
                         );
                         self.log_error(Diagnostics::IncorrectExpressionType(err));
                     }
                     if !value_ty.is_eq(&first_value_ty) {
                         let err = IncorrectExpressionTypeError::new(
-                            first_value_ty.to_string(),
-                            value_ty.to_string(),
+                            first_value_ty.to_string(&self.semantic_state_db.interner),
+                            value_ty.to_string(&self.semantic_state_db.interner),
                             core_key_value_pair.value_expr.range(),
                         );
                         self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -1401,7 +1418,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_tuple_expr(&self, tuple_expr: &TupleExpressionNode) -> Type {
+    pub fn check_tuple_expr(&mut self, tuple_expr: &TupleExpressionNode) -> Type {
         let mut sub_types = vec![];
         for expr in tuple_expr.core_ref().initials.iter() {
             sub_types.push(self.check_expr(expr));
@@ -1409,7 +1426,7 @@ impl TypeChecker {
         Type::new_with_tuple(sub_types)
     }
 
-    pub fn check_atomic_expr(&self, atomic_expr: &AtomicExpressionNode) -> Type {
+    pub fn check_atomic_expr(&mut self, atomic_expr: &AtomicExpressionNode) -> Type {
         let core_atomic_expr = atomic_expr.core_ref();
         match core_atomic_expr {
             CoreAtomicExpressionNode::Bool(token) => {
@@ -1441,7 +1458,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_only_unary_expr(&self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
+    pub fn check_only_unary_expr(&mut self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
         let core_only_unary_expr = only_unary_expr.core_ref();
         let unary_expr = &core_only_unary_expr.unary_expr;
         let operand_type = self.check_unary_expr(unary_expr);
@@ -1453,7 +1470,7 @@ impl TypeChecker {
                     operand_type
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type.to_string(),
+                        operand_type.to_string(&self.semantic_state_db.interner),
                         "numeric (`int`, `float`)",
                         "`+` or `-`",
                         unary_expr.range(),
@@ -1468,7 +1485,7 @@ impl TypeChecker {
                     operand_type
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type.to_string(),
+                        operand_type.to_string(&self.semantic_state_db.interner),
                         "boolean",
                         "`not`",
                         unary_expr.range(),
@@ -1481,7 +1498,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_unary_expr(&self, unary_expr: &UnaryExpressionNode) -> Type {
+    pub fn check_unary_expr(&mut self, unary_expr: &UnaryExpressionNode) -> Type {
         let core_unary_expr = unary_expr.core_ref();
         match core_unary_expr {
             CoreUnaryExpressionNode::Atomic(atomic) => self.check_atomic_expr(atomic),
@@ -1489,7 +1506,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_binary_expr(&self, binary_expr: &BinaryExpressionNode) -> Type {
+    pub fn check_binary_expr(&mut self, binary_expr: &BinaryExpressionNode) -> Type {
         let core_binary_expr = binary_expr.core_ref();
         let left_expr = &core_binary_expr.left_expr;
         let right_expr = &core_binary_expr.right_expr;
@@ -1502,8 +1519,8 @@ impl TypeChecker {
             Some(type_obj) => type_obj,
             None => {
                 let err = BinaryOperatorInvalidOperandsError::new(
-                    l_type.to_string(),
-                    r_type.to_string(),
+                    l_type.to_string(&self.semantic_state_db.interner),
+                    r_type.to_string(&self.semantic_state_db.interner),
                     left_expr.range(),
                     right_expr.range(),
                     operator.range(),
@@ -1514,7 +1531,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_comp_expr(&self, comp_expr: &ComparisonNode) -> Type {
+    pub fn check_comp_expr(&mut self, comp_expr: &ComparisonNode) -> Type {
         let core_comp_expr = comp_expr.core_ref();
         let operands = &core_comp_expr.operands;
         let operators = &core_comp_expr.operators;
@@ -1541,8 +1558,8 @@ impl TypeChecker {
                 },
                 None => {
                     let err = BinaryOperatorInvalidOperandsError::new(
-                        l_type.to_string(),
-                        r_type.to_string(),
+                        l_type.to_string(&self.semantic_state_db.interner),
+                        r_type.to_string(&self.semantic_state_db.interner),
                         left_expr.range(),
                         right_expr.range(),
                         operator.range(),
@@ -1555,7 +1572,7 @@ impl TypeChecker {
         Type::new_with_atomic(BOOL)
     }
 
-    pub fn check_expr(&self, expr: &ExpressionNode) -> Type {
+    pub fn check_expr(&mut self, expr: &ExpressionNode) -> Type {
         let core_expr = expr.core_ref();
         match core_expr {
             CoreExpressionNode::Unary(unary_expr) => self.check_unary_expr(unary_expr),
@@ -1566,7 +1583,7 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_assignment(&self, assignment: &AssignmentNode) {
+    pub fn check_assignment(&mut self, assignment: &AssignmentNode) {
         let core_assignment = assignment.core_ref();
         let (l_type, r_assign, range) = match core_assignment {
             CoreAssignmentNode::Ok(ok_assignment) => {
@@ -1577,7 +1594,7 @@ impl TypeChecker {
                     if let Some(interior_atom_type) = interior_atom_type {
                         if interior_atom_type.is_immutable() {
                             let err = ImmutableTypeNotAssignableError::new(
-                                &interior_atom_type,
+                                interior_atom_type.to_string(&self.semantic_state_db.interner),
                                 l_index_expr.core_ref().atom.range(),
                             );
                             self.log_error(Diagnostics::ImmutableTypeNotAssignable(err));
@@ -1603,8 +1620,8 @@ impl TypeChecker {
         }
         if !l_type.is_eq(&r_type) {
             let err = MismatchedTypesOnLeftRightError::new(
-                l_type.to_string(),
-                r_type.to_string(),
+                l_type.to_string(&self.semantic_state_db.interner),
+                r_type.to_string(&self.semantic_state_db.interner),
                 range,
                 r_assign.range(),
             );
@@ -1633,8 +1650,8 @@ impl TypeChecker {
                     symbol_data_mut_ref.set_data_type(&r_type);
                 } else if !variable_ty.is_eq(&r_type) {
                     let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
-                        variable_ty.to_string(),
-                        r_type.to_string(),
+                        variable_ty.to_string(&self.semantic_state_db.interner),
+                        r_type.to_string(&self.semantic_state_db.interner),
                         core_variable_decl.name.range(),
                         r_variable_decl.range(),
                     );
@@ -1721,7 +1738,7 @@ impl TypeChecker {
         self.check_callable_body(&body.prototype, &body.block, is_constructor);
     }
 
-    pub fn check_return_stmt(&self, return_stmt: &ReturnStatementNode) {
+    pub fn check_return_stmt(&mut self, return_stmt: &ReturnStatementNode) {
         let core_return_stmt = return_stmt.core_ref();
         let func_stack_len = self.context.func_stack.len();
         if func_stack_len == 0 {
@@ -1741,8 +1758,8 @@ impl TypeChecker {
             ));
         } else if !expr_type_obj.is_eq(expected_type_obj) {
             let err = MismatchedReturnTypeError::new(
-                expected_type_obj.to_string(),
-                expr_type_obj.to_string(),
+                expected_type_obj.to_string(&self.semantic_state_db.interner),
+                expr_type_obj.to_string(&self.semantic_state_db.interner),
                 core_return_stmt.return_keyword.range(),
             );
             self.log_error(Diagnostics::MismatchedReturnType(err));
@@ -1775,8 +1792,9 @@ impl TypeChecker {
                             let err = InterfaceMethodsInStructCheckError::new(
                                 missing_interface_method_names,
                                 errors,
-                                interface_obj.to_string(),
+                                interface_obj.to_string(&self.semantic_state_db.interner),
                                 *range,
+                                &self.semantic_state_db.interner,
                             );
                             self.log_error(Diagnostics::InterfaceMethodsInStructCheck(err));
                         }
@@ -1873,8 +1891,12 @@ impl TypeChecker {
                 err_strs,
                 concrete_types,
             ) => {
-                let err =
-                    InferredTypesNotBoundedByInterfacesError::new(range, err_strs, concrete_types);
+                let err = InferredTypesNotBoundedByInterfacesError::new(
+                    range,
+                    err_strs,
+                    concrete_types,
+                    &self.semantic_state_db.interner,
+                );
                 self.log_error(Diagnostics::InferredTypesNotBoundedByInterfaces(err));
             }
         }

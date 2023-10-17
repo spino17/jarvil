@@ -4,6 +4,7 @@ use super::lambda::Lambda;
 use super::r#struct::Struct;
 use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
+use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
@@ -14,7 +15,7 @@ use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::{array::core::Array, atomic::Atomic};
 use std::collections::HashMap as StdHashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::rc::Rc;
 
 pub trait AbstractType {
@@ -30,6 +31,7 @@ pub trait AbstractType {
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()>;
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
+    fn to_string(&self, interner: &Interner) -> String;
 }
 
 pub trait AbstractNonStructTypes {
@@ -463,22 +465,20 @@ impl AbstractType for Type {
             }
         }
     }
-}
 
-impl std::fmt::Display for Type {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn to_string(&self, interner: &Interner) -> String {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => write!(f, "{}", atomic_type.to_string()),
-            CoreType::Struct(struct_type) => write!(f, "{}", struct_type.to_string()),
-            CoreType::Lambda(lambda_type) => write!(f, "{}", lambda_type.to_string()),
-            CoreType::Array(array_type) => write!(f, "{}", array_type.to_string()),
-            CoreType::Tuple(tuple_type) => write!(f, "{}", tuple_type.to_string()),
-            CoreType::HashMap(hashmap_type) => write!(f, "{}", hashmap_type.to_string()),
-            CoreType::Generic(generic_type) => write!(f, "{}", generic_type.to_string()),
-            CoreType::Unknown => write!(f, "{}", UNKNOWN),
-            CoreType::Void => write!(f, "()"),
-            CoreType::Unset => write!(f, "{}", UNSET),
-            CoreType::Any => write!(f, "{}", ANY),
+            CoreType::Atomic(atomic_type) => atomic_type.to_string(interner),
+            CoreType::Struct(struct_type) => struct_type.to_string(interner),
+            CoreType::Lambda(lambda_type) => lambda_type.to_string(interner),
+            CoreType::Array(array_type) => array_type.to_string(interner),
+            CoreType::Tuple(tuple_type) => tuple_type.to_string(interner),
+            CoreType::HashMap(hashmap_type) => hashmap_type.to_string(interner),
+            CoreType::Generic(generic_type) => generic_type.to_string(interner),
+            CoreType::Unknown => format!("{}", UNKNOWN),
+            CoreType::Void => "()".to_string(),
+            CoreType::Unset => format!("{}", UNSET),
+            CoreType::Any => format!("{}", ANY),
         }
     }
 }

@@ -171,7 +171,7 @@ impl CallablePrototypeData {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &TypeChecker,
+        type_checker: &mut TypeChecker,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         let expected_params = &self.params;
@@ -287,7 +287,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &TypeChecker,
+        type_checker: &mut TypeChecker,
         local_concrete_types: Option<ConcreteTypesTuple>,
         local_concrete_ty_ranges: Option<Vec<TextRange>>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -302,6 +302,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                             Some(type_ranges) => type_ranges,
                             None => unreachable!(),
                         },
+                        &type_checker.semantic_state_db.interner,
                     )?;
                     let concrete_prototype = self
                         .callable_data

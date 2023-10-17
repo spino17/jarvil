@@ -1,6 +1,7 @@
 use super::builtin::HASHMAP_BUILTIN_METHODS;
 use crate::{
     constants::common::BOOL,
+    core::string_interner::Interner,
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
@@ -93,11 +94,13 @@ impl AbstractType for HashMap {
             _ => Err(()),
         }
     }
-}
 
-impl ToString for HashMap {
-    fn to_string(&self) -> String {
-        format!("{{{} : {}}}", self.key_type, self.value_type)
+    fn to_string(&self, interner: &Interner) -> String {
+        format!(
+            "{{{} : {}}}",
+            self.key_type.to_string(interner),
+            self.value_type.to_string(interner)
+        )
     }
 }
 

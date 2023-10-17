@@ -1,5 +1,6 @@
 use super::core::Type;
 use crate::{
+    core::string_interner::Interner,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::ConcreteTypesTuple,
@@ -14,9 +15,12 @@ use crate::{
 };
 use text_size::TextRange;
 
-pub fn get_unbounded_generic_type_with_declaration_index(index: usize) -> Type {
+pub fn get_unbounded_generic_type_with_declaration_index(
+    index: usize,
+    interner: &mut Interner,
+) -> Type {
     Type::new_with_generic(&SymbolData::new(
-        "T".to_string(),
+        interner.intern("T"),
         UserDefinedTypeData::Generic(GenericTypeData {
             category: GenericTypeDeclarationPlaceCategory::InStruct,
             index,

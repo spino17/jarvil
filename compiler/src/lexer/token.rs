@@ -15,6 +15,7 @@ use crate::constants::common::{
     SINGLE_LINE_COMMENT, SLASH, STAR, STRUCT_KEYWORD, TRUE, TRY_KEYWORD, TYPE_KEYWORD, WHILE,
     WITH_KEYWORD, YIELD_KEYWORD,
 };
+use crate::core::string_interner::{Interner, StrId};
 use std::fmt::Display;
 use text_size::TextRange;
 
@@ -210,7 +211,11 @@ impl Token {
         self.core_token.to_string().to_string()
     }
 
-    pub fn token_value(&self, code: &JarvilCode) -> String {
+    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+        interner.intern(&code.token_from_range(self.range))
+    }
+
+    pub fn token_value_str(&self, code: &JarvilCode) -> String {
         code.token_from_range(self.range)
     }
 

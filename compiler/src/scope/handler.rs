@@ -12,6 +12,7 @@ use crate::{
         BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierInDeclNode,
         OkIdentifierInUseNode, OkSelfKeywordNode, TypeExpressionNode,
     },
+    core::string_interner::Interner,
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -23,6 +24,7 @@ pub enum SymbolDataEntry {
     Interface(SymbolData<InterfaceData>),
 }
 
+#[derive(Debug, Clone)]
 pub enum ConcreteSymbolDataEntry {
     Variable(ConcreteSymbolData<VariableData>),
     Function(ConcreteSymbolData<CallableData>),
@@ -60,6 +62,7 @@ pub enum IdentifierNodeWrapper<'a> {
 // This contains all the relevant semantic information collected over various AST passes
 pub struct SemanticStateDatabase {
     pub namespace: Namespace,
+    pub interner: Interner,
     pub unique_key_generator: GlobalUniqueKeyGenerator,
     pub identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
     pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
@@ -73,6 +76,7 @@ impl SemanticStateDatabase {
     pub fn new() -> Self {
         SemanticStateDatabase {
             namespace: Namespace::new(),
+            interner: Interner::default(),
             unique_key_generator: GlobalUniqueKeyGenerator::default(),
             identifier_in_decl_binding_table: FxHashMap::default(),
             identifier_in_use_binding_table: FxHashMap::default(),
@@ -110,8 +114,11 @@ impl SemanticStateDatabase {
     pub fn get_symbol_data_for_identifier_in_use(
         &self,
         identifier: &OkIdentifierInUseNode,
-    ) -> Option<&ConcreteSymbolDataEntry> {
-        self.identifier_in_use_binding_table.get(identifier)
+    ) -> Option<ConcreteSymbolDataEntry> {
+        match self.identifier_in_use_binding_table.get(identifier) {
+            Some(val) => Some(val.clone()),
+            None => None,
+        }
     }
 
     pub fn get_variable_symbol_data_for_identifier_in_decl(
@@ -184,10 +191,10 @@ impl SemanticStateDatabase {
     pub fn get_type_symbol_data_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
-    ) -> Option<&ConcreteSymbolData<UserDefinedTypeData>> {
+    ) -> Option<ConcreteSymbolData<UserDefinedTypeData>> {
         match self.identifier_in_use_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data),
+                ConcreteSymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data.clone()),
                 _ => unreachable!(),
             },
             None => None,

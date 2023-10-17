@@ -1,3 +1,4 @@
+use crate::core::string_interner::StrId;
 use crate::scope::common::{FieldsMap, MethodsMap};
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
@@ -24,10 +25,10 @@ pub struct StructTypeData {
 impl StructTypeData {
     pub fn set_meta_data(
         &mut self,
-        fields: FxHashMap<String, (Type, TextRange)>,
+        fields: FxHashMap<StrId, (Type, TextRange)>,
         constructor: Option<(CallableData, TextRange)>,
-        methods: FxHashMap<String, (CallableData, TextRange)>,
-        class_methods: FxHashMap<String, (CallableData, TextRange)>,
+        methods: FxHashMap<StrId, (CallableData, TextRange)>,
+        class_methods: FxHashMap<StrId, (CallableData, TextRange)>,
     ) {
         self.fields = FieldsMap::new(fields);
         self.methods = MethodsMap::new(methods);
@@ -49,7 +50,7 @@ impl StructTypeData {
 
     pub fn try_field(
         &self,
-        field_name: &str,
+        field_name: &StrId,
         context: &ConcretizationContext,
     ) -> Option<(Type, TextRange)> {
         self.fields.try_field(field_name, context)
@@ -57,7 +58,7 @@ impl StructTypeData {
 
     pub fn try_method<'a>(
         &'a self,
-        method_name: &str,
+        method_name: &StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.methods.try_method(method_name, global_concrete_types)
@@ -65,7 +66,7 @@ impl StructTypeData {
 
     pub fn try_class_method<'a>(
         &'a self,
-        class_method_name: &str,
+        class_method_name: &StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.class_methods

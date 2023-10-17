@@ -7,8 +7,8 @@ use super::{
     types::core::UserDefinedTypeData,
     variables::VariableData,
 };
-use crate::types::core::AbstractType;
 use crate::types::core::Type;
+use crate::{core::string_interner::StrId, types::core::AbstractType};
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
 
@@ -63,17 +63,17 @@ impl GlobalUniqueKeyGenerator {
 
 #[derive(Debug, Default)]
 pub struct FieldsMap {
-    fields: FxHashMap<String, (Type, TextRange)>,
+    fields: FxHashMap<StrId, (Type, TextRange)>,
 }
 
 impl FieldsMap {
-    pub fn new(fields: FxHashMap<String, (Type, TextRange)>) -> Self {
+    pub fn new(fields: FxHashMap<StrId, (Type, TextRange)>) -> Self {
         FieldsMap { fields }
     }
 
     pub fn try_field(
         &self,
-        field_name: &str,
+        field_name: &StrId,
         context: &ConcretizationContext,
     ) -> Option<(Type, TextRange)> {
         match self.fields.get(field_name) {
@@ -91,21 +91,21 @@ impl FieldsMap {
 
 #[derive(Debug, Default)]
 pub struct MethodsMap {
-    methods: FxHashMap<String, (CallableData, TextRange)>,
+    methods: FxHashMap<StrId, (CallableData, TextRange)>,
 }
 
 impl MethodsMap {
-    pub fn new(methods: FxHashMap<String, (CallableData, TextRange)>) -> Self {
+    pub fn new(methods: FxHashMap<StrId, (CallableData, TextRange)>) -> Self {
         MethodsMap { methods }
     }
 
-    pub fn get_methods_ref(&self) -> &FxHashMap<String, (CallableData, TextRange)> {
+    pub fn get_methods_ref(&self) -> &FxHashMap<StrId, (CallableData, TextRange)> {
         &self.methods
     }
 
     pub fn try_method<'a>(
         &'a self,
-        method_name: &str,
+        method_name: &StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         match self.methods.get(method_name) {

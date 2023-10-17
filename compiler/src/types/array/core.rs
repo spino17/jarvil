@@ -1,4 +1,5 @@
 use super::builtin::ARRAY_BUILTIN_METHODS;
+use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
@@ -90,11 +91,9 @@ impl AbstractType for Array {
             _ => Err(()),
         }
     }
-}
 
-impl ToString for Array {
-    fn to_string(&self) -> String {
-        format!("[{}]", self.element_type)
+    fn to_string(&self, interner: &Interner) -> String {
+        format!("[{}]", self.element_type.to_string(interner))
     }
 }
 

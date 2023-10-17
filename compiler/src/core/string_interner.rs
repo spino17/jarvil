@@ -4,7 +4,7 @@
 use rustc_hash::FxHashMap;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-struct StrId(u32);
+pub struct StrId(u32);
 
 #[derive(Default)]
 pub struct Interner {
@@ -13,18 +13,19 @@ pub struct Interner {
 }
 
 impl Interner {
-    pub fn intern(&mut self, name: &str) -> u32 {
+    pub fn intern(&mut self, name: &str) -> StrId {
         if let Some(&idx) = self.map.get(name) {
-            return idx;
+            return StrId(idx);
         }
         let idx = self.map.len() as u32;
         self.map.insert(name.to_owned(), idx);
         self.vec.push(name.to_owned());
-        debug_assert!(self.lookup(idx) == name);
-        debug_assert!(self.intern(name) == idx);
-        idx
+        debug_assert!(self.lookup(StrId(idx)) == name);
+        debug_assert!(self.intern(name) == StrId(idx));
+        StrId(idx)
     }
-    pub fn lookup(&self, idx: u32) -> &str {
-        self.vec[idx as usize].as_str()
+
+    pub fn lookup(&self, idx: StrId) -> &str {
+        self.vec[idx.0 as usize].as_str()
     }
 }

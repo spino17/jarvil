@@ -6,6 +6,7 @@ use super::helper::check_concrete_types_bounded_by_interfaces;
 use super::interfaces::{InterfaceBounds, InterfaceData};
 use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
 use super::types::lambda_type::LambdaTypeData;
+use crate::core::string_interner::{Interner, StrId};
 use crate::parser::resolver::BlockKind;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::variables::VariableData;
@@ -43,20 +44,20 @@ impl<T: AbstractSymbolData> LookupData<T> {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct MangledIdentifierName {
-    pub jarvil_identifer_name: String,
+    pub jarvil_identifer_name: StrId,
     unique_id: Option<usize>,
 }
 
 impl MangledIdentifierName {
-    pub fn to_string(&self, suffix: &str) -> String {
+    pub fn to_string(&self, suffix: &str, interner: &Interner) -> String {
         match self.unique_id {
             Some(id) => format!(
                 "{}_{}_{}",
-                self.jarvil_identifer_name,
+                interner.lookup(self.jarvil_identifer_name),
                 id.to_string(),
                 suffix
             ),
-            None => self.jarvil_identifer_name.to_string(),
+            None => interner.lookup(self.jarvil_identifer_name).to_string(),
         }
     }
 }
@@ -85,6 +86,7 @@ pub trait AbstractSymbolData {
         concrete_types: &Option<ConcreteTypesTuple>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
+        interner: &Interner,
     ) -> Result<(), GenericTypeArgsCheckError>;
     fn get_mangled_name(&self) -> MangledIdentifierName;
 }
@@ -95,7 +97,7 @@ pub enum ConcreteTypesRegistrationKind {
 }
 
 #[derive(Debug)]
-pub struct GenericTypeParams(pub Vec<(String, InterfaceBounds, TextRange)>);
+pub struct GenericTypeParams(pub Vec<(StrId, InterfaceBounds, TextRange)>);
 
 impl GenericTypeParams {
     pub fn len(&self) -> usize {
@@ -106,6 +108,7 @@ impl GenericTypeParams {
         &self,
         concrete_types: &ConcreteTypesTuple,
         type_ranges: &Vec<TextRange>,
+        interner: &Interner,
     ) -> Result<(), GenericTypeArgsCheckError> {
         let expected_len = self.len();
         let received_len = concrete_types.len();
@@ -119,7 +122,8 @@ impl GenericTypeParams {
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
             let ty = &concrete_types[index];
             if !ty.is_type_bounded_by_interfaces(interface_bounds) {
-                incorrectly_bounded_types.push((type_ranges[index], interface_bounds.to_string()))
+                incorrectly_bounded_types
+                    .push((type_ranges[index], interface_bounds.to_string(interner)))
             }
         }
         if !incorrectly_bounded_types.is_empty() {
@@ -135,7 +139,7 @@ impl GenericTypeParams {
 
 #[derive(Debug)]
 pub struct SymbolDataCore<T: AbstractConcreteTypesHandler> {
-    pub identifier_name: String,
+    pub identifier_name: StrId,
     pub identifier_data: RefCell<T>,
     pub declaration_line_number: TextRange,
     unique_id: Option<usize>,
@@ -143,7 +147,7 @@ pub struct SymbolDataCore<T: AbstractConcreteTypesHandler> {
 
 impl<T: AbstractConcreteTypesHandler> SymbolDataCore<T> {
     fn new(
-        identifier_name: String,
+        identifier_name: StrId,
         identifier_data: T,
         decl_range: TextRange,
         unique_id: Option<usize>,
@@ -161,12 +165,7 @@ impl<T: AbstractConcreteTypesHandler> SymbolDataCore<T> {
 pub struct SymbolData<T: AbstractConcreteTypesHandler>(Rc<SymbolDataCore<T>>); // (identifier_meta_data, decl_line_number, should_add_prefix)
 
 impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
-    pub fn new(
-        name: String,
-        core_data: T,
-        decl_range: TextRange,
-        unique_id: Option<usize>,
-    ) -> Self {
+    pub fn new(name: StrId, core_data: T, decl_range: TextRange, unique_id: Option<usize>) -> Self {
         SymbolData(Rc::new(SymbolDataCore::new(
             name, core_data, decl_range, unique_id,
         )))
@@ -180,8 +179,8 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
         self.0.as_ref().identifier_data.borrow_mut()
     }
 
-    pub fn identifier_name(&self) -> &str {
-        &self.0.identifier_name
+    pub fn identifier_name(&self) -> StrId {
+        self.0.identifier_name
     }
 
     pub fn declaration_line_number(&self) -> TextRange {
@@ -194,7 +193,7 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
 
     pub fn get_mangled_name(&self) -> MangledIdentifierName {
         MangledIdentifierName {
-            jarvil_identifer_name: self.identifier_name().to_string(),
+            jarvil_identifer_name: self.identifier_name(),
             unique_id: self.0.unique_id,
         }
     }
@@ -234,6 +233,7 @@ impl AbstractSymbolData for VariableSymbolData {
         concrete_types: &Option<ConcreteTypesTuple>,
         _type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
+        _interner: &Interner,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
         if concrete_types.is_some() {
@@ -260,6 +260,7 @@ impl AbstractSymbolData for FunctionSymbolData {
         concrete_types: &Option<ConcreteTypesTuple>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
+        interner: &Interner,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(is_concrete_types_none_allowed);
         let function_data = self.0.get_core_ref();
@@ -269,6 +270,7 @@ impl AbstractSymbolData for FunctionSymbolData {
             concrete_types,
             type_ranges,
             true,
+            interner,
         )
     }
 
@@ -290,6 +292,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
         concrete_types: &Option<ConcreteTypesTuple>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
+        interner: &Interner,
     ) -> Result<(), GenericTypeArgsCheckError> {
         match &*self.0.get_core_ref() {
             UserDefinedTypeData::Struct(struct_data) => {
@@ -299,6 +302,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
                     concrete_types,
                     type_ranges,
                     is_concrete_types_none_allowed,
+                    interner,
                 )
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
@@ -308,6 +312,7 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
                     concrete_types,
                     type_ranges,
                     false,
+                    interner,
                 )
             }
             UserDefinedTypeData::Generic(_) => {
@@ -337,6 +342,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
         concrete_types: &Option<ConcreteTypesTuple>,
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
+        interner: &Interner,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
         let interface_data = self.0.get_core_ref();
@@ -346,6 +352,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
             concrete_types,
             type_ranges,
             false,
+            interner,
         )
     }
 
@@ -356,7 +363,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
 
 #[derive(Debug)]
 pub struct CoreScope<T: AbstractConcreteTypesHandler> {
-    symbol_table: FxHashMap<String, SymbolData<T>>,
+    symbol_table: FxHashMap<StrId, SymbolData<T>>,
     pub parent_scope: Option<usize>, // points to the index in the global flattened scope vec
     scope_kind: BlockKind,
 }
@@ -364,17 +371,17 @@ pub struct CoreScope<T: AbstractConcreteTypesHandler> {
 impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
     fn set(
         &mut self,
-        name: String,
+        name: StrId,
         meta_data: T,
         decl_range: TextRange,
         unique_id: Option<usize>,
     ) -> SymbolData<T> {
-        let symbol_data = SymbolData::new(name.to_string(), meta_data, decl_range, unique_id);
+        let symbol_data = SymbolData::new(name, meta_data, decl_range, unique_id);
         self.symbol_table.insert(name, symbol_data.clone());
         symbol_data
     }
 
-    pub fn get(&self, name: &str) -> Option<&SymbolData<T>> {
+    pub fn get(&self, name: &StrId) -> Option<&SymbolData<T>> {
         self.symbol_table.get(name)
     }
 
@@ -404,7 +411,7 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
     pub fn lookup(
         &self,
         scope_index: usize,
-        key: &str,
+        key: &StrId,
         global_scope_vec: &Vec<CoreScope<T>>,
     ) -> Option<(SymbolData<T>, usize, usize, Option<usize>)> {
         let mut enclosing_func_scope_depth: Option<usize> = None;
@@ -472,7 +479,7 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
     pub fn force_insert(
         &mut self,
         scope_index: usize,
-        key: String,
+        key: StrId,
         meta_data: T,
         decl_range: TextRange,
     ) {
@@ -480,15 +487,15 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         self.flattened_vec[scope_index].set(key, meta_data, decl_range, None);
     }
 
-    pub fn insert<U: Fn(&Scope<T>, usize, &str) -> Option<TextRange>>(
+    pub fn insert<U: Fn(&Scope<T>, usize, &StrId) -> Option<TextRange>>(
         &mut self,
         scope_index: usize,
-        key: String,
+        key: StrId,
         meta_data: T,
         decl_range: TextRange,
         lookup_fn: U,
         unique_id: usize,
-    ) -> Result<SymbolData<T>, (String, TextRange)> {
+    ) -> Result<SymbolData<T>, (StrId, TextRange)> {
         if let Some(previous_decl_range) = lookup_fn(self, scope_index, &key) {
             return Err((key, previous_decl_range));
         }
@@ -497,19 +504,19 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
         Ok(symbol_data)
     }
 
-    pub fn get(&self, scope_index: usize, key: &str) -> Option<&SymbolData<T>> {
+    pub fn get(&self, scope_index: usize, key: &StrId) -> Option<&SymbolData<T>> {
         self.flattened_vec[scope_index].get(key)
     }
 
     fn lookup(
         &self,
         scope_index: usize,
-        key: &str,
+        key: &StrId,
     ) -> Option<(SymbolData<T>, usize, usize, Option<usize>)> {
         self.flattened_vec[scope_index].lookup(scope_index, key, &self.flattened_vec)
     }
 
-    fn lookup_with_is_init(&self, scope_index: usize, key: &str) -> IntermediateLookupResult<T> {
+    fn lookup_with_is_init(&self, scope_index: usize, key: &StrId) -> IntermediateLookupResult<T> {
         match self.lookup(scope_index, key) {
             Some((symbol_data, resolved_scope_index, depth, enclosing_func_scope_depth)) => {
                 if symbol_data.get_core_ref().is_initialized() {
@@ -567,7 +574,7 @@ impl Namespace {
     pub fn get_from_variables_namespace(
         &self,
         scope_index: usize,
-        key: &str,
+        key: &StrId,
     ) -> Option<&SymbolData<VariableData>> {
         self.variables.get(scope_index, key)
     }
@@ -575,7 +582,7 @@ impl Namespace {
     pub fn get_from_functions_namespace(
         &self,
         scope_index: usize,
-        key: &str,
+        key: &StrId,
     ) -> Option<&SymbolData<CallableData>> {
         self.functions.get(scope_index, key)
     }
@@ -583,7 +590,7 @@ impl Namespace {
     pub fn get_from_types_namespace(
         &self,
         scope_index: usize,
-        key: &str,
+        key: &StrId,
     ) -> Option<&SymbolData<UserDefinedTypeData>> {
         self.types.get(scope_index, key)
     }
@@ -591,7 +598,7 @@ impl Namespace {
     pub fn get_from_interfaces_namespace(
         &self,
         scope_index: usize,
-        key: &str,
+        key: &StrId,
     ) -> Option<&SymbolData<InterfaceData>> {
         self.interfaces.get(scope_index, key)
     }
@@ -599,7 +606,7 @@ impl Namespace {
     pub fn lookup_in_variables_namespace(
         &self,
         scope_index: usize,
-        key: &str,
+        key: &StrId,
     ) -> LookupResult<VariableSymbolData> {
         match self.variables.lookup_with_is_init(scope_index, key) {
             IntermediateLookupResult::Ok((
@@ -623,7 +630,7 @@ impl Namespace {
     pub fn lookup_in_functions_namespace(
         &self,
         scope_index: usize,
-        key: &str,
+        key: &StrId,
     ) -> LookupResult<FunctionSymbolData> {
         match self.functions.lookup_with_is_init(scope_index, key) {
             IntermediateLookupResult::Ok((
@@ -647,7 +654,7 @@ impl Namespace {
     pub fn lookup_in_types_namespace(
         &self,
         scope_index: usize,
-        key: &str,
+        key: &StrId,
     ) -> LookupResult<UserDefinedTypeSymbolData> {
         match self.types.lookup_with_is_init(scope_index, key) {
             IntermediateLookupResult::Ok((
@@ -671,7 +678,7 @@ impl Namespace {
     pub fn lookup_in_interfaces_namespace(
         &self,
         scope_index: usize,
-        key: &str,
+        key: &StrId,
     ) -> LookupResult<InterfaceSymbolData> {
         match self.interfaces.lookup_with_is_init(scope_index, key) {
             IntermediateLookupResult::Ok((
@@ -695,11 +702,11 @@ impl Namespace {
     pub fn declare_variable(
         &mut self,
         scope_index: usize,
-        name: String,
+        name: StrId,
         decl_range: TextRange,
         unique_id: usize,
-    ) -> Result<VariableSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| {
+    ) -> Result<VariableSymbolData, (StrId, TextRange)> {
+        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &StrId| {
             scope.flattened_vec[scope_index]
                 .get(key)
                 .map(|symbol_data| symbol_data.declaration_line_number())
@@ -720,13 +727,13 @@ impl Namespace {
     pub fn declare_variable_with_type(
         &mut self,
         scope_index: usize,
-        name: String,
+        name: StrId,
         variable_type: &Type,
         decl_range: TextRange,
         is_init: bool,
         unique_id: usize,
-    ) -> Result<VariableSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &str| {
+    ) -> Result<VariableSymbolData, (StrId, TextRange)> {
+        let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &StrId| {
             scope.flattened_vec[scope_index]
                 .get(key)
                 .map(|symbol_data| symbol_data.declaration_line_number())
@@ -747,11 +754,11 @@ impl Namespace {
     pub fn declare_function(
         &mut self,
         scope_index: usize,
-        name: String,
+        name: StrId,
         decl_range: TextRange,
         unique_id: usize,
-    ) -> Result<FunctionSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<CallableData>, scope_index: usize, key: &str| {
+    ) -> Result<FunctionSymbolData, (StrId, TextRange)> {
+        let lookup_func = |scope: &Scope<CallableData>, scope_index: usize, key: &StrId| {
             scope.flattened_vec[scope_index]
                 .get(key)
                 .map(|symbol_data| symbol_data.declaration_line_number())
@@ -772,12 +779,12 @@ impl Namespace {
     pub fn declare_user_defined_type(
         &mut self,
         scope_index: usize,
-        name: String,
+        name: StrId,
         meta_data: UserDefinedTypeData,
         decl_range: TextRange,
         unique_id: usize,
-    ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &str| {
+    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
+        let lookup_func = |scope: &Scope<UserDefinedTypeData>, scope_index: usize, key: &StrId| {
             scope
                 .lookup(scope_index, key)
                 .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())
@@ -798,10 +805,10 @@ impl Namespace {
     pub fn declare_struct_type(
         &mut self,
         scope_index: usize,
-        name: String,
+        name: StrId,
         decl_range: TextRange,
         unique_id: usize,
-    ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
         let meta_data = UserDefinedTypeData::default_with_struct();
         self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)
     }
@@ -809,14 +816,14 @@ impl Namespace {
     pub fn declare_lambda_type_with_meta_data(
         &mut self,
         scope_index: usize,
-        name: String,
+        name: StrId,
         param_types: Vec<Type>,
         return_type: Type,
         is_concretization_required: Option<(Vec<usize>, bool)>,
         generics_spec: Option<GenericTypeParams>,
         decl_range: TextRange,
         unique_id: usize,
-    ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
         let meta_data = UserDefinedTypeData::Lambda(LambdaTypeData::new(
             param_types,
             return_type,
@@ -829,13 +836,13 @@ impl Namespace {
     pub fn declare_generic_type_with_meta_data(
         &mut self,
         scope_index: usize,
-        name: String,
+        name: StrId,
         index: usize,
         category: GenericTypeDeclarationPlaceCategory,
         interface_bounds: &InterfaceBounds,
         decl_range: TextRange,
         unique_id: usize,
-    ) -> Result<UserDefinedTypeSymbolData, (String, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
         let meta_data = UserDefinedTypeData::Generic(GenericTypeData::new(
             index,
             category,
@@ -847,11 +854,11 @@ impl Namespace {
     pub fn declare_interface(
         &mut self,
         scope_index: usize,
-        name: String,
+        name: StrId,
         decl_range: TextRange,
         unique_id: usize,
-    ) -> Result<InterfaceSymbolData, (String, TextRange)> {
-        let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &str| {
+    ) -> Result<InterfaceSymbolData, (StrId, TextRange)> {
+        let lookup_func = |scope: &Scope<InterfaceData>, scope_index: usize, key: &StrId| {
             scope
                 .lookup(scope_index, key)
                 .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())

@@ -1,7 +1,11 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
+use crate::types::core::AbstractType;
 use crate::{
-    lexer::token::Token, parser::helper::format_symbol,
-    scope::interfaces::PartialConcreteInterfaceMethodsCheckError, types::core::Type,
+    core::string_interner::{Interner, StrId},
+    lexer::token::Token,
+    parser::helper::format_symbol,
+    scope::interfaces::PartialConcreteInterfaceMethodsCheckError,
+    types::core::Type,
 };
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use owo_colors::{OwoColorize, Style};
@@ -463,7 +467,7 @@ pub struct IdentifierAlreadyDeclaredError {
 impl IdentifierAlreadyDeclaredError {
     pub fn new(
         identifier_kind: IdentifierKind,
-        name: String,
+        name: &str,
         previous_decl_range: TextRange,
         redecl_range: TextRange,
     ) -> Self {
@@ -497,7 +501,7 @@ impl IdentifierAlreadyDeclaredError {
         };
         IdentifierAlreadyDeclaredError {
             identifier_kind,
-            name,
+            name: name.to_string(),
             previous_decl_span: range_to_span(previous_decl_range).into(),
             redecl_span: range_to_span(redecl_range).into(),
             help: Some(help_str.style(Style::new().yellow()).to_string()),
@@ -591,14 +595,17 @@ pub struct FieldsNotInitializedInConstructorError {
 }
 
 impl FieldsNotInitializedInConstructorError {
-    pub fn new(missing_fields_vec: Vec<&str>, range: TextRange) -> Self {
+    pub fn new(missing_fields_vec: Vec<&StrId>, range: TextRange, interner: &Interner) -> Self {
         let len = missing_fields_vec.len();
-        let mut message = format!("`{}`", missing_fields_vec[0]);
+        let mut message = format!("`{}`", interner.lookup(*missing_fields_vec[0]));
         if len > 1 {
             for i in 1..(len - 1) {
-                message.push_str(&format!(", `{}`", missing_fields_vec[i]));
+                message.push_str(&format!(", `{}`", interner.lookup(*missing_fields_vec[i])));
             }
-            message.push_str(&format!(" and `{}`", missing_fields_vec[len - 1]));
+            message.push_str(&format!(
+                " and `{}`",
+                interner.lookup(*missing_fields_vec[len - 1])
+            ));
         }
         FieldsNotInitializedInConstructorError {
             err_msg: message,
@@ -888,9 +895,9 @@ pub struct ImmutableTypeNotAssignableError {
 }
 
 impl ImmutableTypeNotAssignableError {
-    pub fn new(ty: &Type, range: TextRange) -> Self {
+    pub fn new(ty: String, range: TextRange) -> Self {
         ImmutableTypeNotAssignableError {
-            ty: ty.to_string(),
+            ty,
             span: range_to_span(range).into(),
             help: Some(
                 "`str` and `tuple` are immutable types which are not assignable"
@@ -1080,19 +1087,23 @@ pub struct InterfaceMethodsInStructCheckError {
 
 impl InterfaceMethodsInStructCheckError {
     pub fn new(
-        missing_interface_method_names: Option<Vec<&str>>,
-        errors: Option<Vec<(&str, PartialConcreteInterfaceMethodsCheckError)>>,
+        missing_interface_method_names: Option<Vec<&StrId>>,
+        errors: Option<Vec<(&StrId, PartialConcreteInterfaceMethodsCheckError)>>,
         interface_name: String,
         interface_range: TextRange,
+        interner: &Interner,
     ) -> Self {
         let missing_interface_method_names: Option<String> =
             if let Some(missing_interface_method_names) = missing_interface_method_names {
                 let mut s = "".to_string();
                 if !missing_interface_method_names.is_empty() {
-                    s.push_str(missing_interface_method_names[0]);
+                    s.push_str(interner.lookup(*missing_interface_method_names[0]));
                 }
                 for i in 1..missing_interface_method_names.len() {
-                    s.push_str(&format!(", {}", missing_interface_method_names[i]));
+                    s.push_str(&format!(
+                        ", {}",
+                        interner.lookup(*missing_interface_method_names[i])
+                    ));
                 }
                 Some(s)
             } else {
@@ -1224,12 +1235,13 @@ impl InferredTypesNotBoundedByInterfacesError {
         range: TextRange,
         err_strs: Vec<(String, String)>,
         concrete_types: Vec<Type>,
+        interner: &Interner,
     ) -> Self {
         let mut concrete_types_str = "<".to_string();
         let concrete_types_len = concrete_types.len();
-        concrete_types_str.push_str(&concrete_types[0].to_string());
+        concrete_types_str.push_str(&concrete_types[0].to_string(interner));
         for i in 1..concrete_types_len {
-            concrete_types_str.push_str(&format!(", {}", concrete_types[i]));
+            concrete_types_str.push_str(&format!(", {}", concrete_types[i].to_string(interner)));
         }
         concrete_types_str.push('>');
         let mut err_msg = format!(
@@ -1296,9 +1308,9 @@ pub struct ConstructorNotFoundForTypeError {
 }
 
 impl ConstructorNotFoundForTypeError {
-    pub fn new(ty_str: String, range: TextRange) -> Self {
+    pub fn new(ty_str: &str, range: TextRange) -> Self {
         ConstructorNotFoundForTypeError {
-            ty: ty_str,
+            ty: ty_str.to_string(),
             span: range_to_span(range).into(),
             help: Some(
                 "only struct type is allowed to call constructor via self name"
@@ -1320,9 +1332,9 @@ pub struct ClassmethodDoesNotExistError {
 }
 
 impl ClassmethodDoesNotExistError {
-    pub fn new(struct_name: String, range: TextRange) -> Self {
+    pub fn new(struct_name: &str, range: TextRange) -> Self {
         ClassmethodDoesNotExistError {
-            struct_name,
+            struct_name: struct_name.to_string(),
             span: range_to_span(range).into(),
         }
     }

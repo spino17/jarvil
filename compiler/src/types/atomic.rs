@@ -1,5 +1,6 @@
 use super::core::OperatorCompatiblity;
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
+use crate::core::string_interner::Interner;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::interfaces::InterfaceBounds;
@@ -101,10 +102,8 @@ impl AbstractType for Atomic {
     ) -> Result<(), ()> {
         unreachable!()
     }
-}
 
-impl ToString for Atomic {
-    fn to_string(&self) -> String {
+    fn to_string(&self, _interner: &Interner) -> String {
         match self {
             Atomic::Int => String::from(INT),
             Atomic::Float => String::from(FLOAT),

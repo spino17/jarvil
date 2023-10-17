@@ -4,7 +4,10 @@ use super::{
     core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
     function::{CallableData, PartialConcreteCallableDataRef},
 };
-use crate::types::core::Type;
+use crate::{
+    core::string_interner::{Interner, StrId},
+    types::core::Type,
+};
 use crate::{scope::concrete::ConcretizationContext, types::core::AbstractType};
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
@@ -21,8 +24,8 @@ pub struct InterfaceData {
 impl InterfaceData {
     pub fn set_meta_data(
         &mut self,
-        fields: FxHashMap<String, (Type, TextRange)>,
-        methods: FxHashMap<String, (CallableData, TextRange)>,
+        fields: FxHashMap<StrId, (Type, TextRange)>,
+        methods: FxHashMap<StrId, (CallableData, TextRange)>,
     ) {
         self.fields = FieldsMap::new(fields);
         self.methods = MethodsMap::new(methods);
@@ -35,7 +38,7 @@ impl InterfaceData {
 
     pub fn try_field(
         &self,
-        field_name: &str,
+        field_name: &StrId,
         context: &ConcretizationContext,
     ) -> Option<(Type, TextRange)> {
         self.fields.try_field(field_name, context)
@@ -43,7 +46,7 @@ impl InterfaceData {
 
     pub fn try_method<'a>(
         &'a self,
-        method_name: &str,
+        method_name: &StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.methods.try_method(method_name, global_concrete_types)
@@ -70,11 +73,11 @@ impl AbstractConcreteTypesHandler for InterfaceData {
 }
 
 #[derive(Debug, Clone)]
-pub struct InterfaceObject(Rc<(String, ConcreteSymbolData<InterfaceData>)>); // (name, semantic data)
+pub struct InterfaceObject(Rc<(StrId, ConcreteSymbolData<InterfaceData>)>); // (name, semantic data)
 
 impl InterfaceObject {
     pub fn new(
-        name: String,
+        name: StrId,
         symbol_data: SymbolData<InterfaceData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Self {
@@ -84,7 +87,7 @@ impl InterfaceObject {
         )))
     }
 
-    pub fn get_core_ref(&self) -> &(String, ConcreteSymbolData<InterfaceData>) {
+    pub fn get_core_ref(&self) -> &(StrId, ConcreteSymbolData<InterfaceData>) {
         self.0.as_ref()
     }
 
@@ -112,15 +115,13 @@ impl InterfaceObject {
         }
         false
     }
-}
 
-impl ToString for InterfaceObject {
-    fn to_string(&self) -> String {
-        let mut s = self.0.as_ref().0.to_string();
+    pub fn to_string(&self, interner: &Interner) -> String {
+        let mut s = interner.lookup(self.0.as_ref().0).to_string();
         match &self.0.as_ref().1.concrete_types {
             Some(concrete_types) => {
                 s.push('<');
-                s.push_str(&concrete_types.to_string());
+                s.push_str(&concrete_types.to_string(interner));
                 s.push('>');
                 s
             }
@@ -187,18 +188,16 @@ impl InterfaceBounds {
     pub fn is_eq(&self, other: &InterfaceBounds) -> bool {
         self.is_subset(other) && other.is_subset(self)
     }
-}
 
-impl ToString for InterfaceBounds {
-    fn to_string(&self) -> String {
+    pub fn to_string(&self, interner: &Interner) -> String {
         let mut s = "{".to_string();
         let len = self.interfaces.len();
         if len > 0 {
-            s.push_str(&self.interfaces[0].0.to_string());
+            s.push_str(&self.interfaces[0].0.to_string(interner));
         }
         for i in 1..len {
             s.push_str(" + ");
-            s.push_str(&self.interfaces[i].0.to_string());
+            s.push_str(&self.interfaces[i].0.to_string(interner));
         }
         s.push('}');
         s
@@ -296,13 +295,13 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
     ) -> Result<
         (),
         (
-            Option<Vec<&str>>,
-            Option<Vec<(&str, PartialConcreteInterfaceMethodsCheckError)>>,
+            Option<Vec<&StrId>>,
+            Option<Vec<(&StrId, PartialConcreteInterfaceMethodsCheckError)>>,
         ),
     > {
         let struct_methods_map_ref = struct_methods.get_methods_ref();
-        let mut missing_interface_method_names: Vec<&str> = vec![];
-        let mut errors: Vec<(&str, PartialConcreteInterfaceMethodsCheckError)> = vec![];
+        let mut missing_interface_method_names: Vec<&StrId> = vec![];
+        let mut errors: Vec<(&StrId, PartialConcreteInterfaceMethodsCheckError)> = vec![];
         for (interface_method_name, (interface_method_callable_data, _)) in
             self.methods.get_methods_ref()
         {

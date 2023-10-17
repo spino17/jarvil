@@ -1,5 +1,6 @@
 use super::core::OperatorCompatiblity;
 use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
+use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::{
     InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
 };
@@ -38,7 +39,7 @@ impl Lambda {
         Lambda::Unnamed(func_prototype)
     }
 
-    pub fn try_name(&self) -> Option<&str> {
+    pub fn try_name(&self) -> Option<StrId> {
         match self {
             Lambda::Named(semantic_data) => Some(semantic_data.symbol_data.identifier_name()),
             Lambda::Unnamed(_) => None,
@@ -48,7 +49,7 @@ impl Lambda {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &TypeChecker,
+        type_checker: &mut TypeChecker,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         match self {
@@ -234,17 +235,17 @@ impl AbstractType for Lambda {
             _ => Err(()),
         }
     }
-}
 
-impl ToString for Lambda {
-    fn to_string(&self) -> String {
+    fn to_string(&self, interner: &Interner) -> String {
         match self {
             Lambda::Named(semantic_data) => {
-                let mut s = semantic_data.symbol_data.identifier_name().to_string();
+                let mut s = interner
+                    .lookup(semantic_data.symbol_data.identifier_name())
+                    .to_string();
                 match &semantic_data.concrete_types {
                     Some(concrete_types) => {
                         s.push('<');
-                        s.push_str(&concrete_types.to_string());
+                        s.push_str(&concrete_types.to_string(interner));
                         s.push('>');
                         s
                     }
@@ -260,10 +261,14 @@ impl ToString for Lambda {
                     if flag {
                         params_str.push_str(", ")
                     }
-                    params_str.push_str(&format!("{}", param));
+                    params_str.push_str(&format!("{}", param.to_string(interner)));
                     flag = true;
                 }
-                format!("lambda({}) -> {}", params_str, self_return_type)
+                format!(
+                    "lambda({}) -> {}",
+                    params_str,
+                    self_return_type.to_string(interner)
+                )
             }
         }
     }

@@ -1,6 +1,7 @@
 use super::{core::OperatorCompatiblity, helper::try_infer_types_from_tuple};
 use crate::{
     constants::common::BOOL,
+    core::string_interner::Interner,
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
@@ -119,13 +120,11 @@ impl AbstractType for Tuple {
             _ => Err(()),
         }
     }
-}
 
-impl ToString for Tuple {
-    fn to_string(&self) -> String {
-        let mut str = self.sub_types[0].to_string();
+    fn to_string(&self, interner: &Interner) -> String {
+        let mut str = self.sub_types[0].to_string(interner);
         for i in 1..self.sub_types.len() {
-            str.push_str(&format!(", {}", self.sub_types[i]));
+            str.push_str(&format!(", {}", self.sub_types[i].to_string(interner)));
         }
         format!("({})", str)
     }
