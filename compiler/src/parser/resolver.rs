@@ -473,7 +473,7 @@ impl Resolver {
         self_keyword: &OkSelfKeywordNode,
     ) -> Option<(SymbolData<VariableData>, usize)> {
         let name = self_keyword.token_value(&self.code);
-        assert!(name == *"self");
+        debug_assert!(name == *"self");
         match self
             .semantic_state_db
             .namespace
@@ -681,7 +681,7 @@ impl Resolver {
                                         false,
                                     ) {
                                         Ok((concrete_types, _)) => {
-                                            assert!(concrete_types.is_none());
+                                            debug_assert!(concrete_types.is_none());
                                             *has_generics = true;
                                             TypeResolveKind::Resolved(Type::new_with_generic(
                                                 &symbol_data.0,
@@ -847,7 +847,7 @@ impl Resolver {
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) =
                         core_generic_type_decl.generic_type_name.core_ref()
                     {
-                        assert!(ok_identifier_in_decl
+                        debug_assert!(ok_identifier_in_decl
                             .core_ref()
                             .generic_type_decls
                             .is_none());
@@ -1373,7 +1373,7 @@ impl Resolver {
             true,
             unique_id,
         );
-        assert!(result.is_ok());
+        debug_assert!(result.is_ok());
 
         let mut implementing_interfaces: Option<InterfaceBounds> = None;
         if let Some((_, interfaces_node)) = implementing_interfaces_node {

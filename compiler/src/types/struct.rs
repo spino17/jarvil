@@ -42,7 +42,7 @@ impl Struct {
                         let self_len = self_concrete_types.len();
                         let other_len = other_concrete_types.len();
 
-                        assert!(self_len == other_len);
+                        debug_assert!(self_len == other_len);
                         for i in 0..self_len {
                             if !ty_cmp_func(
                                 &self_concrete_types[i],

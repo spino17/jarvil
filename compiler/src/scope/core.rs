@@ -235,7 +235,7 @@ impl AbstractSymbolData for VariableSymbolData {
         _type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        assert!(!is_concrete_types_none_allowed);
+        debug_assert!(!is_concrete_types_none_allowed);
         if concrete_types.is_some() {
             return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
         }
@@ -261,7 +261,7 @@ impl AbstractSymbolData for FunctionSymbolData {
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        assert!(is_concrete_types_none_allowed);
+        debug_assert!(is_concrete_types_none_allowed);
         let function_data = self.0.get_core_ref();
         let generic_type_decls = &function_data.generics;
         check_concrete_types_bounded_by_interfaces(
@@ -338,7 +338,7 @@ impl AbstractSymbolData for InterfaceSymbolData {
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        assert!(!is_concrete_types_none_allowed);
+        debug_assert!(!is_concrete_types_none_allowed);
         let interface_data = self.0.get_core_ref();
         let generic_type_decls = &interface_data.generics;
         check_concrete_types_bounded_by_interfaces(

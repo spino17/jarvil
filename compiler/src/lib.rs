@@ -15,6 +15,7 @@ pub mod code;
 pub mod codegen;
 pub mod constants;
 pub mod context;
+pub mod core;
 pub mod error;
 pub mod lexer;
 pub mod parser;

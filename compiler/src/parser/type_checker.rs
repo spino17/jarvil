@@ -634,7 +634,7 @@ impl TypeChecker {
         concrete_symbol_data: &ConcreteSymbolData<VariableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
-        assert!(concrete_symbol_data.concrete_types.is_none());
+        debug_assert!(concrete_symbol_data.concrete_types.is_none());
         let lambda_type = &concrete_symbol_data.get_core_ref().data_type;
         match lambda_type.0.as_ref() {
             CoreType::Lambda(lambda_data) => {
@@ -1528,14 +1528,14 @@ impl TypeChecker {
             let operator_kind = operators[index - 1]
                 .is_binary_operator()
                 .expect("operator token is always valid");
-            assert!(
+            debug_assert!(
                 operator_kind.is_comparison(),
                 "all the operators in `ComparisonNode` should be comparison operators"
             );
             let result = self.is_binary_operation_valid(&l_type, &r_type, &operator_kind);
             match result {
                 Some(type_obj) => match type_obj.0.as_ref() {
-                    CoreType::Atomic(atomic) => assert!(atomic.is_bool()),
+                    CoreType::Atomic(atomic) => debug_assert!(atomic.is_bool()),
                     CoreType::Unknown => return Type::new_with_unknown(),
                     _ => unreachable!("comparison operator always result into `bool` type"),
                 },

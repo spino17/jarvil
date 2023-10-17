@@ -127,7 +127,7 @@ impl AbstractType for Generic {
                 }
             }
         } else {
-            assert!(decl_place == GenericTypeDeclarationPlaceCategory::InStruct);
+            debug_assert!(decl_place == GenericTypeDeclarationPlaceCategory::InStruct);
             let global_concrete_types = match global_concrete_types {
                 Some(concrete_types) => concrete_types,
                 None => unreachable!(),

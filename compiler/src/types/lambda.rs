@@ -140,7 +140,7 @@ impl AbstractType for Lambda {
                                         };
                                     let other_len = other_concrete_types.len();
 
-                                    assert!(self_len == other_len);
+                                    debug_assert!(self_len == other_len);
                                     for i in 0..self_len {
                                         if !self_concrete_types[i]
                                             .is_structurally_eq(&other_concrete_types[i], context)

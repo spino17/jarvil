@@ -350,7 +350,7 @@ impl JarvilParser {
                     //    }
                     //    None => token.start_index(),
                     //};
-                    // assert!(alternate_line_index == self.code.get_line_start_index(token.line_number));
+                    // debug_assert!(alternate_line_index == self.code.get_line_start_index(token.line_number));
                     expected_indent_spaces += self.correction_indent();
                     if indent_spaces == expected_indent_spaces {
                         return IndentResult {

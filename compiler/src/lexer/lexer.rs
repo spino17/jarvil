@@ -218,9 +218,9 @@ impl CoreLexer {
         match &core_token {
             CoreToken::LEXICAL_ERROR(err_kind) => match err_kind {
                 LexicalErrorKind::InvalidChar => {
-                    assert!(
+                    debug_assert!(
                         end_line_number == start_line_number,
-                        "invalid char should occur on the same line"
+                        "invalid char should occur on the same line",
                     );
                     self.log_invalid_char_error(&token);
                 }
