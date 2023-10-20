@@ -142,7 +142,7 @@ pub struct SymbolDataCore<T: AbstractConcreteTypesHandler> {
     pub identifier_name: StrId,
     pub identifier_data: RefCell<T>,
     pub declaration_line_number: TextRange,
-    unique_id: Option<usize>,
+    pub unique_id: Option<usize>,
 }
 
 impl<T: AbstractConcreteTypesHandler> SymbolDataCore<T> {
@@ -196,6 +196,10 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
             jarvil_identifer_name: self.identifier_name(),
             unique_id: self.0.unique_id,
         }
+    }
+
+    pub fn get_index(&self) -> Option<usize> {
+        self.0.unique_id
     }
 }
 

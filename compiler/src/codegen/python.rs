@@ -15,7 +15,7 @@ use crate::{
     context,
     lexer::token::{CoreToken, Token},
     scope::{
-        core::MangledIdentifierName,
+        core::{AbstractSymbolData, LookupResult, MangledIdentifierName},
         handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
     },
 };
@@ -73,8 +73,19 @@ impl PythonCodeGenerator {
         //    "\n\nif __name__ == \"__main__\":\n{}main_func()",
         //    get_whitespaces_from_indent_level(1)
         //);
-        let main_call_str = "\n\nmain_func()";
-        self.add_str_to_python_code(main_call_str);
+        let index = match self
+            .semantic_state_db
+            .namespace
+            .lookup_in_functions_namespace(0, &self.semantic_state_db.interner.intern("main"))
+        {
+            LookupResult::Ok(lookup_data) => match lookup_data.symbol_data.0.get_index() {
+                Some(index) => index,
+                None => unreachable!(),
+            },
+            LookupResult::Unresolved | LookupResult::NotInitialized(_) => unreachable!(),
+        };
+        let main_call_str = format!("\n\nmain_{}_func()", index);
+        self.add_str_to_python_code(&main_call_str);
         self.generate_code
     }
 
