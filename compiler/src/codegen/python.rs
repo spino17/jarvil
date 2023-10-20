@@ -41,7 +41,7 @@ pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
 
 pub struct PythonCodeGenerator {
     indent_level: usize,
-    generate_code: String,
+    generated_code: String,
     code: JarvilCode,
     semantic_state_db: SemanticStateDatabase,
 }
@@ -50,7 +50,7 @@ impl PythonCodeGenerator {
     pub fn new(code: JarvilCode, semantic_state_db: SemanticStateDatabase) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
-            generate_code: "".to_string(),
+            generated_code: "".to_string(),
             code,
             semantic_state_db,
         }
@@ -86,11 +86,11 @@ impl PythonCodeGenerator {
         };
         let main_call_str = format!("\n\nmain_{}_func()", index);
         self.add_str_to_python_code(&main_call_str);
-        self.generate_code
+        self.generated_code
     }
 
     pub fn add_str_to_python_code(&mut self, str: &str) {
-        self.generate_code.push_str(str);
+        self.generated_code.push_str(str);
     }
 
     pub fn get_non_locals(&self, block: &BlockNode) -> &FxHashSet<MangledIdentifierName> {
