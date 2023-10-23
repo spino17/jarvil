@@ -4,7 +4,6 @@ use crate::scope::core::SymbolData;
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use std::cell::Ref;
-use std::cell::RefMut;
 use std::ops::Index;
 use std::slice::Iter;
 

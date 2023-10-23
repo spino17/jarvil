@@ -15,7 +15,7 @@ use crate::{
     context,
     lexer::token::{CoreToken, Token},
     scope::{
-        core::{AbstractSymbolData, LookupResult, MangledIdentifierName},
+        core::{LookupResult, MangledIdentifierName},
         handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
     },
 };
