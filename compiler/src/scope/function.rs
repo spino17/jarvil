@@ -340,10 +340,13 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     Ok(concrete_return_ty)
                 }
                 None => {
-                    let return_ty = self
+                    let concrete_prototype = self
                         .callable_data
                         .prototype
-                        .is_received_params_valid(type_checker, received_params)?;
+                        .concretize_prototype(self.concrete_types, None);
+                    let prototype_ref = concrete_prototype.get_prototype_ref();
+                    let return_ty =
+                        prototype_ref.is_received_params_valid(type_checker, received_params)?;
                     Ok(return_ty)
                 }
             },
