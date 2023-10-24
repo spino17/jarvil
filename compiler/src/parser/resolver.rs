@@ -1852,6 +1852,7 @@ impl Resolver {
 impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
+            // TODO - add cases for `break` and `continue` statements!
             ASTNode::Block(block) => {
                 let core_block = block.0.as_ref();
                 self.open_block(core_block.kind);
