@@ -2,11 +2,12 @@ use super::ast::{
     ArrayExpressionNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode,
     AtomicExpressionNode, AtomicTypeNode, BinaryExpressionNode, BlockNode,
     BoundedMethodWrapperNode, CallExpressionNode, CallNode, CallableBodyNode,
-    CallablePrototypeNode, ClassMethodCallNode, ComparisonNode, CoreArrayExpressionNode,
-    CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
-    CoreAtomicExpressionNode, CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode,
-    CoreBoundedMethodWrapperNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
-    CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode, CoreExpressionNode,
+    CallablePrototypeNode, ClassMethodCallNode, ComparisonNode, ConditionalBlockNode,
+    ConditionalStatementNode, CoreArrayExpressionNode, CoreArrayTypeNode, CoreAssignmentNode,
+    CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreAtomicTypeNode,
+    CoreBinaryExpressionNode, CoreBlockNode, CoreBoundedMethodWrapperNode, CoreCallExpressionNode,
+    CoreCallNode, CoreCallableBodyNode, CoreCallablePrototypeNode, CoreClassMethodCallNode,
+    CoreComparisonNode, CoreConditionalBlockNode, CoreConditionalStatementNode, CoreExpressionNode,
     CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
     CoreGenericTypeDeclNode, CoreHashMapExpressionNode, CoreHashMapTypeNode,
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode,
@@ -755,6 +756,72 @@ impl Node for InterfaceMethodPrototypeWrapperNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().def_keyword.start_line_number()
+    }
+}
+
+impl ConditionalBlockNode {
+    pub fn new(
+        condition_keyword: &TokenNode,
+        condition_expr: &ExpressionNode,
+        colon: &TokenNode,
+        block: &BlockNode,
+    ) -> Self {
+        let node = Rc::new(CoreConditionalBlockNode {
+            condition_keyword: condition_keyword.clone(),
+            condition_expr: condition_expr.clone(),
+            colon: colon.clone(),
+            block: block.clone(),
+        });
+        ConditionalBlockNode(node)
+    }
+
+    impl_core_ref!(CoreConditionalBlockNode);
+}
+
+impl Node for ConditionalBlockNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().condition_keyword, self.core_ref().block)
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().condition_keyword.start_line_number()
+    }
+}
+
+impl ConditionalStatementNode {
+    pub fn new(
+        if_block: &ConditionalBlockNode,
+        elifs: Vec<ConditionalBlockNode>,
+        else_block: Option<(TokenNode, TokenNode, BlockNode)>,
+    ) -> Self {
+        let node = Rc::new(CoreConditionalStatementNode {
+            if_block: if_block.clone(),
+            elifs,
+            else_block: else_block.clone(),
+        });
+        ConditionalStatementNode(node)
+    }
+
+    impl_core_ref!(CoreConditionalStatementNode);
+}
+
+impl Node for ConditionalStatementNode {
+    fn range(&self) -> TextRange {
+        let core_ref = self.core_ref();
+        match &core_ref.else_block {
+            Some((_, _, else_block)) => {
+                impl_range!(core_ref.if_block, else_block)
+            }
+            None => {
+                if core_ref.elifs.is_empty() {
+                    core_ref.if_block.range()
+                } else {
+                    impl_range!(core_ref.if_block, core_ref.elifs.last().unwrap())
+                }
+            }
+        }
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().if_block.start_line_number()
     }
 }
 

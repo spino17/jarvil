@@ -36,6 +36,8 @@ pub enum ASTNode {
     IncorrectlyIndentedStatement(IncorrectlyIndentedStatementNode),
     Statement(StatementNode),
     Return(ReturnStatementNode),
+    Conditional(ConditionalStatementNode),
+    ConditionalBlock(ConditionalBlockNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
     InterfaceMethodPrototypeWrapper(InterfaceMethodPrototypeWrapperNode),
     VariableDeclaration(VariableDeclarationNode),
@@ -128,6 +130,7 @@ pub enum CoreStatementNode {
     Assignment(AssignmentNode),
     VariableDeclaration(VariableDeclarationNode),
     Return(ReturnStatementNode),
+    Conditional(ConditionalStatementNode),
     FunctionWrapper(FunctionWrapperNode),
     BoundedMethodWrapper(BoundedMethodWrapperNode),
     TypeDeclaration(TypeDeclarationNode),
@@ -156,6 +159,21 @@ pub struct CoreInterfaceMethodPrototypeWrapperNode {
     pub name: IdentifierInDeclNode,
     pub prototype: CallablePrototypeNode,
     pub terminal: InterfaceMethodTerminalNode,
+}
+
+#[derive(Debug)]
+pub struct CoreConditionalStatementNode {
+    pub if_block: ConditionalBlockNode,
+    pub elifs: Vec<ConditionalBlockNode>,
+    pub else_block: Option<(TokenNode, TokenNode, BlockNode)>, // ('else', ':', block)
+}
+
+#[derive(Debug)]
+pub struct CoreConditionalBlockNode {
+    pub condition_keyword: TokenNode, // 'if' or 'elif'
+    pub condition_expr: ExpressionNode,
+    pub colon: TokenNode,
+    pub block: BlockNode,
 }
 
 #[derive(Debug)]
@@ -691,6 +709,10 @@ pub struct KeyValuePairNode(pub Rc<CoreKeyValuePairNode>);
 pub struct HashMapExpressionNode(pub Rc<CoreHashMapExpressionNode>);
 #[derive(Debug, Clone)]
 pub struct TupleExpressionNode(pub Rc<CoreTupleExpressionNode>);
+#[derive(Debug, Clone)]
+pub struct ConditionalStatementNode(pub Rc<CoreConditionalStatementNode>);
+#[derive(Debug, Clone)]
+pub struct ConditionalBlockNode(pub Rc<CoreConditionalBlockNode>);
 
 pub enum UnresolvedIdentifier<'a> {
     Unresolved(&'a OkIdentifierInUseNode),

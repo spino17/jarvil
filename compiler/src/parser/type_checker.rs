@@ -1827,6 +1827,7 @@ impl TypeChecker {
             CoreStatementNode::Return(return_stmt) => {
                 self.check_return_stmt(return_stmt);
             }
+            CoreStatementNode::Conditional(conditional_stmt) => todo!(),
             CoreStatementNode::TypeDeclaration(type_decl) => match type_decl.core_ref() {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {
                     // self.walk_block(&struct_decl.core_ref().block);

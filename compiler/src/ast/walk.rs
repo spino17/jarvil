@@ -1,9 +1,9 @@
 use super::ast::{
-    ArrayExpressionNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode, GenericTypeDeclNode,
-    HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
-    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, KeyValuePairNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, SymbolSeparatedSequenceNode,
-    TupleExpressionNode, TupleTypeNode,
+    ArrayExpressionNode, ConditionalBlockNode, ConditionalStatementNode, CoreIdentifierInDeclNode,
+    CoreIdentifierInUseNode, GenericTypeDeclNode, HashMapExpressionNode, IdentifierInDeclNode,
+    IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
+    InterfaceMethodTerminalNode, KeyValuePairNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode,
 };
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
@@ -69,6 +69,16 @@ pub trait Visitor {
         walk_expr_stmt,
         ExpressionStatementNode,
         new_with_ExpressionStatementNode
+    );
+    impl_node_walk!(
+        walk_conditional,
+        ConditionalStatementNode,
+        new_with_ConditionalStatementNode
+    );
+    impl_node_walk!(
+        walk_conditional_block,
+        ConditionalBlockNode,
+        new_with_ConditionalBlockNode
     );
     impl_node_walk!(walk_assignment, AssignmentNode, new_with_AssignmentNode);
     impl_node_walk!(
@@ -432,6 +442,9 @@ pub trait Visitor {
                 CoreStatementNode::Return(return_stmt) => {
                     self.walk_return_stmt(return_stmt);
                 }
+                CoreStatementNode::Conditional(conditional_stmt) => {
+                    self.walk_conditional(conditional_stmt);
+                }
             },
             ASTNode::ExpressionStatement(expr_stmt) => {
                 let core_expr_stmt = expr_stmt.core_ref();
@@ -446,6 +459,25 @@ pub trait Visitor {
                     self.walk_invalid_l_value_assignment(invalid_l_value_assignment);
                 }
             },
+            ASTNode::Conditional(conditional_stmt) => {
+                let core_conditional_stmt = conditional_stmt.core_ref();
+                self.walk_conditional_block(&core_conditional_stmt.if_block);
+                for elif_block in &core_conditional_stmt.elifs {
+                    self.walk_conditional_block(&elif_block);
+                }
+                if let Some((else_keyword, colon, else_block)) = &core_conditional_stmt.else_block {
+                    self.walk_token(else_keyword);
+                    self.walk_token(colon);
+                    self.walk_block(else_block);
+                }
+            }
+            ASTNode::ConditionalBlock(conditional_block) => {
+                let core_conditional_block = conditional_block.core_ref();
+                self.walk_token(&core_conditional_block.condition_keyword);
+                self.walk_expression(&core_conditional_block.condition_expr);
+                self.walk_token(&core_conditional_block.colon);
+                self.walk_block(&core_conditional_block.block);
+            }
             ASTNode::OkAssignment(ok_assignment) => {
                 let core_ok_assignment = ok_assignment.core_ref();
                 self.walk_atom(&core_ok_assignment.l_atom);
