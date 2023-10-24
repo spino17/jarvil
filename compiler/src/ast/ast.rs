@@ -30,10 +30,12 @@ pub trait ErrornousNode {
 #[derive(Debug, Clone, Nodify)]
 pub enum ASTNode {
     Block(BlockNode),
-    StatementIndentWrapper(StatemenIndentWrapperNode),
+    StatementIndentWrapper(StatementIndentWrapperNode),
     SkippedTokens(SkippedTokensNode),
     IncorrectlyIndentedStatement(IncorrectlyIndentedStatementNode),
     Statement(StatementNode),
+    Break(BreakStatementNode),
+    Continue(ContinueStatementNode),
     Return(ReturnStatementNode),
     Conditional(ConditionalStatementNode),
     ConditionalBlock(ConditionalBlockNode),
@@ -98,12 +100,12 @@ pub enum ASTNode {
 #[derive(Debug)]
 pub struct CoreBlockNode {
     pub newline: TokenNode,
-    pub stmts: Rc<Vec<StatemenIndentWrapperNode>>,
+    pub stmts: Rc<Vec<StatementIndentWrapperNode>>,
     pub kind: BlockKind,
 }
 
 #[derive(Debug, Node)]
-pub enum CoreStatemenIndentWrapperNode {
+pub enum CoreStatementIndentWrapperNode {
     CorrectlyIndented(StatementNode),
     IncorrectlyIndented(IncorrectlyIndentedStatementNode),
     LeadingSkippedTokens(SkippedTokensNode), // skipped tokens leading to the next stmt in block
@@ -130,12 +132,26 @@ pub enum CoreStatementNode {
     VariableDeclaration(VariableDeclarationNode),
     Return(ReturnStatementNode),
     Conditional(ConditionalStatementNode),
+    Break(BreakStatementNode),
+    Continue(ContinueStatementNode),
     FunctionWrapper(FunctionWrapperNode),
     BoundedMethodWrapper(BoundedMethodWrapperNode),
     TypeDeclaration(TypeDeclarationNode),
     StructPropertyDeclaration(StructPropertyDeclarationNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
     InterfaceMethodPrototypeWrapper(InterfaceMethodPrototypeWrapperNode),
+}
+
+#[derive(Debug)]
+pub struct CoreBreakStatementNode {
+    pub break_keyword: TokenNode,
+    pub newline: TokenNode,
+}
+
+#[derive(Debug)]
+pub struct CoreContinueStatementNode {
+    pub continue_keyword: TokenNode,
+    pub newline: TokenNode,
 }
 
 #[derive(Debug)]
@@ -585,7 +601,7 @@ pub struct CoreGenericTypeDeclNode {
 #[derive(Debug, Clone)]
 pub struct BlockNode(pub Rc<CoreBlockNode>);
 #[derive(Debug, Clone)]
-pub struct StatemenIndentWrapperNode(pub Rc<CoreStatemenIndentWrapperNode>);
+pub struct StatementIndentWrapperNode(pub Rc<CoreStatementIndentWrapperNode>);
 #[derive(Debug, Clone)]
 pub struct SkippedTokensNode(pub Rc<CoreSkippedTokensNode>);
 #[derive(Debug, Clone)]
@@ -712,6 +728,10 @@ pub struct TupleExpressionNode(pub Rc<CoreTupleExpressionNode>);
 pub struct ConditionalStatementNode(pub Rc<CoreConditionalStatementNode>);
 #[derive(Debug, Clone)]
 pub struct ConditionalBlockNode(pub Rc<CoreConditionalBlockNode>);
+#[derive(Debug, Clone)]
+pub struct BreakStatementNode(pub Rc<CoreBreakStatementNode>);
+#[derive(Debug, Clone)]
+pub struct ContinueStatementNode(pub Rc<CoreContinueStatementNode>);
 
 pub enum UnresolvedIdentifier<'a> {
     Unresolved(&'a OkIdentifierInUseNode),

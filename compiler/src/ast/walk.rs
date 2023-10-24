@@ -1,9 +1,10 @@
 use super::ast::{
-    ArrayExpressionNode, ConditionalBlockNode, ConditionalStatementNode, CoreIdentifierInDeclNode,
-    CoreIdentifierInUseNode, GenericTypeDeclNode, HashMapExpressionNode, IdentifierInDeclNode,
-    IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
-    InterfaceMethodTerminalNode, KeyValuePairNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
-    SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode,
+    ArrayExpressionNode, BreakStatementNode, ConditionalBlockNode, ConditionalStatementNode,
+    ContinueStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode, GenericTypeDeclNode,
+    HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
+    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, KeyValuePairNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, SymbolSeparatedSequenceNode,
+    TupleExpressionNode, TupleTypeNode,
 };
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
@@ -11,7 +12,7 @@ use crate::ast::ast::{
     CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
     CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
     CoreExpressionNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-    CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
+    CoreStatementIndentWrapperNode, CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
     CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode, ExpressionStatementNode,
     FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
@@ -19,9 +20,9 @@ use crate::ast::ast::{
     OkAssignmentNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
     ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
     ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, SkippedTokensNode,
-    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
-    TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
-    VariableDeclarationNode,
+    StatementIndentWrapperNode, StatementNode, StructDeclarationNode,
+    StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
@@ -36,8 +37,8 @@ pub trait Visitor {
     impl_node_walk!(walk_block, BlockNode, new_with_BlockNode);
     impl_node_walk!(
         walk_stmt_indent_wrapper,
-        StatemenIndentWrapperNode,
-        new_with_StatemenIndentWrapperNode
+        StatementIndentWrapperNode,
+        new_with_StatementIndentWrapperNode
     );
     impl_node_walk!(walk_stmt, StatementNode, new_with_StatementNode);
     impl_node_walk!(
@@ -59,6 +60,16 @@ pub trait Visitor {
         walk_interface_decl,
         InterfaceDeclarationNode,
         new_with_InterfaceDeclarationNode
+    );
+    impl_node_walk!(
+        walk_break_stmt,
+        BreakStatementNode,
+        new_with_BreakStatementNode
+    );
+    impl_node_walk!(
+        walk_continue_stmt,
+        ContinueStatementNode,
+        new_with_ContinueStatementNode
     );
     impl_node_walk!(
         walk_interface_method_prototype_wrapper,
@@ -381,19 +392,19 @@ pub trait Visitor {
             }
             ASTNode::StatementIndentWrapper(stmt_indent_wrapper_node) => {
                 match stmt_indent_wrapper_node.core_ref() {
-                    CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => {
+                    CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => {
                         self.walk_stmt(stmt);
                     }
-                    CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
+                    CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => {
                         self.walk_incorrectly_indented_stmt(stmt);
                     }
-                    CoreStatemenIndentWrapperNode::LeadingSkippedTokens(skipped_tokens) => {
+                    CoreStatementIndentWrapperNode::LeadingSkippedTokens(skipped_tokens) => {
                         self.walk_skipped_tokens(skipped_tokens);
                     }
-                    CoreStatemenIndentWrapperNode::TrailingSkippedTokens(skipped_tokens) => {
+                    CoreStatementIndentWrapperNode::TrailingSkippedTokens(skipped_tokens) => {
                         self.walk_skipped_tokens(skipped_tokens);
                     }
-                    CoreStatemenIndentWrapperNode::ExtraNewlines(skipped_tokens) => {
+                    CoreStatementIndentWrapperNode::ExtraNewlines(skipped_tokens) => {
                         self.walk_skipped_tokens(skipped_tokens);
                     }
                 }
@@ -410,6 +421,10 @@ pub trait Visitor {
             ASTNode::Statement(statement_node) => match statement_node.core_ref() {
                 CoreStatementNode::Expression(expr_stmt) => {
                     self.walk_expr_stmt(expr_stmt);
+                }
+                CoreStatementNode::Break(break_stmt) => self.walk_break_stmt(break_stmt),
+                CoreStatementNode::Continue(continue_stmt) => {
+                    self.walk_continue_stmt(continue_stmt)
                 }
                 CoreStatementNode::Assignment(assignment) => {
                     self.walk_assignment(assignment);
@@ -446,6 +461,14 @@ pub trait Visitor {
                     self.walk_conditional(conditional_stmt);
                 }
             },
+            ASTNode::Break(break_stmt) => {
+                self.walk_token(&break_stmt.core_ref().break_keyword);
+                self.walk_token(&break_stmt.core_ref().newline);
+            }
+            ASTNode::Continue(continue_stmt) => {
+                self.walk_token(&continue_stmt.core_ref().continue_keyword);
+                self.walk_token(&continue_stmt.core_ref().newline);
+            }
             ASTNode::ExpressionStatement(expr_stmt) => {
                 let core_expr_stmt = expr_stmt.core_ref();
                 self.walk_expression(&core_expr_stmt.expr);

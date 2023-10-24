@@ -3,7 +3,7 @@ use crate::{
         ast::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
             ClassMethodCallNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
-            CoreRVariableDeclarationNode, CoreStatemenIndentWrapperNode, CoreTokenNode,
+            CoreRVariableDeclarationNode, CoreStatementIndentWrapperNode, CoreTokenNode,
             CoreTypeDeclarationNode, IdentifierInDeclNode, IdentifierInUseNode,
             OkIdentifierInDeclNode, OkIdentifierInUseNode, TokenNode, TypeDeclarationNode,
             VariableDeclarationNode,
@@ -416,11 +416,11 @@ impl Visitor for PythonCodeGenerator {
             ASTNode::StatementIndentWrapper(stmt_wrapper) => {
                 let core_stmt_wrapper = stmt_wrapper.core_ref();
                 match core_stmt_wrapper {
-                    CoreStatemenIndentWrapperNode::CorrectlyIndented(ok_stmt) => {
+                    CoreStatementIndentWrapperNode::CorrectlyIndented(ok_stmt) => {
                         // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                         self.walk_stmt(ok_stmt);
                     }
-                    CoreStatemenIndentWrapperNode::ExtraNewlines(extra_newlines) => {
+                    CoreStatementIndentWrapperNode::ExtraNewlines(extra_newlines) => {
                         let core_extra_newlines = extra_newlines.core_ref();
                         for extra_newline in &core_extra_newlines.skipped_tokens {
                             let core_token = &extra_newline.core_ref().skipped_token;
@@ -428,9 +428,9 @@ impl Visitor for PythonCodeGenerator {
                             self.print_token(core_token);
                         }
                     }
-                    CoreStatemenIndentWrapperNode::IncorrectlyIndented(_) => unreachable!(),
-                    CoreStatemenIndentWrapperNode::LeadingSkippedTokens(_) => unreachable!(),
-                    CoreStatemenIndentWrapperNode::TrailingSkippedTokens(_) => unreachable!(),
+                    CoreStatementIndentWrapperNode::IncorrectlyIndented(_) => unreachable!(),
+                    CoreStatementIndentWrapperNode::LeadingSkippedTokens(_) => unreachable!(),
+                    CoreStatementIndentWrapperNode::TrailingSkippedTokens(_) => unreachable!(),
                 }
                 None
             }

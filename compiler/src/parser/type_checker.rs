@@ -2,7 +2,7 @@
 // cover and the representation of type expressions in terms of type objects.
 
 use crate::ast::ast::{
-    ArrayExpressionNode, CallExpressionNode, CallNode, ClassMethodCallNode,
+    ArrayExpressionNode, CallExpressionNode, CallNode, ClassMethodCallNode, ConditionalBlockNode,
     ConditionalStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
     HashMapExpressionNode, IndexAccessNode, InterfaceMethodTerminalNode, MethodAccessNode,
     OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode,
@@ -38,7 +38,7 @@ use crate::{
             BinaryExpressionNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode,
             CallablePrototypeNode, ComparisonNode, CoreAssignmentNode, CoreAtomNode,
             CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
-            CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatemenIndentWrapperNode,
+            CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatementIndentWrapperNode,
             CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreUnaryExpressionNode,
             ExpressionNode, LambdaDeclarationNode, NameTypeSpecNode, Node, OnlyUnaryExpressionNode,
             RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, StatementNode,
@@ -1688,8 +1688,8 @@ impl TypeChecker {
         let mut has_return_stmt: Option<TextRange> = None;
         for stmt in body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
-                CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
-                CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
+                CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => {
                     let core_stmt = stmt.core_ref();
                     &core_stmt.stmt
                 }
@@ -1806,8 +1806,30 @@ impl TypeChecker {
         self.walk_block(&core_struct_decl.block);
     }
 
+    fn check_conditional_block(&mut self, conditional_block: &ConditionalBlockNode) {
+        let core_conditional_block = conditional_block.core_ref();
+        let condition_expr = &core_conditional_block.condition_expr;
+        let ty = self.check_expr(condition_expr);
+        if !ty.is_bool() {
+            let err = IncorrectExpressionTypeError::new(
+                "bool".to_string(),
+                ty.to_string(&self.semantic_state_db.interner),
+                condition_expr.range(),
+            );
+            self.log_error(Diagnostics::IncorrectExpressionType(err));
+        }
+        self.walk_block(&core_conditional_block.block);
+    }
+
     pub fn check_conditional_stmt(&mut self, conditional_stmt: &ConditionalStatementNode) {
-        todo!()
+        let core_conditional_stmt = conditional_stmt.core_ref();
+        self.check_conditional_block(&core_conditional_stmt.if_block);
+        for elif in &core_conditional_stmt.elifs {
+            self.check_conditional_block(elif);
+        }
+        if let Some((_, _, else_block)) = &core_conditional_stmt.else_block {
+            self.walk_block(else_block);
+        }
     }
 
     pub fn check_stmt(&mut self, stmt: &StatementNode) {
@@ -1860,7 +1882,9 @@ impl TypeChecker {
                     );
                 }
             }
-            CoreStatementNode::StructPropertyDeclaration(_) => (),
+            CoreStatementNode::StructPropertyDeclaration(_)
+            | CoreStatementNode::Break(_)
+            | CoreStatementNode::Continue(_) => (),
         }
     }
 

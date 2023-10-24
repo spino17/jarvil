@@ -29,6 +29,7 @@ pub enum Diagnostics {
     IdentifierFoundInNonLocals(IdentifierFoundInNonLocalsError),
     IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
+    InvalidLoopControlFlowStatementFound(InvalidLoopControlFlowStatementFoundError),
     NonVoidConstructorReturnType(NonVoidConstructorReturnTypeError),
     NonStructConstructorReturnType(NonStructConstructorReturnTypeError),
     MismatchedConstructorReturnType(MismatchedConstructorReturnTypeError),
@@ -201,6 +202,9 @@ impl Diagnostics {
             }
             Diagnostics::IncorrectExpressionType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::ExpressionTypeCannotBeInferred(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InvalidLoopControlFlowStatementFound(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -780,6 +784,24 @@ impl InitMethodNotAllowedInsideConstructorError {
     pub fn new(span: TextRange) -> Self {
         InitMethodNotAllowedInsideConstructorError {
             span: range_to_span(span).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("invalid {} statement found", self.kind)]
+#[diagnostic(code("SemanticError"))]
+pub struct InvalidLoopControlFlowStatementFoundError {
+    pub kind: &'static str,
+    #[label("no enclosing loop found for the statmement")]
+    pub span: SourceSpan,
+}
+
+impl InvalidLoopControlFlowStatementFoundError {
+    pub fn new(span: TextRange, kind: &'static str) -> Self {
+        InvalidLoopControlFlowStatementFoundError {
+            span: range_to_span(span).into(),
+            kind,
         }
     }
 }

@@ -14,8 +14,8 @@ use crate::error::diagnostics::{
     IdentifierNotFoundInAnyNamespaceError, IdentifierUsedBeforeInitializedError,
     InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError,
     InitMethodNotAllowedInsideConstructorError, InterfaceAlreadyExistInBoundsDeclarationError,
-    MainFunctionNotFoundError, MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError,
-    SelfNotFoundError,
+    InvalidLoopControlFlowStatementFoundError, MainFunctionNotFoundError,
+    MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
@@ -34,7 +34,7 @@ use crate::types::core::AbstractType;
 use crate::{
     ast::{
         ast::{
-            ASTNode, BlockNode, CoreAtomStartNode, CoreStatemenIndentWrapperNode,
+            ASTNode, BlockNode, CoreAtomStartNode, CoreStatementIndentWrapperNode,
             CoreStatementNode, Node, StructDeclarationNode, TypeExpressionNode, TypeResolveKind,
             VariableDeclarationNode,
         },
@@ -289,6 +289,21 @@ impl Resolver {
             }
         }
         false
+    }
+
+    pub fn check_enclosing_loop_scope(&self) -> bool {
+        let mut index = self.context.block_context_stack.len() - 1;
+        loop {
+            let block_kind = self.context.block_context_stack[index].block_kind;
+            match block_kind {
+                BlockKind::Loop => return true,
+                BlockKind::Function | BlockKind::Lambda | BlockKind::Method => return false,
+                BlockKind::Struct | BlockKind::Interface | BlockKind::LambdaType => unreachable!(),
+                BlockKind::Conditional => {
+                    index -= 1;
+                }
+            }
+        }
     }
 
     pub fn get_enclosing_generics_declarative_scope_index(&self) -> (usize, Option<usize>) {
@@ -1148,8 +1163,8 @@ impl Resolver {
             self.declare_callable_prototype(&core_callable_body.prototype, None);
         for stmt in callable_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
-                CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
-                CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
+                CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => {
                     let core_stmt = stmt.core_ref();
                     &core_stmt.stmt
                 }
@@ -1427,8 +1442,8 @@ impl Resolver {
         let mut initialized_fields: FxHashSet<StrId> = FxHashSet::default();
         for stmt in struct_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
-                CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
-                CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
+                CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
                 _ => continue,
             };
             match stmt.core_ref() {
@@ -1768,8 +1783,8 @@ impl Resolver {
         let mut methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
         for stmt in interface_body.0.as_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
-                CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
-                CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
+                CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
                 _ => continue,
             };
             match stmt.core_ref() {
@@ -1852,7 +1867,6 @@ impl Resolver {
 impl Visitor for Resolver {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
-            // TODO - add cases for `break` and `continue` statements!
             ASTNode::Block(block) => {
                 let core_block = block.0.as_ref();
                 self.open_block(core_block.kind);
@@ -1860,6 +1874,26 @@ impl Visitor for Resolver {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block(Some(block));
+                None
+            }
+            ASTNode::Break(break_stmt) => {
+                if !self.check_enclosing_loop_scope() {
+                    let err =
+                        InvalidLoopControlFlowStatementFoundError::new(break_stmt.range(), "break");
+                    self.errors
+                        .push(Diagnostics::InvalidLoopControlFlowStatementFound(err));
+                }
+                None
+            }
+            ASTNode::Continue(continue_stmt) => {
+                if !self.check_enclosing_loop_scope() {
+                    let err = InvalidLoopControlFlowStatementFoundError::new(
+                        continue_stmt.range(),
+                        "continue",
+                    );
+                    self.errors
+                        .push(Diagnostics::InvalidLoopControlFlowStatementFound(err));
+                }
                 None
             }
             ASTNode::VariableDeclaration(variable_decl) => {

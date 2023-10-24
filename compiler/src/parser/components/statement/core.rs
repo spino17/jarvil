@@ -1,4 +1,7 @@
-use crate::ast::ast::{CallableKind, StatementNode, StructPropertyDeclarationNode};
+use crate::ast::ast::{
+    BreakStatementNode, CallableKind, ContinueStatementNode, StatementNode,
+    StructPropertyDeclarationNode,
+};
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::JarvilParser;
@@ -115,8 +118,22 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
                 }
             }
         }
-        CoreToken::BREAK => todo!(),
-        CoreToken::CONTINUE => todo!(),
+        CoreToken::BREAK => {
+            let break_keyword_node = parser.expect("break");
+            let newline_node = parser.expect_terminators();
+            StatementNode::new_with_break_statment(BreakStatementNode::new(
+                break_keyword_node,
+                newline_node,
+            ))
+        }
+        CoreToken::CONTINUE => {
+            let continue_keyword_node = parser.expect("continue");
+            let newline_node = parser.expect_terminators();
+            StatementNode::new_with_continue_statment(ContinueStatementNode::new(
+                continue_keyword_node,
+                newline_node,
+            ))
+        }
         _ => {
             let expr_node = parser.expr();
             let token = parser.curr_token();

@@ -1,24 +1,25 @@
 use super::ast::{
     ArrayExpressionNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode,
     AtomicExpressionNode, AtomicTypeNode, BinaryExpressionNode, BlockNode,
-    BoundedMethodWrapperNode, CallExpressionNode, CallNode, CallableBodyNode,
+    BoundedMethodWrapperNode, BreakStatementNode, CallExpressionNode, CallNode, CallableBodyNode,
     CallablePrototypeNode, ClassMethodCallNode, ComparisonNode, ConditionalBlockNode,
-    ConditionalStatementNode, CoreArrayExpressionNode, CoreArrayTypeNode, CoreAssignmentNode,
-    CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreAtomicTypeNode,
-    CoreBinaryExpressionNode, CoreBlockNode, CoreBoundedMethodWrapperNode, CoreCallExpressionNode,
-    CoreCallNode, CoreCallableBodyNode, CoreCallablePrototypeNode, CoreClassMethodCallNode,
-    CoreComparisonNode, CoreConditionalBlockNode, CoreConditionalStatementNode, CoreExpressionNode,
-    CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
-    CoreGenericTypeDeclNode, CoreHashMapExpressionNode, CoreHashMapTypeNode,
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode,
-    CoreIndexAccessNode, CoreInterfaceDeclarationNode, CoreInterfaceMethodPrototypeWrapperNode,
-    CoreInvalidLValueNode, CoreKeyValuePairNode, CoreLambdaDeclarationNode,
-    CoreLambdaTypeDeclarationNode, CoreMethodAccessNode, CoreMissingTokenNode,
-    CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
+    ConditionalStatementNode, ContinueStatementNode, CoreArrayExpressionNode, CoreArrayTypeNode,
+    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
+    CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode, CoreBoundedMethodWrapperNode,
+    CoreBreakStatementNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
+    CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode,
+    CoreConditionalBlockNode, CoreConditionalStatementNode, CoreContinueStatementNode,
+    CoreExpressionNode, CoreExpressionStatementNode, CoreFunctionDeclarationNode,
+    CoreFunctionWrapperNode, CoreGenericTypeDeclNode, CoreHashMapExpressionNode,
+    CoreHashMapTypeNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
+    CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode, CoreInterfaceDeclarationNode,
+    CoreInterfaceMethodPrototypeWrapperNode, CoreInvalidLValueNode, CoreKeyValuePairNode,
+    CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMethodAccessNode,
+    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
     CoreOkIdentifierInUseNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
     CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
-    CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatemenIndentWrapperNode, CoreStatementNode,
+    CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatementIndentWrapperNode, CoreStatementNode,
     CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreSymbolSeparatedSequenceNode,
     CoreTokenNode, CoreTupleExpressionNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
     CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
@@ -30,7 +31,7 @@ use super::ast::{
     MethodAccessNode, NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode,
     OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
     ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
-    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatemenIndentWrapperNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatementIndentWrapperNode,
     StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
     SymbolSeparatedSequenceNode, TokenNode, TupleExpressionNode, TupleTypeNode,
     TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
@@ -52,7 +53,11 @@ use text_size::TextRange;
 use text_size::TextSize;
 
 impl BlockNode {
-    pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: TokenNode, kind: BlockKind) -> Self {
+    pub fn new(
+        stmts: Vec<StatementIndentWrapperNode>,
+        newline: TokenNode,
+        kind: BlockKind,
+    ) -> Self {
         let node = Rc::new(CoreBlockNode {
             newline,
             stmts: Rc::new(stmts),
@@ -73,7 +78,7 @@ impl Node for BlockNode {
             let mut is_empty = false;
             loop {
                 match core_block.stmts[index].core_ref() {
-                    CoreStatemenIndentWrapperNode::ExtraNewlines(_) => {}
+                    CoreStatementIndentWrapperNode::ExtraNewlines(_) => {}
                     _ => break,
                 }
                 if index == 0 {
@@ -111,10 +116,10 @@ impl Hash for BlockNode {
     }
 }
 
-impl StatemenIndentWrapperNode {
+impl StatementIndentWrapperNode {
     pub fn new_with_correctly_indented(stmt: StatementNode) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt));
-        StatemenIndentWrapperNode(node)
+        let node = Rc::new(CoreStatementIndentWrapperNode::CorrectlyIndented(stmt));
+        StatementIndentWrapperNode(node)
     }
 
     pub fn new_with_incorrectly_indented(
@@ -122,32 +127,34 @@ impl StatemenIndentWrapperNode {
         expected_indent: i64,
         received_indent: i64,
     ) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::IncorrectlyIndented(
+        let node = Rc::new(CoreStatementIndentWrapperNode::IncorrectlyIndented(
             IncorrectlyIndentedStatementNode::new(stmt, expected_indent, received_indent),
         ));
-        StatemenIndentWrapperNode(node)
+        StatementIndentWrapperNode(node)
     }
 
     pub fn new_with_leading_skipped_tokens(skipped_tokens: SkippedTokensNode) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::LeadingSkippedTokens(
+        let node = Rc::new(CoreStatementIndentWrapperNode::LeadingSkippedTokens(
             skipped_tokens,
         ));
-        StatemenIndentWrapperNode(node)
+        StatementIndentWrapperNode(node)
     }
 
     pub fn new_with_trailing_skipped_tokens(skipped_tokens: SkippedTokensNode) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::TrailingSkippedTokens(
+        let node = Rc::new(CoreStatementIndentWrapperNode::TrailingSkippedTokens(
             skipped_tokens,
         ));
-        StatemenIndentWrapperNode(node)
+        StatementIndentWrapperNode(node)
     }
 
     pub fn new_with_extra_newlines(skipped_tokens: SkippedTokensNode) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::ExtraNewlines(skipped_tokens));
-        StatemenIndentWrapperNode(node)
+        let node = Rc::new(CoreStatementIndentWrapperNode::ExtraNewlines(
+            skipped_tokens,
+        ));
+        StatementIndentWrapperNode(node)
     }
 
-    impl_core_ref!(CoreStatemenIndentWrapperNode);
+    impl_core_ref!(CoreStatementIndentWrapperNode);
 }
 
 impl SkippedTokensNode {
@@ -187,6 +194,16 @@ impl StatementNode {
         let node = Rc::new(CoreStatementNode::Expression(ExpressionStatementNode::new(
             expr, newline,
         )));
+        StatementNode(node)
+    }
+
+    pub fn new_with_break_statment(break_stmt: BreakStatementNode) -> Self {
+        let node = Rc::new(CoreStatementNode::Break(break_stmt));
+        StatementNode(node)
+    }
+
+    pub fn new_with_continue_statment(continue_stmt: ContinueStatementNode) -> Self {
+        let node = Rc::new(CoreStatementNode::Continue(continue_stmt));
         StatementNode(node)
     }
 
@@ -278,6 +295,48 @@ impl Node for IncorrectlyIndentedStatementNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().stmt.start_line_number()
+    }
+}
+
+impl BreakStatementNode {
+    pub fn new(break_keyword: TokenNode, newline: TokenNode) -> Self {
+        let node = Rc::new(CoreBreakStatementNode {
+            break_keyword,
+            newline,
+        });
+        BreakStatementNode(node)
+    }
+
+    impl_core_ref!(CoreBreakStatementNode);
+}
+
+impl Node for BreakStatementNode {
+    fn range(&self) -> TextRange {
+        self.core_ref().break_keyword.range()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().break_keyword.start_line_number()
+    }
+}
+
+impl ContinueStatementNode {
+    pub fn new(continue_keyword: TokenNode, newline: TokenNode) -> Self {
+        let node = Rc::new(CoreContinueStatementNode {
+            continue_keyword,
+            newline,
+        });
+        ContinueStatementNode(node)
+    }
+
+    impl_core_ref!(CoreContinueStatementNode);
+}
+
+impl Node for ContinueStatementNode {
+    fn range(&self) -> TextRange {
+        self.core_ref().continue_keyword.range()
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().continue_keyword.start_line_number()
     }
 }
 
