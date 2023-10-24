@@ -39,12 +39,12 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 BlockKind::Struct,
             );
             TypeDeclarationNode::new_with_struct(
-                &type_name_node,
-                &block_node,
-                &type_keyword_node,
-                &struct_keyword_node,
+                type_name_node,
+                block_node,
+                type_keyword_node,
+                struct_keyword_node,
                 implementing_interfaces_node,
-                &colon_node,
+                colon_node,
             )
         }
         CoreToken::LAMBDA_KEYWORD => {
@@ -63,21 +63,24 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             }
             let newline_node = parser.expect_terminators();
             let lambda_node = LambdaTypeDeclarationNode::new(
-                &type_name_node,
-                &type_keyword_node,
-                &lambda_keyword_node,
-                &equal_node,
-                &lparen_node,
-                &rparen_node,
+                type_name_node,
+                type_keyword_node,
+                lambda_keyword_node,
+                equal_node,
+                lparen_node,
+                rparen_node,
                 type_tuple_node,
                 return_type_node,
-                &newline_node,
+                newline_node,
             );
-            TypeDeclarationNode::new_with_lambda(&lambda_node)
+            TypeDeclarationNode::new_with_lambda(lambda_node)
         }
         _ => {
             parser.log_missing_token_error(&["struct", "lambda"], token);
-            TypeDeclarationNode::new_with_missing_tokens(["struct", "lambda"].to_vec(), token)
+            TypeDeclarationNode::new_with_missing_tokens(
+                ["struct", "lambda"].to_vec(),
+                token.clone(),
+            )
         }
     }
 }

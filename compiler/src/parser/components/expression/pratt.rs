@@ -13,7 +13,7 @@ use crate::{
 
 pub fn pratt_expr(parser: &mut JarvilParser, precedence: u8) -> ExpressionNode {
     let prefix_node = parser.unary_expr();
-    let mut left_expr_node: ExpressionNode = ExpressionNode::new_with_unary(&prefix_node);
+    let mut left_expr_node: ExpressionNode = ExpressionNode::new_with_unary(prefix_node);
     loop {
         let (operator_precedence, operator_str) = parser.curr_token_precedence_and_name();
         if precedence >= operator_precedence {
@@ -60,7 +60,11 @@ pub fn infix_comparison_expr(
         operators.push(operator_node);
     }
     if operators.len() == 1 {
-        return ExpressionNode::new_with_binary(&operators[0], &operands[0], &operands[1]);
+        return ExpressionNode::new_with_binary(
+            operators[0].clone(),
+            operands[0].clone(),
+            operands[1].clone(),
+        );
     }
     ExpressionNode::new_with_comparison(operands, operators)
 }
@@ -72,7 +76,11 @@ pub fn infix_binary_expr(
     operator_precedence: u8,
 ) -> ExpressionNode {
     let right_expr_node = parser.pratt_expr(operator_precedence);
-    ExpressionNode::new_with_binary(operator_node, left_expr_node, &right_expr_node)
+    ExpressionNode::new_with_binary(
+        operator_node.clone(),
+        left_expr_node.clone(),
+        right_expr_node,
+    )
 }
 
 pub fn is_comparison(precedence: u8) -> bool {

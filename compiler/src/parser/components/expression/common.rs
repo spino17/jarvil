@@ -10,11 +10,11 @@ pub fn params(parser: &mut JarvilParser) -> SymbolSeparatedSequenceNode<Expressi
             let comma_node = parser.expect(",");
             let remaining_params_node = parser.params();
             SymbolSeparatedSequenceNode::new_with_entities(
-                &first_param_node,
-                &remaining_params_node,
-                &comma_node,
+                first_param_node,
+                remaining_params_node,
+                comma_node,
             )
         }
-        _ => SymbolSeparatedSequenceNode::new_with_single_entity(&first_param_node),
+        _ => SymbolSeparatedSequenceNode::new_with_single_entity(first_param_node),
     }
 }

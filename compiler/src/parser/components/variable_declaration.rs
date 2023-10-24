@@ -20,22 +20,25 @@ pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
         CoreToken::LAMBDA_KEYWORD => {
             let lambda_keyword_node = parser.expect(LAMBDA_KEYWORD);
             let callable_body = parser.callable_body(BlockKind::Lambda);
-            let lambda_decl_node =
-                LambdaDeclarationNode::new(&identifier_node, &lambda_keyword_node, &callable_body);
-            RVariableDeclarationNode::new_with_lambda(&lambda_decl_node)
+            let lambda_decl_node = LambdaDeclarationNode::new(
+                identifier_node.clone(),
+                lambda_keyword_node,
+                callable_body,
+            );
+            RVariableDeclarationNode::new_with_lambda(lambda_decl_node)
         }
         _ => {
             // TODO - change this when `expr` like conditionals and loops will be introduced
             let expr_node = parser.expr();
             let newline_node = parser.expect_terminators();
-            RVariableDeclarationNode::new_with_expr(&expr_node, &newline_node)
+            RVariableDeclarationNode::new_with_expr(expr_node, newline_node)
         }
     };
     VariableDeclarationNode::new(
-        &identifier_node,
-        &r_node,
-        &let_keyword_node,
-        &equal_node,
+        identifier_node,
+        r_node,
+        let_keyword_node,
+        equal_node,
         optional_ty_annotation_node,
     )
 }

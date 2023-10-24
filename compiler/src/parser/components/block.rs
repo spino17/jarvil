@@ -36,13 +36,13 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
         let skipped_tokens = indent_result.skipped_tokens;
         if !skipped_tokens.is_empty() {
             stmts_vec.push(StatemenIndentWrapperNode::new_with_trailing_skipped_tokens(
-                &SkippedTokensNode::new_with_trailing_skipped_tokens(skipped_tokens),
+                SkippedTokensNode::new_with_trailing_skipped_tokens(skipped_tokens),
             ));
         }
         let extra_newlines = indent_result.extra_newlines;
         if !extra_newlines.is_empty() {
             stmts_vec.push(StatemenIndentWrapperNode::new_with_extra_newlines(
-                &SkippedTokensNode::new_with_extra_newlines(extra_newlines),
+                SkippedTokensNode::new_with_extra_newlines(extra_newlines),
             ));
         }
         let incorrect_indent_data = match indent_result.kind {
@@ -53,12 +53,12 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
                 if !has_atleast_one_stmt {
                     parser.log_no_valid_statement_inside_block_error(newline_node.range());
                 }
-                return BlockNode::new(stmts_vec, &newline_node, kind);
+                return BlockNode::new(stmts_vec, newline_node, kind);
             }
         };
         while !is_starting_with_fn(parser.curr_token()) {
             let token = parser.curr_token();
-            leading_skipped_tokens.push(SkippedTokenNode::new(token));
+            leading_skipped_tokens.push(SkippedTokenNode::new(token.clone()));
             parser.log_missing_token_error(expected_symbols, token);
             if token.is_eq("\n") || token.is_eq(ENDMARKER) {
                 break;
@@ -67,7 +67,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
         }
         if !leading_skipped_tokens.is_empty() {
             stmts_vec.push(StatemenIndentWrapperNode::new_with_leading_skipped_tokens(
-                &SkippedTokensNode::new_with_leading_skipped_tokens(mem::take(
+                SkippedTokensNode::new_with_leading_skipped_tokens(mem::take(
                     &mut leading_skipped_tokens,
                 )),
             ));
@@ -78,7 +78,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
             if !has_atleast_one_stmt {
                 parser.log_no_valid_statement_inside_block_error(newline_node.range());
             }
-            return BlockNode::new(stmts_vec, &newline_node, kind);
+            return BlockNode::new(stmts_vec, newline_node, kind);
         }
         if token.is_eq("\n") {
             continue;
@@ -107,7 +107,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
                     stmt_node
                 };
                 stmts_vec.push(StatemenIndentWrapperNode::new_with_incorrectly_indented(
-                    &stmt_node,
+                    stmt_node,
                     indent_data.0,
                     indent_data.1,
                 ));
@@ -116,7 +116,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
             None => {
                 let stmt_node = statement_parsing_fn(parser);
                 stmts_vec.push(StatemenIndentWrapperNode::new_with_correctly_indented(
-                    &stmt_node,
+                    stmt_node,
                 ));
                 has_atleast_one_stmt = true;
             }

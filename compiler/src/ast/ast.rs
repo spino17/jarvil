@@ -24,8 +24,7 @@ pub trait Node {
 }
 
 pub trait ErrornousNode {
-    fn new_with_missing_tokens(expected_symbols: Vec<&'static str>, received_token: &Token)
-        -> Self;
+    fn new_with_missing_tokens(expected_symbols: Vec<&'static str>, received_token: Token) -> Self;
 }
 
 #[derive(Debug, Clone, Nodify)]

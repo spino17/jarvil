@@ -14,7 +14,7 @@ pub fn name_type_spec(parser: &mut JarvilParser) -> NameTypeSpecNode {
     let name_node = parser.expect_identifier();
     let colon_node = parser.expect(":");
     let type_expr_node = parser.type_expr();
-    NameTypeSpecNode::new(&name_node, &type_expr_node, &colon_node)
+    NameTypeSpecNode::new(name_node, type_expr_node, colon_node)
 }
 
 pub fn name_type_specs(parser: &mut JarvilParser) -> SymbolSeparatedSequenceNode<NameTypeSpecNode> {
@@ -25,12 +25,12 @@ pub fn name_type_specs(parser: &mut JarvilParser) -> SymbolSeparatedSequenceNode
             let comma_node = parser.expect(",");
             let remaining_args_node = parser.name_type_specs();
             SymbolSeparatedSequenceNode::new_with_entities(
-                &first_arg_node,
-                &remaining_args_node,
-                &comma_node,
+                first_arg_node,
+                remaining_args_node,
+                comma_node,
             )
         }
-        _ => SymbolSeparatedSequenceNode::new_with_single_entity(&first_arg_node),
+        _ => SymbolSeparatedSequenceNode::new_with_single_entity(first_arg_node),
     }
 }
 
@@ -46,15 +46,15 @@ pub fn type_tuple(
             let (remaining_types_node, num_types) = parser.type_tuple();
             (
                 SymbolSeparatedSequenceNode::new_with_entities(
-                    &first_type_node,
-                    &remaining_types_node,
-                    &comma_node,
+                    first_type_node,
+                    remaining_types_node,
+                    comma_node,
                 ),
                 num_types + 1,
             )
         }
         _ => (
-            SymbolSeparatedSequenceNode::new_with_single_entity(&first_type_node),
+            SymbolSeparatedSequenceNode::new_with_single_entity(first_type_node),
             1,
         ),
     }
@@ -73,11 +73,11 @@ pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
         CallablePrototypeNode::new(
             args_node,
             Some((r_arrow_node, return_type_node)),
-            &lparen_node,
-            &rparen_node,
+            lparen_node,
+            rparen_node,
         )
     } else {
-        CallablePrototypeNode::new(args_node, None, &lparen_node, &rparen_node)
+        CallablePrototypeNode::new(args_node, None, lparen_node, rparen_node)
     }
 }
 
@@ -90,7 +90,7 @@ pub fn callable_body(parser: &mut JarvilParser, block_kind: BlockKind) -> Callab
         &STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
         block_kind,
     );
-    CallableBodyNode::new(&func_block_node, &colon_node, &callable_prototype)
+    CallableBodyNode::new(func_block_node, colon_node, callable_prototype)
 }
 
 pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> StatementNode {
@@ -102,13 +102,13 @@ pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> 
     };
     let callable_body = parser.callable_body(block_kind);
     let func_decl_node =
-        FunctionDeclarationNode::new(&func_name_node, &def_keyword_node, &callable_body);
+        FunctionDeclarationNode::new(func_name_node, def_keyword_node, callable_body);
     match callable_kind {
         CallableKind::Function => {
-            StatementNode::new_with_function_wrapper(&FunctionWrapperNode::new(&func_decl_node))
+            StatementNode::new_with_function_wrapper(FunctionWrapperNode::new(func_decl_node))
         }
         CallableKind::Method => StatementNode::new_with_bounded_method_wrapper(
-            &BoundedMethodWrapperNode::new(&func_decl_node),
+            BoundedMethodWrapperNode::new(func_decl_node),
         ),
     }
 }

@@ -21,12 +21,7 @@ pub fn interface_decl(parser: &mut JarvilParser) -> InterfaceDeclarationNode {
         &[IDENTIFIER, DEF],
         BlockKind::Interface,
     );
-    InterfaceDeclarationNode::new(
-        &interface_keyword_node,
-        &name_node,
-        &colon_node,
-        &block_node,
-    )
+    InterfaceDeclarationNode::new(interface_keyword_node, name_node, colon_node, block_node)
 }
 
 pub fn interface_method_prototype_wrapper(
@@ -37,9 +32,9 @@ pub fn interface_method_prototype_wrapper(
     let prototype = parser.callable_prototype();
     let newline = parser.expect_terminators();
     InterfaceMethodPrototypeWrapperNode::new(
-        &def_keyword_node,
-        &func_name_node,
-        &prototype,
+        def_keyword_node,
+        func_name_node,
+        prototype,
         InterfaceMethodTerminalNode::NoDefaultBody(newline),
     )
     /*

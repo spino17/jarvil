@@ -52,13 +52,9 @@ use text_size::TextRange;
 use text_size::TextSize;
 
 impl BlockNode {
-    pub fn new(
-        stmts: Vec<StatemenIndentWrapperNode>,
-        newline: &TokenNode,
-        kind: BlockKind,
-    ) -> Self {
+    pub fn new(stmts: Vec<StatemenIndentWrapperNode>, newline: TokenNode, kind: BlockKind) -> Self {
         let node = Rc::new(CoreBlockNode {
-            newline: newline.clone(),
+            newline,
             stmts: Rc::new(stmts),
             kind,
         });
@@ -116,15 +112,13 @@ impl Hash for BlockNode {
 }
 
 impl StatemenIndentWrapperNode {
-    pub fn new_with_correctly_indented(stmt: &StatementNode) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::CorrectlyIndented(
-            stmt.clone(),
-        ));
+    pub fn new_with_correctly_indented(stmt: StatementNode) -> Self {
+        let node = Rc::new(CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt));
         StatemenIndentWrapperNode(node)
     }
 
     pub fn new_with_incorrectly_indented(
-        stmt: &StatementNode,
+        stmt: StatementNode,
         expected_indent: i64,
         received_indent: i64,
     ) -> Self {
@@ -134,24 +128,22 @@ impl StatemenIndentWrapperNode {
         StatemenIndentWrapperNode(node)
     }
 
-    pub fn new_with_leading_skipped_tokens(skipped_tokens: &SkippedTokensNode) -> Self {
+    pub fn new_with_leading_skipped_tokens(skipped_tokens: SkippedTokensNode) -> Self {
         let node = Rc::new(CoreStatemenIndentWrapperNode::LeadingSkippedTokens(
-            skipped_tokens.clone(),
+            skipped_tokens,
         ));
         StatemenIndentWrapperNode(node)
     }
 
-    pub fn new_with_trailing_skipped_tokens(skipped_tokens: &SkippedTokensNode) -> Self {
+    pub fn new_with_trailing_skipped_tokens(skipped_tokens: SkippedTokensNode) -> Self {
         let node = Rc::new(CoreStatemenIndentWrapperNode::TrailingSkippedTokens(
-            skipped_tokens.clone(),
+            skipped_tokens,
         ));
         StatemenIndentWrapperNode(node)
     }
 
-    pub fn new_with_extra_newlines(skipped_tokens: &SkippedTokensNode) -> Self {
-        let node = Rc::new(CoreStatemenIndentWrapperNode::ExtraNewlines(
-            skipped_tokens.clone(),
-        ));
+    pub fn new_with_extra_newlines(skipped_tokens: SkippedTokensNode) -> Self {
+        let node = Rc::new(CoreStatemenIndentWrapperNode::ExtraNewlines(skipped_tokens));
         StatemenIndentWrapperNode(node)
     }
 
@@ -191,71 +183,65 @@ impl Node for SkippedTokensNode {
 }
 
 impl StatementNode {
-    pub fn new_with_expression(expr: &ExpressionNode, newline: &TokenNode) -> Self {
+    pub fn new_with_expression(expr: ExpressionNode, newline: TokenNode) -> Self {
         let node = Rc::new(CoreStatementNode::Expression(ExpressionStatementNode::new(
             expr, newline,
         )));
         StatementNode(node)
     }
 
-    pub fn new_with_assignment(assignment: &AssignmentNode) -> Self {
-        let node = Rc::new(CoreStatementNode::Assignment(assignment.clone()));
+    pub fn new_with_assignment(assignment: AssignmentNode) -> Self {
+        let node = Rc::new(CoreStatementNode::Assignment(assignment));
         StatementNode(node)
     }
 
-    pub fn new_with_variable_declaration(variable_decl: &VariableDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::VariableDeclaration(
-            variable_decl.clone(),
-        ));
+    pub fn new_with_variable_declaration(variable_decl: VariableDeclarationNode) -> Self {
+        let node = Rc::new(CoreStatementNode::VariableDeclaration(variable_decl));
         StatementNode(node)
     }
 
-    pub fn new_with_function_wrapper(func_wrapper: &FunctionWrapperNode) -> Self {
-        let node = Rc::new(CoreStatementNode::FunctionWrapper(func_wrapper.clone()));
+    pub fn new_with_function_wrapper(func_wrapper: FunctionWrapperNode) -> Self {
+        let node = Rc::new(CoreStatementNode::FunctionWrapper(func_wrapper));
         StatementNode(node)
     }
 
     pub fn new_with_bounded_method_wrapper(
-        bounded_method_wrapper: &BoundedMethodWrapperNode,
+        bounded_method_wrapper: BoundedMethodWrapperNode,
     ) -> Self {
         let node = Rc::new(CoreStatementNode::BoundedMethodWrapper(
-            bounded_method_wrapper.clone(),
+            bounded_method_wrapper,
         ));
         StatementNode(node)
     }
 
-    pub fn new_with_type_declaration(type_decl: &TypeDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::TypeDeclaration(type_decl.clone()));
+    pub fn new_with_type_declaration(type_decl: TypeDeclarationNode) -> Self {
+        let node = Rc::new(CoreStatementNode::TypeDeclaration(type_decl));
         StatementNode(node)
     }
 
-    pub fn new_with_struct_stmt(struct_stmt: &StructPropertyDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::StructPropertyDeclaration(
-            struct_stmt.clone(),
-        ));
+    pub fn new_with_struct_stmt(struct_stmt: StructPropertyDeclarationNode) -> Self {
+        let node = Rc::new(CoreStatementNode::StructPropertyDeclaration(struct_stmt));
         StatementNode(node)
     }
 
-    pub fn new_with_interface_declaration(interface_decl: &InterfaceDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::InterfaceDeclaration(
-            interface_decl.clone(),
-        ));
+    pub fn new_with_interface_declaration(interface_decl: InterfaceDeclarationNode) -> Self {
+        let node = Rc::new(CoreStatementNode::InterfaceDeclaration(interface_decl));
         StatementNode(node)
     }
 
     pub fn new_with_interface_method_prototype_wrapper(
-        interface_method_prototype: &InterfaceMethodPrototypeWrapperNode,
+        interface_method_prototype: InterfaceMethodPrototypeWrapperNode,
     ) -> Self {
         let node = Rc::new(CoreStatementNode::InterfaceMethodPrototypeWrapper(
-            interface_method_prototype.clone(),
+            interface_method_prototype,
         ));
         StatementNode(node)
     }
 
     pub fn new_with_return_statement(
-        return_keyword: &TokenNode,
+        return_keyword: TokenNode,
         expr: Option<ExpressionNode>,
-        newline: &TokenNode,
+        newline: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreStatementNode::Return(ReturnStatementNode::new(
             return_keyword,
@@ -269,9 +255,9 @@ impl StatementNode {
 }
 
 impl IncorrectlyIndentedStatementNode {
-    pub fn new(stmt: &StatementNode, expected_indent: i64, received_indent: i64) -> Self {
+    pub fn new(stmt: StatementNode, expected_indent: i64, received_indent: i64) -> Self {
         let node = Rc::new(CoreIncorrectlyIndentedStatementNode {
-            stmt: stmt.clone(),
+            stmt,
             expected_indent,
             received_indent,
         });
@@ -291,11 +277,8 @@ impl Node for IncorrectlyIndentedStatementNode {
 }
 
 impl ExpressionStatementNode {
-    pub fn new(expr: &ExpressionNode, newline: &TokenNode) -> Self {
-        let node = Rc::new(CoreExpressionStatementNode {
-            expr: expr.clone(),
-            newline: newline.clone(),
-        });
+    pub fn new(expr: ExpressionNode, newline: TokenNode) -> Self {
+        let node = Rc::new(CoreExpressionStatementNode { expr, newline });
         ExpressionStatementNode(node)
     }
 
@@ -312,7 +295,7 @@ impl Node for ExpressionStatementNode {
 }
 
 impl AssignmentNode {
-    pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
+    pub fn new(l_atom: AtomNode, r_assign: RAssignmentNode, equal: TokenNode) -> Self {
         let node = Rc::new(CoreAssignmentNode::Ok(OkAssignmentNode::new(
             l_atom, r_assign, equal,
         )));
@@ -320,9 +303,9 @@ impl AssignmentNode {
     }
 
     pub fn new_with_invalid_l_value(
-        l_expr: &ExpressionNode,
-        r_assign: &RAssignmentNode,
-        equal: &TokenNode,
+        l_expr: ExpressionNode,
+        r_assign: RAssignmentNode,
+        equal: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreAssignmentNode::InvalidLValue(InvalidLValueNode::new(
             l_expr, r_assign, equal,
@@ -334,11 +317,11 @@ impl AssignmentNode {
 }
 
 impl OkAssignmentNode {
-    pub fn new(l_atom: &AtomNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
+    pub fn new(l_atom: AtomNode, r_assign: RAssignmentNode, equal: TokenNode) -> Self {
         let node = Rc::new(CoreOkAssignmentNode {
-            equal: equal.clone(),
-            l_atom: l_atom.clone(),
-            r_assign: r_assign.clone(),
+            equal,
+            l_atom,
+            r_assign,
         });
         OkAssignmentNode(node)
     }
@@ -356,11 +339,11 @@ impl Node for OkAssignmentNode {
 }
 
 impl InvalidLValueNode {
-    pub fn new(l_expr: &ExpressionNode, r_assign: &RAssignmentNode, equal: &TokenNode) -> Self {
+    pub fn new(l_expr: ExpressionNode, r_assign: RAssignmentNode, equal: TokenNode) -> Self {
         let node = Rc::new(CoreInvalidLValueNode {
-            l_expr: l_expr.clone(),
-            equal: equal.clone(),
-            r_assign: r_assign.clone(),
+            l_expr,
+            equal,
+            r_assign,
         });
         InvalidLValueNode(node)
     }
@@ -378,10 +361,10 @@ impl Node for InvalidLValueNode {
 }
 
 impl StructPropertyDeclarationNode {
-    pub fn new(name_type_spec: &NameTypeSpecNode, newline: &TokenNode) -> Self {
+    pub fn new(name_type_spec: NameTypeSpecNode, newline: TokenNode) -> Self {
         let node = Rc::new(CoreStructPropertyDeclarationNode {
-            newline: newline.clone(),
-            name_type_spec: name_type_spec.clone(),
+            newline,
+            name_type_spec,
         });
         StructPropertyDeclarationNode(node)
     }
@@ -403,15 +386,15 @@ impl Node for StructPropertyDeclarationNode {
 
 impl TypeDeclarationNode {
     pub fn new_with_struct(
-        name: &IdentifierInDeclNode,
-        block: &BlockNode,
-        type_keyword: &TokenNode,
-        struct_keyword: &TokenNode,
+        name: IdentifierInDeclNode,
+        block: BlockNode,
+        type_keyword: TokenNode,
+        struct_keyword: TokenNode,
         implementing_interfaces: Option<(
             TokenNode,
             SymbolSeparatedSequenceNode<IdentifierInUseNode>,
         )>,
-        colon: &TokenNode,
+        colon: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreTypeDeclarationNode::Struct(StructDeclarationNode::new(
             name,
@@ -424,8 +407,8 @@ impl TypeDeclarationNode {
         TypeDeclarationNode(node)
     }
 
-    pub fn new_with_lambda(lambda: &LambdaTypeDeclarationNode) -> Self {
-        let node = Rc::new(CoreTypeDeclarationNode::Lambda(lambda.clone()));
+    pub fn new_with_lambda(lambda: LambdaTypeDeclarationNode) -> Self {
+        let node = Rc::new(CoreTypeDeclarationNode::Lambda(lambda));
         TypeDeclarationNode(node)
     }
 
@@ -435,23 +418,23 @@ default_errornous_node_impl!(TypeDeclarationNode, CoreTypeDeclarationNode);
 
 impl StructDeclarationNode {
     pub fn new(
-        name: &IdentifierInDeclNode,
-        block: &BlockNode,
-        type_keyword: &TokenNode,
-        struct_keyword: &TokenNode,
+        name: IdentifierInDeclNode,
+        block: BlockNode,
+        type_keyword: TokenNode,
+        struct_keyword: TokenNode,
         implementing_interfaces: Option<(
             TokenNode,
             SymbolSeparatedSequenceNode<IdentifierInUseNode>,
         )>,
-        colon: &TokenNode,
+        colon: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreStructDeclarationNode {
-            type_keyword: type_keyword.clone(),
-            colon: colon.clone(),
-            struct_keyword: struct_keyword.clone(),
+            type_keyword,
+            colon,
+            struct_keyword,
             implementing_interfaces,
-            name: name.clone(),
-            block: block.clone(),
+            name,
+            block,
         });
         StructDeclarationNode(node)
     }
@@ -470,26 +453,26 @@ impl Node for StructDeclarationNode {
 
 impl LambdaTypeDeclarationNode {
     pub fn new(
-        name: &IdentifierInDeclNode,
-        type_keyword: &TokenNode,
-        lambda_keyword: &TokenNode,
-        equal: &TokenNode,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
+        name: IdentifierInDeclNode,
+        type_keyword: TokenNode,
+        lambda_keyword: TokenNode,
+        equal: TokenNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
         type_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
         return_type: Option<(TokenNode, TypeExpressionNode)>,
-        newline: &TokenNode,
+        newline: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreLambdaTypeDeclarationNode {
-            name: name.clone(),
-            type_keyword: type_keyword.clone(),
-            lambda_keyword: lambda_keyword.clone(),
-            equal: equal.clone(),
-            lparen: lparen.clone(),
-            rparen: rparen.clone(),
+            name,
+            type_keyword,
+            lambda_keyword,
+            equal,
+            lparen,
+            rparen,
             type_tuple,
             return_type,
-            newline: newline.clone(),
+            newline,
         });
         LambdaTypeDeclarationNode(node)
     }
@@ -510,12 +493,12 @@ impl CallablePrototypeNode {
     pub fn new(
         params: Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
         return_type: Option<(TokenNode, TypeExpressionNode)>,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreCallablePrototypeNode {
-            lparen: lparen.clone(),
-            rparen: rparen.clone(),
+            lparen,
+            rparen,
             params,
             return_type,
         });
@@ -538,11 +521,11 @@ impl Node for CallablePrototypeNode {
 }
 
 impl CallableBodyNode {
-    pub fn new(block: &BlockNode, colon: &TokenNode, prototype: &CallablePrototypeNode) -> Self {
+    pub fn new(block: BlockNode, colon: TokenNode, prototype: CallablePrototypeNode) -> Self {
         let node = Rc::new(CoreCallableBodyNode {
-            block: block.clone(),
-            colon: colon.clone(),
-            prototype: prototype.clone(),
+            block,
+            colon,
+            prototype,
         });
         CallableBodyNode(node)
     }
@@ -560,15 +543,11 @@ impl Node for CallableBodyNode {
 }
 
 impl FunctionDeclarationNode {
-    pub fn new(
-        name: &IdentifierInDeclNode,
-        def_keyword: &TokenNode,
-        body: &CallableBodyNode,
-    ) -> Self {
+    pub fn new(name: IdentifierInDeclNode, def_keyword: TokenNode, body: CallableBodyNode) -> Self {
         let node = Rc::new(CoreFunctionDeclarationNode {
-            name: name.clone(),
-            def_keyword: def_keyword.clone(),
-            body: body.clone(),
+            name,
+            def_keyword,
+            body,
         });
         FunctionDeclarationNode(node)
     }
@@ -586,10 +565,8 @@ impl Node for FunctionDeclarationNode {
 }
 
 impl FunctionWrapperNode {
-    pub fn new(func_decl: &FunctionDeclarationNode) -> Self {
-        let node = Rc::new(CoreFunctionWrapperNode {
-            func_decl: func_decl.clone(),
-        });
+    pub fn new(func_decl: FunctionDeclarationNode) -> Self {
+        let node = Rc::new(CoreFunctionWrapperNode { func_decl });
         FunctionWrapperNode(node)
     }
 
@@ -606,10 +583,8 @@ impl Node for FunctionWrapperNode {
 }
 
 impl BoundedMethodWrapperNode {
-    pub fn new(func_decl: &FunctionDeclarationNode) -> Self {
-        let node = Rc::new(CoreBoundedMethodWrapperNode {
-            func_decl: func_decl.clone(),
-        });
+    pub fn new(func_decl: FunctionDeclarationNode) -> Self {
+        let node = Rc::new(CoreBoundedMethodWrapperNode { func_decl });
         BoundedMethodWrapperNode(node)
     }
 
@@ -642,14 +617,14 @@ impl Hash for BoundedMethodWrapperNode {
 
 impl LambdaDeclarationNode {
     pub fn new(
-        name: &IdentifierInDeclNode,
-        lambda_keyword: &TokenNode,
-        body: &CallableBodyNode,
+        name: IdentifierInDeclNode,
+        lambda_keyword: TokenNode,
+        body: CallableBodyNode,
     ) -> Self {
         let node = Rc::new(CoreLambdaDeclarationNode {
-            name: name.clone(),
-            lambda_keyword: lambda_keyword.clone(),
-            body: body.clone(),
+            name,
+            lambda_keyword,
+            body,
         });
         LambdaDeclarationNode(node)
     }
@@ -668,17 +643,17 @@ impl Node for LambdaDeclarationNode {
 
 impl VariableDeclarationNode {
     pub fn new(
-        name: &IdentifierInDeclNode,
-        r_node: &RVariableDeclarationNode,
-        let_keyword: &TokenNode,
-        equal: &TokenNode,
+        name: IdentifierInDeclNode,
+        r_node: RVariableDeclarationNode,
+        let_keyword: TokenNode,
+        equal: TokenNode,
         optional_ty_annotation: Option<(TokenNode, TypeExpressionNode)>,
     ) -> Self {
         let node = Rc::new(CoreVariableDeclarationNode {
-            let_keyword: let_keyword.clone(),
-            equal: equal.clone(),
-            name: name.clone(),
-            r_node: r_node.clone(),
+            let_keyword,
+            equal,
+            name,
+            r_node,
             ty_annotation: optional_ty_annotation,
         });
         VariableDeclarationNode(node)
@@ -698,16 +673,16 @@ impl Node for VariableDeclarationNode {
 
 impl InterfaceDeclarationNode {
     pub fn new(
-        interface_keyword: &TokenNode,
-        name: &IdentifierInDeclNode,
-        colon: &TokenNode,
-        block: &BlockNode,
+        interface_keyword: TokenNode,
+        name: IdentifierInDeclNode,
+        colon: TokenNode,
+        block: BlockNode,
     ) -> Self {
         let node = Rc::new(CoreInterfaceDeclarationNode {
-            interface_keyword: interface_keyword.clone(),
-            name: name.clone(),
-            colon: colon.clone(),
-            block: block.clone(),
+            interface_keyword,
+            name,
+            colon,
+            block,
         });
         InterfaceDeclarationNode(node)
     }
@@ -726,15 +701,15 @@ impl Node for InterfaceDeclarationNode {
 
 impl InterfaceMethodPrototypeWrapperNode {
     pub fn new(
-        def_keyword: &TokenNode,
-        name: &IdentifierInDeclNode,
-        prototype: &CallablePrototypeNode,
+        def_keyword: TokenNode,
+        name: IdentifierInDeclNode,
+        prototype: CallablePrototypeNode,
         terminal: InterfaceMethodTerminalNode,
     ) -> Self {
         let node = Rc::new(CoreInterfaceMethodPrototypeWrapperNode {
-            def_keyword: def_keyword.clone(),
-            name: name.clone(),
-            prototype: prototype.clone(),
+            def_keyword,
+            name,
+            prototype,
             terminal,
         });
         InterfaceMethodPrototypeWrapperNode(node)
@@ -761,16 +736,16 @@ impl Node for InterfaceMethodPrototypeWrapperNode {
 
 impl ConditionalBlockNode {
     pub fn new(
-        condition_keyword: &TokenNode,
-        condition_expr: &ExpressionNode,
-        colon: &TokenNode,
-        block: &BlockNode,
+        condition_keyword: TokenNode,
+        condition_expr: ExpressionNode,
+        colon: TokenNode,
+        block: BlockNode,
     ) -> Self {
         let node = Rc::new(CoreConditionalBlockNode {
-            condition_keyword: condition_keyword.clone(),
-            condition_expr: condition_expr.clone(),
-            colon: colon.clone(),
-            block: block.clone(),
+            condition_keyword,
+            condition_expr,
+            colon,
+            block,
         });
         ConditionalBlockNode(node)
     }
@@ -789,14 +764,14 @@ impl Node for ConditionalBlockNode {
 
 impl ConditionalStatementNode {
     pub fn new(
-        if_block: &ConditionalBlockNode,
+        if_block: ConditionalBlockNode,
         elifs: Vec<ConditionalBlockNode>,
         else_block: Option<(TokenNode, TokenNode, BlockNode)>,
     ) -> Self {
         let node = Rc::new(CoreConditionalStatementNode {
-            if_block: if_block.clone(),
+            if_block,
             elifs,
-            else_block: else_block.clone(),
+            else_block,
         });
         ConditionalStatementNode(node)
     }
@@ -827,14 +802,14 @@ impl Node for ConditionalStatementNode {
 
 impl ReturnStatementNode {
     pub fn new(
-        return_keyword: &TokenNode,
+        return_keyword: TokenNode,
         expr: Option<ExpressionNode>,
-        newline: &TokenNode,
+        newline: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreReturnStatementNode {
-            return_keyword: return_keyword.clone(),
+            return_keyword,
             expr,
-            newline: newline.clone(),
+            newline,
         });
         ReturnStatementNode(node)
     }
@@ -853,14 +828,14 @@ impl Node for ReturnStatementNode {
 
 impl NameTypeSpecNode {
     pub fn new(
-        param_name: &IdentifierInDeclNode,
-        param_type: &TypeExpressionNode,
-        colon: &TokenNode,
+        name: IdentifierInDeclNode,
+        data_type: TypeExpressionNode,
+        colon: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreNameTypeSpecNode {
-            colon: colon.clone(),
-            name: param_name.clone(),
-            data_type: param_type.clone(),
+            colon,
+            name,
+            data_type,
         });
         NameTypeSpecNode(node)
     }
@@ -878,14 +853,14 @@ impl Node for NameTypeSpecNode {
 }
 
 impl TypeExpressionNode {
-    pub fn new_with_atomic_type(atomic_type: &TokenNode) -> Self {
+    pub fn new_with_atomic_type(atomic_type: TokenNode) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::Atomic(AtomicTypeNode::new(
             atomic_type,
         )));
         TypeExpressionNode(node)
     }
 
-    pub fn new_with_user_defined_type(identifier: &IdentifierInUseNode) -> Self {
+    pub fn new_with_user_defined_type(identifier: IdentifierInUseNode) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::UserDefined(
             UserDefinedTypeNode::new(identifier),
         ));
@@ -893,9 +868,9 @@ impl TypeExpressionNode {
     }
 
     pub fn new_with_array_type(
-        sub_type: &TypeExpressionNode,
-        lsquare: &TokenNode,
-        rsquare: &TokenNode,
+        sub_type: TypeExpressionNode,
+        lsquare: TokenNode,
+        rsquare: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::Array(ArrayTypeNode::new(
             sub_type, lsquare, rsquare,
@@ -904,9 +879,9 @@ impl TypeExpressionNode {
     }
 
     pub fn new_with_tuple_type(
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        types: &SymbolSeparatedSequenceNode<TypeExpressionNode>,
+        lparen: TokenNode,
+        rparen: TokenNode,
+        types: SymbolSeparatedSequenceNode<TypeExpressionNode>,
     ) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::Tuple(TupleTypeNode::new(
             lparen, rparen, types,
@@ -915,11 +890,11 @@ impl TypeExpressionNode {
     }
 
     pub fn new_with_hashmap_type(
-        lcurly: &TokenNode,
-        rcurly: &TokenNode,
-        colon: &TokenNode,
-        key_type: &TypeExpressionNode,
-        value_type: &TypeExpressionNode,
+        lcurly: TokenNode,
+        rcurly: TokenNode,
+        colon: TokenNode,
+        key_type: TypeExpressionNode,
+        value_type: TypeExpressionNode,
     ) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::HashMap(HashMapTypeNode::new(
             lcurly, rcurly, colon, key_type, value_type,
@@ -972,10 +947,8 @@ impl Hash for TypeExpressionNode {
 }
 
 impl AtomicTypeNode {
-    pub fn new(token: &TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicTypeNode {
-            kind: token.clone(),
-        });
+    pub fn new(token: TokenNode) -> Self {
+        let node = Rc::new(CoreAtomicTypeNode { kind: token });
         AtomicTypeNode(node)
     }
 
@@ -1014,11 +987,11 @@ impl Node for AtomicTypeNode {
 }
 
 impl ArrayTypeNode {
-    pub fn new(sub_type: &TypeExpressionNode, lsquare: &TokenNode, rsquare: &TokenNode) -> Self {
+    pub fn new(sub_type: TypeExpressionNode, lsquare: TokenNode, rsquare: TokenNode) -> Self {
         let node = Rc::new(CoreArrayTypeNode {
-            lsquare: lsquare.clone(),
-            rsquare: rsquare.clone(),
-            sub_type: sub_type.clone(),
+            lsquare,
+            rsquare,
+            sub_type,
         });
         ArrayTypeNode(node)
     }
@@ -1058,14 +1031,14 @@ impl Node for ArrayTypeNode {
 
 impl TupleTypeNode {
     pub fn new(
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        types: &SymbolSeparatedSequenceNode<TypeExpressionNode>,
+        lparen: TokenNode,
+        rparen: TokenNode,
+        types: SymbolSeparatedSequenceNode<TypeExpressionNode>,
     ) -> Self {
         let node = Rc::new(CoreTupleTypeNode {
-            lparen: lparen.clone(),
-            rparen: rparen.clone(),
-            types: types.clone(),
+            lparen,
+            rparen,
+            types,
         });
         TupleTypeNode(node)
     }
@@ -1110,18 +1083,18 @@ impl Node for TupleTypeNode {
 
 impl HashMapTypeNode {
     pub fn new(
-        lcurly: &TokenNode,
-        rcurly: &TokenNode,
-        colon: &TokenNode,
-        key_type: &TypeExpressionNode,
-        value_type: &TypeExpressionNode,
+        lcurly: TokenNode,
+        rcurly: TokenNode,
+        colon: TokenNode,
+        key_type: TypeExpressionNode,
+        value_type: TypeExpressionNode,
     ) -> Self {
         let node = Rc::new(CoreHashMapTypeNode {
-            lcurly: lcurly.clone(),
-            rcurly: rcurly.clone(),
-            colon: colon.clone(),
-            key_type: key_type.clone(),
-            value_type: value_type.clone(),
+            lcurly,
+            rcurly,
+            colon,
+            key_type,
+            value_type,
         });
         HashMapTypeNode(node)
     }
@@ -1202,10 +1175,8 @@ impl Node for HashMapTypeNode {
 }
 
 impl UserDefinedTypeNode {
-    pub fn new(identifier: &IdentifierInUseNode) -> Self {
-        let node = Rc::new(CoreUserDefinedTypeNode {
-            name: identifier.clone(),
-        });
+    pub fn new(identifier: IdentifierInUseNode) -> Self {
+        let node = Rc::new(CoreUserDefinedTypeNode { name: identifier });
         UserDefinedTypeNode(node)
     }
 
@@ -1231,7 +1202,7 @@ impl Node for UserDefinedTypeNode {
 }
 
 impl RAssignmentNode {
-    pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
+    pub fn new_with_expr(expr: ExpressionNode, newline: TokenNode) -> Self {
         let node = Rc::new(CoreRAssignmentNode {
             expr: ExpressionStatementNode::new(expr, newline),
         });
@@ -1251,12 +1222,12 @@ impl Node for RAssignmentNode {
 }
 
 impl RVariableDeclarationNode {
-    pub fn new_with_lambda(lambda_decl: &LambdaDeclarationNode) -> Self {
-        let node = Rc::new(CoreRVariableDeclarationNode::Lambda(lambda_decl.clone()));
+    pub fn new_with_lambda(lambda_decl: LambdaDeclarationNode) -> Self {
+        let node = Rc::new(CoreRVariableDeclarationNode::Lambda(lambda_decl));
         RVariableDeclarationNode(node)
     }
 
-    pub fn new_with_expr(expr: &ExpressionNode, newline: &TokenNode) -> Self {
+    pub fn new_with_expr(expr: ExpressionNode, newline: TokenNode) -> Self {
         let node = Rc::new(CoreRVariableDeclarationNode::Expression(
             ExpressionStatementNode::new(expr, newline),
         ));
@@ -1267,15 +1238,15 @@ impl RVariableDeclarationNode {
 }
 
 impl ExpressionNode {
-    pub fn new_with_unary(unary_expr: &UnaryExpressionNode) -> Self {
-        let node = Rc::new(CoreExpressionNode::Unary(unary_expr.clone()));
+    pub fn new_with_unary(unary_expr: UnaryExpressionNode) -> Self {
+        let node = Rc::new(CoreExpressionNode::Unary(unary_expr));
         ExpressionNode(node)
     }
 
     pub fn new_with_binary(
-        operator: &TokenNode,
-        left_expr: &ExpressionNode,
-        right_expr: &ExpressionNode,
+        operator: TokenNode,
+        left_expr: ExpressionNode,
+        right_expr: ExpressionNode,
     ) -> Self {
         let operator_kind = match operator.is_binary_operator() {
             Some(operator_kind) => operator_kind,
@@ -1324,32 +1295,32 @@ impl ExpressionNode {
 }
 
 impl AtomicExpressionNode {
-    pub fn new_with_bool(bool_value: &TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::Bool(bool_value.clone()));
+    pub fn new_with_bool(bool_value: TokenNode) -> Self {
+        let node = Rc::new(CoreAtomicExpressionNode::Bool(bool_value));
         AtomicExpressionNode(node)
     }
 
-    pub fn new_with_integer(integer_value: &TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::Integer(integer_value.clone()));
+    pub fn new_with_integer(integer_value: TokenNode) -> Self {
+        let node = Rc::new(CoreAtomicExpressionNode::Integer(integer_value));
         AtomicExpressionNode(node)
     }
 
-    pub fn new_with_floating_point_number(floating_point_value: &TokenNode) -> Self {
+    pub fn new_with_floating_point_number(floating_point_value: TokenNode) -> Self {
         let node = Rc::new(CoreAtomicExpressionNode::FloatingPointNumber(
-            floating_point_value.clone(),
+            floating_point_value,
         ));
         AtomicExpressionNode(node)
     }
 
-    pub fn new_with_literal(literal_value: &TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::Literal(literal_value.clone()));
+    pub fn new_with_literal(literal_value: TokenNode) -> Self {
+        let node = Rc::new(CoreAtomicExpressionNode::Literal(literal_value));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_parenthesised_expr(
-        expr: &ExpressionNode,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
+        expr: ExpressionNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreAtomicExpressionNode::ParenthesisedExpression(
             ParenthesisedExpressionNode::new(expr, lparen, rparen),
@@ -1357,14 +1328,14 @@ impl AtomicExpressionNode {
         AtomicExpressionNode(node)
     }
 
-    pub fn new_with_atom(atom: &AtomNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::Atom(atom.clone()));
+    pub fn new_with_atom(atom: AtomNode) -> Self {
+        let node = Rc::new(CoreAtomicExpressionNode::Atom(atom));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_array_expr(
-        lsquare: &TokenNode,
-        rsquare: &TokenNode,
+        lsquare: TokenNode,
+        rsquare: TokenNode,
         initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> AtomicExpressionNode {
         let node = Rc::new(CoreAtomicExpressionNode::ArrayExpression(
@@ -1374,8 +1345,8 @@ impl AtomicExpressionNode {
     }
 
     pub fn new_with_hashmap_expr(
-        lcurly: &TokenNode,
-        rcurly: &TokenNode,
+        lcurly: TokenNode,
+        rcurly: TokenNode,
         initials: Option<SymbolSeparatedSequenceNode<KeyValuePairNode>>,
     ) -> AtomicExpressionNode {
         let node = Rc::new(CoreAtomicExpressionNode::HashMapExpression(
@@ -1385,9 +1356,9 @@ impl AtomicExpressionNode {
     }
 
     pub fn new_with_tuple_expr(
-        lround: &TokenNode,
-        rround: &TokenNode,
-        initials: &SymbolSeparatedSequenceNode<ExpressionNode>,
+        lround: TokenNode,
+        rround: TokenNode,
+        initials: SymbolSeparatedSequenceNode<ExpressionNode>,
     ) -> AtomicExpressionNode {
         let node = Rc::new(CoreAtomicExpressionNode::TupleExpression(
             TupleExpressionNode::new(lround, rround, initials),
@@ -1400,11 +1371,11 @@ impl AtomicExpressionNode {
 default_errornous_node_impl!(AtomicExpressionNode, CoreAtomicExpressionNode);
 
 impl ParenthesisedExpressionNode {
-    pub fn new(expr: &ExpressionNode, lparen: &TokenNode, rparen: &TokenNode) -> Self {
+    pub fn new(expr: ExpressionNode, lparen: TokenNode, rparen: TokenNode) -> Self {
         let node = Rc::new(CoreParenthesisedExpressionNode {
-            lparen: lparen.clone(),
-            rparen: rparen.clone(),
-            expr: expr.clone(),
+            lparen,
+            rparen,
+            expr,
         });
         ParenthesisedExpressionNode(node)
     }
@@ -1422,14 +1393,14 @@ impl Node for ParenthesisedExpressionNode {
 }
 
 impl UnaryExpressionNode {
-    pub fn new_with_atomic(atomic_expr: &AtomicExpressionNode) -> Self {
-        let node = Rc::new(CoreUnaryExpressionNode::Atomic(atomic_expr.clone()));
+    pub fn new_with_atomic(atomic_expr: AtomicExpressionNode) -> Self {
+        let node = Rc::new(CoreUnaryExpressionNode::Atomic(atomic_expr));
         UnaryExpressionNode(node)
     }
 
     pub fn new_with_unary(
-        unary_expr: &UnaryExpressionNode,
-        operator: &TokenNode,
+        unary_expr: UnaryExpressionNode,
+        operator: TokenNode,
         operator_kind: UnaryOperatorKind,
     ) -> Self {
         let node = Rc::new(CoreUnaryExpressionNode::Unary(
@@ -1443,13 +1414,13 @@ impl UnaryExpressionNode {
 
 impl OnlyUnaryExpressionNode {
     pub fn new(
-        operator: &TokenNode,
-        unary_expr: &UnaryExpressionNode,
+        operator: TokenNode,
+        unary_expr: UnaryExpressionNode,
         operator_kind: UnaryOperatorKind,
     ) -> Self {
         let node = Rc::new(CoreOnlyUnaryExpressionNode {
-            operator: operator.clone(),
-            unary_expr: unary_expr.clone(),
+            operator,
+            unary_expr,
             operator_kind,
         });
         OnlyUnaryExpressionNode(node)
@@ -1470,15 +1441,15 @@ impl Node for OnlyUnaryExpressionNode {
 impl BinaryExpressionNode {
     pub fn new(
         operator_kind: BinaryOperatorKind,
-        operator: &TokenNode,
-        left_expr: &ExpressionNode,
-        right_expr: &ExpressionNode,
+        operator: TokenNode,
+        left_expr: ExpressionNode,
+        right_expr: ExpressionNode,
     ) -> Self {
         let node = Rc::new(CoreBinaryExpressionNode {
             operator_kind,
-            operator: operator.clone(),
-            left_expr: left_expr.clone(),
-            right_expr: right_expr.clone(),
+            operator,
+            left_expr,
+            right_expr,
         });
         BinaryExpressionNode(node)
     }
@@ -1521,22 +1492,22 @@ impl Node for ComparisonNode {
 }
 
 impl<T: Clone> SymbolSeparatedSequenceNode<T> {
-    pub fn new_with_single_entity(entity: &T) -> Self {
+    pub fn new_with_single_entity(entity: T) -> Self {
         let node = Rc::new(CoreSymbolSeparatedSequenceNode {
-            entity: entity.clone(),
+            entity,
             remaining_entities: None,
         });
         SymbolSeparatedSequenceNode(node)
     }
 
     pub fn new_with_entities(
-        entity: &T,
-        remaining_entities: &SymbolSeparatedSequenceNode<T>,
-        comma: &TokenNode,
+        entity: T,
+        remaining_entities: SymbolSeparatedSequenceNode<T>,
+        comma: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreSymbolSeparatedSequenceNode {
-            entity: entity.clone(),
-            remaining_entities: Some((comma.clone(), remaining_entities.clone())),
+            entity,
+            remaining_entities: Some((comma, remaining_entities)),
         });
         SymbolSeparatedSequenceNode(node)
     }
@@ -1566,15 +1537,15 @@ impl<T: Clone + Node> Node for SymbolSeparatedSequenceNode<T> {
 
 impl CallExpressionNode {
     pub fn new(
-        function_name: &IdentifierInUseNode,
+        function_name: IdentifierInUseNode,
         params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreCallExpressionNode {
-            lparen: lparen.clone(),
-            rparen: rparen.clone(),
-            function_name: function_name.clone(),
+            lparen,
+            rparen,
+            function_name,
             params,
         });
         CallExpressionNode(node)
@@ -1594,19 +1565,19 @@ impl Node for CallExpressionNode {
 
 impl ClassMethodCallNode {
     pub fn new(
-        class_name: &IdentifierInUseNode,
-        class_method_name: &IdentifierInUseNode,
+        class_name: IdentifierInUseNode,
+        class_method_name: IdentifierInUseNode,
         params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-        double_colon: &TokenNode,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
+        double_colon: TokenNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreClassMethodCallNode {
-            lparen: lparen.clone(),
-            rparen: rparen.clone(),
-            double_colon: double_colon.clone(),
-            class_name: class_name.clone(),
-            class_method_name: class_method_name.clone(),
+            lparen,
+            rparen,
+            double_colon,
+            class_name,
+            class_method_name,
             params,
         });
         ClassMethodCallNode(node)
@@ -1626,13 +1597,13 @@ impl Node for ClassMethodCallNode {
 
 impl ArrayExpressionNode {
     pub fn new(
-        lsquare: &TokenNode,
-        rsquare: &TokenNode,
+        lsquare: TokenNode,
+        rsquare: TokenNode,
         initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Self {
         let node = Rc::new(CoreArrayExpressionNode {
-            lsquare: lsquare.clone(),
-            rsquare: rsquare.clone(),
+            lsquare,
+            rsquare,
             initials,
         });
         ArrayExpressionNode(node)
@@ -1651,11 +1622,11 @@ impl Node for ArrayExpressionNode {
 }
 
 impl KeyValuePairNode {
-    pub fn new(key_expr: &ExpressionNode, value_expr: &ExpressionNode, colon: &TokenNode) -> Self {
+    pub fn new(key_expr: ExpressionNode, value_expr: ExpressionNode, colon: TokenNode) -> Self {
         let node = Rc::new(CoreKeyValuePairNode {
-            key_expr: key_expr.clone(),
-            value_expr: value_expr.clone(),
-            colon: colon.clone(),
+            key_expr,
+            value_expr,
+            colon,
         });
         KeyValuePairNode(node)
     }
@@ -1674,13 +1645,13 @@ impl Node for KeyValuePairNode {
 
 impl HashMapExpressionNode {
     pub fn new(
-        lcurly: &TokenNode,
-        rcurly: &TokenNode,
+        lcurly: TokenNode,
+        rcurly: TokenNode,
         initials: Option<SymbolSeparatedSequenceNode<KeyValuePairNode>>,
     ) -> Self {
         let node = Rc::new(CoreHashMapExpressionNode {
-            lcurly: lcurly.clone(),
-            rcurly: rcurly.clone(),
+            lcurly,
+            rcurly,
             initials,
         });
         HashMapExpressionNode(node)
@@ -1700,14 +1671,14 @@ impl Node for HashMapExpressionNode {
 
 impl TupleExpressionNode {
     pub fn new(
-        lround: &TokenNode,
-        rround: &TokenNode,
-        initials: &SymbolSeparatedSequenceNode<ExpressionNode>,
+        lround: TokenNode,
+        rround: TokenNode,
+        initials: SymbolSeparatedSequenceNode<ExpressionNode>,
     ) -> Self {
         let node = Rc::new(CoreTupleExpressionNode {
-            lround: lround.clone(),
-            rround: rround.clone(),
-            initials: initials.clone(),
+            lround,
+            rround,
+            initials,
         });
         TupleExpressionNode(node)
     }
@@ -1725,16 +1696,16 @@ impl Node for TupleExpressionNode {
 }
 
 impl AtomNode {
-    pub fn new_with_atom_start(atom_start: &AtomStartNode) -> Self {
-        let node = Rc::new(CoreAtomNode::AtomStart(atom_start.clone()));
+    pub fn new_with_atom_start(atom_start: AtomStartNode) -> Self {
+        let node = Rc::new(CoreAtomNode::AtomStart(atom_start));
         AtomNode(node)
     }
 
     pub fn new_with_call(
-        atom: &AtomNode,
+        atom: AtomNode,
         params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreAtomNode::Call(CallNode::new(
             atom, params, lparen, rparen,
@@ -1743,9 +1714,9 @@ impl AtomNode {
     }
 
     pub fn new_with_propertry_access(
-        atom: &AtomNode,
-        propertry: &IdentifierInUseNode,
-        dot: &TokenNode,
+        atom: AtomNode,
+        propertry: IdentifierInUseNode,
+        dot: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreAtomNode::PropertyAccess(PropertyAccessNode::new(
             atom, propertry, dot,
@@ -1754,12 +1725,12 @@ impl AtomNode {
     }
 
     pub fn new_with_method_access(
-        atom: &AtomNode,
-        method_name: &IdentifierInUseNode,
+        atom: AtomNode,
+        method_name: IdentifierInUseNode,
         params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        dot: &TokenNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
+        dot: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreAtomNode::MethodAccess(MethodAccessNode::new(
             atom,
@@ -1773,10 +1744,10 @@ impl AtomNode {
     }
 
     pub fn new_with_index_access(
-        atom: &AtomNode,
-        index: &ExpressionNode,
-        lsquare: &TokenNode,
-        rsquare: &TokenNode,
+        atom: AtomNode,
+        index: ExpressionNode,
+        lsquare: TokenNode,
+        rsquare: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreAtomNode::IndexAccess(IndexAccessNode::new(
             atom, index, lsquare, rsquare,
@@ -1804,28 +1775,28 @@ impl AtomNode {
 }
 
 impl AtomStartNode {
-    pub fn new_with_identifier(token: &IdentifierInUseNode) -> Self {
-        let node = Rc::new(CoreAtomStartNode::Identifier(token.clone()));
+    pub fn new_with_identifier(token: IdentifierInUseNode) -> Self {
+        let node = Rc::new(CoreAtomStartNode::Identifier(token));
         AtomStartNode(node)
     }
 
-    pub fn new_with_self_keyword(self_keyword: &SelfKeywordNode) -> Self {
-        let node = Rc::new(CoreAtomStartNode::SelfKeyword(self_keyword.clone()));
+    pub fn new_with_self_keyword(self_keyword: SelfKeywordNode) -> Self {
+        let node = Rc::new(CoreAtomStartNode::SelfKeyword(self_keyword));
         AtomStartNode(node)
     }
 
-    pub fn new_with_function_call(call_expr: &CallExpressionNode) -> Self {
-        let node = Rc::new(CoreAtomStartNode::Call(call_expr.clone()));
+    pub fn new_with_function_call(call_expr: CallExpressionNode) -> Self {
+        let node = Rc::new(CoreAtomStartNode::Call(call_expr));
         AtomStartNode(node)
     }
 
     pub fn new_with_class_method_call(
-        class_name: &IdentifierInUseNode,
-        class_method_name: &IdentifierInUseNode,
+        class_name: IdentifierInUseNode,
+        class_method_name: IdentifierInUseNode,
         params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-        double_colon: &TokenNode,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
+        double_colon: TokenNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreAtomStartNode::ClassMethodCall(
             ClassMethodCallNode::new(
@@ -1853,15 +1824,15 @@ impl AtomStartNode {
 
 impl CallNode {
     pub fn new(
-        atom: &AtomNode,
+        atom: AtomNode,
         params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreCallNode {
-            atom: atom.clone(),
-            lparen: lparen.clone(),
-            rparen: rparen.clone(),
+            atom,
+            lparen,
+            rparen,
             params,
         });
         CallNode(node)
@@ -1880,11 +1851,11 @@ impl Node for CallNode {
 }
 
 impl PropertyAccessNode {
-    pub fn new(atom: &AtomNode, propertry: &IdentifierInUseNode, dot: &TokenNode) -> Self {
+    pub fn new(atom: AtomNode, propertry: IdentifierInUseNode, dot: TokenNode) -> Self {
         let node = Rc::new(CorePropertyAccessNode {
-            dot: dot.clone(),
-            atom: atom.clone(),
-            propertry: propertry.clone(),
+            dot,
+            atom,
+            propertry,
         });
         PropertyAccessNode(node)
     }
@@ -1903,19 +1874,19 @@ impl Node for PropertyAccessNode {
 
 impl MethodAccessNode {
     pub fn new(
-        atom: &AtomNode,
-        method_name: &IdentifierInUseNode,
+        atom: AtomNode,
+        method_name: IdentifierInUseNode,
         params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-        lparen: &TokenNode,
-        rparen: &TokenNode,
-        dot: &TokenNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
+        dot: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreMethodAccessNode {
-            lparen: lparen.clone(),
-            rparen: rparen.clone(),
-            dot: dot.clone(),
-            atom: atom.clone(),
-            method_name: method_name.clone(),
+            lparen,
+            rparen,
+            dot,
+            atom,
+            method_name,
             params,
         });
         MethodAccessNode(node)
@@ -1935,16 +1906,16 @@ impl Node for MethodAccessNode {
 
 impl IndexAccessNode {
     pub fn new(
-        atom: &AtomNode,
-        index: &ExpressionNode,
-        lsquare: &TokenNode,
-        rsquare: &TokenNode,
+        atom: AtomNode,
+        index: ExpressionNode,
+        lsquare: TokenNode,
+        rsquare: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreIndexAccessNode {
-            lsquare: lsquare.clone(),
-            rsquare: rsquare.clone(),
-            atom: atom.clone(),
-            index: index.clone(),
+            lsquare,
+            rsquare,
+            atom,
+            index,
         });
         IndexAccessNode(node)
     }
@@ -1962,7 +1933,7 @@ impl Node for IndexAccessNode {
 }
 
 impl SelfKeywordNode {
-    pub fn new_with_ok(token: &OkTokenNode) -> Self {
+    pub fn new_with_ok(token: OkTokenNode) -> Self {
         let node = Rc::new(CoreSelfKeywordNode::Ok(OkSelfKeywordNode::new(token)));
         SelfKeywordNode(node)
     }
@@ -1972,10 +1943,8 @@ impl SelfKeywordNode {
 default_errornous_node_impl!(SelfKeywordNode, CoreSelfKeywordNode);
 
 impl OkSelfKeywordNode {
-    pub fn new(token: &OkTokenNode) -> Self {
-        let node = Rc::new(CoreOkSelfKeywordNode {
-            token: token.clone(),
-        });
+    pub fn new(token: OkTokenNode) -> Self {
+        let node = Rc::new(CoreOkSelfKeywordNode { token });
         OkSelfKeywordNode(node)
     }
 
@@ -2009,7 +1978,7 @@ impl Hash for OkSelfKeywordNode {
 }
 
 impl TokenNode {
-    pub fn new_with_ok(token: &Token) -> Self {
+    pub fn new_with_ok(token: Token) -> Self {
         let node = Rc::new(CoreTokenNode::Ok(OkTokenNode::new(token)));
         TokenNode(node)
     }
@@ -2026,10 +1995,8 @@ impl TokenNode {
 default_errornous_node_impl!(TokenNode, CoreTokenNode);
 
 impl OkTokenNode {
-    pub fn new(token: &Token) -> Self {
-        OkTokenNode(Rc::new(CoreOkTokenNode {
-            token: token.clone(),
-        }))
+    pub fn new(token: Token) -> Self {
+        OkTokenNode(Rc::new(CoreOkTokenNode { token }))
     }
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
@@ -2072,13 +2039,13 @@ impl Hash for OkTokenNode {
 }
 
 impl MissingTokenNode {
-    pub fn new(expected_symbols: Vec<&'static str>, received_token: &Token) -> Self {
+    pub fn new(expected_symbols: Vec<&'static str>, received_token: Token) -> Self {
         let node = Rc::new(CoreMissingTokenNode {
             // NOTE: Below is traditionally an expensive clone but in our case,
             // mostly `expected_symbols.len()` is less so we avoid runtime overhead of using `Rc`
             // which ideally should be used if length is large for example: in `BlockNode`, see `stmts` field.
             expected_symbols,
-            received_token: received_token.clone(),
+            received_token,
         });
         MissingTokenNode(node)
     }
@@ -2097,10 +2064,8 @@ impl Node for MissingTokenNode {
 }
 
 impl SkippedTokenNode {
-    pub fn new(skipped_token: &Token) -> Self {
-        let node = Rc::new(CoreSkippedTokenNode {
-            skipped_token: skipped_token.clone(),
-        });
+    pub fn new(skipped_token: Token) -> Self {
+        let node = Rc::new(CoreSkippedTokenNode { skipped_token });
         SkippedTokenNode(node)
     }
 
@@ -2118,7 +2083,7 @@ impl Node for SkippedTokenNode {
 
 impl IdentifierInUseNode {
     pub fn new_with_ok(
-        token: &OkTokenNode,
+        token: OkTokenNode,
         generic_type_args: Option<(
             TokenNode,
             SymbolSeparatedSequenceNode<TypeExpressionNode>,
@@ -2138,7 +2103,7 @@ default_errornous_node_impl!(IdentifierInUseNode, CoreIdentifierInUseNode);
 
 impl IdentifierInDeclNode {
     pub fn new_with_ok(
-        token: &OkTokenNode,
+        token: OkTokenNode,
         generic_type_decls: Option<(
             TokenNode,
             SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
@@ -2158,7 +2123,7 @@ default_errornous_node_impl!(IdentifierInDeclNode, CoreIdentifierInDeclNode);
 
 impl OkIdentifierInUseNode {
     fn new(
-        token: &OkTokenNode,
+        token: OkTokenNode,
         generic_type_args: Option<(
             TokenNode,
             SymbolSeparatedSequenceNode<TypeExpressionNode>,
@@ -2166,9 +2131,8 @@ impl OkIdentifierInUseNode {
         )>,
     ) -> Self {
         let node = Rc::new(CoreOkIdentifierInUseNode {
-            name: token.clone(),
-            generic_type_args: generic_type_args
-                .map(|(langle, args, rangle)| (langle.clone(), args.clone(), rangle.clone())),
+            name: token,
+            generic_type_args,
         });
         OkIdentifierInUseNode(node)
     }
@@ -2213,7 +2177,7 @@ impl Hash for OkIdentifierInUseNode {
 
 impl OkIdentifierInDeclNode {
     fn new(
-        token: &OkTokenNode,
+        token: OkTokenNode,
         generic_type_decls: Option<(
             TokenNode,
             SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
@@ -2221,9 +2185,8 @@ impl OkIdentifierInDeclNode {
         )>,
     ) -> Self {
         let node = Rc::new(CoreOkIdentifierInDeclNode {
-            name: token.clone(),
-            generic_type_decls: generic_type_decls
-                .map(|(langle, args, rangle)| (langle.clone(), args.clone(), rangle.clone())),
+            name: token,
+            generic_type_decls,
         });
         OkIdentifierInDeclNode(node)
     }
@@ -2268,13 +2231,12 @@ impl Hash for OkIdentifierInDeclNode {
 
 impl GenericTypeDeclNode {
     pub fn new(
-        generic_type_name: &IdentifierInDeclNode,
+        generic_type_name: IdentifierInDeclNode,
         interface_bounds: Option<(TokenNode, SymbolSeparatedSequenceNode<IdentifierInUseNode>)>,
     ) -> Self {
         let node = Rc::new(CoreGenericTypeDeclNode {
-            generic_type_name: generic_type_name.clone(),
-            interface_bounds: interface_bounds
-                .map(|(colon, interfaces)| (colon.clone(), interfaces.clone())),
+            generic_type_name,
+            interface_bounds,
         });
         GenericTypeDeclNode(node)
     }
