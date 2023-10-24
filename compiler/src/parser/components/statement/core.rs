@@ -17,6 +17,20 @@ pub const STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS: [&str; 9] = [
     "return",
 ];
 
+pub const STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS: [&str; 11] = [
+    "let",
+    "def",
+    "for",
+    "while",
+    "if",
+    "type",
+    "interface",
+    "<expression>",
+    "return",
+    "break",
+    "continue",
+];
+
 pub fn is_statement_at_global_scope_starting_with(token: &Token) -> bool {
     match token.core_token {
         CoreToken::DEF => true,
@@ -40,6 +54,22 @@ pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
     }
 }
 
+pub fn is_statement_within_control_flow_starting_with(token: &Token) -> bool {
+    match token.core_token {
+        CoreToken::LET => true,
+        CoreToken::DEF => true,
+        CoreToken::FOR => true,
+        CoreToken::WHILE => true,
+        CoreToken::IF => true,
+        CoreToken::TYPE_KEYWORD => true,
+        CoreToken::INTERFACE_KEYWORD => true,
+        CoreToken::RETURN => true,
+        CoreToken::BREAK => true,
+        CoreToken::CONTINUE => true,
+        _ => is_expression_starting_with(token),
+    }
+}
+
 // Below method parsers every possible statement in Jarvil.
 // It is the responsiblity of the `is_starting_with_fn` passed into `block` parsing
 // method to allow or disallow certain statements inside the block for example: in struct block
@@ -54,7 +84,10 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         CoreToken::DEF => parser.function_stmt(CallableKind::Function),
         CoreToken::FOR => todo!(),
         CoreToken::WHILE => todo!(),
-        CoreToken::IF => todo!(),
+        CoreToken::IF => {
+            let conditional_node = parser.conditional();
+            StatementNode::new_with_conditional(conditional_node)
+        }
         CoreToken::TYPE_KEYWORD => {
             let type_decl_node = parser.type_decl();
             StatementNode::new_with_type_declaration(type_decl_node)

@@ -200,6 +200,11 @@ impl StatementNode {
         StatementNode(node)
     }
 
+    pub fn new_with_conditional(conditional: ConditionalStatementNode) -> Self {
+        let node = Rc::new(CoreStatementNode::Conditional(conditional));
+        StatementNode(node)
+    }
+
     pub fn new_with_function_wrapper(func_wrapper: FunctionWrapperNode) -> Self {
         let node = Rc::new(CoreStatementNode::FunctionWrapper(func_wrapper));
         StatementNode(node)

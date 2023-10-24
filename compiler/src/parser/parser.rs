@@ -1,11 +1,11 @@
 use super::resolver::BlockKind;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
-    CallableKind, CallablePrototypeNode, ErrornousNode, ExpressionNode, GenericTypeDeclNode,
-    IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
-    InterfaceMethodPrototypeWrapperNode, NameTypeSpecNode, OkTokenNode, SelfKeywordNode,
-    SkippedTokenNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode,
-    TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
+    CallableKind, CallablePrototypeNode, ConditionalBlockNode, ConditionalStatementNode,
+    ErrornousNode, ExpressionNode, GenericTypeDeclNode, IdentifierInDeclNode, IdentifierInUseNode,
+    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, NameTypeSpecNode, OkTokenNode,
+    SelfKeywordNode, SkippedTokenNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode,
+    TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::code::JarvilCode;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
@@ -407,6 +407,17 @@ impl JarvilParser {
 
     pub fn assignment(&mut self, expr: ExpressionNode) -> AssignmentNode {
         components::assignment::assignment(self, expr)
+    }
+
+    pub fn conditional(&mut self) -> ConditionalStatementNode {
+        components::conditional::conditional(self)
+    }
+
+    pub fn conditional_block(
+        &mut self,
+        conditional_keyword_str: &'static str,
+    ) -> ConditionalBlockNode {
+        components::conditional::conditional_block(self, conditional_keyword_str)
     }
 
     pub fn type_expr(&mut self) -> TypeExpressionNode {

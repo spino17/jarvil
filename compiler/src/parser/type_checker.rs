@@ -3,9 +3,10 @@
 
 use crate::ast::ast::{
     ArrayExpressionNode, CallExpressionNode, CallNode, ClassMethodCallNode,
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, HashMapExpressionNode, IndexAccessNode,
-    InterfaceMethodTerminalNode, MethodAccessNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
-    PropertyAccessNode, StructDeclarationNode, TupleExpressionNode,
+    ConditionalStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
+    HashMapExpressionNode, IndexAccessNode, InterfaceMethodTerminalNode, MethodAccessNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode,
+    TupleExpressionNode,
 };
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
@@ -1805,6 +1806,10 @@ impl TypeChecker {
         self.walk_block(&core_struct_decl.block);
     }
 
+    pub fn check_conditional_stmt(&mut self, conditional_stmt: &ConditionalStatementNode) {
+        todo!()
+    }
+
     pub fn check_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
             CoreStatementNode::Expression(expr_stmt) => {
@@ -1827,7 +1832,9 @@ impl TypeChecker {
             CoreStatementNode::Return(return_stmt) => {
                 self.check_return_stmt(return_stmt);
             }
-            CoreStatementNode::Conditional(conditional_stmt) => todo!(),
+            CoreStatementNode::Conditional(conditional_stmt) => {
+                self.check_conditional_stmt(conditional_stmt)
+            }
             CoreStatementNode::TypeDeclaration(type_decl) => match type_decl.core_ref() {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {
                     // self.walk_block(&struct_decl.core_ref().block);

@@ -2,6 +2,7 @@ pub mod assignment;
 pub mod block;
 pub mod code;
 pub mod common;
+pub mod conditional;
 pub mod expression;
 pub mod interface_declaration;
 pub mod statement;
