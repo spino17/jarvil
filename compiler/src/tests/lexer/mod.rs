@@ -310,3 +310,21 @@ fn test_peg_parser() {
     let alt_vec = vec!["_", "__peg_", "__peg_parser__", "__peg_parser___"];
     assert_token_for_identifier(alt_vec, "__peg_parser__", CoreToken::PEG_PARSER)
 }
+
+#[test]
+fn test_enum() {
+    let alt_vec = vec!["e", "en", "enum", "enu", "enumeration"];
+    assert_token_for_identifier(alt_vec, "enum", CoreToken::ENUM_KEYWORD)
+}
+
+#[test]
+fn test_match() {
+    let alt_vec = vec!["m", "mat", "mattress", "match", "matching", "maternal"];
+    assert_token_for_identifier(alt_vec, "match", CoreToken::MATCH)
+}
+
+#[test]
+fn test_case() {
+    let alt_vec = vec!["c", "cased", "cas", "case", "castle"];
+    assert_token_for_identifier(alt_vec, "case", CoreToken::CASE)
+}

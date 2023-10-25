@@ -449,11 +449,12 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                         Some(next_c) => match next_c {
                             'o' => check_keyword("ntinue", value_iter, CoreToken::CONTINUE),
                             'l' => check_keyword("ass", value_iter, CoreToken::CLASS_KEYWORD),
+                            'a' => check_keyword("se", value_iter, CoreToken::CASE),
                             _ => CoreToken::IDENTIFIER,
                         },
                         None => CoreToken::IDENTIFIER,
                     }
-                } // continue, class
+                } // continue, class, case
                 'b' => {
                     let next_c = value_iter.next();
                     match next_c {
@@ -543,11 +544,12 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                                 }
                             }
                             'x' => check_keyword("cept", value_iter, CoreToken::EXCEPT_KEYWORD),
+                            'n' => check_keyword("um", value_iter, CoreToken::ENUM_KEYWORD),
                             _ => CoreToken::IDENTIFIER,
                         },
                         None => CoreToken::IDENTIFIER,
                     }
-                } // else, elif, except
+                } // else, elif, except, enum
                 't' => {
                     let next_c = value_iter.next();
                     match next_c {
@@ -679,8 +681,9 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                         None => CoreToken::IDENTIFIER,
                     }
                 } // not, nonlocal
-                'o' => check_keyword("r", value_iter, CoreToken::OR), // or
-                'T' => check_keyword("rue", value_iter, CoreToken::TRUE), // True
+                'm' => check_keyword("atch", value_iter, CoreToken::MATCH), // match
+                'o' => check_keyword("r", value_iter, CoreToken::OR),       // or
+                'T' => check_keyword("rue", value_iter, CoreToken::TRUE),   // True
                 'F' => check_keyword("alse", value_iter, CoreToken::FALSE), // False
                 'r' => {
                     let next_c = value_iter.next();
@@ -693,7 +696,7 @@ pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken
                         None => CoreToken::IDENTIFIER,
                     }
                 } // raise, return
-                'N' => check_keyword("one", value_iter, CoreToken::NONE), // None
+                'N' => check_keyword("one", value_iter, CoreToken::NONE),   // None
                 'g' => check_keyword("lobal", value_iter, CoreToken::GLOBAL_KEYWORD), // global
                 'p' => check_keyword("ass", value_iter, CoreToken::PASS_KEYWORD), // pass
                 'y' => check_keyword("ield", value_iter, CoreToken::YIELD_KEYWORD), // yield
