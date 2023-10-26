@@ -50,6 +50,8 @@ pub enum ASTNode {
     TypeDeclaration(TypeDeclarationNode),
     StructDeclaration(StructDeclarationNode),
     StructPropertyDeclaration(StructPropertyDeclarationNode),
+    EnumDeclaration(EnumDeclarationNode),
+    EnumVariantDeclaration(EnumVariantDeclarationNode),
     LambdaTypeDeclaration(LambdaTypeDeclarationNode),
     TypeExpression(TypeExpressionNode),
     AtomicType(AtomicTypeNode),
@@ -138,6 +140,7 @@ pub enum CoreStatementNode {
     BoundedMethodWrapper(BoundedMethodWrapperNode),
     TypeDeclaration(TypeDeclarationNode),
     StructPropertyDeclaration(StructPropertyDeclarationNode),
+    EnumVariantDeclaration(EnumVariantDeclarationNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
     InterfaceMethodPrototypeWrapper(InterfaceMethodPrototypeWrapperNode),
 }
@@ -260,6 +263,22 @@ pub struct CoreStructDeclarationNode {
 pub struct CoreStructPropertyDeclarationNode {
     pub newline: TokenNode,
     pub name_type_spec: NameTypeSpecNode,
+}
+
+#[derive(Debug)]
+pub struct CoreEnumDeclarationNode {
+    pub type_keyword: TokenNode,
+    pub name: IdentifierInDeclNode,
+    pub enum_keyword: TokenNode,
+    pub colon: TokenNode,
+    pub block: BlockNode,
+}
+
+#[derive(Debug)]
+pub struct CoreEnumVariantDeclarationNode {
+    pub variant: IdentifierInDeclNode,
+    pub ty: Option<(TokenNode, TypeExpressionNode, TokenNode)>,
+    pub newline: TokenNode,
 }
 
 #[derive(Debug)]
@@ -732,6 +751,10 @@ pub struct ConditionalBlockNode(pub Rc<CoreConditionalBlockNode>);
 pub struct BreakStatementNode(pub Rc<CoreBreakStatementNode>);
 #[derive(Debug, Clone)]
 pub struct ContinueStatementNode(pub Rc<CoreContinueStatementNode>);
+#[derive(Debug, Clone)]
+pub struct EnumDeclarationNode(pub Rc<CoreEnumDeclarationNode>);
+#[derive(Debug, Clone)]
+pub struct EnumVariantDeclarationNode(pub Rc<CoreEnumVariantDeclarationNode>);
 
 pub enum UnresolvedIdentifier<'a> {
     Unresolved(&'a OkIdentifierInUseNode),

@@ -1,10 +1,10 @@
 use super::ast::{
     ArrayExpressionNode, BreakStatementNode, ConditionalBlockNode, ConditionalStatementNode,
-    ContinueStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode, GenericTypeDeclNode,
-    HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
-    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, KeyValuePairNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, SymbolSeparatedSequenceNode,
-    TupleExpressionNode, TupleTypeNode,
+    ContinueStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode, EnumDeclarationNode,
+    EnumVariantDeclarationNode, GenericTypeDeclNode, HashMapExpressionNode, IdentifierInDeclNode,
+    IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
+    InterfaceMethodTerminalNode, KeyValuePairNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode,
 };
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
@@ -133,9 +133,19 @@ pub trait Visitor {
         new_with_TypeDeclarationNode
     );
     impl_node_walk!(
-        walk_struct_property_declaration,
+        walk_struct_property_decl,
         StructPropertyDeclarationNode,
         new_with_StructPropertyDeclarationNode
+    );
+    impl_node_walk!(
+        walk_enum_decl,
+        EnumDeclarationNode,
+        new_with_EnumDeclarationNode
+    );
+    impl_node_walk!(
+        walk_enum_variant_decl,
+        EnumVariantDeclarationNode,
+        new_with_EnumVariantDeclarationNode
     );
     impl_node_walk!(
         walk_missing_tokens,
@@ -175,7 +185,7 @@ pub trait Visitor {
     );
     impl_node_walk!(walk_r_assignment, RAssignmentNode, new_with_RAssignmentNode);
     impl_node_walk!(
-        walk_r_variable_declaration,
+        walk_r_variable_decl,
         RVariableDeclarationNode,
         new_with_RVariableDeclarationNode
     );
@@ -442,7 +452,10 @@ pub trait Visitor {
                     self.walk_type_decl(type_decl);
                 }
                 CoreStatementNode::StructPropertyDeclaration(struct_stmt) => {
-                    self.walk_struct_property_declaration(struct_stmt);
+                    self.walk_struct_property_decl(struct_stmt);
+                }
+                CoreStatementNode::EnumVariantDeclaration(enum_variant_decl) => {
+                    self.walk_enum_variant_decl(enum_variant_decl);
                 }
                 CoreStatementNode::InterfaceDeclaration(interface_decl) => {
                     self.walk_interface_decl(interface_decl);
@@ -564,6 +577,24 @@ pub trait Visitor {
                 self.walk_token(&core_struct_decl.colon);
                 self.walk_block(&core_struct_decl.block);
             }
+            ASTNode::EnumDeclaration(enum_decl_node) => {
+                let core_enum_decl = enum_decl_node.core_ref();
+                self.walk_token(&core_enum_decl.type_keyword);
+                self.walk_identifier_in_decl(&core_enum_decl.name);
+                self.walk_token(&core_enum_decl.enum_keyword);
+                self.walk_token(&core_enum_decl.colon);
+                self.walk_block(&core_enum_decl.block);
+            }
+            ASTNode::EnumVariantDeclaration(enum_variant_decl) => {
+                let core_enum_variant_decl = enum_variant_decl.core_ref();
+                self.walk_identifier_in_decl(&core_enum_variant_decl.variant);
+                if let Some((lparen, ty, rparen)) = &core_enum_variant_decl.ty {
+                    self.walk_token(lparen);
+                    self.walk_type_expression(ty);
+                    self.walk_token(rparen);
+                }
+                self.walk_token(&core_enum_variant_decl.newline);
+            }
             ASTNode::LambdaTypeDeclaration(lambda_decl_node) => {
                 let core_lambda_decl = lambda_decl_node.core_ref();
                 self.walk_token(&core_lambda_decl.type_keyword);
@@ -625,7 +656,7 @@ pub trait Visitor {
                     self.walk_type_expression(ty_expr);
                 }
                 self.walk_token(&core_variable_decl.equal);
-                self.walk_r_variable_declaration(&core_variable_decl.r_node);
+                self.walk_r_variable_decl(&core_variable_decl.r_node);
             }
             ASTNode::Return(return_stmt) => {
                 let core_return_stmt = return_stmt.core_ref();

@@ -9,13 +9,14 @@ use super::ast::{
     CoreBreakStatementNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
     CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode,
     CoreConditionalBlockNode, CoreConditionalStatementNode, CoreContinueStatementNode,
-    CoreExpressionNode, CoreExpressionStatementNode, CoreFunctionDeclarationNode,
-    CoreFunctionWrapperNode, CoreGenericTypeDeclNode, CoreHashMapExpressionNode,
-    CoreHashMapTypeNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
-    CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode, CoreInterfaceDeclarationNode,
-    CoreInterfaceMethodPrototypeWrapperNode, CoreInvalidLValueNode, CoreKeyValuePairNode,
-    CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMethodAccessNode,
-    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
+    CoreEnumDeclarationNode, CoreEnumVariantDeclarationNode, CoreExpressionNode,
+    CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
+    CoreGenericTypeDeclNode, CoreHashMapExpressionNode, CoreHashMapTypeNode,
+    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode,
+    CoreIndexAccessNode, CoreInterfaceDeclarationNode, CoreInterfaceMethodPrototypeWrapperNode,
+    CoreInvalidLValueNode, CoreKeyValuePairNode, CoreLambdaDeclarationNode,
+    CoreLambdaTypeDeclarationNode, CoreMethodAccessNode, CoreMissingTokenNode,
+    CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
     CoreOkIdentifierInUseNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
     CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
@@ -23,19 +24,19 @@ use super::ast::{
     CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreSymbolSeparatedSequenceNode,
     CoreTokenNode, CoreTupleExpressionNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
     CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
-    CoreVariableDeclarationNode, ExpressionNode, ExpressionStatementNode, FunctionDeclarationNode,
-    FunctionWrapperNode, GenericTypeDeclNode, HashMapExpressionNode, HashMapTypeNode,
-    IdentifierInDeclNode, IdentifierInUseNode, IncorrectlyIndentedStatementNode, IndexAccessNode,
-    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode,
-    InvalidLValueNode, KeyValuePairNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
-    MethodAccessNode, NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode,
-    OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
-    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
-    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatementIndentWrapperNode,
-    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
-    SymbolSeparatedSequenceNode, TokenNode, TupleExpressionNode, TupleTypeNode,
-    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-    UnresolvedIdentifier, UserDefinedTypeNode, VariableDeclarationNode,
+    CoreVariableDeclarationNode, EnumDeclarationNode, EnumVariantDeclarationNode, ExpressionNode,
+    ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode,
+    HashMapExpressionNode, HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode,
+    IncorrectlyIndentedStatementNode, IndexAccessNode, InterfaceDeclarationNode,
+    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, InvalidLValueNode,
+    KeyValuePairNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
+    NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode, ParenthesisedExpressionNode,
+    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
+    SelfKeywordNode, SkippedTokenNode, StatementIndentWrapperNode, StatementNode,
+    StructDeclarationNode, StructPropertyDeclarationNode, SymbolSeparatedSequenceNode, TokenNode,
+    TupleExpressionNode, TupleTypeNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind,
+    UnaryExpressionNode, UnresolvedIdentifier, UserDefinedTypeNode, VariableDeclarationNode,
 };
 use super::iterators::SymbolSeparatedSequenceIterator;
 use crate::ast::ast::ErrornousNode;
@@ -448,6 +449,35 @@ impl Node for StructPropertyDeclarationNode {
     }
 }
 
+impl EnumVariantDeclarationNode {
+    pub fn new(
+        variant: IdentifierInDeclNode,
+        ty: Option<(TokenNode, TypeExpressionNode, TokenNode)>,
+        newline: TokenNode,
+    ) -> Self {
+        let node = Rc::new(CoreEnumVariantDeclarationNode {
+            variant,
+            ty,
+            newline,
+        });
+        EnumVariantDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreEnumVariantDeclarationNode);
+}
+
+impl Node for EnumVariantDeclarationNode {
+    fn range(&self) -> TextRange {
+        match &self.core_ref().ty {
+            Some((_, _, rbracket)) => impl_range!(self.core_ref().variant, rbracket),
+            None => self.core_ref().variant.range(),
+        }
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().variant.start_line_number()
+    }
+}
+
 impl TypeDeclarationNode {
     pub fn new_with_struct(
         name: IdentifierInDeclNode,
@@ -512,6 +542,36 @@ impl Node for StructDeclarationNode {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().type_keyword.start_line_number()
+    }
+}
+
+impl EnumDeclarationNode {
+    pub fn new(
+        type_keyword: TokenNode,
+        name: IdentifierInDeclNode,
+        enum_keyword: TokenNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Rc::new(CoreEnumDeclarationNode {
+            type_keyword,
+            name,
+            enum_keyword,
+            colon,
+            block,
+        });
+        EnumDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreEnumDeclarationNode);
+}
+
+impl Node for EnumDeclarationNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().type_keyword, self.core_ref().block)
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().type_keyword.start_line_number()
     }
 }
 
