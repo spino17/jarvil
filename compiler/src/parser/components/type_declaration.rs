@@ -11,7 +11,6 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
     let type_keyword_node = parser.expect("type");
     let type_name_node = parser.expect_identifier_in_decl();
     let token = parser.curr_token();
-
     match token.core_token {
         CoreToken::STRUCT_KEYWORD => {
             let mut implementing_interfaces_node: Option<(
@@ -45,6 +44,26 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 struct_keyword_node,
                 implementing_interfaces_node,
                 colon_node,
+            )
+        }
+        CoreToken::ENUM_KEYWORD => {
+            let enum_keyword_node = parser.expect("enum");
+            let colon_node = parser.expect(":");
+            let block_node = parser.block(
+                |token| match token.core_token {
+                    CoreToken::IDENTIFIER => true,
+                    _ => false,
+                },
+                |parser| parser.enum_stmt(),
+                &[IDENTIFIER],
+                BlockKind::Enum,
+            );
+            TypeDeclarationNode::new_with_enum(
+                type_keyword_node,
+                type_name_node,
+                enum_keyword_node,
+                colon_node,
+                block_node,
             )
         }
         CoreToken::LAMBDA_KEYWORD => {

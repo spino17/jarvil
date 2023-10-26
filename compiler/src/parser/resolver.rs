@@ -70,6 +70,7 @@ pub enum BlockKind {
     Method,
     Conditional,
     Loop,
+    Enum,
 }
 
 impl BlockKind {
@@ -80,7 +81,8 @@ impl BlockKind {
             | BlockKind::LambdaType
             | BlockKind::Struct
             | BlockKind::Interface
-            | BlockKind::Lambda => true,
+            | BlockKind::Lambda
+            | BlockKind::Enum => true,
             BlockKind::Conditional | BlockKind::Loop => false,
         }
     }
@@ -99,6 +101,7 @@ impl BlockKind {
             | BlockKind::Struct
             | BlockKind::Interface
             | BlockKind::Conditional
+            | BlockKind::Enum
             | BlockKind::Loop => false,
         }
     }
@@ -256,7 +259,10 @@ impl Resolver {
             match block_kind {
                 BlockKind::Loop => return true,
                 BlockKind::Function | BlockKind::Lambda | BlockKind::Method => return false,
-                BlockKind::Struct | BlockKind::Interface | BlockKind::LambdaType => unreachable!(),
+                BlockKind::Struct
+                | BlockKind::Interface
+                | BlockKind::LambdaType
+                | BlockKind::Enum => unreachable!(),
                 BlockKind::Conditional => {
                     index -= 1;
                 }

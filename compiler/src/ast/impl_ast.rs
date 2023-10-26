@@ -247,6 +247,11 @@ impl StatementNode {
         StatementNode(node)
     }
 
+    pub fn new_with_enum_stmt(enum_stmt: EnumVariantDeclarationNode) -> Self {
+        let node = Rc::new(CoreStatementNode::EnumVariantDeclaration(enum_stmt));
+        StatementNode(node)
+    }
+
     pub fn new_with_interface_declaration(interface_decl: InterfaceDeclarationNode) -> Self {
         let node = Rc::new(CoreStatementNode::InterfaceDeclaration(interface_decl));
         StatementNode(node)
@@ -497,6 +502,23 @@ impl TypeDeclarationNode {
             struct_keyword,
             implementing_interfaces,
             colon,
+        )));
+        TypeDeclarationNode(node)
+    }
+
+    pub fn new_with_enum(
+        type_keyword: TokenNode,
+        name: IdentifierInDeclNode,
+        enum_keyword: TokenNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Rc::new(CoreTypeDeclarationNode::Enum(EnumDeclarationNode::new(
+            type_keyword,
+            name,
+            enum_keyword,
+            colon,
+            block,
         )));
         TypeDeclarationNode(node)
     }

@@ -318,6 +318,9 @@ impl PythonCodeGenerator {
             CoreTypeDeclarationNode::Lambda(_) => {
                 self.add_str_to_python_code("\n");
             }
+            CoreTypeDeclarationNode::Enum(enum_decl) => {
+                todo!()
+            }
             CoreTypeDeclarationNode::MissingTokens(_) => unreachable!(),
         }
     }

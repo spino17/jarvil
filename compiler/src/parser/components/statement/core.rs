@@ -1,6 +1,6 @@
 use crate::ast::ast::{
-    BreakStatementNode, CallableKind, ContinueStatementNode, StatementNode,
-    StructPropertyDeclarationNode,
+    BreakStatementNode, CallableKind, ContinueStatementNode, EnumVariantDeclarationNode,
+    StatementNode, StructPropertyDeclarationNode, TokenNode, TypeExpressionNode,
 };
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
@@ -162,6 +162,29 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
             StatementNode::new_with_struct_stmt(struct_stmt)
         }
         CoreToken::DEF => parser.function_stmt(CallableKind::Method),
+        _ => unreachable!(),
+    }
+}
+
+pub fn enum_stmt(parser: &mut JarvilParser) -> StatementNode {
+    let token = parser.curr_token();
+    match token.core_token {
+        CoreToken::IDENTIFIER => {
+            let mut optional_ty_node: Option<(TokenNode, TypeExpressionNode, TokenNode)> = None;
+            let variant_name_node = parser.expect_identifier();
+            if parser.curr_token().is_eq("(") {
+                let lparen_node = parser.expect("(");
+                let ty_node = parser.type_expr();
+                let rparen_node = parser.expect(")");
+                optional_ty_node = Some((lparen_node, ty_node, rparen_node));
+            }
+            let newline_node = parser.expect_terminators();
+            StatementNode::new_with_enum_stmt(EnumVariantDeclarationNode::new(
+                variant_name_node,
+                optional_ty_node,
+                newline_node,
+            ))
+        }
         _ => unreachable!(),
     }
 }

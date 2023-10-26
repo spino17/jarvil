@@ -244,6 +244,7 @@ pub enum CoreRVariableDeclarationNode {
 #[derive(Debug, Node)]
 pub enum CoreTypeDeclarationNode {
     Struct(StructDeclarationNode),
+    Enum(EnumDeclarationNode),
     Lambda(LambdaTypeDeclarationNode),
     MissingTokens(MissingTokenNode),
 }

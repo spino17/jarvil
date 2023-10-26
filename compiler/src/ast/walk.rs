@@ -535,6 +535,9 @@ pub trait Visitor {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {
                     self.walk_struct_decl(struct_decl);
                 }
+                CoreTypeDeclarationNode::Enum(enum_decl) => {
+                    self.walk_enum_decl(enum_decl);
+                }
                 CoreTypeDeclarationNode::Lambda(lambda_decl) => {
                     self.walk_lambda_type_decl(lambda_decl);
                 }
