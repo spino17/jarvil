@@ -27,20 +27,3 @@ pub fn range_meta_data() -> CallableData {
         generics: Option::default(),
     }
 }
-
-fn check_in_builtin_func_trie(remaining_str: &str, value: Chars) -> bool {
-    let value: String = value.collect();
-    value.len() == remaining_str.len() && value.eq(remaining_str)
-}
-
-pub fn is_name_in_builtin_func(name: &str) -> bool {
-    let mut iter = name.chars();
-    match iter.next() {
-        Some(c) => match c {
-            'p' => check_in_builtin_func_trie("rint", iter),
-            'r' => check_in_builtin_func_trie("ange", iter),
-            _ => false,
-        },
-        None => unreachable!(),
-    }
-}

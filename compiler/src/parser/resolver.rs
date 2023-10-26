@@ -8,9 +8,8 @@ use crate::ast::ast::{
 };
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
-    BuiltinFunctionNameOverlapError, ConstructorNotFoundInsideStructDeclarationError,
-    FieldsNotInitializedInConstructorError, GenericTypeResolvedToOutsideScopeError,
-    GenericTypesDeclarationInsideConstructorFoundError, IdentifierFoundInNonLocalsError,
+    ConstructorNotFoundInsideStructDeclarationError, FieldsNotInitializedInConstructorError,
+    GenericTypeResolvedToOutsideScopeError, GenericTypesDeclarationInsideConstructorFoundError,
     IdentifierNotFoundInAnyNamespaceError, IdentifierUsedBeforeInitializedError,
     InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError,
     InitMethodNotAllowedInsideConstructorError, InterfaceAlreadyExistInBoundsDeclarationError,
@@ -18,7 +17,7 @@ use crate::error::diagnostics::{
     MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
-use crate::scope::builtin::{is_name_in_builtin_func, print_meta_data, range_meta_data};
+use crate::scope::builtin::{print_meta_data, range_meta_data};
 use crate::scope::concrete::ConcreteTypesTuple;
 use crate::scope::core::{
     AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData, LookupData,
@@ -110,8 +109,6 @@ pub struct ClassContext {
 }
 
 pub struct BlockContext {
-    variable_non_locals: FxHashSet<MangledIdentifierName>,
-    function_non_locals: FxHashSet<MangledIdentifierName>,
     inner_non_locals: FxHashSet<MangledIdentifierName>,
     block_kind: BlockKind,
     scope_index: usize,
@@ -140,8 +137,6 @@ impl Resolver {
             context: Context {
                 class_context_stack: vec![],
                 block_context_stack: vec![BlockContext {
-                    variable_non_locals: FxHashSet::default(),
-                    function_non_locals: FxHashSet::default(),
                     inner_non_locals: FxHashSet::default(),
                     block_kind: BlockKind::Function,
                     scope_index: 0,
@@ -204,8 +199,6 @@ impl Resolver {
         self.scope_index = new_scope_index;
         self.indent_level += 1;
         self.context.block_context_stack.push(BlockContext {
-            variable_non_locals: FxHashSet::default(),
-            function_non_locals: FxHashSet::default(),
             inner_non_locals: FxHashSet::default(),
             block_kind,
             scope_index: new_scope_index,
@@ -228,11 +221,8 @@ impl Resolver {
             None => unreachable!(),
         };
         if let Some(block) = block {
-            non_locals
-                .variable_non_locals
-                .extend(non_locals.inner_non_locals);
             self.semantic_state_db
-                .set_non_locals(block, non_locals.variable_non_locals);
+                .set_non_locals(block, non_locals.inner_non_locals);
         }
     }
 
@@ -253,42 +243,10 @@ impl Resolver {
     ) {
         let len = self.context.block_context_stack.len();
         if let Some(enclosing_func_scope_depth) = enclosing_func_scope_depth {
-            if enclosing_func_scope_depth > 1 {
-                self.context.block_context_stack[len - 1 - (enclosing_func_scope_depth - 1)]
-                    .inner_non_locals
-                    .insert(name.clone());
-            }
+            self.context.block_context_stack[len - 1 - (enclosing_func_scope_depth - 1)]
+                .inner_non_locals
+                .insert(name.clone());
         }
-        self.context.block_context_stack[len - 1]
-            .variable_non_locals
-            .insert(name);
-    }
-
-    pub fn is_variable_in_non_locals(&self, name: StrId) -> bool {
-        let len = self.context.block_context_stack.len();
-        for key in &self.context.block_context_stack[len - 1].variable_non_locals {
-            if key.jarvil_identifer_name == name {
-                return true;
-            }
-        }
-        false
-    }
-
-    pub fn set_to_function_non_locals(&mut self, name: MangledIdentifierName) {
-        let len = self.context.block_context_stack.len();
-        self.context.block_context_stack[len - 1]
-            .function_non_locals
-            .insert(name);
-    }
-
-    pub fn is_function_in_non_locals(&self, name: StrId) -> bool {
-        let len = self.context.block_context_stack.len();
-        for key in &self.context.block_context_stack[len - 1].function_non_locals {
-            if key.jarvil_identifer_name == name {
-                return true;
-            }
-        }
-        false
     }
 
     pub fn check_enclosing_loop_scope(&self) -> bool {
@@ -1209,33 +1167,22 @@ impl Resolver {
         let core_variable_decl = variable_decl.core_ref();
         let mut symbol_data: Option<VariableSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
-            let name = ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
-            if self.is_variable_in_non_locals(name) {
-                let err = IdentifierFoundInNonLocalsError::new(
-                    IdentKind::Variable,
-                    ok_identifier.range(),
-                );
-                self.errors
-                    .push(Diagnostics::IdentifierFoundInNonLocals(err));
-            } else {
-                match self.try_declare_and_bind_variable(ok_identifier) {
-                    Ok(local_symbol_data) => {
-                        symbol_data = Some(local_symbol_data);
-                    }
-                    Err((name, previous_decl_range)) => {
-                        let err = IdentifierAlreadyDeclaredError::new(
-                            IdentKind::Variable,
-                            self.semantic_state_db.interner.lookup(name),
-                            previous_decl_range,
-                            ok_identifier.range(),
-                        );
-                        self.errors
-                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                    }
+            match self.try_declare_and_bind_variable(ok_identifier) {
+                Ok(local_symbol_data) => {
+                    symbol_data = Some(local_symbol_data);
+                }
+                Err((name, previous_decl_range)) => {
+                    let err = IdentifierAlreadyDeclaredError::new(
+                        IdentKind::Variable,
+                        self.semantic_state_db.interner.lookup(name),
+                        previous_decl_range,
+                        ok_identifier.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
             }
         }
-
         let ty_from_optional_annotation = core_variable_decl
             .ty_annotation
             .as_ref()
@@ -1301,33 +1248,17 @@ impl Resolver {
         let mut symbol_data: Option<FunctionSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
-            let name = ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
-            if self.is_function_in_non_locals(name) {
-                let err = IdentifierFoundInNonLocalsError::new(
-                    IdentKind::Function,
-                    ok_identifier.range(),
-                );
-                self.errors
-                    .push(Diagnostics::IdentifierFoundInNonLocals(err));
-            } else if self.indent_level == 0
-                && is_name_in_builtin_func(self.semantic_state_db.interner.lookup(name))
-            {
-                let err = BuiltinFunctionNameOverlapError::new(ok_identifier.range());
-                self.errors
-                    .push(Diagnostics::BuiltinFunctionNameOverlap(err));
-            } else {
-                match self.try_declare_and_bind_function(ok_identifier) {
-                    Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
-                    Err((name, previous_decl_range)) => {
-                        let err = IdentifierAlreadyDeclaredError::new(
-                            IdentKind::Function,
-                            self.semantic_state_db.interner.lookup(name),
-                            previous_decl_range,
-                            ok_identifier.range(),
-                        );
-                        self.errors
-                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                    }
+            match self.try_declare_and_bind_function(ok_identifier) {
+                Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
+                Err((name, previous_decl_range)) => {
+                    let err = IdentifierAlreadyDeclaredError::new(
+                        IdentKind::Function,
+                        self.semantic_state_db.interner.lookup(name),
+                        previous_decl_range,
+                        ok_identifier.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
             }
         }
@@ -1956,15 +1887,7 @@ impl Visitor for Resolver {
                         {
                             // order of namespace search: function => type => variable
                             match self.try_resolving_function(ok_identifier, false) {
-                                ResolveResult::Ok(lookup_data, _, _) => {
-                                    let symbol_data = lookup_data.symbol_data;
-                                    let depth = lookup_data.depth;
-                                    if depth > 0 && symbol_data.0.is_suffix_required() {
-                                        self.set_to_function_non_locals(
-                                            symbol_data.get_mangled_name(),
-                                        );
-                                    }
-                                }
+                                ResolveResult::Ok(_, _, _) => {}
                                 ResolveResult::NotInitialized(_, _) => unreachable!(),
                                 ResolveResult::InvalidGenericTypeArgsProvided(err) => {
                                     let err = err_for_generic_type_args(
