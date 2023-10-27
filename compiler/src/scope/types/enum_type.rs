@@ -7,6 +7,7 @@ use crate::{
     types::core::{AbstractType, Type},
 };
 
+#[derive(Debug)]
 pub struct EnumTypeData {
     variants: Vec<(StrId, Option<Type>)>,
     pub generics: Option<GenericTypeParams>,

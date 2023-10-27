@@ -319,6 +319,16 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
                     interner,
                 )
             }
+            UserDefinedTypeData::Enum(enum_data) => {
+                let generic_type_decls = &enum_data.generics;
+                check_concrete_types_bounded_by_interfaces(
+                    generic_type_decls,
+                    concrete_types,
+                    type_ranges,
+                    false,
+                    interner,
+                )
+            }
             UserDefinedTypeData::Generic(_) => {
                 if concrete_types.is_some() {
                     return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
@@ -814,6 +824,17 @@ impl Namespace {
         unique_id: usize,
     ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
         let meta_data = UserDefinedTypeData::default_with_struct();
+        self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)
+    }
+
+    pub fn declare_enum_type(
+        &mut self,
+        scope_index: usize,
+        name: StrId,
+        decl_range: TextRange,
+        unique_id: usize,
+    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
+        let meta_data = UserDefinedTypeData::default_with_enum();
         self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)
     }
 

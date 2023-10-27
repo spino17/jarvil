@@ -1,6 +1,7 @@
 use super::generic::Generic;
 use super::hashmap::core::HashMap;
 use super::lambda::Lambda;
+use super::r#enum::Enum;
 use super::r#struct::Struct;
 use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
@@ -94,6 +95,7 @@ pub enum CoreType {
     Tuple(Tuple),
     HashMap(HashMap),
     Generic(Generic),
+    Enum(Enum),
     Unknown,
     Void,
     Unset,
@@ -130,6 +132,16 @@ impl Type {
     ) -> Type {
         Type(
             Rc::new(CoreType::Struct(Struct::new(symbol_data, concrete_types))),
+            false,
+        )
+    }
+
+    pub fn new_with_enum(
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        concrete_types: Option<ConcreteTypesTuple>,
+    ) -> Type {
+        Type(
+            Rc::new(CoreType::Enum(Enum::new(symbol_data, concrete_types))),
             false,
         )
     }
@@ -338,6 +350,7 @@ impl AbstractType for Type {
             CoreType::Tuple(tuple_type) => tuple_type.is_eq(other_ty),
             CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(other_ty),
             CoreType::Generic(generic_type) => generic_type.is_eq(other_ty),
+            CoreType::Enum(enum_type) => enum_type.is_eq(other_ty),
             CoreType::Void => match other_ty.0.as_ref() {
                 CoreType::Void => true,
                 _ => false,
@@ -352,6 +365,7 @@ impl AbstractType for Type {
         match self.0.as_ref() {
             CoreType::Atomic(atomic_type) => atomic_type.is_structurally_eq(other_ty, context),
             CoreType::Struct(struct_type) => struct_type.is_structurally_eq(other_ty, context),
+            CoreType::Enum(enum_type) => enum_type.is_structurally_eq(other_ty, context),
             CoreType::Lambda(lambda_type) => lambda_type.is_structurally_eq(other_ty, context),
             CoreType::Array(array_type) => array_type.is_structurally_eq(other_ty, context),
             CoreType::Tuple(tuple_type) => tuple_type.is_structurally_eq(other_ty, context),
@@ -368,6 +382,7 @@ impl AbstractType for Type {
     fn concretize(&self, context: &ConcretizationContext) -> Type {
         match self.0.as_ref() {
             CoreType::Struct(struct_type) => struct_type.concretize(context),
+            CoreType::Enum(enum_type) => enum_type.concretize(context),
             CoreType::Lambda(lambda_type) => lambda_type.concretize(context),
             CoreType::Array(array_type) => array_type.concretize(context),
             CoreType::Tuple(tuple_type) => tuple_type.concretize(context),
@@ -397,7 +412,7 @@ impl AbstractType for Type {
                 hashmap_ty.is_type_bounded_by_interfaces(interface_bounds)
             }
             CoreType::Tuple(tuple_ty) => tuple_ty.is_type_bounded_by_interfaces(interface_bounds),
-            CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Any => false,
+            CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Enum(_) | CoreType::Any => false,
             CoreType::Unknown | CoreType::Unset | CoreType::Void => false,
         }
     }
@@ -412,6 +427,13 @@ impl AbstractType for Type {
     ) -> Result<(), ()> {
         match self.0.as_ref() {
             CoreType::Struct(struct_ty) => struct_ty.try_infer_type_or_check_equivalence(
+                received_ty,
+                inferred_concrete_types,
+                global_concrete_types,
+                num_inferred_types,
+                inference_category,
+            ),
+            CoreType::Enum(enum_ty) => enum_ty.try_infer_type_or_check_equivalence(
                 received_ty,
                 inferred_concrete_types,
                 global_concrete_types,
@@ -470,6 +492,7 @@ impl AbstractType for Type {
         match self.0.as_ref() {
             CoreType::Atomic(atomic_type) => atomic_type.to_string(interner),
             CoreType::Struct(struct_type) => struct_type.to_string(interner),
+            CoreType::Enum(enum_type) => enum_type.to_string(interner),
             CoreType::Lambda(lambda_type) => lambda_type.to_string(interner),
             CoreType::Array(array_type) => array_type.to_string(interner),
             CoreType::Tuple(tuple_type) => tuple_type.to_string(interner),

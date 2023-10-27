@@ -719,7 +719,9 @@ impl TypeChecker {
                     }
                 }
             }
-            UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
+            UserDefinedTypeData::Lambda(_)
+            | UserDefinedTypeData::Generic(_)
+            | UserDefinedTypeData::Enum(_) => {
                 return Err(AtomStartTypeCheckError::ConstructorNotFoundForTypeError(
                     name,
                 ))

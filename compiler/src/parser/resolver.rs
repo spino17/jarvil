@@ -609,6 +609,29 @@ impl Resolver {
                                 ]),
                             }
                         }
+                        UserDefineTypeKind::Enum => {
+                            match self.bind_decl_to_identifier_in_use(
+                                ok_identifier,
+                                &symbol_data,
+                                false,
+                            ) {
+                                Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
+                                    if has_generics_inside_angle_bracket_types {
+                                        *has_generics = true;
+                                    }
+                                    TypeResolveKind::Resolved(Type::new_with_enum(
+                                        &symbol_data.0,
+                                        concrete_types,
+                                    ))
+                                }
+                                Err(err) => TypeResolveKind::Unresolved(vec![
+                                    UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
+                                        ok_identifier,
+                                        err,
+                                    ),
+                                ]),
+                            }
+                        }
                         UserDefineTypeKind::Lambda => {
                             match self.bind_decl_to_identifier_in_use(
                                 ok_identifier,

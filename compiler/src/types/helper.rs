@@ -1,9 +1,9 @@
 use super::core::Type;
 use crate::{
-    core::string_interner::Interner,
+    core::string_interner::{Interner, StrId},
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::ConcreteTypesTuple,
+        concrete::{ConcreteTypesTuple, ConcretizationContext},
         core::SymbolData,
         interfaces::InterfaceBounds,
         types::{
@@ -53,4 +53,42 @@ pub fn try_infer_types_from_tuple(
         )?;
     }
     Ok(())
+}
+
+pub trait StructEnumType {
+    fn get_concrete_types(&self) -> Option<&ConcreteTypesTuple>;
+    fn get_name(&self) -> StrId;
+}
+
+pub fn struct_enum_compare_fn<
+    T: StructEnumType,
+    F: Fn(&Type, &Type, &ConcretizationContext) -> bool,
+>(
+    base: &T,
+    other: &T,
+    ty_cmp_func: F,
+    context: &ConcretizationContext,
+) -> bool {
+    if base.get_name() == other.get_name() {
+        match base.get_concrete_types() {
+            Some(self_concrete_types) => match other.get_concrete_types() {
+                Some(other_concrete_types) => {
+                    let self_len = self_concrete_types.len();
+                    let other_len = other_concrete_types.len();
+
+                    debug_assert!(self_len == other_len);
+                    for i in 0..self_len {
+                        if !ty_cmp_func(&self_concrete_types[i], &other_concrete_types[i], context)
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                None => unreachable!(),
+            },
+            None => return true,
+        }
+    }
+    false
 }
