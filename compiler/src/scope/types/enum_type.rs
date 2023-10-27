@@ -1,7 +1,10 @@
 use crate::{
     core::string_interner::StrId,
-    scope::core::{AbstractConcreteTypesHandler, GenericTypeParams},
-    types::core::Type,
+    scope::{
+        concrete::ConcretizationContext,
+        core::{AbstractConcreteTypesHandler, GenericTypeParams},
+    },
+    types::core::{AbstractType, Type},
 };
 
 pub struct EnumTypeData {
@@ -18,6 +21,28 @@ impl EnumTypeData {
     pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
         self.generics = generics_spec;
         self.is_init = true;
+    }
+
+    pub fn try_index_and_type_for_variant(
+        &self,
+        variant_name: StrId,
+        context: &ConcretizationContext,
+    ) -> Option<(usize, Option<Type>)> {
+        for (index, (curr_variant_name, ty)) in self.variants.iter().enumerate() {
+            if *curr_variant_name == variant_name {
+                match ty {
+                    Some(ty) => {
+                        if ty.is_concretization_required() {
+                            return Some((index, Some(ty.concretize(context))));
+                        } else {
+                            return Some((index, Some(ty.clone())));
+                        }
+                    }
+                    None => return Some((index, None)),
+                }
+            }
+        }
+        None
     }
 }
 
