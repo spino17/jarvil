@@ -548,6 +548,24 @@ impl Resolver {
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
+    pub fn try_declare_and_bind_enum_type(
+        &mut self,
+        identifier: &OkIdentifierInDeclNode,
+    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
+        let declare_fn = |namespace: &mut Namespace,
+                          scope_index: usize,
+                          name: StrId,
+                          decl_range: TextRange,
+                          unique_id: usize| {
+            namespace.declare_enum_type(scope_index, name, decl_range, unique_id)
+        };
+        let unique_id = self
+            .semantic_state_db
+            .unique_key_generator
+            .generate_unique_id_for_type();
+        self.try_declare_and_bind(identifier, declare_fn, unique_id)
+    }
+
     pub fn try_declare_and_bind_interface(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
@@ -1613,7 +1631,100 @@ impl Resolver {
 
     pub fn declare_enum_type(&mut self, enum_type_decl: &EnumDeclarationNode) {
         let core_enum_type_decl = enum_type_decl.core_ref();
-        todo!()
+        let name = &core_enum_type_decl.name;
+        let mut optional_ok_identifier_in_decl = None;
+        let mut symbol_data: Option<UserDefinedTypeSymbolData> = None;
+        if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
+            optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
+            match self.try_declare_and_bind_enum_type(ok_identifier_in_decl) {
+                Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
+                Err((name, previous_decl_range)) => {
+                    let err = IdentifierAlreadyDeclaredError::new(
+                        IdentKind::UserDefinedType,
+                        self.semantic_state_db.interner.lookup(name),
+                        previous_decl_range,
+                        ok_identifier_in_decl.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                }
+            }
+        }
+        let enum_body = &core_enum_type_decl.block;
+        self.open_block(enum_body.core_ref().kind);
+        let generic_type_decls = match optional_ok_identifier_in_decl {
+            Some(ok_identifier) => {
+                self.declare_angle_bracket_content_from_identifier_in_decl(
+                    ok_identifier,
+                    GenericTypeDeclarationPlaceCategory::InStruct,
+                )
+                .0
+            }
+            None => None,
+        };
+        if let Some(symbol_data) = &symbol_data {
+            symbol_data
+                .0
+                .get_core_mut_ref()
+                .get_enum_data_mut_ref()
+                .set_generics(generic_type_decls);
+        }
+        let mut variants: Vec<(StrId, Option<Type>, TextRange)> = vec![];
+        let mut variants_map: FxHashMap<StrId, TextRange> = FxHashMap::default();
+        for stmt in enum_body.0.as_ref().stmts.as_ref() {
+            let stmt = match stmt.core_ref() {
+                CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
+                _ => continue,
+            };
+            match stmt.core_ref() {
+                CoreStatementNode::EnumVariantDeclaration(enum_variant_decl) => {
+                    let core_enum_variant_decl = enum_variant_decl.core_ref();
+                    let variant_name = &core_enum_variant_decl.variant;
+                    let ty = &core_enum_variant_decl.ty;
+                    let mut variant_ty_obj: Option<Type> = None;
+                    if let CoreIdentifierInDeclNode::Ok(ok_identifier) = variant_name.core_ref() {
+                        let variant_name = ok_identifier
+                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                        if let Some((_, ty_expr, _)) = ty {
+                            variant_ty_obj = Some(
+                                self.type_obj_for_expression_contained_inside_declarations(ty_expr)
+                                    .0,
+                            );
+                        }
+                        match variants_map.get(&variant_name) {
+                            Some(previous_decl_range) => {
+                                let err = IdentifierAlreadyDeclaredError::new(
+                                    IdentKind::Field,
+                                    self.semantic_state_db.interner.lookup(variant_name),
+                                    *previous_decl_range,
+                                    ok_identifier.range(),
+                                );
+                                self.errors
+                                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                            }
+                            None => {
+                                variants.push((
+                                    variant_name,
+                                    variant_ty_obj,
+                                    ok_identifier.range(),
+                                ));
+                                variants_map.insert(variant_name, ok_identifier.range());
+                            }
+                        }
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
+        self.close_block(Some(enum_body));
+        if let Some(symbol_data) = &symbol_data {
+            symbol_data
+                .0
+                .get_core_mut_ref()
+                .get_enum_data_mut_ref()
+                .set_meta_data(variants);
+        }
     }
 
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &LambdaTypeDeclarationNode) {

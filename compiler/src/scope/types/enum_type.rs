@@ -1,3 +1,5 @@
+use text_size::TextRange;
+
 use crate::{
     core::string_interner::StrId,
     scope::{
@@ -9,13 +11,13 @@ use crate::{
 
 #[derive(Debug)]
 pub struct EnumTypeData {
-    variants: Vec<(StrId, Option<Type>)>,
+    variants: Vec<(StrId, Option<Type>, TextRange)>,
     pub generics: Option<GenericTypeParams>,
     pub is_init: bool,
 }
 
 impl EnumTypeData {
-    pub fn set_meta_data(&mut self, variants: Vec<(StrId, Option<Type>)>) {
+    pub fn set_meta_data(&mut self, variants: Vec<(StrId, Option<Type>, TextRange)>) {
         self.variants = variants;
     }
 
@@ -29,7 +31,7 @@ impl EnumTypeData {
         variant_name: StrId,
         context: &ConcretizationContext,
     ) -> Option<(usize, Option<Type>)> {
-        for (index, (curr_variant_name, ty)) in self.variants.iter().enumerate() {
+        for (index, (curr_variant_name, ty, _)) in self.variants.iter().enumerate() {
             if *curr_variant_name == variant_name {
                 match ty {
                     Some(ty) => {

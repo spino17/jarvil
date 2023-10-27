@@ -1,6 +1,5 @@
 use super::function::{CallableData, CallableKind, CallablePrototypeData};
 use crate::{constants::common::INT, types::core::Type};
-use std::str::Chars;
 
 // print(_obj: <any>)
 pub fn print_meta_data() -> CallableData {
