@@ -1835,6 +1835,9 @@ impl TypeChecker {
     }
 
     pub fn check_match_case_stmt(&mut self, match_case: &MatchCaseStatementNode) {
+        // TODO - check if the of match expr is enum
+        // check enum_name in case branch is same, whether variant exist if yes get concrete data type of variant value
+        // check type of the variable
         todo!()
     }
 

@@ -93,7 +93,10 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         CoreToken::DEF => parser.function_stmt(CallableKind::Function),
         CoreToken::FOR => todo!(),
         CoreToken::WHILE => todo!(),
-        CoreToken::MATCH => todo!(),
+        CoreToken::MATCH => {
+            let match_case_node = parser.match_case();
+            StatementNode::new_with_match_case_statement(match_case_node)
+        }
         CoreToken::IF => {
             let conditional_node = parser.conditional();
             StatementNode::new_with_conditional(conditional_node)

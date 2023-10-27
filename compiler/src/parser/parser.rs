@@ -3,9 +3,10 @@ use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ConditionalBlockNode, ConditionalStatementNode,
     ErrornousNode, ExpressionNode, GenericTypeDeclNode, IdentifierInDeclNode, IdentifierInUseNode,
-    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, NameTypeSpecNode, OkTokenNode,
-    SelfKeywordNode, SkippedTokenNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode,
-    TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
+    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, MatchCaseStatementNode,
+    NameTypeSpecNode, OkTokenNode, SelfKeywordNode, SkippedTokenNode, StatementNode,
+    SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    UnaryExpressionNode, VariableDeclarationNode,
 };
 use crate::code::JarvilCode;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
@@ -531,6 +532,10 @@ impl JarvilParser {
 
     pub fn case_branch_stmt(&mut self) -> StatementNode {
         components::statement::core::case_branch_stmt(self)
+    }
+
+    pub fn match_case(&mut self) -> MatchCaseStatementNode {
+        components::match_case::match_case(self)
     }
 
     pub fn interface_stmt(&mut self) -> StatementNode {

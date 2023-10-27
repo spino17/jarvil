@@ -3,8 +3,8 @@ use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
     CoreSelfKeywordNode, EnumDeclarationNode, FunctionWrapperNode, InterfaceDeclarationNode,
-    LambdaTypeDeclarationNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
-    UnresolvedIdentifier, UserDefinedTypeNode,
+    LambdaTypeDeclarationNode, MatchCaseStatementNode, OkIdentifierInDeclNode,
+    OkIdentifierInUseNode, OkSelfKeywordNode, UnresolvedIdentifier, UserDefinedTypeNode,
 };
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
@@ -1942,6 +1942,44 @@ impl Resolver {
                 .set_meta_data(fields_map, methods);
         }
     }
+
+    pub fn resolve_match_case(&mut self, match_case: &MatchCaseStatementNode) {
+        let core_match_case = match_case.core_ref();
+        let block = &core_match_case.block;
+        self.open_block(block.core_ref().kind);
+        for stmt in block.core_ref().stmts.as_ref() {
+            let stmt = match stmt.core_ref() {
+                CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
+                _ => continue,
+            };
+            match stmt.core_ref() {
+                CoreStatementNode::CaseBranch(case_branch) => {
+                    let core_case_branch = case_branch.core_ref();
+                    let case_block = &core_case_branch.block;
+                    self.open_block(case_block.core_ref().kind);
+                    if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
+                        if let CoreIdentifierInDeclNode::Ok(ok_identifier) =
+                            variable_name.core_ref()
+                        {
+                            match self.try_declare_and_bind_variable(ok_identifier) {
+                                Ok(symbol_data) => {
+                                    symbol_data.0.get_core_mut_ref().set_is_init(true);
+                                }
+                                Err(_) => unreachable!(),
+                            }
+                        }
+                    }
+                    for stmt in case_block.core_ref().stmts.as_ref() {
+                        self.walk_stmt_indent_wrapper(stmt);
+                    }
+                    self.close_block(Some(case_block));
+                }
+                _ => unreachable!(),
+            }
+        }
+        self.close_block(Some(block));
+    }
 }
 
 impl Visitor for Resolver {
@@ -2002,6 +2040,10 @@ impl Visitor for Resolver {
             }
             ASTNode::TypeExpression(type_expr) => {
                 self.type_obj_from_expression(type_expr);
+                None
+            }
+            ASTNode::MatchCase(match_case) => {
+                self.resolve_match_case(match_case);
                 None
             }
             ASTNode::AtomStart(atom_start) => {
