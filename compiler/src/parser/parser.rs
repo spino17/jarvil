@@ -529,6 +529,10 @@ impl JarvilParser {
         components::statement::core::enum_stmt(self)
     }
 
+    pub fn case_branch_stmt(&mut self) -> StatementNode {
+        components::statement::core::case_branch_stmt(self)
+    }
+
     pub fn interface_stmt(&mut self) -> StatementNode {
         components::statement::core::interface_stmt(self)
     }

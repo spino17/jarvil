@@ -1,10 +1,12 @@
 use crate::ast::ast::{
-    BreakStatementNode, CallableKind, ContinueStatementNode, EnumVariantDeclarationNode,
-    StatementNode, StructPropertyDeclarationNode, TokenNode, TypeExpressionNode,
+    BreakStatementNode, CallableKind, CaseBranchStatementNode, ContinueStatementNode,
+    EnumVariantDeclarationNode, IdentifierInDeclNode, StatementNode, StructPropertyDeclarationNode,
+    TokenNode, TypeExpressionNode,
 };
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::JarvilParser;
+use crate::parser::resolver::BlockKind;
 
 pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&str; 3] = ["def", "type", "interface"];
 
@@ -171,29 +173,6 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
     }
 }
 
-pub fn enum_stmt(parser: &mut JarvilParser) -> StatementNode {
-    let token = parser.curr_token();
-    match token.core_token {
-        CoreToken::IDENTIFIER => {
-            let mut optional_ty_node: Option<(TokenNode, TypeExpressionNode, TokenNode)> = None;
-            let variant_name_node = parser.expect_identifier();
-            if parser.curr_token().is_eq("(") {
-                let lparen_node = parser.expect("(");
-                let ty_node = parser.type_expr();
-                let rparen_node = parser.expect(")");
-                optional_ty_node = Some((lparen_node, ty_node, rparen_node));
-            }
-            let newline_node = parser.expect_terminators();
-            StatementNode::new_with_enum_stmt(EnumVariantDeclarationNode::new(
-                variant_name_node,
-                optional_ty_node,
-                newline_node,
-            ))
-        }
-        _ => unreachable!(),
-    }
-}
-
 pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
     match token.core_token {
@@ -212,4 +191,52 @@ pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
         }
         _ => unreachable!(),
     }
+}
+
+pub fn enum_stmt(parser: &mut JarvilParser) -> StatementNode {
+    let mut optional_ty_node: Option<(TokenNode, TypeExpressionNode, TokenNode)> = None;
+    let variant_name_node = parser.expect_identifier();
+    if parser.curr_token().is_eq("(") {
+        let lparen_node = parser.expect("(");
+        let ty_node = parser.type_expr();
+        let rparen_node = parser.expect(")");
+        optional_ty_node = Some((lparen_node, ty_node, rparen_node));
+    }
+    let newline_node = parser.expect_terminators();
+    StatementNode::new_with_enum_stmt(EnumVariantDeclarationNode::new(
+        variant_name_node,
+        optional_ty_node,
+        newline_node,
+    ))
+}
+
+pub fn case_branch_stmt(parser: &mut JarvilParser) -> StatementNode {
+    let mut optional_variable_name_node: Option<(TokenNode, IdentifierInDeclNode, TokenNode)> =
+        None;
+    let case_keyword_node = parser.expect("case");
+    let enum_name_node = parser.expect_identifier();
+    let double_colon_node = parser.expect("::");
+    let variant_name_node = parser.expect_identifier();
+    if parser.curr_token().is_eq("(") {
+        let lparen_node = parser.expect("(");
+        let variable_name_node = parser.expect_identifier();
+        let rparen_node = parser.expect(")");
+        optional_variable_name_node = Some((lparen_node, variable_name_node, rparen_node));
+    }
+    let colon_node = parser.expect(":");
+    let block_node = parser.block(
+        is_statement_within_control_flow_starting_with,
+        |parser| parser.stmt(),
+        &STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS,
+        BlockKind::Case,
+    );
+    StatementNode::new_with_case_branch_statement(CaseBranchStatementNode::new(
+        case_keyword_node,
+        enum_name_node,
+        double_colon_node,
+        variant_name_node,
+        optional_variable_name_node,
+        colon_node,
+        block_node,
+    ))
 }
