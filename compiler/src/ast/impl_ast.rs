@@ -2,22 +2,23 @@ use super::ast::{
     ArrayExpressionNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode,
     AtomicExpressionNode, AtomicTypeNode, BinaryExpressionNode, BlockNode,
     BoundedMethodWrapperNode, BreakStatementNode, CallExpressionNode, CallNode, CallableBodyNode,
-    CallablePrototypeNode, ClassMethodCallNode, ComparisonNode, ConditionalBlockNode,
-    ConditionalStatementNode, ContinueStatementNode, CoreArrayExpressionNode, CoreArrayTypeNode,
-    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode, CoreBoundedMethodWrapperNode,
-    CoreBreakStatementNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
-    CoreCallablePrototypeNode, CoreClassMethodCallNode, CoreComparisonNode,
-    CoreConditionalBlockNode, CoreConditionalStatementNode, CoreContinueStatementNode,
-    CoreEnumDeclarationNode, CoreEnumVariantDeclarationNode, CoreExpressionNode,
-    CoreExpressionStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
-    CoreGenericTypeDeclNode, CoreHashMapExpressionNode, CoreHashMapTypeNode,
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode,
-    CoreIndexAccessNode, CoreInterfaceDeclarationNode, CoreInterfaceMethodPrototypeWrapperNode,
-    CoreInvalidLValueNode, CoreKeyValuePairNode, CoreLambdaDeclarationNode,
-    CoreLambdaTypeDeclarationNode, CoreMethodAccessNode, CoreMissingTokenNode,
-    CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
-    CoreOkIdentifierInUseNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
+    CallablePrototypeNode, CaseBranchStatementNode, ClassMethodCallNode, ComparisonNode,
+    ConditionalBlockNode, ConditionalStatementNode, ContinueStatementNode, CoreArrayExpressionNode,
+    CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
+    CoreAtomicExpressionNode, CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode,
+    CoreBoundedMethodWrapperNode, CoreBreakStatementNode, CoreCallExpressionNode, CoreCallNode,
+    CoreCallableBodyNode, CoreCallablePrototypeNode, CoreCaseBranchStatementNode,
+    CoreClassMethodCallNode, CoreComparisonNode, CoreConditionalBlockNode,
+    CoreConditionalStatementNode, CoreContinueStatementNode, CoreEnumDeclarationNode,
+    CoreEnumVariantDeclarationNode, CoreExpressionNode, CoreExpressionStatementNode,
+    CoreFunctionDeclarationNode, CoreFunctionWrapperNode, CoreGenericTypeDeclNode,
+    CoreHashMapExpressionNode, CoreHashMapTypeNode, CoreIdentifierInDeclNode,
+    CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode,
+    CoreInterfaceDeclarationNode, CoreInterfaceMethodPrototypeWrapperNode, CoreInvalidLValueNode,
+    CoreKeyValuePairNode, CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode,
+    CoreMatchCaseStatementNode, CoreMethodAccessNode, CoreMissingTokenNode, CoreNameTypeSpecNode,
+    CoreOkAssignmentNode, CoreOkIdentifierInDeclNode, CoreOkIdentifierInUseNode,
+    CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
     CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
     CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
     CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatementIndentWrapperNode, CoreStatementNode,
@@ -29,14 +30,15 @@ use super::ast::{
     HashMapExpressionNode, HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InterfaceDeclarationNode,
     InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, InvalidLValueNode,
-    KeyValuePairNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MethodAccessNode,
-    NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
-    OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode, ParenthesisedExpressionNode,
-    PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode,
-    SelfKeywordNode, SkippedTokenNode, StatementIndentWrapperNode, StatementNode,
-    StructDeclarationNode, StructPropertyDeclarationNode, SymbolSeparatedSequenceNode, TokenNode,
-    TupleExpressionNode, TupleTypeNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind,
-    UnaryExpressionNode, UnresolvedIdentifier, UserDefinedTypeNode, VariableDeclarationNode,
+    KeyValuePairNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MatchCaseStatementNode,
+    MethodAccessNode, NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode,
+    OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatementIndentWrapperNode,
+    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    SymbolSeparatedSequenceNode, TokenNode, TupleExpressionNode, TupleTypeNode,
+    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
+    UnresolvedIdentifier, UserDefinedTypeNode, VariableDeclarationNode,
 };
 use super::iterators::SymbolSeparatedSequenceIterator;
 use crate::ast::ast::ErrornousNode;
@@ -208,6 +210,16 @@ impl StatementNode {
         StatementNode(node)
     }
 
+    pub fn new_with_match_case_statement(match_case_stmt: MatchCaseStatementNode) -> Self {
+        let node = Rc::new(CoreStatementNode::MatchCase(match_case_stmt));
+        StatementNode(node)
+    }
+
+    pub fn new_with_case_branch_statement(case_branch_stmt: CaseBranchStatementNode) -> Self {
+        let node = Rc::new(CoreStatementNode::CaseBranch(case_branch_stmt));
+        StatementNode(node)
+    }
+
     pub fn new_with_assignment(assignment: AssignmentNode) -> Self {
         let node = Rc::new(CoreStatementNode::Assignment(assignment));
         StatementNode(node)
@@ -335,6 +347,68 @@ impl ContinueStatementNode {
     }
 
     impl_core_ref!(CoreContinueStatementNode);
+}
+
+impl MatchCaseStatementNode {
+    pub fn new(
+        match_keyword: TokenNode,
+        expr: ExpressionNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Rc::new(CoreMatchCaseStatementNode {
+            match_keyword,
+            expr,
+            colon,
+            block,
+        });
+        MatchCaseStatementNode(node)
+    }
+
+    impl_core_ref!(CoreMatchCaseStatementNode);
+}
+
+impl Node for MatchCaseStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().match_keyword, self.core_ref().block)
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().match_keyword.start_line_number()
+    }
+}
+
+impl CaseBranchStatementNode {
+    pub fn new(
+        case_keyword: TokenNode,
+        enum_name: IdentifierInDeclNode,
+        double_colon: TokenNode,
+        variant_name: IdentifierInDeclNode,
+        variable_name: Option<(TokenNode, IdentifierInDeclNode, TokenNode)>,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Rc::new(CoreCaseBranchStatementNode {
+            case_keyword,
+            enum_name,
+            double_colon,
+            variant_name,
+            variable_name,
+            colon,
+            block,
+        });
+        CaseBranchStatementNode(node)
+    }
+
+    impl_core_ref!(CoreCaseBranchStatementNode);
+}
+
+impl Node for CaseBranchStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().case_keyword, self.core_ref().block)
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().case_keyword.start_line_number()
+    }
 }
 
 impl Node for ContinueStatementNode {

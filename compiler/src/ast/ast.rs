@@ -39,6 +39,8 @@ pub enum ASTNode {
     Return(ReturnStatementNode),
     Conditional(ConditionalStatementNode),
     ConditionalBlock(ConditionalBlockNode),
+    MatchCase(MatchCaseStatementNode),
+    CaseBranch(CaseBranchStatementNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
     InterfaceMethodPrototypeWrapper(InterfaceMethodPrototypeWrapperNode),
     VariableDeclaration(VariableDeclarationNode),
@@ -140,6 +142,8 @@ pub enum CoreStatementNode {
     BoundedMethodWrapper(BoundedMethodWrapperNode),
     TypeDeclaration(TypeDeclarationNode),
     StructPropertyDeclaration(StructPropertyDeclarationNode),
+    MatchCase(MatchCaseStatementNode),
+    CaseBranch(CaseBranchStatementNode),
     EnumVariantDeclaration(EnumVariantDeclarationNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
     InterfaceMethodPrototypeWrapper(InterfaceMethodPrototypeWrapperNode),
@@ -155,6 +159,25 @@ pub struct CoreBreakStatementNode {
 pub struct CoreContinueStatementNode {
     pub continue_keyword: TokenNode,
     pub newline: TokenNode,
+}
+
+#[derive(Debug)]
+pub struct CoreCaseBranchStatementNode {
+    pub case_keyword: TokenNode,
+    pub enum_name: IdentifierInDeclNode,
+    pub double_colon: TokenNode,
+    pub variant_name: IdentifierInDeclNode,
+    pub variable_name: Option<(TokenNode, IdentifierInDeclNode, TokenNode)>,
+    pub colon: TokenNode,
+    pub block: BlockNode,
+}
+
+#[derive(Debug)]
+pub struct CoreMatchCaseStatementNode {
+    pub match_keyword: TokenNode,
+    pub expr: ExpressionNode,
+    pub colon: TokenNode,
+    pub block: BlockNode,
 }
 
 #[derive(Debug)]
@@ -756,6 +779,10 @@ pub struct ContinueStatementNode(pub Rc<CoreContinueStatementNode>);
 pub struct EnumDeclarationNode(pub Rc<CoreEnumDeclarationNode>);
 #[derive(Debug, Clone)]
 pub struct EnumVariantDeclarationNode(pub Rc<CoreEnumVariantDeclarationNode>);
+#[derive(Debug, Clone)]
+pub struct MatchCaseStatementNode(pub Rc<CoreMatchCaseStatementNode>);
+#[derive(Debug, Clone)]
+pub struct CaseBranchStatementNode(pub Rc<CoreCaseBranchStatementNode>);
 
 pub enum UnresolvedIdentifier<'a> {
     Unresolved(&'a OkIdentifierInUseNode),

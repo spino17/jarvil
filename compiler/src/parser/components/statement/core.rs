@@ -8,7 +8,7 @@ use crate::parser::parser::JarvilParser;
 
 pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&str; 3] = ["def", "type", "interface"];
 
-pub const STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS: [&str; 9] = [
+pub const STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS: [&str; 10] = [
     "let",
     "def",
     "for",
@@ -18,9 +18,10 @@ pub const STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS: [&str; 9] = [
     "interface",
     "<expression>",
     "return",
+    "match",
 ];
 
-pub const STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS: [&str; 11] = [
+pub const STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS: [&str; 12] = [
     "let",
     "def",
     "for",
@@ -32,6 +33,7 @@ pub const STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS: [&str; 11] = [
     "return",
     "break",
     "continue",
+    "match",
 ];
 
 pub fn is_statement_at_global_scope_starting_with(token: &Token) -> bool {
@@ -53,6 +55,7 @@ pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
         CoreToken::TYPE_KEYWORD => true,
         CoreToken::INTERFACE_KEYWORD => true,
         CoreToken::RETURN => true,
+        CoreToken::MATCH => true,
         _ => is_expression_starting_with(token),
     }
 }
@@ -69,6 +72,7 @@ pub fn is_statement_within_control_flow_starting_with(token: &Token) -> bool {
         CoreToken::RETURN => true,
         CoreToken::BREAK => true,
         CoreToken::CONTINUE => true,
+        CoreToken::MATCH => true,
         _ => is_expression_starting_with(token),
     }
 }
@@ -87,6 +91,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         CoreToken::DEF => parser.function_stmt(CallableKind::Function),
         CoreToken::FOR => todo!(),
         CoreToken::WHILE => todo!(),
+        CoreToken::MATCH => todo!(),
         CoreToken::IF => {
             let conditional_node = parser.conditional();
             StatementNode::new_with_conditional(conditional_node)

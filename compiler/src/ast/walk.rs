@@ -1,9 +1,10 @@
 use super::ast::{
-    ArrayExpressionNode, BreakStatementNode, ConditionalBlockNode, ConditionalStatementNode,
-    ContinueStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode, EnumDeclarationNode,
-    EnumVariantDeclarationNode, GenericTypeDeclNode, HashMapExpressionNode, IdentifierInDeclNode,
-    IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
-    InterfaceMethodTerminalNode, KeyValuePairNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    ArrayExpressionNode, BreakStatementNode, CaseBranchStatementNode, ConditionalBlockNode,
+    ConditionalStatementNode, ContinueStatementNode, CoreIdentifierInDeclNode,
+    CoreIdentifierInUseNode, EnumDeclarationNode, EnumVariantDeclarationNode, GenericTypeDeclNode,
+    HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
+    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, KeyValuePairNode,
+    MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
     SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode,
 };
 use crate::ast::ast::{
@@ -136,6 +137,16 @@ pub trait Visitor {
         walk_struct_property_decl,
         StructPropertyDeclarationNode,
         new_with_StructPropertyDeclarationNode
+    );
+    impl_node_walk!(
+        walk_match_case_stmt,
+        MatchCaseStatementNode,
+        new_with_MatchCaseStatementNode
+    );
+    impl_node_walk!(
+        walk_case_branch_stmt,
+        CaseBranchStatementNode,
+        new_with_CaseBranchStatementNode
     );
     impl_node_walk!(
         walk_enum_decl,
@@ -445,6 +456,12 @@ pub trait Visitor {
                 CoreStatementNode::FunctionWrapper(func_wrapper) => {
                     self.walk_func_wrapper(func_wrapper);
                 }
+                CoreStatementNode::MatchCase(match_case) => {
+                    self.walk_match_case_stmt(match_case);
+                }
+                CoreStatementNode::CaseBranch(case_branch) => {
+                    self.walk_case_branch_stmt(case_branch);
+                }
                 CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                     self.walk_bounded_method_wrapper(bounded_method_wrapper);
                 }
@@ -474,6 +491,27 @@ pub trait Visitor {
                     self.walk_conditional(conditional_stmt);
                 }
             },
+            ASTNode::MatchCase(match_case) => {
+                let core_match_case = match_case.core_ref();
+                self.walk_token(&core_match_case.match_keyword);
+                self.walk_expression(&core_match_case.expr);
+                self.walk_token(&core_match_case.colon);
+                self.walk_block(&core_match_case.block);
+            }
+            ASTNode::CaseBranch(case_branch) => {
+                let core_case_branch = case_branch.core_ref();
+                self.walk_token(&core_case_branch.case_keyword);
+                self.walk_identifier_in_decl(&core_case_branch.enum_name);
+                self.walk_token(&core_case_branch.double_colon);
+                self.walk_identifier_in_decl(&core_case_branch.variant_name);
+                if let Some((lparen, variable_name, rparen)) = &core_case_branch.variable_name {
+                    self.walk_token(lparen);
+                    self.walk_identifier_in_decl(variable_name);
+                    self.walk_token(rparen);
+                }
+                self.walk_token(&core_case_branch.colon);
+                self.walk_block(&core_case_branch.block);
+            }
             ASTNode::Break(break_stmt) => {
                 self.walk_token(&break_stmt.core_ref().break_keyword);
                 self.walk_token(&break_stmt.core_ref().newline);

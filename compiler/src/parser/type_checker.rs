@@ -4,9 +4,9 @@
 use crate::ast::ast::{
     ArrayExpressionNode, CallExpressionNode, CallNode, ClassMethodCallNode, ConditionalBlockNode,
     ConditionalStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
-    HashMapExpressionNode, IndexAccessNode, InterfaceMethodTerminalNode, MethodAccessNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode,
-    TupleExpressionNode,
+    HashMapExpressionNode, IndexAccessNode, InterfaceMethodTerminalNode, MatchCaseStatementNode,
+    MethodAccessNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode,
+    StructDeclarationNode, TupleExpressionNode,
 };
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
@@ -1834,11 +1834,18 @@ impl TypeChecker {
         }
     }
 
+    pub fn check_match_case_stmt(&mut self, match_case: &MatchCaseStatementNode) {
+        todo!()
+    }
+
     pub fn check_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
             CoreStatementNode::Expression(expr_stmt) => {
                 let core_expr_stmt = expr_stmt.core_ref();
                 self.check_expr(&core_expr_stmt.expr);
+            }
+            CoreStatementNode::MatchCase(match_case_stmt) => {
+                self.check_match_case_stmt(match_case_stmt)
             }
             CoreStatementNode::Assignment(assignment) => {
                 self.check_assignment(assignment);
@@ -1887,6 +1894,7 @@ impl TypeChecker {
             }
             CoreStatementNode::StructPropertyDeclaration(_)
             | CoreStatementNode::EnumVariantDeclaration(_)
+            | CoreStatementNode::CaseBranch(_)
             | CoreStatementNode::Break(_)
             | CoreStatementNode::Continue(_) => (),
         }
