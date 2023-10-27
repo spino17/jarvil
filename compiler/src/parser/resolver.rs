@@ -2,9 +2,9 @@ use super::helper::err_for_generic_type_args;
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
-    CoreSelfKeywordNode, FunctionWrapperNode, InterfaceDeclarationNode, LambdaTypeDeclarationNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, UnresolvedIdentifier,
-    UserDefinedTypeNode,
+    CoreSelfKeywordNode, EnumDeclarationNode, FunctionWrapperNode, InterfaceDeclarationNode,
+    LambdaTypeDeclarationNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
+    UnresolvedIdentifier, UserDefinedTypeNode,
 };
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
@@ -1588,6 +1588,11 @@ impl Resolver {
         self.context.class_context_stack.pop();
     }
 
+    pub fn declare_enum_type(&mut self, enum_type_decl: &EnumDeclarationNode) {
+        let core_enum_type_decl = enum_type_decl.core_ref();
+        todo!()
+    }
+
     pub fn declare_lambda_type(&mut self, lambda_type_decl: &LambdaTypeDeclarationNode) {
         let core_lambda_type_decl = lambda_type_decl.core_ref();
         let mut types_vec: Vec<Type> = vec![];
@@ -1843,6 +1848,10 @@ impl Visitor for Resolver {
             }
             ASTNode::StructDeclaration(struct_decl) => {
                 self.declare_struct_type(struct_decl);
+                None
+            }
+            ASTNode::EnumDeclaration(enum_decl) => {
+                self.declare_enum_type(enum_decl);
                 None
             }
             ASTNode::InterfaceDeclaration(interface_decl) => {

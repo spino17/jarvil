@@ -1884,7 +1884,7 @@ impl TypeChecker {
                 }
             }
             CoreStatementNode::StructPropertyDeclaration(_)
-            | &CoreStatementNode::EnumVariantDeclaration(_)
+            | CoreStatementNode::EnumVariantDeclaration(_)
             | CoreStatementNode::Break(_)
             | CoreStatementNode::Continue(_) => (),
         }
