@@ -319,7 +319,22 @@ impl PythonCodeGenerator {
                 self.add_str_to_python_code("\n");
             }
             CoreTypeDeclarationNode::Enum(enum_decl) => {
-                todo!()
+                let core_enum_decl = enum_decl.core_ref();
+                let enum_name = &core_enum_decl.name;
+                let type_keyword = &core_enum_decl.type_keyword;
+                let colon = &core_enum_decl.colon;
+                let trivia = get_trivia_from_token_node(type_keyword);
+                self.print_trivia(trivia);
+                self.add_str_to_python_code("class");
+                self.print_identifier_in_decl(enum_name);
+                self.print_token_node(colon);
+                let constructor_str = format!(
+                    "\n{}def __init__(index, data=None):\n{}self.index = index\n{}self.data = data\n",
+                    get_whitespaces_from_indent_level(self.indent_level + 1),
+                    get_whitespaces_from_indent_level(self.indent_level + 2),
+                    get_whitespaces_from_indent_level(self.indent_level + 2)
+                );
+                self.add_str_to_python_code(&constructor_str);
             }
             CoreTypeDeclarationNode::MissingTokens(_) => unreachable!(),
         }

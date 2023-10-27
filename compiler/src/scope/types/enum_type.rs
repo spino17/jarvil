@@ -1,5 +1,3 @@
-use text_size::TextRange;
-
 use crate::{
     core::string_interner::StrId,
     scope::{
@@ -8,6 +6,7 @@ use crate::{
     },
     types::core::{AbstractType, Type},
 };
+use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct EnumTypeData {
