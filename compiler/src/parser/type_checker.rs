@@ -1859,11 +1859,11 @@ impl TypeChecker {
             }
             CoreStatementNode::TypeDeclaration(type_decl) => match type_decl.core_ref() {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {
-                    // self.walk_block(&struct_decl.core_ref().block);
                     self.check_struct_declaration(struct_decl);
                 }
-                CoreTypeDeclarationNode::Enum(enum_decl) => todo!(),
-                CoreTypeDeclarationNode::Lambda(_) | CoreTypeDeclarationNode::MissingTokens(_) => {}
+                CoreTypeDeclarationNode::Lambda(_)
+                | CoreTypeDeclarationNode::Enum(_)
+                | CoreTypeDeclarationNode::MissingTokens(_) => {}
             },
             CoreStatementNode::InterfaceDeclaration(interface_decl) => {
                 self.walk_block(&interface_decl.core_ref().block);
