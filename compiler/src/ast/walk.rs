@@ -502,7 +502,7 @@ pub trait Visitor {
                 let core_case_branch = case_branch.core_ref();
                 self.walk_token(&core_case_branch.case_keyword);
                 self.walk_identifier_in_decl(&core_case_branch.enum_name);
-                self.walk_token(&core_case_branch.r_arrow);
+                self.walk_token(&core_case_branch.double_colon_node);
                 self.walk_identifier_in_decl(&core_case_branch.variant_name);
                 if let Some((lparen, variable_name, rparen)) = &core_case_branch.variable_name {
                     self.walk_token(lparen);

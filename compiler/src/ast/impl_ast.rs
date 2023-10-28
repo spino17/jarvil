@@ -381,7 +381,7 @@ impl CaseBranchStatementNode {
     pub fn new(
         case_keyword: TokenNode,
         enum_name: IdentifierInDeclNode,
-        r_arrow: TokenNode,
+        double_colon_node: TokenNode,
         variant_name: IdentifierInDeclNode,
         variable_name: Option<(TokenNode, IdentifierInDeclNode, TokenNode)>,
         colon: TokenNode,
@@ -390,7 +390,7 @@ impl CaseBranchStatementNode {
         let node = Rc::new(CoreCaseBranchStatementNode {
             case_keyword,
             enum_name,
-            r_arrow,
+            double_colon_node,
             variant_name,
             variable_name,
             colon,

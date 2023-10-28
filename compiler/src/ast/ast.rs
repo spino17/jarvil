@@ -165,7 +165,7 @@ pub struct CoreContinueStatementNode {
 pub struct CoreCaseBranchStatementNode {
     pub case_keyword: TokenNode,
     pub enum_name: IdentifierInDeclNode,
-    pub r_arrow: TokenNode,
+    pub double_colon_node: TokenNode,
     pub variant_name: IdentifierInDeclNode,
     pub variable_name: Option<(TokenNode, IdentifierInDeclNode, TokenNode)>,
     pub colon: TokenNode,

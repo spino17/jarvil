@@ -873,7 +873,61 @@ impl TypeChecker {
                         }
                         _ => return Type::new_with_unknown(),
                     },
-                    _ => {
+                    UserDefinedTypeData::Enum(enum_data) => {
+                        if let CoreIdentifierInUseNode::Ok(class_method) = class_method.core_ref() {
+                            let class_method_name = class_method
+                                .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            let concrete_types = &type_symbol_data.concrete_types;
+                            if class_method.core_ref().generic_type_args.is_some() {
+                                // TODO - raise error `invalid generic type args found`
+                                return Type::new_with_unknown();
+                            }
+                            match params {
+                                Some(params) => {
+                                    let mut params_iter = params.iter();
+                                    let expr = params_iter.next().unwrap();
+                                    if params_iter.next().is_some() {
+                                        // TODO - raise error `invalid syntax, not more than one expr in enum variant value`
+                                        return Type::new_with_unknown();
+                                    }
+                                    match enum_data.try_index_and_type_for_variant(
+                                        class_method_name,
+                                        &ConcretizationContext::new(concrete_types.as_ref(), None),
+                                    ) {
+                                        Some((_, expected_ty)) => {
+                                            match expected_ty {
+                                                Some(expected_ty) => {
+                                                    let expr_ty = self.check_expr(expr);
+                                                    if !expr_ty.is_eq(&expected_ty) {
+                                                        // TODO - raise error `mismatched type in enum variant value`
+                                                        return Type::new_with_unknown();
+                                                    }
+                                                    return Type::new_with_enum(
+                                                        &type_symbol_data.symbol_data,
+                                                        concrete_types.clone(),
+                                                    );
+                                                }
+                                                None => {
+                                                    // TODO - raise error `variant does not expect value`
+                                                    return Type::new_with_unknown();
+                                                }
+                                            }
+                                        }
+                                        None => {
+                                            // TODO - raise error `variant does not exist for the enum`
+                                            return Type::new_with_unknown();
+                                        }
+                                    }
+                                }
+                                None => {
+                                    // TODO - raise error `expr expected for enum variant value`
+                                    return Type::new_with_unknown();
+                                }
+                            }
+                        }
+                        return Type::new_with_unknown();
+                    }
+                    UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
                         let err = PropertyNotSupportedError::new(
                             "classmethod".to_string(),
                             class.range(),

@@ -90,6 +90,7 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
                 CoreToken::DOUBLE_COLON => {
                     let double_colon_node = parser.expect("::");
                     let class_method_name = parser.expect_identifier_in_use();
+                    // TODO - add a check if next token is not `(` then let it be for enum variant expr and return
                     let lparen_node = parser.expect("(");
                     let mut params_node: Option<SymbolSeparatedSequenceNode<ExpressionNode>> = None;
                     if !parser.check_curr_token(")") {

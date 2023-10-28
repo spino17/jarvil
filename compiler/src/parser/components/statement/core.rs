@@ -218,7 +218,7 @@ pub fn case_branch_stmt(parser: &mut JarvilParser) -> StatementNode {
         None;
     let case_keyword_node = parser.expect("case");
     let enum_name_node = parser.expect_identifier();
-    let r_arrow_node = parser.expect("->");
+    let double_colon_node = parser.expect("::");
     let variant_name_node = parser.expect_identifier();
     if parser.curr_token().is_eq("(") {
         let lparen_node = parser.expect("(");
@@ -236,7 +236,7 @@ pub fn case_branch_stmt(parser: &mut JarvilParser) -> StatementNode {
     StatementNode::new_with_case_branch_statement(CaseBranchStatementNode::new(
         case_keyword_node,
         enum_name_node,
-        r_arrow_node,
+        double_colon_node,
         variant_name_node,
         optional_variable_name_node,
         colon_node,
