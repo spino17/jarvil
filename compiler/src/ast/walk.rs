@@ -10,12 +10,12 @@ use super::ast::{
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
     AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
-    CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
-    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreExpressionNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-    CoreStatementIndentWrapperNode, CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
-    CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode, ExpressionStatementNode,
-    FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
+    CallNode, CallableBodyNode, CallablePrototypeNode, ComparisonNode, CoreAssignmentNode,
+    CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
+    CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatementIndentWrapperNode,
+    CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreTypeExpressionNode,
+    CoreUnaryExpressionNode, EnumVariantExprOrClassMethodCallNode, ExpressionNode,
+    ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
     LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
     OkAssignmentNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
@@ -256,9 +256,9 @@ pub trait Visitor {
         new_with_CallExpressionNode
     );
     impl_node_walk!(
-        walk_class_method_call,
-        ClassMethodCallNode,
-        new_with_ClassMethodCallNode
+        walk_enum_variant_or_class_method_call,
+        EnumVariantExprOrClassMethodCallNode,
+        new_with_EnumVariantExprOrClassMethodCallNode
     );
     impl_node_walk!(
         walk_array_expression,
@@ -874,16 +874,19 @@ pub trait Visitor {
                 }
                 self.walk_token(&core_call_expr.rparen);
             }
-            ASTNode::ClassMethodCall(class_method_call_node) => {
-                let core_class_method_call = class_method_call_node.core_ref();
-                self.walk_identifier_in_use(&core_class_method_call.class_name);
-                self.walk_token(&core_class_method_call.double_colon);
-                self.walk_identifier_in_use(&core_class_method_call.class_method_name);
-                self.walk_token(&core_class_method_call.lparen);
-                if let Some(params) = &core_class_method_call.params {
+            ASTNode::EnumVariantExprOrClassMethodCall(enum_variant_or_class_method_call_node) => {
+                let core_enum_variant_or_class_method_call_node =
+                    enum_variant_or_class_method_call_node.core_ref();
+                self.walk_identifier_in_use(&core_enum_variant_or_class_method_call_node.ty_name);
+                self.walk_token(&core_enum_variant_or_class_method_call_node.double_colon);
+                self.walk_identifier_in_use(
+                    &core_enum_variant_or_class_method_call_node.property_name,
+                );
+                self.walk_token(&core_enum_variant_or_class_method_call_node.lparen);
+                if let Some(params) = &core_enum_variant_or_class_method_call_node.params {
                     self.walk_comma_separated_expressions(params);
                 }
-                self.walk_token(&core_class_method_call.rparen);
+                self.walk_token(&core_enum_variant_or_class_method_call_node.rparen);
             }
             ASTNode::ArrayExpression(array_expression_node) => {
                 let core_array_exprs = array_expression_node.core_ref();
@@ -945,8 +948,10 @@ pub trait Visitor {
                     CoreAtomStartNode::Call(call_expr) => {
                         self.walk_call_expression(call_expr);
                     }
-                    CoreAtomStartNode::ClassMethodCall(class_method) => {
-                        self.walk_class_method_call(class_method);
+                    CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
+                        enum_variant_or_class_method,
+                    ) => {
+                        self.walk_enum_variant_or_class_method_call(enum_variant_or_class_method);
                     }
                 }
             }

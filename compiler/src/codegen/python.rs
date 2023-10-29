@@ -2,9 +2,9 @@ use crate::{
     ast::{
         ast::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
-            ClassMethodCallNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
-            CoreRVariableDeclarationNode, CoreStatementIndentWrapperNode, CoreTokenNode,
-            CoreTypeDeclarationNode, IdentifierInDeclNode, IdentifierInUseNode,
+            CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
+            CoreStatementIndentWrapperNode, CoreTokenNode, CoreTypeDeclarationNode,
+            EnumVariantExprOrClassMethodCallNode, IdentifierInDeclNode, IdentifierInUseNode,
             OkIdentifierInDeclNode, OkIdentifierInUseNode, TokenNode, TypeDeclarationNode,
             VariableDeclarationNode,
         },
@@ -340,16 +340,20 @@ impl PythonCodeGenerator {
         }
     }
 
-    pub fn print_class_method_call(&mut self, class_method_call: &ClassMethodCallNode) {
-        let core_class_method_call = class_method_call.core_ref();
-        let lparen = &core_class_method_call.lparen;
-        let rparen = &core_class_method_call.rparen;
-        let class_name = &core_class_method_call.class_name;
-        let class_method_name = &core_class_method_call.class_method_name;
-        let params = &core_class_method_call.params;
-        self.print_identifier_in_use(class_name);
+    pub fn print_enum_variant_expr_or_class_method_call(
+        &mut self,
+        enum_variant_expr_or_class_method_call: &EnumVariantExprOrClassMethodCallNode,
+    ) {
+        let core_enum_variant_expr_or_class_method_call =
+            enum_variant_expr_or_class_method_call.core_ref();
+        let lparen = &core_enum_variant_expr_or_class_method_call.lparen;
+        let rparen = &core_enum_variant_expr_or_class_method_call.rparen;
+        let ty_name = &core_enum_variant_expr_or_class_method_call.ty_name;
+        let property_name = &core_enum_variant_expr_or_class_method_call.property_name;
+        let params = &core_enum_variant_expr_or_class_method_call.params;
+        self.print_identifier_in_use(ty_name);
         self.add_str_to_python_code(".");
-        self.print_identifier_in_use(class_method_name);
+        self.print_identifier_in_use(property_name);
         self.print_token_node(lparen);
         if let Some(params) = params {
             self.walk_comma_separated_expressions(params);
@@ -483,8 +487,10 @@ impl Visitor for PythonCodeGenerator {
                 self.add_str_to_python_code("\n");
                 None
             }
-            ASTNode::ClassMethodCall(class_method_call) => {
-                self.print_class_method_call(class_method_call);
+            ASTNode::EnumVariantExprOrClassMethodCall(enum_variant_expr_or_class_method_call) => {
+                self.print_enum_variant_expr_or_class_method_call(
+                    enum_variant_expr_or_class_method_call,
+                );
                 None
             }
             ASTNode::IdentifierInDecl(identifier_in_decl) => {

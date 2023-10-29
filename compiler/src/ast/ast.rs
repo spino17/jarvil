@@ -86,7 +86,7 @@ pub enum ASTNode {
     MethodAccess(MethodAccessNode),
     IndexAccess(IndexAccessNode),
     Call(CallNode),
-    ClassMethodCall(ClassMethodCallNode),
+    EnumVariantExprOrClassMethodCall(EnumVariantExprOrClassMethodCallNode),
     NameTypeSpec(NameTypeSpecNode),
     IdentifierInUse(IdentifierInUseNode),
     IdentifierInDecl(IdentifierInDeclNode),
@@ -508,10 +508,10 @@ pub enum CoreAtomNode {
 
 #[derive(Debug, Node)]
 pub enum CoreAtomStartNode {
-    Identifier(IdentifierInUseNode),      // id
-    SelfKeyword(SelfKeywordNode),         // self
-    Call(CallExpressionNode),             // id(...)
-    ClassMethodCall(ClassMethodCallNode), // id::id(...)
+    Identifier(IdentifierInUseNode), // id
+    SelfKeyword(SelfKeywordNode),    // self
+    Call(CallExpressionNode),        // id(...)
+    EnumVariantExprOrClassMethodCall(EnumVariantExprOrClassMethodCallNode), // id::id(...)
 }
 
 #[derive(Debug)]
@@ -548,13 +548,13 @@ pub struct CoreCallNode {
 }
 
 #[derive(Debug)]
-pub struct CoreClassMethodCallNode {
+pub struct CoreEnumVariantExprOrClassMethodCallNode {
+    pub ty_name: IdentifierInUseNode,
+    pub double_colon: TokenNode,
+    pub property_name: IdentifierInUseNode,
+    pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     pub lparen: TokenNode,
     pub rparen: TokenNode,
-    pub double_colon: TokenNode,
-    pub class_name: IdentifierInUseNode,
-    pub class_method_name: IdentifierInUseNode,
-    pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
 }
 
 #[derive(Debug)]
@@ -732,7 +732,7 @@ pub struct IndexAccessNode(pub Rc<CoreIndexAccessNode>);
 #[derive(Debug, Clone)]
 pub struct CallNode(pub Rc<CoreCallNode>);
 #[derive(Debug, Clone)]
-pub struct ClassMethodCallNode(pub Rc<CoreClassMethodCallNode>);
+pub struct EnumVariantExprOrClassMethodCallNode(pub Rc<CoreEnumVariantExprOrClassMethodCallNode>);
 #[derive(Debug, Clone)]
 pub struct NameTypeSpecNode(pub Rc<CoreNameTypeSpecNode>);
 #[derive(Debug, Clone)]

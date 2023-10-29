@@ -2,15 +2,15 @@ use super::ast::{
     ArrayExpressionNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode,
     AtomicExpressionNode, AtomicTypeNode, BinaryExpressionNode, BlockNode,
     BoundedMethodWrapperNode, BreakStatementNode, CallExpressionNode, CallNode, CallableBodyNode,
-    CallablePrototypeNode, CaseBranchStatementNode, ClassMethodCallNode, ComparisonNode,
-    ConditionalBlockNode, ConditionalStatementNode, ContinueStatementNode, CoreArrayExpressionNode,
-    CoreArrayTypeNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
-    CoreAtomicExpressionNode, CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode,
-    CoreBoundedMethodWrapperNode, CoreBreakStatementNode, CoreCallExpressionNode, CoreCallNode,
-    CoreCallableBodyNode, CoreCallablePrototypeNode, CoreCaseBranchStatementNode,
-    CoreClassMethodCallNode, CoreComparisonNode, CoreConditionalBlockNode,
-    CoreConditionalStatementNode, CoreContinueStatementNode, CoreEnumDeclarationNode,
-    CoreEnumVariantDeclarationNode, CoreExpressionNode, CoreExpressionStatementNode,
+    CallablePrototypeNode, CaseBranchStatementNode, ComparisonNode, ConditionalBlockNode,
+    ConditionalStatementNode, ContinueStatementNode, CoreArrayExpressionNode, CoreArrayTypeNode,
+    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
+    CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode, CoreBoundedMethodWrapperNode,
+    CoreBreakStatementNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
+    CoreCallablePrototypeNode, CoreCaseBranchStatementNode, CoreComparisonNode,
+    CoreConditionalBlockNode, CoreConditionalStatementNode, CoreContinueStatementNode,
+    CoreEnumDeclarationNode, CoreEnumVariantDeclarationNode,
+    CoreEnumVariantExprOrClassMethodCallNode, CoreExpressionNode, CoreExpressionStatementNode,
     CoreFunctionDeclarationNode, CoreFunctionWrapperNode, CoreGenericTypeDeclNode,
     CoreHashMapExpressionNode, CoreHashMapTypeNode, CoreIdentifierInDeclNode,
     CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode,
@@ -25,19 +25,19 @@ use super::ast::{
     CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreSymbolSeparatedSequenceNode,
     CoreTokenNode, CoreTupleExpressionNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
     CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
-    CoreVariableDeclarationNode, EnumDeclarationNode, EnumVariantDeclarationNode, ExpressionNode,
-    ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode,
-    HashMapExpressionNode, HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode,
-    IncorrectlyIndentedStatementNode, IndexAccessNode, InterfaceDeclarationNode,
-    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, InvalidLValueNode,
-    KeyValuePairNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MatchCaseStatementNode,
-    MethodAccessNode, NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode,
-    OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
-    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
-    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatementIndentWrapperNode,
-    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
-    SymbolSeparatedSequenceNode, TokenNode, TupleExpressionNode, TupleTypeNode,
-    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
+    CoreVariableDeclarationNode, EnumDeclarationNode, EnumVariantDeclarationNode,
+    EnumVariantExprOrClassMethodCallNode, ExpressionNode, ExpressionStatementNode,
+    FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode, HashMapExpressionNode,
+    HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode, IncorrectlyIndentedStatementNode,
+    IndexAccessNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
+    InterfaceMethodTerminalNode, InvalidLValueNode, KeyValuePairNode, LambdaDeclarationNode,
+    LambdaTypeDeclarationNode, MatchCaseStatementNode, MethodAccessNode, NameTypeSpecNode,
+    OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
+    OkTokenNode, OnlyUnaryExpressionNode, ParenthesisedExpressionNode, PropertyAccessNode,
+    RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode,
+    SkippedTokenNode, StatementIndentWrapperNode, StatementNode, StructDeclarationNode,
+    StructPropertyDeclarationNode, SymbolSeparatedSequenceNode, TokenNode, TupleExpressionNode,
+    TupleTypeNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
     UnresolvedIdentifier, UserDefinedTypeNode, VariableDeclarationNode,
 };
 use super::iterators::SymbolSeparatedSequenceIterator;
@@ -1783,35 +1783,35 @@ impl Node for CallExpressionNode {
     }
 }
 
-impl ClassMethodCallNode {
+impl EnumVariantExprOrClassMethodCallNode {
     pub fn new(
-        class_name: IdentifierInUseNode,
-        class_method_name: IdentifierInUseNode,
+        ty_name: IdentifierInUseNode,
+        property_name: IdentifierInUseNode,
         params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         double_colon: TokenNode,
         lparen: TokenNode,
         rparen: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreClassMethodCallNode {
+        let node = Rc::new(CoreEnumVariantExprOrClassMethodCallNode {
             lparen,
             rparen,
             double_colon,
-            class_name,
-            class_method_name,
+            ty_name,
+            property_name,
             params,
         });
-        ClassMethodCallNode(node)
+        EnumVariantExprOrClassMethodCallNode(node)
     }
 
-    impl_core_ref!(CoreClassMethodCallNode);
+    impl_core_ref!(CoreEnumVariantExprOrClassMethodCallNode);
 }
 
-impl Node for ClassMethodCallNode {
+impl Node for EnumVariantExprOrClassMethodCallNode {
     fn range(&self) -> TextRange {
-        impl_range!(self.0.as_ref().class_name, self.0.as_ref().rparen)
+        impl_range!(self.0.as_ref().ty_name, self.0.as_ref().rparen)
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().class_name.start_line_number()
+        self.0.as_ref().ty_name.start_line_number()
     }
 }
 
@@ -2010,18 +2010,18 @@ impl AtomStartNode {
         AtomStartNode(node)
     }
 
-    pub fn new_with_class_method_call(
-        class_name: IdentifierInUseNode,
-        class_method_name: IdentifierInUseNode,
+    pub fn new_with_enum_variant_expr_or_class_method_call(
+        ty_name: IdentifierInUseNode,
+        property_name: IdentifierInUseNode,
         params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         double_colon: TokenNode,
         lparen: TokenNode,
         rparen: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomStartNode::ClassMethodCall(
-            ClassMethodCallNode::new(
-                class_name,
-                class_method_name,
+        let node = Rc::new(CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
+            EnumVariantExprOrClassMethodCallNode::new(
+                ty_name,
+                property_name,
                 params,
                 double_colon,
                 lparen,

@@ -2,11 +2,11 @@
 // cover and the representation of type expressions in terms of type objects.
 
 use crate::ast::ast::{
-    ArrayExpressionNode, CallExpressionNode, CallNode, ClassMethodCallNode, ConditionalBlockNode,
+    ArrayExpressionNode, CallExpressionNode, CallNode, ConditionalBlockNode,
     ConditionalStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
-    HashMapExpressionNode, IndexAccessNode, InterfaceMethodTerminalNode, MatchCaseStatementNode,
-    MethodAccessNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode,
-    StructDeclarationNode, TupleExpressionNode,
+    EnumVariantExprOrClassMethodCallNode, HashMapExpressionNode, IndexAccessNode,
+    InterfaceMethodTerminalNode, MatchCaseStatementNode, MethodAccessNode, OkIdentifierInDeclNode,
+    OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode, TupleExpressionNode,
 };
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
@@ -806,25 +806,26 @@ impl TypeChecker {
         Type::new_with_unknown()
     }
 
-    fn check_atom_start_class_method_call(
+    fn check_atom_start_enum_variant_expr_or_class_method_call(
         &mut self,
-        class_method_call: &ClassMethodCallNode,
+        enum_variant_expr_or_class_method_call: &EnumVariantExprOrClassMethodCallNode,
     ) -> Type {
-        let core_class_method = class_method_call.core_ref();
-        let class = &core_class_method.class_name;
-        let class_method = &core_class_method.class_method_name;
-        let params = &core_class_method.params;
-        if let CoreIdentifierInUseNode::Ok(ok_identifier) = class.core_ref() {
-            let class_name =
+        let core_enum_variant_expr_or_class_method_call =
+            enum_variant_expr_or_class_method_call.core_ref();
+        let ty = &core_enum_variant_expr_or_class_method_call.ty_name;
+        let property_name = &core_enum_variant_expr_or_class_method_call.property_name;
+        let params = &core_enum_variant_expr_or_class_method_call.params;
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) = ty.core_ref() {
+            let ty_name =
                 ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
             match self
                 .semantic_state_db
                 .get_type_symbol_data_for_identifier_in_use(ok_identifier)
             {
                 Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
-                    UserDefinedTypeData::Struct(struct_data) => match class_method.core_ref() {
-                        CoreIdentifierInUseNode::Ok(class_method) => {
-                            let class_method_name = class_method
+                    UserDefinedTypeData::Struct(struct_data) => match property_name.core_ref() {
+                        CoreIdentifierInUseNode::Ok(property_name) => {
+                            let class_method_name = property_name
                                 .token_value(&self.code, &mut self.semantic_state_db.interner);
                             let concrete_types = &type_symbol_data.concrete_types;
                             match struct_data
@@ -833,7 +834,7 @@ impl TypeChecker {
                                 Some((partial_concrete_callable_data, _)) => {
                                     let (concrete_types, ty_ranges, _) = self
                                         .extract_angle_bracket_content_from_identifier_in_use(
-                                            class_method,
+                                            property_name,
                                         );
                                     let result = partial_concrete_callable_data
                                         .is_received_params_valid(
@@ -848,7 +849,7 @@ impl TypeChecker {
                                             match err {
                                                     PartialCallableDataPrototypeCheckError::PrototypeEquivalenceCheckFailed(prototype_check_err) => {
                                                         self.log_params_type_and_count_check_error(
-                                                            class_method.range(),
+                                                            property_name.range(),
                                                             prototype_check_err,
                                                         );
                                                     }
@@ -863,8 +864,8 @@ impl TypeChecker {
                                 }
                                 None => {
                                     let err = ClassmethodDoesNotExistError::new(
-                                        self.semantic_state_db.interner.lookup(class_name),
-                                        class_method.range(),
+                                        self.semantic_state_db.interner.lookup(ty_name),
+                                        property_name.range(),
                                     );
                                     self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
                                     return Type::new_with_unknown();
@@ -874,11 +875,12 @@ impl TypeChecker {
                         _ => return Type::new_with_unknown(),
                     },
                     UserDefinedTypeData::Enum(enum_data) => {
-                        if let CoreIdentifierInUseNode::Ok(class_method) = class_method.core_ref() {
-                            let variant_name = class_method
+                        if let CoreIdentifierInUseNode::Ok(property_name) = property_name.core_ref()
+                        {
+                            let variant_name = property_name
                                 .token_value(&self.code, &mut self.semantic_state_db.interner);
                             let concrete_types = &type_symbol_data.concrete_types;
-                            if class_method.core_ref().generic_type_args.is_some() {
+                            if property_name.core_ref().generic_type_args.is_some() {
                                 // TODO - raise error `invalid generic type args found`
                                 return Type::new_with_unknown();
                             }
@@ -928,10 +930,8 @@ impl TypeChecker {
                         return Type::new_with_unknown();
                     }
                     UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
-                        let err = PropertyNotSupportedError::new(
-                            "classmethod".to_string(),
-                            class.range(),
-                        );
+                        let err =
+                            PropertyNotSupportedError::new("classmethod".to_string(), ty.range());
                         self.log_error(Diagnostics::PropertyNotSupported(err));
                         return Type::new_with_unknown();
                     }
@@ -977,9 +977,11 @@ impl TypeChecker {
                 }
             }
             CoreAtomStartNode::Call(call_expr) => self.check_atom_start_call_expr(call_expr),
-            CoreAtomStartNode::ClassMethodCall(class_method_call) => {
-                self.check_atom_start_class_method_call(class_method_call)
-            }
+            CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
+                enum_variant_expr_or_class_method_call,
+            ) => self.check_atom_start_enum_variant_expr_or_class_method_call(
+                enum_variant_expr_or_class_method_call,
+            ),
         }
     }
 

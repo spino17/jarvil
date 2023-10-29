@@ -89,7 +89,7 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
                 }
                 CoreToken::DOUBLE_COLON => {
                     let double_colon_node = parser.expect("::");
-                    let class_method_name = parser.expect_identifier_in_use();
+                    let ty_name = parser.expect_identifier_in_use();
                     // TODO - add a check if next token is not `(` then let it be for enum variant expr and return
                     let lparen_node = parser.expect("(");
                     let mut params_node: Option<SymbolSeparatedSequenceNode<ExpressionNode>> = None;
@@ -97,9 +97,9 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
                         params_node = Some(parser.params());
                     }
                     let rparen_node = parser.expect(")");
-                    AtomStartNode::new_with_class_method_call(
+                    AtomStartNode::new_with_enum_variant_expr_or_class_method_call(
                         leading_identifier_node,
-                        class_method_name,
+                        ty_name,
                         params_node,
                         double_colon_node,
                         lparen_node,

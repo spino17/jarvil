@@ -2177,15 +2177,22 @@ impl Visitor for Resolver {
                             self.walk_comma_separated_expressions(params)
                         }
                     }
-                    CoreAtomStartNode::ClassMethodCall(class_method_call) => {
-                        let core_class_method_call = class_method_call.core_ref();
+                    CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
+                        enum_variant_expr_or_class_method_call,
+                    ) => {
+                        let core_enum_variant_expr_or_class_method_call =
+                            enum_variant_expr_or_class_method_call.core_ref();
                         if let CoreIdentifierInUseNode::Ok(ok_identifier) =
-                            core_class_method_call.class_name.core_ref()
+                            core_enum_variant_expr_or_class_method_call
+                                .ty_name
+                                .core_ref()
                         {
                             self.try_resolving_user_defined_type(ok_identifier, true, false);
                         }
-                        self.walk_identifier_in_use(&core_class_method_call.class_method_name);
-                        if let Some(params) = &core_class_method_call.params {
+                        self.walk_identifier_in_use(
+                            &core_enum_variant_expr_or_class_method_call.property_name,
+                        );
+                        if let Some(params) = &core_enum_variant_expr_or_class_method_call.params {
                             self.walk_comma_separated_expressions(params);
                         }
                     }
