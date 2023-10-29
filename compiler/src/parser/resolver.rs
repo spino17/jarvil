@@ -2192,8 +2192,12 @@ impl Visitor for Resolver {
                         self.walk_identifier_in_use(
                             &core_enum_variant_expr_or_class_method_call.property_name,
                         );
-                        if let Some(params) = &core_enum_variant_expr_or_class_method_call.params {
-                            self.walk_comma_separated_expressions(params);
+                        if let Some((_, params, _)) =
+                            &core_enum_variant_expr_or_class_method_call.params
+                        {
+                            if let Some(params) = params {
+                                self.walk_comma_separated_expressions(params);
+                            }
                         }
                     }
                 }

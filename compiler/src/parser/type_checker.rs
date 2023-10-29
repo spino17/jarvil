@@ -825,6 +825,13 @@ impl TypeChecker {
                 Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
                     UserDefinedTypeData::Struct(struct_data) => match property_name.core_ref() {
                         CoreIdentifierInUseNode::Ok(property_name) => {
+                            let params = match params {
+                                Some((_, params, _)) => params,
+                                None => {
+                                    // TODO - raise error `syntax error => expected `(` for classmethod call`
+                                    return Type::new_with_unknown();
+                                }
+                            };
                             let class_method_name = property_name
                                 .token_value(&self.code, &mut self.semantic_state_db.interner);
                             let concrete_types = &type_symbol_data.concrete_types;
@@ -884,48 +891,57 @@ impl TypeChecker {
                                 // TODO - raise error `invalid generic type args found`
                                 return Type::new_with_unknown();
                             }
-                            match params {
-                                Some(params) => {
-                                    let mut params_iter = params.iter();
-                                    let expr = params_iter.next().unwrap();
-                                    if params_iter.next().is_some() {
-                                        // TODO - raise error `invalid syntax, not more than one expr in enum variant value`
-                                        return Type::new_with_unknown();
-                                    }
-                                    match enum_data.try_index_and_type_for_variant(
-                                        variant_name,
-                                        concrete_types.as_ref(),
-                                    ) {
-                                        Some((_, expected_ty)) => {
-                                            match expected_ty {
-                                                Some(expected_ty) => {
-                                                    let expr_ty = self.check_expr(expr);
-                                                    if !expr_ty.is_eq(&expected_ty) {
-                                                        // TODO - raise error `mismatched type in enum variant value`
+                            match enum_data.try_index_and_type_for_variant(
+                                variant_name,
+                                concrete_types.as_ref(),
+                            ) {
+                                Some((_, expected_ty)) => match params {
+                                    Some((_, params, _)) => {
+                                        match params {
+                                            Some(params) => {
+                                                match expected_ty {
+                                                    Some(expected_ty) => {
+                                                        let mut params_iter = params.iter();
+                                                        let expr = params_iter.next().unwrap();
+                                                        if params_iter.next().is_some() {
+                                                            // TODO - raise error `invalid syntax, not more than one expr in enum variant value`
+                                                            return Type::new_with_unknown();
+                                                        }
+                                                        let expr_ty = self.check_expr(expr);
+                                                        if !expr_ty.is_eq(&expected_ty) {
+                                                            // TODO - raise error `mismatched type in enum variant value`
+                                                            return Type::new_with_unknown();
+                                                        }
+                                                    }
+                                                    None => {
+                                                        // TODO - raise error `enum variant does not expect value`
                                                         return Type::new_with_unknown();
                                                     }
-                                                    return Type::new_with_enum(
-                                                        &type_symbol_data.symbol_data,
-                                                        concrete_types.clone(),
-                                                    );
-                                                }
-                                                None => {
-                                                    // TODO - raise error `variant does not expect value`
-                                                    return Type::new_with_unknown();
                                                 }
                                             }
-                                        }
-                                        None => {
-                                            // TODO - raise error `variant does not exist for the enum`
-                                            return Type::new_with_unknown();
+                                            None => {
+                                                // TODO - raise error `syntax error, expected expr for enum variant`
+                                                return Type::new_with_unknown();
+                                            }
                                         }
                                     }
-                                }
+                                    None => match expected_ty {
+                                        Some(_) => {
+                                            // TODO - raise error `enum variant expected value of type ...`
+                                            return Type::new_with_unknown();
+                                        }
+                                        None => {}
+                                    },
+                                },
                                 None => {
-                                    // TODO - raise error `expr expected for enum variant value`
+                                    // TODO - raise error `variant does not exist for the enum`
                                     return Type::new_with_unknown();
                                 }
                             }
+                            return Type::new_with_enum(
+                                &type_symbol_data.symbol_data,
+                                concrete_types.clone(),
+                            );
                         }
                         return Type::new_with_unknown();
                     }

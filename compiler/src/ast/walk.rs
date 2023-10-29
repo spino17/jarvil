@@ -882,11 +882,15 @@ pub trait Visitor {
                 self.walk_identifier_in_use(
                     &core_enum_variant_or_class_method_call_node.property_name,
                 );
-                self.walk_token(&core_enum_variant_or_class_method_call_node.lparen);
-                if let Some(params) = &core_enum_variant_or_class_method_call_node.params {
-                    self.walk_comma_separated_expressions(params);
+                if let Some((lparen, params, rparen)) =
+                    &core_enum_variant_or_class_method_call_node.params
+                {
+                    self.walk_token(lparen);
+                    if let Some(params) = params {
+                        self.walk_comma_separated_expressions(params);
+                    }
+                    self.walk_token(rparen);
                 }
-                self.walk_token(&core_enum_variant_or_class_method_call_node.rparen);
             }
             ASTNode::ArrayExpression(array_expression_node) => {
                 let core_array_exprs = array_expression_node.core_ref();

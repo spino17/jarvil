@@ -346,11 +346,13 @@ impl PythonCodeGenerator {
     ) {
         let core_enum_variant_expr_or_class_method_call =
             enum_variant_expr_or_class_method_call.core_ref();
-        let lparen = &core_enum_variant_expr_or_class_method_call.lparen;
-        let rparen = &core_enum_variant_expr_or_class_method_call.rparen;
+        // let lparen = &core_enum_variant_expr_or_class_method_call.lparen;
+        // let rparen = &core_enum_variant_expr_or_class_method_call.rparen;
         let ty_name = &core_enum_variant_expr_or_class_method_call.ty_name;
         let property_name = &core_enum_variant_expr_or_class_method_call.property_name;
         let params = &core_enum_variant_expr_or_class_method_call.params;
+        // TODO - get the symbol_data for `ty_name` and check if it's classmethod or enum
+        /*
         self.print_identifier_in_use(ty_name);
         self.add_str_to_python_code(".");
         self.print_identifier_in_use(property_name);
@@ -359,6 +361,7 @@ impl PythonCodeGenerator {
             self.walk_comma_separated_expressions(params);
         }
         self.print_token_node(rparen);
+        */
     }
 
     pub fn print_bounded_method_wrapper(

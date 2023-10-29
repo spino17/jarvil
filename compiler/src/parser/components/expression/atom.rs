@@ -1,5 +1,6 @@
 use crate::ast::ast::{
     AtomNode, AtomStartNode, CallExpressionNode, ExpressionNode, SymbolSeparatedSequenceNode,
+    TokenNode,
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
@@ -88,22 +89,28 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
                     AtomStartNode::new_with_function_call(call_expr_node)
                 }
                 CoreToken::DOUBLE_COLON => {
+                    let mut contained_params_node: Option<(
+                        TokenNode,
+                        Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+                        TokenNode,
+                    )> = None;
                     let double_colon_node = parser.expect("::");
                     let ty_name = parser.expect_identifier_in_use();
-                    // TODO - add a check if next token is not `(` then let it be for enum variant expr and return
-                    let lparen_node = parser.expect("(");
-                    let mut params_node: Option<SymbolSeparatedSequenceNode<ExpressionNode>> = None;
-                    if !parser.check_curr_token(")") {
-                        params_node = Some(parser.params());
+                    if parser.curr_token().is_eq("(") {
+                        let lparen_node = parser.expect("(");
+                        let mut params_node: Option<SymbolSeparatedSequenceNode<ExpressionNode>> =
+                            None;
+                        if !parser.check_curr_token(")") {
+                            params_node = Some(parser.params());
+                        }
+                        let rparen_node = parser.expect(")");
+                        contained_params_node = Some((lparen_node, params_node, rparen_node));
                     }
-                    let rparen_node = parser.expect(")");
                     AtomStartNode::new_with_enum_variant_expr_or_class_method_call(
                         leading_identifier_node,
                         ty_name,
-                        params_node,
+                        contained_params_node,
                         double_colon_node,
-                        lparen_node,
-                        rparen_node,
                     )
                 }
                 _ => AtomStartNode::new_with_identifier(leading_identifier_node),

@@ -1787,14 +1787,14 @@ impl EnumVariantExprOrClassMethodCallNode {
     pub fn new(
         ty_name: IdentifierInUseNode,
         property_name: IdentifierInUseNode,
-        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        params: Option<(
+            TokenNode,
+            Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+            TokenNode,
+        )>,
         double_colon: TokenNode,
-        lparen: TokenNode,
-        rparen: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreEnumVariantExprOrClassMethodCallNode {
-            lparen,
-            rparen,
             double_colon,
             ty_name,
             property_name,
@@ -1808,7 +1808,10 @@ impl EnumVariantExprOrClassMethodCallNode {
 
 impl Node for EnumVariantExprOrClassMethodCallNode {
     fn range(&self) -> TextRange {
-        impl_range!(self.0.as_ref().ty_name, self.0.as_ref().rparen)
+        match &self.core_ref().params {
+            Some((_, _, rparen)) => impl_range!(self.core_ref().ty_name, rparen),
+            None => impl_range!(self.core_ref().ty_name, self.core_ref().property_name),
+        }
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().ty_name.start_line_number()
@@ -2013,20 +2016,15 @@ impl AtomStartNode {
     pub fn new_with_enum_variant_expr_or_class_method_call(
         ty_name: IdentifierInUseNode,
         property_name: IdentifierInUseNode,
-        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        params: Option<(
+            TokenNode,
+            Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+            TokenNode,
+        )>,
         double_colon: TokenNode,
-        lparen: TokenNode,
-        rparen: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
-            EnumVariantExprOrClassMethodCallNode::new(
-                ty_name,
-                property_name,
-                params,
-                double_colon,
-                lparen,
-                rparen,
-            ),
+            EnumVariantExprOrClassMethodCallNode::new(ty_name, property_name, params, double_colon),
         ));
         AtomStartNode(node)
     }

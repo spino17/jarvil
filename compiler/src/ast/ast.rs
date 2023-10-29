@@ -552,9 +552,11 @@ pub struct CoreEnumVariantExprOrClassMethodCallNode {
     pub ty_name: IdentifierInUseNode,
     pub double_colon: TokenNode,
     pub property_name: IdentifierInUseNode,
-    pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-    pub lparen: TokenNode,
-    pub rparen: TokenNode,
+    pub params: Option<(
+        TokenNode,
+        Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        TokenNode,
+    )>,
 }
 
 #[derive(Debug)]
