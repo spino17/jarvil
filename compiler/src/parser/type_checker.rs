@@ -875,7 +875,7 @@ impl TypeChecker {
                     },
                     UserDefinedTypeData::Enum(enum_data) => {
                         if let CoreIdentifierInUseNode::Ok(class_method) = class_method.core_ref() {
-                            let class_method_name = class_method
+                            let variant_name = class_method
                                 .token_value(&self.code, &mut self.semantic_state_db.interner);
                             let concrete_types = &type_symbol_data.concrete_types;
                             if class_method.core_ref().generic_type_args.is_some() {
@@ -891,8 +891,8 @@ impl TypeChecker {
                                         return Type::new_with_unknown();
                                     }
                                     match enum_data.try_index_and_type_for_variant(
-                                        class_method_name,
-                                        &ConcretizationContext::new(concrete_types.as_ref(), None),
+                                        variant_name,
+                                        concrete_types.as_ref(),
                                     ) {
                                         Some((_, expected_ty)) => {
                                             match expected_ty {
@@ -1032,16 +1032,8 @@ impl TypeChecker {
                             let concrete_types = &struct_ty.concrete_types;
                             let symbol_data = struct_ty.symbol_data.get_core_ref();
                             let struct_data = symbol_data.get_struct_data_ref();
-                            match struct_data.try_field(
-                                &property_name_str,
-                                &ConcretizationContext::new(
-                                    match concrete_types {
-                                        Some(concrete_types) => Some(concrete_types),
-                                        None => None,
-                                    },
-                                    None,
-                                ),
-                            ) {
+                            match struct_data.try_field(&property_name_str, concrete_types.as_ref())
+                            {
                                 Some((type_obj, _)) => Ok(type_obj),
                                 None => Err(()),
                             }
@@ -1086,16 +1078,7 @@ impl TypeChecker {
         let symbol_data = struct_ty.symbol_data.get_core_ref();
         let struct_data = symbol_data.get_struct_data_ref();
         // first check if it's a property
-        match struct_data.try_field(
-            &method_name,
-            &ConcretizationContext::new(
-                match concrete_types {
-                    Some(concrete_types) => Some(concrete_types),
-                    None => None,
-                },
-                None,
-            ),
-        ) {
+        match struct_data.try_field(&method_name, concrete_types.as_ref()) {
             Some((propetry_ty, _)) => {
                 if method_name_ok_identifier
                     .core_ref()

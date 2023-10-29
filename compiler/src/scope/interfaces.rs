@@ -36,12 +36,12 @@ impl InterfaceData {
         self.is_init = true;
     }
 
-    pub fn try_field(
-        &self,
+    pub fn try_field<'a>(
+        &'a self,
         field_name: &StrId,
-        context: &ConcretizationContext,
+        global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(Type, TextRange)> {
-        self.fields.try_field(field_name, context)
+        self.fields.try_field(field_name, global_concrete_types)
     }
 
     pub fn try_method<'a>(

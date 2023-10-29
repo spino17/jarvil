@@ -71,15 +71,18 @@ impl FieldsMap {
         FieldsMap { fields }
     }
 
-    pub fn try_field(
-        &self,
+    pub fn try_field<'a>(
+        &'a self,
         field_name: &StrId,
-        context: &ConcretizationContext,
+        global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(Type, TextRange)> {
         match self.fields.get(field_name) {
             Some((ty, range)) => {
                 if ty.is_concretization_required() {
-                    Some((ty.concretize(context), *range))
+                    Some((
+                        ty.concretize(&ConcretizationContext::new(global_concrete_types, None)),
+                        *range,
+                    ))
                 } else {
                     Some((ty.clone(), *range))
                 }

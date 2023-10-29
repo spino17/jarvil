@@ -1,7 +1,7 @@
 use crate::{
     core::string_interner::StrId,
     scope::{
-        concrete::ConcretizationContext,
+        concrete::{ConcreteTypesTuple, ConcretizationContext},
         core::{AbstractConcreteTypesHandler, GenericTypeParams},
     },
     types::core::{AbstractType, Type},
@@ -25,17 +25,23 @@ impl EnumTypeData {
         self.is_init = true;
     }
 
-    pub fn try_index_and_type_for_variant(
-        &self,
+    pub fn try_index_and_type_for_variant<'a>(
+        &'a self,
         variant_name: StrId,
-        context: &ConcretizationContext,
+        global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(usize, Option<Type>)> {
         for (index, (curr_variant_name, ty, _)) in self.variants.iter().enumerate() {
             if *curr_variant_name == variant_name {
                 match ty {
                     Some(ty) => {
                         if ty.is_concretization_required() {
-                            return Some((index, Some(ty.concretize(context))));
+                            return Some((
+                                index,
+                                Some(ty.concretize(&ConcretizationContext::new(
+                                    global_concrete_types,
+                                    None,
+                                ))),
+                            ));
                         } else {
                             return Some((index, Some(ty.clone())));
                         }
