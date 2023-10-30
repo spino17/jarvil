@@ -10,10 +10,13 @@ use crate::ast::ast::{
 };
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
-    GenericTypeArgsNotExpectedError, IncorrectExpressionTypeError,
+    ClassMethodExpectedParenthesisError, EnumVariantDoesNotExistError,
+    EnumVariantsMissingFromMatchCaseStatementError, ExpectedValueForEnumVariantError,
+    GenericTypeArgsNotExpectedError, IncorrectEnumNameError, IncorrectExpressionTypeError,
     InferredTypesNotBoundedByInterfacesError, InterfaceMethodsInStructCheckError,
-    NotAllConcreteTypesInferredError, RightSideExpressionTypeMismatchedWithTypeFromAnnotationError,
-    TypeInferenceFailedError,
+    MissingTokenError, NotAllConcreteTypesInferredError,
+    RightSideExpressionTypeMismatchedWithTypeFromAnnotationError, TypeInferenceFailedError,
+    UnexpectedValueProvidedToEnumVariantError,
 };
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::{ConcreteSymbolData, ConcreteTypesTuple, ConcretizationContext};
@@ -74,10 +77,11 @@ use crate::{
         core::{AbstractType, CoreType, Type},
     },
 };
-use std::cell::UnsafeCell;
 use rustc_hash::FxHashSet;
+use std::cell::UnsafeCell;
 use text_size::TextRange;
 
+use super::components::assignment::R_ASSIGNMENT_STARTING_SYMBOLS;
 use super::helper::err_for_generic_type_args;
 
 #[derive(Debug)]
@@ -829,7 +833,12 @@ impl TypeChecker {
                             let params = match params {
                                 Some((_, params, _)) => params,
                                 None => {
-                                    // TODO - raise error `syntax error => expected `(` for classmethod call`
+                                    let err = ClassMethodExpectedParenthesisError::new(
+                                        property_name.range().end().into(),
+                                    );
+                                    self.log_error(Diagnostics::ClassMethodExpectedParenthesis(
+                                        err,
+                                    ));
                                     return Type::new_with_unknown();
                                 }
                             };
@@ -889,53 +898,99 @@ impl TypeChecker {
                                 .token_value(&self.code, &mut self.semantic_state_db.interner);
                             let concrete_types = &type_symbol_data.concrete_types;
                             if property_name.core_ref().generic_type_args.is_some() {
-                                // TODO - raise error `invalid generic type args found`
+                                let err = GenericTypeArgsNotExpectedError::new(
+                                    IdentifierKind::Variant,
+                                    property_name.range(),
+                                );
+                                self.log_error(Diagnostics::GenericTypeArgsNotExpected(err));
                                 return Type::new_with_unknown();
                             }
                             match enum_data.try_index_and_type_for_variant(
                                 variant_name,
                                 concrete_types.as_ref(),
                             ) {
-                                Some((_, expected_ty)) => match params {
-                                    Some((_, params, _)) => {
-                                        match params {
-                                            Some(params) => {
-                                                match expected_ty {
-                                                    Some(expected_ty) => {
-                                                        let mut params_iter = params.iter();
-                                                        let expr = params_iter.next().unwrap();
-                                                        if params_iter.next().is_some() {
-                                                            // TODO - raise error `invalid syntax, not more than one expr in enum variant value`
+                                Some((_, expected_ty)) => {
+                                    match params {
+                                        Some((_, params, rparen)) => {
+                                            match params {
+                                                Some(params) => {
+                                                    match expected_ty {
+                                                        Some(expected_ty) => {
+                                                            let core_params = params.core_ref();
+                                                            let expr = &core_params.entity;
+                                                            if let Some((comma, _)) =
+                                                                &core_params.remaining_entities
+                                                            {
+                                                                let err = MissingTokenError::new(&[")"], match comma.core_ref() {
+                                                                CoreTokenNode::Ok(ok_token) => &ok_token.core_ref().token,
+                                                                CoreTokenNode::MissingTokens(missing_token) => &missing_token.core_ref().received_token
+                                                            });
+                                                                self.log_error(
+                                                                    Diagnostics::MissingToken(err),
+                                                                );
+                                                                return Type::new_with_unknown();
+                                                            }
+                                                            let expr_ty = self.check_expr(expr);
+                                                            if !expr_ty.is_eq(&expected_ty) {
+                                                                let err = IncorrectExpressionTypeError::new(
+                                                                expected_ty.to_string(&self.semantic_state_db.interner),
+                                                                expr_ty.to_string(&self.semantic_state_db.interner),
+                                                                expr.range()
+                                                            );
+                                                                self.log_error(Diagnostics::IncorrectExpressionType(err));
+                                                                return Type::new_with_unknown();
+                                                            }
+                                                        }
+                                                        None => {
+                                                            let err = UnexpectedValueProvidedToEnumVariantError::new(self.semantic_state_db.interner.lookup(variant_name).to_string(), params.range());
+                                                            self.log_error(Diagnostics::UnexpectedValueProvidedToEnumVariant(err));
                                                             return Type::new_with_unknown();
                                                         }
-                                                        let expr_ty = self.check_expr(expr);
-                                                        if !expr_ty.is_eq(&expected_ty) {
-                                                            // TODO - raise error `mismatched type in enum variant value`
-                                                            return Type::new_with_unknown();
-                                                        }
-                                                    }
-                                                    None => {
-                                                        // TODO - raise error `enum variant does not expect value`
-                                                        return Type::new_with_unknown();
                                                     }
                                                 }
+                                                None => {
+                                                    let err = MissingTokenError::new(
+                                                        &R_ASSIGNMENT_STARTING_SYMBOLS,
+                                                        match rparen.core_ref() {
+                                                            CoreTokenNode::Ok(ok_token) => {
+                                                                &ok_token.core_ref().token
+                                                            }
+                                                            CoreTokenNode::MissingTokens(
+                                                                missing_token,
+                                                            ) => {
+                                                                &missing_token
+                                                                    .core_ref()
+                                                                    .received_token
+                                                            }
+                                                        },
+                                                    );
+                                                    self.log_error(Diagnostics::MissingToken(err));
+                                                    return Type::new_with_unknown();
+                                                }
                                             }
-                                            None => {
-                                                // TODO - raise error `syntax error, expected expr for enum variant`
+                                        }
+                                        None => {
+                                            if let Some(expected_ty) = expected_ty {
+                                                let err = ExpectedValueForEnumVariantError::new(
+                                                    expected_ty.to_string(
+                                                        &self.semantic_state_db.interner,
+                                                    ),
+                                                    property_name.range(),
+                                                );
+                                                self.log_error(
+                                                    Diagnostics::ExpectedValueForEnumVariant(err),
+                                                );
                                                 return Type::new_with_unknown();
                                             }
                                         }
                                     }
-                                    None => match expected_ty {
-                                        Some(_) => {
-                                            // TODO - raise error `enum variant expected value of type ...`
-                                            return Type::new_with_unknown();
-                                        }
-                                        None => {}
-                                    },
-                                },
+                                }
                                 None => {
-                                    // TODO - raise error `variant does not exist for the enum`
+                                    let err = EnumVariantDoesNotExistError::new(
+                                        self.semantic_state_db.interner.lookup(ty_name).to_string(),
+                                        property_name.range(),
+                                    );
+                                    self.log_error(Diagnostics::EnumVariantDoesNotExist(err));
                                     return Type::new_with_unknown();
                                 }
                             }
@@ -1897,7 +1952,8 @@ impl TypeChecker {
         let core_match_case = match_case.core_ref();
         let expr = &core_match_case.expr;
         let match_block = &core_match_case.block;
-        match self.check_expr(expr).0.as_ref() {
+        let expr_ty = self.check_expr(expr);
+        match expr_ty.0.as_ref() {
             CoreType::Enum(enum_ty) => {
                 let mut checked_variants: FxHashSet<StrId> = FxHashSet::default();
                 let expr_enum_name = enum_ty.symbol_data.identifier_name();
@@ -1921,7 +1977,18 @@ impl TypeChecker {
                                 let enum_name_str = enum_name
                                     .token_value(&self.code, &mut self.semantic_state_db.interner);
                                 if expr_enum_name != enum_name_str {
-                                    // TODO - raise error `expected enum ..., got ...`
+                                    let err = IncorrectEnumNameError::new(
+                                        self.semantic_state_db
+                                            .interner
+                                            .lookup(expr_enum_name)
+                                            .to_string(),
+                                        self.semantic_state_db
+                                            .interner
+                                            .lookup(enum_name_str)
+                                            .to_string(),
+                                        enum_name.range(),
+                                    );
+                                    self.log_error(Diagnostics::IncorrectEnumName(err));
                                 } else {
                                     let variant_name = &core_case_branch.variant_name;
                                     if let CoreIdentifierInDeclNode::Ok(variant_name) =
@@ -1942,33 +2009,42 @@ impl TypeChecker {
                                                     Some((_, variable_name, _)) => {
                                                         match expected_ty {
                                                             Some(expected_ty) => {
-                                                                if let CoreIdentifierInDeclNode::Ok(variable_name) 
-                                                                = variable_name.core_ref()
+                                                                if let CoreIdentifierInDeclNode::Ok(variable_name) = variable_name.core_ref()
                                                                 {
                                                                     if let Some(symbol_data) = self
                                                                     .semantic_state_db
                                                                     .get_variable_symbol_data_for_identifier_in_decl(variable_name)
                                                                     {
-                                                                        let mut symbol_data_mut_ref 
-                                                                        = symbol_data.get_core_mut_ref();
+                                                                        let mut symbol_data_mut_ref = symbol_data.get_core_mut_ref();
                                                                         symbol_data_mut_ref.set_data_type(&expected_ty);
                                                                     }
                                                                 };
                                                             }
                                                             None => {
-                                                                // TODO - raise error `enum variant does not expected a value`
+                                                                let err = UnexpectedValueProvidedToEnumVariantError::new(self.semantic_state_db.interner.lookup(variant_name_str).to_string(), variable_name.range());
+                                                                self.log_error(Diagnostics::UnexpectedValueProvidedToEnumVariant(err));
                                                             }
                                                         }
                                                     }
                                                     None => {
-                                                        if expected_ty.is_some() {
-                                                            // TODO - raise error `enum variant expected a value`
+                                                        if let Some(expected_ty) = expected_ty {
+                                                            let err = ExpectedValueForEnumVariantError::new(expected_ty.to_string(&self.semantic_state_db.interner), variant_name.range());
+                                                            self.log_error(Diagnostics::ExpectedValueForEnumVariant(err));
                                                         }
                                                     }
                                                 }
                                             }
                                             None => {
-                                                // TODO - raise error `variant does not exist`
+                                                let err = EnumVariantDoesNotExistError::new(
+                                                    self.semantic_state_db
+                                                        .interner
+                                                        .lookup(enum_name_str)
+                                                        .to_string(),
+                                                    variant_name.range(),
+                                                );
+                                                self.log_error(
+                                                    Diagnostics::EnumVariantDoesNotExist(err),
+                                                );
                                             }
                                         }
                                     }
@@ -1987,11 +2063,25 @@ impl TypeChecker {
                     }
                 }
                 if !missing_variants.is_empty() {
-                    // TODO - raise `not all enum variants covered`
+                    let err = EnumVariantsMissingFromMatchCaseStatementError::new(
+                        self.semantic_state_db
+                            .interner
+                            .lookup(expr_enum_name)
+                            .to_string(),
+                        missing_variants,
+                        expr.range(),
+                        &self.semantic_state_db.interner,
+                    );
+                    self.log_error(Diagnostics::EnumVariantsMissingFromMatchCaseStatement(err));
                 }
             }
             _ => {
-                // TODO - raise error `expected expression with type enum, got ...`
+                let err = IncorrectExpressionTypeError::new(
+                    "<enum>".to_string(),
+                    expr_ty.to_string(&self.semantic_state_db.interner),
+                    expr.range(),
+                );
+                self.log_error(Diagnostics::IncorrectExpressionType(err));
             }
         }
     }

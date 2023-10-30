@@ -87,6 +87,12 @@ pub enum Diagnostics {
     ),
     IncorrectExpressionType(IncorrectExpressionTypeError),
     ExpressionTypeCannotBeInferred(ExpressionTypeCannotBeInferredError),
+    ClassMethodExpectedParenthesis(ClassMethodExpectedParenthesisError),
+    EnumVariantDoesNotExist(EnumVariantDoesNotExistError),
+    UnexpectedValueProvidedToEnumVariant(UnexpectedValueProvidedToEnumVariantError),
+    ExpectedValueForEnumVariant(ExpectedValueForEnumVariantError),
+    EnumVariantsMissingFromMatchCaseStatement(EnumVariantsMissingFromMatchCaseStatementError),
+    IncorrectEnumName(IncorrectEnumNameError),
 }
 
 impl Diagnostics {
@@ -203,6 +209,18 @@ impl Diagnostics {
             Diagnostics::InvalidLoopControlFlowStatementFound(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
+            Diagnostics::ClassMethodExpectedParenthesis(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::EnumVariantDoesNotExist(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::UnexpectedValueProvidedToEnumVariant(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::ExpectedValueForEnumVariant(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::EnumVariantsMissingFromMatchCaseStatement(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::IncorrectEnumName(diagnostic) => Report::new(diagnostic.clone()),
         }
     }
 }
@@ -372,6 +390,23 @@ impl InvalidLValueError {
                     .style(Style::new().yellow())
                     .to_string(),
             ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("expected token missing")]
+#[diagnostic(code("SyntaxError"))]
+pub struct ClassMethodExpectedParenthesisError {
+    #[label("expected `(` for classmethod call expression")]
+    pub span: SourceSpan,
+}
+
+impl ClassMethodExpectedParenthesisError {
+    pub fn new(end_index: usize) -> Self {
+        let start_index = end_index - 1;
+        ClassMethodExpectedParenthesisError {
+            span: (start_index, end_index - start_index).into(),
         }
     }
 }
@@ -595,6 +630,74 @@ impl FieldsNotInitializedInConstructorError {
                 .style(Style::new().yellow())
                 .to_string()
             )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("enum variants missing from match-case statement")]
+#[diagnostic(code("SemanticError"))]
+pub struct EnumVariantsMissingFromMatchCaseStatementError {
+    pub enum_name: String,
+    pub err_msg: String,
+    #[label(
+        "variants {} not handled inside the match-case statement for the expression with type `{}`",
+        err_msg,
+        self.enum_name
+    )]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl EnumVariantsMissingFromMatchCaseStatementError {
+    pub fn new(
+        enum_name: String,
+        missing_variants: Vec<StrId>,
+        range: TextRange,
+        interner: &Interner,
+    ) -> Self {
+        let len = missing_variants.len();
+        let mut message = format!("`{}`", interner.lookup(missing_variants[0]));
+        if len > 1 {
+            for i in 1..(len - 1) {
+                message.push_str(&format!(", `{}`", interner.lookup(missing_variants[i])));
+            }
+            message.push_str(&format!(
+                " and `{}`",
+                interner.lookup(missing_variants[len - 1])
+            ));
+        }
+        EnumVariantsMissingFromMatchCaseStatementError {
+            enum_name,
+            err_msg: message,
+            span: range_to_span(range).into(),
+            help: Some(
+                "all variants should be handled inside the match-case statement for the expression with enum type"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("`self` is not declared in the scope")]
+#[diagnostic(code("SemanticError"))]
+pub struct IncorrectEnumNameError {
+    pub expected_enum_name: String,
+    pub received_enum_name: String,
+    #[label("expected enum `{}`, got `{}`", self.expected_enum_name, self.received_enum_name)]
+    pub span: SourceSpan,
+}
+
+impl IncorrectEnumNameError {
+    pub fn new(expected_enum_name: String, received_enum_name: String, range: TextRange) -> Self {
+        IncorrectEnumNameError {
+            expected_enum_name,
+            received_enum_name,
+            span: range_to_span(range).into(),
         }
     }
 }
@@ -1774,6 +1877,60 @@ impl MismatchedReturnTypeError {
         MismatchedReturnTypeError {
             expected_type,
             received_type,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("enum variant not found")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct EnumVariantDoesNotExistError {
+    pub enum_name: String,
+    #[label("no variant with this name found for enum `{}`", self.enum_name)]
+    pub span: SourceSpan,
+}
+
+impl EnumVariantDoesNotExistError {
+    pub fn new(enum_name: String, range: TextRange) -> Self {
+        EnumVariantDoesNotExistError {
+            enum_name,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("unexpected value provided to enum variant")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct UnexpectedValueProvidedToEnumVariantError {
+    pub variant_name: String,
+    #[label("enum variant `{}` does not expect a value", self.variant_name)]
+    pub span: SourceSpan,
+}
+
+impl UnexpectedValueProvidedToEnumVariantError {
+    pub fn new(variant_name: String, range: TextRange) -> Self {
+        UnexpectedValueProvidedToEnumVariantError {
+            variant_name,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("enum variant expected a value")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct ExpectedValueForEnumVariantError {
+    pub variant_ty: String,
+    #[label("enum variant expected a value with type `{}`", self.variant_ty)]
+    pub span: SourceSpan,
+}
+
+impl ExpectedValueForEnumVariantError {
+    pub fn new(variant_ty: String, range: TextRange) -> Self {
+        ExpectedValueForEnumVariantError {
+            variant_ty,
             span: range_to_span(range).into(),
         }
     }
