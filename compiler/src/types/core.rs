@@ -230,6 +230,13 @@ impl Type {
         }
     }
 
+    pub fn is_enum(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::Enum(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_numeric(&self) -> bool {
         self.is_int() || self.is_float()
     }

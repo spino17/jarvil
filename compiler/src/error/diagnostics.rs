@@ -495,6 +495,9 @@ impl IdentifierAlreadyDeclaredError {
                     identifier_kind
                 )
             }
+            IdentifierKind::Variant => {
+                format!("all variants of enum should have distinct names")
+            }
             IdentifierKind::Constructor => {
                 "constructor is not allowed to be redeclared".to_string()
             }

@@ -75,6 +75,7 @@ use crate::{
     },
 };
 use std::cell::UnsafeCell;
+use rustc_hash::FxHashSet;
 use text_size::TextRange;
 
 use super::helper::err_for_generic_type_args;
@@ -1893,7 +1894,106 @@ impl TypeChecker {
         // TODO - check if the of match expr is enum
         // check enum_name in case branch is same, whether variant exist if yes get concrete data type of variant value
         // check type of the variable
-        todo!()
+        let core_match_case = match_case.core_ref();
+        let expr = &core_match_case.expr;
+        let match_block = &core_match_case.block;
+        match self.check_expr(expr).0.as_ref() {
+            CoreType::Enum(enum_ty) => {
+                let mut checked_variants: FxHashSet<StrId> = FxHashSet::default();
+                let expr_enum_name = enum_ty.symbol_data.identifier_name();
+                let concrete_types = &enum_ty.concrete_types;
+                let symbol_data = enum_ty.symbol_data.get_core_ref();
+                let enum_data = symbol_data.get_enum_data_ref();
+                for stmt in match_block.0.as_ref().stmts.as_ref() {
+                    let stmt = match stmt.core_ref() {
+                        CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                        CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => {
+                            let core_stmt = stmt.core_ref();
+                            &core_stmt.stmt
+                        }
+                        _ => continue,
+                    };
+                    match stmt.core_ref() {
+                        CoreStatementNode::CaseBranch(case_branch) => {
+                            let core_case_branch = case_branch.core_ref();
+                            let enum_name = &core_case_branch.enum_name;
+                            if let CoreIdentifierInDeclNode::Ok(enum_name) = enum_name.core_ref() {
+                                let enum_name_str = enum_name
+                                    .token_value(&self.code, &mut self.semantic_state_db.interner);
+                                if expr_enum_name != enum_name_str {
+                                    // TODO - raise error `expected enum ..., got ...`
+                                } else {
+                                    let variant_name = &core_case_branch.variant_name;
+                                    if let CoreIdentifierInDeclNode::Ok(variant_name) =
+                                        variant_name.core_ref()
+                                    {
+                                        let variant_name_str = variant_name.token_value(
+                                            &self.code,
+                                            &mut self.semantic_state_db.interner,
+                                        );
+                                        match enum_data.try_index_and_type_for_variant(
+                                            variant_name_str,
+                                            concrete_types.as_ref(),
+                                        ) {
+                                            Some((_, expected_ty)) => {
+                                                checked_variants.insert(variant_name_str);
+                                                let variable_name = &core_case_branch.variable_name;
+                                                match variable_name {
+                                                    Some((_, variable_name, _)) => {
+                                                        match expected_ty {
+                                                            Some(expected_ty) => {
+                                                                if let CoreIdentifierInDeclNode::Ok(variable_name) 
+                                                                = variable_name.core_ref()
+                                                                {
+                                                                    if let Some(symbol_data) = self
+                                                                    .semantic_state_db
+                                                                    .get_variable_symbol_data_for_identifier_in_decl(variable_name)
+                                                                    {
+                                                                        let mut symbol_data_mut_ref 
+                                                                        = symbol_data.get_core_mut_ref();
+                                                                        symbol_data_mut_ref.set_data_type(&expected_ty);
+                                                                    }
+                                                                };
+                                                            }
+                                                            None => {
+                                                                // TODO - raise error `enum variant does not expected a value`
+                                                            }
+                                                        }
+                                                    }
+                                                    None => {
+                                                        if expected_ty.is_some() {
+                                                            // TODO - raise error `enum variant expected a value`
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            None => {
+                                                // TODO - raise error `variant does not exist`
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            let case_block = &core_case_branch.block;
+                            self.walk_block(case_block);
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                let mut missing_variants: Vec<StrId> = vec![];
+                for (variant, _, _) in &enum_data.variants {
+                    if !checked_variants.contains(variant) {
+                        missing_variants.push(*variant);
+                    }
+                }
+                if !missing_variants.is_empty() {
+                    // TODO - raise `not all enum variants covered`
+                }
+            }
+            _ => {
+                // TODO - raise error `expected expression with type enum, got ...`
+            }
+        }
     }
 
     pub fn check_stmt(&mut self, stmt: &StatementNode) {

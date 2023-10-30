@@ -217,6 +217,7 @@ pub fn case_branch_stmt(parser: &mut JarvilParser) -> StatementNode {
     let mut optional_variable_name_node: Option<(TokenNode, IdentifierInDeclNode, TokenNode)> =
         None;
     let case_keyword_node = parser.expect("case");
+    // TODO - here it can be `_` for handling default case
     let enum_name_node = parser.expect_identifier();
     let double_colon_node = parser.expect("::");
     let variant_name_node = parser.expect_identifier();

@@ -1699,7 +1699,7 @@ impl Resolver {
                         match variants_map.get(&variant_name) {
                             Some(previous_decl_range) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
-                                    IdentKind::Field,
+                                    IdentKind::Variant,
                                     self.semantic_state_db.interner.lookup(variant_name),
                                     *previous_decl_range,
                                     ok_identifier.range(),

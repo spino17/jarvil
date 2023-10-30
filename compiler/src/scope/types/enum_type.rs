@@ -10,7 +10,7 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct EnumTypeData {
-    variants: Vec<(StrId, Option<Type>, TextRange)>,
+    pub variants: Vec<(StrId, Option<Type>, TextRange)>,
     pub generics: Option<GenericTypeParams>,
     pub is_init: bool,
 }
