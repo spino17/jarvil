@@ -533,7 +533,6 @@ impl Visitor for PythonCodeGenerator {
                         self.add_str_to_python_code(&nonlocal_str);
                     }
                 }
-
                 for stmt in core_block.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
