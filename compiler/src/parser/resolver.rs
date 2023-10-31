@@ -1946,6 +1946,7 @@ impl Resolver {
     pub fn resolve_match_case(&mut self, match_case: &MatchCaseStatementNode) {
         let core_match_case = match_case.core_ref();
         let block = &core_match_case.block;
+        self.walk_expression(&core_match_case.expr);
         self.open_block(block.core_ref().kind);
         for stmt in block.core_ref().stmts.as_ref() {
             let stmt = match stmt.core_ref() {
