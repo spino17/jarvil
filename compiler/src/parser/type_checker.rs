@@ -25,7 +25,7 @@ use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{
     CallableData, PartialCallableDataPrototypeCheckError, PrototypeConcretizationResult,
 };
-use crate::scope::handler::ConcreteSymbolDataEntry;
+use crate::scope::handler::{ConcreteSymbolDataEntry, SymbolDataEntry};
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::variables::VariableData;
 use crate::types::array::core::Array;
@@ -905,11 +905,10 @@ impl TypeChecker {
                                 self.log_error(Diagnostics::GenericTypeArgsNotExpected(err));
                                 return Type::new_with_unknown();
                             }
-                            match enum_data.try_index_and_type_for_variant(
-                                variant_name,
-                                concrete_types.as_ref(),
-                            ) {
-                                Some((_, expected_ty)) => {
+                            match enum_data
+                                .try_type_for_variant(variant_name, concrete_types.as_ref())
+                            {
+                                Some(expected_ty) => {
                                     match params {
                                         Some((_, params, rparen)) => {
                                             match params {
@@ -1974,6 +1973,12 @@ impl TypeChecker {
                             let core_case_branch = case_branch.core_ref();
                             let enum_name = &core_case_branch.enum_name;
                             if let CoreIdentifierInDeclNode::Ok(enum_name) = enum_name.core_ref() {
+                                self.semantic_state_db
+                                    .identifier_in_decl_binding_table
+                                    .insert(
+                                        enum_name.clone(),
+                                        SymbolDataEntry::Type(enum_ty.symbol_data.clone()),
+                                    );
                                 let enum_name_str = enum_name
                                     .token_value(&self.code, &mut self.semantic_state_db.interner);
                                 if expr_enum_name != enum_name_str {
@@ -1998,11 +2003,11 @@ impl TypeChecker {
                                             &self.code,
                                             &mut self.semantic_state_db.interner,
                                         );
-                                        match enum_data.try_index_and_type_for_variant(
+                                        match enum_data.try_type_for_variant(
                                             variant_name_str,
                                             concrete_types.as_ref(),
                                         ) {
-                                            Some((_, expected_ty)) => {
+                                            Some(expected_ty) => {
                                                 checked_variants.insert(variant_name_str);
                                                 let variable_name = &core_case_branch.variable_name;
                                                 match variable_name {

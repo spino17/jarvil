@@ -25,29 +25,35 @@ impl EnumTypeData {
         self.is_init = true;
     }
 
-    pub fn try_index_and_type_for_variant<'a>(
+    pub fn try_type_for_variant<'a>(
         &'a self,
         variant_name: StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
-    ) -> Option<(usize, Option<Type>)> {
+    ) -> Option<(Option<Type>)> {
         for (index, (curr_variant_name, ty, _)) in self.variants.iter().enumerate() {
             if *curr_variant_name == variant_name {
                 match ty {
                     Some(ty) => {
                         if ty.is_concretization_required() {
-                            return Some((
-                                index,
-                                Some(ty.concretize(&ConcretizationContext::new(
-                                    global_concrete_types,
-                                    None,
-                                ))),
-                            ));
+                            return Some(Some(ty.concretize(&ConcretizationContext::new(
+                                global_concrete_types,
+                                None,
+                            ))));
                         } else {
-                            return Some((index, Some(ty.clone())));
+                            return Some(Some(ty.clone()));
                         }
                     }
-                    None => return Some((index, None)),
+                    None => return Some(None),
                 }
+            }
+        }
+        None
+    }
+
+    pub fn try_index_for_variant<'a>(&'a self, variant_name: StrId) -> Option<usize> {
+        for (index, (curr_variant_name, ty, _)) in self.variants.iter().enumerate() {
+            if *curr_variant_name == variant_name {
+                return Some(index);
             }
         }
         None

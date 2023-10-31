@@ -3,10 +3,10 @@ use crate::{
         ast::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
             CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
-            CoreStatementIndentWrapperNode, CoreTokenNode, CoreTypeDeclarationNode,
-            EnumVariantExprOrClassMethodCallNode, IdentifierInDeclNode, IdentifierInUseNode,
-            OkIdentifierInDeclNode, OkIdentifierInUseNode, TokenNode, TypeDeclarationNode,
-            VariableDeclarationNode,
+            CoreStatementIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CoreTypeDeclarationNode, EnumVariantExprOrClassMethodCallNode, IdentifierInDeclNode,
+            IdentifierInUseNode, MatchCaseStatementNode, OkIdentifierInDeclNode,
+            OkIdentifierInUseNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -15,8 +15,9 @@ use crate::{
     context,
     lexer::token::{CoreToken, Token},
     scope::{
-        core::{LookupResult, MangledIdentifierName},
+        core::{LookupResult, MangledIdentifierName, SymbolData},
         handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
+        types::core::UserDefinedTypeData,
     },
 };
 use rustc_hash::FxHashSet;
@@ -329,7 +330,7 @@ impl PythonCodeGenerator {
                 self.print_identifier_in_decl(enum_name);
                 self.print_token_node(colon);
                 let constructor_str = format!(
-                    "\n{}def __init__(index, data=None):\n{}self.index = index\n{}self.data = data\n",
+                    "\n{}def __init__(self, index, data=None):\n{}self.index = index\n{}self.data = data\n",
                     get_whitespaces_from_indent_level(self.indent_level + 1),
                     get_whitespaces_from_indent_level(self.indent_level + 2),
                     get_whitespaces_from_indent_level(self.indent_level + 2)
@@ -346,22 +347,123 @@ impl PythonCodeGenerator {
     ) {
         let core_enum_variant_expr_or_class_method_call =
             enum_variant_expr_or_class_method_call.core_ref();
-        // let lparen = &core_enum_variant_expr_or_class_method_call.lparen;
-        // let rparen = &core_enum_variant_expr_or_class_method_call.rparen;
         let ty_name = &core_enum_variant_expr_or_class_method_call.ty_name;
         let property_name = &core_enum_variant_expr_or_class_method_call.property_name;
         let params = &core_enum_variant_expr_or_class_method_call.params;
-        // TODO - get the symbol_data for `ty_name` and check if it's classmethod or enum
-        /*
-        self.print_identifier_in_use(ty_name);
-        self.add_str_to_python_code(".");
-        self.print_identifier_in_use(property_name);
-        self.print_token_node(lparen);
-        if let Some(params) = params {
-            self.walk_comma_separated_expressions(params);
+        if let CoreIdentifierInUseNode::Ok(ok_ty_name) = ty_name.core_ref() {
+            if let Some(concrete_symbol_data) = self
+                .semantic_state_db
+                .get_type_symbol_data_for_identifier_in_use(ok_ty_name)
+            {
+                let symbol_data = &concrete_symbol_data.symbol_data;
+                match &*symbol_data.get_core_ref() {
+                    UserDefinedTypeData::Struct(_) => {
+                        self.print_identifier_in_use(ty_name);
+                        self.add_str_to_python_code(".");
+                        self.print_identifier_in_use(property_name);
+                        if let Some((lparen, params, rparen)) = params {
+                            self.print_token_node(lparen);
+                            if let Some(params) = params {
+                                self.walk_comma_separated_expressions(params);
+                            }
+                            self.print_token_node(rparen);
+                        }
+                    }
+                    UserDefinedTypeData::Enum(enum_data) => {
+                        if let CoreIdentifierInUseNode::Ok(ok_variant_name) =
+                            property_name.core_ref()
+                        {
+                            let variant_name_str = ok_variant_name
+                                .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
+                                self.print_identifier_in_use(ty_name);
+                                self.add_str_to_python_code(&format!("(index={}", index));
+                                if let Some((_, params, _)) = params {
+                                    if let Some(params) = params {
+                                        self.add_str_to_python_code(", data=");
+                                        let expr = &params.core_ref().entity;
+                                        self.walk_expression(expr);
+                                    }
+                                }
+                                self.add_str_to_python_code(")");
+                            }
+                        }
+                    }
+                    UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
+                        unreachable!()
+                    }
+                }
+            }
         }
-        self.print_token_node(rparen);
-        */
+    }
+
+    pub fn print_match_case(&mut self, match_case: &MatchCaseStatementNode) {
+        let core_match_case = match_case.core_ref();
+        let expr = &core_match_case.expr;
+        let match_block = &core_match_case.block;
+        let mut symbol_data: Option<SymbolData<UserDefinedTypeData>> = None;
+        let mut conditional_keyword_str: &'static str = "if";
+        for stmt in match_block.core_ref().stmts.as_ref() {
+            let stmt = match stmt.core_ref() {
+                CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
+                _ => continue,
+            };
+            match stmt.core_ref() {
+                CoreStatementNode::CaseBranch(case_branch) => {
+                    let core_case_branch = case_branch.core_ref();
+                    let enum_name = &core_case_branch.enum_name;
+                    if symbol_data.is_none() {
+                        // cache the symbol_data to be used for all case branches
+                        if let CoreIdentifierInDeclNode::Ok(ok_enum_name) = enum_name.core_ref() {
+                            if let Some(sym_data) = self
+                                .semantic_state_db
+                                .get_type_symbol_data_for_identifier_in_decl(ok_enum_name)
+                            {
+                                symbol_data = Some(sym_data.clone());
+                            }
+                        }
+                    }
+                    let variant_name = &core_case_branch.variant_name;
+                    if let CoreIdentifierInDeclNode::Ok(ok_variant_name) = variant_name.core_ref() {
+                        let variant_name_str = ok_variant_name
+                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                        let index = match &symbol_data {
+                            Some(symbol_data) => symbol_data
+                                .get_core_ref()
+                                .get_enum_data_ref()
+                                .try_index_for_variant(variant_name_str)
+                                .unwrap(),
+                            None => unreachable!(),
+                        };
+                        let case_block = &core_case_branch.block;
+                        self.add_str_to_python_code(&get_whitespaces_from_indent_level(
+                            self.indent_level,
+                        ));
+                        self.add_str_to_python_code(&format!("{}", conditional_keyword_str));
+                        self.walk_expression(expr);
+                        self.add_str_to_python_code(&format!(".index == {}:", index));
+                        self.open_block();
+                        self.print_token_node(&case_block.core_ref().newline);
+                        if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
+                            self.add_str_to_python_code(&get_whitespaces_from_indent_level(
+                                self.indent_level,
+                            ));
+                            self.print_identifier_in_decl(variable_name);
+                            self.add_str_to_python_code(" = ");
+                            self.walk_expression(expr);
+                            self.add_str_to_python_code(".data\n")
+                        }
+                        for stmt in case_block.core_ref().stmts.as_ref() {
+                            self.walk_stmt_indent_wrapper(stmt);
+                        }
+                        self.close_block();
+                    }
+                    conditional_keyword_str = "elif";
+                }
+                _ => unreachable!(),
+            }
+        }
     }
 
     pub fn print_bounded_method_wrapper(
@@ -473,6 +575,10 @@ impl Visitor for PythonCodeGenerator {
             }
             ASTNode::CallablePrototype(callable_prototype) => {
                 self.print_callable_prototype(callable_prototype);
+                None
+            }
+            ASTNode::MatchCase(match_case) => {
+                self.print_match_case(match_case);
                 None
             }
             ASTNode::NameTypeSpec(name_type_spec) => {
