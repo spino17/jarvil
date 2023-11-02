@@ -893,12 +893,12 @@ pub trait Visitor {
                 }
             }
             ASTNode::ArrayExpression(array_expression_node) => {
-                let core_array_exprs = array_expression_node.core_ref();
-                self.walk_token(&core_array_exprs.lsquare);
-                if let Some(initials) = &core_array_exprs.initials {
+                let core_array_expr = array_expression_node.core_ref();
+                self.walk_token(&core_array_expr.lsquare);
+                if let Some(initials) = &core_array_expr.initials {
                     self.walk_comma_separated_expressions(initials);
                 }
-                self.walk_token(&core_array_exprs.rsquare);
+                self.walk_token(&core_array_expr.rsquare);
             }
             ASTNode::KeyValuePair(key_value_pair_node) => {
                 let core_key_value_pair = key_value_pair_node.core_ref();

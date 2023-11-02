@@ -2,12 +2,13 @@ use crate::{
     ast::{
         ast::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
+            ConditionalBlockNode, ConditionalStatementNode, CoreAssignmentNode, CoreExpressionNode,
             CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
             CoreStatementIndentWrapperNode, CoreStatementNode, CoreTokenNode,
-            CoreTypeDeclarationNode, EnumVariantExprOrClassMethodCallNode, IdentifierInDeclNode,
-            IdentifierInUseNode, MatchCaseStatementNode, OkIdentifierInDeclNode,
-            OkIdentifierInUseNode, StatementNode, TokenNode, TypeDeclarationNode,
-            VariableDeclarationNode,
+            CoreTypeDeclarationNode, CoreUnaryExpressionNode, EnumVariantExprOrClassMethodCallNode,
+            ExpressionStatementNode, IdentifierInDeclNode, IdentifierInUseNode,
+            MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, StatementNode,
+            TokenNode, TypeDeclarationNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -224,36 +225,50 @@ impl PythonCodeGenerator {
         }
     }
 
-    pub fn print_identifier_in_decl(&mut self, identifier: &IdentifierInDeclNode) {
+    pub fn print_token_node_without_trivia(&mut self, token: &TokenNode) {
+        match token.core_ref() {
+            CoreTokenNode::Ok(ok_token_node) => {
+                self.add_str_to_python_code(&ok_token_node.token_value_str(&self.code));
+            }
+            CoreTokenNode::MissingTokens(_) => unreachable!(),
+        }
+    }
+
+    pub fn print_identifier_in_decl(&mut self, identifier: &IdentifierInDeclNode, is_trivia: bool) {
         let identifier = match identifier.core_ref() {
             CoreIdentifierInDeclNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
         let token_value = self.get_mangled_identifier_name_in_decl(identifier);
-        let token = &identifier.0.as_ref().name.core_ref().token;
-        let trivia = match &token.trivia {
-            Some(trivia) => Some(trivia),
-            None => None,
-        };
-        self.print_trivia(trivia);
+        if is_trivia {
+            let token = &identifier.0.as_ref().name.core_ref().token;
+            let trivia = match &token.trivia {
+                Some(trivia) => Some(trivia),
+                None => None,
+            };
+            self.print_trivia(trivia);
+        }
         self.add_str_to_python_code(&token_value);
     }
 
-    pub fn print_identifier_in_use(&mut self, identifier: &IdentifierInUseNode) {
+    pub fn print_identifier_in_use(&mut self, identifier: &IdentifierInUseNode, is_trivia: bool) {
         let identifier = match identifier.core_ref() {
             CoreIdentifierInUseNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
         let token_value = self.get_mangled_identifier_name_in_use(identifier);
-        let token = &identifier.0.as_ref().name.core_ref().token;
-        let trivia = match &token.trivia {
-            Some(trivia) => Some(trivia),
-            None => None,
-        };
-        self.print_trivia(trivia);
+        if is_trivia {
+            let token = &identifier.0.as_ref().name.core_ref().token;
+            let trivia = match &token.trivia {
+                Some(trivia) => Some(trivia),
+                None => None,
+            };
+            self.print_trivia(trivia);
+        }
         self.add_str_to_python_code(&token_value);
     }
 
+    /*
     pub fn print_identifier_in_decl_without_trivia(&mut self, identifier: &IdentifierInDeclNode) {
         let identifier = match identifier.core_ref() {
             CoreIdentifierInDeclNode::Ok(ok_identifier) => ok_identifier,
@@ -271,25 +286,23 @@ impl PythonCodeGenerator {
         let token_value = self.get_mangled_identifier_name_in_use(identifier);
         self.add_str_to_python_code(&token_value);
     }
+     */
 
     pub fn print_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        let let_keyword = &core_variable_decl.let_keyword;
         let name = &core_variable_decl.name;
         let equal = &core_variable_decl.equal;
         let r_node = &core_variable_decl.r_node;
-        let trivia = get_trivia_from_token_node(let_keyword);
-        self.print_trivia(trivia);
         match r_node.core_ref() {
             CoreRVariableDeclarationNode::Expression(expr_stmt) => {
-                self.print_identifier_in_decl_without_trivia(name);
+                self.print_identifier_in_decl(name, false);
                 self.print_token_node(equal);
                 self.walk_expr_stmt(expr_stmt);
             }
             CoreRVariableDeclarationNode::Lambda(lambda_decl) => {
                 let callable_body = &lambda_decl.core_ref().body;
                 self.add_str_to_python_code("def");
-                self.print_identifier_in_decl(name);
+                self.print_identifier_in_decl(name, true);
                 self.walk_callable_body(callable_body);
             }
         }
@@ -313,13 +326,10 @@ impl PythonCodeGenerator {
             CoreTypeDeclarationNode::Struct(struct_decl) => {
                 let core_struct_decl = struct_decl.core_ref();
                 let struct_name = &core_struct_decl.name;
-                let type_keyword = &core_struct_decl.type_keyword;
                 let colon = &core_struct_decl.colon;
                 let block = &core_struct_decl.block;
-                let trivia = get_trivia_from_token_node(type_keyword);
-                self.print_trivia(trivia);
                 self.add_str_to_python_code("class");
-                self.print_identifier_in_decl(struct_name);
+                self.print_identifier_in_decl(struct_name, true);
                 self.print_token_node(colon);
                 self.walk_block(block);
             }
@@ -329,12 +339,9 @@ impl PythonCodeGenerator {
             CoreTypeDeclarationNode::Enum(enum_decl) => {
                 let core_enum_decl = enum_decl.core_ref();
                 let enum_name = &core_enum_decl.name;
-                let type_keyword = &core_enum_decl.type_keyword;
                 let colon = &core_enum_decl.colon;
-                let trivia = get_trivia_from_token_node(type_keyword);
-                self.print_trivia(trivia);
                 self.add_str_to_python_code("class");
-                self.print_identifier_in_decl(enum_name);
+                self.print_identifier_in_decl(enum_name, true);
                 self.print_token_node(colon);
                 let constructor_str = format!(
                     "\n{}def __init__(self, index, data=None):\n{}self.index = index\n{}self.data = data\n",
@@ -351,6 +358,7 @@ impl PythonCodeGenerator {
     pub fn print_enum_variant_expr_or_class_method_call(
         &mut self,
         enum_variant_expr_or_class_method_call: &EnumVariantExprOrClassMethodCallNode,
+        is_trivia: bool,
     ) {
         let core_enum_variant_expr_or_class_method_call =
             enum_variant_expr_or_class_method_call.core_ref();
@@ -365,9 +373,9 @@ impl PythonCodeGenerator {
                 let symbol_data = &concrete_symbol_data.symbol_data;
                 match &*symbol_data.get_core_ref() {
                     UserDefinedTypeData::Struct(_) => {
-                        self.print_identifier_in_use(ty_name);
+                        self.print_identifier_in_use(ty_name, is_trivia);
                         self.add_str_to_python_code(".");
-                        self.print_identifier_in_use(property_name);
+                        self.print_identifier_in_use(property_name, true);
                         if let Some((lparen, params, rparen)) = params {
                             self.print_token_node(lparen);
                             if let Some(params) = params {
@@ -383,7 +391,7 @@ impl PythonCodeGenerator {
                             let variant_name_str = ok_variant_name
                                 .token_value(&self.code, &mut self.semantic_state_db.interner);
                             if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
-                                self.print_identifier_in_use(ty_name);
+                                self.print_identifier_in_use(ty_name, is_trivia);
                                 self.add_str_to_python_code(&format!("(index={}", index));
                                 if let Some((_, params, _)) = params {
                                     if let Some(params) = params {
@@ -444,19 +452,15 @@ impl PythonCodeGenerator {
                             None => unreachable!(),
                         };
                         let case_block = &core_case_branch.block;
-                        self.add_str_to_python_code(&get_whitespaces_from_indent_level(
-                            self.indent_level,
-                        ));
-                        self.add_str_to_python_code(&format!("{}", conditional_keyword_str));
+                        self.add_indention_to_python_code();
+                        self.add_str_to_python_code(conditional_keyword_str);
                         self.walk_expression(expr);
                         self.add_str_to_python_code(&format!(".index == {}:", index));
                         self.open_block();
                         self.print_token_node(&case_block.core_ref().newline);
                         if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
-                            self.add_str_to_python_code(&get_whitespaces_from_indent_level(
-                                self.indent_level,
-                            ));
-                            self.print_identifier_in_decl(variable_name);
+                            self.add_indention_to_python_code();
+                            self.print_identifier_in_decl(variable_name, true);
                             self.add_str_to_python_code(" = ");
                             self.walk_expression(expr);
                             self.add_str_to_python_code(".data\n")
@@ -486,7 +490,10 @@ impl PythonCodeGenerator {
         };
         match bounded_kind {
             BoundedMethodKind::ClassMethod => {
-                self.walk_func_decl(&bounded_method_wrapper.0.as_ref().func_decl);
+                let core_func_decl = &bounded_method_wrapper.0.as_ref().func_decl.core_ref();
+                self.print_token_node_without_trivia(&core_func_decl.def_keyword);
+                self.walk_identifier_in_decl(&core_func_decl.name);
+                self.walk_callable_body(&core_func_decl.body);
             }
             BoundedMethodKind::Method | BoundedMethodKind::Constructor => {
                 let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
@@ -500,8 +507,8 @@ impl PythonCodeGenerator {
                 let rparen = &prototype.rparen;
                 let params = &prototype.params;
 
-                self.print_token_node(def_keyword);
-                self.print_identifier_in_decl(name);
+                self.print_token_node_without_trivia(def_keyword);
+                self.print_identifier_in_decl(name, true);
                 self.print_token_node(lparen);
                 self.add_str_to_python_code("self");
                 if let Some(params) = params {
@@ -515,26 +522,79 @@ impl PythonCodeGenerator {
         }
     }
 
+    pub fn print_conditional_block(&mut self, conditional_block: &ConditionalBlockNode) {
+        self.add_indention_to_python_code();
+        let core_conditional_block = conditional_block.core_ref();
+        self.print_token_node_without_trivia(&core_conditional_block.condition_keyword);
+        self.walk_expression(&core_conditional_block.condition_expr);
+        self.walk_token(&core_conditional_block.colon);
+        self.walk_block(&core_conditional_block.block);
+    }
+
     fn print_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
-            CoreStatementNode::Expression(expr_stmt) => self.walk_expr_stmt(expr_stmt),
-            CoreStatementNode::Assignment(assign) => self.walk_assignment(assign),
+            CoreStatementNode::Expression(expr_stmt) => {
+                self.add_indention_to_python_code();
+                let core_expr_stmt = expr_stmt.core_ref();
+                self.print_expression_without_trivia(&core_expr_stmt.expr);
+                self.walk_token(&core_expr_stmt.newline);
+            }
+            CoreStatementNode::Assignment(assignment) => {
+                self.add_indention_to_python_code();
+                match assignment.core_ref() {
+                    CoreAssignmentNode::Ok(ok_assignment) => {
+                        let core_ok_assignment = ok_assignment.core_ref();
+                        self.print_atom_node_without_trivia(&core_ok_assignment.l_atom);
+                        self.walk_token(&core_ok_assignment.equal);
+                        self.walk_r_assignment(&core_ok_assignment.r_assign);
+                    }
+                    CoreAssignmentNode::InvalidLValue(_) => unreachable!(),
+                }
+            }
             CoreStatementNode::VariableDeclaration(variable_decl) => {
+                self.add_indention_to_python_code();
                 self.print_variable_decl(variable_decl)
             }
-            CoreStatementNode::Return(return_stmt) => self.walk_return_stmt(return_stmt),
+            CoreStatementNode::Return(return_stmt) => {
+                self.add_indention_to_python_code();
+                let core_return_stmt = return_stmt.core_ref();
+                self.print_token_node_without_trivia(&core_return_stmt.return_keyword);
+                if let Some(expr) = &core_return_stmt.expr {
+                    self.walk_expression(expr);
+                }
+                self.print_token_node(&core_return_stmt.newline);
+            }
             CoreStatementNode::Conditional(conditional_stmt) => {
                 self.walk_conditional(conditional_stmt)
             }
-            CoreStatementNode::Break(break_stmt) => self.walk_break_stmt(break_stmt),
-            CoreStatementNode::Continue(continue_stmt) => self.walk_continue_stmt(continue_stmt),
+            CoreStatementNode::Break(break_stmt) => {
+                self.add_indention_to_python_code();
+                let core_break_stmt = break_stmt.core_ref();
+                self.print_token_node_without_trivia(&core_break_stmt.break_keyword);
+                self.print_token_node(&core_break_stmt.newline);
+            }
+            CoreStatementNode::Continue(continue_stmt) => {
+                self.add_indention_to_python_code();
+                let core_continue_stmt = continue_stmt.core_ref();
+                self.print_token_node_without_trivia(&core_continue_stmt.continue_keyword);
+                self.print_token_node(&core_continue_stmt.newline);
+            }
             CoreStatementNode::FunctionWrapper(func_wrapper) => {
-                self.walk_func_wrapper(func_wrapper)
+                self.add_indention_to_python_code();
+                let core_func_wrapper = func_wrapper.core_ref();
+                let core_func_decl = core_func_wrapper.func_decl.core_ref();
+                self.print_token_node_without_trivia(&core_func_decl.def_keyword);
+                self.walk_identifier_in_decl(&core_func_decl.name);
+                self.walk_callable_body(&core_func_decl.body);
             }
             CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
+                self.add_indention_to_python_code();
                 self.print_bounded_method_wrapper(bounded_method_wrapper)
             }
-            CoreStatementNode::TypeDeclaration(type_decl) => self.print_type_decl(type_decl),
+            CoreStatementNode::TypeDeclaration(type_decl) => {
+                self.add_indention_to_python_code();
+                self.print_type_decl(type_decl);
+            }
             CoreStatementNode::MatchCase(match_case_stmt) => self.print_match_case(match_case_stmt),
             CoreStatementNode::StructPropertyDeclaration(_)
             | CoreStatementNode::InterfaceDeclaration(_) => {
@@ -600,25 +660,30 @@ impl Visitor for PythonCodeGenerator {
                 self.print_callable_prototype(callable_prototype);
                 None
             }
+            ASTNode::ConditionalBlock(conditional_block) => {
+                self.print_conditional_block(conditional_block);
+                None
+            }
             ASTNode::NameTypeSpec(name_type_spec) => {
                 // This is where type-annotations are evapored in the generated Python code
                 let core_name_type_spec = name_type_spec.core_ref();
                 let name = &core_name_type_spec.name;
-                self.print_identifier_in_decl(name);
+                self.print_identifier_in_decl(name, true);
                 None
             }
             ASTNode::EnumVariantExprOrClassMethodCall(enum_variant_expr_or_class_method_call) => {
                 self.print_enum_variant_expr_or_class_method_call(
                     enum_variant_expr_or_class_method_call,
+                    true,
                 );
                 None
             }
             ASTNode::IdentifierInDecl(identifier_in_decl) => {
-                self.print_identifier_in_decl(identifier_in_decl);
+                self.print_identifier_in_decl(identifier_in_decl, true);
                 None
             }
             ASTNode::IdentifierInUse(identifier_in_use) => {
-                self.print_identifier_in_use(identifier_in_use);
+                self.print_identifier_in_use(identifier_in_use, true);
                 None
             }
             ASTNode::OkToken(token) => {
