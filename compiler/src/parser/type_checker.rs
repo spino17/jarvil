@@ -1973,12 +1973,6 @@ impl TypeChecker {
                             let core_case_branch = case_branch.core_ref();
                             let enum_name = &core_case_branch.enum_name;
                             if let CoreIdentifierInDeclNode::Ok(enum_name) = enum_name.core_ref() {
-                                self.semantic_state_db
-                                    .identifier_in_decl_binding_table
-                                    .insert(
-                                        enum_name.clone(),
-                                        SymbolDataEntry::Type(enum_ty.symbol_data.clone()),
-                                    );
                                 let enum_name_str = enum_name
                                     .token_value(&self.code, &mut self.semantic_state_db.interner);
                                 if expr_enum_name != enum_name_str {
@@ -1995,6 +1989,12 @@ impl TypeChecker {
                                     );
                                     self.log_error(Diagnostics::IncorrectEnumName(err));
                                 } else {
+                                    self.semantic_state_db
+                                        .identifier_in_decl_binding_table
+                                        .insert(
+                                            enum_name.clone(),
+                                            SymbolDataEntry::Type(enum_ty.symbol_data.clone()),
+                                        );
                                     let variant_name = &core_case_branch.variant_name;
                                     if let CoreIdentifierInDeclNode::Ok(variant_name) =
                                         variant_name.core_ref()
