@@ -268,26 +268,6 @@ impl PythonCodeGenerator {
         self.add_str_to_python_code(&token_value);
     }
 
-    /*
-    pub fn print_identifier_in_decl_without_trivia(&mut self, identifier: &IdentifierInDeclNode) {
-        let identifier = match identifier.core_ref() {
-            CoreIdentifierInDeclNode::Ok(ok_identifier) => ok_identifier,
-            _ => unreachable!(),
-        };
-        let token_value = self.get_mangled_identifier_name_in_decl(identifier);
-        self.add_str_to_python_code(&token_value);
-    }
-
-    pub fn print_identifier_in_use_without_trivia(&mut self, identifier: &IdentifierInUseNode) {
-        let identifier = match identifier.core_ref() {
-            CoreIdentifierInUseNode::Ok(ok_identifier) => ok_identifier,
-            _ => unreachable!(),
-        };
-        let token_value = self.get_mangled_identifier_name_in_use(identifier);
-        self.add_str_to_python_code(&token_value);
-    }
-     */
-
     pub fn print_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         let name = &core_variable_decl.name;
