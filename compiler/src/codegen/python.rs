@@ -91,6 +91,10 @@ impl PythonCodeGenerator {
         self.generated_code.push_str(str);
     }
 
+    pub fn add_indention_to_python_code(&mut self) {
+        self.add_str_to_python_code(&get_whitespaces_from_indent_level(self.indent_level));
+    }
+
     pub fn get_non_locals(&self, block: &BlockNode) -> &FxHashSet<MangledIdentifierName> {
         self.semantic_state_db.get_non_locals_ref(block)
     }
