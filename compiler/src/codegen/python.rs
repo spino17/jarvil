@@ -6,7 +6,8 @@ use crate::{
             CoreStatementIndentWrapperNode, CoreStatementNode, CoreTokenNode,
             CoreTypeDeclarationNode, EnumVariantExprOrClassMethodCallNode, IdentifierInDeclNode,
             IdentifierInUseNode, MatchCaseStatementNode, OkIdentifierInDeclNode,
-            OkIdentifierInUseNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
+            OkIdentifierInUseNode, StatementNode, TokenNode, TypeDeclarationNode,
+            VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -70,10 +71,6 @@ impl PythonCodeGenerator {
         for stmt in code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        //let main_call_str = format!(
-        //    "\n\nif __name__ == \"__main__\":\n{}main_func()",
-        //    get_whitespaces_from_indent_level(1)
-        //);
         let index = match self
             .semantic_state_db
             .namespace
@@ -167,6 +164,7 @@ impl PythonCodeGenerator {
         let token_value = token.token_value_str(&self.code);
         match token.core_token {
             CoreToken::SINGLE_LINE_COMMENT => {
+                /*
                 if token_value.starts_with('/') {
                     let mut modified_str = "#".to_string();
                     modified_str.push_str(&token_value[2..]);
@@ -174,14 +172,19 @@ impl PythonCodeGenerator {
                 } else {
                     self.add_str_to_python_code(&token_value);
                 }
+                 */
+                self.add_str_to_python_code("\n");
             }
             CoreToken::BLOCK_COMMENT => {
+                /*
                 let len = token_value.len();
                 let mut critical_section = token_value[2..(len - 2)].to_string();
                 critical_section.push_str("\"\"\"");
                 let mut final_str = "\"\"\"".to_string();
                 final_str.push_str(&critical_section);
                 self.add_str_to_python_code(&final_str);
+                 */
+                self.add_str_to_python_code("\n");
             }
             CoreToken::ENDMARKER => (),
             CoreToken::LITERAL => {
@@ -507,6 +510,37 @@ impl PythonCodeGenerator {
             }
         }
     }
+
+    fn print_stmt(&mut self, stmt: &StatementNode) {
+        match stmt.core_ref() {
+            CoreStatementNode::Expression(expr_stmt) => self.walk_expr_stmt(expr_stmt),
+            CoreStatementNode::Assignment(assign) => self.walk_assignment(assign),
+            CoreStatementNode::VariableDeclaration(variable_decl) => {
+                self.print_variable_decl(variable_decl)
+            }
+            CoreStatementNode::Return(return_stmt) => self.walk_return_stmt(return_stmt),
+            CoreStatementNode::Conditional(conditional_stmt) => {
+                self.walk_conditional(conditional_stmt)
+            }
+            CoreStatementNode::Break(break_stmt) => self.walk_break_stmt(break_stmt),
+            CoreStatementNode::Continue(continue_stmt) => self.walk_continue_stmt(continue_stmt),
+            CoreStatementNode::FunctionWrapper(func_wrapper) => {
+                self.walk_func_wrapper(func_wrapper)
+            }
+            CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
+                self.print_bounded_method_wrapper(bounded_method_wrapper)
+            }
+            CoreStatementNode::TypeDeclaration(type_decl) => self.print_type_decl(type_decl),
+            CoreStatementNode::MatchCase(match_case_stmt) => self.print_match_case(match_case_stmt),
+            CoreStatementNode::StructPropertyDeclaration(_)
+            | CoreStatementNode::InterfaceDeclaration(_) => {
+                self.add_str_to_python_code("\n");
+            }
+            CoreStatementNode::EnumVariantDeclaration(_)
+            | CoreStatementNode::InterfaceMethodPrototypeWrapper(_)
+            | CoreStatementNode::CaseBranch(_) => unreachable!(),
+        }
+    }
 }
 
 impl Visitor for PythonCodeGenerator {
@@ -543,41 +577,23 @@ impl Visitor for PythonCodeGenerator {
                 let core_stmt_wrapper = stmt_wrapper.core_ref();
                 match core_stmt_wrapper {
                     CoreStatementIndentWrapperNode::CorrectlyIndented(ok_stmt) => {
-                        // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
                         self.walk_stmt(ok_stmt);
                     }
-                    CoreStatementIndentWrapperNode::ExtraNewlines(extra_newlines) => {
-                        let core_extra_newlines = extra_newlines.core_ref();
-                        for extra_newline in &core_extra_newlines.skipped_tokens {
-                            let core_token = &extra_newline.core_ref().skipped_token;
-                            // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
-                            self.print_token(core_token);
-                        }
+                    CoreStatementIndentWrapperNode::ExtraNewlines(_) => {
+                        self.add_str_to_python_code("\n")
                     }
-                    CoreStatementIndentWrapperNode::IncorrectlyIndented(_) => unreachable!(),
-                    CoreStatementIndentWrapperNode::LeadingSkippedTokens(_) => unreachable!(),
-                    CoreStatementIndentWrapperNode::TrailingSkippedTokens(_) => unreachable!(),
+                    CoreStatementIndentWrapperNode::IncorrectlyIndented(_)
+                    | CoreStatementIndentWrapperNode::LeadingSkippedTokens(_)
+                    | CoreStatementIndentWrapperNode::TrailingSkippedTokens(_) => unreachable!(),
                 }
                 None
             }
-            ASTNode::VariableDeclaration(variable_decl) => {
-                self.print_variable_decl(variable_decl);
-                None
-            }
-            ASTNode::StructPropertyDeclaration(_) => {
-                self.add_str_to_python_code("\n");
-                None
-            }
-            ASTNode::BoundedMethodWrapper(bounded_method_wrapper) => {
-                self.print_bounded_method_wrapper(bounded_method_wrapper);
+            ASTNode::Statement(stmt) => {
+                self.print_stmt(stmt);
                 None
             }
             ASTNode::CallablePrototype(callable_prototype) => {
                 self.print_callable_prototype(callable_prototype);
-                None
-            }
-            ASTNode::MatchCase(match_case) => {
-                self.print_match_case(match_case);
                 None
             }
             ASTNode::NameTypeSpec(name_type_spec) => {
@@ -585,14 +601,6 @@ impl Visitor for PythonCodeGenerator {
                 let core_name_type_spec = name_type_spec.core_ref();
                 let name = &core_name_type_spec.name;
                 self.print_identifier_in_decl(name);
-                None
-            }
-            ASTNode::TypeDeclaration(type_decl) => {
-                self.print_type_decl(type_decl);
-                None
-            }
-            ASTNode::InterfaceDeclaration(_) => {
-                self.add_str_to_python_code("\n");
                 None
             }
             ASTNode::EnumVariantExprOrClassMethodCall(enum_variant_expr_or_class_method_call) => {
