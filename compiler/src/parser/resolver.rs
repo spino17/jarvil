@@ -318,7 +318,6 @@ impl Resolver {
             is_concrete_types_none_allowed,
             &self.semantic_state_db.interner,
         )?;
-        // let index = symbol_data.register_concrete_types(concrete_types);
         let concrete_symbol_data =
             ConcreteSymbolDataEntry::new(symbol_data.get_entry(), concrete_types.clone());
         self.semantic_state_db

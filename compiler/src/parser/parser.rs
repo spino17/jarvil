@@ -124,7 +124,6 @@ impl JarvilParser {
             } else if token.is_eq(ENDMARKER) {
                 self.log_trailing_skipped_tokens_error(skipped_tokens.clone());
                 skipped_tokens.push(SkippedTokenNode::new(token.clone()));
-                // self.scan_next_token();
                 return skipped_tokens;
             } else {
                 skipped_tokens.push(SkippedTokenNode::new(token.clone()));

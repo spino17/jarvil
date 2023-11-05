@@ -425,10 +425,6 @@ impl TypeChecker {
         r_type: &Type,
         operator_kind: &BinaryOperatorKind,
     ) -> Option<Type> {
-        //if l_type.is_unknown() || r_type.is_unknown() {
-        //    return Some(Type::new_with_unknown());
-        //}
-
         l_type.check_operator(r_type, operator_kind)
     }
 
@@ -440,7 +436,6 @@ impl TypeChecker {
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<ConcreteTypesTuple, PrototypeEquivalenceCheckError> {
-        // (inferred_concrete_types, params_ty_vec)
         match received_params {
             Some(received_params) => {
                 let generic_type_decls_len = generic_type_decls.len();
@@ -588,7 +583,6 @@ impl TypeChecker {
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
                 // CASE 1
-                // let concrete_types = func_data.get_concrete_types(index);
                 let concrete_prototype = func_data
                     .prototype
                     .concretize_prototype(None, Some(concrete_types));

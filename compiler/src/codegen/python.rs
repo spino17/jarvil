@@ -545,7 +545,17 @@ impl PythonCodeGenerator {
                 self.print_token_node(&core_return_stmt.newline);
             }
             CoreStatementNode::Conditional(conditional_stmt) => {
-                self.walk_conditional(conditional_stmt)
+                let core_conditional_stmt = conditional_stmt.core_ref();
+                self.walk_conditional_block(&core_conditional_stmt.if_block);
+                for elif_block in &core_conditional_stmt.elifs {
+                    self.walk_conditional_block(&elif_block);
+                }
+                if let Some((else_keyword, colon, else_block)) = &core_conditional_stmt.else_block {
+                    self.add_indention_to_python_code();
+                    self.print_token_node_without_trivia(else_keyword);
+                    self.walk_token(colon);
+                    self.walk_block(else_block);
+                }
             }
             CoreStatementNode::Break(break_stmt) => {
                 self.add_indention_to_python_code();
