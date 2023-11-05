@@ -5,7 +5,7 @@ use super::ast::{
     HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
     InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, KeyValuePairNode,
     MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
-    SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode,
+    SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode, WhileLoopStatementNode,
 };
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
@@ -86,6 +86,11 @@ pub trait Visitor {
         walk_conditional,
         ConditionalStatementNode,
         new_with_ConditionalStatementNode
+    );
+    impl_node_walk!(
+        walk_while_loop,
+        WhileLoopStatementNode,
+        new_with_WhileLoopStatementNode
     );
     impl_node_walk!(
         walk_conditional_block,
@@ -490,6 +495,9 @@ pub trait Visitor {
                 CoreStatementNode::Conditional(conditional_stmt) => {
                     self.walk_conditional(conditional_stmt);
                 }
+                CoreStatementNode::WhileLoop(while_loop_stmt) => {
+                    self.walk_while_loop(while_loop_stmt);
+                }
             },
             ASTNode::MatchCase(match_case) => {
                 let core_match_case = match_case.core_ref();
@@ -497,6 +505,13 @@ pub trait Visitor {
                 self.walk_expression(&core_match_case.expr);
                 self.walk_token(&core_match_case.colon);
                 self.walk_block(&core_match_case.block);
+            }
+            ASTNode::WhileLoop(while_loop) => {
+                let core_while_loop = while_loop.core_ref();
+                self.walk_token(&core_while_loop.while_keyword);
+                self.walk_expression(&core_while_loop.condition_expr);
+                self.walk_token(&core_while_loop.colon);
+                self.walk_block(&core_while_loop.block);
             }
             ASTNode::CaseBranch(case_branch) => {
                 let core_case_branch = case_branch.core_ref();

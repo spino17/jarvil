@@ -38,6 +38,7 @@ pub enum ASTNode {
     Continue(ContinueStatementNode),
     Return(ReturnStatementNode),
     Conditional(ConditionalStatementNode),
+    WhileLoop(WhileLoopStatementNode),
     ConditionalBlock(ConditionalBlockNode),
     MatchCase(MatchCaseStatementNode),
     CaseBranch(CaseBranchStatementNode),
@@ -136,6 +137,7 @@ pub enum CoreStatementNode {
     VariableDeclaration(VariableDeclarationNode),
     Return(ReturnStatementNode),
     Conditional(ConditionalStatementNode),
+    WhileLoop(WhileLoopStatementNode),
     Break(BreakStatementNode),
     Continue(ContinueStatementNode),
     FunctionWrapper(FunctionWrapperNode),
@@ -212,6 +214,14 @@ pub struct CoreConditionalStatementNode {
 #[derive(Debug)]
 pub struct CoreConditionalBlockNode {
     pub condition_keyword: TokenNode, // 'if' or 'elif'
+    pub condition_expr: ExpressionNode,
+    pub colon: TokenNode,
+    pub block: BlockNode,
+}
+
+#[derive(Debug)]
+pub struct CoreWhileLoopStatementNode {
+    pub while_keyword: TokenNode,
     pub condition_expr: ExpressionNode,
     pub colon: TokenNode,
     pub block: BlockNode,
@@ -785,6 +795,8 @@ pub struct EnumVariantDeclarationNode(pub Rc<CoreEnumVariantDeclarationNode>);
 pub struct MatchCaseStatementNode(pub Rc<CoreMatchCaseStatementNode>);
 #[derive(Debug, Clone)]
 pub struct CaseBranchStatementNode(pub Rc<CoreCaseBranchStatementNode>);
+#[derive(Debug, Clone)]
+pub struct WhileLoopStatementNode(pub Rc<CoreWhileLoopStatementNode>);
 
 pub enum UnresolvedIdentifier<'a> {
     Unresolved(&'a OkIdentifierInUseNode),

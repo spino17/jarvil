@@ -7,6 +7,7 @@ use crate::ast::ast::{
     EnumVariantExprOrClassMethodCallNode, HashMapExpressionNode, IndexAccessNode,
     InterfaceMethodTerminalNode, MatchCaseStatementNode, MethodAccessNode, OkIdentifierInDeclNode,
     OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode, TupleExpressionNode,
+    WhileLoopStatementNode,
 };
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
@@ -2082,6 +2083,21 @@ impl TypeChecker {
         }
     }
 
+    pub fn check_while_loop_stmt(&mut self, while_loop_stmt: &WhileLoopStatementNode) {
+        let core_while_loop = while_loop_stmt.core_ref();
+        let condition_expr = &core_while_loop.condition_expr;
+        let ty = self.check_expr(condition_expr);
+        if !ty.is_bool() {
+            let err = IncorrectExpressionTypeError::new(
+                "bool".to_string(),
+                ty.to_string(&self.semantic_state_db.interner),
+                condition_expr.range(),
+            );
+            self.log_error(Diagnostics::IncorrectExpressionType(err));
+        }
+        self.walk_block(&core_while_loop.block);
+    }
+
     pub fn check_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
             CoreStatementNode::Expression(expr_stmt) => {
@@ -2109,6 +2125,9 @@ impl TypeChecker {
             }
             CoreStatementNode::Conditional(conditional_stmt) => {
                 self.check_conditional_stmt(conditional_stmt)
+            }
+            CoreStatementNode::WhileLoop(while_loop_stmt) => {
+                self.check_while_loop_stmt(while_loop_stmt)
             }
             CoreStatementNode::TypeDeclaration(type_decl) => match type_decl.core_ref() {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {

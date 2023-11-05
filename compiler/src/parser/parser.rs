@@ -6,7 +6,7 @@ use crate::ast::ast::{
     InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, MatchCaseStatementNode,
     NameTypeSpecNode, OkTokenNode, SelfKeywordNode, SkippedTokenNode, StatementNode,
     SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    UnaryExpressionNode, VariableDeclarationNode,
+    UnaryExpressionNode, VariableDeclarationNode, WhileLoopStatementNode,
 };
 use crate::code::JarvilCode;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
@@ -535,6 +535,10 @@ impl JarvilParser {
 
     pub fn match_case(&mut self) -> MatchCaseStatementNode {
         components::match_case::match_case(self)
+    }
+
+    pub fn while_loop_stmt(&mut self) -> WhileLoopStatementNode {
+        components::loops::while_loop_stmt(self)
     }
 
     pub fn interface_stmt(&mut self) -> StatementNode {

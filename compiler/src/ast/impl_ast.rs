@@ -25,20 +25,21 @@ use super::ast::{
     CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreSymbolSeparatedSequenceNode,
     CoreTokenNode, CoreTupleExpressionNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
     CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
-    CoreVariableDeclarationNode, EnumDeclarationNode, EnumVariantDeclarationNode,
-    EnumVariantExprOrClassMethodCallNode, ExpressionNode, ExpressionStatementNode,
-    FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode, HashMapExpressionNode,
-    HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode, IncorrectlyIndentedStatementNode,
-    IndexAccessNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
-    InterfaceMethodTerminalNode, InvalidLValueNode, KeyValuePairNode, LambdaDeclarationNode,
-    LambdaTypeDeclarationNode, MatchCaseStatementNode, MethodAccessNode, NameTypeSpecNode,
-    OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
-    OkTokenNode, OnlyUnaryExpressionNode, ParenthesisedExpressionNode, PropertyAccessNode,
-    RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode,
-    SkippedTokenNode, StatementIndentWrapperNode, StatementNode, StructDeclarationNode,
-    StructPropertyDeclarationNode, SymbolSeparatedSequenceNode, TokenNode, TupleExpressionNode,
-    TupleTypeNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
-    UnresolvedIdentifier, UserDefinedTypeNode, VariableDeclarationNode,
+    CoreVariableDeclarationNode, CoreWhileLoopStatementNode, EnumDeclarationNode,
+    EnumVariantDeclarationNode, EnumVariantExprOrClassMethodCallNode, ExpressionNode,
+    ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode,
+    HashMapExpressionNode, HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode,
+    IncorrectlyIndentedStatementNode, IndexAccessNode, InterfaceDeclarationNode,
+    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, InvalidLValueNode,
+    KeyValuePairNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MatchCaseStatementNode,
+    MethodAccessNode, NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode,
+    OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatementIndentWrapperNode,
+    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    SymbolSeparatedSequenceNode, TokenNode, TupleExpressionNode, TupleTypeNode,
+    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
+    UnresolvedIdentifier, UserDefinedTypeNode, VariableDeclarationNode, WhileLoopStatementNode,
 };
 use super::iterators::SymbolSeparatedSequenceIterator;
 use crate::ast::ast::ErrornousNode;
@@ -235,6 +236,11 @@ impl StatementNode {
         StatementNode(node)
     }
 
+    pub fn new_with_while_loop(while_loop: WhileLoopStatementNode) -> Self {
+        let node = Rc::new(CoreStatementNode::WhileLoop(while_loop));
+        StatementNode(node)
+    }
+
     pub fn new_with_function_wrapper(func_wrapper: FunctionWrapperNode) -> Self {
         let node = Rc::new(CoreStatementNode::FunctionWrapper(func_wrapper));
         StatementNode(node)
@@ -417,6 +423,34 @@ impl Node for ContinueStatementNode {
     }
     fn start_line_number(&self) -> usize {
         self.core_ref().continue_keyword.start_line_number()
+    }
+}
+
+impl WhileLoopStatementNode {
+    pub fn new(
+        while_keyword: TokenNode,
+        condition_expr: ExpressionNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Rc::new(CoreWhileLoopStatementNode {
+            while_keyword,
+            condition_expr,
+            colon,
+            block,
+        });
+        WhileLoopStatementNode(node)
+    }
+
+    impl_core_ref!(CoreWhileLoopStatementNode);
+}
+
+impl Node for WhileLoopStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().while_keyword, self.core_ref().block)
+    }
+    fn start_line_number(&self) -> usize {
+        self.core_ref().while_keyword.start_line_number()
     }
 }
 

@@ -557,6 +557,14 @@ impl PythonCodeGenerator {
                     self.walk_block(else_block);
                 }
             }
+            CoreStatementNode::WhileLoop(while_loop_stmt) => {
+                self.add_indention_to_python_code();
+                let core_while_loop = while_loop_stmt.core_ref();
+                self.print_token_node_without_trivia(&core_while_loop.while_keyword);
+                self.walk_expression(&core_while_loop.condition_expr);
+                self.walk_token(&core_while_loop.colon);
+                self.walk_block(&core_while_loop.block);
+            }
             CoreStatementNode::Break(break_stmt) => {
                 self.add_indention_to_python_code();
                 let core_break_stmt = break_stmt.core_ref();

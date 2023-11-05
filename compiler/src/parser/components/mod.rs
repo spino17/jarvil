@@ -5,6 +5,7 @@ pub mod common;
 pub mod conditional;
 pub mod expression;
 pub mod interface_declaration;
+pub mod loops;
 pub mod match_case;
 pub mod statement;
 pub mod type_declaration;
