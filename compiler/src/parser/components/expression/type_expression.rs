@@ -28,7 +28,6 @@ pub fn type_expr(parser: &mut JarvilParser) -> TypeExpressionNode {
         CoreToken::LPAREN => {
             let lparen_node = parser.expect("(");
             let (types_node, num_types) = parser.type_tuple();
-            // TODO - check here that `num_types` > 1 as tuple type should have atleast two subtypes
             let rparen_node = parser.expect(")");
             if num_types < 2 {
                 parser.log_single_sub_type_in_tuple_error(types_node.range());
