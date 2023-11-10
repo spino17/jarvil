@@ -93,6 +93,7 @@ pub enum Diagnostics {
     ExpectedValueForEnumVariant(ExpectedValueForEnumVariantError),
     EnumVariantsMissingFromMatchCaseStatement(EnumVariantsMissingFromMatchCaseStatementError),
     IncorrectEnumName(IncorrectEnumNameError),
+    NonIterableExpression(NonIterableExpressionError),
 }
 
 impl Diagnostics {
@@ -221,6 +222,7 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::IncorrectEnumName(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NonIterableExpression(diagnostic) => Report::new(diagnostic.clone()),
         }
     }
 }
@@ -1362,6 +1364,32 @@ impl IdentifierNotCallableError {
             span: range_to_span(range).into(),
             help: Some(
                 "only variables with `lambda` types are callable"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("expression not iterable")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct NonIterableExpressionError {
+    pub ty: String,
+    #[label("expression with type `{}` is not iterable", self.ty)]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl NonIterableExpressionError {
+    pub fn new(ty: String, range: TextRange) -> Self {
+        NonIterableExpressionError {
+            ty,
+            span: range_to_span(range).into(),
+            help: Some(
+                "only expressions with iterable type like `array`, `hashmap`, `str` should be used inside `for` loop"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),

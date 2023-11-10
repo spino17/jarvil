@@ -16,7 +16,7 @@ use crate::error::diagnostics::{
     EnumVariantsMissingFromMatchCaseStatementError, ExpectedValueForEnumVariantError,
     GenericTypeArgsNotExpectedError, IncorrectEnumNameError, IncorrectExpressionTypeError,
     InferredTypesNotBoundedByInterfacesError, InterfaceMethodsInStructCheckError,
-    MissingTokenError, NotAllConcreteTypesInferredError,
+    MissingTokenError, NonIterableExpressionError, NotAllConcreteTypesInferredError,
     RightSideExpressionTypeMismatchedWithTypeFromAnnotationError, TypeInferenceFailedError,
     UnexpectedValueProvidedToEnumVariantError,
 };
@@ -2071,7 +2071,8 @@ impl TypeChecker {
 
     pub fn check_for_loop_stmt(&mut self, for_loop_stmt: &ForLoopStatementNode) {
         let core_for_loop = for_loop_stmt.core_ref();
-        let iterable_expr_ty = self.check_expr(&core_for_loop.iterable_expr);
+        let iterable_expr = &core_for_loop.iterable_expr;
+        let iterable_expr_ty = self.check_expr(iterable_expr);
         let element_ty: Option<RefOrOwned<Type>> = match iterable_expr_ty.0.as_ref() {
             CoreType::Array(array_data) => Some(RefOrOwned::Ref(&array_data.element_type)),
             CoreType::HashMap(hashmap_data) => Some(RefOrOwned::Ref(&hashmap_data.key_type)),
@@ -2108,8 +2109,11 @@ impl TypeChecker {
                 }
             };
         } else {
-            // TODO - raise error `expression is not iterable`
-            println!("expression is not iterable")
+            let err = NonIterableExpressionError::new(
+                iterable_expr_ty.to_string(&self.semantic_state_db.interner),
+                iterable_expr.range(),
+            );
+            self.log_error(Diagnostics::NonIterableExpression(err));
         }
         self.walk_block(&core_for_loop.block);
     }
