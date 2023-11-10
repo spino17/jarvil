@@ -4,11 +4,12 @@
 use crate::ast::ast::{
     ArrayExpressionNode, CallExpressionNode, CallNode, ConditionalBlockNode,
     ConditionalStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
-    EnumVariantExprOrClassMethodCallNode, HashMapExpressionNode, IndexAccessNode,
-    InterfaceMethodTerminalNode, MatchCaseStatementNode, MethodAccessNode, OkIdentifierInDeclNode,
-    OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode, TupleExpressionNode,
-    WhileLoopStatementNode,
+    EnumVariantExprOrClassMethodCallNode, ForLoopStatementNode, HashMapExpressionNode,
+    IndexAccessNode, InterfaceMethodTerminalNode, MatchCaseStatementNode, MethodAccessNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode,
+    TupleExpressionNode, WhileLoopStatementNode,
 };
+use crate::core::common::RefOrOwned;
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
     ClassMethodExpectedParenthesisError, EnumVariantDoesNotExistError,
@@ -385,38 +386,6 @@ impl TypeChecker {
             TupleIndexCheckResult::Ok((tuple_len as i32 + index_value) as usize)
         } else {
             TupleIndexCheckResult::NegativeIndexOutOfBound
-        }
-    }
-
-    pub fn is_indexable_with_type(&self, other_ty: &Type, index_type: &Type) -> Option<Type> {
-        // NOTE - case for `tuple` is already handled in the calling function
-        match other_ty.0.as_ref() {
-            CoreType::Array(array) => {
-                if index_type.is_int() {
-                    Some(array.element_type.clone())
-                } else {
-                    None
-                }
-            }
-            CoreType::Atomic(atomic) => match atomic {
-                Atomic::String => {
-                    if index_type.is_int() {
-                        Some(Type::new_with_atomic("str"))
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            },
-            CoreType::HashMap(hashmap) => {
-                // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
-                if index_type.is_eq(&hashmap.key_type) && index_type.is_hashable() {
-                    Some(hashmap.value_type.clone())
-                } else {
-                    None
-                }
-            }
-            _ => None,
         }
     }
 
@@ -1355,20 +1324,20 @@ impl TypeChecker {
         let index_expr = &core_index_access.index;
         let index_type_obj = self.check_expr(index_expr);
         let result = match atom_type_obj.0.as_ref() {
-            CoreType::Tuple(tuple) => {
+            CoreType::Tuple(tuple_data) => {
                 return (
-                    self.check_index_access_for_tuple_ty(tuple, index_expr),
+                    self.check_index_access_for_tuple_ty(tuple_data, index_expr),
                     Some(atom_type_obj),
                 )
             }
-            CoreType::Array(array) => {
+            CoreType::Array(array_data) => {
                 if index_type_obj.is_int() {
-                    Some(array.element_type.clone())
+                    Some(array_data.element_type.clone())
                 } else {
                     None
                 }
             }
-            CoreType::Atomic(atomic) => match atomic {
+            CoreType::Atomic(atomic_data) => match atomic_data {
                 Atomic::String => {
                     if index_type_obj.is_int() {
                         Some(Type::new_with_atomic("str"))
@@ -1378,13 +1347,21 @@ impl TypeChecker {
                 }
                 _ => None,
             },
-            CoreType::HashMap(hashmap) => {
+            CoreType::HashMap(hashmap_data) => {
                 // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
-                if index_type_obj.is_eq(&hashmap.key_type) && index_type_obj.is_hashable() {
-                    Some(hashmap.value_type.clone())
+                if index_type_obj.is_eq(&hashmap_data.key_type) && index_type_obj.is_hashable() {
+                    Some(hashmap_data.value_type.clone())
                 } else {
                     None
                 }
+            }
+            CoreType::Struct(struct_data) => {
+                // TODO - check if struct implements `Iterable` interface
+                None
+            }
+            CoreType::Generic(generic_data) => {
+                // TODO - check if generic type is bounded by `Iterable` interface
+                None
             }
             _ => None,
         };
@@ -2098,6 +2075,50 @@ impl TypeChecker {
         self.walk_block(&core_while_loop.block);
     }
 
+    pub fn check_for_loop_stmt(&mut self, for_loop_stmt: &ForLoopStatementNode) {
+        let core_for_loop = for_loop_stmt.core_ref();
+        let iterable_expr_ty = self.check_expr(&core_for_loop.iterable_expr);
+        let element_ty: Option<RefOrOwned<Type>> = match iterable_expr_ty.0.as_ref() {
+            CoreType::Array(array_data) => Some(RefOrOwned::Ref(&array_data.element_type)),
+            CoreType::HashMap(hashmap_data) => Some(RefOrOwned::Ref(&hashmap_data.key_type)),
+            CoreType::Atomic(atomic_data) => match atomic_data {
+                Atomic::String => Some(RefOrOwned::Owned(Type::new_with_atomic("str"))),
+                Atomic::Float | Atomic::Int | Atomic::Bool => None,
+            },
+            CoreType::Struct(struct_data) => {
+                // TODO - check if struct implement `Iterable` interface
+                None
+            }
+            CoreType::Generic(generic_data) => {
+                // TODO - check if struct implement `Iterable` interface
+                None
+            }
+            CoreType::Enum(_)
+            | CoreType::Lambda(_)
+            | CoreType::Tuple(_)
+            | CoreType::Any
+            | CoreType::Unknown
+            | CoreType::Unset
+            | CoreType::Unset
+            | CoreType::Void => None,
+        };
+        let loop_variable = &core_for_loop.loop_variable;
+        if let Some(element_ty) = element_ty {
+            if let CoreIdentifierInDeclNode::Ok(ok_loop_variable) = loop_variable.core_ref() {
+                if let Some(symbol_data) = self
+                    .semantic_state_db
+                    .get_variable_symbol_data_for_identifier_in_decl(ok_loop_variable)
+                {
+                    let mut symbol_data_mut_ref = symbol_data.get_core_mut_ref();
+                    symbol_data_mut_ref.set_data_type(&element_ty);
+                }
+            };
+        } else {
+            // TODO - raise error `expression is not iterable`
+        }
+        self.walk_block(&core_for_loop.block);
+    }
+
     pub fn check_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
             CoreStatementNode::Expression(expr_stmt) => {
@@ -2128,6 +2149,9 @@ impl TypeChecker {
             }
             CoreStatementNode::WhileLoop(while_loop_stmt) => {
                 self.check_while_loop_stmt(while_loop_stmt)
+            }
+            CoreStatementNode::ForLoop(for_loop_stmt) => {
+                self.check_for_loop_stmt(for_loop_stmt);
             }
             CoreStatementNode::TypeDeclaration(type_decl) => match type_decl.core_ref() {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {

@@ -565,6 +565,16 @@ impl PythonCodeGenerator {
                 self.walk_token(&core_while_loop.colon);
                 self.walk_block(&core_while_loop.block);
             }
+            CoreStatementNode::ForLoop(for_loop_stmt) => {
+                self.add_indention_to_python_code();
+                let core_for_loop = for_loop_stmt.core_ref();
+                self.print_token_node_without_trivia(&core_for_loop.for_keyword);
+                self.walk_identifier_in_decl(&core_for_loop.loop_variable);
+                self.walk_token(&core_for_loop.in_keyword);
+                self.walk_expression(&core_for_loop.iterable_expr);
+                self.walk_token(&core_for_loop.colon);
+                self.walk_block(&core_for_loop.block);
+            }
             CoreStatementNode::Break(break_stmt) => {
                 self.add_indention_to_python_code();
                 let core_break_stmt = break_stmt.core_ref();

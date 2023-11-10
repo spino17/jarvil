@@ -39,6 +39,7 @@ pub enum ASTNode {
     Return(ReturnStatementNode),
     Conditional(ConditionalStatementNode),
     WhileLoop(WhileLoopStatementNode),
+    ForLoop(ForLoopStatementNode),
     ConditionalBlock(ConditionalBlockNode),
     MatchCase(MatchCaseStatementNode),
     CaseBranch(CaseBranchStatementNode),
@@ -138,6 +139,7 @@ pub enum CoreStatementNode {
     Return(ReturnStatementNode),
     Conditional(ConditionalStatementNode),
     WhileLoop(WhileLoopStatementNode),
+    ForLoop(ForLoopStatementNode),
     Break(BreakStatementNode),
     Continue(ContinueStatementNode),
     FunctionWrapper(FunctionWrapperNode),
@@ -223,6 +225,16 @@ pub struct CoreConditionalBlockNode {
 pub struct CoreWhileLoopStatementNode {
     pub while_keyword: TokenNode,
     pub condition_expr: ExpressionNode,
+    pub colon: TokenNode,
+    pub block: BlockNode,
+}
+
+#[derive(Debug)]
+pub struct CoreForLoopStatementNode {
+    pub for_keyword: TokenNode,
+    pub loop_variable: IdentifierInDeclNode,
+    pub in_keyword: TokenNode,
+    pub iterable_expr: ExpressionNode,
     pub colon: TokenNode,
     pub block: BlockNode,
 }
@@ -797,6 +809,8 @@ pub struct MatchCaseStatementNode(pub Rc<CoreMatchCaseStatementNode>);
 pub struct CaseBranchStatementNode(pub Rc<CoreCaseBranchStatementNode>);
 #[derive(Debug, Clone)]
 pub struct WhileLoopStatementNode(pub Rc<CoreWhileLoopStatementNode>);
+#[derive(Debug, Clone)]
+pub struct ForLoopStatementNode(pub Rc<CoreForLoopStatementNode>);
 
 pub enum UnresolvedIdentifier<'a> {
     Unresolved(&'a OkIdentifierInUseNode),

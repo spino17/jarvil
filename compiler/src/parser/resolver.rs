@@ -2,9 +2,10 @@ use super::helper::err_for_generic_type_args;
 use crate::ast::ast::{
     BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
-    CoreSelfKeywordNode, EnumDeclarationNode, FunctionWrapperNode, InterfaceDeclarationNode,
-    LambdaTypeDeclarationNode, MatchCaseStatementNode, OkIdentifierInDeclNode,
-    OkIdentifierInUseNode, OkSelfKeywordNode, UnresolvedIdentifier, UserDefinedTypeNode,
+    CoreSelfKeywordNode, EnumDeclarationNode, ForLoopStatementNode, FunctionWrapperNode,
+    InterfaceDeclarationNode, LambdaTypeDeclarationNode, MatchCaseStatementNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, UnresolvedIdentifier,
+    UserDefinedTypeNode,
 };
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
@@ -1980,6 +1981,26 @@ impl Resolver {
         }
         self.close_block(Some(block));
     }
+
+    fn resolve_for_loop(&mut self, for_loop: &ForLoopStatementNode) {
+        let core_for_loop = for_loop.core_ref();
+        let loop_variable = &core_for_loop.loop_variable;
+        let block = &core_for_loop.block;
+        self.walk_expression(&core_for_loop.iterable_expr);
+        self.open_block(block.core_ref().kind);
+        if let CoreIdentifierInDeclNode::Ok(ok_loop_variable) = loop_variable.core_ref() {
+            match self.try_declare_and_bind_variable(ok_loop_variable) {
+                Ok(symbol_data) => {
+                    symbol_data.0.get_core_mut_ref().set_is_init(true);
+                }
+                Err(_) => unreachable!(),
+            }
+        }
+        for stmt in block.core_ref().stmts.as_ref() {
+            self.walk_stmt_indent_wrapper(stmt);
+        }
+        self.close_block(Some(block));
+    }
 }
 
 impl Visitor for Resolver {
@@ -2044,6 +2065,10 @@ impl Visitor for Resolver {
             }
             ASTNode::MatchCase(match_case) => {
                 self.resolve_match_case(match_case);
+                None
+            }
+            ASTNode::ForLoop(for_loop) => {
+                self.resolve_for_loop(for_loop);
                 None
             }
             ASTNode::AtomStart(atom_start) => {

@@ -1,10 +1,10 @@
 use super::ast::{
     ArrayExpressionNode, BreakStatementNode, CaseBranchStatementNode, ConditionalBlockNode,
     ConditionalStatementNode, ContinueStatementNode, CoreIdentifierInDeclNode,
-    CoreIdentifierInUseNode, EnumDeclarationNode, EnumVariantDeclarationNode, GenericTypeDeclNode,
-    HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
-    InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode, KeyValuePairNode,
-    MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    CoreIdentifierInUseNode, EnumDeclarationNode, EnumVariantDeclarationNode, ForLoopStatementNode,
+    GenericTypeDeclNode, HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode,
+    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode,
+    KeyValuePairNode, MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
     SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode, WhileLoopStatementNode,
 };
 use crate::ast::ast::{
@@ -91,6 +91,11 @@ pub trait Visitor {
         walk_while_loop,
         WhileLoopStatementNode,
         new_with_WhileLoopStatementNode
+    );
+    impl_node_walk!(
+        walk_for_loop,
+        ForLoopStatementNode,
+        new_with_ForLoopStatementNode
     );
     impl_node_walk!(
         walk_conditional_block,
@@ -498,6 +503,9 @@ pub trait Visitor {
                 CoreStatementNode::WhileLoop(while_loop_stmt) => {
                     self.walk_while_loop(while_loop_stmt);
                 }
+                CoreStatementNode::ForLoop(for_loop_stmt) => {
+                    self.walk_for_loop(for_loop_stmt);
+                }
             },
             ASTNode::MatchCase(match_case) => {
                 let core_match_case = match_case.core_ref();
@@ -512,6 +520,15 @@ pub trait Visitor {
                 self.walk_expression(&core_while_loop.condition_expr);
                 self.walk_token(&core_while_loop.colon);
                 self.walk_block(&core_while_loop.block);
+            }
+            ASTNode::ForLoop(for_loop) => {
+                let core_for_loop = for_loop.core_ref();
+                self.walk_token(&core_for_loop.for_keyword);
+                self.walk_identifier_in_decl(&core_for_loop.loop_variable);
+                self.walk_token(&core_for_loop.in_keyword);
+                self.walk_expression(&core_for_loop.iterable_expr);
+                self.walk_token(&core_for_loop.colon);
+                self.walk_block(&core_for_loop.block);
             }
             ASTNode::CaseBranch(case_branch) => {
                 let core_case_branch = case_branch.core_ref();
