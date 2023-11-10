@@ -22,23 +22,6 @@ pub enum CallableKind {
     LambdaType,
 }
 
-/*
-#[derive(Debug)]
-pub enum PrototypeConcretizationResult<'a> {
-    UnConcretized(&'a CallablePrototypeData),
-    Concretized(CallablePrototypeData),
-}
-
-impl<'a> PrototypeConcretizationResult<'a> {
-    pub fn get_prototype_ref(&'a self) -> &'a CallablePrototypeData {
-        match self {
-            PrototypeConcretizationResult::UnConcretized(prototype) => prototype,
-            PrototypeConcretizationResult::Concretized(prototype) => prototype,
-        }
-    }
-}
- */
-
 #[derive(Debug, Clone)]
 pub struct CallablePrototypeData {
     pub params: Vec<Type>,
