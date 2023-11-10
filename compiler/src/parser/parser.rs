@@ -2,10 +2,10 @@ use super::resolver::BlockKind;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ConditionalBlockNode, ConditionalStatementNode,
-    ErrornousNode, ExpressionNode, GenericTypeDeclNode, IdentifierInDeclNode, IdentifierInUseNode,
-    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, MatchCaseStatementNode,
-    NameTypeSpecNode, OkTokenNode, SelfKeywordNode, SkippedTokenNode, StatementNode,
-    SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    ErrornousNode, ExpressionNode, ForLoopStatementNode, GenericTypeDeclNode, IdentifierInDeclNode,
+    IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
+    MatchCaseStatementNode, NameTypeSpecNode, OkTokenNode, SelfKeywordNode, SkippedTokenNode,
+    StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
     UnaryExpressionNode, VariableDeclarationNode, WhileLoopStatementNode,
 };
 use crate::code::JarvilCode;
@@ -539,6 +539,10 @@ impl JarvilParser {
 
     pub fn while_loop_stmt(&mut self) -> WhileLoopStatementNode {
         components::loops::while_loop_stmt(self)
+    }
+
+    pub fn for_loop_stmt(&mut self) -> ForLoopStatementNode {
+        components::loops::for_loop_stmt(self)
     }
 
     pub fn interface_stmt(&mut self) -> StatementNode {

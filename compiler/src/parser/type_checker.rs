@@ -2115,6 +2115,7 @@ impl TypeChecker {
             };
         } else {
             // TODO - raise error `expression is not iterable`
+            println!("expression is not iterable")
         }
         self.walk_block(&core_for_loop.block);
     }

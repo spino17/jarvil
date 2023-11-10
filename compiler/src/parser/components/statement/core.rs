@@ -91,7 +91,10 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
             StatementNode::new_with_variable_declaration(variable_decl_node)
         }
         CoreToken::DEF => parser.function_stmt(CallableKind::Function),
-        CoreToken::FOR => todo!(),
+        CoreToken::FOR => {
+            let for_loop_node = parser.for_loop_stmt();
+            StatementNode::new_with_for_loop(for_loop_node)
+        }
         CoreToken::WHILE => {
             let while_loop_node = parser.while_loop_stmt();
             StatementNode::new_with_while_loop(while_loop_node)
