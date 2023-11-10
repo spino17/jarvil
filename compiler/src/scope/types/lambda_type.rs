@@ -1,8 +1,9 @@
 use crate::{
+    core::common::RefOrOwned,
     scope::{
         concrete::ConcreteTypesTuple,
         core::{AbstractConcreteTypesHandler, GenericTypeParams},
-        function::{CallableData, CallableKind, PrototypeConcretizationResult},
+        function::{CallableData, CallableKind, CallablePrototypeData},
     },
     types::core::Type,
 };
@@ -33,7 +34,7 @@ impl LambdaTypeData {
     pub fn get_concrete_prototype(
         &self,
         global_concrete_types: Option<&ConcreteTypesTuple>,
-    ) -> PrototypeConcretizationResult {
+    ) -> RefOrOwned<CallablePrototypeData> {
         match global_concrete_types {
             Some(concrete_types) => {
                 return self
@@ -41,7 +42,7 @@ impl LambdaTypeData {
                     .prototype
                     .concretize_prototype(None, Some(concrete_types));
             }
-            None => return PrototypeConcretizationResult::UnConcretized(&self.meta_data.prototype),
+            None => return RefOrOwned::Ref(&self.meta_data.prototype),
         }
     }
 

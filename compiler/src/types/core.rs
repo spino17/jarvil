@@ -5,12 +5,13 @@ use super::r#enum::Enum;
 use super::r#struct::Struct;
 use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
+use crate::core::common::RefOrOwned;
 use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::core::SymbolData;
-use crate::scope::function::{CallableData, CallablePrototypeData, PrototypeConcretizationResult};
+use crate::scope::function::{CallableData, CallablePrototypeData};
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
@@ -47,8 +48,8 @@ pub trait AbstractNonStructTypes {
                     .prototype
                     .concretize_prototype(Some(&concrete_types), None)
                 {
-                    PrototypeConcretizationResult::UnConcretized(_) => unreachable!(),
-                    PrototypeConcretizationResult::Concretized(prototype) => Some(prototype),
+                    RefOrOwned::Ref(_) => unreachable!(),
+                    RefOrOwned::Owned(prototype) => Some(prototype),
                 }
             }
             None => None,

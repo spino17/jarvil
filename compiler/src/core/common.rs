@@ -1,5 +1,6 @@
 use std::ops::Deref;
 
+#[derive(Debug)]
 pub enum RefOrOwned<'a, T> {
     Ref(&'a T),
     Owned(T),

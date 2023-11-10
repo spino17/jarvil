@@ -58,9 +58,8 @@ impl Lambda {
                 let symbol_data = semantic_data.symbol_data.get_core_ref();
                 let lambda_data = symbol_data.get_lambda_data_ref();
                 let prototype_result = lambda_data.get_concrete_prototype(concrete_types.as_ref());
-                let prototype_ref = prototype_result.get_prototype_ref();
-                let expected_param_types = &prototype_ref.params;
-                let return_type = &prototype_ref.return_type;
+                let expected_param_types = &prototype_result.params;
+                let return_type = &prototype_result.return_type;
                 type_checker.check_params_type_and_count(expected_param_types, received_params)?;
                 Ok(return_type.clone())
             }
@@ -86,7 +85,6 @@ impl AbstractType for Lambda {
                         let self_concrete_types = &self_named.concrete_types;
                         let self_prototype_result =
                             self_data.get_concrete_prototype(self_concrete_types.as_ref());
-                        let self_prototype_ref = self_prototype_result.get_prototype_ref();
                         match other_data {
                             Lambda::Named(other_named) => {
                                 let other_symbol_data = other_named.symbol_data.get_core_ref();
@@ -94,12 +92,10 @@ impl AbstractType for Lambda {
                                 let other_concrete_types = &other_named.concrete_types;
                                 let other_prototype_result = other_data
                                     .get_concrete_prototype(other_concrete_types.as_ref());
-                                let other_prototype_ref =
-                                    other_prototype_result.get_prototype_ref();
-                                other_prototype_ref.is_eq(self_prototype_ref)
+                                other_prototype_result.is_eq(&self_prototype_result)
                             }
                             Lambda::Unnamed(other_prototype) => {
-                                self_prototype_ref.is_eq(other_prototype)
+                                self_prototype_result.is_eq(other_prototype)
                             }
                         }
                     }
@@ -110,8 +106,7 @@ impl AbstractType for Lambda {
                             let other_concrete_types = &other_named.concrete_types;
                             let other_prototype_result =
                                 other_data.get_concrete_prototype(other_concrete_types.as_ref());
-                            let other_prototype_ref = other_prototype_result.get_prototype_ref();
-                            other_prototype_ref.is_eq(self_prototype)
+                            other_prototype_result.is_eq(self_prototype)
                         }
                         Lambda::Unnamed(other_prototype) => self_prototype.is_eq(other_prototype),
                     },
@@ -204,7 +199,6 @@ impl AbstractType for Lambda {
                     let self_concrete_types = &self_named.concrete_types;
                     let self_prototype_result =
                         self_data.get_concrete_prototype(self_concrete_types.as_ref());
-                    let self_prototype_ref = self_prototype_result.get_prototype_ref();
                     match lambda_ty {
                         Lambda::Named(other_named) => {
                             let other_symbol_data = other_named.symbol_data.get_core_ref();
@@ -212,16 +206,15 @@ impl AbstractType for Lambda {
                             let other_concrete_types = &other_named.concrete_types;
                             let other_prototype_result =
                                 other_data.get_concrete_prototype(other_concrete_types.as_ref());
-                            let other_prototype_ref = other_prototype_result.get_prototype_ref();
-                            self_prototype_ref.try_infer_type(
-                                other_prototype_ref,
+                            self_prototype_result.try_infer_type(
+                                &other_prototype_result,
                                 inferred_concrete_types,
                                 global_concrete_types,
                                 num_inferred_types,
                                 inference_category,
                             )
                         }
-                        Lambda::Unnamed(other_prototype) => self_prototype_ref.try_infer_type(
+                        Lambda::Unnamed(other_prototype) => self_prototype_result.try_infer_type(
                             other_prototype,
                             inferred_concrete_types,
                             global_concrete_types,

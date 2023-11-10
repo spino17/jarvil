@@ -24,9 +24,7 @@ use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::{ConcreteSymbolData, ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::core::GenericTypeParams;
 use crate::scope::errors::GenericTypeArgsCheckError;
-use crate::scope::function::{
-    CallableData, PartialCallableDataPrototypeCheckError, PrototypeConcretizationResult,
-};
+use crate::scope::function::{CallableData, PartialCallableDataPrototypeCheckError};
 use crate::scope::handler::{ConcreteSymbolDataEntry, SymbolDataEntry};
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::variables::VariableData;
@@ -106,7 +104,7 @@ pub enum InferredConcreteTypesEntry {
 
 #[derive(Debug)]
 pub enum CallExpressionPrototypeEquivalenceCheckResult<'a> {
-    HasConcretePrototype(PrototypeConcretizationResult<'a>),
+    HasConcretePrototype(RefOrOwned<'a, CallablePrototypeData>),
     NeedsTypeInference(&'a GenericTypeParams),
 }
 
@@ -570,15 +568,14 @@ impl TypeChecker {
                     }
                     // CASE 4
                     None => CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
-                        PrototypeConcretizationResult::UnConcretized(&func_data.prototype),
+                        RefOrOwned::Ref(&func_data.prototype),
                     ),
                 }
             }
         };
         match prototype_result {
             CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
-                let prototype_ref = prototype.get_prototype_ref();
-                let return_ty = prototype_ref.is_received_params_valid(self, params)?;
+                let return_ty = prototype.is_received_params_valid(self, params)?;
                 Ok(return_ty)
             }
             CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
@@ -654,9 +651,7 @@ impl TypeChecker {
                             None => {
                                 // CASE 4
                                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
-                                    PrototypeConcretizationResult::UnConcretized(
-                                        &constructor_meta_data.prototype,
-                                    ),
+                                    RefOrOwned::Ref(&constructor_meta_data.prototype),
                                 )
                             }
                         }
@@ -666,8 +661,7 @@ impl TypeChecker {
                     CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                         prototype,
                     ) => {
-                        let prototype_ref = prototype.get_prototype_ref();
-                        self.check_params_type_and_count(&prototype_ref.params, params)?;
+                        self.check_params_type_and_count(&prototype.params, params)?;
                         let return_ty = Type::new_with_struct(
                             &concrete_symbol_data.symbol_data,
                             concrete_types.clone(), // expensive clone

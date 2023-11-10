@@ -5,6 +5,7 @@ use super::{
 };
 use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
+    core::common::RefOrOwned,
     parser::type_checker::{
         InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
     },
@@ -21,6 +22,7 @@ pub enum CallableKind {
     LambdaType,
 }
 
+/*
 #[derive(Debug)]
 pub enum PrototypeConcretizationResult<'a> {
     UnConcretized(&'a CallablePrototypeData),
@@ -35,6 +37,7 @@ impl<'a> PrototypeConcretizationResult<'a> {
         }
     }
 }
+ */
 
 #[derive(Debug, Clone)]
 pub struct CallablePrototypeData {
@@ -133,7 +136,7 @@ impl CallablePrototypeData {
     pub fn concretize_prototype_core(
         &self,
         context: &ConcretizationContext,
-    ) -> PrototypeConcretizationResult {
+    ) -> RefOrOwned<'_, CallablePrototypeData> {
         match &self.is_concretization_required {
             Some((
                 generics_containing_params_indexes,
@@ -147,13 +150,13 @@ impl CallablePrototypeData {
                 if *is_concretization_required_for_return_type {
                     concrete_return_type = self.return_type.concretize(context);
                 }
-                return PrototypeConcretizationResult::Concretized(CallablePrototypeData::new(
+                return RefOrOwned::Owned(CallablePrototypeData::new(
                     concrete_params,
                     concrete_return_type,
                     None,
                 ));
             }
-            None => return PrototypeConcretizationResult::UnConcretized(self),
+            None => return RefOrOwned::Ref(self),
         }
     }
 
@@ -161,7 +164,7 @@ impl CallablePrototypeData {
         &self,
         global_concrete_types: Option<&ConcreteTypesTuple>,
         local_concrete_types: Option<&ConcreteTypesTuple>,
-    ) -> PrototypeConcretizationResult {
+    ) -> RefOrOwned<'_, CallablePrototypeData> {
         return self.concretize_prototype_core(&ConcretizationContext::new(
             global_concrete_types,
             local_concrete_types,
@@ -308,9 +311,8 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         .callable_data
                         .prototype
                         .concretize_prototype(self.concrete_types, Some(&local_concrete_types));
-                    let prototype_ref = concrete_prototype.get_prototype_ref();
-                    let return_ty =
-                        prototype_ref.is_received_params_valid(type_checker, received_params)?;
+                    let return_ty = concrete_prototype
+                        .is_received_params_valid(type_checker, received_params)?;
                     Ok(return_ty)
                 }
                 None => Err(
@@ -344,9 +346,8 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         .callable_data
                         .prototype
                         .concretize_prototype(self.concrete_types, None);
-                    let prototype_ref = concrete_prototype.get_prototype_ref();
-                    let return_ty =
-                        prototype_ref.is_received_params_valid(type_checker, received_params)?;
+                    let return_ty = concrete_prototype
+                        .is_received_params_valid(type_checker, received_params)?;
                     Ok(return_ty)
                 }
             },
