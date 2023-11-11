@@ -1172,8 +1172,19 @@ impl TypeChecker {
         let method_name = method_name_ok_identifier.token_value_str(&self.code);
         match array_ty.try_method(&method_name) {
             Some(prototype) => {
-                let return_ty = prototype.is_received_params_valid(self, params)?;
-                Ok(return_ty)
+                if method_name_ok_identifier
+                    .core_ref()
+                    .generic_type_args
+                    .is_some()
+                {
+                    Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
+                        GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
+                        IdentifierKind::Field,
+                    ))
+                } else {
+                    let return_ty = prototype.is_received_params_valid(self, params)?;
+                    Ok(return_ty)
+                }
             }
             None => Err(MethodAccessTypeCheckError::MethodNotFound),
         }
@@ -1188,8 +1199,19 @@ impl TypeChecker {
         let method_name = method_name_ok_identifier.token_value_str(&self.code);
         match hashmap_ty.try_method(&method_name) {
             Some(prototype) => {
-                let return_ty = prototype.is_received_params_valid(self, params)?;
-                Ok(return_ty)
+                if method_name_ok_identifier
+                    .core_ref()
+                    .generic_type_args
+                    .is_some()
+                {
+                    Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
+                        GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
+                        IdentifierKind::Field,
+                    ))
+                } else {
+                    let return_ty = prototype.is_received_params_valid(self, params)?;
+                    Ok(return_ty)
+                }
             }
             None => Err(MethodAccessTypeCheckError::MethodNotFound),
         }
