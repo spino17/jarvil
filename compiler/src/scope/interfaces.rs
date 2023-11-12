@@ -52,6 +52,10 @@ impl InterfaceData {
         self.methods.try_method(method_name, global_concrete_types)
     }
 
+    pub fn has_method(&self, method_name: &StrId) -> bool {
+        self.methods.has_method(method_name)
+    }
+
     pub fn get_partially_concrete_interface_methods<'a>(
         &'a self,
         key: Option<&'a ConcreteTypesTuple>,
@@ -73,7 +77,7 @@ impl AbstractConcreteTypesHandler for InterfaceData {
 }
 
 #[derive(Debug, Clone)]
-pub struct InterfaceObject(Rc<(StrId, ConcreteSymbolData<InterfaceData>)>); // (name, semantic data)
+pub struct InterfaceObject(pub Rc<(StrId, ConcreteSymbolData<InterfaceData>)>); // (name, semantic data)
 
 impl InterfaceObject {
     pub fn new(
@@ -164,6 +168,10 @@ impl InterfaceBounds {
             }
         }
         None
+    }
+
+    pub fn interface_obj_at_index(&self, index: usize) -> &InterfaceObject {
+        &self.interfaces[index].0
     }
 
     pub fn insert(&mut self, obj: InterfaceObject, decl_range: TextRange) -> Option<TextRange> {

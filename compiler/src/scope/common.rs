@@ -127,4 +127,8 @@ impl MethodsMap {
             None => None,
         }
     }
+
+    pub fn has_method(&self, method_name: &StrId) -> bool {
+        self.methods.get(method_name).is_some()
+    }
 }

@@ -26,7 +26,9 @@ use crate::scope::core::GenericTypeParams;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::function::{CallableData, PartialCallableDataPrototypeCheckError};
 use crate::scope::handler::{ConcreteSymbolDataEntry, SymbolDataEntry};
-use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::types::generic_type::{
+    GenericTypeDeclarationPlaceCategory, GenericTypePropertyQueryResult,
+};
 use crate::scope::variables::VariableData;
 use crate::types::array::core::Array;
 use crate::types::core::AbstractNonStructTypes;
@@ -1066,25 +1068,52 @@ impl TypeChecker {
                             match struct_data.try_field(&property_name_str, concrete_types.as_ref())
                             {
                                 Some((type_obj, _)) => Ok(type_obj),
-                                None => Err(()),
+                                None => Err(Diagnostics::PropertyDoesNotExist(
+                                    PropertyDoesNotExistError::new(
+                                        PropertyKind::Field,
+                                        atom_type_obj.to_string(&self.semantic_state_db.interner),
+                                        property.range(),
+                                        atom.range(),
+                                    ),
+                                )),
                             }
                         }
-                        CoreType::Generic(_generic_ty) => {
+                        CoreType::Generic(generic_ty) => {
                             // TODO - change this to allow property access for generic types also
-                            Err(())
+                            let symbol_data = generic_ty.semantic_data.get_core_ref();
+                            let generic_data = symbol_data.get_generic_data_ref();
+                            match generic_data
+                                .try_field(&property_name_str, &mut self.semantic_state_db.interner)
+                            {
+                                GenericTypePropertyQueryResult::Ok((type_obj, _)) => Ok(type_obj),
+                                GenericTypePropertyQueryResult::AmbigiousPropertyResolution(
+                                    property_containing_interface_objs,
+                                ) => {
+                                    // TODO - raise error `field with same name is contained inside multiple interfaces`
+                                    todo!()
+                                }
+                                GenericTypePropertyQueryResult::None => {
+                                    Err(Diagnostics::PropertyDoesNotExist(
+                                        PropertyDoesNotExistError::new(
+                                            PropertyKind::Field,
+                                            atom_type_obj
+                                                .to_string(&self.semantic_state_db.interner),
+                                            property.range(),
+                                            atom.range(),
+                                        ),
+                                    ))
+                                }
+                            }
                         }
-                        _ => Err(()),
+                        _ => {
+                            // TODO - raise error `no property exist for struct and generic`
+                            todo!()
+                        }
                     };
                     match result {
                         Ok(property_ty) => return (property_ty, Some(atom_type_obj)),
-                        Err(_) => {
-                            let err = PropertyDoesNotExistError::new(
-                                PropertyKind::Field,
-                                atom_type_obj.to_string(&self.semantic_state_db.interner),
-                                property.range(),
-                                atom.range(),
-                            );
-                            self.log_error(Diagnostics::PropertyDoesNotExist(err));
+                        Err(err) => {
+                            self.log_error(err);
                             return (Type::new_with_unknown(), Some(atom_type_obj));
                         }
                     }
@@ -1154,13 +1183,86 @@ impl TypeChecker {
     }
 
     fn check_method_access_for_generic_ty(
-        &self,
-        _generic_ty: &Generic,
-        _method_name_ok_identifier: &OkIdentifierInUseNode,
-        _params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        &mut self,
+        generic_ty: &Generic,
+        method_name_ok_identifier: &OkIdentifierInUseNode,
+        params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         // TODO - change this to allow method access for generic types also
-        Err(MethodAccessTypeCheckError::MethodNotFound)
+        // Err(MethodAccessTypeCheckError::MethodNotFound)
+        let method_name =
+            method_name_ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+        let symbol_data = generic_ty.semantic_data.get_core_ref();
+        let generic_data = symbol_data.get_generic_data_ref();
+        let interface_bounds = &generic_data.interface_bounds;
+        // first check if it's a property
+        match generic_data.try_field(&method_name, &mut self.semantic_state_db.interner) {
+            GenericTypePropertyQueryResult::Ok((propetry_ty, _)) => {
+                if method_name_ok_identifier
+                    .core_ref()
+                    .generic_type_args
+                    .is_some()
+                {
+                    Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
+                        GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
+                        IdentifierKind::Field,
+                    ))
+                } else {
+                    // check if the `property_ty` is callable
+                    match propetry_ty.0.as_ref() {
+                        CoreType::Lambda(lambda_ty) => {
+                            let return_ty = lambda_ty.is_received_params_valid(self, params)?;
+                            Ok(return_ty)
+                        }
+                        _ => Err(MethodAccessTypeCheckError::FieldNotCallable(propetry_ty)),
+                    }
+                }
+            }
+            GenericTypePropertyQueryResult::AmbigiousPropertyResolution(
+                property_containing_interface_objs,
+            ) => {
+                // TODO - raise error `field with same name is contained inside multiple interfaces`
+                todo!()
+            }
+            GenericTypePropertyQueryResult::None => {
+                // if field is not there then check in methods
+                match generic_data.try_method(&method_name, &mut self.semantic_state_db.interner) {
+                    GenericTypePropertyQueryResult::Ok(interface_index) => {
+                        let interface_obj =
+                            interface_bounds.interface_obj_at_index(interface_index);
+                        let concrete_symbol_data = &interface_obj.0.as_ref().1;
+                        let interface_data = &*concrete_symbol_data.symbol_data.get_core_ref();
+                        let concrete_types = &concrete_symbol_data.concrete_types;
+                        match interface_data.try_method(&method_name, concrete_types.as_ref()) {
+                            Some((partial_concrete_callable_data, _)) => {
+                                let (concrete_types, ty_ranges, _) = self
+                                    .extract_angle_bracket_content_from_identifier_in_use(
+                                        method_name_ok_identifier,
+                                    );
+                                let return_ty = partial_concrete_callable_data
+                                    .is_received_params_valid(
+                                        self,
+                                        concrete_types,
+                                        ty_ranges,
+                                        params,
+                                    )?;
+                                Ok(return_ty)
+                            }
+                            None => Err(MethodAccessTypeCheckError::MethodNotFound),
+                        }
+                    }
+                    GenericTypePropertyQueryResult::AmbigiousPropertyResolution(
+                        property_containing_interface_objs,
+                    ) => {
+                        // TODO - raise error `method with same name is contained inside multiple interfaces`
+                        todo!()
+                    }
+                    GenericTypePropertyQueryResult::None => {
+                        Err(MethodAccessTypeCheckError::MethodNotFound)
+                    }
+                }
+            }
+        }
     }
 
     fn check_method_access_for_array_ty(
