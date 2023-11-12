@@ -68,7 +68,7 @@ impl GenericTypeData {
         }
     }
 
-    pub fn try_method(
+    pub fn has_method(
         &self,
         method_name: &StrId,
         interner: &mut Interner,

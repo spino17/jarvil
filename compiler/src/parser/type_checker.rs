@@ -1188,14 +1188,11 @@ impl TypeChecker {
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
-        // TODO - change this to allow method access for generic types also
-        // Err(MethodAccessTypeCheckError::MethodNotFound)
         let method_name =
             method_name_ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
         let symbol_data = generic_ty.semantic_data.get_core_ref();
         let generic_data = symbol_data.get_generic_data_ref();
         let interface_bounds = &generic_data.interface_bounds;
-        // first check if it's a property
         match generic_data.try_field(&method_name, &mut self.semantic_state_db.interner) {
             GenericTypePropertyQueryResult::Ok((propetry_ty, _)) => {
                 if method_name_ok_identifier
@@ -1226,7 +1223,7 @@ impl TypeChecker {
             }
             GenericTypePropertyQueryResult::None => {
                 // if field is not there then check in methods
-                match generic_data.try_method(&method_name, &mut self.semantic_state_db.interner) {
+                match generic_data.has_method(&method_name, &mut self.semantic_state_db.interner) {
                     GenericTypePropertyQueryResult::Ok(interface_index) => {
                         let interface_obj =
                             interface_bounds.interface_obj_at_index(interface_index);
