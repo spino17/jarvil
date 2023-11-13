@@ -17,6 +17,7 @@ use crate::error::diagnostics::{
     GenericTypeArgsNotExpectedError, IncorrectEnumNameError, IncorrectExpressionTypeError,
     InferredTypesNotBoundedByInterfacesError, InterfaceMethodsInStructCheckError,
     MissingTokenError, NonIterableExpressionError, NotAllConcreteTypesInferredError,
+    PropertyResolvedToMultipleInterfaceObjectsError,
     RightSideExpressionTypeMismatchedWithTypeFromAnnotationError, TypeInferenceFailedError,
     UnexpectedValueProvidedToEnumVariantError,
 };
@@ -147,6 +148,7 @@ pub enum MethodAccessTypeCheckError {
     FieldNotCallable(Type),
     PrototypeEquivalenceCheckFailed(PrototypeEquivalenceCheckError),
     GenericTypeArgsCheckFailed(GenericTypeArgsCheckError, IdentifierKind),
+    AmbigiousPropertyResolution(Vec<String>),
 }
 
 impl From<PrototypeEquivalenceCheckError> for MethodAccessTypeCheckError {
@@ -1079,7 +1081,6 @@ impl TypeChecker {
                             }
                         }
                         CoreType::Generic(generic_ty) => {
-                            // TODO - change this to allow property access for generic types also
                             let symbol_data = generic_ty.semantic_data.get_core_ref();
                             let generic_data = symbol_data.get_generic_data_ref();
                             match generic_data
@@ -1088,10 +1089,13 @@ impl TypeChecker {
                                 GenericTypePropertyQueryResult::Ok((type_obj, _)) => Ok(type_obj),
                                 GenericTypePropertyQueryResult::AmbigiousPropertyResolution(
                                     property_containing_interface_objs,
-                                ) => {
-                                    // TODO - raise error `field with same name is contained inside multiple interfaces`
-                                    todo!()
-                                }
+                                ) => Err(Diagnostics::PropertyResolvedToMultipleInterfaceObjects(
+                                    PropertyResolvedToMultipleInterfaceObjectsError::new(
+                                        property.range(),
+                                        property_containing_interface_objs,
+                                        PropertyKind::Field,
+                                    ),
+                                )),
                                 GenericTypePropertyQueryResult::None => {
                                     Err(Diagnostics::PropertyDoesNotExist(
                                         PropertyDoesNotExistError::new(
@@ -1105,10 +1109,14 @@ impl TypeChecker {
                                 }
                             }
                         }
-                        _ => {
-                            // TODO - raise error `no property exist for struct and generic`
-                            todo!()
-                        }
+                        _ => Err(Diagnostics::PropertyDoesNotExist(
+                            PropertyDoesNotExistError::new(
+                                PropertyKind::Field,
+                                atom_type_obj.to_string(&self.semantic_state_db.interner),
+                                property.range(),
+                                atom.range(),
+                            ),
+                        )),
                     };
                     match result {
                         Ok(property_ty) => return (property_ty, Some(atom_type_obj)),
@@ -1217,10 +1225,9 @@ impl TypeChecker {
             }
             GenericTypePropertyQueryResult::AmbigiousPropertyResolution(
                 property_containing_interface_objs,
-            ) => {
-                // TODO - raise error `field with same name is contained inside multiple interfaces`
-                todo!()
-            }
+            ) => Err(MethodAccessTypeCheckError::AmbigiousPropertyResolution(
+                property_containing_interface_objs,
+            )),
             GenericTypePropertyQueryResult::None => {
                 // if field is not there then check in methods
                 match generic_data.has_method(&method_name, &mut self.semantic_state_db.interner) {
@@ -1250,10 +1257,9 @@ impl TypeChecker {
                     }
                     GenericTypePropertyQueryResult::AmbigiousPropertyResolution(
                         property_containing_interface_objs,
-                    ) => {
-                        // TODO - raise error `method with same name is contained inside multiple interfaces`
-                        todo!()
-                    }
+                    ) => Err(MethodAccessTypeCheckError::AmbigiousPropertyResolution(
+                        property_containing_interface_objs,
+                    )),
                     GenericTypePropertyQueryResult::None => {
                         Err(MethodAccessTypeCheckError::MethodNotFound)
                     }
@@ -1375,6 +1381,18 @@ impl TypeChecker {
                             self.log_params_type_and_count_check_error(
                                 ok_identifier.range(),
                                 prototype_check_err,
+                            );
+                        }
+                        MethodAccessTypeCheckError::AmbigiousPropertyResolution(
+                            method_containing_interface_objs,
+                        ) => {
+                            let err = PropertyResolvedToMultipleInterfaceObjectsError::new(
+                                ok_identifier.range(),
+                                method_containing_interface_objs,
+                                PropertyKind::Method,
+                            );
+                            self.log_error(
+                                Diagnostics::PropertyResolvedToMultipleInterfaceObjects(err),
                             );
                         }
                     }

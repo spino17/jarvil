@@ -94,6 +94,7 @@ pub enum Diagnostics {
     EnumVariantsMissingFromMatchCaseStatement(EnumVariantsMissingFromMatchCaseStatementError),
     IncorrectEnumName(IncorrectEnumNameError),
     NonIterableExpression(NonIterableExpressionError),
+    PropertyResolvedToMultipleInterfaceObjects(PropertyResolvedToMultipleInterfaceObjectsError),
 }
 
 impl Diagnostics {
@@ -223,6 +224,9 @@ impl Diagnostics {
             }
             Diagnostics::IncorrectEnumName(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::NonIterableExpression(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::PropertyResolvedToMultipleInterfaceObjects(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
         }
     }
 }
@@ -1338,6 +1342,41 @@ impl InferredTypesNotBoundedByInterfacesError {
             ),
             help: Some(
                 "explicitly specify the generic type arguments using <...>"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("ambigious {} resolution", self.property_kind)]
+#[diagnostic(code("TypeCheckError"))]
+pub struct PropertyResolvedToMultipleInterfaceObjectsError {
+    pub property_kind: PropertyKind,
+    pub msg: String,
+    #[label("{}", msg)]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl PropertyResolvedToMultipleInterfaceObjectsError {
+    pub fn new(range: TextRange, interface_objs: Vec<String>, property_kind: PropertyKind) -> Self {
+        let mut err_msg = interface_objs[0].to_string();
+        for i in 1..interface_objs.len() {
+            err_msg.push_str(&format!(", {}", interface_objs[i]));
+        }
+        PropertyResolvedToMultipleInterfaceObjectsError {
+            property_kind,
+            span: range_to_span(range).into(),
+            msg: format!(
+                "{} resolved to following multiple interface objects: {}",
+                property_kind, err_msg
+            ),
+            help: Some(
+                "there should not be name collision for fields and methods between interfaces inside bounds of any generic type"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),

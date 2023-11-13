@@ -31,7 +31,7 @@ impl Display for IdentifierKind {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub enum PropertyKind {
     Field,
     Method,
