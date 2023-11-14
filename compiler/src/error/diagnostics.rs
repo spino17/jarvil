@@ -1,8 +1,18 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
-use crate::{lexer::token::Token, parser::helper::format_symbol, types::core::Type};
+use crate::types::core::AbstractType;
+use crate::{
+    core::string_interner::{Interner, StrId},
+    lexer::token::Token,
+    parser::helper::format_symbol,
+    scope::interfaces::PartialConcreteInterfaceMethodsCheckError,
+    types::core::Type,
+};
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use owo_colors::{OwoColorize, Style};
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    vec,
+};
 use text_size::TextRange;
 use thiserror::Error;
 
@@ -16,21 +26,24 @@ pub enum Diagnostics {
     InvalidLValue(InvalidLValueError),
     IdentifierAlreadyDeclared(IdentifierAlreadyDeclaredError),
     ConstructorNotFoundInsideStructDeclaration(ConstructorNotFoundInsideStructDeclarationError),
-    IdentifierFoundInNonLocals(IdentifierFoundInNonLocalsError),
     IdentifierNotFoundInAnyNamespace(IdentifierNotFoundInAnyNamespaceError),
     IdentifierNotDeclared(IdentifierNotDeclaredError),
-    VoidConstructorReturnType(VoidConstructorReturnTypeError),
+    InvalidLoopControlFlowStatementFound(InvalidLoopControlFlowStatementFoundError),
+    NonVoidConstructorReturnType(NonVoidConstructorReturnTypeError),
     NonStructConstructorReturnType(NonStructConstructorReturnTypeError),
     MismatchedConstructorReturnType(MismatchedConstructorReturnTypeError),
     SelfNotFound(SelfNotFoundError),
-    VariableReferencedBeforeAssignment(VariableReferencedBeforeAssignmentError),
+    GenericTypeResolvedToOutsideScope(GenericTypeResolvedToOutsideScopeError),
+    IdentifierUsedBeforeInitialized(IdentifierUsedBeforeInitializedError),
     RightSideWithVoidTypeNotAllowed(RightSideWithVoidTypeNotAllowedError),
     MoreParamsCount(MoreParamsCountError),
     LessParamsCount(LessParamsCountError),
-    MoreThanMaxLimitParamsPassed(MoreThanMaxLimitParamsPassedError),
     MismatchedParamType(MismatchedParamTypeError),
+    NotAllConcreteTypesInferred(NotAllConcreteTypesInferredError),
+    TypeInferenceFailed(TypeInferenceFailedError),
+    InferredTypesNotBoundedByInterfaces(InferredTypesNotBoundedByInterfacesError),
     IdentifierNotCallable(IdentifierNotCallableError),
-    StructFieldNotCallable(StructFieldNotCallableError),
+    FieldNotCallable(FieldNotCallableError),
     ConstructorNotFoundForType(ConstructorNotFoundForTypeError),
     ClassmethodDoesNotExist(ClassmethodDoesNotExistError),
     PropertyDoesNotExist(PropertyDoesNotExistError),
@@ -51,12 +64,37 @@ pub enum Diagnostics {
     InvalidIndexExpressionForTuple(InvalidIndexExpressionForTupleError),
     ImmutableTypeNotAssignable(ImmutableTypeNotAssignableError),
     SingleSubTypeFoundInTuple(SingleSubTypeFoundInTupleError),
-    BuiltinFunctionNameOverlap(BuiltinFunctionNameOverlapError),
     MainFunctionNotFound(MainFunctionNotFoundError),
     MainFunctionWrongType(MainFunctionWrongTypeError),
     ExplicitReturnStatementFoundInConstructorBody(
         ExplicitReturnStatementFoundInConstructorBodyError,
     ),
+    InterfaceAlreadyExistInBoundsDeclaration(InterfaceAlreadyExistInBoundsDeclarationError),
+    GenericTypesDeclarationInsideConstructorFound(
+        GenericTypesDeclarationInsideConstructorFoundError,
+    ),
+    GenericTypeArgsNotExpected(GenericTypeArgsNotExpectedError),
+    GenericTypeArgsExpected(GenericTypeArgsExpectedError),
+    GenericTypeArgsCountMismatched(GenericTypeArgsCountMismatchedError),
+    GenericTypeArgsIncorrectlyBounded(GenericTypeArgsIncorrectlyBoundedError),
+    InterfaceMethodsInStructCheck(InterfaceMethodsInStructCheckError),
+    InitMethodNotAllowedInsideConstructor(InitMethodNotAllowedInsideConstructorError),
+    InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(
+        InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError,
+    ),
+    RightSideExpressionTypeMismatchedWithTypeFromAnnotation(
+        RightSideExpressionTypeMismatchedWithTypeFromAnnotationError,
+    ),
+    IncorrectExpressionType(IncorrectExpressionTypeError),
+    ExpressionTypeCannotBeInferred(ExpressionTypeCannotBeInferredError),
+    ClassMethodExpectedParenthesis(ClassMethodExpectedParenthesisError),
+    EnumVariantDoesNotExist(EnumVariantDoesNotExistError),
+    UnexpectedValueProvidedToEnumVariant(UnexpectedValueProvidedToEnumVariantError),
+    ExpectedValueForEnumVariant(ExpectedValueForEnumVariantError),
+    EnumVariantsMissingFromMatchCaseStatement(EnumVariantsMissingFromMatchCaseStatementError),
+    IncorrectEnumName(IncorrectEnumNameError),
+    NonIterableExpression(NonIterableExpressionError),
+    PropertyResolvedToMultipleInterfaceObjects(PropertyResolvedToMultipleInterfaceObjectsError),
 }
 
 impl Diagnostics {
@@ -75,12 +113,13 @@ impl Diagnostics {
             Diagnostics::IdentifierNotFoundInAnyNamespace(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
-            Diagnostics::IdentifierFoundInNonLocals(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::RightSideWithVoidTypeNotAllowed(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::IdentifierNotDeclared(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::VoidConstructorReturnType(diagonstic) => Report::new(diagonstic.clone()),
+            Diagnostics::NonVoidConstructorReturnType(diagonstic) => {
+                Report::new(diagonstic.clone())
+            }
             Diagnostics::NonStructConstructorReturnType(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
@@ -88,17 +127,14 @@ impl Diagnostics {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::SelfNotFound(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::VariableReferencedBeforeAssignment(diagnostic) => {
+            Diagnostics::IdentifierUsedBeforeInitialized(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
             Diagnostics::MoreParamsCount(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::LessParamsCount(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::MoreThanMaxLimitParamsPassed(diagonstic) => {
-                Report::new(diagonstic.clone())
-            }
             Diagnostics::MismatchedParamType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::IdentifierNotCallable(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::StructFieldNotCallable(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::FieldNotCallable(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::ConstructorNotFoundForType(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::ClassmethodDoesNotExist(diagonstic) => Report::new(diagonstic.clone()),
             Diagnostics::PropertyDoesNotExist(diagnostic) => Report::new(diagnostic.clone()),
@@ -129,10 +165,66 @@ impl Diagnostics {
             }
             Diagnostics::ImmutableTypeNotAssignable(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::SingleSubTypeFoundInTuple(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::BuiltinFunctionNameOverlap(diagnotic) => Report::new(diagnotic.clone()),
             Diagnostics::MainFunctionNotFound(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MainFunctionWrongType(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::ExplicitReturnStatementFoundInConstructorBody(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::GenericTypeResolvedToOutsideScope(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::GenericTypesDeclarationInsideConstructorFound(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::GenericTypeArgsNotExpected(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::GenericTypeArgsExpected(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::GenericTypeArgsCountMismatched(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::GenericTypeArgsIncorrectlyBounded(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::NotAllConcreteTypesInferred(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::TypeInferenceFailed(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::InferredTypesNotBoundedByInterfaces(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InterfaceMethodsInStructCheck(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InitMethodNotAllowedInsideConstructor(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::RightSideExpressionTypeMismatchedWithTypeFromAnnotation(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::IncorrectExpressionType(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::ExpressionTypeCannotBeInferred(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::InvalidLoopControlFlowStatementFound(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::ClassMethodExpectedParenthesis(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::EnumVariantDoesNotExist(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::UnexpectedValueProvidedToEnumVariant(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::ExpectedValueForEnumVariant(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::EnumVariantsMissingFromMatchCaseStatement(diagnostic) => {
+                Report::new(diagnostic.clone())
+            }
+            Diagnostics::IncorrectEnumName(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::NonIterableExpression(diagnostic) => Report::new(diagnostic.clone()),
+            Diagnostics::PropertyResolvedToMultipleInterfaceObjects(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
         }
@@ -208,7 +300,7 @@ impl MissingTokenError {
 
 impl Diagnostic for MissingTokenError {
     fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        return Some(Box::new("SyntaxError"));
+        Some(Box::new("SyntaxError"))
     }
 
     fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
@@ -244,7 +336,7 @@ impl Diagnostic for MissingTokenError {
             self.start_index,
             self.len,
         )];
-        return Some(Box::new(span_vec.into_iter()));
+        Some(Box::new(span_vec.into_iter()))
     }
 }
 
@@ -299,7 +391,7 @@ impl InvalidLValueError {
         InvalidLValueError {
             span: range_to_span(range).into(),
             help: Some(
-                "any value derived from the output of a function call is not assignable"
+                "constants and output of function call is not assignable"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),
@@ -309,21 +401,38 @@ impl InvalidLValueError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("void constructor return-type")]
+#[error("expected token missing")]
+#[diagnostic(code("SyntaxError"))]
+pub struct ClassMethodExpectedParenthesisError {
+    #[label("expected `(` for classmethod call expression")]
+    pub span: SourceSpan,
+}
+
+impl ClassMethodExpectedParenthesisError {
+    pub fn new(end_index: usize) -> Self {
+        let start_index = end_index - 1;
+        ClassMethodExpectedParenthesisError {
+            span: (start_index, end_index - start_index).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("return-type in constructor declaration found")]
 #[diagnostic(code("SemanticError"))]
-pub struct VoidConstructorReturnTypeError {
-    #[label("constructor cannot have a void return-type")]
+pub struct NonVoidConstructorReturnTypeError {
+    #[label("constructor cannot have a return-type")]
     pub span: SourceSpan,
     #[help]
     pub help: Option<String>, // any value derived from a function call is not assignable
 }
 
-impl VoidConstructorReturnTypeError {
+impl NonVoidConstructorReturnTypeError {
     pub fn new(range: TextRange) -> Self {
-        VoidConstructorReturnTypeError {
+        NonVoidConstructorReturnTypeError {
             span: range_to_span(range).into(),
             help: Some(
-                "constructor should have return-type same as the struct it is defined in"
+                "constructor should not have any return-type"
                     .to_string()
                     .style(Style::new().yellow())
                     .to_string(),
@@ -399,7 +508,7 @@ pub struct IdentifierAlreadyDeclaredError {
 impl IdentifierAlreadyDeclaredError {
     pub fn new(
         identifier_kind: IdentifierKind,
-        name: String,
+        name: &str,
         previous_decl_range: TextRange,
         redecl_range: TextRange,
     ) -> Self {
@@ -410,58 +519,36 @@ impl IdentifierAlreadyDeclaredError {
                     identifier_kind
                 )
             }
+            IdentifierKind::UserDefinedType => {
+                "types are not allowed to be redeclared inside the complete scope chain".to_string()
+            }
+            IdentifierKind::Interface => {
+                "interfaces are not allowed to be redeclared inside the complete scope chain"
+                    .to_string()
+            }
             IdentifierKind::Argument => {
+                "parameters are not allowed to be redeclared in the same function defintion"
+                    .to_string()
+            }
+            IdentifierKind::Field | IdentifierKind::Method => {
                 format!(
-                    "{}s are not allowed to be redeclared in the same function defintion",
+                    "all {}s of struct and interfaces should have distinct names",
                     identifier_kind
                 )
             }
-            IdentifierKind::Field => {
-                format!("all fields of struct should have distinct names")
-            }
-            IdentifierKind::Type => {
-                format!(
-                    "{}s are not allowed to be redeclared inside the complete scope chain",
-                    identifier_kind
-                )
-            }
-            IdentifierKind::Method => {
-                format!("all methods of struct should have distinct names")
+            IdentifierKind::Variant => {
+                format!("all variants of enum should have distinct names")
             }
             IdentifierKind::Constructor => {
-                format!("constructor is not allowed to be redeclared")
+                "constructor is not allowed to be redeclared".to_string()
             }
         };
         IdentifierAlreadyDeclaredError {
             identifier_kind,
-            name,
+            name: name.to_string(),
             previous_decl_span: range_to_span(previous_decl_range).into(),
             redecl_span: range_to_span(redecl_range).into(),
             help: Some(help_str.style(Style::new().yellow()).to_string()),
-        }
-    }
-}
-
-#[derive(Diagnostic, Debug, Error, Clone)]
-#[error("builtin function name overlap")]
-#[diagnostic(code("SemanticError"))]
-pub struct BuiltinFunctionNameOverlapError {
-    #[label("there is a builtin function with same name")]
-    pub span: SourceSpan,
-    #[help]
-    help: Option<String>,
-}
-
-impl BuiltinFunctionNameOverlapError {
-    pub fn new(range: TextRange) -> Self {
-        BuiltinFunctionNameOverlapError {
-            span: range_to_span(range).into(),
-            help: Some(
-                "functions with same name as builtin functions cannot be declared in global scope"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
         }
     }
 }
@@ -520,17 +607,28 @@ impl ConstructorNotFoundInsideStructDeclarationError {
 #[error("fields not initialized in constructor")]
 #[diagnostic(code("SemanticError"))]
 pub struct FieldsNotInitializedInConstructorError {
-    pub message: String,
-    #[label("fields {} not initialized inside the constructor", self.message)]
+    pub err_msg: String,
+    #[label("fields {} not initialized inside the constructor", err_msg)]
     pub span: SourceSpan,
     #[help]
     help: Option<String>,
 }
 
 impl FieldsNotInitializedInConstructorError {
-    pub fn new(message: String, range: TextRange) -> Self {
+    pub fn new(missing_fields_vec: Vec<&StrId>, range: TextRange, interner: &Interner) -> Self {
+        let len = missing_fields_vec.len();
+        let mut message = format!("`{}`", interner.lookup(*missing_fields_vec[0]));
+        if len > 1 {
+            for i in 1..(len - 1) {
+                message.push_str(&format!(", `{}`", interner.lookup(*missing_fields_vec[i])));
+            }
+            message.push_str(&format!(
+                " and `{}`",
+                interner.lookup(*missing_fields_vec[len - 1])
+            ));
+        }
         FieldsNotInitializedInConstructorError {
-            message,
+            err_msg: message,
             span: range_to_span(range).into(),
             help: Some(
                 "all fields of struct should be initialized through assignment inside the constructor"
@@ -538,6 +636,74 @@ impl FieldsNotInitializedInConstructorError {
                 .style(Style::new().yellow())
                 .to_string()
             )
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("enum variants missing from match-case statement")]
+#[diagnostic(code("SemanticError"))]
+pub struct EnumVariantsMissingFromMatchCaseStatementError {
+    pub enum_name: String,
+    pub err_msg: String,
+    #[label(
+        "variants {} not handled inside the match-case statement for the expression with type `{}`",
+        err_msg,
+        self.enum_name
+    )]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl EnumVariantsMissingFromMatchCaseStatementError {
+    pub fn new(
+        enum_name: String,
+        missing_variants: Vec<StrId>,
+        range: TextRange,
+        interner: &Interner,
+    ) -> Self {
+        let len = missing_variants.len();
+        let mut message = format!("`{}`", interner.lookup(missing_variants[0]));
+        if len > 1 {
+            for i in 1..(len - 1) {
+                message.push_str(&format!(", `{}`", interner.lookup(missing_variants[i])));
+            }
+            message.push_str(&format!(
+                " and `{}`",
+                interner.lookup(missing_variants[len - 1])
+            ));
+        }
+        EnumVariantsMissingFromMatchCaseStatementError {
+            enum_name,
+            err_msg: message,
+            span: range_to_span(range).into(),
+            help: Some(
+                "all variants should be handled inside the match-case statement for the expression with enum type"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("`self` is not declared in the scope")]
+#[diagnostic(code("SemanticError"))]
+pub struct IncorrectEnumNameError {
+    pub expected_enum_name: String,
+    pub received_enum_name: String,
+    #[label("expected enum `{}`, got `{}`", self.expected_enum_name, self.received_enum_name)]
+    pub span: SourceSpan,
+}
+
+impl IncorrectEnumNameError {
+    pub fn new(expected_enum_name: String, received_enum_name: String, range: TextRange) -> Self {
+        IncorrectEnumNameError {
+            expected_enum_name,
+            received_enum_name,
+            span: range_to_span(range).into(),
         }
     }
 }
@@ -567,23 +733,24 @@ impl SelfNotFoundError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("{} found in non-locals", self.identifier_kind)]
+#[error("inferred type of lambda variable does not match with provided type annotation")]
 #[diagnostic(code("SemanticError"))]
-pub struct IdentifierFoundInNonLocalsError {
-    pub identifier_kind: IdentifierKind,
-    #[label("identifier with same name is resolved in non-local scope")]
+pub struct InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError {
+    pub ty_from_annotation: String,
+    pub inferred_lambda_ty: String,
+    #[label("inferred lambda type of right side expression does not match this")]
     pub span: SourceSpan,
-    #[help]
     help: Option<String>,
 }
 
-impl IdentifierFoundInNonLocalsError {
-    pub fn new(identifier_kind: IdentifierKind, range: TextRange) -> Self {
-        IdentifierFoundInNonLocalsError {
-            identifier_kind,
+impl InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError {
+    pub fn new(ty_from_annotation: String, inferred_lambda_ty: String, range: TextRange) -> Self {
+        InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError {
+            ty_from_annotation,
+            inferred_lambda_ty,
             span: range_to_span(range).into(),
             help: Some(
-                "variables and functions are not allowed to be declared in the scope where there exist a reference with the same name to a non-local declaration"
+                "use lambda type in annotation matching the prototype with the lambda on the right side"
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()
@@ -593,26 +760,153 @@ impl IdentifierFoundInNonLocalsError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("variable `{}` referenced before assignment", self.variable_name)]
+#[error("identifier `{}` referenced before initialization", self.identifier_name)]
 #[diagnostic(code("SemanticError"))]
-pub struct VariableReferencedBeforeAssignmentError {
-    pub variable_name: String,
-    #[label("variable declared here")]
+pub struct IdentifierUsedBeforeInitializedError {
+    pub identifier_name: String,
+    pub identifier_kind: IdentifierKind,
+    #[label("{} declared here", identifier_kind)]
     pub decl_span: SourceSpan,
-    #[label("same variable used within the declaration statement")]
+    #[label("same {} used within the declaration", identifier_kind)]
     pub usage_span: SourceSpan,
     #[help]
     help: Option<String>,
 }
 
-impl VariableReferencedBeforeAssignmentError {
-    pub fn new(variable_name: String, decl_range: TextRange, usage_range: TextRange) -> Self {
-        VariableReferencedBeforeAssignmentError {
-            variable_name,
+impl IdentifierUsedBeforeInitializedError {
+    pub fn new(
+        identifier_name: &str,
+        identifier_kind: IdentifierKind,
+        decl_range: TextRange,
+        usage_range: TextRange,
+    ) -> Self {
+        let help_str = match identifier_kind {
+            IdentifierKind::Variable => "variables are not allowed to be referenced inside their own declaration statement",
+            IdentifierKind::UserDefinedType => "struct types are not allowed to be referenced inside their own generic types declaration and implementing interfaces",
+            IdentifierKind::Interface => "interfaces are not allowed to be referenced inside their own generic types declaration",
+            _ => unreachable!()
+        };
+        IdentifierUsedBeforeInitializedError {
+            identifier_name: identifier_name.to_string(),
+            identifier_kind,
             decl_span: range_to_span(decl_range).into(),
             usage_span: range_to_span(usage_range).into(),
             help: Some(
-                "variables are not allowed to be referenced inside the their own declaration statement"
+                help_str
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("interface reincluded in the bounds")]
+#[diagnostic(code("SemanticError"))]
+pub struct InterfaceAlreadyExistInBoundsDeclarationError {
+    name: String,
+    #[label("interface `{}` is included here", self.name)]
+    pub previous_decl_span: SourceSpan,
+    #[label("interface `{}` reincluded here", self.name)]
+    pub decl_span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl InterfaceAlreadyExistInBoundsDeclarationError {
+    pub fn new(name: &str, previous_decl_span: TextRange, decl_span: TextRange) -> Self {
+        InterfaceAlreadyExistInBoundsDeclarationError {
+            name: name.to_string(),
+            previous_decl_span: range_to_span(previous_decl_span).into(),
+            decl_span: range_to_span(decl_span).into(),
+            help: Some(
+                "interface can only be included once inside the bounds declaration"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("init method not allowed inside interface")]
+#[diagnostic(code("SemanticError"))]
+pub struct InitMethodNotAllowedInsideConstructorError {
+    #[label("prototype with name `__init__` is not allowed")]
+    pub span: SourceSpan,
+}
+
+impl InitMethodNotAllowedInsideConstructorError {
+    pub fn new(span: TextRange) -> Self {
+        InitMethodNotAllowedInsideConstructorError {
+            span: range_to_span(span).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("invalid {} statement found", self.kind)]
+#[diagnostic(code("SemanticError"))]
+pub struct InvalidLoopControlFlowStatementFoundError {
+    pub kind: &'static str,
+    #[label("no enclosing loop found for the statmement")]
+    pub span: SourceSpan,
+}
+
+impl InvalidLoopControlFlowStatementFoundError {
+    pub fn new(span: TextRange, kind: &'static str) -> Self {
+        InvalidLoopControlFlowStatementFoundError {
+            span: range_to_span(span).into(),
+            kind,
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("generic types declaration inside constructor found")]
+#[diagnostic(code("SemanticError"))]
+pub struct GenericTypesDeclarationInsideConstructorFoundError {
+    #[label("generic types declaration found")]
+    pub span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl GenericTypesDeclarationInsideConstructorFoundError {
+    pub fn new(span: TextRange) -> Self {
+        GenericTypesDeclarationInsideConstructorFoundError {
+            span: range_to_span(span).into(),
+            help: Some(
+                "generic types declaration is not allowed inside constructor"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("generic type resolved to outside scope")]
+#[diagnostic(code("SemanticError"))]
+pub struct GenericTypeResolvedToOutsideScopeError {
+    #[label("generic type resolved to the outside declaration")]
+    pub usage_span: SourceSpan,
+    #[label("generic type is declared here")]
+    pub decl_span: SourceSpan,
+    #[help]
+    help: Option<String>,
+}
+
+impl GenericTypeResolvedToOutsideScopeError {
+    pub fn new(usage_span: TextRange, decl_span: TextRange) -> Self {
+        GenericTypeResolvedToOutsideScopeError {
+            usage_span: range_to_span(usage_span).into(),
+            decl_span: range_to_span(decl_span).into(),
+            help: Some(
+                "generic types are not allowed to be resolved to declarations outside the enclosing generics declarative constructs like functions, methods, structs and interfaces."
                 .to_string()
                 .style(Style::new().yellow())
                 .to_string()
@@ -681,9 +975,9 @@ pub struct ImmutableTypeNotAssignableError {
 }
 
 impl ImmutableTypeNotAssignableError {
-    pub fn new(ty: &Type, range: TextRange) -> Self {
+    pub fn new(ty: String, range: TextRange) -> Self {
         ImmutableTypeNotAssignableError {
-            ty: ty.to_string(),
+            ty,
             span: range_to_span(range).into(),
             help: Some(
                 "`str` and `tuple` are immutable types which are not assignable"
@@ -692,6 +986,100 @@ impl ImmutableTypeNotAssignableError {
                     .to_string(),
             ),
         }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("generic type arguments not provided")]
+#[diagnostic(code("SemanticError"))]
+pub struct GenericTypeArgsExpectedError {
+    pub identifier_kind: IdentifierKind,
+    #[label("generic type arguments expected by the {}", identifier_kind)]
+    pub span: SourceSpan,
+}
+
+impl GenericTypeArgsExpectedError {
+    pub fn new(identifier_kind: IdentifierKind, range: TextRange) -> Self {
+        GenericTypeArgsExpectedError {
+            identifier_kind,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("unexpected generic type arguments provided")]
+#[diagnostic(code("SemanticError"))]
+pub struct GenericTypeArgsNotExpectedError {
+    pub identifier_kind: IdentifierKind,
+    #[label("generic type arguments not expected by the {}", identifier_kind)]
+    pub span: SourceSpan,
+}
+
+impl GenericTypeArgsNotExpectedError {
+    pub fn new(identifier_kind: IdentifierKind, range: TextRange) -> Self {
+        GenericTypeArgsNotExpectedError {
+            identifier_kind,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("mismatched expected and passed generic type arguments")]
+#[diagnostic(code("SemanticError"))]
+pub struct GenericTypeArgsCountMismatchedError {
+    pub received_count: usize,
+    pub expected_count: usize,
+    #[label(
+        "expected {} generic type arguments, got {}",
+        expected_count,
+        received_count
+    )]
+    pub span: SourceSpan,
+}
+
+impl GenericTypeArgsCountMismatchedError {
+    pub fn new(received_count: usize, expected_count: usize, range: TextRange) -> Self {
+        GenericTypeArgsCountMismatchedError {
+            received_count,
+            expected_count,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Debug, Error, Clone)]
+#[error("incorrectly bounded generic type arguments found")]
+pub struct GenericTypeArgsIncorrectlyBoundedError {
+    incorrectly_bounded_types: Vec<(TextRange, String)>, // (ty_span, interface_bounds_str)
+}
+impl GenericTypeArgsIncorrectlyBoundedError {
+    pub fn new(incorrectly_bounded_types: &Vec<(TextRange, String)>) -> Self {
+        GenericTypeArgsIncorrectlyBoundedError {
+            incorrectly_bounded_types: incorrectly_bounded_types.clone(),
+        }
+    }
+}
+
+impl Diagnostic for GenericTypeArgsIncorrectlyBoundedError {
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
+        let mut span_vec: Vec<LabeledSpan> = vec![];
+        for factor in &self.incorrectly_bounded_types {
+            let err_message = format!("type is not bounded by interfaces `{}`", factor.1);
+            let start_index: usize = factor.0.start().into();
+            let len: usize = (factor.0.end() - factor.0.start()).into();
+            span_vec.push(miette::LabeledSpan::new(
+                Some(err_message),
+                start_index,
+                len,
+            ));
+        }
+        Some(Box::new(span_vec.into_iter()))
+    }
+
+    fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
+        Some(Box::new("TypeCheckError"))
     }
 }
 
@@ -737,26 +1125,6 @@ impl LessParamsCountError {
     }
 }
 
-#[derive(Diagnostic, Debug, Error, Clone)]
-#[error("more than {} parameters passed in the function", self.max_limit)]
-#[diagnostic(code("SemanticError"))]
-pub struct MoreThanMaxLimitParamsPassedError {
-    params_count: usize,
-    max_limit: usize,
-    #[label("max. limit for parameters to a function is {}, got {}", self.max_limit, self.params_count)]
-    pub span: SourceSpan,
-}
-
-impl MoreThanMaxLimitParamsPassedError {
-    pub fn new(params_count: usize, max_limit: usize, range: TextRange) -> Self {
-        MoreThanMaxLimitParamsPassedError {
-            params_count,
-            max_limit,
-            span: range_to_span(range).into(),
-        }
-    }
-}
-
 #[derive(Debug, Error, Clone)]
 #[error("mismatched types")]
 pub struct MismatchedParamTypeError {
@@ -781,11 +1149,239 @@ impl Diagnostic for MismatchedParamTypeError {
                 len,
             ));
         }
-        return Some(Box::new(span_vec.into_iter()));
+        Some(Box::new(span_vec.into_iter()))
     }
 
     fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
-        return Some(Box::new("TypeCheckError"));
+        Some(Box::new("TypeCheckError"))
+    }
+}
+
+#[derive(Debug, Error, Clone)]
+#[error("struct type not implementing interface methods correctly")]
+pub struct InterfaceMethodsInStructCheckError {
+    missing_interface_method_names: Option<String>,
+    errors: Option<Vec<(String, TextRange)>>,
+    interface_range: TextRange,
+}
+
+impl InterfaceMethodsInStructCheckError {
+    pub fn new(
+        missing_interface_method_names: Option<Vec<&StrId>>,
+        errors: Option<Vec<(&StrId, PartialConcreteInterfaceMethodsCheckError)>>,
+        interface_name: String,
+        interface_range: TextRange,
+        interner: &Interner,
+    ) -> Self {
+        let missing_interface_method_names: Option<String> =
+            if let Some(missing_interface_method_names) = missing_interface_method_names {
+                let mut s = "".to_string();
+                if !missing_interface_method_names.is_empty() {
+                    s.push_str(interner.lookup(*missing_interface_method_names[0]));
+                }
+                for i in 1..missing_interface_method_names.len() {
+                    s.push_str(&format!(
+                        ", {}",
+                        interner.lookup(*missing_interface_method_names[i])
+                    ));
+                }
+                Some(s)
+            } else {
+                None
+            };
+        let errors: Option<Vec<(String, TextRange)>> = if let Some(errors) = errors {
+            let mut v = vec![];
+            for (_, err) in errors {
+                let s: (String, TextRange) = match err {
+                    PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range) => {
+                        (format!("generic types declaration does not match with interface `{}` specification for this method", interface_name), range)
+                    },
+                    PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationNotExpected(range) => {
+                        (format!("generic types declaration is not expected by interface `{}` specification for this method", interface_name), range)
+                    },
+                    PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationExpected(range) => {
+                        (format!("generic types declaration expected by interface `{}` specification for this method", interface_name), range)
+                    },
+                    PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range) => {
+                        (format!("prototype does not match with the interface `{}` specification for this method", interface_name), range)
+                    },
+                };
+                v.push(s);
+            }
+            Some(v)
+        } else {
+            None
+        };
+        InterfaceMethodsInStructCheckError {
+            missing_interface_method_names,
+            errors,
+            interface_range,
+        }
+    }
+}
+
+impl Diagnostic for InterfaceMethodsInStructCheckError {
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
+        let mut span_vec: Vec<LabeledSpan> = vec![];
+        let s = match &self.missing_interface_method_names {
+            Some(s) => {
+                format!("missing interface methods: {}", s)
+            }
+            None => "interface not correctly implemented by the struct type".to_string(),
+        };
+        let start_index: usize = self.interface_range.start().into();
+        let len: usize = (self.interface_range.end() - self.interface_range.start()).into();
+        span_vec.push(miette::LabeledSpan::new(Some(s), start_index, len));
+        if let Some(errors) = &self.errors {
+            for (err_message, method_range) in errors {
+                let start_index: usize = method_range.start().into();
+                let len: usize = (method_range.end() - method_range.start()).into();
+                span_vec.push(miette::LabeledSpan::new(
+                    Some(err_message.to_string()),
+                    start_index,
+                    len,
+                ));
+            }
+        }
+        Some(Box::new(span_vec.into_iter()))
+    }
+
+    fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
+        Some(Box::new("TypeCheckError"))
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("concrete types inference failed")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct NotAllConcreteTypesInferredError {
+    #[label("complete set of concrete types cannot be inferred")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl NotAllConcreteTypesInferredError {
+    pub fn new(range: TextRange) -> Self {
+        NotAllConcreteTypesInferredError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "explicitly specify the generic type arguments using <...>"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("concrete types inference failed")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct TypeInferenceFailedError {
+    #[label("cannot infer concrete types")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl TypeInferenceFailedError {
+    pub fn new(range: TextRange) -> Self {
+        TypeInferenceFailedError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "explicitly specify the generic type arguments using <...>"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("concrete types inference failed")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct InferredTypesNotBoundedByInterfacesError {
+    pub msg: String,
+    #[label("{}", msg)]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl InferredTypesNotBoundedByInterfacesError {
+    pub fn new(
+        range: TextRange,
+        err_strs: Vec<(String, String)>,
+        concrete_types: Vec<Type>,
+        interner: &Interner,
+    ) -> Self {
+        let mut concrete_types_str = "<".to_string();
+        let concrete_types_len = concrete_types.len();
+        concrete_types_str.push_str(&concrete_types[0].to_string(interner));
+        for i in 1..concrete_types_len {
+            concrete_types_str.push_str(&format!(", {}", concrete_types[i].to_string(interner)));
+        }
+        concrete_types_str.push('>');
+        let mut err_msg = format!(
+            "type `{}` is not bounded by interfaces `{}`",
+            err_strs[0].0, err_strs[0].1
+        );
+        for (ty_str, interface_bounds_str) in &err_strs[1..] {
+            err_msg.push_str(&format!(
+                "\ntype `{}` is not bounded by interfaces `{}`",
+                ty_str, interface_bounds_str
+            ));
+        }
+        InferredTypesNotBoundedByInterfacesError {
+            span: range_to_span(range).into(),
+            msg: format!(
+                "inferred types `{}` are not bounded:\n{}",
+                concrete_types_str, err_msg
+            ),
+            help: Some(
+                "explicitly specify the generic type arguments using <...>"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("ambigious {} resolution", self.property_kind)]
+#[diagnostic(code("TypeCheckError"))]
+pub struct PropertyResolvedToMultipleInterfaceObjectsError {
+    pub property_kind: PropertyKind,
+    pub msg: String,
+    #[label("{}", msg)]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl PropertyResolvedToMultipleInterfaceObjectsError {
+    pub fn new(range: TextRange, interface_objs: Vec<String>, property_kind: PropertyKind) -> Self {
+        let mut err_msg = interface_objs[0].to_string();
+        for i in 1..interface_objs.len() {
+            err_msg.push_str(&format!(", {}", interface_objs[i]));
+        }
+        PropertyResolvedToMultipleInterfaceObjectsError {
+            property_kind,
+            span: range_to_span(range).into(),
+            msg: format!(
+                "{} resolved to following multiple interface objects: {}",
+                property_kind, err_msg
+            ),
+            help: Some(
+                "there should not be name collision for fields and methods between interfaces inside bounds of any generic type"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
     }
 }
 
@@ -816,6 +1412,32 @@ impl IdentifierNotCallableError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
+#[error("expression not iterable")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct NonIterableExpressionError {
+    pub ty: String,
+    #[label("expression with type `{}` is not iterable", self.ty)]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl NonIterableExpressionError {
+    pub fn new(ty: String, range: TextRange) -> Self {
+        NonIterableExpressionError {
+            ty,
+            span: range_to_span(range).into(),
+            help: Some(
+                "only expressions with iterable type like `array`, `hashmap`, `str` should be used inside `for` loop"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
 #[error("constructor not found")]
 #[diagnostic(code("TypeCheckError"))]
 pub struct ConstructorNotFoundForTypeError {
@@ -827,9 +1449,9 @@ pub struct ConstructorNotFoundForTypeError {
 }
 
 impl ConstructorNotFoundForTypeError {
-    pub fn new(ty_str: String, range: TextRange) -> Self {
+    pub fn new(ty_str: &str, range: TextRange) -> Self {
         ConstructorNotFoundForTypeError {
-            ty: ty_str,
+            ty: ty_str.to_string(),
             span: range_to_span(range).into(),
             help: Some(
                 "only struct type is allowed to call constructor via self name"
@@ -851,9 +1473,9 @@ pub struct ClassmethodDoesNotExistError {
 }
 
 impl ClassmethodDoesNotExistError {
-    pub fn new(struct_name: String, range: TextRange) -> Self {
+    pub fn new(struct_name: &str, range: TextRange) -> Self {
         ClassmethodDoesNotExistError {
-            struct_name,
+            struct_name: struct_name.to_string(),
             span: range_to_span(range).into(),
         }
     }
@@ -888,17 +1510,17 @@ impl PropertyDoesNotExistError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
-#[error("struct field not callable")]
+#[error("field not callable")]
 #[diagnostic(code("TypeCheckError"))]
-pub struct StructFieldNotCallableError {
+pub struct FieldNotCallableError {
     pub ty: String,
     #[label("field with type `{}` is not callable", self.ty)]
     pub field_span: SourceSpan,
 }
 
-impl StructFieldNotCallableError {
+impl FieldNotCallableError {
     pub fn new(ty: String, field_span: TextRange) -> Self {
-        StructFieldNotCallableError {
+        FieldNotCallableError {
             ty,
             field_span: range_to_span(field_span).into(),
         }
@@ -1026,6 +1648,54 @@ impl UnresolvedIndexExpressionInTupleError {
 }
 
 #[derive(Diagnostic, Debug, Error, Clone)]
+#[error("incorrect expression type")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct IncorrectExpressionTypeError {
+    pub expected_ty: String,
+    pub received_ty: String,
+    #[label(
+        "expected type `{}`, got expression with type `{}`",
+        expected_ty,
+        received_ty
+    )]
+    pub span: SourceSpan,
+}
+
+impl IncorrectExpressionTypeError {
+    pub fn new(expected_ty: String, received_ty: String, range: TextRange) -> Self {
+        IncorrectExpressionTypeError {
+            expected_ty,
+            received_ty,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("expression type cannot be inferred")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct ExpressionTypeCannotBeInferredError {
+    #[label("expression type is not clear")]
+    pub span: SourceSpan,
+    #[help]
+    pub help: Option<String>,
+}
+
+impl ExpressionTypeCannotBeInferredError {
+    pub fn new(range: TextRange) -> Self {
+        ExpressionTypeCannotBeInferredError {
+            span: range_to_span(range).into(),
+            help: Some(
+                "while declaring the variable, use explicit type annotation to remove ambiguity associated with empty collections like lists and dicts"
+                    .to_string()
+                    .style(Style::new().yellow())
+                    .to_string(),
+            ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
 #[error("invalid unary operand")]
 #[diagnostic(code("TypeCheckError"))]
 pub struct UnaryOperatorInvalidUseError {
@@ -1131,6 +1801,34 @@ impl MismatchedTypesOnLeftRightError {
                     .style(Style::new().yellow())
                     .to_string(),
             ),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("right side expression type does not match the type annotated on the variable")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct RightSideExpressionTypeMismatchedWithTypeFromAnnotationError {
+    pub ty_from_annotation: String,
+    pub right_expr_ty: String,
+    #[label("variable has type `{}`", ty_from_annotation)]
+    pub variable_span: SourceSpan,
+    #[label("expression has type `{}`", right_expr_ty)]
+    pub right_expr_span: SourceSpan,
+}
+
+impl RightSideExpressionTypeMismatchedWithTypeFromAnnotationError {
+    pub fn new(
+        ty_from_annotation: String,
+        right_expr_ty: String,
+        variable_range: TextRange,
+        right_expr_range: TextRange,
+    ) -> Self {
+        RightSideExpressionTypeMismatchedWithTypeFromAnnotationError {
+            ty_from_annotation,
+            right_expr_ty,
+            variable_span: range_to_span(variable_range).into(),
+            right_expr_span: range_to_span(right_expr_range).into(),
         }
     }
 }
@@ -1244,8 +1942,62 @@ pub struct MismatchedReturnTypeError {
 impl MismatchedReturnTypeError {
     pub fn new(expected_type: String, received_type: String, range: TextRange) -> Self {
         MismatchedReturnTypeError {
-            expected_type: expected_type,
-            received_type: received_type,
+            expected_type,
+            received_type,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("enum variant not found")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct EnumVariantDoesNotExistError {
+    pub enum_name: String,
+    #[label("no variant with this name found for enum `{}`", self.enum_name)]
+    pub span: SourceSpan,
+}
+
+impl EnumVariantDoesNotExistError {
+    pub fn new(enum_name: String, range: TextRange) -> Self {
+        EnumVariantDoesNotExistError {
+            enum_name,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("unexpected value provided to enum variant")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct UnexpectedValueProvidedToEnumVariantError {
+    pub variant_name: String,
+    #[label("enum variant `{}` does not expect a value", self.variant_name)]
+    pub span: SourceSpan,
+}
+
+impl UnexpectedValueProvidedToEnumVariantError {
+    pub fn new(variant_name: String, range: TextRange) -> Self {
+        UnexpectedValueProvidedToEnumVariantError {
+            variant_name,
+            span: range_to_span(range).into(),
+        }
+    }
+}
+
+#[derive(Diagnostic, Debug, Error, Clone)]
+#[error("enum variant expected a value")]
+#[diagnostic(code("TypeCheckError"))]
+pub struct ExpectedValueForEnumVariantError {
+    pub variant_ty: String,
+    #[label("enum variant expected a value with type `{}`", self.variant_ty)]
+    pub span: SourceSpan,
+}
+
+impl ExpectedValueForEnumVariantError {
+    pub fn new(variant_ty: String, range: TextRange) -> Self {
+        ExpectedValueForEnumVariantError {
+            variant_ty,
             span: range_to_span(range).into(),
         }
     }

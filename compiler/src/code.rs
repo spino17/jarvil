@@ -15,7 +15,7 @@ impl JarvilCode {
 
     pub fn extract_code_lines(&self) -> &Vec<usize> {
         match &self.code_lines {
-            Some(code_lines) => return code_lines,
+            Some(code_lines) => code_lines,
             None => unreachable!(
                 "this method should always be called once code_lines has been set by the lexer"
             ),

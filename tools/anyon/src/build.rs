@@ -42,7 +42,7 @@ impl AbstractCommand for BuildCommand {
     fn check_cmd(&mut self) -> Result<(), AnyonError> {
         let len = self.command_line_args.len();
         if len == 2 {
-            return Ok(());
+            Ok(())
         } else if len == 3 {
             let file_name = check_jarvil_code_file_extension(&self.command_line_args[2])?;
             self.alternate_code_file_name = Some(file_name.to_string());
@@ -63,7 +63,7 @@ impl AbstractCommand for BuildCommand {
             curr_dir_path, code_file_name
         );
 
-        let code_str = fs::read_to_string(&jarvil_code_file_path)?;
+        let code_str = fs::read_to_string(jarvil_code_file_path)?;
         let code = JarvilCode::new(&code_str);
         let py_code = build_code(code, code_str)?;
         fs::write(&transpiled_py_code_file_path, py_code)?;
@@ -78,11 +78,18 @@ impl AbstractCommand for BuildCommand {
                 let output = Command::new("python3")
                     .arg(transpiled_py_code_file_path)
                     .output()?;
-                let len = output.stdout.len();
-                if len > 0 {
-                    let std_output_str = str::from_utf8(&output.stdout[..len - 1])?;
-                    println!("{}", std_output_str)
-                }
+                let std_out_len = output.stdout.len();
+                let std_err_len = output.stderr.len();
+                let output_str = if std_err_len > 0 {
+                    let msg = str::from_utf8(&output.stderr)?;
+                    format!("\nPython Runtime Error Occured\n\n{}", msg)
+                } else if std_out_len > 0 {
+                    let msg = str::from_utf8(&output.stdout[..std_out_len - 1])?;
+                    msg.to_string()
+                } else {
+                    "".to_string()
+                };
+                println!("{}", output_str);
             }
             BuildMode::Build => {}
         }

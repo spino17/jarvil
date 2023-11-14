@@ -2,15 +2,17 @@ use std::fmt::Display;
 use std::fmt::{self};
 use text_size::TextRange;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub enum IdentifierKind {
     Variable,
     Function,
-    Type,
+    UserDefinedType,
+    Interface,
     Argument,
     Field,
     Method,
     Constructor,
+    Variant,
 }
 
 impl Display for IdentifierKind {
@@ -18,16 +20,18 @@ impl Display for IdentifierKind {
         match self {
             IdentifierKind::Variable => write!(f, "variable"),
             IdentifierKind::Function => write!(f, "function"),
-            IdentifierKind::Type => write!(f, "type"),
+            IdentifierKind::UserDefinedType => write!(f, "type"),
             IdentifierKind::Argument => write!(f, "argument"),
             IdentifierKind::Field => write!(f, "field"),
+            IdentifierKind::Variant => write!(f, "variant"),
             IdentifierKind::Method => write!(f, "method"),
             IdentifierKind::Constructor => write!(f, "constructor"),
+            IdentifierKind::Interface => write!(f, "interface"),
         }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub enum PropertyKind {
     Field,
     Method,

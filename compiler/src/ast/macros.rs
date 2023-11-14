@@ -2,8 +2,8 @@ macro_rules! default_errornous_node_impl {
     ($t: ident, $u: ident) => {
         impl ErrornousNode for $t {
             fn new_with_missing_tokens(
-                expected_symbols: &Vec<&'static str>,
-                received_token: &Token,
+                expected_symbols: Vec<&'static str>,
+                received_token: Token,
             ) -> Self {
                 $t(Rc::new($u::MissingTokens(MissingTokenNode::new(
                     expected_symbols,
@@ -21,15 +21,6 @@ macro_rules! impl_ast_node {
                 ASTNode::$t(x.clone())
             }
         )*
-    };
-}
-
-macro_rules! extract_from_option {
-    ($t: ident) => {
-        match $t {
-            Some(val) => Some(val.clone()),
-            None => None,
-        }
     };
 }
 

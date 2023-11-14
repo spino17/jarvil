@@ -1,7 +1,4 @@
-use anyon::{
-    core::{get_cmd_from_command_line_args, AbstractCommand},
-    error::AnyonError,
-};
+use anyon::{core::AbstractCommand, error::AnyonError, helper::get_cmd_from_command_line_args};
 use miette::{GraphicalReportHandler, GraphicalTheme};
 use owo_colors::Style;
 use std::env::args;

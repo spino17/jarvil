@@ -1,23 +1,30 @@
+use super::ast::{
+    ArrayExpressionNode, BreakStatementNode, CaseBranchStatementNode, ConditionalBlockNode,
+    ConditionalStatementNode, ContinueStatementNode, CoreIdentifierInDeclNode,
+    CoreIdentifierInUseNode, EnumDeclarationNode, EnumVariantDeclarationNode, ForLoopStatementNode,
+    GenericTypeDeclNode, HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode,
+    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode,
+    KeyValuePairNode, MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode, WhileLoopStatementNode,
+};
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
     AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
-    CallNode, CallableBodyNode, CallablePrototypeNode, ClassMethodCallNode, ComparisonNode,
-    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
-    CoreExpressionNode, CoreIdentifierNode, CoreRVariableDeclarationNode, CoreSelfKeywordNode,
-    CoreStatemenIndentWrapperNode, CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
-    CoreTypeExpressionNode, CoreUnaryExpressionNode, ExpressionNode, ExpressionStatementNode,
-    FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode, IdentifierNode,
+    CallNode, CallableBodyNode, CallablePrototypeNode, ComparisonNode, CoreAssignmentNode,
+    CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
+    CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatementIndentWrapperNode,
+    CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreTypeExpressionNode,
+    CoreUnaryExpressionNode, EnumVariantExprOrClassMethodCallNode, ExpressionNode,
+    ExpressionStatementNode, FunctionDeclarationNode, FunctionWrapperNode, HashMapTypeNode,
     IncorrectlyIndentedStatementNode, IndexAccessNode, InvalidLValueNode, LambdaDeclarationNode,
     LambdaTypeDeclarationNode, MethodAccessNode, MissingTokenNode, NameTypeSpecNode,
-    OkAssignmentNode, OkIdentifierNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
+    OkAssignmentNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
     ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
     ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, SkippedTokensNode,
-    StatemenIndentWrapperNode, StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
-    TokenNode, TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, UserDefinedTypeNode,
-    VariableDeclarationNode,
+    StatementIndentWrapperNode, StatementNode, StructDeclarationNode,
+    StructPropertyDeclarationNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    UnaryExpressionNode, UserDefinedTypeNode, VariableDeclarationNode,
 };
-
-use super::ast::{CommaSeparatedNode, TupleTypeNode};
 
 // This kind of visitor pattern implementation is taken from `Golang` Programming Language
 // See /src/go/ast/walk.go
@@ -31,8 +38,8 @@ pub trait Visitor {
     impl_node_walk!(walk_block, BlockNode, new_with_BlockNode);
     impl_node_walk!(
         walk_stmt_indent_wrapper,
-        StatemenIndentWrapperNode,
-        new_with_StatemenIndentWrapperNode
+        StatementIndentWrapperNode,
+        new_with_StatementIndentWrapperNode
     );
     impl_node_walk!(walk_stmt, StatementNode, new_with_StatementNode);
     impl_node_walk!(
@@ -51,9 +58,49 @@ pub trait Visitor {
         new_with_SkippedTokenNode
     );
     impl_node_walk!(
+        walk_interface_decl,
+        InterfaceDeclarationNode,
+        new_with_InterfaceDeclarationNode
+    );
+    impl_node_walk!(
+        walk_break_stmt,
+        BreakStatementNode,
+        new_with_BreakStatementNode
+    );
+    impl_node_walk!(
+        walk_continue_stmt,
+        ContinueStatementNode,
+        new_with_ContinueStatementNode
+    );
+    impl_node_walk!(
+        walk_interface_method_prototype_wrapper,
+        InterfaceMethodPrototypeWrapperNode,
+        new_with_InterfaceMethodPrototypeWrapperNode
+    );
+    impl_node_walk!(
         walk_expr_stmt,
         ExpressionStatementNode,
         new_with_ExpressionStatementNode
+    );
+    impl_node_walk!(
+        walk_conditional,
+        ConditionalStatementNode,
+        new_with_ConditionalStatementNode
+    );
+    impl_node_walk!(
+        walk_while_loop,
+        WhileLoopStatementNode,
+        new_with_WhileLoopStatementNode
+    );
+    impl_node_walk!(
+        walk_for_loop,
+        ForLoopStatementNode,
+        new_with_ForLoopStatementNode
+    );
+    impl_node_walk!(
+        walk_conditional_block,
+        ConditionalBlockNode,
+        new_with_ConditionalBlockNode
     );
     impl_node_walk!(walk_assignment, AssignmentNode, new_with_AssignmentNode);
     impl_node_walk!(
@@ -97,9 +144,29 @@ pub trait Visitor {
         new_with_TypeDeclarationNode
     );
     impl_node_walk!(
-        walk_struct_property_declaration,
+        walk_struct_property_decl,
         StructPropertyDeclarationNode,
         new_with_StructPropertyDeclarationNode
+    );
+    impl_node_walk!(
+        walk_match_case_stmt,
+        MatchCaseStatementNode,
+        new_with_MatchCaseStatementNode
+    );
+    impl_node_walk!(
+        walk_case_branch_stmt,
+        CaseBranchStatementNode,
+        new_with_CaseBranchStatementNode
+    );
+    impl_node_walk!(
+        walk_enum_decl,
+        EnumDeclarationNode,
+        new_with_EnumDeclarationNode
+    );
+    impl_node_walk!(
+        walk_enum_variant_decl,
+        EnumVariantDeclarationNode,
+        new_with_EnumVariantDeclarationNode
     );
     impl_node_walk!(
         walk_missing_tokens,
@@ -139,7 +206,7 @@ pub trait Visitor {
     );
     impl_node_walk!(walk_r_assignment, RAssignmentNode, new_with_RAssignmentNode);
     impl_node_walk!(
-        walk_r_variable_declaration,
+        walk_r_variable_decl,
         RVariableDeclarationNode,
         new_with_RVariableDeclarationNode
     );
@@ -199,9 +266,29 @@ pub trait Visitor {
         new_with_CallExpressionNode
     );
     impl_node_walk!(
-        walk_class_method_call,
-        ClassMethodCallNode,
-        new_with_ClassMethodCallNode
+        walk_enum_variant_or_class_method_call,
+        EnumVariantExprOrClassMethodCallNode,
+        new_with_EnumVariantExprOrClassMethodCallNode
+    );
+    impl_node_walk!(
+        walk_array_expression,
+        ArrayExpressionNode,
+        new_with_ArrayExpressionNode
+    );
+    impl_node_walk!(
+        walk_key_value_pair,
+        KeyValuePairNode,
+        new_with_KeyValuePairNode
+    );
+    impl_node_walk!(
+        walk_hashmap_expression,
+        HashMapExpressionNode,
+        new_with_HashMapExpressionNode
+    );
+    impl_node_walk!(
+        walk_tuple_expression,
+        TupleExpressionNode,
+        new_with_TupleExpressionNode
     );
     impl_node_walk!(
         walk_return_stmt,
@@ -210,25 +297,114 @@ pub trait Visitor {
     );
     impl_node_walk!(walk_ok_token, OkTokenNode, new_with_OkTokenNode);
     impl_node_walk!(
-        walk_ok_identifier,
-        OkIdentifierNode,
-        new_with_OkIdentifierNode
+        walk_identifier_in_use,
+        IdentifierInUseNode,
+        new_with_IdentifierInUseNode
     );
-    impl_node_walk!(walk_identifier, IdentifierNode, new_with_IdentifierNode);
+    impl_node_walk!(
+        walk_identifier_in_decl,
+        IdentifierInDeclNode,
+        new_with_IdentifierInDeclNode
+    );
+    impl_node_walk!(
+        walk_ok_identifier_in_use,
+        OkIdentifierInUseNode,
+        new_with_OkIdentifierInUseNode
+    );
+    impl_node_walk!(
+        walk_ok_identifier_in_decl,
+        OkIdentifierInDeclNode,
+        new_with_OkIdentifierInDeclNode
+    );
+    impl_node_walk!(
+        walk_generic_type_decl,
+        GenericTypeDeclNode,
+        new_with_GenericTypeDeclNode
+    );
     impl_node_walk!(walk_self_keyword, SelfKeywordNode, new_with_SelfKeywordNode);
     impl_node_walk!(
         walk_ok_self_keyword,
         OkSelfKeywordNode,
         new_with_OkSelfKeywordNode
     );
-    fn walk_type_tuple(&mut self, x: &CommaSeparatedNode<TypeExpressionNode>) {
-        self.walk(&ASTNode::new_with_TypeTuple(x));
+
+    // below are concrete `SymbolSeparatedSequenceNode<T>` walk methods
+    fn walk_comma_separated_type_expressions(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<TypeExpressionNode>,
+    ) {
+        let core_comma_separated_type_exprs = x.core_ref();
+        self.walk_type_expression(&core_comma_separated_type_exprs.entity);
+        if let Some((comma, remaining_type_exprs)) =
+            &core_comma_separated_type_exprs.remaining_entities
+        {
+            self.walk_token(comma);
+            self.walk_comma_separated_type_expressions(remaining_type_exprs);
+        }
     }
-    fn walk_name_type_specs(&mut self, x: &CommaSeparatedNode<NameTypeSpecNode>) {
-        self.walk(&ASTNode::new_with_NameTypeSpecs(x));
+
+    fn walk_comma_separated_expressions(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<ExpressionNode>,
+    ) {
+        let core_comma_separated_exprs = x.core_ref();
+        self.walk_expression(&core_comma_separated_exprs.entity);
+        if let Some((comma, remaining_exprs)) = &core_comma_separated_exprs.remaining_entities {
+            self.walk_token(comma);
+            self.walk_comma_separated_expressions(remaining_exprs);
+        }
     }
-    fn walk_params(&mut self, x: &CommaSeparatedNode<ExpressionNode>) {
-        self.walk(&ASTNode::new_with_Params(x));
+
+    fn walk_comma_separated_key_value_pairs(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<KeyValuePairNode>,
+    ) {
+        let core_comma_separated_key_value_pairs = x.core_ref();
+        self.walk_key_value_pair(&core_comma_separated_key_value_pairs.entity);
+        if let Some((comma, remaining_key_value_pairs)) =
+            &core_comma_separated_key_value_pairs.remaining_entities
+        {
+            self.walk_token(comma);
+            self.walk_comma_separated_key_value_pairs(remaining_key_value_pairs);
+        }
+    }
+
+    fn walk_comma_separated_name_type_specs(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<NameTypeSpecNode>,
+    ) {
+        let core_comma_separated_name_type_specs = x.core_ref();
+        self.walk_name_type_spec(&core_comma_separated_name_type_specs.entity);
+        if let Some((comma, remaining_name_type_specs)) =
+            &core_comma_separated_name_type_specs.remaining_entities
+        {
+            self.walk_token(comma);
+            self.walk_comma_separated_name_type_specs(remaining_name_type_specs);
+        }
+    }
+
+    fn walk_comma_separated_generic_type_decls(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
+    ) {
+        let core_generic_type_decls = x.core_ref();
+        self.walk_generic_type_decl(&core_generic_type_decls.entity);
+        if let Some((comma, remaining_entities)) = &core_generic_type_decls.remaining_entities {
+            self.walk_token(comma);
+            self.walk_comma_separated_generic_type_decls(remaining_entities);
+        }
+    }
+
+    fn walk_plus_separated_interfaces(
+        &mut self,
+        x: &SymbolSeparatedSequenceNode<IdentifierInUseNode>,
+    ) {
+        let core_interface_bounds = x.core_ref();
+        self.walk_identifier_in_use(&core_interface_bounds.entity);
+        if let Some((comma, remaining_entities)) = &core_interface_bounds.remaining_entities {
+            self.walk_token(comma);
+            self.walk_plus_separated_interfaces(remaining_entities);
+        }
     }
 
     fn walk(&mut self, node: &ASTNode) {
@@ -241,25 +417,25 @@ pub trait Visitor {
             ASTNode::Block(block_node) => {
                 let core_block_node = &block_node.0.as_ref();
                 self.walk_token(&core_block_node.newline);
-                for stmt in &*core_block_node.stmts.as_ref() {
+                for stmt in core_block_node.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
             }
             ASTNode::StatementIndentWrapper(stmt_indent_wrapper_node) => {
                 match stmt_indent_wrapper_node.core_ref() {
-                    CoreStatemenIndentWrapperNode::CorrectlyIndented(stmt) => {
+                    CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => {
                         self.walk_stmt(stmt);
                     }
-                    CoreStatemenIndentWrapperNode::IncorrectlyIndented(stmt) => {
+                    CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => {
                         self.walk_incorrectly_indented_stmt(stmt);
                     }
-                    CoreStatemenIndentWrapperNode::LeadingSkippedTokens(skipped_tokens) => {
+                    CoreStatementIndentWrapperNode::LeadingSkippedTokens(skipped_tokens) => {
                         self.walk_skipped_tokens(skipped_tokens);
                     }
-                    CoreStatemenIndentWrapperNode::TrailingSkippedTokens(skipped_tokens) => {
+                    CoreStatementIndentWrapperNode::TrailingSkippedTokens(skipped_tokens) => {
                         self.walk_skipped_tokens(skipped_tokens);
                     }
-                    CoreStatemenIndentWrapperNode::ExtraNewlines(skipped_tokens) => {
+                    CoreStatementIndentWrapperNode::ExtraNewlines(skipped_tokens) => {
                         self.walk_skipped_tokens(skipped_tokens);
                     }
                 }
@@ -277,6 +453,10 @@ pub trait Visitor {
                 CoreStatementNode::Expression(expr_stmt) => {
                     self.walk_expr_stmt(expr_stmt);
                 }
+                CoreStatementNode::Break(break_stmt) => self.walk_break_stmt(break_stmt),
+                CoreStatementNode::Continue(continue_stmt) => {
+                    self.walk_continue_stmt(continue_stmt)
+                }
                 CoreStatementNode::Assignment(assignment) => {
                     self.walk_assignment(assignment);
                 }
@@ -286,6 +466,12 @@ pub trait Visitor {
                 CoreStatementNode::FunctionWrapper(func_wrapper) => {
                     self.walk_func_wrapper(func_wrapper);
                 }
+                CoreStatementNode::MatchCase(match_case) => {
+                    self.walk_match_case_stmt(match_case);
+                }
+                CoreStatementNode::CaseBranch(case_branch) => {
+                    self.walk_case_branch_stmt(case_branch);
+                }
                 CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                     self.walk_bounded_method_wrapper(bounded_method_wrapper);
                 }
@@ -293,12 +479,79 @@ pub trait Visitor {
                     self.walk_type_decl(type_decl);
                 }
                 CoreStatementNode::StructPropertyDeclaration(struct_stmt) => {
-                    self.walk_struct_property_declaration(struct_stmt);
+                    self.walk_struct_property_decl(struct_stmt);
+                }
+                CoreStatementNode::EnumVariantDeclaration(enum_variant_decl) => {
+                    self.walk_enum_variant_decl(enum_variant_decl);
+                }
+                CoreStatementNode::InterfaceDeclaration(interface_decl) => {
+                    self.walk_interface_decl(interface_decl);
+                }
+                CoreStatementNode::InterfaceMethodPrototypeWrapper(
+                    interface_method_prototype_wrapper,
+                ) => {
+                    self.walk_interface_method_prototype_wrapper(
+                        interface_method_prototype_wrapper,
+                    );
                 }
                 CoreStatementNode::Return(return_stmt) => {
                     self.walk_return_stmt(return_stmt);
                 }
+                CoreStatementNode::Conditional(conditional_stmt) => {
+                    self.walk_conditional(conditional_stmt);
+                }
+                CoreStatementNode::WhileLoop(while_loop_stmt) => {
+                    self.walk_while_loop(while_loop_stmt);
+                }
+                CoreStatementNode::ForLoop(for_loop_stmt) => {
+                    self.walk_for_loop(for_loop_stmt);
+                }
             },
+            ASTNode::MatchCase(match_case) => {
+                let core_match_case = match_case.core_ref();
+                self.walk_token(&core_match_case.match_keyword);
+                self.walk_expression(&core_match_case.expr);
+                self.walk_token(&core_match_case.colon);
+                self.walk_block(&core_match_case.block);
+            }
+            ASTNode::WhileLoop(while_loop) => {
+                let core_while_loop = while_loop.core_ref();
+                self.walk_token(&core_while_loop.while_keyword);
+                self.walk_expression(&core_while_loop.condition_expr);
+                self.walk_token(&core_while_loop.colon);
+                self.walk_block(&core_while_loop.block);
+            }
+            ASTNode::ForLoop(for_loop) => {
+                let core_for_loop = for_loop.core_ref();
+                self.walk_token(&core_for_loop.for_keyword);
+                self.walk_identifier_in_decl(&core_for_loop.loop_variable);
+                self.walk_token(&core_for_loop.in_keyword);
+                self.walk_expression(&core_for_loop.iterable_expr);
+                self.walk_token(&core_for_loop.colon);
+                self.walk_block(&core_for_loop.block);
+            }
+            ASTNode::CaseBranch(case_branch) => {
+                let core_case_branch = case_branch.core_ref();
+                self.walk_token(&core_case_branch.case_keyword);
+                self.walk_identifier_in_decl(&core_case_branch.enum_name);
+                self.walk_token(&core_case_branch.double_colon_node);
+                self.walk_identifier_in_decl(&core_case_branch.variant_name);
+                if let Some((lparen, variable_name, rparen)) = &core_case_branch.variable_name {
+                    self.walk_token(lparen);
+                    self.walk_identifier_in_decl(variable_name);
+                    self.walk_token(rparen);
+                }
+                self.walk_token(&core_case_branch.colon);
+                self.walk_block(&core_case_branch.block);
+            }
+            ASTNode::Break(break_stmt) => {
+                self.walk_token(&break_stmt.core_ref().break_keyword);
+                self.walk_token(&break_stmt.core_ref().newline);
+            }
+            ASTNode::Continue(continue_stmt) => {
+                self.walk_token(&continue_stmt.core_ref().continue_keyword);
+                self.walk_token(&continue_stmt.core_ref().newline);
+            }
             ASTNode::ExpressionStatement(expr_stmt) => {
                 let core_expr_stmt = expr_stmt.core_ref();
                 self.walk_expression(&core_expr_stmt.expr);
@@ -312,6 +565,25 @@ pub trait Visitor {
                     self.walk_invalid_l_value_assignment(invalid_l_value_assignment);
                 }
             },
+            ASTNode::Conditional(conditional_stmt) => {
+                let core_conditional_stmt = conditional_stmt.core_ref();
+                self.walk_conditional_block(&core_conditional_stmt.if_block);
+                for elif_block in &core_conditional_stmt.elifs {
+                    self.walk_conditional_block(&elif_block);
+                }
+                if let Some((else_keyword, colon, else_block)) = &core_conditional_stmt.else_block {
+                    self.walk_token(else_keyword);
+                    self.walk_token(colon);
+                    self.walk_block(else_block);
+                }
+            }
+            ASTNode::ConditionalBlock(conditional_block) => {
+                let core_conditional_block = conditional_block.core_ref();
+                self.walk_token(&core_conditional_block.condition_keyword);
+                self.walk_expression(&core_conditional_block.condition_expr);
+                self.walk_token(&core_conditional_block.colon);
+                self.walk_block(&core_conditional_block.block);
+            }
             ASTNode::OkAssignment(ok_assignment) => {
                 let core_ok_assignment = ok_assignment.core_ref();
                 self.walk_atom(&core_ok_assignment.l_atom);
@@ -333,6 +605,9 @@ pub trait Visitor {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {
                     self.walk_struct_decl(struct_decl);
                 }
+                CoreTypeDeclarationNode::Enum(enum_decl) => {
+                    self.walk_enum_decl(enum_decl);
+                }
                 CoreTypeDeclarationNode::Lambda(lambda_decl) => {
                     self.walk_lambda_type_decl(lambda_decl);
                 }
@@ -340,29 +615,72 @@ pub trait Visitor {
                     self.walk_missing_tokens(missing_tokens);
                 }
             },
+            ASTNode::InterfaceDeclaration(interface_decl_node) => {
+                let core_interface_decl = interface_decl_node.core_ref();
+                self.walk_token(&core_interface_decl.interface_keyword);
+                self.walk_identifier_in_decl(&core_interface_decl.name);
+                self.walk_token(&core_interface_decl.colon);
+                self.walk_block(&core_interface_decl.block);
+            }
+            ASTNode::InterfaceMethodPrototypeWrapper(interface_method_prototype_wrapper_node) => {
+                let core_interface_method_prototype_wrapper =
+                    interface_method_prototype_wrapper_node.core_ref();
+                self.walk_token(&core_interface_method_prototype_wrapper.def_keyword);
+                self.walk_identifier_in_decl(&core_interface_method_prototype_wrapper.name);
+                self.walk_callable_prototype(&core_interface_method_prototype_wrapper.prototype);
+                match &core_interface_method_prototype_wrapper.terminal {
+                    InterfaceMethodTerminalNode::HasDefaultBody(colon, block) => {
+                        self.walk_token(colon);
+                        self.walk_block(block);
+                    }
+                    InterfaceMethodTerminalNode::NoDefaultBody(newline) => self.walk_token(newline),
+                }
+            }
             ASTNode::StructDeclaration(struct_decl_node) => {
                 let core_struct_decl = struct_decl_node.core_ref();
                 self.walk_token(&core_struct_decl.type_keyword);
-                self.walk_identifier(&core_struct_decl.name);
+                self.walk_identifier_in_decl(&core_struct_decl.name);
                 self.walk_token(&core_struct_decl.struct_keyword);
+                if let Some((implements_keyword, interfaces)) =
+                    &core_struct_decl.implementing_interfaces
+                {
+                    self.walk_token(implements_keyword);
+                    self.walk_plus_separated_interfaces(interfaces);
+                }
                 self.walk_token(&core_struct_decl.colon);
                 self.walk_block(&core_struct_decl.block);
+            }
+            ASTNode::EnumDeclaration(enum_decl_node) => {
+                let core_enum_decl = enum_decl_node.core_ref();
+                self.walk_token(&core_enum_decl.type_keyword);
+                self.walk_identifier_in_decl(&core_enum_decl.name);
+                self.walk_token(&core_enum_decl.enum_keyword);
+                self.walk_token(&core_enum_decl.colon);
+                self.walk_block(&core_enum_decl.block);
+            }
+            ASTNode::EnumVariantDeclaration(enum_variant_decl) => {
+                let core_enum_variant_decl = enum_variant_decl.core_ref();
+                self.walk_identifier_in_decl(&core_enum_variant_decl.variant);
+                if let Some((lparen, ty, rparen)) = &core_enum_variant_decl.ty {
+                    self.walk_token(lparen);
+                    self.walk_type_expression(ty);
+                    self.walk_token(rparen);
+                }
+                self.walk_token(&core_enum_variant_decl.newline);
             }
             ASTNode::LambdaTypeDeclaration(lambda_decl_node) => {
                 let core_lambda_decl = lambda_decl_node.core_ref();
                 self.walk_token(&core_lambda_decl.type_keyword);
-                self.walk_identifier(&core_lambda_decl.name);
+                self.walk_identifier_in_decl(&core_lambda_decl.name);
                 self.walk_token(&core_lambda_decl.lambda_keyword);
                 self.walk_token(&core_lambda_decl.equal);
                 self.walk_token(&core_lambda_decl.lparen);
                 if let Some(type_tuple) = &core_lambda_decl.type_tuple {
-                    self.walk_type_tuple(type_tuple);
+                    self.walk_comma_separated_type_expressions(type_tuple);
                 }
                 self.walk_token(&core_lambda_decl.rparen);
-                if let Some(right_arrow) = &core_lambda_decl.right_arrow {
+                if let Some((right_arrow, return_type)) = &core_lambda_decl.return_type {
                     self.walk_token(right_arrow);
-                }
-                if let Some(return_type) = &core_lambda_decl.return_type {
                     self.walk_type_expression(return_type);
                 }
                 self.walk_token(&core_lambda_decl.newline);
@@ -371,13 +689,11 @@ pub trait Visitor {
                 let core_callable_prototype = callable_prototype.core_ref();
                 self.walk_token(&core_callable_prototype.lparen);
                 if let Some(name_type_specs) = &core_callable_prototype.params {
-                    self.walk_name_type_specs(name_type_specs);
+                    self.walk_comma_separated_name_type_specs(name_type_specs);
                 }
                 self.walk_token(&core_callable_prototype.rparen);
-                if let Some(right_arrow) = &core_callable_prototype.right_arrow {
+                if let Some((right_arrow, return_type)) = &core_callable_prototype.return_type {
                     self.walk_token(right_arrow);
-                }
-                if let Some(return_type) = &core_callable_prototype.return_type {
                     self.walk_type_expression(return_type);
                 }
             }
@@ -395,7 +711,7 @@ pub trait Visitor {
             ASTNode::FunctionDeclaration(function_decl_node) => {
                 let core_func_decl = function_decl_node.core_ref();
                 self.walk_token(&core_func_decl.def_keyword);
-                self.walk_identifier(&core_func_decl.name);
+                self.walk_identifier_in_decl(&core_func_decl.name);
                 self.walk_callable_body(&core_func_decl.body);
             }
             ASTNode::FunctionWrapper(func_wrapper) => {
@@ -407,9 +723,13 @@ pub trait Visitor {
             ASTNode::VariableDeclaration(variable_decl_node) => {
                 let core_variable_decl = variable_decl_node.core_ref();
                 self.walk_token(&core_variable_decl.let_keyword);
-                self.walk_identifier(&core_variable_decl.name);
+                self.walk_identifier_in_decl(&core_variable_decl.name);
+                if let Some((colon, ty_expr)) = &core_variable_decl.ty_annotation {
+                    self.walk_token(colon);
+                    self.walk_type_expression(ty_expr);
+                }
                 self.walk_token(&core_variable_decl.equal);
-                self.walk_r_variable_declaration(&core_variable_decl.r_node);
+                self.walk_r_variable_decl(&core_variable_decl.r_node);
             }
             ASTNode::Return(return_stmt) => {
                 let core_return_stmt = return_stmt.core_ref();
@@ -434,31 +754,11 @@ pub trait Visitor {
                     }
                 }
             }
-            ASTNode::NameTypeSpecs(name_type_specs_node) => {
-                let core_name_type_specs = name_type_specs_node.core_ref();
-                self.walk_name_type_spec(&core_name_type_specs.entity);
-                if let Some(comma) = &core_name_type_specs.comma {
-                    self.walk_token(comma);
-                }
-                if let Some(remaining_args) = &core_name_type_specs.remaining_entities {
-                    self.walk_name_type_specs(remaining_args);
-                }
-            }
             ASTNode::NameTypeSpec(name_type_spec_node) => {
                 let core_name_type_spec = name_type_spec_node.core_ref();
-                self.walk_identifier(&core_name_type_spec.name);
+                self.walk_identifier_in_decl(&core_name_type_spec.name);
                 self.walk_token(&core_name_type_spec.colon);
                 self.walk_type_expression(&core_name_type_spec.data_type);
-            }
-            ASTNode::TypeTuple(type_tuple_node) => {
-                let core_type_tuple = type_tuple_node.core_ref();
-                self.walk_type_expression(&core_type_tuple.entity);
-                if let Some(comma) = &core_type_tuple.comma {
-                    self.walk_token(comma);
-                }
-                if let Some(remaining_types) = &core_type_tuple.remaining_entities {
-                    self.walk_type_tuple(remaining_types);
-                }
             }
             ASTNode::TypeExpression(type_expression_node) => {
                 let core_type_expr = type_expression_node.core_ref();
@@ -496,7 +796,7 @@ pub trait Visitor {
             ASTNode::TupleType(tuple_type_node) => {
                 let core_tuple_type = tuple_type_node.core_ref();
                 self.walk_token(&core_tuple_type.lparen);
-                self.walk_type_tuple(&core_tuple_type.types);
+                self.walk_comma_separated_type_expressions(&core_tuple_type.types);
                 self.walk_token(&core_tuple_type.rparen);
             }
             ASTNode::HashmapType(hashmap_type_node) => {
@@ -509,7 +809,7 @@ pub trait Visitor {
             }
             ASTNode::UserDefinedType(user_defined_type) => {
                 let core_user_defined_type = user_defined_type.core_ref();
-                self.walk_identifier(&core_user_defined_type.name)
+                self.walk_identifier_in_use(&core_user_defined_type.name)
             }
             ASTNode::Expression(expression_node) => {
                 let core_expr = expression_node.core_ref();
@@ -545,6 +845,15 @@ pub trait Visitor {
                     }
                     CoreAtomicExpressionNode::Atom(atom) => {
                         self.walk_atom(atom);
+                    }
+                    CoreAtomicExpressionNode::ArrayExpression(array_expr) => {
+                        self.walk_array_expression(array_expr);
+                    }
+                    CoreAtomicExpressionNode::HashMapExpression(hashmap_expr) => {
+                        self.walk_hashmap_expression(hashmap_expr);
+                    }
+                    CoreAtomicExpressionNode::TupleExpression(tuple_expr) => {
+                        self.walk_tuple_expression(tuple_expr);
                     }
                     CoreAtomicExpressionNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
@@ -588,35 +897,60 @@ pub trait Visitor {
                     self.walk_expression(&core_comp_expr.operands[i + 1]);
                 }
             }
-            ASTNode::Params(params_node) => {
-                let core_params = params_node.core_ref();
-                self.walk_expression(&core_params.entity);
-                if let Some(comma) = &core_params.comma {
-                    self.walk_token(comma);
-                }
-                if let Some(remaining_params) = &core_params.remaining_entities {
-                    self.walk_params(remaining_params);
-                }
-            }
             ASTNode::CallExpression(call_expression_node) => {
                 let core_call_expr = call_expression_node.core_ref();
-                self.walk_identifier(&core_call_expr.function_name);
+                self.walk_identifier_in_use(&core_call_expr.function_name);
                 self.walk_token(&core_call_expr.lparen);
                 if let Some(params) = &core_call_expr.params {
-                    self.walk_params(params)
+                    self.walk_comma_separated_expressions(params);
                 }
                 self.walk_token(&core_call_expr.rparen);
             }
-            ASTNode::ClassMethodCall(class_method_call_node) => {
-                let core_class_method_call = class_method_call_node.core_ref();
-                self.walk_identifier(&core_class_method_call.class_name);
-                self.walk_token(&core_class_method_call.double_colon);
-                self.walk_identifier(&core_class_method_call.class_method_name);
-                self.walk_token(&core_class_method_call.lparen);
-                if let Some(params) = &core_class_method_call.params {
-                    self.walk_params(params);
+            ASTNode::EnumVariantExprOrClassMethodCall(enum_variant_or_class_method_call_node) => {
+                let core_enum_variant_or_class_method_call_node =
+                    enum_variant_or_class_method_call_node.core_ref();
+                self.walk_identifier_in_use(&core_enum_variant_or_class_method_call_node.ty_name);
+                self.walk_token(&core_enum_variant_or_class_method_call_node.double_colon);
+                self.walk_identifier_in_use(
+                    &core_enum_variant_or_class_method_call_node.property_name,
+                );
+                if let Some((lparen, params, rparen)) =
+                    &core_enum_variant_or_class_method_call_node.params
+                {
+                    self.walk_token(lparen);
+                    if let Some(params) = params {
+                        self.walk_comma_separated_expressions(params);
+                    }
+                    self.walk_token(rparen);
                 }
-                self.walk_token(&core_class_method_call.rparen);
+            }
+            ASTNode::ArrayExpression(array_expression_node) => {
+                let core_array_expr = array_expression_node.core_ref();
+                self.walk_token(&core_array_expr.lsquare);
+                if let Some(initials) = &core_array_expr.initials {
+                    self.walk_comma_separated_expressions(initials);
+                }
+                self.walk_token(&core_array_expr.rsquare);
+            }
+            ASTNode::KeyValuePair(key_value_pair_node) => {
+                let core_key_value_pair = key_value_pair_node.core_ref();
+                self.walk_expression(&core_key_value_pair.key_expr);
+                self.walk_token(&core_key_value_pair.colon);
+                self.walk_expression(&core_key_value_pair.value_expr);
+            }
+            ASTNode::HashMapExpression(hashmap_expression_node) => {
+                let core_hashmap_expr = hashmap_expression_node.core_ref();
+                self.walk_token(&core_hashmap_expr.lcurly);
+                if let Some(initials) = &core_hashmap_expr.initials {
+                    self.walk_comma_separated_key_value_pairs(initials);
+                }
+                self.walk_token(&core_hashmap_expr.rcurly);
+            }
+            ASTNode::TupleExpression(tuple_expression) => {
+                let core_tuple_expr = tuple_expression.core_ref();
+                self.walk_token(&core_tuple_expr.lround);
+                self.walk_comma_separated_expressions(&core_tuple_expr.initials);
+                self.walk_token(&core_tuple_expr.rround);
             }
             ASTNode::Atom(atom_node) => {
                 let core_atom = atom_node.core_ref();
@@ -642,7 +976,7 @@ pub trait Visitor {
                 let core_atom_start = atom_start_node.core_ref();
                 match core_atom_start {
                     CoreAtomStartNode::Identifier(token) => {
-                        self.walk_identifier(token);
+                        self.walk_identifier_in_use(token);
                     }
                     CoreAtomStartNode::SelfKeyword(self_keyword) => {
                         self.walk_self_keyword(self_keyword);
@@ -650,8 +984,10 @@ pub trait Visitor {
                     CoreAtomStartNode::Call(call_expr) => {
                         self.walk_call_expression(call_expr);
                     }
-                    CoreAtomStartNode::ClassMethodCall(class_method) => {
-                        self.walk_class_method_call(class_method);
+                    CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
+                        enum_variant_or_class_method,
+                    ) => {
+                        self.walk_enum_variant_or_class_method_call(enum_variant_or_class_method);
                     }
                 }
             }
@@ -660,7 +996,7 @@ pub trait Visitor {
                 self.walk_atom(&core_call.atom);
                 self.walk_token(&core_call.lparen);
                 if let Some(params) = &core_call.params {
-                    self.walk_params(params);
+                    self.walk_comma_separated_expressions(params);
                 }
                 self.walk_token(&core_call.rparen);
             }
@@ -668,16 +1004,16 @@ pub trait Visitor {
                 let core_property_access = property_access_node.core_ref();
                 self.walk_atom(&core_property_access.atom);
                 self.walk_token(&core_property_access.dot);
-                self.walk_identifier(&core_property_access.propertry);
+                self.walk_identifier_in_use(&core_property_access.propertry);
             }
             ASTNode::MethodAccess(method_access_node) => {
                 let core_method_access = method_access_node.core_ref();
                 self.walk_atom(&core_method_access.atom);
                 self.walk_token(&core_method_access.dot);
-                self.walk_identifier(&core_method_access.method_name);
+                self.walk_identifier_in_use(&core_method_access.method_name);
                 self.walk_token(&core_method_access.lparen);
                 if let Some(params) = &core_method_access.params {
-                    self.walk_params(params);
+                    self.walk_comma_separated_expressions(params);
                 }
                 self.walk_token(&core_method_access.rparen);
             }
@@ -697,18 +1033,6 @@ pub trait Visitor {
                     }
                 }
             }
-            ASTNode::Identifier(identifier) => {
-                let core_identifier = identifier.core_ref();
-                match core_identifier {
-                    CoreIdentifierNode::Ok(ok_identifier) => self.walk_ok_identifier(ok_identifier),
-                    CoreIdentifierNode::MissingTokens(missing_tokens) => {
-                        self.walk_missing_tokens(missing_tokens)
-                    }
-                }
-            }
-            ASTNode::OkIdentifier(ok_identifier) => {
-                self.walk_ok_token(&ok_identifier.0.as_ref().token);
-            }
             ASTNode::SelfKeyword(self_keyword) => {
                 let core_self_keyword = self_keyword.core_ref();
                 match core_self_keyword {
@@ -718,6 +1042,58 @@ pub trait Visitor {
                     CoreSelfKeywordNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens)
                     }
+                }
+            }
+            ASTNode::IdentifierInUse(identifier_in_use) => {
+                let core_identifier_in_use = identifier_in_use.core_ref();
+                match core_identifier_in_use {
+                    CoreIdentifierInUseNode::Ok(ok_identifier) => {
+                        self.walk_ok_identifier_in_use(ok_identifier)
+                    }
+                    CoreIdentifierInUseNode::MissingTokens(missing_tokens) => {
+                        self.walk_missing_tokens(missing_tokens)
+                    }
+                }
+            }
+            ASTNode::IdentifierInDecl(identifier_in_decl) => {
+                let core_identifier_in_decl = identifier_in_decl.core_ref();
+                match core_identifier_in_decl {
+                    CoreIdentifierInDeclNode::Ok(ok_identifier) => {
+                        self.walk_ok_identifier_in_decl(ok_identifier)
+                    }
+                    CoreIdentifierInDeclNode::MissingTokens(missing_tokens) => {
+                        self.walk_missing_tokens(missing_tokens)
+                    }
+                }
+            }
+            ASTNode::OkIdentifierInUse(ok_identifier_in_use) => {
+                let core_ok_identifier_in_use = ok_identifier_in_use.core_ref();
+                self.walk_ok_token(&core_ok_identifier_in_use.name);
+                if let Some((langle, generic_type_args, rangle)) =
+                    &core_ok_identifier_in_use.generic_type_args
+                {
+                    self.walk_token(langle);
+                    self.walk_comma_separated_type_expressions(generic_type_args);
+                    self.walk_token(rangle);
+                }
+            }
+            ASTNode::OkIdentifierInDecl(ok_identifier_in_decl) => {
+                let core_ok_identifier_in_decl = ok_identifier_in_decl.core_ref();
+                self.walk_ok_token(&core_ok_identifier_in_decl.name);
+                if let Some((langle, generic_type_decls, rangle)) =
+                    &core_ok_identifier_in_decl.generic_type_decls
+                {
+                    self.walk_token(langle);
+                    self.walk_comma_separated_generic_type_decls(generic_type_decls);
+                    self.walk_token(rangle);
+                }
+            }
+            ASTNode::GenericTypeDecl(generic_type_decl) => {
+                let core_generic_type_decl = generic_type_decl.core_ref();
+                self.walk_identifier_in_decl(&core_generic_type_decl.generic_type_name);
+                if let Some((colon, interface_bounds)) = &core_generic_type_decl.interface_bounds {
+                    self.walk_token(colon);
+                    self.walk_plus_separated_interfaces(interface_bounds);
                 }
             }
             ASTNode::OkSelfKeyword(ok_self_keyword) => {

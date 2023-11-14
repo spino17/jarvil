@@ -5,16 +5,17 @@ use jarvil_macros::Tokenify;
 use crate::code::JarvilCode;
 use crate::constants::common::{
     AND, AS, ASSERT_KEYWORD, ASYNC_KEYWORD, ATOMIC_TYPE, AWAIT_KEYWORD, BLANK, BLOCK_COMMENT,
-    BREAK, CLASS_KEYWORD, COLON, COMMA, CONTINUE, DASH, DEF, DEL_KEYWORD, DOT, DOUBLE_COLON,
-    DOUBLE_EQUAL, DOUBLE_STAR, ELIF, ELSE, ENDMARKER, EQUAL, EXCEPT_KEYWORD, FALSE,
+    BREAK, CASE, CLASS_KEYWORD, COLON, COMMA, CONTINUE, DASH, DEF, DEL_KEYWORD, DOT, DOUBLE_COLON,
+    DOUBLE_EQUAL, DOUBLE_STAR, ELIF, ELSE, ENDMARKER, ENUM_KEYWORD, EQUAL, EXCEPT_KEYWORD, FALSE,
     FINALLY_KEYWORD, FLOATING_POINT_NUMBER, FOR, FROM_KEYWORD, GLOBAL_KEYWORD, GREATER_EQUAL,
     IDENTIFIER, IF, IMPLEMENTS_KEYWORD, IMPORT_KEYWORD, IN, INTEGER, INTERFACE_KEYWORD, IS,
     LAMBDA_KEYWORD, LBRACE, LBRACKET, LESS_EQUAL, LET, LEXICAL_ERROR, LITERAL, LPAREN, LSQUARE,
-    NEWLINE, NONE, NONLOCAL_KEYWORD, NOT, NOT_EQUAL, OR, PASS_KEYWORD, PEG_PARSER, PLUS,
+    MATCH, NEWLINE, NONE, NONLOCAL_KEYWORD, NOT, NOT_EQUAL, OR, PASS_KEYWORD, PEG_PARSER, PLUS,
     RAISE_KEYWORD, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN, RSQUARE, SELF, SEMICOLON,
     SINGLE_LINE_COMMENT, SLASH, STAR, STRUCT_KEYWORD, TRUE, TRY_KEYWORD, TYPE_KEYWORD, WHILE,
     WITH_KEYWORD, YIELD_KEYWORD,
 };
+use crate::core::string_interner::{Interner, StrId};
 use std::fmt::Display;
 use text_size::TextRange;
 
@@ -27,6 +28,8 @@ pub enum CoreToken {
     WHILE,          // 'while'
     CONTINUE,       // 'continue'
     BREAK,          // 'break'
+    MATCH,          // 'match'
+    CASE,           // 'case'
     DEF,            // 'def'
     RETURN,         // 'return'
     LAMBDA_KEYWORD, // 'lambda'
@@ -37,6 +40,7 @@ pub enum CoreToken {
     IMPLEMENTS_KEYWORD,  // 'implements'
     INTERFACE_KEYWORD,   // 'interface'
     STRUCT_KEYWORD,      // 'struct'
+    ENUM_KEYWORD,        // 'enum'
     AND,                 // 'and'
     NOT,                 // 'not'
     OR,                  // 'or'
@@ -210,7 +214,11 @@ impl Token {
         self.core_token.to_string().to_string()
     }
 
-    pub fn token_value(&self, code: &JarvilCode) -> String {
+    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+        interner.intern(&code.token_from_range(self.range))
+    }
+
+    pub fn token_value_str(&self, code: &JarvilCode) -> String {
         code.token_from_range(self.range)
     }
 
@@ -237,7 +245,7 @@ impl Token {
     }
 
     pub fn get_precedence(&self) -> u8 {
-        let precedence = match self.core_token {
+        match self.core_token {
             CoreToken::OR => 1,
             CoreToken::AND => 2,
             CoreToken::LBRACKET
@@ -249,7 +257,6 @@ impl Token {
             CoreToken::PLUS | CoreToken::DASH => 4,
             CoreToken::STAR | CoreToken::SLASH => 5,
             _ => 0,
-        };
-        precedence
+        }
     }
 }

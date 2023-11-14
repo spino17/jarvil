@@ -1,3 +1,4 @@
+use super::core::AbstractConcreteTypesHandler;
 use crate::types::core::Type;
 
 #[derive(Debug)]
@@ -22,7 +23,14 @@ impl VariableData {
         self.is_init = is_init
     }
 
-    pub fn is_initialized(&self) -> bool {
+    pub fn set_data_type_from_optional_annotation(&mut self, ty: Type) {
+        self.is_init = true;
+        self.data_type = ty;
+    }
+}
+
+impl AbstractConcreteTypesHandler for VariableData {
+    fn is_initialized(&self) -> bool {
         self.is_init
     }
 }

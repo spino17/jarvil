@@ -1,17 +1,60 @@
-use super::hashmap::HashMap;
+use super::generic::Generic;
+use super::hashmap::core::HashMap;
 use super::lambda::Lambda;
+use super::r#enum::Enum;
 use super::r#struct::Struct;
 use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
+use crate::core::common::RefOrOwned;
+use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
+use crate::parser::type_checker::InferredConcreteTypesEntry;
+use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::core::SymbolData;
-use crate::scope::user_defined_types::UserDefinedTypeData;
-use crate::types::{array::Array, atomic::Atomic};
-use std::fmt::{Debug, Formatter};
+use crate::scope::function::{CallableData, CallablePrototypeData};
+use crate::scope::interfaces::InterfaceBounds;
+use crate::scope::types::core::UserDefinedTypeData;
+use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::types::{array::core::Array, atomic::Atomic};
+use std::collections::HashMap as StdHashMap;
+use std::fmt::Debug;
 use std::rc::Rc;
 
 pub trait AbstractType {
-    fn is_eq(&self, base_type: &Type) -> bool;
+    fn is_eq(&self, other_ty: &Type) -> bool;
+    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool;
+    fn concretize(&self, context: &ConcretizationContext) -> Type;
+    fn try_infer_type_or_check_equivalence(
+        &self,
+        received_ty: &Type,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
+        num_inferred_types: &mut usize,
+        inference_category: GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()>;
+    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
+    fn to_string(&self, interner: &Interner) -> String;
+}
+
+pub trait AbstractNonStructTypes {
+    fn get_concrete_types(&self) -> ConcreteTypesTuple;
+    fn get_builtin_methods(&self) -> Rc<StdHashMap<&'static str, CallableData>>;
+    fn try_method(&self, method_name: &str) -> Option<CallablePrototypeData> {
+        let builtin_methods = self.get_builtin_methods();
+        match builtin_methods.get(method_name) {
+            Some(callable_data) => {
+                let concrete_types = self.get_concrete_types();
+                match callable_data
+                    .prototype
+                    .concretize_prototype(Some(&concrete_types), None)
+                {
+                    RefOrOwned::Ref(_) => unreachable!(),
+                    RefOrOwned::Owned(prototype) => Some(prototype),
+                }
+            }
+            None => None,
+        }
+    }
 }
 
 pub trait OperatorCompatiblity {
@@ -28,19 +71,19 @@ pub trait OperatorCompatiblity {
         if self.check_double_equal(other).is_some() {
             return Some(Type::new_with_atomic(BOOL));
         }
-        return None;
+        None
     }
     fn check_greater_equal(&self, other: &Type) -> Option<Type> {
         if self.check_greater(other).is_some() && self.check_double_equal(other).is_some() {
             return Some(Type::new_with_atomic(BOOL));
         }
-        return None;
+        None
     }
     fn check_less_equal(&self, other: &Type) -> Option<Type> {
         if self.check_less(other).is_some() && self.check_double_equal(other).is_some() {
             return Some(Type::new_with_atomic(BOOL));
         }
-        return None;
+        None
     }
 }
 
@@ -52,6 +95,8 @@ pub enum CoreType {
     Array(Array),
     Tuple(Tuple),
     HashMap(HashMap),
+    Generic(Generic),
+    Enum(Enum),
     Unknown,
     Void,
     Unset,
@@ -59,53 +104,89 @@ pub enum CoreType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Type(pub Rc<CoreType>);
+pub struct Type(pub Rc<CoreType>, bool);
 
 impl Type {
     pub fn new_with_atomic(name: &str) -> Type {
-        Type(Rc::new(CoreType::Atomic(Atomic::new(name))))
+        Type(Rc::new(CoreType::Atomic(Atomic::new(name))), false)
     }
 
-    pub fn new_with_struct(name: String, symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
-        Type(Rc::new(CoreType::Struct(Struct::new(name, symbol_data))))
-    }
-
-    pub fn new_with_lambda(name: Option<String>, params: &Vec<Type>, return_type: &Type) -> Type {
-        Type(Rc::new(CoreType::Lambda(Lambda::new(
-            name,
-            params,
-            return_type,
-        ))))
-    }
-
-    pub fn new_with_array(element_type: &Type) -> Type {
-        Type(Rc::new(CoreType::Array(Array::new(element_type))))
+    pub fn new_with_array(element_type: Type) -> Type {
+        Type(Rc::new(CoreType::Array(Array::new(element_type))), false)
     }
 
     pub fn new_with_tuple(types: Vec<Type>) -> Type {
-        Type(Rc::new(CoreType::Tuple(Tuple::new(types))))
+        Type(Rc::new(CoreType::Tuple(Tuple::new(types))), false)
     }
 
-    pub fn new_with_hashmap(key_type: &Type, value_type: &Type) -> Type {
-        Type(Rc::new(CoreType::HashMap(HashMap::new(
-            key_type, value_type,
-        ))))
+    pub fn new_with_hashmap(key_type: Type, value_type: Type) -> Type {
+        Type(
+            Rc::new(CoreType::HashMap(HashMap::new(key_type, value_type))),
+            false,
+        )
+    }
+
+    // user-defined-types
+    pub fn new_with_struct(
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        concrete_types: Option<ConcreteTypesTuple>,
+    ) -> Type {
+        Type(
+            Rc::new(CoreType::Struct(Struct::new(symbol_data, concrete_types))),
+            false,
+        )
+    }
+
+    pub fn new_with_enum(
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        concrete_types: Option<ConcreteTypesTuple>,
+    ) -> Type {
+        Type(
+            Rc::new(CoreType::Enum(Enum::new(symbol_data, concrete_types))),
+            false,
+        )
+    }
+
+    pub fn new_with_lambda_named(
+        symbol_data: &SymbolData<UserDefinedTypeData>,
+        concrete_types: Option<ConcreteTypesTuple>,
+    ) -> Type {
+        Type(
+            Rc::new(CoreType::Lambda(Lambda::new_with_named(
+                symbol_data,
+                concrete_types,
+            ))),
+            false,
+        )
+    }
+
+    pub fn new_with_lambda_unnamed(function_prototype: CallablePrototypeData) -> Type {
+        Type(
+            Rc::new(CoreType::Lambda(Lambda::new_with_unnamed(
+                function_prototype,
+            ))),
+            false,
+        )
+    }
+
+    pub fn new_with_generic(symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
+        Type(Rc::new(CoreType::Generic(Generic::new(symbol_data))), false)
     }
 
     pub fn new_with_unknown() -> Type {
-        Type(Rc::new(CoreType::Unknown))
+        Type(Rc::new(CoreType::Unknown), false)
     }
 
     pub fn new_with_unset() -> Type {
-        Type(Rc::new(CoreType::Unset))
+        Type(Rc::new(CoreType::Unset), false)
     }
 
     pub fn new_with_void() -> Type {
-        Type(Rc::new(CoreType::Void))
+        Type(Rc::new(CoreType::Void), false)
     }
 
     pub fn new_with_any() -> Type {
-        Type(Rc::new(CoreType::Any))
+        Type(Rc::new(CoreType::Any), false)
     }
 
     pub fn is_void(&self) -> bool {
@@ -150,12 +231,15 @@ impl Type {
         }
     }
 
-    pub fn is_numeric(&self) -> bool {
-        if self.is_int() || self.is_float() {
-            true
-        } else {
-            false
+    pub fn is_enum(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::Enum(_) => true,
+            _ => false,
         }
+    }
+
+    pub fn is_numeric(&self) -> bool {
+        self.is_int() || self.is_float()
     }
 
     pub fn is_lambda(&self) -> bool {
@@ -186,16 +270,14 @@ impl Type {
     pub fn is_hashable(&self) -> bool {
         // `int`, `float`, `str` and `tuple` with hashable sub_types are only hashable types
         match self.0.as_ref() {
-            CoreType::Atomic(atomic) => {
-                return atomic.is_int() || atomic.is_string() || atomic.is_float()
-            }
+            CoreType::Atomic(atomic) => atomic.is_int() || atomic.is_string() || atomic.is_float(),
             CoreType::Tuple(tuple) => {
                 for ty in &tuple.sub_types {
                     if !ty.is_hashable() {
                         return false;
                     }
                 }
-                return true;
+                true
             }
             _ => false,
         }
@@ -206,6 +288,21 @@ impl Type {
             CoreType::Unknown => true,
             _ => false,
         }
+    }
+
+    pub fn is_unset(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::Unset => true,
+            _ => false,
+        }
+    }
+
+    pub fn set_concretization_required_flag(&mut self) {
+        self.1 = true;
+    }
+
+    pub fn is_concretization_required(&self) -> bool {
+        self.1
     }
 
     // This function returns Some if operation is possible and None otherwise
@@ -252,38 +349,167 @@ impl Type {
 }
 
 impl AbstractType for Type {
-    fn is_eq(&self, base_type: &Type) -> bool {
+    fn is_eq(&self, other_ty: &Type) -> bool {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => atomic_type.is_eq(base_type),
-            CoreType::Struct(struct_type) => struct_type.is_eq(base_type),
-            CoreType::Lambda(lambda_type) => lambda_type.is_eq(base_type),
-            CoreType::Array(array_type) => array_type.is_eq(base_type),
-            CoreType::Tuple(tuple_type) => tuple_type.is_eq(base_type),
-            CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(base_type),
-            CoreType::Unknown => return false,
-            CoreType::Void => match base_type.0.as_ref() {
+            CoreType::Atomic(atomic_type) => atomic_type.is_eq(other_ty),
+            CoreType::Struct(struct_type) => struct_type.is_eq(other_ty),
+            CoreType::Lambda(lambda_type) => lambda_type.is_eq(other_ty),
+            CoreType::Array(array_type) => array_type.is_eq(other_ty),
+            CoreType::Tuple(tuple_type) => tuple_type.is_eq(other_ty),
+            CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(other_ty),
+            CoreType::Generic(generic_type) => generic_type.is_eq(other_ty),
+            CoreType::Enum(enum_type) => enum_type.is_eq(other_ty),
+            CoreType::Void => match other_ty.0.as_ref() {
                 CoreType::Void => true,
                 _ => false,
             },
-            CoreType::Unset => return false,
-            CoreType::Any => return true,
+            CoreType::Unknown => false,
+            CoreType::Unset => false,
+            CoreType::Any => true,
         }
     }
-}
 
-impl std::fmt::Display for Type {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => write!(f, "{}", atomic_type.to_string()),
-            CoreType::Struct(struct_type) => write!(f, "{}", struct_type.to_string()),
-            CoreType::Lambda(lambda_type) => write!(f, "{}", lambda_type.to_string()),
-            CoreType::Array(array_type) => write!(f, "{}", array_type.to_string()),
-            CoreType::Tuple(tuple_type) => write!(f, "{}", tuple_type.to_string()),
-            CoreType::HashMap(hashmap_type) => write!(f, "{}", hashmap_type.to_string()),
-            CoreType::Unknown => write!(f, "{}", UNKNOWN),
-            CoreType::Void => write!(f, "()"),
-            CoreType::Unset => write!(f, "{}", UNSET),
-            CoreType::Any => write!(f, "{}", ANY),
+            CoreType::Atomic(atomic_type) => atomic_type.is_structurally_eq(other_ty, context),
+            CoreType::Struct(struct_type) => struct_type.is_structurally_eq(other_ty, context),
+            CoreType::Enum(enum_type) => enum_type.is_structurally_eq(other_ty, context),
+            CoreType::Lambda(lambda_type) => lambda_type.is_structurally_eq(other_ty, context),
+            CoreType::Array(array_type) => array_type.is_structurally_eq(other_ty, context),
+            CoreType::Tuple(tuple_type) => tuple_type.is_structurally_eq(other_ty, context),
+            CoreType::HashMap(hashmap_type) => hashmap_type.is_structurally_eq(other_ty, context),
+            CoreType::Generic(generic_type) => generic_type.is_structurally_eq(other_ty, context),
+            CoreType::Void => match other_ty.0.as_ref() {
+                CoreType::Void => true,
+                _ => false,
+            },
+            CoreType::Unknown | CoreType::Unset | CoreType::Any => unreachable!(),
+        }
+    }
+
+    fn concretize(&self, context: &ConcretizationContext) -> Type {
+        match self.0.as_ref() {
+            CoreType::Struct(struct_type) => struct_type.concretize(context),
+            CoreType::Enum(enum_type) => enum_type.concretize(context),
+            CoreType::Lambda(lambda_type) => lambda_type.concretize(context),
+            CoreType::Array(array_type) => array_type.concretize(context),
+            CoreType::Tuple(tuple_type) => tuple_type.concretize(context),
+            CoreType::HashMap(hashmap_type) => hashmap_type.concretize(context),
+            CoreType::Generic(generic_type) => generic_type.concretize(context),
+            CoreType::Atomic(_)
+            | CoreType::Unknown
+            | CoreType::Void
+            | CoreType::Unset
+            | CoreType::Any => self.clone(),
+        }
+    }
+
+    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+        if interface_bounds.len() == 0 {
+            return true;
+        }
+        match self.0.as_ref() {
+            CoreType::Struct(struct_ty) => {
+                struct_ty.is_type_bounded_by_interfaces(interface_bounds)
+            }
+            CoreType::Generic(generic_ty) => {
+                generic_ty.is_type_bounded_by_interfaces(interface_bounds)
+            }
+            CoreType::Array(array_ty) => array_ty.is_type_bounded_by_interfaces(interface_bounds),
+            CoreType::HashMap(hashmap_ty) => {
+                hashmap_ty.is_type_bounded_by_interfaces(interface_bounds)
+            }
+            CoreType::Tuple(tuple_ty) => tuple_ty.is_type_bounded_by_interfaces(interface_bounds),
+            CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Enum(_) | CoreType::Any => false,
+            CoreType::Unknown | CoreType::Unset | CoreType::Void => false,
+        }
+    }
+
+    fn try_infer_type_or_check_equivalence(
+        &self,
+        received_ty: &Type,
+        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
+        num_inferred_types: &mut usize,
+        inference_category: GenericTypeDeclarationPlaceCategory,
+    ) -> Result<(), ()> {
+        match self.0.as_ref() {
+            CoreType::Struct(struct_ty) => struct_ty.try_infer_type_or_check_equivalence(
+                received_ty,
+                inferred_concrete_types,
+                global_concrete_types,
+                num_inferred_types,
+                inference_category,
+            ),
+            CoreType::Enum(enum_ty) => enum_ty.try_infer_type_or_check_equivalence(
+                received_ty,
+                inferred_concrete_types,
+                global_concrete_types,
+                num_inferred_types,
+                inference_category,
+            ),
+            CoreType::Lambda(lambda_ty) => lambda_ty.try_infer_type_or_check_equivalence(
+                received_ty,
+                inferred_concrete_types,
+                global_concrete_types,
+                num_inferred_types,
+                inference_category,
+            ),
+            CoreType::Array(array_ty) => array_ty.try_infer_type_or_check_equivalence(
+                received_ty,
+                inferred_concrete_types,
+                global_concrete_types,
+                num_inferred_types,
+                inference_category,
+            ),
+            CoreType::Tuple(tuple_ty) => tuple_ty.try_infer_type_or_check_equivalence(
+                received_ty,
+                inferred_concrete_types,
+                global_concrete_types,
+                num_inferred_types,
+                inference_category,
+            ),
+            CoreType::HashMap(hashmap_ty) => hashmap_ty.try_infer_type_or_check_equivalence(
+                received_ty,
+                inferred_concrete_types,
+                global_concrete_types,
+                num_inferred_types,
+                inference_category,
+            ),
+            CoreType::Generic(generic_ty) => generic_ty.try_infer_type_or_check_equivalence(
+                received_ty,
+                inferred_concrete_types,
+                global_concrete_types,
+                num_inferred_types,
+                inference_category,
+            ),
+            CoreType::Atomic(_)
+            | CoreType::Unknown
+            | CoreType::Void
+            | CoreType::Unset
+            | CoreType::Any => {
+                if !self.is_eq(received_ty) {
+                    return Err(());
+                }
+                Ok(())
+            }
+        }
+    }
+
+    fn to_string(&self, interner: &Interner) -> String {
+        match self.0.as_ref() {
+            CoreType::Atomic(atomic_type) => atomic_type.to_string(interner),
+            CoreType::Struct(struct_type) => struct_type.to_string(interner),
+            CoreType::Enum(enum_type) => enum_type.to_string(interner),
+            CoreType::Lambda(lambda_type) => lambda_type.to_string(interner),
+            CoreType::Array(array_type) => array_type.to_string(interner),
+            CoreType::Tuple(tuple_type) => tuple_type.to_string(interner),
+            CoreType::HashMap(hashmap_type) => hashmap_type.to_string(interner),
+            CoreType::Generic(generic_type) => generic_type.to_string(interner),
+            CoreType::Unknown => format!("{}", UNKNOWN),
+            CoreType::Void => "()".to_string(),
+            CoreType::Unset => format!("{}", UNSET),
+            CoreType::Any => format!("{}", ANY),
         }
     }
 }

@@ -63,8 +63,8 @@ impl Debug for AnyonError {
         match self {
             AnyonError::Report(report) => report.fmt(f),
             AnyonError::Vanilla(vanilla) => write!(f, "{}", vanilla.msg),
-            AnyonError::Io(io) => write!(f, "{}", io.to_string()),
-            AnyonError::UTF8(utf8) => write!(f, "{}", utf8.to_string()),
+            AnyonError::Io(io) => write!(f, "{}", io),
+            AnyonError::UTF8(utf8) => write!(f, "{}", utf8),
             AnyonError::Command(command) => {
                 write!(f, "{}\nView all commands with `jarvil help`", command.msg)
             }

@@ -15,6 +15,7 @@ pub mod code;
 pub mod codegen;
 pub mod constants;
 pub mod context;
+pub mod core;
 pub mod error;
 pub mod lexer;
 pub mod parser;
@@ -34,7 +35,7 @@ pub fn curr_dir_path() -> Rc<String> {
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
     match result.map_err(|error| error.with_source_code(source)).err() {
-        Some(err) => return err,
+        Some(err) => err,
         None => unreachable!("the result should always unwrap to an error"),
     }
 }
@@ -53,20 +54,20 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
 
     // name-resolver
     let resolver = Resolver::new(code);
-    let (namespace_handler, mut semantic_errors, code) = resolver.resolve_ast(&ast);
+    let (semantic_state_db, mut semantic_errors, code) = resolver.resolve_ast(&ast);
     errors.append(&mut semantic_errors);
 
     // type-checker
-    let type_checker = TypeChecker::new(code, namespace_handler);
-    let (namespace_handler, code) = type_checker.check_ast(&ast, &mut errors);
+    let type_checker = TypeChecker::new(code, semantic_state_db);
+    let (semantic_state_db, code) = type_checker.check_ast(&ast, &mut errors);
 
-    if errors.len() > 0 {
+    if !errors.is_empty() {
         let err = &errors[0];
         return Err(attach_source_code(err.report(), code_str));
     }
 
     // Python code-generation
-    let py_generator = PythonCodeGenerator::new(code, namespace_handler);
+    let py_generator = PythonCodeGenerator::new(code, semantic_state_db);
     let py_code = py_generator.generate_python_code(&ast);
     Ok(py_code)
 }

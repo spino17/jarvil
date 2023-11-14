@@ -2,33 +2,40 @@ use crate::{
     ast::{
         ast::{
             ASTNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, CallablePrototypeNode,
-            ClassMethodCallNode, CoreIdentifierNode, CoreRVariableDeclarationNode,
-            CoreStatemenIndentWrapperNode, CoreTokenNode, CoreTypeDeclarationNode, IdentifierNode,
-            OkIdentifierNode, TokenNode, TypeDeclarationNode, VariableDeclarationNode,
+            ConditionalBlockNode, CoreAssignmentNode, CoreIdentifierInDeclNode,
+            CoreIdentifierInUseNode, CoreRVariableDeclarationNode, CoreStatementIndentWrapperNode,
+            CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode,
+            EnumVariantExprOrClassMethodCallNode, IdentifierInDeclNode, IdentifierInUseNode,
+            MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, StatementNode,
+            TokenNode, TypeDeclarationNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
     code::JarvilCode,
+    constants::common::{FUNC_SUFFIX, TY_SUFFIX, VAR_SUFFIX},
     context,
     lexer::token::{CoreToken, Token},
-    scope::handler::{NamespaceHandler, SymbolDataEntry},
+    scope::{
+        core::{LookupResult, MangledIdentifierName, SymbolData},
+        handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
+        types::core::UserDefinedTypeData,
+    },
 };
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashSet;
 use std::convert::TryInto;
 
 // Utility functions
 pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
     let expected_indent_spaces = context::indent_spaces() * indent_level;
-    return " "
-        .to_string()
-        .repeat(expected_indent_spaces.try_into().unwrap());
+    " ".to_string()
+        .repeat(expected_indent_spaces.try_into().unwrap())
 }
 
 pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
     match token.core_ref() {
         CoreTokenNode::Ok(ok_token_node) => match &ok_token_node.core_ref().token.trivia {
-            Some(trivia) => return Some(trivia),
-            None => return None,
+            Some(trivia) => Some(trivia),
+            None => None,
         },
         _ => unreachable!(),
     }
@@ -36,82 +43,120 @@ pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
 
 pub struct PythonCodeGenerator {
     indent_level: usize,
-    generate_code: String,
+    generated_code: String,
     code: JarvilCode,
-    namespace_handler: NamespaceHandler,
+    semantic_state_db: SemanticStateDatabase,
 }
 
 impl PythonCodeGenerator {
-    pub fn new(code: JarvilCode, namespace_handler: NamespaceHandler) -> PythonCodeGenerator {
+    pub fn new(code: JarvilCode, semantic_state_db: SemanticStateDatabase) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
-            generate_code: "".to_string(),
+            generated_code: "".to_string(),
             code,
-            namespace_handler,
+            semantic_state_db,
         }
     }
 
     pub fn open_block(&mut self) {
-        self.indent_level = self.indent_level + 1;
+        self.indent_level += 1;
     }
 
     pub fn close_block(&mut self) {
-        self.indent_level = self.indent_level - 1;
+        self.indent_level -= 1;
     }
 
     pub fn generate_python_code(mut self, ast: &BlockNode) -> String {
         let code_block = ast.0.as_ref();
-        for stmt in &*code_block.stmts.as_ref() {
+        for stmt in code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        //let main_call_str = format!(
-        //    "\n\nif __name__ == \"__main__\":\n{}main_func()",
-        //    get_whitespaces_from_indent_level(1)
-        //);
-        let main_call_str = "\n\nmain_func()";
-        self.add_str_to_python_code(main_call_str);
-        self.generate_code
+        let index = match self
+            .semantic_state_db
+            .namespace
+            .lookup_in_functions_namespace(0, &self.semantic_state_db.interner.intern("main"))
+        {
+            LookupResult::Ok(lookup_data) => match lookup_data.symbol_data.0.get_index() {
+                Some(index) => index,
+                None => unreachable!(),
+            },
+            LookupResult::Unresolved | LookupResult::NotInitialized(_) => unreachable!(),
+        };
+        let main_call_str = format!("\n\nmain_{}_func()", index);
+        self.add_str_to_python_code(&main_call_str);
+        self.generated_code
     }
 
     pub fn add_str_to_python_code(&mut self, str: &str) {
-        self.generate_code.push_str(str);
+        self.generated_code.push_str(str);
     }
 
-    pub fn get_non_locals(
+    pub fn add_indention_to_python_code(&mut self) {
+        self.add_str_to_python_code(&get_whitespaces_from_indent_level(self.indent_level));
+    }
+
+    pub fn get_non_locals(&self, block: &BlockNode) -> &FxHashSet<MangledIdentifierName> {
+        self.semantic_state_db.get_non_locals_ref(block)
+    }
+
+    pub fn get_mangled_identifier_name_in_decl(
         &self,
-        block: &BlockNode,
-    ) -> (&FxHashSet<String>, &FxHashMap<String, bool>) {
-        self.namespace_handler.get_non_locals_ref(block)
-    }
-
-    pub fn get_suffix_str_for_identifier(&self, identifier: &OkIdentifierNode) -> &'static str {
+        identifier: &OkIdentifierInDeclNode,
+    ) -> String {
         match self
-            .namespace_handler
-            .identifier_binding_table
-            .get(identifier)
+            .semantic_state_db
+            .get_symbol_data_for_identifier_in_decl(identifier)
         {
             Some(symbol_data) => match symbol_data {
                 SymbolDataEntry::Variable(variable_symbol_data) => {
-                    if variable_symbol_data.2 {
-                        return "_var";
-                    }
-                    return "";
+                    return variable_symbol_data
+                        .get_mangled_name()
+                        .to_string(VAR_SUFFIX, &self.semantic_state_db.interner);
                 }
                 SymbolDataEntry::Function(func_symbol_data) => {
-                    if func_symbol_data.2 {
-                        return "_func";
-                    }
-                    return "";
+                    return func_symbol_data
+                        .get_mangled_name()
+                        .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner);
                 }
                 SymbolDataEntry::Type(type_symbol_data) => {
-                    if type_symbol_data.2 {
-                        return "_ty";
-                    }
-                    return "";
+                    return type_symbol_data
+                        .get_mangled_name()
+                        .to_string(TY_SUFFIX, &self.semantic_state_db.interner);
                 }
+                SymbolDataEntry::Interface(_) => unreachable!(),
             },
-            None => return "",
-        };
+            None => identifier.token_value_str(&self.code),
+        }
+    }
+
+    pub fn get_mangled_identifier_name_in_use(&self, identifier: &OkIdentifierInUseNode) -> String {
+        match self
+            .semantic_state_db
+            .get_symbol_data_for_identifier_in_use(identifier)
+        {
+            Some(symbol_data) => match symbol_data {
+                ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
+                    return variable_symbol_data
+                        .symbol_data
+                        .get_mangled_name()
+                        .to_string(VAR_SUFFIX, &self.semantic_state_db.interner);
+                }
+                ConcreteSymbolDataEntry::Function(func_symbol_data) => {
+                    return func_symbol_data
+                        .symbol_data
+                        .get_mangled_name()
+                        .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner);
+                }
+                ConcreteSymbolDataEntry::Type(type_symbol_data) => {
+                    return type_symbol_data
+                        .symbol_data
+                        .get_mangled_name()
+                        .to_string(TY_SUFFIX, &self.semantic_state_db.interner)
+                }
+                ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
+            },
+            None => identifier.token_value_str(&self.code),
+        }
     }
 
     pub fn print_token(&mut self, token: &Token) {
@@ -120,26 +165,32 @@ impl PythonCodeGenerator {
             None => None,
         };
         self.print_trivia(trivia);
-        let token_value = token.token_value(&self.code);
+        let token_value = token.token_value_str(&self.code);
         match token.core_token {
             CoreToken::SINGLE_LINE_COMMENT => {
-                if token_value.chars().next().unwrap() == '/' {
+                /*
+                if token_value.starts_with('/') {
                     let mut modified_str = "#".to_string();
                     modified_str.push_str(&token_value[2..]);
                     self.add_str_to_python_code(&modified_str);
                 } else {
                     self.add_str_to_python_code(&token_value);
                 }
+                 */
+                self.add_str_to_python_code("\n");
             }
             CoreToken::BLOCK_COMMENT => {
+                /*
                 let len = token_value.len();
                 let mut critical_section = token_value[2..(len - 2)].to_string();
                 critical_section.push_str("\"\"\"");
                 let mut final_str = "\"\"\"".to_string();
                 final_str.push_str(&critical_section);
                 self.add_str_to_python_code(&final_str);
+                 */
+                self.add_str_to_python_code("\n");
             }
-            CoreToken::ENDMARKER => return,
+            CoreToken::ENDMARKER => (),
             CoreToken::LITERAL => {
                 // Jarvil `str` can span multiple lines so this
                 // translates to Python three-quotes string.
@@ -167,58 +218,70 @@ impl PythonCodeGenerator {
     pub fn print_token_node(&mut self, token: &TokenNode) {
         match token.core_ref() {
             CoreTokenNode::Ok(ok_token_node) => {
-                self.walk_ok_token(&ok_token_node);
+                self.walk_ok_token(ok_token_node);
             }
             CoreTokenNode::MissingTokens(_) => unreachable!(),
         }
     }
 
-    pub fn print_identifier(&mut self, identifier: &IdentifierNode) {
+    pub fn print_token_node_without_trivia(&mut self, token: &TokenNode) {
+        match token.core_ref() {
+            CoreTokenNode::Ok(ok_token_node) => {
+                self.add_str_to_python_code(&ok_token_node.token_value_str(&self.code));
+            }
+            CoreTokenNode::MissingTokens(_) => unreachable!(),
+        }
+    }
+
+    pub fn print_identifier_in_decl(&mut self, identifier: &IdentifierInDeclNode, is_trivia: bool) {
         let identifier = match identifier.core_ref() {
-            CoreIdentifierNode::Ok(ok_identifier) => ok_identifier,
+            CoreIdentifierInDeclNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
-        let suffix_str = self.get_suffix_str_for_identifier(identifier);
-        let mut token_value = identifier.token_value(&self.code);
-        token_value.push_str(suffix_str);
-        let token = &identifier.0.as_ref().token.core_ref().token;
-        let trivia = match &token.trivia {
-            Some(trivia) => Some(trivia),
-            None => None,
-        };
-        self.print_trivia(trivia);
+        let token_value = self.get_mangled_identifier_name_in_decl(identifier);
+        if is_trivia {
+            let token = &identifier.0.as_ref().name.core_ref().token;
+            let trivia = match &token.trivia {
+                Some(trivia) => Some(trivia),
+                None => None,
+            };
+            self.print_trivia(trivia);
+        }
         self.add_str_to_python_code(&token_value);
     }
 
-    pub fn print_identifier_without_trivia(&mut self, identifier: &IdentifierNode) {
+    pub fn print_identifier_in_use(&mut self, identifier: &IdentifierInUseNode, is_trivia: bool) {
         let identifier = match identifier.core_ref() {
-            CoreIdentifierNode::Ok(ok_identifier) => ok_identifier,
+            CoreIdentifierInUseNode::Ok(ok_identifier) => ok_identifier,
             _ => unreachable!(),
         };
-        let suffix_str = self.get_suffix_str_for_identifier(identifier);
-        let mut token_value = identifier.token_value(&self.code);
-        token_value.push_str(suffix_str);
+        let token_value = self.get_mangled_identifier_name_in_use(identifier);
+        if is_trivia {
+            let token = &identifier.0.as_ref().name.core_ref().token;
+            let trivia = match &token.trivia {
+                Some(trivia) => Some(trivia),
+                None => None,
+            };
+            self.print_trivia(trivia);
+        }
         self.add_str_to_python_code(&token_value);
     }
 
     pub fn print_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        let let_keyword = &core_variable_decl.let_keyword;
         let name = &core_variable_decl.name;
         let equal = &core_variable_decl.equal;
         let r_node = &core_variable_decl.r_node;
-        let trivia = get_trivia_from_token_node(let_keyword);
-        self.print_trivia(trivia);
         match r_node.core_ref() {
             CoreRVariableDeclarationNode::Expression(expr_stmt) => {
-                self.print_identifier_without_trivia(name);
+                self.print_identifier_in_decl(name, false);
                 self.print_token_node(equal);
                 self.walk_expr_stmt(expr_stmt);
             }
             CoreRVariableDeclarationNode::Lambda(lambda_decl) => {
                 let callable_body = &lambda_decl.core_ref().body;
                 self.add_str_to_python_code("def");
-                self.print_identifier(name);
+                self.print_identifier_in_decl(name, true);
                 self.walk_callable_body(callable_body);
             }
         }
@@ -231,7 +294,7 @@ impl PythonCodeGenerator {
         let rparen = &core_callable_prototype.rparen;
         self.print_token_node(lparen);
         if let Some(params) = params {
-            self.walk_name_type_specs(params);
+            self.walk_comma_separated_name_type_specs(params);
         }
         self.print_token_node(rparen);
     }
@@ -242,38 +305,155 @@ impl PythonCodeGenerator {
             CoreTypeDeclarationNode::Struct(struct_decl) => {
                 let core_struct_decl = struct_decl.core_ref();
                 let struct_name = &core_struct_decl.name;
-                let type_keyword = &core_struct_decl.type_keyword;
                 let colon = &core_struct_decl.colon;
                 let block = &core_struct_decl.block;
-                let trivia = get_trivia_from_token_node(type_keyword);
-                self.print_trivia(trivia);
                 self.add_str_to_python_code("class");
-                self.print_identifier(struct_name);
+                self.print_identifier_in_decl(struct_name, true);
                 self.print_token_node(colon);
                 self.walk_block(block);
             }
             CoreTypeDeclarationNode::Lambda(_) => {
                 self.add_str_to_python_code("\n");
             }
+            CoreTypeDeclarationNode::Enum(enum_decl) => {
+                let core_enum_decl = enum_decl.core_ref();
+                let enum_name = &core_enum_decl.name;
+                let colon = &core_enum_decl.colon;
+                self.add_str_to_python_code("class");
+                self.print_identifier_in_decl(enum_name, true);
+                self.print_token_node(colon);
+                let constructor_str = format!(
+                    "\n{}def __init__(self, index, data=None):\n{}self.index = index\n{}self.data = data\n",
+                    get_whitespaces_from_indent_level(self.indent_level + 1),
+                    get_whitespaces_from_indent_level(self.indent_level + 2),
+                    get_whitespaces_from_indent_level(self.indent_level + 2)
+                );
+                self.add_str_to_python_code(&constructor_str);
+            }
             CoreTypeDeclarationNode::MissingTokens(_) => unreachable!(),
         }
     }
 
-    pub fn print_class_method_call(&mut self, class_method_call: &ClassMethodCallNode) {
-        let core_class_method_call = class_method_call.core_ref();
-        let lparen = &core_class_method_call.lparen;
-        let rparen = &core_class_method_call.rparen;
-        let class_name = &core_class_method_call.class_name;
-        let class_method_name = &core_class_method_call.class_method_name;
-        let params = &core_class_method_call.params;
-        self.print_identifier(class_name);
-        self.add_str_to_python_code(".");
-        self.print_identifier(class_method_name);
-        self.print_token_node(lparen);
-        if let Some(params) = params {
-            self.walk_params(params);
+    pub fn print_enum_variant_expr_or_class_method_call(
+        &mut self,
+        enum_variant_expr_or_class_method_call: &EnumVariantExprOrClassMethodCallNode,
+        is_trivia: bool,
+    ) {
+        let core_enum_variant_expr_or_class_method_call =
+            enum_variant_expr_or_class_method_call.core_ref();
+        let ty_name = &core_enum_variant_expr_or_class_method_call.ty_name;
+        let property_name = &core_enum_variant_expr_or_class_method_call.property_name;
+        let params = &core_enum_variant_expr_or_class_method_call.params;
+        if let CoreIdentifierInUseNode::Ok(ok_ty_name) = ty_name.core_ref() {
+            if let Some(concrete_symbol_data) = self
+                .semantic_state_db
+                .get_type_symbol_data_for_identifier_in_use(ok_ty_name)
+            {
+                let symbol_data = &concrete_symbol_data.symbol_data;
+                match &*symbol_data.get_core_ref() {
+                    UserDefinedTypeData::Struct(_) => {
+                        self.print_identifier_in_use(ty_name, is_trivia);
+                        self.add_str_to_python_code(".");
+                        self.print_identifier_in_use(property_name, true);
+                        if let Some((lparen, params, rparen)) = params {
+                            self.print_token_node(lparen);
+                            if let Some(params) = params {
+                                self.walk_comma_separated_expressions(params);
+                            }
+                            self.print_token_node(rparen);
+                        }
+                    }
+                    UserDefinedTypeData::Enum(enum_data) => {
+                        if let CoreIdentifierInUseNode::Ok(ok_variant_name) =
+                            property_name.core_ref()
+                        {
+                            let variant_name_str = ok_variant_name
+                                .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
+                                self.print_identifier_in_use(ty_name, is_trivia);
+                                self.add_str_to_python_code(&format!("(index={}", index));
+                                if let Some((_, params, _)) = params {
+                                    if let Some(params) = params {
+                                        self.add_str_to_python_code(", data=");
+                                        let expr = &params.core_ref().entity;
+                                        self.walk_expression(expr);
+                                    }
+                                }
+                                self.add_str_to_python_code(")");
+                            }
+                        }
+                    }
+                    UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
+                        unreachable!()
+                    }
+                }
+            }
         }
-        self.print_token_node(rparen);
+    }
+
+    pub fn print_match_case(&mut self, match_case: &MatchCaseStatementNode) {
+        let core_match_case = match_case.core_ref();
+        let expr = &core_match_case.expr;
+        let match_block = &core_match_case.block;
+        let mut symbol_data: Option<SymbolData<UserDefinedTypeData>> = None;
+        let mut conditional_keyword_str: &'static str = "if";
+        for stmt in match_block.core_ref().stmts.as_ref() {
+            let stmt = match stmt.core_ref() {
+                CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
+                CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
+                _ => continue,
+            };
+            match stmt.core_ref() {
+                CoreStatementNode::CaseBranch(case_branch) => {
+                    let core_case_branch = case_branch.core_ref();
+                    let enum_name = &core_case_branch.enum_name;
+                    if symbol_data.is_none() {
+                        // cache the symbol_data to be used for all case branches
+                        if let CoreIdentifierInDeclNode::Ok(ok_enum_name) = enum_name.core_ref() {
+                            if let Some(sym_data) = self
+                                .semantic_state_db
+                                .get_type_symbol_data_for_identifier_in_decl(ok_enum_name)
+                            {
+                                symbol_data = Some(sym_data.clone());
+                            }
+                        }
+                    }
+                    let variant_name = &core_case_branch.variant_name;
+                    if let CoreIdentifierInDeclNode::Ok(ok_variant_name) = variant_name.core_ref() {
+                        let variant_name_str = ok_variant_name
+                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                        let index = match &symbol_data {
+                            Some(symbol_data) => symbol_data
+                                .get_core_ref()
+                                .get_enum_data_ref()
+                                .try_index_for_variant(variant_name_str)
+                                .unwrap(),
+                            None => unreachable!(),
+                        };
+                        let case_block = &core_case_branch.block;
+                        self.add_indention_to_python_code();
+                        self.add_str_to_python_code(conditional_keyword_str);
+                        self.walk_expression(expr);
+                        self.add_str_to_python_code(&format!(".index == {}:", index));
+                        self.open_block();
+                        self.print_token_node(&case_block.core_ref().newline);
+                        if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
+                            self.add_indention_to_python_code();
+                            self.print_identifier_in_decl(variable_name, true);
+                            self.add_str_to_python_code(" = ");
+                            self.walk_expression(expr);
+                            self.add_str_to_python_code(".data\n")
+                        }
+                        for stmt in case_block.core_ref().stmts.as_ref() {
+                            self.walk_stmt_indent_wrapper(stmt);
+                        }
+                        self.close_block();
+                    }
+                    conditional_keyword_str = "elif";
+                }
+                _ => unreachable!(),
+            }
+        }
     }
 
     pub fn print_bounded_method_wrapper(
@@ -281,7 +461,7 @@ impl PythonCodeGenerator {
         bounded_method_wrapper: &BoundedMethodWrapperNode,
     ) {
         let bounded_kind = match self
-            .namespace_handler
+            .semantic_state_db
             .get_bounded_kind_ref(bounded_method_wrapper)
         {
             Some(bounded_kind) => bounded_kind,
@@ -289,8 +469,10 @@ impl PythonCodeGenerator {
         };
         match bounded_kind {
             BoundedMethodKind::ClassMethod => {
-                self.walk_func_decl(&bounded_method_wrapper.0.as_ref().func_decl);
-                return;
+                let core_func_decl = &bounded_method_wrapper.0.as_ref().func_decl.core_ref();
+                self.print_token_node_without_trivia(&core_func_decl.def_keyword);
+                self.walk_identifier_in_decl(&core_func_decl.name);
+                self.walk_callable_body(&core_func_decl.body);
             }
             BoundedMethodKind::Method | BoundedMethodKind::Constructor => {
                 let core_func_decl = bounded_method_wrapper.0.as_ref().func_decl.core_ref();
@@ -304,19 +486,131 @@ impl PythonCodeGenerator {
                 let rparen = &prototype.rparen;
                 let params = &prototype.params;
 
-                self.print_token_node(def_keyword);
-                self.print_identifier(name);
+                self.print_token_node_without_trivia(def_keyword);
+                self.print_identifier_in_decl(name, true);
                 self.print_token_node(lparen);
                 self.add_str_to_python_code("self");
                 if let Some(params) = params {
                     self.add_str_to_python_code(", ");
-                    self.walk_name_type_specs(params);
+                    self.walk_comma_separated_name_type_specs(params);
                 }
                 self.print_token_node(rparen);
                 self.print_token_node(colon);
                 self.walk_block(block);
             }
-        };
+        }
+    }
+
+    pub fn print_conditional_block(&mut self, conditional_block: &ConditionalBlockNode) {
+        self.add_indention_to_python_code();
+        let core_conditional_block = conditional_block.core_ref();
+        self.print_token_node_without_trivia(&core_conditional_block.condition_keyword);
+        self.walk_expression(&core_conditional_block.condition_expr);
+        self.walk_token(&core_conditional_block.colon);
+        self.walk_block(&core_conditional_block.block);
+    }
+
+    fn print_stmt(&mut self, stmt: &StatementNode) {
+        match stmt.core_ref() {
+            CoreStatementNode::Expression(expr_stmt) => {
+                self.add_indention_to_python_code();
+                let core_expr_stmt = expr_stmt.core_ref();
+                self.print_expression_without_trivia(&core_expr_stmt.expr);
+                self.walk_token(&core_expr_stmt.newline);
+            }
+            CoreStatementNode::Assignment(assignment) => {
+                self.add_indention_to_python_code();
+                match assignment.core_ref() {
+                    CoreAssignmentNode::Ok(ok_assignment) => {
+                        let core_ok_assignment = ok_assignment.core_ref();
+                        self.print_atom_node_without_trivia(&core_ok_assignment.l_atom);
+                        self.walk_token(&core_ok_assignment.equal);
+                        self.walk_r_assignment(&core_ok_assignment.r_assign);
+                    }
+                    CoreAssignmentNode::InvalidLValue(_) => unreachable!(),
+                }
+            }
+            CoreStatementNode::VariableDeclaration(variable_decl) => {
+                self.add_indention_to_python_code();
+                self.print_variable_decl(variable_decl)
+            }
+            CoreStatementNode::Return(return_stmt) => {
+                self.add_indention_to_python_code();
+                let core_return_stmt = return_stmt.core_ref();
+                self.print_token_node_without_trivia(&core_return_stmt.return_keyword);
+                if let Some(expr) = &core_return_stmt.expr {
+                    self.walk_expression(expr);
+                }
+                self.print_token_node(&core_return_stmt.newline);
+            }
+            CoreStatementNode::Conditional(conditional_stmt) => {
+                let core_conditional_stmt = conditional_stmt.core_ref();
+                self.walk_conditional_block(&core_conditional_stmt.if_block);
+                for elif_block in &core_conditional_stmt.elifs {
+                    self.walk_conditional_block(&elif_block);
+                }
+                if let Some((else_keyword, colon, else_block)) = &core_conditional_stmt.else_block {
+                    self.add_indention_to_python_code();
+                    self.print_token_node_without_trivia(else_keyword);
+                    self.walk_token(colon);
+                    self.walk_block(else_block);
+                }
+            }
+            CoreStatementNode::WhileLoop(while_loop_stmt) => {
+                self.add_indention_to_python_code();
+                let core_while_loop = while_loop_stmt.core_ref();
+                self.print_token_node_without_trivia(&core_while_loop.while_keyword);
+                self.walk_expression(&core_while_loop.condition_expr);
+                self.walk_token(&core_while_loop.colon);
+                self.walk_block(&core_while_loop.block);
+            }
+            CoreStatementNode::ForLoop(for_loop_stmt) => {
+                self.add_indention_to_python_code();
+                let core_for_loop = for_loop_stmt.core_ref();
+                self.print_token_node_without_trivia(&core_for_loop.for_keyword);
+                self.walk_identifier_in_decl(&core_for_loop.loop_variable);
+                self.walk_token(&core_for_loop.in_keyword);
+                self.walk_expression(&core_for_loop.iterable_expr);
+                self.walk_token(&core_for_loop.colon);
+                self.walk_block(&core_for_loop.block);
+            }
+            CoreStatementNode::Break(break_stmt) => {
+                self.add_indention_to_python_code();
+                let core_break_stmt = break_stmt.core_ref();
+                self.print_token_node_without_trivia(&core_break_stmt.break_keyword);
+                self.print_token_node(&core_break_stmt.newline);
+            }
+            CoreStatementNode::Continue(continue_stmt) => {
+                self.add_indention_to_python_code();
+                let core_continue_stmt = continue_stmt.core_ref();
+                self.print_token_node_without_trivia(&core_continue_stmt.continue_keyword);
+                self.print_token_node(&core_continue_stmt.newline);
+            }
+            CoreStatementNode::FunctionWrapper(func_wrapper) => {
+                self.add_indention_to_python_code();
+                let core_func_wrapper = func_wrapper.core_ref();
+                let core_func_decl = core_func_wrapper.func_decl.core_ref();
+                self.print_token_node_without_trivia(&core_func_decl.def_keyword);
+                self.walk_identifier_in_decl(&core_func_decl.name);
+                self.walk_callable_body(&core_func_decl.body);
+            }
+            CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
+                self.add_indention_to_python_code();
+                self.print_bounded_method_wrapper(bounded_method_wrapper)
+            }
+            CoreStatementNode::TypeDeclaration(type_decl) => {
+                self.add_indention_to_python_code();
+                self.print_type_decl(type_decl);
+            }
+            CoreStatementNode::MatchCase(match_case_stmt) => self.print_match_case(match_case_stmt),
+            CoreStatementNode::StructPropertyDeclaration(_)
+            | CoreStatementNode::InterfaceDeclaration(_) => {
+                self.add_str_to_python_code("\n");
+            }
+            CoreStatementNode::EnumVariantDeclaration(_)
+            | CoreStatementNode::InterfaceMethodPrototypeWrapper(_)
+            | CoreStatementNode::CaseBranch(_) => unreachable!(),
+        }
     }
 }
 
@@ -327,104 +621,81 @@ impl Visitor for PythonCodeGenerator {
                 self.open_block();
                 let core_block = block.0.as_ref();
                 self.print_token_node(&core_block.newline);
-                let mut nonlocal_strs = vec![];
-                let (variable_non_locals, func_non_locals) = self.get_non_locals(block);
-                for variable_name in variable_non_locals.iter() {
-                    nonlocal_strs.push(format!(
-                        "{}nonlocal {}_var\n",
-                        get_whitespaces_from_indent_level(self.indent_level),
-                        variable_name
-                    ));
-                }
-                for (func_name, &is_global) in func_non_locals.iter() {
-                    if is_global {
-                        // TODO - if declarations are in global we can completely remove this
-                        // as there are no variable declarations which needs to have proper
-                        // behaviour of non-local assignments but global scope does not have
-                        // any variable declarartions and functions cannot be assigned so
-                        // we can safely remove explicit global statement here
-                        // self.add_str_to_python_code(&format!("global {}\n", func_name));
+
+                if block.core_ref().kind.has_callable_body() {
+                    let mut nonlocal_strs = vec![];
+                    let variable_non_locals = self.get_non_locals(block);
+                    for variable_name in variable_non_locals.iter() {
+                        let mangled_variable_name =
+                            variable_name.to_string(VAR_SUFFIX, &self.semantic_state_db.interner);
                         nonlocal_strs.push(format!(
-                            "{}global {}_func\n",
+                            "{}nonlocal {}\n",
                             get_whitespaces_from_indent_level(self.indent_level),
-                            func_name
-                        ))
-                    } else {
-                        nonlocal_strs.push(format!(
-                            "{}nonlocal {}_func\n",
-                            get_whitespaces_from_indent_level(self.indent_level),
-                            func_name
-                        ))
+                            mangled_variable_name
+                        ));
+                    }
+                    for nonlocal_str in nonlocal_strs {
+                        self.add_str_to_python_code(&nonlocal_str);
                     }
                 }
-                for nonlocal_str in nonlocal_strs {
-                    self.add_str_to_python_code(&nonlocal_str);
-                }
-                for stmt in &*core_block.stmts.as_ref() {
+                for stmt in core_block.stmts.as_ref() {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block();
-                return None;
+                None
             }
             ASTNode::StatementIndentWrapper(stmt_wrapper) => {
                 let core_stmt_wrapper = stmt_wrapper.core_ref();
                 match core_stmt_wrapper {
-                    CoreStatemenIndentWrapperNode::CorrectlyIndented(ok_stmt) => {
-                        // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
+                    CoreStatementIndentWrapperNode::CorrectlyIndented(ok_stmt) => {
                         self.walk_stmt(ok_stmt);
                     }
-                    CoreStatemenIndentWrapperNode::ExtraNewlines(extra_newlines) => {
-                        let core_extra_newlines = extra_newlines.core_ref();
-                        for extra_newline in &core_extra_newlines.skipped_tokens {
-                            let core_token = &extra_newline.core_ref().skipped_token;
-                            // self.add_str_to_python_code(&get_whitespaces_from_indent_level(1));
-                            self.print_token(core_token);
-                        }
+                    CoreStatementIndentWrapperNode::ExtraNewlines(_) => {
+                        self.add_str_to_python_code("\n")
                     }
-                    CoreStatemenIndentWrapperNode::IncorrectlyIndented(_) => unreachable!(),
-                    CoreStatemenIndentWrapperNode::LeadingSkippedTokens(_) => unreachable!(),
-                    CoreStatemenIndentWrapperNode::TrailingSkippedTokens(_) => unreachable!(),
+                    CoreStatementIndentWrapperNode::IncorrectlyIndented(_)
+                    | CoreStatementIndentWrapperNode::LeadingSkippedTokens(_)
+                    | CoreStatementIndentWrapperNode::TrailingSkippedTokens(_) => unreachable!(),
                 }
-                return None;
+                None
             }
-            ASTNode::VariableDeclaration(variable_decl) => {
-                self.print_variable_decl(variable_decl);
-                return None;
-            }
-            ASTNode::StructPropertyDeclaration(_) => {
-                self.add_str_to_python_code("\n");
-                return None;
-            }
-            ASTNode::BoundedMethodWrapper(bounded_method_wrapper) => {
-                self.print_bounded_method_wrapper(bounded_method_wrapper);
-                return None;
+            ASTNode::Statement(stmt) => {
+                self.print_stmt(stmt);
+                None
             }
             ASTNode::CallablePrototype(callable_prototype) => {
                 self.print_callable_prototype(callable_prototype);
-                return None;
+                None
+            }
+            ASTNode::ConditionalBlock(conditional_block) => {
+                self.print_conditional_block(conditional_block);
+                None
             }
             ASTNode::NameTypeSpec(name_type_spec) => {
                 // This is where type-annotations are evapored in the generated Python code
                 let core_name_type_spec = name_type_spec.core_ref();
                 let name = &core_name_type_spec.name;
-                self.print_identifier(name);
-                return None;
+                self.print_identifier_in_decl(name, true);
+                None
             }
-            ASTNode::TypeDeclaration(type_decl) => {
-                self.print_type_decl(type_decl);
-                return None;
+            ASTNode::EnumVariantExprOrClassMethodCall(enum_variant_expr_or_class_method_call) => {
+                self.print_enum_variant_expr_or_class_method_call(
+                    enum_variant_expr_or_class_method_call,
+                    true,
+                );
+                None
             }
-            ASTNode::ClassMethodCall(class_method_call) => {
-                self.print_class_method_call(class_method_call);
-                return None;
+            ASTNode::IdentifierInDecl(identifier_in_decl) => {
+                self.print_identifier_in_decl(identifier_in_decl, true);
+                None
             }
-            ASTNode::Identifier(identifier) => {
-                self.print_identifier(identifier);
-                return None;
+            ASTNode::IdentifierInUse(identifier_in_use) => {
+                self.print_identifier_in_use(identifier_in_use, true);
+                None
             }
             ASTNode::OkToken(token) => {
                 self.print_token(&token.core_ref().token);
-                return None;
+                None
             }
             _ => Some(()),
         }

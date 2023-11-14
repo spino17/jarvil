@@ -27,6 +27,8 @@ pub const FOR: &'static str                     = "for";
 pub const WHILE: &'static str                   = "while";
 pub const CONTINUE: &'static str                = "continue";
 pub const BREAK: &'static str                   = "break";
+pub const MATCH: &'static str                   = "match";
+pub const CASE: &'static str                    = "case";
 pub const IF: &'static str                      = "if";
 pub const ELIF: &'static str                    = "elif";
 pub const ELSE: &'static str                    = "else";
@@ -44,6 +46,7 @@ pub const TRUE: &'static str                    = "True";
 pub const FALSE: &'static str                   = "False";
 pub const LAMBDA_KEYWORD: &'static str          = "lambda";
 pub const STRUCT_KEYWORD: &'static str          = "struct";
+pub const ENUM_KEYWORD: &'static str            = "enum";
 pub const RETURN: &'static str                  = "return";
 pub const INT: &'static str                     = "int";
 pub const INTEGER: &'static str                 = "<integer>";
@@ -85,4 +88,7 @@ pub const ASYNC_KEYWORD: &'static str           = "async";
 pub const AWAIT_KEYWORD: &'static str           = "await";
 pub const PEG_PARSER: &'static str              = "__peg_parser__";
 
-pub const EIGHT_BIT_MAX_VALUE: usize = 250;
+// suffix for name-mangling
+pub const VAR_SUFFIX: &'static str              = "var";
+pub const FUNC_SUFFIX: &'static str             = "func";
+pub const TY_SUFFIX: &'static str               = "ty";
