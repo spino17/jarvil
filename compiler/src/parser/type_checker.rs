@@ -170,12 +170,6 @@ impl From<PartialCallableDataPrototypeCheckError> for MethodAccessTypeCheckError
     }
 }
 
-#[derive(Debug)]
-pub enum StructConstructorPrototypeCheckResult {
-    Basic(Type),
-    Inferred(ConcreteTypesTuple),
-}
-
 #[derive(Debug, Clone)]
 pub enum TupleIndexCheckResult {
     Ok(usize),
@@ -628,8 +622,7 @@ impl TypeChecker {
         concrete_symbol_data: &ConcreteSymbolData<UserDefinedTypeData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
-        let struct_constructor_prototype_check_result = match &*concrete_symbol_data.get_core_ref()
-        {
+        match &*concrete_symbol_data.get_core_ref() {
             UserDefinedTypeData::Struct(struct_symbol_data) => {
                 let concrete_types = &concrete_symbol_data.concrete_types;
                 let constructor_meta_data = &struct_symbol_data.constructor;
@@ -670,7 +663,7 @@ impl TypeChecker {
                             &concrete_symbol_data.symbol_data,
                             concrete_types.clone(), // expensive clone
                         );
-                        StructConstructorPrototypeCheckResult::Basic(return_ty)
+                        return Ok(return_ty);
                     }
                     CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
                         generic_type_decls,
@@ -682,7 +675,10 @@ impl TypeChecker {
                             params,
                             GenericTypeDeclarationPlaceCategory::InStruct,
                         )?;
-                        StructConstructorPrototypeCheckResult::Inferred(concrete_types)
+                        return Ok(Type::new_with_struct(
+                            &concrete_symbol_data.symbol_data,
+                            Some(concrete_types),
+                        ));
                     }
                 }
             }
@@ -693,12 +689,6 @@ impl TypeChecker {
                     name,
                 ))
             }
-        };
-        match struct_constructor_prototype_check_result {
-            StructConstructorPrototypeCheckResult::Basic(return_ty) => Ok(return_ty),
-            StructConstructorPrototypeCheckResult::Inferred(concrete_types) => Ok(
-                Type::new_with_struct(&concrete_symbol_data.symbol_data, Some(concrete_types)),
-            ),
         }
     }
 
@@ -1897,7 +1887,6 @@ impl TypeChecker {
         body: &BlockNode,
         is_constructor: bool,
     ) {
-        // let core_callable_body = callable_body.0.as_ref();
         let return_type_obj = self.check_callable_prototype(prototype);
         self.context
             .func_stack
