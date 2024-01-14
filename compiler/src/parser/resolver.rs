@@ -224,7 +224,7 @@ impl Resolver {
         };
         self.scope_index = parent_scope_index;
         self.indent_level -= 1;
-        let mut non_locals = match self.context.block_context_stack.pop() {
+        let non_locals = match self.context.block_context_stack.pop() {
             Some(block_context) => block_context,
             None => unreachable!(),
         };

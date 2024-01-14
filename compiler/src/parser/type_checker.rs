@@ -2222,7 +2222,6 @@ impl TypeChecker {
             | CoreType::Any
             | CoreType::Unknown
             | CoreType::Unset
-            | CoreType::Unset
             | CoreType::Void => None,
         };
         let loop_variable = &core_for_loop.loop_variable;
