@@ -14,7 +14,7 @@ pub fn is_letter(c: &char) -> bool {
 }
 
 pub trait Lexer {
-    fn tokenize(self, code: &mut JarvilCode) -> (Vec<Token>, Vec<Diagnostics>);
+    fn tokenize(self, code: &mut JarvilCode) -> (Vec<Token>, Vec<Diagnostics>, Vec<usize>);
 }
 
 pub struct CoreLexer {
@@ -26,7 +26,7 @@ pub struct CoreLexer {
 }
 
 impl Lexer for CoreLexer {
-    fn tokenize(mut self, code: &mut JarvilCode) -> (Vec<Token>, Vec<Diagnostics>) {
+    fn tokenize(mut self, code: &mut JarvilCode) -> (Vec<Token>, Vec<Diagnostics>, Vec<usize>) {
         let mut token_vec: Vec<Token> = Vec::new();
         token_vec.push(Token {
             line_number: self.line_number,
@@ -65,7 +65,6 @@ impl Lexer for CoreLexer {
             }
         }
         self.code_lines.push(self.line_start_index);
-        code.set_code_lines(mem::take(&mut self.code_lines));
         let mut token = Token {
             line_number: self.line_number,
             core_token: CoreToken::ENDMARKER,
@@ -86,7 +85,7 @@ impl Lexer for CoreLexer {
             token.set_trivia(eof_trivia_vec);
         }
         token_vec.push(token);
-        (token_vec, self.errors)
+        (token_vec, self.errors, self.code_lines)
     }
 }
 

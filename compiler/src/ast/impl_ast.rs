@@ -46,7 +46,7 @@ use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
 use crate::ast::ast::SkippedTokensNode;
-use crate::code::JarvilCode;
+use crate::code::{JarvilCode, JarvilCodeHandler};
 use crate::core::string_interner::{Interner, StrId};
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
@@ -1200,8 +1200,10 @@ impl TypeExpressionNode {
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         match self.core_ref() {
-            CoreTypeExpressionNode::Atomic(atomic) => atomic
-                .type_obj_before_resolved(&resolver.code, &mut resolver.semantic_state_db.interner),
+            CoreTypeExpressionNode::Atomic(atomic) => atomic.type_obj_before_resolved(
+                &resolver.code_handler,
+                &mut resolver.semantic_state_db.interner,
+            ),
             CoreTypeExpressionNode::Array(array) => {
                 array.type_obj_before_resolved(resolver, scope_index, has_generics)
             }
@@ -1245,7 +1247,7 @@ impl AtomicTypeNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        code: &JarvilCode,
+        code: &JarvilCodeHandler,
         interner: &mut Interner,
     ) -> TypeResolveKind {
         self.type_obj_after_resolved(code, interner)
@@ -1253,7 +1255,7 @@ impl AtomicTypeNode {
 
     pub fn type_obj_after_resolved(
         &self,
-        code: &JarvilCode,
+        code: &JarvilCodeHandler,
         interner: &mut Interner,
     ) -> TypeResolveKind {
         match self.core_ref().kind.core_ref() {
@@ -2237,7 +2239,7 @@ impl OkSelfKeywordNode {
         OkSelfKeywordNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
         self.0.as_ref().token.token_value(code, interner)
     }
 }
@@ -2292,11 +2294,11 @@ impl OkTokenNode {
         self.core_ref().token.try_as_binary_operator()
     }
 
-    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
         self.0.as_ref().token.token_value(code, interner)
     }
 
-    pub fn token_value_str(&self, code: &JarvilCode) -> String {
+    pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {
         self.0.as_ref().token.token_value_str(code)
     }
 
@@ -2426,11 +2428,11 @@ impl OkIdentifierInUseNode {
         OkIdentifierInUseNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
         self.0.as_ref().name.token_value(code, interner)
     }
 
-    pub fn token_value_str(&self, code: &JarvilCode) -> String {
+    pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {
         self.0.as_ref().name.token_value_str(code)
     }
 
@@ -2480,11 +2482,11 @@ impl OkIdentifierInDeclNode {
         OkIdentifierInDeclNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
         self.0.as_ref().name.token_value(code, interner)
     }
 
-    pub fn token_value_str(&self, code: &JarvilCode) -> String {
+    pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {
         self.0.as_ref().name.token_value_str(code).to_owned()
     }
 

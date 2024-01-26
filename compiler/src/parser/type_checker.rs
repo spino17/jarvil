@@ -9,6 +9,7 @@ use crate::ast::ast::{
     OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode,
     TupleExpressionNode, WhileLoopStatementNode,
 };
+use crate::code::JarvilCodeHandler;
 use crate::core::common::RefOrOwned;
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
@@ -178,16 +179,16 @@ pub enum TupleIndexCheckResult {
 }
 
 pub struct TypeChecker {
-    code: JarvilCode,
+    code_handler: JarvilCodeHandler,
     errors: UnsafeCell<Vec<Diagnostics>>,
     context: Context,
     pub semantic_state_db: SemanticStateDatabase,
 }
 
 impl TypeChecker {
-    pub fn new(code: JarvilCode, semantic_state_db: SemanticStateDatabase) -> Self {
+    pub fn new(code_handler: JarvilCodeHandler, semantic_state_db: SemanticStateDatabase) -> Self {
         TypeChecker {
-            code,
+            code_handler,
             errors: UnsafeCell::new(vec![]),
             context: Context { func_stack: vec![] },
             semantic_state_db,
@@ -210,7 +211,7 @@ impl TypeChecker {
         mut self,
         ast: &BlockNode,
         global_errors: &mut Vec<Diagnostics>,
-    ) -> (SemanticStateDatabase, JarvilCode) {
+    ) -> (SemanticStateDatabase, JarvilCodeHandler) {
         let core_block = ast.0.as_ref();
         for stmt in core_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
@@ -219,7 +220,7 @@ impl TypeChecker {
             let errors_ref = &mut *self.errors.get();
             global_errors.append(errors_ref);
         };
-        (self.semantic_state_db, self.code)
+        (self.semantic_state_db, self.code_handler)
     }
 
     pub fn is_resolved(&self, node: &OkIdentifierInDeclNode) -> bool {
@@ -353,7 +354,7 @@ impl TypeChecker {
                 CoreAtomicExpressionNode::Integer(integer_valued_token) => {
                     match integer_valued_token.core_ref() {
                         CoreTokenNode::Ok(ok_token) => {
-                            let value = ok_token.token_value_str(&self.code);
+                            let value = ok_token.token_value_str(&self.code_handler);
                             match value.parse::<i32>() {
                                 Ok(value) => Some(value),
                                 Err(_) => None,
@@ -720,7 +721,7 @@ impl TypeChecker {
                     ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
                     ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
                         let name = ok_identifier
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                         self.check_user_defined_ty_call_expr(
                             name,
                             &user_defined_type_symbol_data,
@@ -774,7 +775,7 @@ impl TypeChecker {
         let params = &core_enum_variant_expr_or_class_method_call.params;
         if let CoreIdentifierInUseNode::Ok(ok_identifier) = ty.core_ref() {
             let ty_name =
-                ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+                ok_identifier.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
             match self
                 .semantic_state_db
                 .get_type_symbol_data_for_identifier_in_use(ok_identifier)
@@ -794,8 +795,10 @@ impl TypeChecker {
                                     return Type::new_with_unknown();
                                 }
                             };
-                            let class_method_name = property_name
-                                .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            let class_method_name = property_name.token_value(
+                                &self.code_handler,
+                                &mut self.semantic_state_db.interner,
+                            );
                             let concrete_types = &type_symbol_data.concrete_types;
                             match struct_data
                                 .try_class_method(&class_method_name, concrete_types.as_ref())
@@ -846,8 +849,10 @@ impl TypeChecker {
                     UserDefinedTypeData::Enum(enum_data) => {
                         if let CoreIdentifierInUseNode::Ok(property_name) = property_name.core_ref()
                         {
-                            let variant_name = property_name
-                                .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            let variant_name = property_name.token_value(
+                                &self.code_handler,
+                                &mut self.semantic_state_db.interner,
+                            );
                             let concrete_types = &type_symbol_data.concrete_types;
                             if property_name.core_ref().generic_type_args.is_some() {
                                 let err = GenericTypeArgsNotExpectedError::new(
@@ -1050,8 +1055,8 @@ impl TypeChecker {
                     self.log_error(Diagnostics::GenericTypeArgsNotExpected(err));
                 }
                 None => {
-                    let property_name_str =
-                        ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+                    let property_name_str = ok_identifier
+                        .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                     let result = match atom_type_obj.0.as_ref() {
                         CoreType::Struct(struct_ty) => {
                             let concrete_types = &struct_ty.concrete_types;
@@ -1130,8 +1135,8 @@ impl TypeChecker {
         // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
         // (for example: a field with lambda type) and then it goes on to find it in methods.
         // This is in sync with what Python does.
-        let method_name =
-            method_name_ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+        let method_name = method_name_ok_identifier
+            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
         let concrete_types = &struct_ty.concrete_types;
         let symbol_data = struct_ty.symbol_data.get_core_ref();
         let struct_data = symbol_data.get_struct_data_ref();
@@ -1186,8 +1191,8 @@ impl TypeChecker {
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
-        let method_name =
-            method_name_ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+        let method_name = method_name_ok_identifier
+            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
         let symbol_data = generic_ty.semantic_data.get_core_ref();
         let generic_data = symbol_data.get_generic_data_ref();
         let interface_bounds = &generic_data.interface_bounds;
@@ -1264,7 +1269,7 @@ impl TypeChecker {
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
-        let method_name = method_name_ok_identifier.token_value_str(&self.code);
+        let method_name = method_name_ok_identifier.token_value_str(&self.code_handler);
         match array_ty.try_method(&method_name) {
             Some(prototype) => {
                 if method_name_ok_identifier
@@ -1291,7 +1296,7 @@ impl TypeChecker {
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
-        let method_name = method_name_ok_identifier.token_value_str(&self.code);
+        let method_name = method_name_ok_identifier.token_value_str(&self.code_handler);
         match hashmap_ty.try_method(&method_name) {
             Some(prototype) => {
                 if method_name_ok_identifier
@@ -2064,8 +2069,10 @@ impl TypeChecker {
                             let core_case_branch = case_branch.core_ref();
                             let enum_name = &core_case_branch.enum_name;
                             if let CoreIdentifierInDeclNode::Ok(enum_name) = enum_name.core_ref() {
-                                let enum_name_str = enum_name
-                                    .token_value(&self.code, &mut self.semantic_state_db.interner);
+                                let enum_name_str = enum_name.token_value(
+                                    &self.code_handler,
+                                    &mut self.semantic_state_db.interner,
+                                );
                                 if expr_enum_name != enum_name_str {
                                     let err = IncorrectEnumNameError::new(
                                         self.semantic_state_db
@@ -2091,7 +2098,7 @@ impl TypeChecker {
                                         variant_name.core_ref()
                                     {
                                         let variant_name_str = variant_name.token_value(
-                                            &self.code,
+                                            &self.code_handler,
                                             &mut self.semantic_state_db.interner,
                                         );
                                         match enum_data.try_type_for_variant(

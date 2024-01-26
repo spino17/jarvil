@@ -8,7 +8,7 @@ use crate::ast::ast::{
     StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
     UnaryExpressionNode, VariableDeclarationNode, WhileLoopStatementNode,
 };
-use crate::code::JarvilCode;
+use crate::code::{JarvilCode, JarvilCodeHandler};
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::Diagnostics;
@@ -18,26 +18,26 @@ use crate::parser::helper::{IndentResult, IndentResultKind};
 use std::cell::RefCell;
 
 pub trait Parser {
-    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCode);
+    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler);
 }
 
 pub struct JarvilParser {
     token_vec: Vec<Token>,
     lookahead: usize,
     indent_level: i64,
-    code: JarvilCode,
+    code_handler: JarvilCodeHandler,
     pub ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
     pub errors: RefCell<Vec<Diagnostics>>,
 }
 
 impl JarvilParser {
-    pub fn new(code: JarvilCode) -> Self {
+    pub fn new(code_handler: JarvilCodeHandler) -> Self {
         JarvilParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
-            code,
+            code_handler,
             ignore_all_errors: false,
             correction_indent: 0,
             errors: RefCell::new(vec![]),
@@ -46,9 +46,9 @@ impl JarvilParser {
 }
 
 impl Parser for JarvilParser {
-    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCode) {
+    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler) {
         let code_node = self.code(token_vec);
-        (code_node, self.errors.into_inner(), self.code)
+        (code_node, self.errors.into_inner(), self.code_handler)
     }
 }
 
@@ -341,7 +341,7 @@ impl JarvilParser {
                 _ => {
                     // At this point we are sure that the token index is set to the first token on a newline
                     indent_spaces = (token.start_index()
-                        - self.code.get_line_start_index(token.line_number))
+                        - self.code_handler.get_line_start_index(token.line_number))
                         as i64;
                     //let alternate_line_index = match &token.trivia {
                     //    Some(trivia) => {

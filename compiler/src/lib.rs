@@ -1,7 +1,7 @@
 use crate::lexer::lexer::Lexer;
 use crate::parser::parser::Parser;
 use ast::ast::BlockNode;
-use code::JarvilCode;
+use code::{JarvilCode, JarvilCodeHandler};
 use codegen::python::PythonCodeGenerator;
 use error::diagnostics::Diagnostics;
 use lexer::lexer::CoreLexer;
@@ -40,26 +40,27 @@ fn attach_source_code(err: Report, source: String) -> Report {
     }
 }
 
-pub fn build_ast(mut code: JarvilCode) -> (BlockNode, Vec<Diagnostics>, JarvilCode) {
+pub fn build_ast(mut code: JarvilCode) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler) {
     let core_lexer = CoreLexer::new();
-    let (token_vec, mut errors) = core_lexer.tokenize(&mut code);
-    let parser = JarvilParser::new(code);
+    let (token_vec, mut errors, code_lines) = core_lexer.tokenize(&mut code);
+    let code_handler = JarvilCodeHandler::new(code, code_lines);
+    let parser = JarvilParser::new(code_handler);
     let (ast, mut parse_errors, code) = parser.parse(token_vec);
     errors.append(&mut parse_errors);
     (ast, errors, code)
 }
 
 pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> {
-    let (ast, mut errors, code) = build_ast(code);
+    let (ast, mut errors, code_handler) = build_ast(code);
 
     // name-resolver
-    let resolver = Resolver::new(code);
-    let (semantic_state_db, mut semantic_errors, code) = resolver.resolve_ast(&ast);
+    let resolver = Resolver::new(code_handler);
+    let (semantic_state_db, mut semantic_errors, code_handler) = resolver.resolve_ast(&ast);
     errors.append(&mut semantic_errors);
 
     // type-checker
-    let type_checker = TypeChecker::new(code, semantic_state_db);
-    let (semantic_state_db, code) = type_checker.check_ast(&ast, &mut errors);
+    let type_checker = TypeChecker::new(code_handler, semantic_state_db);
+    let (semantic_state_db, code_handler) = type_checker.check_ast(&ast, &mut errors);
 
     if !errors.is_empty() {
         let err = &errors[0];
@@ -67,7 +68,7 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
     }
 
     // Python code-generation
-    let py_generator = PythonCodeGenerator::new(code, semantic_state_db);
+    let py_generator = PythonCodeGenerator::new(code_handler, semantic_state_db);
     let py_code = py_generator.generate_python_code(&ast);
     Ok(py_code)
 }

@@ -11,7 +11,7 @@ use crate::{
         },
         walk::Visitor,
     },
-    code::JarvilCode,
+    code::JarvilCodeHandler,
     constants::common::{FUNC_SUFFIX, TY_SUFFIX, VAR_SUFFIX},
     context,
     lexer::token::{CoreToken, Token},
@@ -44,16 +44,19 @@ pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
 pub struct PythonCodeGenerator {
     indent_level: usize,
     generated_code: String,
-    code: JarvilCode,
+    code_handler: JarvilCodeHandler,
     semantic_state_db: SemanticStateDatabase,
 }
 
 impl PythonCodeGenerator {
-    pub fn new(code: JarvilCode, semantic_state_db: SemanticStateDatabase) -> PythonCodeGenerator {
+    pub fn new(
+        code_handler: JarvilCodeHandler,
+        semantic_state_db: SemanticStateDatabase,
+    ) -> PythonCodeGenerator {
         PythonCodeGenerator {
             indent_level: 0,
             generated_code: "".to_string(),
-            code,
+            code_handler,
             semantic_state_db,
         }
     }
@@ -125,7 +128,7 @@ impl PythonCodeGenerator {
                 }
                 SymbolDataEntry::Interface(_) => unreachable!(),
             },
-            None => identifier.token_value_str(&self.code),
+            None => identifier.token_value_str(&self.code_handler),
         }
     }
 
@@ -155,7 +158,7 @@ impl PythonCodeGenerator {
                 }
                 ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
             },
-            None => identifier.token_value_str(&self.code),
+            None => identifier.token_value_str(&self.code_handler),
         }
     }
 
@@ -165,7 +168,7 @@ impl PythonCodeGenerator {
             None => None,
         };
         self.print_trivia(trivia);
-        let token_value = token.token_value_str(&self.code);
+        let token_value = token.token_value_str(&self.code_handler);
         match token.core_token {
             CoreToken::SINGLE_LINE_COMMENT => {
                 /*
@@ -227,7 +230,7 @@ impl PythonCodeGenerator {
     pub fn print_token_node_without_trivia(&mut self, token: &TokenNode) {
         match token.core_ref() {
             CoreTokenNode::Ok(ok_token_node) => {
-                self.add_str_to_python_code(&ok_token_node.token_value_str(&self.code));
+                self.add_str_to_python_code(&ok_token_node.token_value_str(&self.code_handler));
             }
             CoreTokenNode::MissingTokens(_) => unreachable!(),
         }
@@ -367,8 +370,10 @@ impl PythonCodeGenerator {
                         if let CoreIdentifierInUseNode::Ok(ok_variant_name) =
                             property_name.core_ref()
                         {
-                            let variant_name_str = ok_variant_name
-                                .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            let variant_name_str = ok_variant_name.token_value(
+                                &self.code_handler,
+                                &mut self.semantic_state_db.interner,
+                            );
                             if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
                                 self.print_identifier_in_use(ty_name, is_trivia);
                                 self.add_str_to_python_code(&format!("(index={}", index));
@@ -421,7 +426,7 @@ impl PythonCodeGenerator {
                     let variant_name = &core_case_branch.variant_name;
                     if let CoreIdentifierInDeclNode::Ok(ok_variant_name) = variant_name.core_ref() {
                         let variant_name_str = ok_variant_name
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                         let index = match &symbol_data {
                             Some(symbol_data) => symbol_data
                                 .get_core_ref()

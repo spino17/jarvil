@@ -2,7 +2,7 @@
 
 #[macro_use]
 use jarvil_macros::Tokenify;
-use crate::code::JarvilCode;
+use crate::code::{JarvilCode, JarvilCodeHandler};
 use crate::constants::common::{
     AND, AS, ASSERT_KEYWORD, ASYNC_KEYWORD, ATOMIC_TYPE, AWAIT_KEYWORD, BLANK, BLOCK_COMMENT,
     BREAK, CASE, CLASS_KEYWORD, COLON, COMMA, CONTINUE, DASH, DEF, DEL_KEYWORD, DOT, DOUBLE_COLON,
@@ -55,12 +55,12 @@ impl Token {
         self.core_token.to_string().to_string()
     }
 
-    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
-        interner.intern(&code.token_from_range(self.range))
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
+        interner.intern(&code.code.token_from_range(self.range))
     }
 
-    pub fn token_value_str(&self, code: &JarvilCode) -> String {
-        code.token_from_range(self.range)
+    pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {
+        code.code.token_from_range(self.range)
     }
 
     pub fn is_eq(&self, symbol: &str) -> bool {

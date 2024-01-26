@@ -7,6 +7,7 @@ use crate::ast::ast::{
     OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, UnresolvedIdentifier,
     UserDefinedTypeNode,
 };
+use crate::code::JarvilCodeHandler;
 use crate::core::string_interner::StrId;
 use crate::error::diagnostics::{
     ConstructorNotFoundInsideStructDeclarationError, FieldsNotInitializedInConstructorError,
@@ -129,7 +130,7 @@ pub struct Context {
 
 pub struct Resolver {
     scope_index: usize,
-    pub code: JarvilCode,
+    pub code_handler: JarvilCodeHandler,
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
@@ -137,10 +138,10 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub fn new(code: JarvilCode) -> Self {
+    pub fn new(code_handler: JarvilCodeHandler) -> Self {
         Resolver {
             scope_index: 0,
-            code,
+            code_handler,
             errors: vec![],
             context: Context {
                 class_context_stack: vec![],
@@ -158,7 +159,7 @@ impl Resolver {
     pub fn resolve_ast(
         mut self,
         ast: &BlockNode,
-    ) -> (SemanticStateDatabase, Vec<Diagnostics>, JarvilCode) {
+    ) -> (SemanticStateDatabase, Vec<Diagnostics>, JarvilCodeHandler) {
         let code_block = ast.0.as_ref();
         // setting builtin functions to global scope
         // TODO - shift them to standard library
@@ -196,7 +197,7 @@ impl Resolver {
                 self.errors.push(Diagnostics::MainFunctionNotFound(err));
             }
         }
-        (self.semantic_state_db, self.errors, self.code)
+        (self.semantic_state_db, self.errors, self.code_handler)
     }
 
     pub fn open_block(&mut self, block_kind: BlockKind) {
@@ -348,7 +349,7 @@ impl Resolver {
         log_error: bool,
         is_concrete_types_none_allowed: bool,
     ) -> ResolveResult<T> {
-        let name = identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+        let name = identifier.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
         match lookup_fn(&self.semantic_state_db.namespace, self.scope_index, &name) {
             LookupResult::Ok(lookup_data) => {
                 match self.bind_decl_to_identifier_in_use(
@@ -454,7 +455,8 @@ impl Resolver {
         &mut self,
         self_keyword: &OkSelfKeywordNode,
     ) -> Option<(SymbolData<VariableData>, usize)> {
-        let name = self_keyword.token_value(&self.code, &mut self.semantic_state_db.interner);
+        let name =
+            self_keyword.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
         debug_assert!(self.semantic_state_db.interner.lookup(name) == &*"self");
         match self
             .semantic_state_db
@@ -481,7 +483,7 @@ impl Resolver {
         declare_fn: U,
         unique_id: usize,
     ) -> Result<T, (StrId, TextRange)> {
-        let name = identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+        let name = identifier.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
         let result = declare_fn(
             &mut self.semantic_state_db.namespace,
             self.scope_index,
@@ -597,7 +599,8 @@ impl Resolver {
         if let CoreIdentifierInUseNode::Ok(ok_identifier) =
             user_defined_ty_expr.core_ref().name.core_ref()
         {
-            let name = ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+            let name =
+                ok_identifier.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
             match self
                 .semantic_state_db
                 .namespace
@@ -772,8 +775,10 @@ impl Resolver {
                                     .push(Diagnostics::GenericTypeResolvedToOutsideScope(err));
                             }
                             UnresolvedIdentifier::NotInitialized(identifier, decl_range) => {
-                                let name = identifier
-                                    .token_value(&self.code, &mut self.semantic_state_db.interner);
+                                let name = identifier.token_value(
+                                    &self.code_handler,
+                                    &mut self.semantic_state_db.interner,
+                                );
                                 let err = IdentifierUsedBeforeInitializedError::new(
                                     self.semantic_state_db.interner.lookup(name),
                                     IdentKind::UserDefinedType,
@@ -876,7 +881,7 @@ impl Resolver {
                             .generic_type_decls
                             .is_none());
                         let generic_ty_name = ok_identifier_in_decl
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                         let mut interface_bounds = InterfaceBounds::default();
                         if let Some((_, interface_bounds_node)) =
                             &core_generic_type_decl.interface_bounds
@@ -892,7 +897,7 @@ impl Resolver {
                                             .insert(interface_obj, interface_expr.range())
                                         {
                                             let name = interface_expr.token_value(
-                                                &self.code,
+                                                &self.code_handler,
                                                 &mut self.semantic_state_db.interner,
                                             );
                                             let err =
@@ -1017,8 +1022,8 @@ impl Resolver {
                 let core_param = param.core_ref();
                 let param_name = &core_param.name;
                 if let CoreIdentifierInDeclNode::Ok(ok_identifier) = param_name.core_ref() {
-                    let param_name =
-                        ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+                    let param_name = ok_identifier
+                        .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                     let (param_type, param_ty_has_generics) = self
                         .type_obj_for_expression_contained_inside_declarations(
                             &core_param.data_type,
@@ -1193,7 +1198,7 @@ impl Resolver {
                                 if let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref() {
                                     // l_atom of the form `self.<property_name>`
                                     let property_name_str = property_name.token_value(
-                                        &self.code,
+                                        &self.code_handler,
                                         &mut self.semantic_state_db.interner,
                                     );
                                     initialized_fields.insert(property_name_str);
@@ -1392,8 +1397,10 @@ impl Resolver {
                         if let Some(previous_decl_range) =
                             interfaces.insert(interface_obj, interface_expr.range())
                         {
-                            let name = interface_expr
-                                .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            let name = interface_expr.token_value(
+                                &self.code_handler,
+                                &mut self.semantic_state_db.interner,
+                            );
                             let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
                                 self.semantic_state_db.interner.lookup(name),
                                 previous_decl_range,
@@ -1435,7 +1442,7 @@ impl Resolver {
                     let name = &name_type_spec.name;
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                         let (type_obj, _) = self
                             .type_obj_for_expression_contained_inside_declarations(
                                 &name_type_spec.data_type,
@@ -1467,7 +1474,7 @@ impl Resolver {
                     {
                         optional_ok_identifier_node = Some(ok_bounded_method_name);
                         let method_name_str = ok_bounded_method_name
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                         if method_name_str.eq(&self.semantic_state_db.interner.intern("__init__"))
                             && constructor.is_none()
                         {
@@ -1520,7 +1527,7 @@ impl Resolver {
                             method_generic_type_decls,
                         );
                         let method_name_str = ok_bounded_method_name
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                         if method_name_str.eq(&self.semantic_state_db.interner.intern("__init__")) {
                             match constructor {
                                 Some((_, previous_decl_range)) => {
@@ -1689,7 +1696,7 @@ impl Resolver {
                     let mut variant_ty_obj: Option<Type> = None;
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = variant_name.core_ref() {
                         let variant_name = ok_identifier
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                         if let Some((_, ty_expr, _)) = ty {
                             variant_ty_obj = Some(
                                 self.type_obj_for_expression_contained_inside_declarations(ty_expr)
@@ -1774,7 +1781,8 @@ impl Resolver {
         }
         self.close_block(None);
         if let Some(ok_identifier) = optional_ok_identifier_node {
-            let name = ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+            let name =
+                ok_identifier.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
             let unique_id = self
                 .semantic_state_db
                 .unique_key_generator
@@ -1874,7 +1882,7 @@ impl Resolver {
                     let name = &name_type_spec.name;
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                         let (type_obj, _) = self
                             .type_obj_for_expression_contained_inside_declarations(
                                 &name_type_spec.data_type,
@@ -1902,7 +1910,7 @@ impl Resolver {
                         core_interface_method_wrapper.name.core_ref()
                     {
                         let method_name = ok_identifier
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                         if method_name == self.semantic_state_db.interner.intern("__init__") {
                             let err = InitMethodNotAllowedInsideConstructorError::new(
                                 ok_identifier.core_ref().name.range(),
