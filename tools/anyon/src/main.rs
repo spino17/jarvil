@@ -10,6 +10,8 @@ fn check_and_execute_cmd(args: Vec<String>) -> Result<(), AnyonError> {
     Ok(())
 }
 
+// a comment
+
 fn main() {
     // hook for styling of the error messages
     miette::set_hook(Box::new(|_err| {
