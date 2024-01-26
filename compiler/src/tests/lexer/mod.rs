@@ -1,4 +1,4 @@
-use crate::{lexer::helper::token_for_identifier, lexer::token::CoreToken};
+use crate::lexer::token::CoreToken;
 use std::vec;
 
 fn str_to_vec(word: &str) -> Vec<char> {
@@ -19,7 +19,7 @@ fn assert_token_for_identifier(
             CoreToken::IDENTIFIER
         };
         assert_eq!(
-            token_for_identifier(word_iter),
+            CoreToken::token_for_identifier(word_iter),
             token_type,
             "word passed: {}",
             word

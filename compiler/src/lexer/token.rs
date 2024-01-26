@@ -19,6 +19,89 @@ use crate::core::string_interner::{Interner, StrId};
 use std::fmt::Display;
 use text_size::TextRange;
 
+#[derive(Debug, Clone)]
+pub struct Token {
+    pub line_number: usize,
+    pub core_token: CoreToken,
+    pub range: TextRange,
+    pub trivia: Option<Vec<Token>>,
+}
+
+impl Token {
+    pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
+        self.trivia = Some(trivia_vec);
+    }
+
+    pub fn start_index(&self) -> usize {
+        self.range.start().into()
+    }
+
+    pub fn end_index(&self) -> usize {
+        self.range.end().into()
+    }
+
+    pub fn is_trivia(&self) -> bool {
+        match self.core_token {
+            CoreToken::BLANK | CoreToken::SINGLE_LINE_COMMENT | CoreToken::BLOCK_COMMENT => true,
+            _ => false,
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.end_index() - self.start_index()
+    }
+
+    pub fn name(&self) -> String {
+        self.core_token.to_string().to_string()
+    }
+
+    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+        interner.intern(&code.token_from_range(self.range))
+    }
+
+    pub fn token_value_str(&self, code: &JarvilCode) -> String {
+        code.token_from_range(self.range)
+    }
+
+    pub fn is_eq(&self, symbol: &str) -> bool {
+        self.core_token.is_eq(symbol)
+    }
+
+    pub fn try_as_binary_operator(&self) -> Option<BinaryOperatorKind> {
+        match self.core_token {
+            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NotEqual),
+            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DoubleEqual),
+            CoreToken::RBRACKET => Some(BinaryOperatorKind::Greater),
+            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GreaterEqual),
+            CoreToken::LBRACKET => Some(BinaryOperatorKind::Less),
+            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LessEqual),
+            CoreToken::DASH => Some(BinaryOperatorKind::Subtract),
+            CoreToken::PLUS => Some(BinaryOperatorKind::Add),
+            CoreToken::SLASH => Some(BinaryOperatorKind::Divide),
+            CoreToken::STAR => Some(BinaryOperatorKind::Multiply),
+            CoreToken::AND => Some(BinaryOperatorKind::And),
+            CoreToken::OR => Some(BinaryOperatorKind::Or),
+            _ => None,
+        }
+    }
+
+    pub fn get_precedence(&self) -> u8 {
+        match self.core_token {
+            CoreToken::OR => 1,
+            CoreToken::AND => 2,
+            CoreToken::LBRACKET
+            | CoreToken::LESS_EQUAL
+            | CoreToken::RBRACKET
+            | CoreToken::GREATER_EQUAL
+            | CoreToken::DOUBLE_EQUAL
+            | CoreToken::NOT_EQUAL => 3,
+            CoreToken::PLUS | CoreToken::DASH => 4,
+            CoreToken::STAR | CoreToken::SLASH => 5,
+            _ => 0,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Tokenify)]
 pub enum CoreToken {
     IF,             // 'if'
@@ -109,6 +192,326 @@ pub enum CoreToken {
     PEG_PARSER,       // '__peg_parser__'
 }
 
+// This method is taken from the amazing book `Crafting Interpreters` by `Bob Nystrom`
+fn check_keyword(
+    remaining_str: &str,
+    value: std::slice::Iter<char>,
+    token_type: CoreToken,
+) -> CoreToken {
+    let value: String = value.collect();
+    if value.len() == remaining_str.len() && value.eq(remaining_str) {
+        token_type
+    } else {
+        CoreToken::IDENTIFIER
+    }
+}
+
+impl CoreToken {
+    // Trie based implementation for efficient reserved words matching
+    pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken {
+        match value_iter.next() {
+            Some(c) => {
+                match c {
+                    'f' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'o' => check_keyword("r", value_iter, CoreToken::FOR),
+                                'l' => check_keyword("oat", value_iter, CoreToken::ATOMIC_TYPE),
+                                'i' => {
+                                    check_keyword("nally", value_iter, CoreToken::FINALLY_KEYWORD)
+                                }
+                                'r' => check_keyword("om", value_iter, CoreToken::FROM_KEYWORD),
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // for, float, finally, from
+                    'w' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'h' => check_keyword("ile", value_iter, CoreToken::WHILE),
+                                'i' => check_keyword("th", value_iter, CoreToken::WITH_KEYWORD),
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // with, while
+                    'c' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'o' => check_keyword("ntinue", value_iter, CoreToken::CONTINUE),
+                                'l' => check_keyword("ass", value_iter, CoreToken::CLASS_KEYWORD),
+                                'a' => check_keyword("se", value_iter, CoreToken::CASE),
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // continue, class, case
+                    'b' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'r' => check_keyword("eak", value_iter, CoreToken::BREAK),
+                                'o' => check_keyword("ol", value_iter, CoreToken::ATOMIC_TYPE),
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // break, bool
+                    'i' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                's' => check_keyword("", value_iter, CoreToken::IS),
+                                'f' => check_keyword("", value_iter, CoreToken::IF),
+                                'n' => {
+                                    let next_next_c = value_iter.next();
+                                    match next_next_c {
+                                        Some(next_next_c) => match next_next_c {
+                                            't' => {
+                                                let next_next_next_c = value_iter.next();
+                                                match next_next_next_c {
+                                                    Some(next_next_next_c) => {
+                                                        match next_next_next_c {
+                                                            'e' => check_keyword(
+                                                                "rface",
+                                                                value_iter,
+                                                                CoreToken::INTERFACE_KEYWORD,
+                                                            ),
+                                                            _ => CoreToken::IDENTIFIER,
+                                                        }
+                                                    }
+                                                    None => CoreToken::ATOMIC_TYPE,
+                                                }
+                                            }
+                                            _ => CoreToken::IDENTIFIER,
+                                        },
+                                        None => CoreToken::IN,
+                                    }
+                                }
+                                'm' => {
+                                    let next_next_c = value_iter.next();
+                                    match next_next_c {
+                                        Some(next_next_c) => match next_next_c {
+                                            'p' => {
+                                                let next_next_next_c = value_iter.next();
+                                                match next_next_next_c {
+                                                    Some(next_next_next_c) => {
+                                                        match next_next_next_c {
+                                                            'l' => check_keyword(
+                                                                "ements",
+                                                                value_iter,
+                                                                CoreToken::IMPLEMENTS_KEYWORD,
+                                                            ),
+                                                            'o' => check_keyword(
+                                                                "rt",
+                                                                value_iter,
+                                                                CoreToken::IMPORT_KEYWORD,
+                                                            ),
+                                                            _ => CoreToken::IDENTIFIER,
+                                                        }
+                                                    }
+                                                    None => CoreToken::IDENTIFIER,
+                                                }
+                                            }
+                                            _ => CoreToken::IDENTIFIER,
+                                        },
+                                        None => CoreToken::IDENTIFIER,
+                                    }
+                                }
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // if, interface, in, impl, int, import, is
+                    'e' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'l' => {
+                                    let next_next_c = value_iter.next();
+                                    match next_next_c {
+                                        Some(next_next_c) => match next_next_c {
+                                            's' => check_keyword("e", value_iter, CoreToken::ELSE),
+                                            'i' => check_keyword("f", value_iter, CoreToken::ELIF),
+                                            _ => CoreToken::IDENTIFIER,
+                                        },
+                                        None => CoreToken::IDENTIFIER,
+                                    }
+                                }
+                                'x' => check_keyword("cept", value_iter, CoreToken::EXCEPT_KEYWORD),
+                                'n' => check_keyword("um", value_iter, CoreToken::ENUM_KEYWORD),
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // else, elif, except, enum
+                    't' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'y' => check_keyword("pe", value_iter, CoreToken::TYPE_KEYWORD),
+                                'r' => check_keyword("y", value_iter, CoreToken::TRY_KEYWORD),
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // type, try
+                    'd' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'e' => {
+                                    let next_next_c = value_iter.next();
+                                    match next_next_c {
+                                        Some(next_next_c) => match next_next_c {
+                                            'f' => check_keyword("", value_iter, CoreToken::DEF),
+                                            'l' => check_keyword(
+                                                "",
+                                                value_iter,
+                                                CoreToken::DEL_KEYWORD,
+                                            ),
+                                            _ => CoreToken::IDENTIFIER,
+                                        },
+                                        None => CoreToken::IDENTIFIER,
+                                    }
+                                }
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // del, def
+                    'l' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'e' => check_keyword("t", value_iter, CoreToken::LET),
+                                'a' => check_keyword("mbda", value_iter, CoreToken::LAMBDA_KEYWORD),
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // let, lambda
+                    's' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'e' => check_keyword("lf", value_iter, CoreToken::SELF),
+                                't' => {
+                                    let next_next_c = value_iter.next();
+                                    match next_next_c {
+                                        Some(next_next_c) => match next_next_c {
+                                            'r' => {
+                                                let next_next_next_c = value_iter.next();
+                                                match next_next_next_c {
+                                                    Some(next_next_next_c) => {
+                                                        match next_next_next_c {
+                                                            'u' => check_keyword(
+                                                                "ct",
+                                                                value_iter,
+                                                                CoreToken::STRUCT_KEYWORD,
+                                                            ),
+                                                            _ => CoreToken::IDENTIFIER,
+                                                        }
+                                                    }
+                                                    None => CoreToken::ATOMIC_TYPE,
+                                                }
+                                            }
+                                            _ => CoreToken::IDENTIFIER,
+                                        },
+                                        None => CoreToken::IDENTIFIER,
+                                    }
+                                }
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // self, str, struct
+                    'a' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'n' => check_keyword("d", value_iter, CoreToken::AND),
+                                's' => {
+                                    let next_next_c = value_iter.next();
+                                    match next_next_c {
+                                        Some(next_next_c) => match next_next_c {
+                                            's' => check_keyword(
+                                                "ert",
+                                                value_iter,
+                                                CoreToken::ASSERT_KEYWORD,
+                                            ),
+                                            'y' => check_keyword(
+                                                "nc",
+                                                value_iter,
+                                                CoreToken::ASYNC_KEYWORD,
+                                            ),
+                                            _ => CoreToken::IDENTIFIER,
+                                        },
+                                        None => CoreToken::AS,
+                                    }
+                                }
+                                'w' => check_keyword("ait", value_iter, CoreToken::AWAIT_KEYWORD),
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // and, as, assert, async, await
+                    'n' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'o' => {
+                                    let next_next_c = value_iter.next();
+                                    match next_next_c {
+                                        Some(next_next_c) => match next_next_c {
+                                            't' => check_keyword("", value_iter, CoreToken::NOT),
+                                            'n' => check_keyword(
+                                                "local",
+                                                value_iter,
+                                                CoreToken::NONLOCAL_KEYWORD,
+                                            ),
+                                            _ => CoreToken::IDENTIFIER,
+                                        },
+                                        None => CoreToken::IDENTIFIER,
+                                    }
+                                }
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // not, nonlocal
+                    'm' => check_keyword("atch", value_iter, CoreToken::MATCH), // match
+                    'o' => check_keyword("r", value_iter, CoreToken::OR),       // or
+                    'T' => check_keyword("rue", value_iter, CoreToken::TRUE),   // True
+                    'F' => check_keyword("alse", value_iter, CoreToken::FALSE), // False
+                    'r' => {
+                        let next_c = value_iter.next();
+                        match next_c {
+                            Some(next_c) => match next_c {
+                                'e' => check_keyword("turn", value_iter, CoreToken::RETURN),
+                                'a' => check_keyword("ise", value_iter, CoreToken::RAISE_KEYWORD),
+                                _ => CoreToken::IDENTIFIER,
+                            },
+                            None => CoreToken::IDENTIFIER,
+                        }
+                    } // raise, return
+                    'N' => check_keyword("one", value_iter, CoreToken::NONE),   // None
+                    'g' => check_keyword("lobal", value_iter, CoreToken::GLOBAL_KEYWORD), // global
+                    'p' => check_keyword("ass", value_iter, CoreToken::PASS_KEYWORD), // pass
+                    'y' => check_keyword("ield", value_iter, CoreToken::YIELD_KEYWORD), // yield
+                    '_' => check_keyword("_peg_parser__", value_iter, CoreToken::PEG_PARSER), // __peg_parser__
+                    _ => CoreToken::IDENTIFIER,
+                }
+            }
+            None => unreachable!("identifer value should have alteast one character"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum UnaryOperatorKind {
     Plus,
@@ -176,87 +579,4 @@ pub enum LexicalErrorKind {
 pub struct MissingToken {
     pub expected_symbols: Vec<&'static str>,
     pub received_token: Token,
-}
-
-#[derive(Debug, Clone)]
-pub struct Token {
-    pub line_number: usize,
-    pub core_token: CoreToken,
-    pub range: TextRange,
-    pub trivia: Option<Vec<Token>>,
-}
-
-impl Token {
-    pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
-        self.trivia = Some(trivia_vec);
-    }
-
-    pub fn start_index(&self) -> usize {
-        self.range.start().into()
-    }
-
-    pub fn end_index(&self) -> usize {
-        self.range.end().into()
-    }
-
-    pub fn is_trivia(&self) -> bool {
-        match self.core_token {
-            CoreToken::BLANK | CoreToken::SINGLE_LINE_COMMENT | CoreToken::BLOCK_COMMENT => true,
-            _ => false,
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        self.end_index() - self.start_index()
-    }
-
-    pub fn name(&self) -> String {
-        self.core_token.to_string().to_string()
-    }
-
-    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
-        interner.intern(&code.token_from_range(self.range))
-    }
-
-    pub fn token_value_str(&self, code: &JarvilCode) -> String {
-        code.token_from_range(self.range)
-    }
-
-    pub fn is_eq(&self, symbol: &str) -> bool {
-        self.core_token.is_eq(symbol)
-    }
-
-    pub fn try_as_binary_operator(&self) -> Option<BinaryOperatorKind> {
-        match self.core_token {
-            CoreToken::NOT_EQUAL => Some(BinaryOperatorKind::NotEqual),
-            CoreToken::DOUBLE_EQUAL => Some(BinaryOperatorKind::DoubleEqual),
-            CoreToken::RBRACKET => Some(BinaryOperatorKind::Greater),
-            CoreToken::GREATER_EQUAL => Some(BinaryOperatorKind::GreaterEqual),
-            CoreToken::LBRACKET => Some(BinaryOperatorKind::Less),
-            CoreToken::LESS_EQUAL => Some(BinaryOperatorKind::LessEqual),
-            CoreToken::DASH => Some(BinaryOperatorKind::Subtract),
-            CoreToken::PLUS => Some(BinaryOperatorKind::Add),
-            CoreToken::SLASH => Some(BinaryOperatorKind::Divide),
-            CoreToken::STAR => Some(BinaryOperatorKind::Multiply),
-            CoreToken::AND => Some(BinaryOperatorKind::And),
-            CoreToken::OR => Some(BinaryOperatorKind::Or),
-            _ => None,
-        }
-    }
-
-    pub fn get_precedence(&self) -> u8 {
-        match self.core_token {
-            CoreToken::OR => 1,
-            CoreToken::AND => 2,
-            CoreToken::LBRACKET
-            | CoreToken::LESS_EQUAL
-            | CoreToken::RBRACKET
-            | CoreToken::GREATER_EQUAL
-            | CoreToken::DOUBLE_EQUAL
-            | CoreToken::NOT_EQUAL => 3,
-            CoreToken::PLUS | CoreToken::DASH => 4,
-            CoreToken::STAR | CoreToken::SLASH => 5,
-            _ => 0,
-        }
-    }
 }
