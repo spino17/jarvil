@@ -54,7 +54,6 @@ use crate::{
         },
         walk::Visitor,
     },
-    code::JarvilCode,
     constants::common::{BOOL, FLOAT, INT, STRING},
     error::{
         diagnostics::{

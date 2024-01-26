@@ -41,7 +41,6 @@ use crate::{
         },
         walk::Visitor,
     },
-    code::JarvilCode,
     error::diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
     scope::{
         core::{Namespace, SymbolData},

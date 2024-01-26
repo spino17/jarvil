@@ -2,7 +2,7 @@
 
 #[macro_use]
 use jarvil_macros::Tokenify;
-use crate::code::{JarvilCode, JarvilCodeHandler};
+use crate::code::JarvilCodeHandler;
 use crate::constants::common::{
     AND, AS, ASSERT_KEYWORD, ASYNC_KEYWORD, ATOMIC_TYPE, AWAIT_KEYWORD, BLANK, BLOCK_COMMENT,
     BREAK, CASE, CLASS_KEYWORD, COLON, COMMA, CONTINUE, DASH, DEF, DEL_KEYWORD, DOT, DOUBLE_COLON,

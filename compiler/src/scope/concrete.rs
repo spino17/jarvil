@@ -73,7 +73,7 @@ impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
     }
 
     pub fn get_core_ref<'a>(&'a self) -> Ref<'a, T> {
-        self.symbol_data.get_core_ref::<'a>()
+        self.symbol_data.get_core_ref()
     }
 
     pub fn get_concrete_types(&self) -> &Option<ConcreteTypesTuple> {

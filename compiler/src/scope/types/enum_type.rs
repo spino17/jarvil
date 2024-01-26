@@ -29,8 +29,8 @@ impl EnumTypeData {
         &'a self,
         variant_name: StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
-    ) -> Option<(Option<Type>)> {
-        for (index, (curr_variant_name, ty, _)) in self.variants.iter().enumerate() {
+    ) -> Option<Option<Type>> {
+        for (curr_variant_name, ty, _) in &self.variants {
             if *curr_variant_name == variant_name {
                 match ty {
                     Some(ty) => {
@@ -51,7 +51,7 @@ impl EnumTypeData {
     }
 
     pub fn try_index_for_variant<'a>(&'a self, variant_name: StrId) -> Option<usize> {
-        for (index, (curr_variant_name, ty, _)) in self.variants.iter().enumerate() {
+        for (index, (curr_variant_name, _, _)) in self.variants.iter().enumerate() {
             if *curr_variant_name == variant_name {
                 return Some(index);
             }

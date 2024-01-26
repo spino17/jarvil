@@ -4,7 +4,6 @@ use crate::error::diagnostics::{Diagnostics, InvalidCharError, NoClosingSymbolEr
 use crate::lexer::token::CoreToken;
 use crate::lexer::token::Token;
 use std::convert::TryFrom;
-use std::mem;
 use std::vec;
 use text_size::TextRange;
 use text_size::TextSize;

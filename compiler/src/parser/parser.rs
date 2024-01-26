@@ -8,7 +8,7 @@ use crate::ast::ast::{
     StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
     UnaryExpressionNode, VariableDeclarationNode, WhileLoopStatementNode,
 };
-use crate::code::{JarvilCode, JarvilCodeHandler};
+use crate::code::JarvilCodeHandler;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::Diagnostics;
