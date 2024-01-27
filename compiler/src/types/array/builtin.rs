@@ -6,23 +6,24 @@ use crate::{
 };
 use rustc_hash::FxHashMap;
 
+fn append_callable_data(interner: &mut Interner) -> CallableData {
+    CallableData::new(
+        vec![get_unbounded_generic_type_with_declaration_index(
+            0, interner,
+        )],
+        Type::new_with_void(),
+        CallableKind::Method,
+        Some((vec![0], false)),
+        None,
+    )
+}
+
 impl Array {
     pub fn get_builtin_methods(interner: &mut Interner) -> FxHashMap<&'static str, CallableData> {
         let mut methods = FxHashMap::default();
 
         // array built-in methods
-        methods.insert(
-            "append",
-            CallableData::new(
-                vec![get_unbounded_generic_type_with_declaration_index(
-                    0, interner,
-                )],
-                Type::new_with_void(),
-                CallableKind::Method,
-                Some((vec![0], false)),
-                None,
-            ),
-        );
+        methods.insert("append", append_callable_data(interner));
 
         return methods;
     }

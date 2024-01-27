@@ -3,7 +3,7 @@ use crate::{constants::common::INT, types::core::Type};
 use rustc_hash::FxHashMap;
 
 // print(_obj: <any>)
-pub fn print_callable_data() -> CallableData {
+fn print_callable_data() -> CallableData {
     CallableData {
         prototype: CallablePrototypeData {
             params: vec![Type::new_with_any()], // TODO - replace it with unbounded generic type `T`
@@ -16,7 +16,7 @@ pub fn print_callable_data() -> CallableData {
 }
 
 // range(_start: int, _end: int) -> [int]
-pub fn range_callable_data() -> CallableData {
+fn range_callable_data() -> CallableData {
     CallableData {
         prototype: CallablePrototypeData {
             params: vec![Type::new_with_atomic(INT), Type::new_with_atomic(INT)],
