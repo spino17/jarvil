@@ -1,9 +1,7 @@
-use crate::core::string_interner::Interner;
-
 use super::{
     concrete::ConcreteTypesTuple, core::GenericTypeParams, errors::GenericTypeArgsCheckError,
 };
-
+use crate::core::string_interner::Interner;
 use text_size::TextRange;
 
 pub fn check_concrete_types_bounded_by_interfaces(
