@@ -133,32 +133,32 @@ impl PythonCodeGenerator {
     }
 
     pub fn get_mangled_identifier_name_in_use(&self, identifier: &OkIdentifierInUseNode) -> String {
-        match self
+        let Some(symbol_data) = self
             .semantic_state_db
             .get_symbol_data_for_identifier_in_use(identifier)
-        {
-            Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
-                    return variable_symbol_data
-                        .symbol_data
-                        .get_mangled_name()
-                        .to_string(VAR_SUFFIX, &self.semantic_state_db.interner);
-                }
-                ConcreteSymbolDataEntry::Function(func_symbol_data) => {
-                    return func_symbol_data
-                        .symbol_data
-                        .get_mangled_name()
-                        .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner);
-                }
-                ConcreteSymbolDataEntry::Type(type_symbol_data) => {
-                    return type_symbol_data
-                        .symbol_data
-                        .get_mangled_name()
-                        .to_string(TY_SUFFIX, &self.semantic_state_db.interner)
-                }
-                ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
-            },
-            None => identifier.token_value_str(&self.code_handler),
+        else {
+            return identifier.token_value_str(&self.code_handler);
+        };
+        match symbol_data {
+            ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
+                return variable_symbol_data
+                    .symbol_data
+                    .get_mangled_name()
+                    .to_string(VAR_SUFFIX, &self.semantic_state_db.interner);
+            }
+            ConcreteSymbolDataEntry::Function(func_symbol_data) => {
+                return func_symbol_data
+                    .symbol_data
+                    .get_mangled_name()
+                    .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner);
+            }
+            ConcreteSymbolDataEntry::Type(type_symbol_data) => {
+                return type_symbol_data
+                    .symbol_data
+                    .get_mangled_name()
+                    .to_string(TY_SUFFIX, &self.semantic_state_db.interner)
+            }
+            ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
         }
     }
 
@@ -347,53 +347,51 @@ impl PythonCodeGenerator {
         let ty_name = &core_enum_variant_expr_or_class_method_call.ty_name;
         let property_name = &core_enum_variant_expr_or_class_method_call.property_name;
         let params = &core_enum_variant_expr_or_class_method_call.params;
-        if let CoreIdentifierInUseNode::Ok(ok_ty_name) = ty_name.core_ref() {
-            if let Some(concrete_symbol_data) = self
-                .semantic_state_db
-                .get_type_symbol_data_for_identifier_in_use(ok_ty_name)
-            {
-                let symbol_data = &concrete_symbol_data.symbol_data;
-                match &*symbol_data.get_core_ref() {
-                    UserDefinedTypeData::Struct(_) => {
+        let CoreIdentifierInUseNode::Ok(ok_ty_name) = ty_name.core_ref() else {
+            return;
+        };
+        let Some(concrete_symbol_data) = self
+            .semantic_state_db
+            .get_type_symbol_data_for_identifier_in_use(ok_ty_name)
+        else {
+            return;
+        };
+        let symbol_data = &concrete_symbol_data.symbol_data;
+        match &*symbol_data.get_core_ref() {
+            UserDefinedTypeData::Struct(_) => {
+                self.print_identifier_in_use(ty_name, is_trivia);
+                self.add_str_to_python_code(".");
+                self.print_identifier_in_use(property_name, true);
+                if let Some((lparen, params, rparen)) = params {
+                    self.print_token_node(lparen);
+                    if let Some(params) = params {
+                        self.walk_comma_separated_expressions(params);
+                    }
+                    self.print_token_node(rparen);
+                }
+            }
+            UserDefinedTypeData::Enum(enum_data) => {
+                if let CoreIdentifierInUseNode::Ok(ok_variant_name) = property_name.core_ref() {
+                    let variant_name_str = ok_variant_name
+                        .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+                    if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
                         self.print_identifier_in_use(ty_name, is_trivia);
-                        self.add_str_to_python_code(".");
-                        self.print_identifier_in_use(property_name, true);
-                        if let Some((lparen, params, rparen)) = params {
-                            self.print_token_node(lparen);
+                        self.add_str_to_python_code(&format!("(index={}", index));
+                        if let Some((_, params, _)) = params {
                             if let Some(params) = params {
-                                self.walk_comma_separated_expressions(params);
-                            }
-                            self.print_token_node(rparen);
-                        }
-                    }
-                    UserDefinedTypeData::Enum(enum_data) => {
-                        if let CoreIdentifierInUseNode::Ok(ok_variant_name) =
-                            property_name.core_ref()
-                        {
-                            let variant_name_str = ok_variant_name.token_value(
-                                &self.code_handler,
-                                &mut self.semantic_state_db.interner,
-                            );
-                            if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
-                                self.print_identifier_in_use(ty_name, is_trivia);
-                                self.add_str_to_python_code(&format!("(index={}", index));
-                                if let Some((_, params, _)) = params {
-                                    if let Some(params) = params {
-                                        self.add_str_to_python_code(", data=");
-                                        let expr = &params.core_ref().entity;
-                                        self.walk_expression(expr);
-                                    }
-                                }
-                                self.add_str_to_python_code(")");
+                                self.add_str_to_python_code(", data=");
+                                let expr = &params.core_ref().entity;
+                                self.walk_expression(expr);
                             }
                         }
-                    }
-                    UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
-                        unreachable!()
+                        self.add_str_to_python_code(")");
                     }
                 }
             }
-        }
+            UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
+                unreachable!()
+            }
+        };
     }
 
     pub fn print_match_case(&mut self, match_case: &MatchCaseStatementNode) {
@@ -408,56 +406,54 @@ impl PythonCodeGenerator {
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
                 _ => continue,
             };
-            match stmt.core_ref() {
-                CoreStatementNode::CaseBranch(case_branch) => {
-                    let core_case_branch = case_branch.core_ref();
-                    let enum_name = &core_case_branch.enum_name;
-                    if symbol_data.is_none() {
-                        // cache the symbol_data to be used for all case branches
-                        if let CoreIdentifierInDeclNode::Ok(ok_enum_name) = enum_name.core_ref() {
-                            if let Some(sym_data) = self
-                                .semantic_state_db
-                                .get_type_symbol_data_for_identifier_in_decl(ok_enum_name)
-                            {
-                                symbol_data = Some(sym_data.clone());
-                            }
-                        }
+            let CoreStatementNode::CaseBranch(case_branch) = stmt.core_ref() else {
+                unreachable!()
+            };
+            let core_case_branch = case_branch.core_ref();
+            let enum_name = &core_case_branch.enum_name;
+            if symbol_data.is_none() {
+                // cache the symbol_data to be used for all case branches
+                if let CoreIdentifierInDeclNode::Ok(ok_enum_name) = enum_name.core_ref() {
+                    if let Some(sym_data) = self
+                        .semantic_state_db
+                        .get_type_symbol_data_for_identifier_in_decl(ok_enum_name)
+                    {
+                        symbol_data = Some(sym_data.clone());
                     }
-                    let variant_name = &core_case_branch.variant_name;
-                    if let CoreIdentifierInDeclNode::Ok(ok_variant_name) = variant_name.core_ref() {
-                        let variant_name_str = ok_variant_name
-                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
-                        let index = match &symbol_data {
-                            Some(symbol_data) => symbol_data
-                                .get_core_ref()
-                                .get_enum_data_ref()
-                                .try_index_for_variant(variant_name_str)
-                                .unwrap(),
-                            None => unreachable!(),
-                        };
-                        let case_block = &core_case_branch.block;
-                        self.add_indention_to_python_code();
-                        self.add_str_to_python_code(conditional_keyword_str);
-                        self.walk_expression(expr);
-                        self.add_str_to_python_code(&format!(".index == {}:", index));
-                        self.open_block();
-                        self.print_token_node(&case_block.core_ref().newline);
-                        if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
-                            self.add_indention_to_python_code();
-                            self.print_identifier_in_decl(variable_name, true);
-                            self.add_str_to_python_code(" = ");
-                            self.walk_expression(expr);
-                            self.add_str_to_python_code(".data\n")
-                        }
-                        for stmt in case_block.core_ref().stmts.as_ref() {
-                            self.walk_stmt_indent_wrapper(stmt);
-                        }
-                        self.close_block();
-                    }
-                    conditional_keyword_str = "elif";
                 }
-                _ => unreachable!(),
             }
+            let variant_name = &core_case_branch.variant_name;
+            if let CoreIdentifierInDeclNode::Ok(ok_variant_name) = variant_name.core_ref() {
+                let variant_name_str = ok_variant_name
+                    .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+                let index = match &symbol_data {
+                    Some(symbol_data) => symbol_data
+                        .get_core_ref()
+                        .get_enum_data_ref()
+                        .try_index_for_variant(variant_name_str)
+                        .unwrap(),
+                    None => unreachable!(),
+                };
+                let case_block = &core_case_branch.block;
+                self.add_indention_to_python_code();
+                self.add_str_to_python_code(conditional_keyword_str);
+                self.walk_expression(expr);
+                self.add_str_to_python_code(&format!(".index == {}:", index));
+                self.open_block();
+                self.print_token_node(&case_block.core_ref().newline);
+                if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
+                    self.add_indention_to_python_code();
+                    self.print_identifier_in_decl(variable_name, true);
+                    self.add_str_to_python_code(" = ");
+                    self.walk_expression(expr);
+                    self.add_str_to_python_code(".data\n")
+                }
+                for stmt in case_block.core_ref().stmts.as_ref() {
+                    self.walk_stmt_indent_wrapper(stmt);
+                }
+                self.close_block();
+            }
+            conditional_keyword_str = "elif";
         }
     }
 
