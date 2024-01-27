@@ -1257,39 +1257,14 @@ impl TypeChecker {
         }
     }
 
-    fn check_method_access_for_array_ty(
+    fn check_method_access_for_non_struct_ty<T: AbstractNonStructTypes>(
         &mut self,
-        array_ty: &Array,
+        ty: &T,
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name = method_name_ok_identifier.token_value_str(&self.code_handler);
-        let Some(prototype) = array_ty.try_method(&method_name) else {
-            return Err(MethodAccessTypeCheckError::MethodNotFound);
-        };
-        if method_name_ok_identifier
-            .core_ref()
-            .generic_type_args
-            .is_some()
-        {
-            Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
-                GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
-                IdentifierKind::Field,
-            ))
-        } else {
-            let return_ty = prototype.is_received_params_valid(self, params)?;
-            Ok(return_ty)
-        }
-    }
-
-    fn check_method_access_for_hashmap_ty(
-        &mut self,
-        hashmap_ty: &HashMap,
-        method_name_ok_identifier: &OkIdentifierInUseNode,
-        params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-    ) -> Result<Type, MethodAccessTypeCheckError> {
-        let method_name = method_name_ok_identifier.token_value_str(&self.code_handler);
-        let Some(prototype) = hashmap_ty.try_method(&method_name) else {
+        let Some(prototype) = ty.try_method(&method_name) else {
             return Err(MethodAccessTypeCheckError::MethodNotFound);
         };
         if method_name_ok_identifier
@@ -1324,10 +1299,10 @@ impl TypeChecker {
                 self.check_method_access_for_generic_ty(generic_ty, ok_identifier, params)
             }
             CoreType::Array(array_ty) => {
-                self.check_method_access_for_array_ty(array_ty, ok_identifier, params)
+                self.check_method_access_for_non_struct_ty(array_ty, ok_identifier, params)
             }
             CoreType::HashMap(hashmap_ty) => {
-                self.check_method_access_for_hashmap_ty(hashmap_ty, ok_identifier, params)
+                self.check_method_access_for_non_struct_ty(hashmap_ty, ok_identifier, params)
             }
             _ => Err(MethodAccessTypeCheckError::MethodNotFound),
         };
