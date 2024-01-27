@@ -2,7 +2,7 @@ use super::function::{CallableData, CallableKind, CallablePrototypeData};
 use crate::{constants::common::INT, types::core::Type};
 use rustc_hash::FxHashMap;
 
-// print(_obj: <any>)
+// print<T>(obj: T)
 fn print_callable_data() -> CallableData {
     CallableData {
         prototype: CallablePrototypeData {
@@ -15,7 +15,7 @@ fn print_callable_data() -> CallableData {
     }
 }
 
-// range(_start: int, _end: int) -> [int]
+// range(start: int, end: int) -> [int]
 fn range_callable_data() -> CallableData {
     CallableData {
         prototype: CallablePrototypeData {

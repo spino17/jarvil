@@ -6,6 +6,7 @@ use crate::{
 };
 use rustc_hash::FxHashMap;
 
+// append(x: T), where `T` is the element type of the array
 fn append_callable_data(interner: &mut Interner) -> CallableData {
     CallableData::new(
         vec![get_unbounded_generic_type_with_declaration_index(
