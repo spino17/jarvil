@@ -626,7 +626,6 @@ impl TypeChecker {
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
                 // CASE 1
-                // let concrete_types = struct_symbol_data.get_concrete_types(index);
                 let concrete_prototype = constructor_meta_data
                     .prototype
                     .concretize_prototype(Some(concrete_types), None);
