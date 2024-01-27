@@ -1,6 +1,8 @@
 // See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to
 // cover and the representation of type expressions in terms of type objects.
 
+use super::components::assignment::R_ASSIGNMENT_STARTING_SYMBOLS;
+use super::helper::err_for_generic_type_args;
 use crate::ast::ast::{
     ArrayExpressionNode, CallExpressionNode, CallNode, ConditionalBlockNode,
     ConditionalStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
@@ -85,9 +87,6 @@ use crate::{
 use rustc_hash::FxHashSet;
 use std::cell::UnsafeCell;
 use text_size::TextRange;
-
-use super::components::assignment::R_ASSIGNMENT_STARTING_SYMBOLS;
-use super::helper::err_for_generic_type_args;
 
 #[derive(Debug)]
 struct Context {

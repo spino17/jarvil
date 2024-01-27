@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use super::{
     concrete::{ConcreteTypesTuple, ConcretizationContext},
     function::{CallableData, PartialConcreteCallableDataRef},
@@ -10,6 +8,7 @@ use super::{
 use crate::types::core::Type;
 use crate::{core::string_interner::StrId, types::core::AbstractType};
 use rustc_hash::FxHashMap;
+use std::marker::PhantomData;
 use text_size::TextRange;
 
 #[derive(Debug)]

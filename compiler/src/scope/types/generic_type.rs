@@ -1,10 +1,9 @@
-use text_size::TextRange;
-
 use crate::{
     core::string_interner::{Interner, StrId},
     scope::interfaces::InterfaceBounds,
     types::core::Type,
 };
+use text_size::TextRange;
 
 pub enum GenericTypePropertyQueryResult<T> {
     Ok(T),

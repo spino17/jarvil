@@ -1,9 +1,8 @@
+use super::enum_type::EnumTypeData;
 use crate::scope::{
     core::AbstractConcreteTypesHandler, types::generic_type::GenericTypeData,
     types::lambda_type::LambdaTypeData, types::struct_type::StructTypeData,
 };
-
-use super::enum_type::EnumTypeData;
 
 #[derive(Debug)]
 pub enum UserDefinedTypeData {
