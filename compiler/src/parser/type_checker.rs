@@ -37,9 +37,9 @@ use crate::scope::types::generic_type::{
 use crate::scope::types::struct_type::StructTypeData;
 use crate::scope::variables::VariableData;
 use crate::types::array::core::Array;
-use crate::types::core::AbstractNonStructTypes;
 use crate::types::generic::Generic;
 use crate::types::hashmap::core::HashMap;
+use crate::types::non_struct::NonStructMethodsHandler;
 use crate::types::r#struct::Struct;
 use crate::types::tuple::Tuple;
 use crate::{
@@ -182,15 +182,22 @@ pub struct TypeChecker {
     code_handler: JarvilCodeHandler,
     errors: UnsafeCell<Vec<Diagnostics>>,
     context: Context,
+    non_struct_methods_handler: NonStructMethodsHandler,
     pub semantic_state_db: SemanticStateDatabase,
 }
 
 impl TypeChecker {
-    pub fn new(code_handler: JarvilCodeHandler, semantic_state_db: SemanticStateDatabase) -> Self {
+    pub fn new(
+        code_handler: JarvilCodeHandler,
+        mut semantic_state_db: SemanticStateDatabase,
+    ) -> Self {
+        let non_struct_methods_handler =
+            NonStructMethodsHandler::new(&mut semantic_state_db.interner);
         TypeChecker {
             code_handler,
             errors: UnsafeCell::new(vec![]),
             context: Context { func_stack: vec![] },
+            non_struct_methods_handler,
             semantic_state_db,
         }
     }
@@ -1257,14 +1264,45 @@ impl TypeChecker {
         }
     }
 
-    fn check_method_access_for_non_struct_ty<T: AbstractNonStructTypes>(
+    fn check_method_access_for_array_ty(
         &mut self,
-        ty: &T,
+        array_ty: &Array,
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name = method_name_ok_identifier.token_value_str(&self.code_handler);
-        let Some(prototype) = ty.try_method(&method_name) else {
+        let Some(prototype) = self
+            .non_struct_methods_handler
+            .try_method_for_array(array_ty, &method_name)
+        else {
+            return Err(MethodAccessTypeCheckError::MethodNotFound);
+        };
+        if method_name_ok_identifier
+            .core_ref()
+            .generic_type_args
+            .is_some()
+        {
+            Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
+                GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
+                IdentifierKind::Field,
+            ))
+        } else {
+            let return_ty = prototype.is_received_params_valid(self, params)?;
+            Ok(return_ty)
+        }
+    }
+
+    fn check_method_access_for_hashmap_ty(
+        &mut self,
+        hashmap_ty: &HashMap,
+        method_name_ok_identifier: &OkIdentifierInUseNode,
+        params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Result<Type, MethodAccessTypeCheckError> {
+        let method_name = method_name_ok_identifier.token_value_str(&self.code_handler);
+        let Some(prototype) = self
+            .non_struct_methods_handler
+            .try_method_for_hashmap(hashmap_ty, &method_name)
+        else {
             return Err(MethodAccessTypeCheckError::MethodNotFound);
         };
         if method_name_ok_identifier
@@ -1299,10 +1337,10 @@ impl TypeChecker {
                 self.check_method_access_for_generic_ty(generic_ty, ok_identifier, params)
             }
             CoreType::Array(array_ty) => {
-                self.check_method_access_for_non_struct_ty(array_ty, ok_identifier, params)
+                self.check_method_access_for_array_ty(array_ty, ok_identifier, params)
             }
             CoreType::HashMap(hashmap_ty) => {
-                self.check_method_access_for_non_struct_ty(hashmap_ty, ok_identifier, params)
+                self.check_method_access_for_hashmap_ty(hashmap_ty, ok_identifier, params)
             }
             _ => Err(MethodAccessTypeCheckError::MethodNotFound),
         };

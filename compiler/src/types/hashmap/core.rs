@@ -1,4 +1,3 @@
-use super::builtin::HASHMAP_BUILTIN_METHODS;
 use crate::{
     constants::common::BOOL,
     core::string_interner::Interner,
@@ -6,13 +5,14 @@ use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
-        function::CallableData,
         interfaces::InterfaceBounds,
         types::generic_type::GenericTypeDeclarationPlaceCategory,
     },
-    types::core::{AbstractNonStructTypes, AbstractType, CoreType, OperatorCompatiblity, Type},
+    types::{
+        core::{AbstractType, CoreType, OperatorCompatiblity, Type},
+        non_struct::AbstractNonStructTypes,
+    },
 };
-use std::{collections::HashMap as StdHashMap, rc::Rc};
 
 #[derive(Debug, Clone)]
 pub struct HashMap {
@@ -161,9 +161,5 @@ impl OperatorCompatiblity for HashMap {
 impl AbstractNonStructTypes for HashMap {
     fn get_concrete_types(&self) -> ConcreteTypesTuple {
         ConcreteTypesTuple::new(vec![self.key_type.clone(), self.value_type.clone()])
-    }
-
-    fn get_builtin_methods(&self) -> Rc<StdHashMap<&'static str, CallableData>> {
-        HASHMAP_BUILTIN_METHODS.with(|use_default| use_default.clone())
     }
 }

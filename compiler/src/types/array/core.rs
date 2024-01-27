@@ -1,18 +1,15 @@
-use super::builtin::ARRAY_BUILTIN_METHODS;
 use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::function::CallableData;
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
-use crate::types::core::{AbstractNonStructTypes, OperatorCompatiblity};
+use crate::types::core::OperatorCompatiblity;
+use crate::types::non_struct::AbstractNonStructTypes;
 use crate::{
     constants::common::BOOL,
     types::core::{AbstractType, CoreType, Type},
 };
-use std::collections::HashMap;
-use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Array {
@@ -149,9 +146,5 @@ impl OperatorCompatiblity for Array {
 impl AbstractNonStructTypes for Array {
     fn get_concrete_types(&self) -> ConcreteTypesTuple {
         ConcreteTypesTuple::new(vec![self.element_type.clone()])
-    }
-
-    fn get_builtin_methods(&self) -> Rc<HashMap<&'static str, CallableData>> {
-        ARRAY_BUILTIN_METHODS.with(|use_default| use_default.clone())
     }
 }

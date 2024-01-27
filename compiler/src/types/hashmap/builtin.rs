@@ -1,9 +1,17 @@
-use crate::scope::function::CallableData;
-use std::{collections::HashMap, rc::Rc};
+use super::core::HashMap;
+use crate::core::string_interner::Interner;
+use crate::{
+    scope::function::{CallableData, CallableKind},
+    types::{core::Type, helper::get_unbounded_generic_type_with_declaration_index},
+};
+use rustc_hash::FxHashMap;
 
-thread_local!(
-    pub static HASHMAP_BUILTIN_METHODS: Rc<HashMap<&'static str, CallableData>> =
-        Rc::new(HashMap::from([// TODO - the below type should be bounded by an interface `Hash`
-            // ("get", CallableData::new(vec![get_unbounded_generic_type_with_declaration_index(0)], get_unbounded_generic_type_with_declaration_index(1), CallableKind::Method, Some((vec![0], true)), None)),
-        ]))
-);
+impl HashMap {
+    pub fn get_builtin_methods(interner: &mut Interner) -> FxHashMap<&'static str, CallableData> {
+        let mut methods = FxHashMap::default();
+
+        // hashmap built-in methods
+
+        return methods;
+    }
+}

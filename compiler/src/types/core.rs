@@ -5,18 +5,16 @@ use super::r#enum::Enum;
 use super::r#struct::Struct;
 use super::tuple::Tuple;
 use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
-use crate::core::common::RefOrOwned;
 use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::core::SymbolData;
-use crate::scope::function::{CallableData, CallablePrototypeData};
+use crate::scope::function::CallablePrototypeData;
 use crate::scope::interfaces::InterfaceBounds;
 use crate::scope::types::core::UserDefinedTypeData;
 use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::{array::core::Array, atomic::Atomic};
-use std::collections::HashMap as StdHashMap;
 use std::fmt::Debug;
 use std::rc::Rc;
 
@@ -34,27 +32,6 @@ pub trait AbstractType {
     ) -> Result<(), ()>;
     fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
     fn to_string(&self, interner: &Interner) -> String;
-}
-
-pub trait AbstractNonStructTypes {
-    fn get_concrete_types(&self) -> ConcreteTypesTuple;
-    fn get_builtin_methods(&self) -> Rc<StdHashMap<&'static str, CallableData>>;
-    fn try_method(&self, method_name: &str) -> Option<CallablePrototypeData> {
-        let builtin_methods = self.get_builtin_methods();
-        match builtin_methods.get(method_name) {
-            Some(callable_data) => {
-                let concrete_types = self.get_concrete_types();
-                match callable_data
-                    .prototype
-                    .concretize_prototype(Some(&concrete_types), None)
-                {
-                    RefOrOwned::Ref(_) => unreachable!(),
-                    RefOrOwned::Owned(prototype) => Some(prototype),
-                }
-            }
-            None => None,
-        }
-    }
 }
 
 pub trait OperatorCompatiblity {
