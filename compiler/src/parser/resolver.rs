@@ -20,7 +20,6 @@ use crate::error::diagnostics::{
     MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
-use crate::scope::builtin::{print_meta_data, range_meta_data};
 use crate::scope::concrete::ConcreteTypesTuple;
 use crate::scope::core::{
     AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData, LookupData,
@@ -161,20 +160,6 @@ impl Resolver {
         ast: &BlockNode,
     ) -> (SemanticStateDatabase, Vec<Diagnostics>, JarvilCodeHandler) {
         let code_block = ast.0.as_ref();
-        // setting builtin functions to global scope
-        // TODO - shift them to standard library
-        self.semantic_state_db.namespace.functions.force_insert(
-            self.scope_index,
-            self.semantic_state_db.interner.intern("print"),
-            print_meta_data(),
-            TextRange::default(),
-        );
-        self.semantic_state_db.namespace.functions.force_insert(
-            self.scope_index,
-            self.semantic_state_db.interner.intern("range"),
-            range_meta_data(),
-            TextRange::default(),
-        );
         for stmt in code_block.stmts.as_ref() {
             self.walk_stmt_indent_wrapper(stmt);
         }

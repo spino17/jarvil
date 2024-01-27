@@ -1,11 +1,12 @@
 use super::function::{CallableData, CallableKind, CallablePrototypeData};
 use crate::{constants::common::INT, types::core::Type};
+use rustc_hash::FxHashMap;
 
 // print(_obj: <any>)
-pub fn print_meta_data() -> CallableData {
+pub fn print_callable_data() -> CallableData {
     CallableData {
         prototype: CallablePrototypeData {
-            params: vec![Type::new_with_any()],
+            params: vec![Type::new_with_any()], // TODO - replace it with unbounded generic type `T`
             return_type: Type::new_with_void(),
             is_concretization_required: None,
         },
@@ -15,7 +16,7 @@ pub fn print_meta_data() -> CallableData {
 }
 
 // range(_start: int, _end: int) -> [int]
-pub fn range_meta_data() -> CallableData {
+pub fn range_callable_data() -> CallableData {
     CallableData {
         prototype: CallablePrototypeData {
             params: vec![Type::new_with_atomic(INT), Type::new_with_atomic(INT)],
@@ -25,4 +26,14 @@ pub fn range_meta_data() -> CallableData {
         kind: CallableKind::Function,
         generics: Option::default(),
     }
+}
+
+pub fn get_builtin_functions() -> FxHashMap<&'static str, CallableData> {
+    let mut functions = FxHashMap::default();
+
+    // all built-in functions
+    functions.insert("print", print_callable_data());
+    functions.insert("range", range_callable_data());
+
+    return functions;
 }

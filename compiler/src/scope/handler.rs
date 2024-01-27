@@ -1,4 +1,5 @@
 use super::{
+    builtin::get_builtin_functions,
     common::GlobalUniqueKeyGenerator,
     concrete::{ConcreteSymbolData, ConcreteTypesTuple},
     core::{MangledIdentifierName, Namespace, SymbolData},
@@ -16,6 +17,7 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
+use text_size::TextRange;
 
 pub enum SymbolDataEntry {
     Variable(SymbolData<VariableData>),
@@ -74,9 +76,23 @@ pub struct SemanticStateDatabase {
 
 impl SemanticStateDatabase {
     pub fn new() -> Self {
+        let mut namespace = Namespace::new();
+        let mut interner = Interner::default();
+
+        // fill the built-in functions inside the global namespace
+        let builtin_functions = get_builtin_functions();
+        for (name, callable_data) in builtin_functions {
+            namespace.functions.force_insert(
+                0, // index of global namespace
+                interner.intern(name),
+                callable_data,
+                TextRange::default(),
+            );
+        }
+
         SemanticStateDatabase {
-            namespace: Namespace::new(),
-            interner: Interner::default(),
+            namespace,
+            interner,
             unique_key_generator: GlobalUniqueKeyGenerator::default(),
             identifier_in_decl_binding_table: FxHashMap::default(),
             identifier_in_use_binding_table: FxHashMap::default(),
