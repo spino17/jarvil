@@ -7,6 +7,7 @@ use super::ast::{
     KeyValuePairNode, MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
     SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode, WhileLoopStatementNode,
 };
+use crate::ast::ast::Node;
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
     AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
@@ -329,7 +330,6 @@ pub trait Visitor {
     );
 
     // below are concrete `SymbolSeparatedSequenceNode<T>` walk methods
-    //fn walk_comma_separated_sequence(&mut self, )
     fn walk_comma_separated_type_expressions(
         &mut self,
         x: &SymbolSeparatedSequenceNode<TypeExpressionNode>,
