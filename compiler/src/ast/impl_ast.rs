@@ -1258,13 +1258,11 @@ impl AtomicTypeNode {
         code: &JarvilCodeHandler,
         interner: &mut Interner,
     ) -> TypeResolveKind {
-        match self.core_ref().kind.core_ref() {
-            CoreTokenNode::Ok(ok_token) => {
-                let idx = ok_token.token_value(code, interner);
-                return TypeResolveKind::Resolved(Type::new_with_atomic(interner.lookup(idx)));
-            }
-            _ => TypeResolveKind::Invalid,
-        }
+        let CoreTokenNode::Ok(ok_token) = self.core_ref().kind.core_ref() else {
+            return TypeResolveKind::Invalid;
+        };
+        let idx = ok_token.token_value(code, interner);
+        TypeResolveKind::Resolved(Type::new_with_atomic(interner.lookup(idx)))
     }
 
     impl_core_ref!(CoreAtomicTypeNode);
@@ -1564,23 +1562,19 @@ impl ExpressionNode {
     }
 
     pub fn is_valid_l_value(&self) -> Option<AtomNode> {
-        match &self.0.as_ref() {
-            CoreExpressionNode::Unary(unary_expr_node) => match &unary_expr_node.0.as_ref() {
-                CoreUnaryExpressionNode::Atomic(atomic_expr_node) => {
-                    match &atomic_expr_node.0.as_ref() {
-                        CoreAtomicExpressionNode::Atom(atom_node) => {
-                            if atom_node.is_valid_l_value() {
-                                Some(atom_node.clone())
-                            } else {
-                                None
-                            }
-                        }
-                        _ => None,
-                    }
-                }
-                _ => None,
-            },
-            _ => None,
+        let CoreExpressionNode::Unary(unary_expr_node) = &self.0.as_ref() else {
+            return None;
+        };
+        let CoreUnaryExpressionNode::Atomic(atomic_expr_node) = &unary_expr_node.0.as_ref() else {
+            return None;
+        };
+        let CoreAtomicExpressionNode::Atom(atom_node) = &atomic_expr_node.0.as_ref() else {
+            return None;
+        };
+        if atom_node.is_valid_l_value() {
+            Some(atom_node.clone())
+        } else {
+            None
         }
     }
 
