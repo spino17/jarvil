@@ -531,20 +531,20 @@ impl<T: AbstractConcreteTypesHandler> Scope<T> {
     }
 
     fn lookup_with_is_init(&self, scope_index: usize, key: &StrId) -> IntermediateLookupResult<T> {
-        match self.lookup(scope_index, key) {
-            Some((symbol_data, resolved_scope_index, depth, enclosing_func_scope_depth)) => {
-                if symbol_data.get_core_ref().is_initialized() {
-                    IntermediateLookupResult::Ok((
-                        symbol_data,
-                        resolved_scope_index,
-                        depth,
-                        enclosing_func_scope_depth,
-                    ))
-                } else {
-                    IntermediateLookupResult::NotInitialized(symbol_data.declaration_line_number())
-                }
-            }
-            None => IntermediateLookupResult::Unresolved,
+        let Some((symbol_data, resolved_scope_index, depth, enclosing_func_scope_depth)) =
+            self.lookup(scope_index, key)
+        else {
+            return IntermediateLookupResult::Unresolved;
+        };
+        if symbol_data.get_core_ref().is_initialized() {
+            IntermediateLookupResult::Ok((
+                symbol_data,
+                resolved_scope_index,
+                depth,
+                enclosing_func_scope_depth,
+            ))
+        } else {
+            IntermediateLookupResult::NotInitialized(symbol_data.declaration_line_number())
         }
     }
 }

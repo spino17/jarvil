@@ -98,24 +98,21 @@ impl InterfaceObject {
     pub fn is_eq(&self, other: &InterfaceObject) -> bool {
         if self.0.as_ref().0.eq(&other.0.as_ref().0) {
             // names of interfaces should be same
-            match &self.0.as_ref().1.concrete_types {
-                Some(self_concrete_types) => match &other.0.as_ref().1.concrete_types {
-                    Some(other_concrete_types) => {
-                        let self_len = self_concrete_types.len();
-                        let other_len = other_concrete_types.len();
-
-                        debug_assert!(self_len == other_len);
-                        for i in 0..self_len {
-                            if !self_concrete_types[i].is_eq(&other_concrete_types[i]) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                    None => unreachable!(),
-                },
-                None => return true,
+            let Some(self_concrete_types) = &self.0.as_ref().1.concrete_types else {
+                return true;
+            };
+            let Some(other_concrete_types) = &other.0.as_ref().1.concrete_types else {
+                unreachable!()
+            };
+            let self_len = self_concrete_types.len();
+            let other_len = other_concrete_types.len();
+            debug_assert!(self_len == other_len);
+            for i in 0..self_len {
+                if !self_concrete_types[i].is_eq(&other_concrete_types[i]) {
+                    return false;
+                }
             }
+            return true;
         }
         false
     }

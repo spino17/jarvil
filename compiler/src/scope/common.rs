@@ -75,18 +75,16 @@ impl FieldsMap {
         field_name: &StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(Type, TextRange)> {
-        match self.fields.get(field_name) {
-            Some((ty, range)) => {
-                if ty.is_concretization_required() {
-                    Some((
-                        ty.concretize(&ConcretizationContext::new(global_concrete_types, None)),
-                        *range,
-                    ))
-                } else {
-                    Some((ty.clone(), *range))
-                }
-            }
-            None => None,
+        let Some((ty, range)) = self.fields.get(field_name) else {
+            return None;
+        };
+        if ty.is_concretization_required() {
+            Some((
+                ty.concretize(&ConcretizationContext::new(global_concrete_types, None)),
+                *range,
+            ))
+        } else {
+            Some((ty.clone(), *range))
         }
     }
 }
@@ -110,21 +108,19 @@ impl MethodsMap {
         method_name: &StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
-        match self.methods.get(method_name) {
-            Some((callable_data, range)) => {
-                return Some((
-                    PartialConcreteCallableDataRef::new(
-                        callable_data,
-                        match global_concrete_types {
-                            Some(concrete_types) => Some(concrete_types),
-                            None => None,
-                        },
-                    ),
-                    *range,
-                ))
-            }
-            None => None,
-        }
+        let Some((callable_data, range)) = self.methods.get(method_name) else {
+            return None;
+        };
+        return Some((
+            PartialConcreteCallableDataRef::new(
+                callable_data,
+                match global_concrete_types {
+                    Some(concrete_types) => Some(concrete_types),
+                    None => None,
+                },
+            ),
+            *range,
+        ));
     }
 
     pub fn has_method(&self, method_name: &StrId) -> bool {

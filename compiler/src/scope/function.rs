@@ -120,27 +120,24 @@ impl CallablePrototypeData {
         &self,
         context: &ConcretizationContext,
     ) -> RefOrOwned<'_, CallablePrototypeData> {
-        match &self.is_concretization_required {
-            Some((
-                generics_containing_params_indexes,
-                is_concretization_required_for_return_type,
-            )) => {
-                let mut concrete_params = self.params.clone();
-                let mut concrete_return_type = self.return_type.clone();
-                for index in generics_containing_params_indexes {
-                    concrete_params[*index] = self.params[*index].concretize(context);
-                }
-                if *is_concretization_required_for_return_type {
-                    concrete_return_type = self.return_type.concretize(context);
-                }
-                return RefOrOwned::Owned(CallablePrototypeData::new(
-                    concrete_params,
-                    concrete_return_type,
-                    None,
-                ));
-            }
-            None => return RefOrOwned::Ref(self),
+        let Some((generics_containing_params_indexes, is_concretization_required_for_return_type)) =
+            &self.is_concretization_required
+        else {
+            return RefOrOwned::Ref(self);
+        };
+        let mut concrete_params = self.params.clone();
+        let mut concrete_return_type = self.return_type.clone();
+        for index in generics_containing_params_indexes {
+            concrete_params[*index] = self.params[*index].concretize(context);
         }
+        if *is_concretization_required_for_return_type {
+            concrete_return_type = self.return_type.concretize(context);
+        }
+        return RefOrOwned::Owned(CallablePrototypeData::new(
+            concrete_params,
+            concrete_return_type,
+            None,
+        ));
     }
 
     pub fn concretize_prototype(

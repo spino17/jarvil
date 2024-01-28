@@ -8,8 +8,7 @@ use crate::{
 };
 use text_size::TextRange;
 
-#[derive(Debug)]
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct EnumTypeData {
     pub variants: Vec<(StrId, Option<Type>, TextRange)>,
     pub generics: Option<GenericTypeParams>,
@@ -33,18 +32,14 @@ impl EnumTypeData {
     ) -> Option<Option<Type>> {
         for (curr_variant_name, ty, _) in &self.variants {
             if *curr_variant_name == variant_name {
-                match ty {
-                    Some(ty) => {
-                        if ty.is_concretization_required() {
-                            return Some(Some(ty.concretize(&ConcretizationContext::new(
-                                global_concrete_types,
-                                None,
-                            ))));
-                        } else {
-                            return Some(Some(ty.clone()));
-                        }
-                    }
-                    None => return Some(None),
+                let Some(ty) = ty else { return Some(None) };
+                if ty.is_concretization_required() {
+                    return Some(Some(ty.concretize(&ConcretizationContext::new(
+                        global_concrete_types,
+                        None,
+                    ))));
+                } else {
+                    return Some(Some(ty.clone()));
                 }
             }
         }
@@ -66,5 +61,3 @@ impl AbstractConcreteTypesHandler for EnumTypeData {
         self.is_init
     }
 }
-
-
