@@ -6,15 +6,13 @@
 // NOTE: This file only contains structure of the AST nodes and not their bounded methods. The methods for respective `ASTNode::<...>`
 // is declared in the file `impl_ast.rs`
 
-#[macro_use]
-use jarvil_macros::Nodify;
-#[macro_use]
-use jarvil_macros::Node;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::lexer::token::UnaryOperatorKind;
 use crate::parser::resolver::BlockKind;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::{lexer::token::Token, types::core::Type};
+use jarvil_macros::Node;
+use jarvil_macros::Nodify;
 use std::rc::Rc;
 use text_size::{TextRange, TextSize};
 

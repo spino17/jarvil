@@ -1,7 +1,4 @@
 #![allow(non_camel_case_types)]
-
-#[macro_use]
-use jarvil_macros::Tokenify;
 use crate::code::JarvilCodeHandler;
 use crate::constants::common::{
     AND, AS, ASSERT_KEYWORD, ASYNC_KEYWORD, ATOMIC_TYPE, AWAIT_KEYWORD, BLANK, BLOCK_COMMENT,
@@ -16,6 +13,7 @@ use crate::constants::common::{
     WITH_KEYWORD, YIELD_KEYWORD,
 };
 use crate::core::string_interner::{Interner, StrId};
+use jarvil_macros::Tokenify;
 use std::fmt::Display;
 use text_size::TextRange;
 

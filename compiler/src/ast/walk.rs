@@ -408,11 +408,9 @@ pub trait Visitor {
     }
 
     fn walk(&mut self, node: &ASTNode) {
-        match self.visit(node) {
-            None => return,
-            _ => {}
+        if self.visit(node).is_none() {
+            return;
         }
-
         match node {
             ASTNode::Block(block_node) => {
                 let core_block_node = &block_node.0.as_ref();
