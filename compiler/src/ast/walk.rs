@@ -7,7 +7,6 @@ use super::ast::{
     KeyValuePairNode, MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
     SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode, WhileLoopStatementNode,
 };
-use crate::ast::ast::Node;
 use crate::ast::ast::{
     ASTNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
     AtomicTypeNode, BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallExpressionNode,
