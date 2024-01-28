@@ -64,7 +64,7 @@ impl BlockNode {
     ) -> Self {
         let node = Rc::new(CoreBlockNode {
             newline,
-            stmts: Rc::new(stmts),
+            stmts,
             kind,
         });
         BlockNode(node)

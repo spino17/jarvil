@@ -106,7 +106,7 @@ pub enum ASTNode {
 #[derive(Debug)]
 pub struct CoreBlockNode {
     pub newline: TokenNode,
-    pub stmts: Rc<Vec<StatementIndentWrapperNode>>,
+    pub stmts: Vec<StatementIndentWrapperNode>,
     pub kind: BlockKind,
 }
 

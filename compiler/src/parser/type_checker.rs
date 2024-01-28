@@ -220,7 +220,7 @@ impl TypeChecker {
         global_errors: &mut Vec<Diagnostics>,
     ) -> (SemanticStateDatabase, JarvilCodeHandler) {
         let core_block = ast.0.as_ref();
-        for stmt in core_block.stmts.as_ref() {
+        for stmt in &core_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
         unsafe {
@@ -949,25 +949,21 @@ impl TypeChecker {
             .get_type_symbol_data_for_identifier_in_use(ok_identifier)
         {
             Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
-                UserDefinedTypeData::Struct(struct_data) => {
-                    self.check_class_method_call(
-                        struct_data,
-                        &type_symbol_data.concrete_types,
-                        ok_identifier,
-                        ty_name,
-                        property_name,
-                        params,
-                    )
-                }
-                UserDefinedTypeData::Enum(enum_data) => {
-                    self.check_enum_variant_expr(
-                        enum_data,
-                        &type_symbol_data,
-                        ty_name,
-                        property_name,
-                        params,
-                    )
-                }
+                UserDefinedTypeData::Struct(struct_data) => self.check_class_method_call(
+                    struct_data,
+                    &type_symbol_data.concrete_types,
+                    ok_identifier,
+                    ty_name,
+                    property_name,
+                    params,
+                ),
+                UserDefinedTypeData::Enum(enum_data) => self.check_enum_variant_expr(
+                    enum_data,
+                    &type_symbol_data,
+                    ty_name,
+                    property_name,
+                    params,
+                ),
                 UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
                     let err = PropertyNotSupportedError::new("classmethod".to_string(), ty.range());
                     self.log_error(Diagnostics::PropertyNotSupported(err));
@@ -1877,7 +1873,7 @@ impl TypeChecker {
             .func_stack
             .push((is_constructor, return_type_obj.clone()));
         let mut has_return_stmt: Option<TextRange> = None;
-        for stmt in body.0.as_ref().stmts.as_ref() {
+        for stmt in &body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => {
@@ -2044,7 +2040,7 @@ impl TypeChecker {
         let concrete_types = &enum_ty.concrete_types;
         let symbol_data = enum_ty.symbol_data.get_core_ref();
         let enum_data = symbol_data.get_enum_data_ref();
-        for stmt in match_block.0.as_ref().stmts.as_ref() {
+        for stmt in &match_block.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => {

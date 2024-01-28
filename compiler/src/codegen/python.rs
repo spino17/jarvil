@@ -71,7 +71,7 @@ impl PythonCodeGenerator {
 
     pub fn generate_python_code(mut self, ast: &BlockNode) -> String {
         let code_block = ast.0.as_ref();
-        for stmt in code_block.stmts.as_ref() {
+        for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
         let index = match self
@@ -111,21 +111,15 @@ impl PythonCodeGenerator {
             .get_symbol_data_for_identifier_in_decl(identifier)
         {
             Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Variable(variable_symbol_data) => {
-                    variable_symbol_data
-                        .get_mangled_name()
-                        .to_string(VAR_SUFFIX, &self.semantic_state_db.interner)
-                }
-                SymbolDataEntry::Function(func_symbol_data) => {
-                    func_symbol_data
-                        .get_mangled_name()
-                        .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner)
-                }
-                SymbolDataEntry::Type(type_symbol_data) => {
-                    type_symbol_data
-                        .get_mangled_name()
-                        .to_string(TY_SUFFIX, &self.semantic_state_db.interner)
-                }
+                SymbolDataEntry::Variable(variable_symbol_data) => variable_symbol_data
+                    .get_mangled_name()
+                    .to_string(VAR_SUFFIX, &self.semantic_state_db.interner),
+                SymbolDataEntry::Function(func_symbol_data) => func_symbol_data
+                    .get_mangled_name()
+                    .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner),
+                SymbolDataEntry::Type(type_symbol_data) => type_symbol_data
+                    .get_mangled_name()
+                    .to_string(TY_SUFFIX, &self.semantic_state_db.interner),
                 SymbolDataEntry::Interface(_) => unreachable!(),
             },
             None => identifier.token_value_str(&self.code_handler),
@@ -140,24 +134,18 @@ impl PythonCodeGenerator {
             return identifier.token_value_str(&self.code_handler);
         };
         match symbol_data {
-            ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
-                variable_symbol_data
-                    .symbol_data
-                    .get_mangled_name()
-                    .to_string(VAR_SUFFIX, &self.semantic_state_db.interner)
-            }
-            ConcreteSymbolDataEntry::Function(func_symbol_data) => {
-                func_symbol_data
-                    .symbol_data
-                    .get_mangled_name()
-                    .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner)
-            }
-            ConcreteSymbolDataEntry::Type(type_symbol_data) => {
-                type_symbol_data
-                    .symbol_data
-                    .get_mangled_name()
-                    .to_string(TY_SUFFIX, &self.semantic_state_db.interner)
-            }
+            ConcreteSymbolDataEntry::Variable(variable_symbol_data) => variable_symbol_data
+                .symbol_data
+                .get_mangled_name()
+                .to_string(VAR_SUFFIX, &self.semantic_state_db.interner),
+            ConcreteSymbolDataEntry::Function(func_symbol_data) => func_symbol_data
+                .symbol_data
+                .get_mangled_name()
+                .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner),
+            ConcreteSymbolDataEntry::Type(type_symbol_data) => type_symbol_data
+                .symbol_data
+                .get_mangled_name()
+                .to_string(TY_SUFFIX, &self.semantic_state_db.interner),
             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
         }
     }
@@ -400,7 +388,7 @@ impl PythonCodeGenerator {
         let match_block = &core_match_case.block;
         let mut symbol_data: Option<SymbolData<UserDefinedTypeData>> = None;
         let mut conditional_keyword_str: &'static str = "if";
-        for stmt in match_block.core_ref().stmts.as_ref() {
+        for stmt in &match_block.core_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
@@ -448,7 +436,7 @@ impl PythonCodeGenerator {
                     self.walk_expression(expr);
                     self.add_str_to_python_code(".data\n")
                 }
-                for stmt in case_block.core_ref().stmts.as_ref() {
+                for stmt in &case_block.core_ref().stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block();
@@ -639,7 +627,7 @@ impl Visitor for PythonCodeGenerator {
                         self.add_str_to_python_code(&nonlocal_str);
                     }
                 }
-                for stmt in core_block.stmts.as_ref() {
+                for stmt in &core_block.stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block();

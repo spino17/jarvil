@@ -160,7 +160,7 @@ impl Resolver {
         ast: &BlockNode,
     ) -> (SemanticStateDatabase, Vec<Diagnostics>, JarvilCodeHandler) {
         let code_block = ast.0.as_ref();
-        for stmt in code_block.stmts.as_ref() {
+        for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
         match self.semantic_state_db.namespace.functions.get(
@@ -1092,7 +1092,7 @@ impl Resolver {
                 .get_core_mut_ref()
                 .set_generics(generic_type_decls);
         }
-        for stmt in callable_body.0.as_ref().stmts.as_ref() {
+        for stmt in &callable_body.0.as_ref().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.close_block(Some(callable_body));
@@ -1126,7 +1126,7 @@ impl Resolver {
             generic_type_decls,
         ) = self
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
-        for stmt in callable_body.0.as_ref().stmts.as_ref() {
+        for stmt in &callable_body.0.as_ref().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.close_block(Some(callable_body));
@@ -1155,7 +1155,7 @@ impl Resolver {
         self.open_block(callable_body.core_ref().kind);
         let (param_types_vec, return_type, return_type_range, is_concretization_required, _) =
             self.declare_callable_prototype(&core_callable_body.prototype, None);
-        for stmt in callable_body.0.as_ref().stmts.as_ref() {
+        for stmt in &callable_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => {
@@ -1413,7 +1413,7 @@ impl Resolver {
         let mut methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<StrId> = FxHashSet::default();
-        for stmt in struct_body.0.as_ref().stmts.as_ref() {
+        for stmt in &struct_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
@@ -1666,7 +1666,7 @@ impl Resolver {
         }
         let mut variants: Vec<(StrId, Option<Type>, TextRange)> = vec![];
         let mut variants_map: FxHashMap<StrId, TextRange> = FxHashMap::default();
-        for stmt in enum_body.0.as_ref().stmts.as_ref() {
+        for stmt in &enum_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
@@ -1850,7 +1850,7 @@ impl Resolver {
 
         let mut fields_map: FxHashMap<StrId, (Type, TextRange)> = FxHashMap::default();
         let mut methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
-        for stmt in interface_body.0.as_ref().stmts.as_ref() {
+        for stmt in &interface_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
@@ -1937,7 +1937,7 @@ impl Resolver {
         let block = &core_match_case.block;
         self.walk_expression(&core_match_case.expr);
         self.open_block(block.core_ref().kind);
-        for stmt in block.core_ref().stmts.as_ref() {
+        for stmt in &block.core_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
@@ -1960,7 +1960,7 @@ impl Resolver {
                     }
                 }
             }
-            for stmt in case_block.core_ref().stmts.as_ref() {
+            for stmt in &case_block.core_ref().stmts {
                 self.walk_stmt_indent_wrapper(stmt);
             }
             self.close_block(Some(case_block));
@@ -1982,7 +1982,7 @@ impl Resolver {
                 Err(_) => unreachable!(),
             }
         }
-        for stmt in block.core_ref().stmts.as_ref() {
+        for stmt in &block.core_ref().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.close_block(Some(block));
@@ -2150,7 +2150,7 @@ impl Visitor for Resolver {
             ASTNode::Block(block) => {
                 let core_block = block.0.as_ref();
                 self.open_block(core_block.kind);
-                for stmt in core_block.stmts.as_ref() {
+                for stmt in &core_block.stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block(Some(block));
