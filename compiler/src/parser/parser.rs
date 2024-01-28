@@ -1,4 +1,5 @@
 use super::resolver::BlockKind;
+use crate::ast::ast::Node;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ConditionalBlockNode, ConditionalStatementNode,
@@ -145,7 +146,7 @@ impl JarvilParser {
         }
     }
 
-    pub fn expect_symbol_separated_sequence<T: Clone, U: Fn(&mut JarvilParser) -> T>(
+    pub fn expect_symbol_separated_sequence<T: Node, U: Fn(&mut JarvilParser) -> T>(
         &mut self,
         entity_parsing_fn: U,
         separator: &'static str,
@@ -195,7 +196,7 @@ impl JarvilParser {
 
     pub fn expect_identifier_in<
         T,
-        U: Clone,
+        U: Node,
         F: Fn(&mut JarvilParser) -> SymbolSeparatedSequenceNode<U>,
         V: Fn(OkTokenNode, Option<(TokenNode, SymbolSeparatedSequenceNode<U>, TokenNode)>) -> T,
         W: Fn(Vec<&'static str>, Token) -> T,

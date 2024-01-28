@@ -1778,7 +1778,7 @@ impl Node for ComparisonNode {
     }
 }
 
-impl<T: Clone> SymbolSeparatedSequenceNode<T> {
+impl<T: Node> SymbolSeparatedSequenceNode<T> {
     pub fn new_with_single_entity(entity: T) -> Self {
         let node = Rc::new(CoreSymbolSeparatedSequenceNode {
             entity,

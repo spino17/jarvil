@@ -620,7 +620,7 @@ pub struct CoreSkippedTokenNode {
 }
 
 #[derive(Debug)]
-pub struct CoreSymbolSeparatedSequenceNode<T: Clone> {
+pub struct CoreSymbolSeparatedSequenceNode<T: Node> {
     pub entity: T,
     pub remaining_entities: Option<(TokenNode, SymbolSeparatedSequenceNode<T>)>,
 }
@@ -770,7 +770,7 @@ pub struct MissingTokenNode(pub Rc<CoreMissingTokenNode>);
 #[derive(Debug, Clone)]
 pub struct SkippedTokenNode(pub Rc<CoreSkippedTokenNode>);
 #[derive(Debug, Clone)]
-pub struct SymbolSeparatedSequenceNode<T: Clone>(pub Rc<CoreSymbolSeparatedSequenceNode<T>>);
+pub struct SymbolSeparatedSequenceNode<T: Node>(pub Rc<CoreSymbolSeparatedSequenceNode<T>>);
 #[derive(Debug, Clone)]
 pub struct GenericTypeDeclNode(pub Rc<CoreGenericTypeDeclNode>);
 #[derive(Debug, Clone)]

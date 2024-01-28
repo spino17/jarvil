@@ -329,6 +329,7 @@ pub trait Visitor {
     );
 
     // below are concrete `SymbolSeparatedSequenceNode<T>` walk methods
+    //fn walk_comma_separated_sequence(&mut self, )
     fn walk_comma_separated_type_expressions(
         &mut self,
         x: &SymbolSeparatedSequenceNode<TypeExpressionNode>,

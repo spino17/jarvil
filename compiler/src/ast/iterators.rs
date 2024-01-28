@@ -1,16 +1,17 @@
 use super::ast::SymbolSeparatedSequenceNode;
+use crate::ast::ast::Node;
 
-pub struct SymbolSeparatedSequenceIterator<'a, T: Clone> {
+pub struct SymbolSeparatedSequenceIterator<'a, T: Node> {
     node: Option<&'a SymbolSeparatedSequenceNode<T>>,
 }
 
-impl<'a, T: Clone> SymbolSeparatedSequenceIterator<'a, T> {
+impl<'a, T: Node> SymbolSeparatedSequenceIterator<'a, T> {
     pub fn new(node: &'a SymbolSeparatedSequenceNode<T>) -> Self {
         SymbolSeparatedSequenceIterator { node: Some(node) }
     }
 }
 
-impl<'a, T: Clone> Iterator for SymbolSeparatedSequenceIterator<'a, T> {
+impl<'a, T: Node> Iterator for SymbolSeparatedSequenceIterator<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
         let ok_entity = match self.node {
