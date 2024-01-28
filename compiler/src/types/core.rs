@@ -483,10 +483,10 @@ impl AbstractType for Type {
             CoreType::Tuple(tuple_type) => tuple_type.to_string(interner),
             CoreType::HashMap(hashmap_type) => hashmap_type.to_string(interner),
             CoreType::Generic(generic_type) => generic_type.to_string(interner),
-            CoreType::Unknown => format!("{}", UNKNOWN),
+            CoreType::Unknown => UNKNOWN.to_string(),
             CoreType::Void => "()".to_string(),
-            CoreType::Unset => format!("{}", UNSET),
-            CoreType::Any => format!("{}", ANY),
+            CoreType::Unset => UNSET.to_string(),
+            CoreType::Any => ANY.to_string(),
         }
     }
 }

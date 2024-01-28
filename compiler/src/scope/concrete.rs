@@ -56,10 +56,7 @@ impl<T: AbstractConcreteTypesHandler> Clone for ConcreteSymbolData<T> {
     fn clone(&self) -> Self {
         ConcreteSymbolData {
             symbol_data: self.symbol_data.clone(),
-            concrete_types: match &self.concrete_types {
-                Some(concrete_types) => Some(concrete_types.clone()),
-                None => None,
-            },
+            concrete_types: self.concrete_types.as_ref().cloned(),
         }
     }
 }
@@ -72,7 +69,7 @@ impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
         }
     }
 
-    pub fn get_core_ref<'a>(&'a self) -> Ref<'a, T> {
+    pub fn get_core_ref(&self) -> Ref<'_, T> {
         self.symbol_data.get_core_ref()
     }
 

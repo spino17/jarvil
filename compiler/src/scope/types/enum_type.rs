@@ -9,6 +9,7 @@ use crate::{
 use text_size::TextRange;
 
 #[derive(Debug)]
+#[derive(Default)]
 pub struct EnumTypeData {
     pub variants: Vec<(StrId, Option<Type>, TextRange)>,
     pub generics: Option<GenericTypeParams>,
@@ -50,7 +51,7 @@ impl EnumTypeData {
         None
     }
 
-    pub fn try_index_for_variant<'a>(&'a self, variant_name: StrId) -> Option<usize> {
+    pub fn try_index_for_variant(&self, variant_name: StrId) -> Option<usize> {
         for (index, (curr_variant_name, _, _)) in self.variants.iter().enumerate() {
             if *curr_variant_name == variant_name {
                 return Some(index);
@@ -66,12 +67,4 @@ impl AbstractConcreteTypesHandler for EnumTypeData {
     }
 }
 
-impl Default for EnumTypeData {
-    fn default() -> Self {
-        EnumTypeData {
-            variants: vec![],
-            generics: Option::default(),
-            is_init: false,
-        }
-    }
-}
+

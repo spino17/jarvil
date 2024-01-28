@@ -569,7 +569,7 @@ pub trait Visitor {
                 let core_conditional_stmt = conditional_stmt.core_ref();
                 self.walk_conditional_block(&core_conditional_stmt.if_block);
                 for elif_block in &core_conditional_stmt.elifs {
-                    self.walk_conditional_block(&elif_block);
+                    self.walk_conditional_block(elif_block);
                 }
                 if let Some((else_keyword, colon, else_block)) = &core_conditional_stmt.else_block {
                     self.walk_token(else_keyword);

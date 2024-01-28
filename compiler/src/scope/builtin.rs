@@ -35,5 +35,5 @@ pub fn get_builtin_functions() -> FxHashMap<&'static str, CallableData> {
     functions.insert("print", print_callable_data());
     functions.insert("range", range_callable_data());
 
-    return functions;
+    functions
 }

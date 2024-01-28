@@ -442,7 +442,7 @@ impl Resolver {
     ) -> Option<(SymbolData<VariableData>, usize)> {
         let name =
             self_keyword.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
-        debug_assert!(self.semantic_state_db.interner.lookup(name) == &*"self");
+        debug_assert!(self.semantic_state_db.interner.lookup(name) == "self");
         match self
             .semantic_state_db
             .namespace
@@ -717,7 +717,7 @@ impl Resolver {
                         }
                     }
                 };
-                return result;
+                result
             }
             LookupResult::NotInitialized(decl_range) => {
                 return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::NotInitialized(

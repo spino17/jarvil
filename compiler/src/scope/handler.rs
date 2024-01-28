@@ -131,10 +131,7 @@ impl SemanticStateDatabase {
         &self,
         identifier: &OkIdentifierInUseNode,
     ) -> Option<ConcreteSymbolDataEntry> {
-        match self.identifier_in_use_binding_table.get(identifier) {
-            Some(val) => Some(val.clone()),
-            None => None,
-        }
+        self.identifier_in_use_binding_table.get(identifier).cloned()
     }
 
     pub fn get_variable_symbol_data_for_identifier_in_decl(

@@ -54,7 +54,7 @@ impl MangledIdentifierName {
             Some(id) => format!(
                 "{}_{}_{}",
                 interner.lookup(self.jarvil_identifer_name),
-                id.to_string(),
+                id,
                 suffix
             ),
             None => interner.lookup(self.jarvil_identifer_name).to_string(),

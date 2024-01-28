@@ -11,7 +11,7 @@ impl JarvilCodeHandler {
     }
 
     pub fn extract_code_lines(&self) -> &Vec<usize> {
-        return &self.code_lines;
+        &self.code_lines
     }
 
     pub fn get_line_start_index(&self, line_number: usize) -> usize {

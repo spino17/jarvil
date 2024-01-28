@@ -112,19 +112,19 @@ impl PythonCodeGenerator {
         {
             Some(symbol_data) => match symbol_data {
                 SymbolDataEntry::Variable(variable_symbol_data) => {
-                    return variable_symbol_data
+                    variable_symbol_data
                         .get_mangled_name()
-                        .to_string(VAR_SUFFIX, &self.semantic_state_db.interner);
+                        .to_string(VAR_SUFFIX, &self.semantic_state_db.interner)
                 }
                 SymbolDataEntry::Function(func_symbol_data) => {
-                    return func_symbol_data
+                    func_symbol_data
                         .get_mangled_name()
-                        .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner);
+                        .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner)
                 }
                 SymbolDataEntry::Type(type_symbol_data) => {
-                    return type_symbol_data
+                    type_symbol_data
                         .get_mangled_name()
-                        .to_string(TY_SUFFIX, &self.semantic_state_db.interner);
+                        .to_string(TY_SUFFIX, &self.semantic_state_db.interner)
                 }
                 SymbolDataEntry::Interface(_) => unreachable!(),
             },
@@ -141,19 +141,19 @@ impl PythonCodeGenerator {
         };
         match symbol_data {
             ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
-                return variable_symbol_data
+                variable_symbol_data
                     .symbol_data
                     .get_mangled_name()
-                    .to_string(VAR_SUFFIX, &self.semantic_state_db.interner);
+                    .to_string(VAR_SUFFIX, &self.semantic_state_db.interner)
             }
             ConcreteSymbolDataEntry::Function(func_symbol_data) => {
-                return func_symbol_data
+                func_symbol_data
                     .symbol_data
                     .get_mangled_name()
-                    .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner);
+                    .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner)
             }
             ConcreteSymbolDataEntry::Type(type_symbol_data) => {
-                return type_symbol_data
+                type_symbol_data
                     .symbol_data
                     .get_mangled_name()
                     .to_string(TY_SUFFIX, &self.semantic_state_db.interner)
@@ -548,7 +548,7 @@ impl PythonCodeGenerator {
                 let core_conditional_stmt = conditional_stmt.core_ref();
                 self.walk_conditional_block(&core_conditional_stmt.if_block);
                 for elif_block in &core_conditional_stmt.elifs {
-                    self.walk_conditional_block(&elif_block);
+                    self.walk_conditional_block(elif_block);
                 }
                 if let Some((else_keyword, colon, else_block)) = &core_conditional_stmt.else_block {
                     self.add_indention_to_python_code();

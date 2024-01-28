@@ -26,6 +26,6 @@ impl Array {
         // array built-in methods
         methods.insert("append", append_callable_data(interner));
 
-        return methods;
+        methods
     }
 }

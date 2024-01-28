@@ -664,7 +664,7 @@ impl TypeChecker {
                     &concrete_symbol_data.symbol_data,
                     concrete_types.clone(), // expensive clone
                 );
-                return Ok(return_ty);
+                Ok(return_ty)
             }
             CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
                 generic_type_decls,
@@ -676,10 +676,10 @@ impl TypeChecker {
                     params,
                     GenericTypeDeclarationPlaceCategory::InStruct,
                 )?;
-                return Ok(Type::new_with_struct(
+                Ok(Type::new_with_struct(
                     &concrete_symbol_data.symbol_data,
                     Some(concrete_types),
-                ));
+                ))
             }
         }
     }
@@ -721,7 +721,7 @@ impl TypeChecker {
             }
         };
         match result {
-            Ok(return_ty) => return return_ty,
+            Ok(return_ty) => return_ty,
             Err(err) => {
                 match err {
                     AtomStartTypeCheckError::ConstructorNotFoundForTypeError(struct_name) => {
@@ -744,7 +744,7 @@ impl TypeChecker {
                         );
                     }
                 }
-                return Type::new_with_unknown();
+                Type::new_with_unknown()
             }
         }
     }
@@ -787,7 +787,7 @@ impl TypeChecker {
                     params,
                 );
                 match result {
-                    Ok(return_ty) => return return_ty,
+                    Ok(return_ty) => return_ty,
                     Err(err) => {
                         match err {
                             PartialCallableDataPrototypeCheckError::PrototypeEquivalenceCheckFailed(
@@ -809,7 +809,7 @@ impl TypeChecker {
                                     self.log_error(err);
                                 }
                             }
-                        return Type::new_with_unknown();
+                        Type::new_with_unknown()
                     }
                 }
             }
@@ -819,7 +819,7 @@ impl TypeChecker {
                     property_name.range(),
                 );
                 self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
-                return Type::new_with_unknown();
+                Type::new_with_unknown()
             }
         }
     }
@@ -927,7 +927,7 @@ impl TypeChecker {
                 return Type::new_with_unknown();
             }
         }
-        return Type::new_with_enum(&concrete_symbol_data.symbol_data, concrete_types.clone());
+        Type::new_with_enum(&concrete_symbol_data.symbol_data, concrete_types.clone())
     }
 
     fn check_atom_start_enum_variant_expr_or_class_method_call(
@@ -950,7 +950,7 @@ impl TypeChecker {
         {
             Some(type_symbol_data) => match &*type_symbol_data.get_core_ref() {
                 UserDefinedTypeData::Struct(struct_data) => {
-                    return self.check_class_method_call(
+                    self.check_class_method_call(
                         struct_data,
                         &type_symbol_data.concrete_types,
                         ok_identifier,
@@ -960,7 +960,7 @@ impl TypeChecker {
                     )
                 }
                 UserDefinedTypeData::Enum(enum_data) => {
-                    return self.check_enum_variant_expr(
+                    self.check_enum_variant_expr(
                         enum_data,
                         &type_symbol_data,
                         ty_name,
@@ -971,10 +971,10 @@ impl TypeChecker {
                 UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
                     let err = PropertyNotSupportedError::new("classmethod".to_string(), ty.range());
                     self.log_error(Diagnostics::PropertyNotSupported(err));
-                    return Type::new_with_unknown();
+                    Type::new_with_unknown()
                 }
             },
-            None => return Type::new_with_unknown(),
+            None => Type::new_with_unknown(),
         }
     }
 
@@ -1119,10 +1119,10 @@ impl TypeChecker {
             )),
         };
         match result {
-            Ok(property_ty) => return (property_ty, Some(atom_type_obj)),
+            Ok(property_ty) => (property_ty, Some(atom_type_obj)),
             Err(err) => {
                 self.log_error(err);
-                return (Type::new_with_unknown(), Some(atom_type_obj));
+                (Type::new_with_unknown(), Some(atom_type_obj))
             }
         }
     }
@@ -1345,7 +1345,7 @@ impl TypeChecker {
             _ => Err(MethodAccessTypeCheckError::MethodNotFound),
         };
         match result {
-            Ok(return_ty) => return (return_ty, Some(atom_type_obj)),
+            Ok(return_ty) => (return_ty, Some(atom_type_obj)),
             Err(err) => {
                 match err {
                     MethodAccessTypeCheckError::MethodNotFound => {
@@ -1396,7 +1396,7 @@ impl TypeChecker {
                         ));
                     }
                 }
-                return (Type::new_with_unknown(), Some(atom_type_obj));
+                (Type::new_with_unknown(), Some(atom_type_obj))
             }
         }
     }
@@ -1470,11 +1470,11 @@ impl TypeChecker {
                     None
                 }
             }
-            CoreType::Struct(struct_data) => {
+            CoreType::Struct(_struct_data) => {
                 // TODO - check if struct implements `Iterable` interface
                 None
             }
-            CoreType::Generic(generic_data) => {
+            CoreType::Generic(_generic_data) => {
                 // TODO - check if generic type is bounded by `Iterable` interface
                 None
             }
@@ -2196,11 +2196,11 @@ impl TypeChecker {
                 Atomic::String => Some(RefOrOwned::Owned(Type::new_with_atomic("str"))),
                 Atomic::Float | Atomic::Int | Atomic::Bool => None,
             },
-            CoreType::Struct(struct_data) => {
+            CoreType::Struct(_struct_data) => {
                 // TODO - check if struct implement `Iterable` interface
                 None
             }
-            CoreType::Generic(generic_data) => {
+            CoreType::Generic(_generic_data) => {
                 // TODO - check if struct implement `Iterable` interface
                 None
             }

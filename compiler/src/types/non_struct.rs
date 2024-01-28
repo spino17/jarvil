@@ -62,7 +62,7 @@ impl NonStructMethodsHandler {
         ty: &Array,
         method_name: &str,
     ) -> Option<CallablePrototypeData> {
-        return self.array_methods.try_method(ty, method_name);
+        self.array_methods.try_method(ty, method_name)
     }
 
     pub fn try_method_for_hashmap(
@@ -70,6 +70,6 @@ impl NonStructMethodsHandler {
         ty: &HashMap,
         method_name: &str,
     ) -> Option<CallablePrototypeData> {
-        return self.hashmap_methods.try_method(ty, method_name);
+        self.hashmap_methods.try_method(ty, method_name)
     }
 }

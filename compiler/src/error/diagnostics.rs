@@ -537,7 +537,7 @@ impl IdentifierAlreadyDeclaredError {
                 )
             }
             IdentifierKind::Variant => {
-                format!("all variants of enum should have distinct names")
+                "all variants of enum should have distinct names".to_string()
             }
             IdentifierKind::Constructor => {
                 "constructor is not allowed to be redeclared".to_string()

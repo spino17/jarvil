@@ -254,7 +254,7 @@ impl AbstractType for Lambda {
                     if flag {
                         params_str.push_str(", ")
                     }
-                    params_str.push_str(&format!("{}", param.to_string(interner)));
+                    params_str.push_str(&param.to_string(interner));
                     flag = true;
                 }
                 format!(
