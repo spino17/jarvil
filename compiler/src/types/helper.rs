@@ -86,5 +86,5 @@ pub fn struct_enum_compare_fn<
             return false;
         }
     }
-    return true;
+    true
 }
