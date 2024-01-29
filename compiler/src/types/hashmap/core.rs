@@ -42,16 +42,14 @@ impl AbstractType for HashMap {
     }
 
     fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
-        match other_ty.0.as_ref() {
-            CoreType::HashMap(hashmap_data) => {
-                self.key_type
-                    .is_structurally_eq(&hashmap_data.key_type, context)
-                    && self
-                        .value_type
-                        .is_structurally_eq(&hashmap_data.value_type, context)
-            }
-            _ => false,
-        }
+        let CoreType::HashMap(hashmap_data) = other_ty.0.as_ref() else {
+            return false;
+        };
+        self.key_type
+            .is_structurally_eq(&hashmap_data.key_type, context)
+            && self
+                .value_type
+                .is_structurally_eq(&hashmap_data.value_type, context)
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
@@ -73,26 +71,24 @@ impl AbstractType for HashMap {
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
-        match received_ty.0.as_ref() {
-            CoreType::HashMap(hashmap_ty) => {
-                self.key_type.try_infer_type_or_check_equivalence(
-                    &hashmap_ty.key_type,
-                    inferred_concrete_types,
-                    global_concrete_types,
-                    num_inferred_types,
-                    inference_category,
-                )?;
-                self.value_type.try_infer_type_or_check_equivalence(
-                    &hashmap_ty.value_type,
-                    inferred_concrete_types,
-                    global_concrete_types,
-                    num_inferred_types,
-                    inference_category,
-                )?;
-                Ok(())
-            }
-            _ => Err(()),
-        }
+        let CoreType::HashMap(hashmap_ty) = received_ty.0.as_ref() else {
+            return Err(());
+        };
+        self.key_type.try_infer_type_or_check_equivalence(
+            &hashmap_ty.key_type,
+            inferred_concrete_types,
+            global_concrete_types,
+            num_inferred_types,
+            inference_category,
+        )?;
+        self.value_type.try_infer_type_or_check_equivalence(
+            &hashmap_ty.value_type,
+            inferred_concrete_types,
+            global_concrete_types,
+            num_inferred_types,
+            inference_category,
+        )?;
+        Ok(())
     }
 
     fn to_string(&self, interner: &Interner) -> String {
@@ -122,23 +118,21 @@ impl OperatorCompatiblity for HashMap {
     }
 
     fn check_double_equal(&self, other: &Type) -> Option<Type> {
-        match other.0.as_ref() {
-            CoreType::HashMap(other_hashmap) => {
-                if self
-                    .key_type
-                    .check_operator(&other_hashmap.key_type, &BinaryOperatorKind::DoubleEqual)
-                    .is_some()
-                    && self
-                        .value_type
-                        .check_operator(&other_hashmap.value_type, &BinaryOperatorKind::DoubleEqual)
-                        .is_some()
-                {
-                    return Some(Type::new_with_atomic(BOOL));
-                }
-                None
-            }
-            _ => None,
+        let CoreType::HashMap(other_hashmap) = other.0.as_ref() else {
+            return None;
+        };
+        if self
+            .key_type
+            .check_operator(&other_hashmap.key_type, &BinaryOperatorKind::DoubleEqual)
+            .is_some()
+            && self
+                .value_type
+                .check_operator(&other_hashmap.value_type, &BinaryOperatorKind::DoubleEqual)
+                .is_some()
+        {
+            return Some(Type::new_with_atomic(BOOL));
         }
+        None
     }
 
     fn check_greater(&self, _other: &Type) -> Option<Type> {

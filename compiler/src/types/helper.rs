@@ -69,26 +69,22 @@ pub fn struct_enum_compare_fn<
     ty_cmp_func: F,
     context: &ConcretizationContext,
 ) -> bool {
-    if base.get_name() == other.get_name() {
-        match base.get_concrete_types() {
-            Some(self_concrete_types) => match other.get_concrete_types() {
-                Some(other_concrete_types) => {
-                    let self_len = self_concrete_types.len();
-                    let other_len = other_concrete_types.len();
-
-                    debug_assert!(self_len == other_len);
-                    for i in 0..self_len {
-                        if !ty_cmp_func(&self_concrete_types[i], &other_concrete_types[i], context)
-                        {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                None => unreachable!(),
-            },
-            None => return true,
+    if base.get_name() != other.get_name() {
+        return false;
+    }
+    let Some(self_concrete_types) = base.get_concrete_types() else {
+        return true;
+    };
+    let Some(other_concrete_types) = other.get_concrete_types() else {
+        unreachable!()
+    };
+    let self_len = self_concrete_types.len();
+    let other_len = other_concrete_types.len();
+    debug_assert!(self_len == other_len);
+    for i in 0..self_len {
+        if !ty_cmp_func(&self_concrete_types[i], &other_concrete_types[i], context) {
+            return false;
         }
     }
-    false
+    return true;
 }

@@ -26,19 +26,17 @@ impl Array {
         other: &Type,
         operator_kind: &BinaryOperatorKind,
     ) -> Option<Type> {
-        match other.0.as_ref() {
-            CoreType::Array(other_array) => {
-                if self
-                    .element_type
-                    .check_operator(&other_array.element_type, operator_kind)
-                    .is_some()
-                {
-                    return Some(Type::new_with_atomic(BOOL));
-                }
-                None
-            }
-            _ => None,
+        let CoreType::Array(other_array) = other.0.as_ref() else {
+            return None;
+        };
+        if self
+            .element_type
+            .check_operator(&other_array.element_type, operator_kind)
+            .is_some()
+        {
+            return Some(Type::new_with_atomic(BOOL));
         }
+        None
     }
 }
 
@@ -52,12 +50,11 @@ impl AbstractType for Array {
     }
 
     fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
-        match other_ty.0.as_ref() {
-            CoreType::Array(array_data) => self
-                .element_type
-                .is_structurally_eq(&array_data.element_type, context),
-            _ => false,
-        }
+        let CoreType::Array(array_data) = other_ty.0.as_ref() else {
+            return false;
+        };
+        self.element_type
+            .is_structurally_eq(&array_data.element_type, context)
     }
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
@@ -77,16 +74,16 @@ impl AbstractType for Array {
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
     ) -> Result<(), ()> {
-        match received_ty.0.as_ref() {
-            CoreType::Array(array_ty) => self.element_type.try_infer_type_or_check_equivalence(
-                &array_ty.element_type,
-                inferred_concrete_types,
-                global_concrete_types,
-                num_inferred_types,
-                inference_category,
-            ),
-            _ => Err(()),
-        }
+        let CoreType::Array(array_ty) = received_ty.0.as_ref() else {
+            return Err(());
+        };
+        self.element_type.try_infer_type_or_check_equivalence(
+            &array_ty.element_type,
+            inferred_concrete_types,
+            global_concrete_types,
+            num_inferred_types,
+            inference_category,
+        )
     }
 
     fn to_string(&self, interner: &Interner) -> String {
@@ -96,16 +93,14 @@ impl AbstractType for Array {
 
 impl OperatorCompatiblity for Array {
     fn check_add(&self, other: &Type) -> Option<Type> {
-        match other.0.as_ref() {
-            CoreType::Array(array) => {
-                let sub_type = &array.element_type;
-                if self.element_type.is_eq(sub_type) {
-                    Some(Type::new_with_array(sub_type.clone()))
-                } else {
-                    None
-                }
-            }
-            _ => None,
+        let CoreType::Array(array) = other.0.as_ref() else {
+            return None;
+        };
+        let sub_type = &array.element_type;
+        if self.element_type.is_eq(sub_type) {
+            Some(Type::new_with_array(sub_type.clone()))
+        } else {
+            None
         }
     }
 

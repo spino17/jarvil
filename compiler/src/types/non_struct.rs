@@ -22,18 +22,16 @@ struct CoreNonStructMethodsHandler<T: AbstractNonStructTypes> {
 
 impl<T: AbstractNonStructTypes> CoreNonStructMethodsHandler<T> {
     fn try_method(&self, ty: &T, method_name: &str) -> Option<CallablePrototypeData> {
-        match self.methods.get(method_name) {
-            Some(callable_data) => {
-                let concrete_types = ty.get_concrete_types();
-                match callable_data
-                    .prototype
-                    .concretize_prototype(Some(&concrete_types), None)
-                {
-                    RefOrOwned::Ref(_) => unreachable!(),
-                    RefOrOwned::Owned(prototype) => Some(prototype),
-                }
-            }
-            None => None,
+        let Some(callable_data) = self.methods.get(method_name) else {
+            return None;
+        };
+        let concrete_types = ty.get_concrete_types();
+        match callable_data
+            .prototype
+            .concretize_prototype(Some(&concrete_types), None)
+        {
+            RefOrOwned::Ref(_) => unreachable!(),
+            RefOrOwned::Owned(prototype) => Some(prototype),
         }
     }
 }
