@@ -251,6 +251,12 @@ impl AbstractSymbolData for VariableSymbolData {
     }
 }
 
+impl From<SymbolData<VariableData>> for VariableSymbolData {
+    fn from(value: SymbolData<VariableData>) -> Self {
+        VariableSymbolData(value)
+    }
+}
+
 #[derive(Debug)]
 pub struct FunctionSymbolData(pub SymbolData<CallableData>);
 
@@ -280,6 +286,12 @@ impl AbstractSymbolData for FunctionSymbolData {
 
     fn get_mangled_name(&self) -> MangledIdentifierName {
         self.0.get_mangled_name()
+    }
+}
+
+impl From<SymbolData<CallableData>> for FunctionSymbolData {
+    fn from(value: SymbolData<CallableData>) -> Self {
+        FunctionSymbolData(value)
     }
 }
 
@@ -343,6 +355,12 @@ impl AbstractSymbolData for UserDefinedTypeSymbolData {
     }
 }
 
+impl From<SymbolData<UserDefinedTypeData>> for UserDefinedTypeSymbolData {
+    fn from(value: SymbolData<UserDefinedTypeData>) -> Self {
+        UserDefinedTypeSymbolData(value)
+    }
+}
+
 #[derive(Debug)]
 pub struct InterfaceSymbolData(pub SymbolData<InterfaceData>);
 
@@ -372,6 +390,12 @@ impl AbstractSymbolData for InterfaceSymbolData {
 
     fn get_mangled_name(&self) -> MangledIdentifierName {
         unreachable!()
+    }
+}
+
+impl From<SymbolData<InterfaceData>> for InterfaceSymbolData {
+    fn from(value: SymbolData<InterfaceData>) -> Self {
+        InterfaceSymbolData(value)
     }
 }
 
