@@ -104,9 +104,8 @@ impl AbstractType for Enum {
         let Some(generics_containing_types_tuple) = &self.concrete_types else {
             return Ok(());
         };
-        let base_types_tuple = match &enum_ty.concrete_types {
-            Some(concrete_types) => concrete_types,
-            None => unreachable!(),
+        let Some(base_types_tuple) = &enum_ty.concrete_types else {
+            unreachable!()
         };
         try_infer_types_from_tuple(
             base_types_tuple.get_core_ref(),
