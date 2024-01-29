@@ -50,15 +50,15 @@ pub struct MangledIdentifierName {
 
 impl MangledIdentifierName {
     pub fn to_string(&self, suffix: &str, interner: &Interner) -> String {
-        match self.unique_id {
-            Some(id) => format!(
-                "{}_{}_{}",
-                interner.lookup(self.jarvil_identifer_name),
-                id,
-                suffix
-            ),
-            None => interner.lookup(self.jarvil_identifer_name).to_string(),
-        }
+        let Some(id) = self.unique_id else {
+            return interner.lookup(self.jarvil_identifer_name).to_string();
+        };
+        format!(
+            "{}_{}_{}",
+            interner.lookup(self.jarvil_identifer_name),
+            id,
+            suffix
+        )
     }
 }
 
@@ -630,7 +630,7 @@ impl Namespace {
                 depth,
                 enclosing_func_scope_depth,
             )) => LookupResult::Ok(LookupData::new(
-                VariableSymbolData(symbol_data),
+                symbol_data.into(),
                 resolved_scope_index,
                 depth,
                 enclosing_func_scope_depth,
@@ -654,7 +654,7 @@ impl Namespace {
                 depth,
                 enclosing_func_scope_depth,
             )) => LookupResult::Ok(LookupData::new(
-                FunctionSymbolData(symbol_data),
+                symbol_data.into(),
                 resolved_scope_index,
                 depth,
                 enclosing_func_scope_depth,
@@ -678,7 +678,7 @@ impl Namespace {
                 depth,
                 enclosing_func_scope_depth,
             )) => LookupResult::Ok(LookupData::new(
-                UserDefinedTypeSymbolData(symbol_data),
+                symbol_data.into(),
                 resolved_scope_index,
                 depth,
                 enclosing_func_scope_depth,
@@ -702,7 +702,7 @@ impl Namespace {
                 depth,
                 enclosing_func_scope_depth,
             )) => LookupResult::Ok(LookupData::new(
-                InterfaceSymbolData(symbol_data),
+                symbol_data.into(),
                 resolved_scope_index,
                 depth,
                 enclosing_func_scope_depth,
@@ -726,17 +726,17 @@ impl Namespace {
                 .get(key)
                 .map(|symbol_data| symbol_data.declaration_line_number())
         };
-        match self.variables.insert(
-            scope_index,
-            name,
-            VariableData::default(),
-            decl_range,
-            lookup_func,
-            unique_id,
-        ) {
-            Ok(symbol_data) => Ok(VariableSymbolData(symbol_data)),
-            Err(err) => Err(err),
-        }
+        Ok(self
+            .variables
+            .insert(
+                scope_index,
+                name,
+                VariableData::default(),
+                decl_range,
+                lookup_func,
+                unique_id,
+            )?
+            .into())
     }
 
     pub fn declare_variable_with_type(
@@ -753,17 +753,17 @@ impl Namespace {
                 .get(key)
                 .map(|symbol_data| symbol_data.declaration_line_number())
         };
-        match self.variables.insert(
-            scope_index,
-            name,
-            VariableData::new(variable_type, is_init),
-            decl_range,
-            lookup_func,
-            unique_id,
-        ) {
-            Ok(symbol_data) => Ok(VariableSymbolData(symbol_data)),
-            Err(err) => Err(err),
-        }
+        Ok(self
+            .variables
+            .insert(
+                scope_index,
+                name,
+                VariableData::new(variable_type, is_init),
+                decl_range,
+                lookup_func,
+                unique_id,
+            )?
+            .into())
     }
 
     pub fn declare_function(
@@ -778,17 +778,17 @@ impl Namespace {
                 .get(key)
                 .map(|symbol_data| symbol_data.declaration_line_number())
         };
-        match self.functions.insert(
-            scope_index,
-            name,
-            CallableData::default_for_kind(CallableKind::Function),
-            decl_range,
-            lookup_func,
-            unique_id,
-        ) {
-            Ok(symbol_data) => Ok(FunctionSymbolData(symbol_data)),
-            Err(err) => Err(err),
-        }
+        Ok(self
+            .functions
+            .insert(
+                scope_index,
+                name,
+                CallableData::default_for_kind(CallableKind::Function),
+                decl_range,
+                lookup_func,
+                unique_id,
+            )?
+            .into())
     }
 
     pub fn declare_user_defined_type(
@@ -804,17 +804,17 @@ impl Namespace {
                 .lookup(scope_index, key)
                 .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())
         };
-        match self.types.insert(
-            scope_index,
-            name,
-            meta_data,
-            decl_range,
-            lookup_func,
-            unique_id,
-        ) {
-            Ok(symbol_data) => Ok(UserDefinedTypeSymbolData(symbol_data)),
-            Err(err) => Err(err),
-        }
+        Ok(self
+            .types
+            .insert(
+                scope_index,
+                name,
+                meta_data,
+                decl_range,
+                lookup_func,
+                unique_id,
+            )?
+            .into())
     }
 
     pub fn declare_struct_type(
@@ -889,17 +889,17 @@ impl Namespace {
                 .lookup(scope_index, key)
                 .map(|(symbol_data, _, _, _)| symbol_data.declaration_line_number())
         };
-        match self.interfaces.insert(
-            scope_index,
-            name,
-            InterfaceData::default(),
-            decl_range,
-            lookup_func,
-            unique_id,
-        ) {
-            Ok(symbol_data) => Ok(InterfaceSymbolData(symbol_data)),
-            Err(err) => Err(err),
-        }
+        Ok(self
+            .interfaces
+            .insert(
+                scope_index,
+                name,
+                InterfaceData::default(),
+                decl_range,
+                lookup_func,
+                unique_id,
+            )?
+            .into())
     }
 }
 
