@@ -399,29 +399,6 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
         self.symbol_table.get(name)
     }
 
-    /*
-    pub fn lookup(
-        &self,
-        scope_index: usize,
-        key: &str,
-        global_scope_vec: &Vec<CoreScope<T>>,
-    ) -> Option<(SymbolData<T>, usize, usize)> {
-        match self.get(key) {
-            Some(value) => Some((value.clone(), scope_index, 0)),
-            None => {
-                if let Some(parent_scope_index) = self.parent_scope {
-                    global_scope_vec[parent_scope_index]
-                        .lookup(parent_scope_index, key, global_scope_vec)
-                        .map(|(symbol_data, resolved_scope_index, depth)| {
-                            (symbol_data, resolved_scope_index, depth + 1)
-                        })
-                } else {
-                    None
-                }
-            }
-        }
-    }*/
-
     pub fn lookup(
         &self,
         scope_index: usize,
