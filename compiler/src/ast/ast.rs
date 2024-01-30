@@ -770,8 +770,6 @@ pub struct MissingTokenNode(pub Rc<CoreMissingTokenNode>);
 #[derive(Debug, Clone)]
 pub struct SkippedTokenNode(pub Rc<CoreSkippedTokenNode>);
 #[derive(Debug, Clone)]
-pub struct SymbolSeparatedSequenceNode<T: Node>(pub Rc<CoreSymbolSeparatedSequenceNode<T>>);
-#[derive(Debug, Clone)]
 pub struct GenericTypeDeclNode(pub Rc<CoreGenericTypeDeclNode>);
 #[derive(Debug, Clone)]
 pub struct IdentifierInUseNode(pub Rc<CoreIdentifierInUseNode>);
@@ -809,6 +807,8 @@ pub struct CaseBranchStatementNode(pub Rc<CoreCaseBranchStatementNode>);
 pub struct WhileLoopStatementNode(pub Rc<CoreWhileLoopStatementNode>);
 #[derive(Debug, Clone)]
 pub struct ForLoopStatementNode(pub Rc<CoreForLoopStatementNode>);
+#[derive(Debug, Clone)]
+pub struct SymbolSeparatedSequenceNode<T: Node>(pub Rc<CoreSymbolSeparatedSequenceNode<T>>);
 
 pub enum UnresolvedIdentifier<'a> {
     Unresolved(&'a OkIdentifierInUseNode),
