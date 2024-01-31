@@ -1,5 +1,5 @@
 extern crate proc_macro;
-use crate::get_macro_expr_stmt;
+use crate::helper::get_macro_expr_stmt;
 use proc_macro::*;
 use quote::quote;
 
@@ -14,17 +14,16 @@ pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
     };
     let variant_iter = &mut enum_data.variants.iter();
     let mut args_str = "".to_string();
-    let mut flag = false;
+    let Some(variant) = variant_iter.next() else {
+        unreachable!()
+    };
+    args_str.push_str(&variant.ident.to_string());
     for variant in variant_iter.by_ref() {
         let variant_name = &variant.ident.to_string();
         if variant_name.eq("LEXICAL_ERROR") {
             continue;
         }
-        if flag {
-            args_str.push_str(", ");
-        }
-        args_str.push_str(variant_name);
-        flag = true;
+        args_str.push_str(&format!(", {}", variant_name));
     }
     let symbols_check_macro_stmt = get_macro_expr_stmt("impl_symbols_check", &args_str);
     let token_to_string_macro = get_macro_expr_stmt("impl_token_to_string", &args_str);

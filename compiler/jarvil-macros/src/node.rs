@@ -1,5 +1,5 @@
 extern crate proc_macro;
-use crate::get_macro_expr_stmt;
+use crate::helper::get_macro_expr_stmt;
 use proc_macro::*;
 use quote::quote;
 use syn::{
@@ -28,14 +28,14 @@ pub fn get_tuple_from_str(entry_1: &str, entry_2: &str) -> syn::ExprTuple {
     }
 }
 
-pub fn impl_weak_nodes_macro(ast: &syn::DeriveInput) -> TokenStream {
+pub fn impl_nodify_macro(ast: &syn::DeriveInput) -> TokenStream {
     let enum_name = &ast.ident;
     if !enum_name.to_string().eq("ASTNode") {
-        panic!("tokenify macro should only be used for `crate::lexer::token::CoreToken` enum")
+        panic!("nodify macro should only be used for `crate::ast::ast::ASTNode` enum")
     }
     let enum_data = match &ast.data {
         syn::Data::Enum(enum_data) => enum_data,
-        _ => panic!("tokenify macro should only be used for `crate::lexer::token::CoreToken` enum"),
+        _ => panic!("nodify macro should only be used for `crate::ast::ast::ASTNode` enum"),
     };
     let variant_iter = &mut enum_data.variants.iter();
     let mut impl_ast_node = "".to_string();
@@ -93,7 +93,7 @@ pub fn type_from_str(type_name: &str) -> syn::Type {
     })
 }
 
-pub fn impl_node_trait(ast: &syn::DeriveInput) -> TokenStream {
+pub fn impl_node_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident.to_string(); // eg. CoreBlockNode
     let node_type = type_from_str(&name[4..]);
     let enum_data = match &ast.data {

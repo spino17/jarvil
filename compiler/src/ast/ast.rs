@@ -14,7 +14,8 @@ use crate::{lexer::token::Token, types::core::Type};
 use jarvil_macros::Node;
 use jarvil_macros::Nodify;
 use std::rc::Rc;
-use text_size::{TextRange, TextSize};
+use text_size::TextRange;
+use text_size::TextSize;
 
 pub trait Node {
     fn range(&self) -> TextRange;
