@@ -246,9 +246,9 @@ pub struct InvalidCharError {
 }
 
 impl InvalidCharError {
-    pub fn new(invalid_token: &Token) -> Self {
+    pub fn new(range: TextRange) -> Self {
         InvalidCharError {
-            span: (invalid_token.start_index(), invalid_token.len()).into(),
+            span: range_to_span(range).into(),
         }
     }
 }
@@ -259,16 +259,16 @@ impl InvalidCharError {
 )]
 #[diagnostic(code("LexicalError"))]
 pub struct NoClosingSymbolError {
-    pub expected_symbol: String,
+    pub expected_symbol: &'static str,
     #[label("no closing `{}` found", self.expected_symbol)]
     pub unclosed_span: SourceSpan,
 }
 
 impl NoClosingSymbolError {
-    pub fn new(expected_symbol: String, token: &Token) -> Self {
+    pub fn new(expected_symbol: &'static str, range: TextRange) -> Self {
         NoClosingSymbolError {
             expected_symbol,
-            unclosed_span: (token.start_index(), token.len()).into(),
+            unclosed_span: range_to_span(range).into(),
         }
     }
 }

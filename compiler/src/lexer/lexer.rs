@@ -1,4 +1,3 @@
-use super::token::LexicalErrorKind;
 use crate::code::JarvilCode;
 use crate::error::diagnostics::{Diagnostics, InvalidCharError, NoClosingSymbolError};
 use crate::lexer::token::CoreToken;
@@ -171,40 +170,45 @@ impl CoreLexer {
                     token = self.extract_digit_prefix_lexeme(code);
                 } else {
                     self.index += 1;
-                    token = CoreToken::LEXICAL_ERROR(LexicalErrorKind::InvalidChar);
+                    token = CoreToken::INVALID_CHAR;
                 }
                 token
             }
         };
         let end_index = self.index;
         let end_line_number = self.line_number;
-        let token = Token {
-            line_number: start_line_number,
-            core_token: core_token.clone(),
-            range: TextRange::new(
-                TextSize::try_from(start_index).unwrap(),
-                TextSize::try_from(end_index).unwrap(),
-            ),
-            trivia: None,
-        };
+        let range = TextRange::new(
+            TextSize::try_from(start_index).unwrap(),
+            TextSize::try_from(end_index).unwrap(),
+        );
+
+        // log lexical errors
         match &core_token {
-            CoreToken::LEXICAL_ERROR(err_kind) => match err_kind {
-                LexicalErrorKind::InvalidChar => {
-                    debug_assert!(
-                        end_line_number == start_line_number,
-                        "invalid char should occur on the same line",
-                    );
-                    self.log_invalid_char_error(&token);
-                }
-                LexicalErrorKind::NoClosingSymbols(expected_symbol) => {
-                    self.log_no_closing_symbol_error(expected_symbol.to_string(), &token)
-                }
-            },
+            CoreToken::INVALID_CHAR => {
+                debug_assert!(
+                    end_line_number == start_line_number,
+                    "invalid char should occur on the same line",
+                );
+                self.log_invalid_char_error(range);
+            }
+            CoreToken::UNCLOSED_BLOCK_COMMENT => self.log_no_closing_symbol_error("*/", range),
+            CoreToken::UNCLOSED_STRING_LITERAL_SINGLE_QUOTE => {
+                self.log_no_closing_symbol_error("'", range)
+            }
+            CoreToken::UNCLOSED_STRING_LITERAL_DOUBLE_QUOTE => {
+                self.log_no_closing_symbol_error(r#"""#, range)
+            }
             _ => {}
         }
-        token
+        Token {
+            line_number: start_line_number,
+            core_token,
+            range,
+            trivia: None,
+        }
     }
 
+    // ------------------- lexeme extraction state machine functions -------------------
     // ' ' -> '...'
     pub fn extract_blank_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let mut forward_lexeme = self.index + 1;
@@ -325,11 +329,11 @@ impl CoreLexer {
             }
             2 => {
                 self.index = forward_lexeme;
-                CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("*/"))
+                CoreToken::UNCLOSED_BLOCK_COMMENT
             }
             3 => {
                 self.index = forward_lexeme;
-                CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("*/"))
+                CoreToken::UNCLOSED_BLOCK_COMMENT
             }
             _ => unreachable!("any state other than 0, 1, 2 and 3 is not reachable"),
         }
@@ -428,12 +432,12 @@ impl CoreLexer {
                 }
                 _ => {
                     self.index += 1;
-                    CoreToken::LEXICAL_ERROR(LexicalErrorKind::InvalidChar)
+                    CoreToken::INVALID_CHAR
                 }
             }
         } else {
             self.index += 1;
-            CoreToken::LEXICAL_ERROR(LexicalErrorKind::InvalidChar)
+            CoreToken::INVALID_CHAR
         }
     }
 
@@ -457,7 +461,7 @@ impl CoreLexer {
             forward_lexeme += 1;
         }
         self.index = forward_lexeme;
-        CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols("'"))
+        CoreToken::UNCLOSED_STRING_LITERAL_SINGLE_QUOTE
     }
 
     // " -> "..."
@@ -480,7 +484,7 @@ impl CoreLexer {
             forward_lexeme += 1;
         }
         self.index = forward_lexeme;
-        CoreToken::LEXICAL_ERROR(LexicalErrorKind::NoClosingSymbols(r#"""#))
+        CoreToken::UNCLOSED_STRING_LITERAL_DOUBLE_QUOTE
     }
 
     // letter -> letter((letter|digit|_)*) or keyword or type
@@ -579,16 +583,16 @@ impl CoreLexer {
         }
     }
 
-    pub fn log_invalid_char_error(&mut self, token: &Token) {
+    pub fn log_invalid_char_error(&mut self, range: TextRange) {
         self.errors
-            .push(Diagnostics::InvalidChar(InvalidCharError::new(token)));
+            .push(Diagnostics::InvalidChar(InvalidCharError::new(range)));
     }
 
-    pub fn log_no_closing_symbol_error(&mut self, expected_symbol: String, token: &Token) {
+    pub fn log_no_closing_symbol_error(&mut self, expected_symbol: &'static str, range: TextRange) {
         self.errors
             .push(Diagnostics::NoClosingSymbol(NoClosingSymbolError::new(
                 expected_symbol,
-                token,
+                range,
             )));
     }
 }
