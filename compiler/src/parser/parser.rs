@@ -324,13 +324,11 @@ impl JarvilParser {
             skipped_tokens = self.skip_to_newline();
         }
         let mut expected_indent_spaces = context::indent_spaces() as i64 * self.indent_level;
-        let mut indent_spaces = 0;
         loop {
             let token = &self.token_vec[self.lookahead];
             match &token.core_token {
                 CoreToken::NEWLINE => {
                     extra_newlines.push(SkippedTokenNode::new(token.clone()));
-                    indent_spaces = 0;
                 }
                 CoreToken::ENDMARKER => {
                     return IndentResult {
@@ -341,7 +339,7 @@ impl JarvilParser {
                 }
                 _ => {
                     // At this point we are sure that the token index is set to the first token on a newline
-                    indent_spaces = (token.start_index()
+                    let indent_spaces = (token.start_index()
                         - self.code_handler.get_line_start_index(token.line_number))
                         as i64;
                     //let alternate_line_index = match &token.trivia {

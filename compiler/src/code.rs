@@ -10,13 +10,8 @@ impl JarvilCodeHandler {
         JarvilCodeHandler { code, code_lines }
     }
 
-    pub fn extract_code_lines(&self) -> &Vec<usize> {
-        &self.code_lines
-    }
-
     pub fn get_line_start_index(&self, line_number: usize) -> usize {
-        let code_lines = self.extract_code_lines();
-        code_lines[line_number - 1]
+        self.code_lines[line_number - 1]
     }
 }
 

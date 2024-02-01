@@ -33,7 +33,7 @@ pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
             match symbol {
                 #(#matching_arms_for_is_eq)*
                 "\n" => self.NEWLINE(),
-                _ => unreachable!("invalid symbol `{}` found", symbol),
+                _ => unreachable!("unrecognized symbol found: `{}`", symbol),
             }
         }
     };
@@ -48,7 +48,6 @@ pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
         pub fn to_string(&self) -> &'static str {
             let symbol_str = match self {
                 #(#matching_arms_for_to_string)*
-                CoreToken::LEXICAL_ERROR(_) => LEXICAL_ERROR,
             };
             symbol_str
         }
