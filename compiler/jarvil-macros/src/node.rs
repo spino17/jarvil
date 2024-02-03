@@ -2,11 +2,7 @@ extern crate proc_macro;
 use crate::helper::get_macro_expr_stmt;
 use proc_macro::*;
 use quote::quote;
-use syn::{
-    punctuated::Punctuated,
-    token::{Colon2, Comma},
-    Expr, ExprTuple, PathSegment, Token,
-};
+use syn::{punctuated::Punctuated, token::Comma, Expr, ExprTuple, Token};
 
 pub fn get_tuple_from_str(entry_1: &str, entry_2: &str) -> syn::ExprTuple {
     let mut elems: Punctuated<Expr, Comma> = syn::punctuated::Punctuated::default();
@@ -78,51 +74,41 @@ pub fn impl_nodify_macro(ast: &syn::DeriveInput) -> TokenStream {
     gen.into()
 }
 
-pub fn type_from_str(type_name: &str) -> syn::Type {
-    let mut punc: Punctuated<PathSegment, Colon2> = syn::punctuated::Punctuated::new();
-    punc.push(syn::PathSegment {
-        ident: proc_macro2::Ident::new(type_name, proc_macro2::Span::call_site()),
-        arguments: syn::PathArguments::None,
-    });
-    syn::Type::Path(syn::TypePath {
-        qself: None,
-        path: syn::Path {
-            leading_colon: None,
-            segments: punc,
-        },
-    })
-}
-
 pub fn impl_node_macro(ast: &syn::DeriveInput) -> TokenStream {
-    let name = &ast.ident.to_string(); // eg. CoreBlockNode
-    let node_type = type_from_str(&name[4..]);
-    let enum_data = match &ast.data {
-        syn::Data::Enum(enum_data) => enum_data,
-        _ => panic!("Node macro should only be used for `Core<Node>` enum"),
+    let core_node_name = &ast.ident;
+    let node_ty =
+        proc_macro2::Ident::new(&ast.ident.to_string()[4..], proc_macro2::Span::call_site());
+    let syn::Data::Enum(enum_data) = &ast.data else {
+        panic!("node macro should only be used for enum type `Core` AST nodes")
     };
-    let variant_iter = &mut enum_data.variants.iter();
-    let mut flag = false;
-    let mut common_str = "".to_string();
-    for variant in variant_iter.by_ref() {
-        let variant_name = variant.ident.to_string(); // eg. `BLOCK`
-        if flag {
-            common_str.push_str(", ");
+    let variants = &enum_data.variants;
+    let matching_arms_for_range = variants.iter().map(|variant| {
+        let variant_name = &variant.ident;
+        quote! {
+            #core_node_name::#variant_name(x) => {
+                impl_range!(x, x)
+            }
         }
-        common_str.push_str(&format!("({}, {})", name, variant_name));
-        flag = true;
-    }
-    let range_macro_str = format!("&self.0.as_ref(), {}", &common_str);
-    let start_line_number_str = format!("&self.0.as_ref(), start_line_number, {}", &common_str);
-    let range_macro_expr = get_macro_expr_stmt("impl_node_variant_for_range", &range_macro_str);
-    let start_line_number_macro_expr =
-        get_macro_expr_stmt("impl_enum_variant", &start_line_number_str);
+    });
+    let matching_arms_for_start_line_number = variants.iter().map(|variant| {
+        let variant_name = &variant.ident;
+        quote! {
+            #core_node_name::#variant_name(x) => {
+                x.start_line_number()
+            }
+        }
+    });
     let gen = quote! {
-        impl Node for #node_type {
+        impl Node for #node_ty {
             fn range(&self) -> TextRange {
-                #range_macro_expr
+                match &self.0.as_ref() {
+                    #(#matching_arms_for_range)*,
+                }
             }
             fn start_line_number(&self) -> usize {
-                #start_line_number_macro_expr
+                match &self.0.as_ref() {
+                    #(#matching_arms_for_start_line_number)*,
+                }
             }
         }
     };
