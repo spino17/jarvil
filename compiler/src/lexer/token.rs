@@ -15,13 +15,15 @@ use crate::constants::common::{
 };
 use crate::core::string_interner::{Interner, StrId};
 use jarvil_macros::Tokenify;
+use serde::Serialize;
 use std::fmt::Display;
 use text_size::TextRange;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
+    #[serde(skip_serializing)]
     pub range: TextRange,
     pub trivia: Option<Vec<Token>>,
 }
@@ -101,7 +103,7 @@ impl Token {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Tokenify)]
+#[derive(Debug, Clone, PartialEq, Tokenify, Serialize)]
 pub enum CoreToken {
     IF,             // 'if'
     ELSE,           // 'else'
@@ -514,14 +516,14 @@ impl CoreToken {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum UnaryOperatorKind {
     Plus,
     Minus,
     Not,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum BinaryOperatorKind {
     NotEqual,
     DoubleEqual,

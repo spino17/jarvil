@@ -50,6 +50,7 @@ use crate::{
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
+use serde::Serialize;
 use std::vec;
 use text_size::TextRange;
 
@@ -61,7 +62,7 @@ pub enum ResolveResult<T: AbstractSymbolData> {
     Unresolved,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum BlockKind {
     Function,
     Lambda,

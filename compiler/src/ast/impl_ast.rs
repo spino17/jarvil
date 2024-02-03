@@ -51,6 +51,7 @@ use crate::core::string_interner::{Interner, StrId};
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
 use crate::types::core::Type;
+use serde::Serialize;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use text_size::TextRange;
@@ -1778,7 +1779,7 @@ impl Node for ComparisonNode {
     }
 }
 
-impl<T: Node> SymbolSeparatedSequenceNode<T> {
+impl<T: Node + Serialize + Clone> SymbolSeparatedSequenceNode<T> {
     pub fn new_with_single_entity(entity: T) -> Self {
         let node = Rc::new(CoreSymbolSeparatedSequenceNode {
             entity,
@@ -1808,7 +1809,7 @@ impl<T: Node> SymbolSeparatedSequenceNode<T> {
     }
 }
 
-impl<T: Clone + Node> Node for SymbolSeparatedSequenceNode<T> {
+impl<T: Clone + Node + Serialize> Node for SymbolSeparatedSequenceNode<T> {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_entities {
             Some((_, remaining_entities)) => {
@@ -1819,6 +1820,15 @@ impl<T: Clone + Node> Node for SymbolSeparatedSequenceNode<T> {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().entity.start_line_number()
+    }
+}
+
+impl<T: Clone + Node + Serialize> Serialize for SymbolSeparatedSequenceNode<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.as_ref().serialize(serializer)
     }
 }
 

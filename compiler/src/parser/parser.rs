@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use super::resolver::BlockKind;
 use crate::ast::ast::Node;
 use crate::ast::ast::{
@@ -146,7 +148,10 @@ impl JarvilParser {
         }
     }
 
-    pub fn expect_symbol_separated_sequence<T: Node, U: Fn(&mut JarvilParser) -> T>(
+    pub fn expect_symbol_separated_sequence<
+        T: Node + Serialize + Clone,
+        U: Fn(&mut JarvilParser) -> T,
+    >(
         &mut self,
         entity_parsing_fn: U,
         separator: &'static str,
@@ -196,7 +201,7 @@ impl JarvilParser {
 
     pub fn expect_identifier_in<
         T,
-        U: Node,
+        U: Node + Serialize + Clone,
         F: Fn(&mut JarvilParser) -> SymbolSeparatedSequenceNode<U>,
         V: Fn(OkTokenNode, Option<(TokenNode, SymbolSeparatedSequenceNode<U>, TokenNode)>) -> T,
         W: Fn(Vec<&'static str>, Token) -> T,
