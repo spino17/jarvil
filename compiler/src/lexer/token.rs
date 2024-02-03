@@ -25,6 +25,7 @@ pub struct Token {
     pub core_token: CoreToken,
     #[serde(skip_serializing)]
     pub range: TextRange,
+    #[serde(skip_serializing)]
     pub trivia: Option<Vec<Token>>,
 }
 

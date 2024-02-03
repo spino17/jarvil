@@ -9,6 +9,7 @@ use miette::Report;
 use parser::parser::JarvilParser;
 use parser::resolver::Resolver;
 use parser::type_checker::TypeChecker;
+use std::fs;
 
 pub mod ast;
 pub mod code;
@@ -52,6 +53,8 @@ pub fn build_ast(mut code: JarvilCode) -> (BlockNode, Vec<Diagnostics>, JarvilCo
 
 pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> {
     let (ast, mut errors, code_handler) = build_ast(code);
+    let ast_str = serde_json::to_string(&ast).unwrap();
+    fs::write("ast.json", ast_str).unwrap();
 
     // name-resolver
     let resolver = Resolver::new(code_handler);
