@@ -42,6 +42,50 @@ impl<T: AbstractSymbolData> LookupData<T> {
     }
 }
 
+pub enum LookupResult<T: AbstractSymbolData> {
+    Ok(LookupData<T>),
+    NotInitialized(TextRange),
+    Unresolved,
+}
+
+#[derive(Debug)]
+pub enum IntermediateLookupResult<T: AbstractConcreteTypesHandler> {
+    Ok((SymbolData<T>, usize, usize, Option<usize>)),
+    NotInitialized(TextRange),
+    Unresolved,
+}
+
+macro_rules! impl_from_intermediate_lookup_result {
+    ($x: ident, $y: ident) => {
+        impl From<IntermediateLookupResult<$x>> for LookupResult<$y> {
+            fn from(value: IntermediateLookupResult<$x>) -> Self {
+                match value {
+                    IntermediateLookupResult::Ok((
+                        symbol_data,
+                        resolved_scope_index,
+                        depth,
+                        enclosing_func_scope_depth,
+                    )) => LookupResult::Ok(LookupData::new(
+                        symbol_data.into(),
+                        resolved_scope_index,
+                        depth,
+                        enclosing_func_scope_depth,
+                    )),
+                    IntermediateLookupResult::NotInitialized(decl_range) => {
+                        LookupResult::NotInitialized(decl_range)
+                    }
+                    IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
+                }
+            }
+        }
+    };
+}
+
+impl_from_intermediate_lookup_result!(VariableData, VariableSymbolData);
+impl_from_intermediate_lookup_result!(CallableData, FunctionSymbolData);
+impl_from_intermediate_lookup_result!(UserDefinedTypeData, UserDefinedTypeSymbolData);
+impl_from_intermediate_lookup_result!(InterfaceData, InterfaceSymbolData);
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct MangledIdentifierName {
     pub jarvil_identifer_name: StrId,
@@ -60,19 +104,6 @@ impl MangledIdentifierName {
             suffix
         )
     }
-}
-
-pub enum LookupResult<T: AbstractSymbolData> {
-    Ok(LookupData<T>),
-    NotInitialized(TextRange),
-    Unresolved,
-}
-
-#[derive(Debug)]
-pub enum IntermediateLookupResult<T: AbstractConcreteTypesHandler> {
-    Ok((SymbolData<T>, usize, usize, Option<usize>)),
-    NotInitialized(TextRange),
-    Unresolved,
 }
 
 pub trait AbstractConcreteTypesHandler {
@@ -623,23 +654,7 @@ impl Namespace {
         scope_index: usize,
         key: &StrId,
     ) -> LookupResult<VariableSymbolData> {
-        match self.variables.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok((
-                symbol_data,
-                resolved_scope_index,
-                depth,
-                enclosing_func_scope_depth,
-            )) => LookupResult::Ok(LookupData::new(
-                symbol_data.into(),
-                resolved_scope_index,
-                depth,
-                enclosing_func_scope_depth,
-            )),
-            IntermediateLookupResult::NotInitialized(decl_range) => {
-                LookupResult::NotInitialized(decl_range)
-            }
-            IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
-        }
+        self.variables.lookup_with_is_init(scope_index, key).into()
     }
 
     pub fn lookup_in_functions_namespace(
@@ -647,23 +662,7 @@ impl Namespace {
         scope_index: usize,
         key: &StrId,
     ) -> LookupResult<FunctionSymbolData> {
-        match self.functions.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok((
-                symbol_data,
-                resolved_scope_index,
-                depth,
-                enclosing_func_scope_depth,
-            )) => LookupResult::Ok(LookupData::new(
-                symbol_data.into(),
-                resolved_scope_index,
-                depth,
-                enclosing_func_scope_depth,
-            )),
-            IntermediateLookupResult::NotInitialized(decl_range) => {
-                LookupResult::NotInitialized(decl_range)
-            }
-            IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
-        }
+        self.functions.lookup_with_is_init(scope_index, key).into()
     }
 
     pub fn lookup_in_types_namespace(
@@ -671,23 +670,7 @@ impl Namespace {
         scope_index: usize,
         key: &StrId,
     ) -> LookupResult<UserDefinedTypeSymbolData> {
-        match self.types.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok((
-                symbol_data,
-                resolved_scope_index,
-                depth,
-                enclosing_func_scope_depth,
-            )) => LookupResult::Ok(LookupData::new(
-                symbol_data.into(),
-                resolved_scope_index,
-                depth,
-                enclosing_func_scope_depth,
-            )),
-            IntermediateLookupResult::NotInitialized(decl_range) => {
-                LookupResult::NotInitialized(decl_range)
-            }
-            IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
-        }
+        self.types.lookup_with_is_init(scope_index, key).into()
     }
 
     pub fn lookup_in_interfaces_namespace(
@@ -695,23 +678,7 @@ impl Namespace {
         scope_index: usize,
         key: &StrId,
     ) -> LookupResult<InterfaceSymbolData> {
-        match self.interfaces.lookup_with_is_init(scope_index, key) {
-            IntermediateLookupResult::Ok((
-                symbol_data,
-                resolved_scope_index,
-                depth,
-                enclosing_func_scope_depth,
-            )) => LookupResult::Ok(LookupData::new(
-                symbol_data.into(),
-                resolved_scope_index,
-                depth,
-                enclosing_func_scope_depth,
-            )),
-            IntermediateLookupResult::NotInitialized(decl_range) => {
-                LookupResult::NotInitialized(decl_range)
-            }
-            IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
-        }
+        self.interfaces.lookup_with_is_init(scope_index, key).into()
     }
 
     pub fn declare_variable(
