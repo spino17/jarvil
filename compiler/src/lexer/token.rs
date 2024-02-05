@@ -15,17 +15,16 @@ use crate::constants::common::{
 };
 use crate::core::string_interner::{Interner, StrId};
 use jarvil_macros::Tokenify;
+use serde::ser::SerializeStruct;
 use serde::Serialize;
 use std::fmt::Display;
 use text_size::TextRange;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub line_number: usize,
     pub core_token: CoreToken,
-    #[serde(skip_serializing)]
     pub range: TextRange,
-    #[serde(skip_serializing)]
     pub trivia: Option<Vec<Token>>,
 }
 
@@ -101,6 +100,23 @@ impl Token {
             CoreToken::STAR | CoreToken::SLASH => 5,
             _ => 0,
         }
+    }
+}
+
+impl Serialize for Token {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut s = serializer.serialize_struct("token", 4)?;
+        s.serialize_field("line_number", &self.line_number)?;
+        s.serialize_field("core_token", &self.core_token)?;
+        s.serialize_field::<(u32, u32)>(
+            "range",
+            &(self.range.start().into(), self.range.end().into()),
+        )?;
+        s.serialize_field("trivia", &self.trivia)?;
+        s.end()
     }
 }
 
