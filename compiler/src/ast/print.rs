@@ -15,7 +15,7 @@ pub fn modify_array(
     for entry in array {
         modified_vec.push(modify_value(entry, code, interner));
     }
-    return modified_vec;
+    modified_vec
 }
 
 pub fn modify_map(
@@ -45,16 +45,16 @@ pub fn modify_map(
         modified_token_value_map.insert("value".to_string(), Value::String(token_value));
         modified_map.insert("token".to_string(), Value::Object(modified_token_value_map));
     }
-    return modified_map;
+    modified_map
 }
 
 pub fn modify_value(val: &Value, code: &JarvilCodeHandler, interner: &mut Interner) -> Value {
     match val {
         Value::Array(array) => {
-            return Value::Array(modify_array(array, code, interner));
+            Value::Array(modify_array(array, code, interner))
         }
-        Value::Object(map) => return Value::Object(modify_map(map, code, interner)),
-        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => return val.clone(),
+        Value::Object(map) => Value::Object(modify_map(map, code, interner)),
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => val.clone(),
     }
 }
 

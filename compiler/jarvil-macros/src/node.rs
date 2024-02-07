@@ -33,7 +33,7 @@ pub fn impl_nodify_macro(ast: &syn::DeriveInput) -> TokenStream {
         let variant_name = &variant.ident;
         let variant_field_name = get_variant_field_name(variant);
         let variant_new_method_name = proc_macro2::Ident::new(
-            &format!("new_with_{}", variant_field_name.to_string()),
+            &format!("new_with_{}", variant_field_name),
             proc_macro2::Span::call_site(),
         );
         quote! {
