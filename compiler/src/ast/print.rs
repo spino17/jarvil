@@ -58,7 +58,7 @@ pub fn modify_value(val: &Value, code: &JarvilCodeHandler, interner: &mut Intern
     }
 }
 
-pub fn print_ast(
+pub fn json_serialize_ast(
     ast: &BlockNode,
     code: &JarvilCodeHandler,
     interner: &mut Interner,

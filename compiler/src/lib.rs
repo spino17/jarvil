@@ -1,7 +1,7 @@
 use crate::lexer::lexer::Lexer;
 use crate::parser::parser::Parser;
 use ast::ast::BlockNode;
-use ast::print::print_ast;
+use ast::print::json_serialize_ast;
 use code::{JarvilCode, JarvilCodeHandler};
 use codegen::python::PythonCodeGenerator;
 use error::diagnostics::Diagnostics;
@@ -61,7 +61,7 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
     errors.append(&mut semantic_errors);
 
     // TODO - remove this after testing
-    let ast_str = print_ast(&ast, &code_handler, &mut semantic_state_db.interner).unwrap();
+    let ast_str = json_serialize_ast(&ast, &code_handler, &mut semantic_state_db.interner).unwrap();
     fs::write("ast.json", ast_str).unwrap();
 
     // type-checker
