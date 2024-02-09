@@ -1,5 +1,6 @@
 #[macro_use]
 pub mod macros;
+pub mod arena;
 pub mod array;
 pub mod atomic;
 pub mod core;
