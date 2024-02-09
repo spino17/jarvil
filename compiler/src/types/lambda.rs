@@ -120,40 +120,36 @@ impl AbstractType for Lambda {
     fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Lambda(other_data) => match self {
-                Lambda::Named(self_concrete_symbol_data) => match other_data {
-                    Lambda::Named(other_concrete_symbol_data) => {
-                        if self_concrete_symbol_data.symbol_data.identifier_name()
-                            == other_concrete_symbol_data.symbol_data.identifier_name()
+                Lambda::Named(self_concrete_symbol_data) => {
+                    let Lambda::Named(other_concrete_symbol_data) = other_data else {
+                        unreachable!()
+                    };
+                    if self_concrete_symbol_data.symbol_data.identifier_name()
+                        != other_concrete_symbol_data.symbol_data.identifier_name()
+                    {
+                        return false;
+                    }
+                    let Some(self_concrete_types) = &self_concrete_symbol_data.concrete_types
+                    else {
+                        return true;
+                    };
+                    let self_len = self_concrete_types.len();
+                    let other_concrete_types = match &other_concrete_symbol_data.concrete_types {
+                        Some(concrete_types) => concrete_types,
+                        None => unreachable!(),
+                    };
+                    let other_len = other_concrete_types.len();
+
+                    debug_assert!(self_len == other_len);
+                    for i in 0..self_len {
+                        if !self_concrete_types[i]
+                            .is_structurally_eq(&other_concrete_types[i], context)
                         {
-                            match &self_concrete_symbol_data.concrete_types {
-                                Some(self_concrete_types) => {
-                                    let self_len = self_concrete_types.len();
-
-                                    let other_concrete_types =
-                                        match &other_concrete_symbol_data.concrete_types {
-                                            Some(concrete_types) => concrete_types,
-                                            None => unreachable!(),
-                                        };
-                                    let other_len = other_concrete_types.len();
-
-                                    debug_assert!(self_len == other_len);
-                                    for i in 0..self_len {
-                                        if !self_concrete_types[i]
-                                            .is_structurally_eq(&other_concrete_types[i], context)
-                                        {
-                                            return false;
-                                        }
-                                    }
-                                    true
-                                }
-                                None => true,
-                            }
-                        } else {
-                            false
+                            return false;
                         }
                     }
-                    Lambda::Unnamed(_) => unreachable!(),
-                },
+                    true
+                }
                 Lambda::Unnamed(_) => unreachable!(),
             },
             _ => false,
@@ -162,19 +158,19 @@ impl AbstractType for Lambda {
 
     fn concretize(&self, context: &ConcretizationContext) -> Type {
         match self {
-            Lambda::Named(concrete_symbol_data) => match &concrete_symbol_data.concrete_types {
-                Some(concrete_types) => {
-                    let mut concretized_concrete_types = vec![];
-                    for ty in concrete_types.iter() {
-                        concretized_concrete_types.push(ty.concretize(context));
-                    }
-                    Type::new_with_lambda_named(
-                        &concrete_symbol_data.symbol_data,
-                        Some(ConcreteTypesTuple::new(concretized_concrete_types)),
-                    )
+            Lambda::Named(concrete_symbol_data) => {
+                let Some(concrete_types) = &concrete_symbol_data.concrete_types else {
+                    return Type::new_with_lambda_named(&concrete_symbol_data.symbol_data, None);
+                };
+                let mut concretized_concrete_types = vec![];
+                for ty in concrete_types.iter() {
+                    concretized_concrete_types.push(ty.concretize(context));
                 }
-                None => Type::new_with_lambda_named(&concrete_symbol_data.symbol_data, None),
-            },
+                return Type::new_with_lambda_named(
+                    &concrete_symbol_data.symbol_data,
+                    Some(ConcreteTypesTuple::new(concretized_concrete_types)),
+                );
+            }
             Lambda::Unnamed(prototype) => Type::new_with_lambda_unnamed(prototype.clone()),
         }
     }
