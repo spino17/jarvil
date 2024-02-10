@@ -67,17 +67,145 @@ pub trait OperatorCompatiblity {
 #[derive(Debug)]
 pub enum CoreType {
     Atomic(Atomic),
-    Struct(Struct),
-    Lambda(Lambda),
     Array(Array),
     Tuple(Tuple),
     HashMap(HashMap),
-    Generic(Generic),
+    Struct(Struct),
     Enum(Enum),
+    Lambda(Lambda),
+    Generic(Generic),
     Unknown,
     Void,
     Unset,
     Any,
+}
+
+impl CoreType {
+    pub fn try_atomic(&self) -> Option<&Atomic> {
+        let CoreType::Atomic(atomic) = self else {
+            return None;
+        };
+        Some(atomic)
+    }
+
+    pub fn try_array(&self) -> Option<&Array> {
+        let CoreType::Array(array) = self else {
+            return None;
+        };
+        Some(array)
+    }
+
+    pub fn try_tuple(&self) -> Option<&Tuple> {
+        let CoreType::Tuple(tuple) = self else {
+            return None;
+        };
+        Some(tuple)
+    }
+
+    pub fn try_hashmap(&self) -> Option<&HashMap> {
+        let CoreType::HashMap(hashmap) = self else {
+            return None;
+        };
+        Some(hashmap)
+    }
+
+    pub fn try_struct(&self) -> Option<&Struct> {
+        let CoreType::Struct(s) = self else {
+            return None;
+        };
+        Some(s)
+    }
+
+    pub fn try_enum(&self) -> Option<&Enum> {
+        let CoreType::Enum(e) = self else { return None };
+        Some(e)
+    }
+
+    pub fn try_lambda(&self) -> Option<&Lambda> {
+        let CoreType::Lambda(lambda) = self else {
+            return None;
+        };
+        Some(lambda)
+    }
+
+    pub fn try_generic(&self) -> Option<&Generic> {
+        let CoreType::Generic(generic) = self else {
+            return None;
+        };
+        Some(generic)
+    }
+
+    pub fn is_int(&self) -> bool {
+        match self {
+            CoreType::Atomic(val) => val.is_int(),
+            _ => false,
+        }
+    }
+
+    pub fn is_float(&self) -> bool {
+        match self {
+            CoreType::Atomic(val) => val.is_float(),
+            _ => false,
+        }
+    }
+
+    pub fn is_bool(&self) -> bool {
+        match self {
+            CoreType::Atomic(val) => val.is_bool(),
+            _ => false,
+        }
+    }
+
+    pub fn is_string(&self) -> bool {
+        match self {
+            CoreType::Atomic(val) => val.is_string(),
+            _ => false,
+        }
+    }
+
+    pub fn is_array(&self) -> bool {
+        matches!(self, CoreType::Array(_))
+    }
+
+    pub fn is_tuple(&self) -> bool {
+        matches!(self, CoreType::Tuple(_))
+    }
+
+    pub fn is_hashmap(&self) -> bool {
+        matches!(self, CoreType::HashMap(_))
+    }
+
+    pub fn is_struct(&self) -> bool {
+        matches!(self, CoreType::Struct(_))
+    }
+
+    pub fn is_enum(&self) -> bool {
+        matches!(self, CoreType::Enum(_))
+    }
+
+    pub fn is_lambda(&self) -> bool {
+        matches!(self, CoreType::Lambda(_))
+    }
+
+    pub fn is_generic(&self) -> bool {
+        matches!(self, CoreType::Generic(_))
+    }
+
+    pub fn is_unknown(&self) -> bool {
+        matches!(self, CoreType::Unknown)
+    }
+
+    pub fn is_void(&self) -> bool {
+        matches!(self, CoreType::Void)
+    }
+
+    pub fn is_unset(&self) -> bool {
+        matches!(self, CoreType::Unset)
+    }
+
+    pub fn is_any(&self) -> bool {
+        matches!(self, CoreType::Any)
+    }
 }
 
 #[derive(Debug, Clone)]

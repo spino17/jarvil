@@ -2,6 +2,7 @@ use super::generic::Generic;
 use super::lambda::Lambda;
 use super::r#enum::Enum;
 use super::{atomic::Atomic, core::CoreType};
+use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::types::r#struct::Struct;
 use crate::{
     core::string_interner::Interner,
@@ -109,72 +110,88 @@ impl TypeLike for TypeId {
 }
 
 impl TypeId {
-    pub fn is_void(&self, arena: &TypesArena) -> bool {
-        todo!()
-    }
-
-    pub fn is_string(&self, arena: &TypesArena) -> bool {
-        todo!()
-    }
-
-    pub fn is_array(&self, arena: &TypesArena) -> bool {
-        todo!()
-    }
-
-    pub fn is_bool(&self, arena: &TypesArena) -> bool {
-        todo!()
+    fn arena_index(&self) -> usize {
+        self.0
     }
 
     pub fn is_int(&self, arena: &TypesArena) -> bool {
-        todo!()
+        arena.get_core_ty_ref(*self).is_int()
     }
 
     pub fn is_float(&self, arena: &TypesArena) -> bool {
-        todo!()
+        arena.get_core_ty_ref(*self).is_float()
+    }
+
+    pub fn is_bool(&self, arena: &TypesArena) -> bool {
+        arena.get_core_ty_ref(*self).is_bool()
+    }
+
+    pub fn is_string(&self, arena: &TypesArena) -> bool {
+        arena.get_core_ty_ref(*self).is_string()
+    }
+
+    pub fn is_array(&self, arena: &TypesArena) -> bool {
+        arena.get_core_ty_ref(*self).is_array()
+    }
+
+    pub fn is_tuple(&self, arena: &TypesArena) -> bool {
+        arena.get_core_ty_ref(*self).is_tuple()
+    }
+
+    pub fn is_hashmap(&self, arena: &TypesArena) -> bool {
+        arena.get_core_ty_ref(*self).is_hashmap()
     }
 
     pub fn is_enum(&self, arena: &TypesArena) -> bool {
-        todo!()
+        arena.get_core_ty_ref(*self).is_enum()
+    }
+
+    pub fn is_lambda(&self, arena: &TypesArena) -> bool {
+        arena.get_core_ty_ref(*self).is_lambda()
+    }
+
+    pub fn is_unknown(&self, arena: &TypesArena) -> bool {
+        arena.get_core_ty_ref(*self).is_unknown()
+    }
+
+    pub fn is_unset(&self, arena: &TypesArena) -> bool {
+        arena.get_core_ty_ref(*self).is_unset()
+    }
+
+    pub fn is_void(&self, arena: &TypesArena) -> bool {
+        arena.get_core_ty_ref(*self).is_void()
     }
 
     pub fn is_numeric(&self, arena: &mut TypesArena) -> bool {
         self.is_int(arena) || self.is_float(arena)
     }
 
-    pub fn is_lambda(&self, arena: &TypesArena) -> bool {
-        todo!()
-    }
-
-    pub fn is_hashmap(&self, arena: &TypesArena) -> bool {
-        todo!()
-    }
-
     pub fn is_immutable(&self, arena: &TypesArena) -> bool {
         self.is_string(arena) || self.is_tuple(arena)
     }
 
-    pub fn is_tuple(&self, arena: &TypesArena) -> bool {
-        todo!()
-    }
-
     pub fn is_hashable(&self, arena: &TypesArena) -> bool {
-        todo!()
-    }
-
-    pub fn is_unknown(&self, arena: &TypesArena) -> bool {
-        todo!()
-    }
-
-    pub fn is_unset(&self, arena: &TypesArena) -> bool {
-        todo!()
+        // `int`, `float`, `str` and `tuple` with hashable sub_types are only hashable types
+        match arena.get_core_ty_ref(*self) {
+            CoreType::Atomic(atomic) => atomic.is_int() || atomic.is_string() || atomic.is_float(),
+            CoreType::Tuple(tuple) => {
+                for ty in &tuple.sub_types {
+                    if !ty.is_hashable() {
+                        return false;
+                    }
+                }
+                true
+            }
+            _ => false,
+        }
     }
 
     pub fn set_concretization_required_flag(&mut self, arena: &mut TypesArena) {
-        todo!()
+        arena.arena[self.arena_index()].is_concretization_required = true;
     }
 
     pub fn is_concretization_required(&self, arena: &TypesArena) -> bool {
-        todo!()
+        arena.arena[self.arena_index()].is_concretization_required
     }
 }
 
@@ -193,12 +210,32 @@ impl TypeObject {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct TypesArena {
     arena: Vec<Box<TypeObject>>,
 }
 
 impl TypesArena {
+    pub fn new() -> TypesArena {
+        let arena = TypesArena {
+            arena: vec![
+                // cache the atomic and null-like types
+                Box::new(TypeObject::new(CoreType::Atomic(Atomic::new(INT)), false)), // 0
+                Box::new(TypeObject::new(CoreType::Atomic(Atomic::new(FLOAT)), false)), // 1
+                Box::new(TypeObject::new(CoreType::Atomic(Atomic::new(BOOL)), false)), // 2
+                Box::new(TypeObject::new(
+                    CoreType::Atomic(Atomic::new(STRING)),
+                    false,
+                )), // 3
+                Box::new(TypeObject::new(CoreType::Unknown, false)),                  // 4
+                Box::new(TypeObject::new(CoreType::Unset, false)),                    // 5
+                Box::new(TypeObject::new(CoreType::Void, false)),                     // 6
+                Box::new(TypeObject::new(CoreType::Any, false)),                      // 7
+            ],
+        };
+        arena
+    }
+
     fn add(&mut self, ty: TypeObject) -> TypeId {
         let id = self.arena.len();
         self.arena.push(Box::new(ty));
@@ -215,8 +252,14 @@ impl TypesArena {
         &mut self.arena[id].ty
     }
 
-    pub fn new_with_atomic(&mut self, name: &str) -> TypeId {
-        self.add(TypeObject::new(CoreType::Atomic(Atomic::new(name)), false))
+    // basic-types
+    pub fn new_with_atomic(&mut self, atomic_ty_kind: Atomic) -> TypeId {
+        match atomic_ty_kind {
+            Atomic::Int => TypeId(0),
+            Atomic::Float => TypeId(1),
+            Atomic::Bool => TypeId(2),
+            Atomic::String => TypeId(3),
+        }
     }
 
     pub fn new_with_array(&mut self, element_type: TypeId) -> TypeId {
@@ -279,19 +322,20 @@ impl TypesArena {
         ))
     }
 
+    // null-like types
     pub fn new_with_unknown(&mut self) -> TypeId {
-        self.add(TypeObject::new(CoreType::Unknown, false))
+        TypeId(4)
     }
 
     pub fn new_with_unset(&mut self) -> TypeId {
-        self.add(TypeObject::new(CoreType::Unset, false))
+        TypeId(5)
     }
 
     pub fn new_with_void(&mut self) -> TypeId {
-        self.add(TypeObject::new(CoreType::Void, false))
+        TypeId(6)
     }
 
     pub fn new_with_any(&mut self) -> TypeId {
-        self.add(TypeObject::new(CoreType::Any, false))
+        TypeId(7)
     }
 }

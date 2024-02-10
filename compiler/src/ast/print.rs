@@ -50,9 +50,7 @@ pub fn modify_map(
 
 pub fn modify_value(val: &Value, code: &JarvilCodeHandler, interner: &mut Interner) -> Value {
     match val {
-        Value::Array(array) => {
-            Value::Array(modify_array(array, code, interner))
-        }
+        Value::Array(array) => Value::Array(modify_array(array, code, interner)),
         Value::Object(map) => Value::Object(modify_map(map, code, interner)),
         Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => val.clone(),
     }

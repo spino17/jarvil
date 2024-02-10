@@ -30,31 +30,19 @@ impl Atomic {
     }
 
     pub fn is_int(&self) -> bool {
-        match self {
-            Atomic::Int => true,
-            _ => false,
-        }
+        matches!(self, Atomic::Int)
     }
 
     pub fn is_float(&self) -> bool {
-        match self {
-            Atomic::Float => true,
-            _ => false,
-        }
+        matches!(self, Atomic::Float)
     }
 
     pub fn is_string(&self) -> bool {
-        match self {
-            Atomic::String => true,
-            _ => false,
-        }
+        matches!(self, Atomic::String)
     }
 
     pub fn is_bool(&self) -> bool {
-        match self {
-            Atomic::Bool => true,
-            _ => false,
-        }
+        matches!(self, Atomic::Bool)
     }
 }
 
