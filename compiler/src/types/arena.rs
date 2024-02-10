@@ -114,6 +114,14 @@ impl TypeId {
         self.0
     }
 
+    pub fn set_concretization_required_flag(&mut self, arena: &mut TypesArena) {
+        arena.arena[self.arena_index()].is_concretization_required = true;
+    }
+
+    pub fn is_concretization_required(&self, arena: &TypesArena) -> bool {
+        arena.arena[self.arena_index()].is_concretization_required
+    }
+
     pub fn is_int(&self, arena: &TypesArena) -> bool {
         arena.get_core_ty_ref(*self).is_int()
     }
@@ -184,14 +192,6 @@ impl TypeId {
             }
             _ => false,
         }
-    }
-
-    pub fn set_concretization_required_flag(&mut self, arena: &mut TypesArena) {
-        arena.arena[self.arena_index()].is_concretization_required = true;
-    }
-
-    pub fn is_concretization_required(&self, arena: &TypesArena) -> bool {
-        arena.arena[self.arena_index()].is_concretization_required
     }
 }
 
