@@ -10,8 +10,6 @@ fn check_and_execute_cmd(args: Vec<String>) -> Result<(), AnyonError> {
     Ok(())
 }
 
-// a comment
-
 fn main() {
     // hook for styling of the error messages
     miette::set_hook(Box::new(|_err| {
@@ -29,4 +27,13 @@ fn main() {
     if let Err(err) = result {
         println!("{:?}", err);
     }
+
+    let mut v = vec![
+        Node {
+            name: "Bhavya".to_string(),
+        },
+        Node {
+            name: "Gargi".to_string(),
+        },
+    ];
 }

@@ -1,3 +1,4 @@
+use super::arena::arena::TypeId;
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use super::helper::{struct_enum_compare_fn, try_infer_types_from_tuple, StructEnumType};
 use crate::core::string_interner::{Interner, StrId};
