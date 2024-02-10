@@ -1,7 +1,7 @@
 use super::generic::Generic;
 use super::lambda::Lambda;
 use super::r#enum::Enum;
-use super::{array::core::Array, atomic::Atomic, core::CoreType};
+use super::{atomic::Atomic, core::CoreType};
 use crate::types::r#struct::Struct;
 use crate::{
     core::string_interner::Interner,
@@ -16,45 +16,48 @@ use crate::{
 };
 
 pub trait TypeLike {
-    fn is_eq(&self, other_ty: &TypeId, arena: &mut TypesArena) -> bool;
+    fn is_eq(&self, other_ty: TypeId, arena: &TypesArena) -> bool;
     fn is_structurally_eq(
         &self,
-        other_ty: &TypeId,
+        other_ty: TypeId,
         context: &ConcretizationContext,
-        arena: &mut TypesArena,
+        arena: &TypesArena,
     ) -> bool;
-    fn concretize(&self, context: &ConcretizationContext, arena: &mut TypesArena) -> TypeId;
+    fn is_type_bounded_by_interfaces(
+        &self,
+        interface_bounds: &InterfaceBounds,
+        arena: &TypesArena,
+    ) -> bool;
     fn try_infer_type_or_check_equivalence(
         &self,
-        received_ty: &TypeId,
+        received_ty: TypeId,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
-        arena: &mut TypesArena,
+        arena: &TypesArena,
     ) -> Result<(), ()>;
-    fn is_type_bounded_by_interfaces(
-        &self,
-        interface_bounds: &InterfaceBounds,
-        arena: &mut TypesArena,
-    ) -> bool;
-    fn to_string(&self, interner: &Interner, arena: &mut TypesArena) -> String;
-    fn check_add(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId>;
-    fn check_subtract(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId>;
-    fn check_multiply(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId>;
-    fn check_divide(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId>;
-    fn check_double_equal(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId>;
-    fn check_greater(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId>;
-    fn check_less(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId>;
-    fn check_and(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId>;
-    fn check_or(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId>;
-    fn check_not_equal(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    fn concretize(&self, context: &ConcretizationContext, arena: &mut TypesArena) -> TypeId;
+    fn to_string(&self, interner: &Interner, arena: &TypesArena) -> String;
+}
+
+pub trait TypesOperatorCompatiblity {
+    fn check_add(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId>;
+    fn check_subtract(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId>;
+    fn check_multiply(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId>;
+    fn check_divide(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId>;
+    fn check_double_equal(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId>;
+    fn check_greater(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId>;
+    fn check_less(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId>;
+    fn check_and(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId>;
+    fn check_or(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId>;
+    fn check_not_equal(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId> {
         todo!()
     }
-    fn check_greater_equal(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    fn check_greater_equal(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId> {
         todo!()
     }
-    fn check_less_equal(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    fn check_less_equal(&self, other: TypeId, arena: &mut TypesArena) -> Option<TypeId> {
         todo!()
     }
 }
@@ -63,15 +66,15 @@ pub trait TypeLike {
 pub struct TypeId(usize);
 
 impl TypeLike for TypeId {
-    fn is_eq(&self, other_ty: &TypeId, arena: &mut TypesArena) -> bool {
+    fn is_eq(&self, other_ty: TypeId, arena: &TypesArena) -> bool {
         todo!()
     }
 
     fn is_structurally_eq(
         &self,
-        other_ty: &TypeId,
+        other_ty: TypeId,
         context: &ConcretizationContext,
-        arena: &mut TypesArena,
+        arena: &TypesArena,
     ) -> bool {
         todo!()
     }
@@ -82,12 +85,12 @@ impl TypeLike for TypeId {
 
     fn try_infer_type_or_check_equivalence(
         &self,
-        received_ty: &TypeId,
+        received_ty: TypeId,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
         global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
-        arena: &mut TypesArena,
+        arena: &TypesArena,
     ) -> Result<(), ()> {
         todo!()
     }
@@ -95,58 +98,82 @@ impl TypeLike for TypeId {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        arena: &mut TypesArena,
+        arena: &TypesArena,
     ) -> bool {
         todo!()
     }
 
-    fn to_string(&self, interner: &Interner, arena: &mut TypesArena) -> String {
+    fn to_string(&self, interner: &Interner, arena: &TypesArena) -> String {
+        todo!()
+    }
+}
+
+impl TypeId {
+    pub fn is_void(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 
-    fn check_add(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    pub fn is_string(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 
-    fn check_subtract(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    pub fn is_array(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 
-    fn check_multiply(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    pub fn is_bool(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 
-    fn check_divide(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    pub fn is_int(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 
-    fn check_double_equal(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    pub fn is_float(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 
-    fn check_greater(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    pub fn is_enum(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 
-    fn check_less(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    pub fn is_numeric(&self, arena: &mut TypesArena) -> bool {
+        self.is_int(arena) || self.is_float(arena)
+    }
+
+    pub fn is_lambda(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 
-    fn check_and(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    pub fn is_hashmap(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 
-    fn check_or(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    pub fn is_immutable(&self, arena: &TypesArena) -> bool {
+        self.is_string(arena) || self.is_tuple(arena)
+    }
+
+    pub fn is_tuple(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 
-    fn check_not_equal(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+    pub fn is_hashable(&self, arena: &TypesArena) -> bool {
         todo!()
     }
-    fn check_greater_equal(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+
+    pub fn is_unknown(&self, arena: &TypesArena) -> bool {
         todo!()
     }
-    fn check_less_equal(&self, other: &TypeId, arena: &mut TypesArena) -> Option<TypeId> {
+
+    pub fn is_unset(&self, arena: &TypesArena) -> bool {
+        todo!()
+    }
+
+    pub fn set_concretization_required_flag(&mut self, arena: &mut TypesArena) {
+        todo!()
+    }
+
+    pub fn is_concretization_required(&self, arena: &TypesArena) -> bool {
         todo!()
     }
 }
@@ -168,14 +195,24 @@ impl TypeObject {
 
 #[derive(Debug, Default)]
 pub struct TypesArena {
-    arena: Vec<TypeObject>,
+    arena: Vec<Box<TypeObject>>,
 }
 
 impl TypesArena {
     fn add(&mut self, ty: TypeObject) -> TypeId {
         let id = self.arena.len();
-        self.arena.push(ty);
+        self.arena.push(Box::new(ty));
         TypeId(id)
+    }
+
+    fn get_core_ty_ref(&self, id: TypeId) -> &CoreType {
+        let id = id.0;
+        &self.arena[id].ty
+    }
+
+    fn get_core_ty_mut_ref(&mut self, id: TypeId) -> &mut CoreType {
+        let id = id.0;
+        &mut self.arena[id].ty
     }
 
     pub fn new_with_atomic(&mut self, name: &str) -> TypeId {

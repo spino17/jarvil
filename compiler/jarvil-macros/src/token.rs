@@ -14,10 +14,7 @@ pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
         let variant_name = &variant.ident;
         quote! {
             fn #variant_name(&self) -> bool {
-                match self {
-                    CoreToken::#variant_name => true,
-                    _ => false,
-                }
+                matches!(self, CoreToken::#variant_name)
             }
         }
     });
