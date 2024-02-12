@@ -5,25 +5,25 @@ impl TypeId {
     pub fn concretize(&self, context: &ConcretizationContext, arena: &mut TypesArena) -> TypeId {
         let ty = arena.get_core_ty_ref(*self);
         match ty {
-            CoreType::Struct(struct_type) => {
+            CoreType::Struct(struct_ty) => {
                 todo!()
             }
-            CoreType::Enum(enum_type) => {
+            CoreType::Enum(enum_ty) => {
                 todo!()
             }
-            CoreType::Lambda(lambda_type) => {
+            CoreType::Lambda(lambda_ty) => {
                 todo!()
             }
-            CoreType::Array(array_type) => {
+            CoreType::Array(array_ty) => {
                 todo!()
             }
-            CoreType::Tuple(tuple_type) => {
+            CoreType::Tuple(tuple_ty) => {
                 todo!()
             }
-            CoreType::HashMap(hashmap_type) => {
+            CoreType::HashMap(hashmap_ty) => {
                 todo!()
             }
-            CoreType::Generic(generic_type) => {
+            CoreType::Generic(generic_ty) => {
                 todo!()
             }
             CoreType::Atomic(_)

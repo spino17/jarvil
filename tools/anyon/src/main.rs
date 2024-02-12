@@ -27,13 +27,4 @@ fn main() {
     if let Err(err) = result {
         println!("{:?}", err);
     }
-
-    let mut v = vec![
-        Node {
-            name: "Bhavya".to_string(),
-        },
-        Node {
-            name: "Gargi".to_string(),
-        },
-    ];
 }

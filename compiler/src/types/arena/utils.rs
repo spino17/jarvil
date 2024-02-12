@@ -4,35 +4,35 @@ use crate::types::core::CoreType;
 impl TypeId {
     // constructors for few cached types!
     pub fn int() -> TypeId {
-        TypeId(0)
+        TypeId::new(0)
     }
 
     pub fn float() -> TypeId {
-        TypeId(1)
+        TypeId::new(1)
     }
 
     pub fn bool() -> TypeId {
-        TypeId(2)
+        TypeId::new(2)
     }
 
     pub fn string() -> TypeId {
-        TypeId(3)
+        TypeId::new(3)
     }
 
     pub fn unknown() -> TypeId {
-        TypeId(4)
+        TypeId::new(4)
     }
 
     pub fn unset() -> TypeId {
-        TypeId(5)
+        TypeId::new(5)
     }
 
     pub fn void() -> TypeId {
-        TypeId(6)
+        TypeId::new(6)
     }
 
     pub fn any() -> TypeId {
-        TypeId(7)
+        TypeId::new(7)
     }
 
     pub fn is_int(&self, arena: &TypesArena) -> bool {

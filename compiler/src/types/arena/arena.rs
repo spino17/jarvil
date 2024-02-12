@@ -12,9 +12,13 @@ use crate::types::r#enum::Enum;
 use crate::types::r#struct::Struct;
 
 #[derive(Debug, Clone, Copy)]
-pub struct TypeId(pub usize);
+pub struct TypeId(usize);
 
 impl TypeId {
+    pub fn new(index: usize) -> TypeId {
+        TypeId(index)
+    }
+
     pub fn arena_index(&self) -> usize {
         self.0
     }
@@ -101,13 +105,11 @@ impl TypesArena {
     }
 
     pub fn get_core_ty_ref(&self, id: TypeId) -> &CoreType {
-        let id = id.0;
-        &self.arena[id].ty
+        &self.arena[id.arena_index()].ty
     }
 
     pub fn get_core_ty_mut_ref(&mut self, id: TypeId) -> &mut CoreType {
-        let id = id.0;
-        &mut self.arena[id].ty
+        &mut self.arena[id.arena_index()].ty
     }
 
     // basic-types
