@@ -48,7 +48,7 @@ pub struct NonStructMethodsHandler {
 }
 
 impl NonStructMethodsHandler {
-    pub fn new(interner: &mut Interner) -> Self {
+    pub fn new(interner: &Interner) -> Self {
         return NonStructMethodsHandler {
             array_methods: CoreNonStructMethodsHandler {
                 methods: Array::get_builtin_methods(interner),

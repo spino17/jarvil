@@ -11,6 +11,7 @@ use crate::{
         traits::IsInitialized,
     },
 };
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use text_size::TextRange;
 
@@ -42,7 +43,7 @@ impl<T> Symbol<T> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug)]
 pub struct IdentDeclId<T> {
     index: usize,
     phantom: PhantomData<T>,
@@ -53,6 +54,20 @@ impl<T> Copy for IdentDeclId<T> {}
 impl<T> Clone for IdentDeclId<T> {
     fn clone(&self) -> Self {
         *self
+    }
+}
+
+impl<T> PartialEq for IdentDeclId<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.index == other.index
+    }
+}
+
+impl<T> Eq for IdentDeclId<T> {}
+
+impl<T> Hash for IdentDeclId<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.index.hash(state)
     }
 }
 

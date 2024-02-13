@@ -248,13 +248,11 @@ impl Resolver {
         enclosing_func_scope_depth: Option<usize>,
     ) {
         let len = self.context.block_context_stack.len();
-        /*
         if let Some(enclosing_func_scope_depth) = enclosing_func_scope_depth {
             self.context.block_context_stack[len - 1 - (enclosing_func_scope_depth - 1)]
                 .inner_non_locals
                 .insert(name);
-        }*/
-        todo!()
+        }
     }
 
     pub fn check_enclosing_loop_scope(&self) -> bool {

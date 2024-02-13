@@ -42,7 +42,21 @@ macro_rules! impl_from_intermediate_lookup_result {
     ($x: ident, $y: ident) => {
         impl From<IntermediateLookupResult<$x>> for LookupResult<$y> {
             fn from(value: IntermediateLookupResult<$x>) -> Self {
-                todo!()
+                match value {
+                    IntermediateLookupResult::Ok((
+                        symbol_data,
+                        depth,
+                        enclosing_func_scope_depth,
+                    )) => LookupResult::Ok(LookupData::new(
+                        symbol_data.into(),
+                        depth,
+                        enclosing_func_scope_depth,
+                    )),
+                    IntermediateLookupResult::NotInitialized(decl_range) => {
+                        LookupResult::NotInitialized(decl_range)
+                    }
+                    IntermediateLookupResult::Unresolved => LookupResult::Unresolved,
+                }
             }
         }
     };

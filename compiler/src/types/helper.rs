@@ -18,7 +18,7 @@ use crate::{
 
 pub fn get_unbounded_generic_type_with_declaration_index(
     index: usize,
-    interner: &mut Interner,
+    interner: &Interner,
 ) -> Type {
     todo!()
 }

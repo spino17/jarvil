@@ -4,7 +4,7 @@ use crate::scope::symbol::function::CallableData;
 use rustc_hash::FxHashMap;
 
 impl HashMap {
-    pub fn get_builtin_methods(_interner: &mut Interner) -> FxHashMap<&'static str, CallableData> {
+    pub fn get_builtin_methods(_interner: &Interner) -> FxHashMap<&'static str, CallableData> {
         // hashmap built-in methods
 
         FxHashMap::default()

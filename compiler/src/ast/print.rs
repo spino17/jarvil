@@ -9,7 +9,7 @@ use text_size::TextRange;
 pub fn modify_array(
     array: &Vec<Value>,
     code: &JarvilCodeHandler,
-    interner: &mut Interner,
+    interner: &Interner,
 ) -> Vec<Value> {
     let mut modified_vec: Vec<Value> = vec![];
     for entry in array {
@@ -21,7 +21,7 @@ pub fn modify_array(
 pub fn modify_map(
     map: &Map<String, Value>,
     code: &JarvilCodeHandler,
-    interner: &mut Interner,
+    interner: &Interner,
 ) -> Map<String, Value> {
     let mut modified_map = Map::new();
     for (key, entry) in map {
@@ -48,7 +48,7 @@ pub fn modify_map(
     modified_map
 }
 
-pub fn modify_value(val: &Value, code: &JarvilCodeHandler, interner: &mut Interner) -> Value {
+pub fn modify_value(val: &Value, code: &JarvilCodeHandler, interner: &Interner) -> Value {
     match val {
         Value::Array(array) => Value::Array(modify_array(array, code, interner)),
         Value::Object(map) => Value::Object(modify_map(map, code, interner)),
@@ -59,7 +59,7 @@ pub fn modify_value(val: &Value, code: &JarvilCodeHandler, interner: &mut Intern
 pub fn json_serialize_ast(
     ast: &BlockNode,
     code: &JarvilCodeHandler,
-    interner: &mut Interner,
+    interner: &Interner,
 ) -> Result<String> {
     let serialized_ast = serde_json::to_string(ast)?;
     let deserialized: Value = serde_json::from_str(&serialized_ast)?;

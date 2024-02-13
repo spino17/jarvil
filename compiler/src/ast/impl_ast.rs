@@ -1252,7 +1252,7 @@ impl AtomicTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         code: &JarvilCodeHandler,
-        interner: &mut Interner,
+        interner: &Interner,
     ) -> TypeResolveKind {
         self.type_obj_after_resolved(code, interner)
     }
@@ -2246,7 +2246,7 @@ impl OkSelfKeywordNode {
         OkSelfKeywordNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
         self.0.as_ref().token.token_value(code, interner)
     }
 }
@@ -2489,7 +2489,7 @@ impl OkIdentifierInDeclNode {
         OkIdentifierInDeclNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
         self.0.as_ref().name.token_value(code, interner)
     }
 

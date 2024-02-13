@@ -7,7 +7,7 @@ use crate::{
 use rustc_hash::FxHashMap;
 
 // append(x: T), where `T` is the element type of the array
-fn append_callable_data(interner: &mut Interner) -> CallableData {
+fn append_callable_data(interner: &Interner) -> CallableData {
     CallableData::new(
         vec![get_unbounded_generic_type_with_declaration_index(
             0, interner,
@@ -20,7 +20,7 @@ fn append_callable_data(interner: &mut Interner) -> CallableData {
 }
 
 impl Array {
-    pub fn get_builtin_methods(interner: &mut Interner) -> FxHashMap<&'static str, CallableData> {
+    pub fn get_builtin_methods(interner: &Interner) -> FxHashMap<&'static str, CallableData> {
         let mut methods = FxHashMap::default();
 
         // array built-in methods
