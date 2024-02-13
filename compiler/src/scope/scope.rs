@@ -71,7 +71,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         }
     }
 
-    pub fn set(
+    fn set(
         &mut self,
         scope_index: ScopeIndex,
         ident_name: StrId,
@@ -126,6 +126,32 @@ impl<T: IsInitialized> ScopeArena<T> {
             scope_kind,
         }));
         ScopeIndex(new_scope_index)
+    }
+
+    pub fn force_insert(
+        &mut self,
+        scope_index: ScopeIndex,
+        key: StrId,
+        meta_data: T,
+        decl_range: TextRange,
+    ) {
+        // use this method only for builtin function where we know that no entry already exist in the scope
+        self.set(scope_index, key, meta_data, decl_range, None);
+    }
+
+    pub fn insert<U: Fn(&ScopeArena<T>, ScopeIndex, &StrId) -> Option<TextRange>>(
+        &mut self,
+        scope_index: ScopeIndex,
+        key: StrId,
+        meta_data: T,
+        decl_range: TextRange,
+        lookup_fn: U,
+        unique_id: IdentDeclId,
+    ) -> Result<SymbolIndex<T>, (StrId, TextRange)> {
+        if let Some(previous_decl_range) = lookup_fn(self, scope_index, &key) {
+            return Err((key, previous_decl_range));
+        }
+        Ok(self.set(scope_index, key, meta_data, decl_range, Some(unique_id)))
     }
 
     fn lookup(

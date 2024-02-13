@@ -1,9 +1,10 @@
+use super::symbol::core::IdentDeclId;
 use crate::core::string_interner::{Interner, StrId};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct MangledIdentifierName {
     pub jarvil_identifer_name: StrId,
-    pub unique_id: Option<usize>,
+    pub unique_id: Option<IdentDeclId>,
 }
 
 impl MangledIdentifierName {
@@ -14,7 +15,7 @@ impl MangledIdentifierName {
         format!(
             "{}_{}_{}",
             interner.lookup(self.jarvil_identifer_name),
-            id,
+            id.index(),
             suffix
         )
     }

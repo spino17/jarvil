@@ -2,12 +2,14 @@ use super::{
     function::CallableData, interfaces::InterfaceData, types::core::UserDefinedTypeData,
     variables::VariableData,
 };
+use crate::scope::mangled::MangledIdentifierName;
 use crate::{
     core::string_interner::StrId,
     scope::{
         concrete::{ConcreteSymbolData, ConcreteTypesTuple},
         core::SymbolData,
-        scope::ScopeIndex,
+        scope::{ScopeArena, ScopeIndex},
+        traits::IsInitialized,
     },
 };
 use std::marker::PhantomData;
@@ -41,14 +43,45 @@ impl<T> Symbol<T> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct IdentDeclId(usize);
 
+impl IdentDeclId {
+    pub fn index(&self) -> usize {
+        self.0
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
-pub struct SymbolIndex<T> {
+pub struct SymbolIndex<T: IsInitialized> {
     pub scope_index: ScopeIndex,
     pub ident_name: StrId,
     pub phanton: PhantomData<T>,
+}
+
+impl<T: IsInitialized> SymbolIndex<T> {
+    pub fn identifier_name(&self) -> StrId {
+        self.ident_name
+    }
+
+    pub fn declaration_line_number(&self, arena: &ScopeArena<T>) -> TextRange {
+        arena.get_symbol_data_ref(*self).decl_line_number()
+    }
+
+    pub fn get_index(&self, arena: &ScopeArena<T>) -> Option<IdentDeclId> {
+        arena.get_symbol_data_ref(*self).unique_id
+    }
+
+    pub fn is_suffix_required(&self, arena: &ScopeArena<T>) -> bool {
+        self.get_index(arena).is_some()
+    }
+
+    pub fn get_mangled_name(&self, arena: &ScopeArena<T>) -> MangledIdentifierName {
+        MangledIdentifierName {
+            jarvil_identifer_name: self.identifier_name(),
+            unique_id: self.get_index(arena),
+        }
+    }
 }
 
 pub enum SymbolDataEntry {
